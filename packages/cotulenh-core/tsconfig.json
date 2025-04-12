@@ -6,12 +6,13 @@
     "sourceMap": true,
     "strict": true,
     "target": "ESNext",
-    "composite": true, 
-    "declarationMap": true 
+    "composite": true,
+    "declarationMap": true,
+    "types": ["node", "jest"]
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "__tests__/**/*"],
   "exclude": ["sample/**"],
-  "references": [ 
+  "references": [
     { "path": "./tsconfig.cjs.json" },
     { "path": "./tsconfig.esm.json" },
     { "path": "./tsconfig.types.json" }
