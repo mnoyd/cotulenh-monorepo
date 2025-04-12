@@ -1,5 +1,5 @@
 {
-  "name": "with-svelte",
+  "name": "cotulenh-monorepo",
   "private": true,
   "scripts": {
     "build": "turbo run build",
@@ -16,5 +16,10 @@
   "packageManager": "pnpm@8.15.6",
   "engines": {
     "node": ">=18"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
   }
 }
