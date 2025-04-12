@@ -1,0 +1,24 @@
+{
+  "include": ["src/**/*"],
+  "exclude": [],
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "src",
+    "noEmitOnError": false,
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitThis": true,
+    "noImplicitReturns": true,
+    "module": "esnext",
+    "moduleResolution": "node",
+    "target": "ES2020",
+    "lib": ["DOM", "ES2020"],
+    "declaration": true,
+    "composite": true,
+    "sourceMap": true,
+    "declarationMap": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true
+  }
+}

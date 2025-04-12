@@ -1,0 +1,286 @@
+/* --- Existing styles (no changes here) --- */
+
+.cg-wrap {
+  box-sizing: content-box;
+  position: relative;
+  display: block;
+}
+
+cg-container {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  display: block;
+  top: 0;
+}
+.board-orientation-blue {
+  transform: rotate(180deg);
+}
+cg-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  background-size: cover;
+}
+
+cg-piece-star {
+  position: absolute;
+  top: 15%;
+  width: 20%;
+  height: 20%;
+  user-select: none;
+  background-size: contain; /* Changed from cover to contain */
+  background-repeat: no-repeat; /*add this line*/
+  background-position: center; /* Add this line */
+  z-index: 3; /* Ensure it is above the pieces */
+}
+
+cg-board {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  line-height: 0;
+}
+
+.cg-wrap cg-auto-pieces,
+.cg-wrap .cg-shapes,
+.cg-wrap .cg-custom-svgs {
+  overflow: visible;
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.cg-wrap cg-auto-pieces {
+  z-index: 2;
+}
+
+.cg-wrap cg-auto-pieces piece {
+  opacity: 0.3;
+}
+cg-board square {
+  position: absolute;
+  top: 3.84%;
+  left: 4.16%;
+  width: 8.3%;
+  height: 7.7%;
+  pointer-events: none;
+}
+
+.cg-wrap piece svg {
+  overflow: hidden;
+  position: relative;
+  top: 0px;
+  left: 0px;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 2;
+  opacity: 0.6;
+}
+.cg-wrap piece {
+  position: absolute;
+  top: 3.84%;
+  left: 4.16%;
+  width: 8.3%;
+  height: 7.7%;
+  /* background-size: cover; */
+  z-index: 2;
+  will-change: transform;
+  pointer-events: none;
+  display: flex; /* Keep flex for regular pieces */
+  justify-content: center; /* Keep centering for regular pieces */
+}
+
+cg-board piece.dragging {
+  cursor: move;
+  /* !important to override z-index from 3D piece inline style */
+  z-index: 11 !important;
+  /* top: 1.92%;
+  left: 2.08%; */
+}
+
+piece.anim {
+  z-index: 8;
+}
+
+piece.fading {
+  z-index: 1;
+  opacity: 0.5;
+}
+
+.cg-wrap cg-auto-pieces,
+.cg-wrap .cg-shapes,
+.cg-wrap .cg-custom-svgs {
+  overflow: visible;
+  position: absolute;
+  top: 0px;
+  left: 0px;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.cg-wrap coords {
+  position: absolute;
+  display: flex;
+  pointer-events: none;
+  opacity: 0.8;
+  font-family: sans-serif;
+  font-size: 9px;
+}
+
+.cg-wrap coords.ranks {
+  left: 4px;
+  flex-flow: column-reverse;
+  height: 92.6%;
+  width: 12px;
+  margin: 7.7% 0;
+}
+
+.cg-wrap coords.ranks.blue {
+  flex-flow: column;
+}
+
+.cg-wrap coords.files {
+  bottom: -4px;
+  flex-flow: row;
+  width: 91.7%;
+  height: 16px;
+  text-transform: uppercase;
+  text-align: left;
+  margin: 0 8.3%;
+}
+
+.cg-wrap coords.files.blue {
+  flex-flow: row-reverse;
+}
+.cg-wrap coords.squares {
+  bottom: 0;
+  left: 0;
+  text-transform: uppercase;
+  text-align: right;
+  flex-flow: column-reverse;
+  height: 100%;
+  width: 12.5%;
+}
+
+.cg-wrap coords.squares.blue {
+  flex-flow: column;
+}
+
+.cg-wrap coords coord {
+  flex: 1 1 auto;
+}
+
+/* --- Combined Stack Styles (Corrected) --- */
+
+/* Styles for the combined stack container */
+.cg-wrap piece.combined-stack {
+  overflow: visible; /* Allow children to overflow */
+  pointer-events: auto; /* Make the whole stack clickable */
+  background: none;
+  overflow: visible;
+}
+
+/* Styles for individual pieces WITHIN the stack */
+.cg-wrap piece.combined-stack > piece {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-size: contain; /* Ensure background image fits */
+  background-position: center;
+  background-repeat: no-repeat;
+  /*display: block; /* Override flex display */
+}
+.combined-piece-popup {
+  position: absolute;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 8px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  z-index: 100;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.combined-piece-popup piece {
+  cursor: grab;
+  transition: transform 0.1s;
+  width: 50px;
+  height: 50px;
+  position: relative;
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+  flex-shrink: 0;
+  pointer-events: auto;
+  user-select: none;
+}
+
+.combined-piece-popup piece:active {
+  cursor: grabbing;
+}
+
+.combined-piece-popup piece:hover {
+  transform: scale(1.1);
+  z-index: 2;
+}
+
+.combined-piece-popup piece.selected {
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+  transform: scale(1.1);
+}
+
+/* Update carrier piece separator */
+.combined-piece-popup .carrier-piece {
+  position: relative;
+}
+
+/* Add separator after carrier piece */
+.combined-piece-popup .carrier-piece::after {
+  content: '';
+  position: absolute;
+  right: -4px;
+  top: 10%;
+  height: 80%;
+  width: 1px;
+  background-color: #ccc;
+}
+
+.cg-wrap piece.combined-stack .selected-stack-piece {
+  filter: brightness(1.2);
+  z-index: 10 !important;
+}
+
+.cg-wrap piece.combined-stack piece {
+  transition: opacity 0.3s ease;
+}
+
+.dragging {
+  cursor: grabbing !important;
+}
+
+.cg-wrap piece.ghost {
+  opacity: 0.3;
+}
