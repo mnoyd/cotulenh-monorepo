@@ -5,18 +5,40 @@ import { applyAnimation, Config, configure } from './config.js';
 import { anim, render } from './anim.js';
 import { DrawShape } from './draw.js';
 import { write as fenWrite } from './fen.js';
+import { dragNewPiece } from './drag.js';
 
 export interface Api {
-  redrawAll: any;
   set(config: Config): void;
+
   state: State;
+
   // change the view angle
   toggleOrientation(): void;
+
   // get the position as a FEN string (only contains pieces, no flags)
-  // e.g. rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR
   getFen(): cg.FEN;
+
   // programmatically draw user shapes
   setShapes(shapes: DrawShape[]): void;
+
+  // perform a move programmatically
+  move(orig: cg.Key, dest: cg.Key): void;
+
+  // add and/or remove arbitrary pieces on the board
+  setPieces(pieces: cg.PiecesDiff): void;
+
+  // put a new piece on the board
+  newPiece(piece: cg.Piece, key: cg.Key): void;
+
+   // only useful when CSS changes the board width/height ratio (for 3D)
+   redrawAll: cg.Redraw;
+
+  // for crazyhouse and board editors
+  dragNewPiece(piece: cg.Piece, event: cg.MouchEvent, force?: boolean): void;
+
+  // unbinds all events
+  // (important for document-wide events like scroll and mousemove)
+  destroy: cg.Unbind;
 }
 
 export function start(state: State, redrawAll: cg.Redraw): Api {
@@ -31,12 +53,31 @@ export function start(state: State, redrawAll: cg.Redraw): Api {
       applyAnimation(state, config);
       (config.fen ? anim : render)(state => configure(state, config), state);
     },
-    redrawAll,
     state,
     toggleOrientation,
     getFen: () => fenWrite(state.pieces),
     setShapes(shapes: DrawShape[]): void {
       render(state => (state.drawable.shapes = shapes), state);
+    },
+    setPieces(pieces): void {
+      anim(state => board.setPieces(state, pieces), state);
+    },
+    move(orig, dest): void {
+      anim(state => board.baseMove(state, orig, dest), state);
+    },
+    newPiece(piece, key): void {
+      anim(state => board.baseNewPiece(state, piece, key), state);
+    },
+    redrawAll,
+
+    dragNewPiece(piece, event, force): void {
+      dragNewPiece(state, piece, event, force);
+    },
+
+    destroy(): void {
+      board.stop(state);
+      state.dom.unbind && state.dom.unbind();
+      state.dom.destroyed = true;
     },
   };
 }

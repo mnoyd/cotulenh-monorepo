@@ -325,3 +325,15 @@ export function baseNewPiece(state: HeadlessState, piece: cg.Piece, key: cg.Key,
   state.turnColor = opposite(state.turnColor);
   return true;
 }
+
+export function setPieces(state: HeadlessState, pieces: cg.PiecesDiff): void {
+  for (const [key, piece] of pieces) {
+    if (piece) state.pieces.set(key, piece);
+    else state.pieces.delete(key);
+  }
+}
+
+export function stop(state: HeadlessState): void {
+  state.movable.color = state.movable.dests = state.animation.current = undefined;
+  cancelMove(state);
+}

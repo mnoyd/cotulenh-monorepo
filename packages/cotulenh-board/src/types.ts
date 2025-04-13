@@ -51,6 +51,7 @@ export interface Drop {
   key: Key;
 }
 export type Pieces = Map<Key, Piece>;
+export type PiecesDiff = Map<Key, Piece | undefined>;
 export type NumberPair = [number, number];
 export type NumberQuad = [number, number, number, number];
 

@@ -5,7 +5,7 @@
   import { CoTuLenh } from '@repo/cotulenh-core';
   import type { Square, Move, PieceSymbol, Color } from '@repo/cotulenh-core';
   import type { Dests, Key, MoveMetadata } from '@repo/cotulenh-board/types';
-  import { algebraicToNumeric, toDests } from '@repo/cotulenh-notation';
+  import { algebraicToNumeric, toDests, playOtherSide } from '@repo/cotulenh-notation';
 
   import '@repo/cotulenh-board/assets/commander-chess.base.css';
   import '@repo/cotulenh-board/assets/commander-chess.pieces.css';
@@ -120,11 +120,6 @@
     }
   });
 
-
-
-    function playOtherSide(boardApi: Api, game: CoTuLenh): ((orig: Key, dest: Key, metadata: MoveMetadata) => void) | undefined {
-        throw new Error('Function not implemented.');
-    }
 </script>
 
 <main>
@@ -149,7 +144,7 @@
 
 <style>
   .board-container {
-    width: 500px;
+    width: 700px;
     aspect-ratio: 12 / 13; /* Adjust if necessary for CoTuLenh */
     position: relative;
   }

@@ -334,3 +334,25 @@ export function callUserFunction<T extends (...args: any[]) => void>(
 ): void {
   if (f) setTimeout(() => f(...args), 1);
 }
+
+export function dragNewPiece(s: State, piece: cg.Piece, e: cg.MouchEvent, force?: boolean): void {
+  const key: cg.Key = '0-0';
+  s.pieces.set(key, piece);
+  s.dom.redraw();
+
+  const position = util.eventPosition(e)!;
+
+  s.draggable.current = {
+    orig: key,
+    piece,
+    origPos: position,
+    pos: position,
+    started: true,
+    element: () => pieceElementByKey(s, key),
+    originTarget: e.target,
+    newPiece: true,
+    force: !!force,
+    keyHasChanged: false,
+  };
+  processDrag(s);
+}
