@@ -9,7 +9,7 @@
       "type": "firefox",
       "request": "launch",
       "reAttach": true,
-      "preLaunchTask": "npm: dist",
+      "preLaunchTask": "npm: build",
       "file": "${workspaceFolder}/demo.html"
     },
     {
