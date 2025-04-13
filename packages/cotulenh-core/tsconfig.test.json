@@ -1,0 +1,13 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    // Test-specific options can go here if needed
+    // Ensure types needed for tests are available
+    "types": ["node", "jest"]
+  },
+  "include": [
+    "src/**/*", // Include source files for type checking against tests
+    "__tests__/**/*" // Include test files
+  ]
+  // No 'outDir' or 'emitDeclarationOnly' as this isn't for building
+}

@@ -3,5 +3,8 @@
   "compilerOptions": {
     "outDir": "./dist/esm",
     "module": "esnext"
-  }
+  },
+  "exclude": [
+    "__tests__/**/*" // Exclude test files from build
+  ]
 }
