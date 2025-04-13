@@ -29,6 +29,9 @@ importers:
       '@repo/cotulenh-core':
         specifier: workspace:^
         version: link:../../packages/cotulenh-core
+      '@repo/cotulenh-notation':
+        specifier: workspace:^
+        version: link:../../packages/cotulenh-notation
     devDependencies:
       '@sveltejs/adapter-auto':
         specifier: ^4.0.0
@@ -89,6 +92,25 @@ importers:
         version: 4.2.0
       typescript:
         specifier: ^5.8.2
+        version: 5.8.2
+
+  packages/cotulenh-notation:
+    dependencies:
+      '@repo/cotulenh-board':
+        specifier: ^0.0.0
+        version: link:../cotulenh-board
+      '@repo/cotulenh-core':
+        specifier: '*'
+        version: link:../cotulenh-core
+    devDependencies:
+      '@repo/eslint-config':
+        specifier: '*'
+        version: link:../eslint-config
+      '@repo/typescript-config':
+        specifier: '*'
+        version: link:../typescript-config
+      typescript:
+        specifier: ^5.3.3
         version: 5.8.2
 
   packages/eslint-config:

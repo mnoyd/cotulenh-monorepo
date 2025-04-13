@@ -22,6 +22,7 @@
 	},
 	"dependencies": {
 		"@repo/cotulenh-board": "workspace:^",
-		"@repo/cotulenh-core": "workspace:^"
+		"@repo/cotulenh-core": "workspace:^",
+		"@repo/cotulenh-notation": "workspace:^"
 	}
 }

@@ -7,11 +7,11 @@ import * as events from './events.js';
 import { Config, configure } from './config.js';
 
 export function initModule({ el, config }: { el: HTMLElement; config?: Config }): Api {
-  return CommanderChessBoard(el, config);
+  return CotulenhBoard(el, config);
 }
 
-export function CommanderChessBoard(element: HTMLElement, config?: Config): Api {
-  console.log('CommanderChessBoard');
+export function CotulenhBoard(element: HTMLElement, config?: Config): Api {
+  console.log('CotulenhBoard');
   const maybeState: State | HeadlessState = defaults();
 
   configure(maybeState, config || {});
