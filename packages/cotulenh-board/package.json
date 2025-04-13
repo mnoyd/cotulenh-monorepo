@@ -2,14 +2,16 @@
   "name": "@repo/cotulenh-board",
   "version": "0.0.0",
   "description": "A js board for commander chess",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "type": "module",
   "scripts": {
-    "build": "tsc -b",
+    "build": "$npm_execpath run dist",
+    "compile": "tsc --sourceMap --declaration",
+    "copy-assets": "mkdir -p dist/assets && cp -r assets/. dist/assets/",
+    "dist": "rm -rf dist tsconfig.tsbuildinfo && $npm_execpath run compile && $npm_execpath run copy-assets",
     "format": "prettier --write .",
-    "check-format": "prettier --check .",
-    "check-exports": "attw --pack ."
+    "check-format": "prettier --check ."
   },
   "keywords": [
     "commander",
@@ -20,40 +22,24 @@
   "author": "Hoang Manh",
   "license": "GPL-3.0-or-later",
   "devDependencies": {
-    "@arethetypeswrong/cli": "^0.17.4",
     "esbuild": "^0.25.1",
     "prettier": "^3.5.3",
     "typescript": "^5.8.2"
   },
   "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
-    },
-    "./state": {
-      "types": "./dist/state.d.ts",
-      "import": "./dist/state.js"
-    },
-    "./render": {
-      "types": "./dist/render.d.ts",
-      "import": "./dist/render.js"
-    },
-    "./events": {
-      "types": "./dist/events.d.ts",
-      "import": "./dist/events.js"
-    },
-    "./fen": {
-      "types": "./dist/fen.d.ts",
-      "import": "./dist/fen.js"
-    },
-    "./types": {
-      "types": "./dist/types.d.ts",
-      "import": "./dist/types.js"
-    },
-    "./api": {
-      "types": "./dist/api.d.ts",
-      "import": "./dist/api.js"
-    },
-    "./assets/*": "./assets/*"
+    ".": "./dist/index.js",
+    "./assets/*": "./dist/assets/*",
+    "./*": "./dist/*.js"
+  },
+  "files": [
+    "dist/**/*",
+    "assets/**/*"
+  ],
+  "typesVersions": {
+    "*": {
+      "*": [
+        "dist/*"
+      ]
+    }
   }
 }
