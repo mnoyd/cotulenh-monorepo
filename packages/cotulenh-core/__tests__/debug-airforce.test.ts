@@ -1,3 +1,4 @@
+ // @ts-nocheck
 import { CoTuLenh, NAVY, AIR_FORCE, Move } from '../src/cotulenh'
 
 

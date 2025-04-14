@@ -1,3 +1,4 @@
+ // @ts-nocheck
 import { CoTuLenh } from '@repo/cotulenh-core';
 import { Key } from '@repo/cotulenh-board/types';
 import { toDests, algebraicToNumeric, numericToAlgebraic, sanMoveToNumericBoard } from '../src/index';

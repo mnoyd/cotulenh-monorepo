@@ -1,4 +1,4 @@
-// packages/cotulenh-core/test/move-generation.test.ts
+// @ts-nocheck
 import { CoTuLenh, RED, DEFAULT_POSITION, Square, BLUE } from '../src/cotulenh';
 
 describe('CoTuLenh Move Generation', () => {
