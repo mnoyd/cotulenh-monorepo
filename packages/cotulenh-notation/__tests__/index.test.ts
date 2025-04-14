@@ -1,6 +1,6 @@
 import { CoTuLenh } from '@repo/cotulenh-core';
 import { Key } from '@repo/cotulenh-board/types';
-import { toDests, algebraicToNumeric } from '../src/index';
+import { toDests, algebraicToNumeric, numericToAlgebraic } from '../src/index';
 
 describe('toDests', () => {
   it('should return correct destinations for the initial position', () => {
@@ -49,5 +49,41 @@ describe('algebraicToNumeric', () => {
     expect(algebraicToNumeric('a')).toBeNull();
     expect(algebraicToNumeric('1a')).toBeNull();
     expect(algebraicToNumeric('')).toBeNull();
+  });
+});
+
+// Add tests for numericToAlgebraic
+describe('numericToAlgebraic', () => {
+  it('should convert valid numeric coordinates to algebraic squares', () => {
+    expect(numericToAlgebraic('0-0')).toBe('a1');
+    expect(numericToAlgebraic('8-9')).toBe('i10');
+    expect(numericToAlgebraic('4-4')).toBe('e5');
+    expect(numericToAlgebraic('0-9')).toBe('a10');
+    expect(numericToAlgebraic('8-0')).toBe('i1');
+  });
+
+  it('should return null for invalid numeric coordinates', () => {
+    // Invalid format
+    // @ts-expect-error
+    expect(numericToAlgebraic('1')).toBeNull();
+    // @ts-expect-error
+    expect(numericToAlgebraic('1-')).toBeNull();
+    // @ts-expect-error
+    expect(numericToAlgebraic('-1')).toBeNull();
+    // @ts-expect-error
+    expect(numericToAlgebraic('1-1-1')).toBeNull();
+    // @ts-expect-error
+    expect(numericToAlgebraic('a-1')).toBeNull();
+    // @ts-expect-error
+    expect(numericToAlgebraic('1-a')).toBeNull();
+    // @ts-expect-error
+    expect(numericToAlgebraic('')).toBeNull();
+
+    // Out of bounds indices
+    // @ts-expect-error 
+    expect(numericToAlgebraic('-1-0')).toBeNull(); // fileIndex < 0
+    expect(numericToAlgebraic('19-2')).toBeNull();  // fileIndex >= FILES.length
+    expect(numericToAlgebraic('0--1')).toBeNull(); // rankIndex < 0
+    expect(numericToAlgebraic('0-13')).toBeNull(); // rankIndex >= RANKS.length
   });
 });
