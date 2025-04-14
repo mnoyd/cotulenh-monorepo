@@ -244,13 +244,13 @@ export function end(s: State, e: cg.MouchEvent): void {
 
       // Treat this as a move from the original position to the destination
       board.userMove(s, originalKey, dest);
-      s.pieces.delete('11-12');
+      s.pieces.delete('11.12');
       // The userMove function in board.ts will handle removing the piece from the stack
       // and placing it at the destination, including captures and combinations
     } else if (cur.originalStackKey) {
       // Handle dragging whole stack
       board.userMove(s, cur.originalStackKey, dest);
-      s.pieces.delete('11-12');
+      s.pieces.delete('11.12');
     } else if (cur.newPiece) {
       board.dropNewPiece(s, cur.orig, dest, cur.force);
     } else {
@@ -259,7 +259,7 @@ export function end(s: State, e: cg.MouchEvent): void {
     }
   } else if (!dest && !cur.newPiece) {
     if (cur.originalStackKey) {
-      s.pieces.delete('11-12');
+      s.pieces.delete('11.12');
     }
     // Reset the piece to original position
     if (typeof cur.element === 'function') {
@@ -336,7 +336,7 @@ export function callUserFunction<T extends (...args: any[]) => void>(
 }
 
 export function dragNewPiece(s: State, piece: cg.Piece, e: cg.MouchEvent, force?: boolean): void {
-  const key: cg.Key = '0-0';
+  const key: cg.Key = '0.0';
   s.pieces.set(key, piece);
   s.dom.redraw();
 

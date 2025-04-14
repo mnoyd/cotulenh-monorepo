@@ -1,6 +1,6 @@
 import { CoTuLenh } from '@repo/cotulenh-core';
 import { Key } from '@repo/cotulenh-board/types';
-import { toDests, algebraicToNumeric, numericToAlgebraic } from '../src/index';
+import { toDests, algebraicToNumeric, numericToAlgebraic, sanMoveToNumericBoard } from '../src/index';
 
 describe('toDests', () => {
   it('should return correct destinations for the initial position', () => {
@@ -10,7 +10,7 @@ describe('toDests', () => {
     const dests: Map<Key, Key[]> = toDests(game);
 
 
-    expect(dests.get('1-1')).toHaveLength(11);
+    expect(dests.get('1.1')).toHaveLength(11);
 
     //half of the pieces (all red pieces) have moves
     expect(dests.size).toBe(16);
@@ -30,11 +30,11 @@ describe('toDests', () => {
 // Add tests for algebraicToNumeric
 describe('algebraicToNumeric', () => {
   it('should convert valid algebraic squares to numeric coordinates', () => {
-    expect(algebraicToNumeric('a1')).toBe('0-0');
-    expect(algebraicToNumeric('i10')).toBe('8-9');
-    expect(algebraicToNumeric('e5')).toBe('4-4');
-    expect(algebraicToNumeric('a10')).toBe('0-9');
-    expect(algebraicToNumeric('i1')).toBe('8-0');
+    expect(algebraicToNumeric('a1')).toBe('0.0');
+    expect(algebraicToNumeric('i10')).toBe('8.9');
+    expect(algebraicToNumeric('e5')).toBe('4.4');
+    expect(algebraicToNumeric('a10')).toBe('0.9');
+    expect(algebraicToNumeric('i1')).toBe('8.0');
   });
 
   it('should return null for invalid algebraic squares', () => {
@@ -55,11 +55,11 @@ describe('algebraicToNumeric', () => {
 // Add tests for numericToAlgebraic
 describe('numericToAlgebraic', () => {
   it('should convert valid numeric coordinates to algebraic squares', () => {
-    expect(numericToAlgebraic('0-0')).toBe('a1');
-    expect(numericToAlgebraic('8-9')).toBe('i10');
-    expect(numericToAlgebraic('4-4')).toBe('e5');
-    expect(numericToAlgebraic('0-9')).toBe('a10');
-    expect(numericToAlgebraic('8-0')).toBe('i1');
+    expect(numericToAlgebraic('0.0')).toBe('a1');
+    expect(numericToAlgebraic('8.9')).toBe('i10');
+    expect(numericToAlgebraic('4.4')).toBe('e5');
+    expect(numericToAlgebraic('0.9')).toBe('a10');
+    expect(numericToAlgebraic('8.0')).toBe('i1');
   });
 
   it('should return null for invalid numeric coordinates', () => {
@@ -67,7 +67,7 @@ describe('numericToAlgebraic', () => {
     // @ts-expect-error
     expect(numericToAlgebraic('1')).toBeNull();
     // @ts-expect-error
-    expect(numericToAlgebraic('1-')).toBeNull();
+    expect(numericToAlgebraic('1.')).toBeNull();
     // @ts-expect-error
     expect(numericToAlgebraic('-1')).toBeNull();
     // @ts-expect-error
@@ -80,10 +80,17 @@ describe('numericToAlgebraic', () => {
     expect(numericToAlgebraic('')).toBeNull();
 
     // Out of bounds indices
-    // @ts-expect-error 
-    expect(numericToAlgebraic('-1-0')).toBeNull(); // fileIndex < 0
-    expect(numericToAlgebraic('19-2')).toBeNull();  // fileIndex >= FILES.length
-    expect(numericToAlgebraic('0--1')).toBeNull(); // rankIndex < 0
-    expect(numericToAlgebraic('0-13')).toBeNull(); // rankIndex >= RANKS.length
+    expect(numericToAlgebraic('-1.0')).toBeNull(); // fileIndex < 0
+    expect(numericToAlgebraic('19.2')).toBeNull();  // fileIndex >= FILES.length
+    expect(numericToAlgebraic('0.-1')).toBeNull(); // rankIndex < 0
+    expect(numericToAlgebraic('0.13')).toBeNull(); // rankIndex >= RANKS.length
+  });
+});
+
+describe('sanMoveToNumericBoard', () => {
+  it('should convert valid SAN moves to numeric coordinates', () => {
+    expect(sanMoveToNumericBoard('Ie5-e6')).toBe('I4.4-4.5');
+    expect(sanMoveToNumericBoard('ff1<f4')).toBe('f5.0<5.3');
+    expect(sanMoveToNumericBoard('cc1>d1')).toBe('c2.0>3.0');
   });
 });

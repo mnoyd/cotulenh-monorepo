@@ -2,7 +2,7 @@ export type Color = (typeof colors)[number];
 export type Role = (typeof roles)[number];
 export type File = (typeof files)[number];
 export type Rank = (typeof ranks)[number];
-export type Key = '0-0' | `${File}-${Rank}`;
+export type Key = '0.0' | `${File}.${Rank}`;
 export type Pos = [number, number];
 
 export const colors = ['red', 'blue'] as const;

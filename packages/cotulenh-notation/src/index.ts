@@ -16,7 +16,7 @@ export type NumericCoordinate = Key;
  * @returns The corresponding algebraic square (e.g., 'a12', 'k1') or null if invalid.
  */
 export function numericToAlgebraic(coord: NumericCoordinate): Square | null {
-  const parts = coord.split('-');
+  const parts = coord.split('.');
   if (parts.length !== 2) {
     console.error(`Invalid numeric coordinate format: ${coord}`);
     return null;
@@ -52,20 +52,8 @@ export function algebraicToNumeric(sq: Square): NumericCoordinate | null {
   }
 
   // Key format is 'fileIndex-rankIndex'
-  return `${fileIndex}-${rankIndex}` as NumericCoordinate;
+  return `${fileIndex}.${rankIndex}` as NumericCoordinate;
 }
-
-// --- Example Usage (for testing/verification) ---
-/*
-console.log('0-0 ->', numericToAlgebraic('0-0')); // Expected: a12
-console.log('10-0 ->', numericToAlgebraic('10-0')); // Expected: k12
-console.log('0-1 ->', numericToAlgebraic('0-1')); // Expected: a11
-console.log('10-11 ->', numericToAlgebraic('10-11')); // Expected: k1
-console.log('a12 ->', algebraicToNumeric('a12')); // Expected: 0-0
-console.log('k12 ->', algebraicToNumeric('k12')); // Expected: 10-0
-console.log('a11 ->', algebraicToNumeric('a11')); // Expected: 0-1
-console.log('k1 ->', algebraicToNumeric('k1')); // Expected: 10-11
-*/
 
 export function toDests(game: CoTuLenh): Map<Key, Key[]> {
   const dests = new Map<NumericCoordinate, Key[]>(); // Use NumericCoordinate (Key) as map key type
@@ -87,4 +75,24 @@ export function toDests(game: CoTuLenh): Map<Key, Key[]> {
     }
   });
   return dests;
+}
+
+export function numericToAlgebraicPair(orig: NumericCoordinate, dest: NumericCoordinate): [Square, Square] {
+  const origSquare = numericToAlgebraic(orig);
+  const destSquare = numericToAlgebraic(dest);
+  if (!origSquare || !destSquare) {
+    throw new Error(`Invalid numeric coordinates: orig=${orig}, dest=${dest}`);
+  }
+  return [origSquare, destSquare];
+}
+
+export function sanMoveToNumericBoard(sanMove: string):string {
+  //write me a regex to find algebraic squares in sanMove
+  return sanMove.replace(/([a-k]\d)/g, (match) => {
+    const numeric = algebraicToNumeric(match);
+    if (!numeric) {
+      throw new Error(`Invalid SAN move: ${sanMove}`);
+    }
+    return numeric;
+  });
 }

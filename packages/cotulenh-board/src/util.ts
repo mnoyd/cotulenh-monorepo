@@ -33,7 +33,7 @@ export const allKeys: readonly cg.Key[] = (() => {
   let allKeys: cg.Key[] = [];
   for (let i = 0; i < 10; i++) {
     for (let j = 0; j < 11; j++) {
-      allKeys.push(`${i}-${j}`);
+      allKeys.push(`${i}.${j}`);
     }
   }
   return allKeys;
@@ -54,8 +54,8 @@ export const eventPosition = (e: cg.MouchEvent): cg.NumberPair | undefined => {
   return; // touchend has no position!
 };
 
-export const key2pos = (k: cg.Key): cg.Pos => k.split('-').map(Number) as cg.Pos;
-export const pos2key = (pos: cg.Pos): cg.Key => `${pos[0]}-${pos[1]}`;
+export const key2pos = (k: cg.Key): cg.Pos => k.split('.').map(Number) as cg.Pos;
+export const pos2key = (pos: cg.Pos): cg.Key => `${pos[0]}.${pos[1]}`;
 
 export const isRightButton = (e: cg.MouchEvent): boolean => e.button === 2;
 export const allPos: readonly cg.Pos[] = allKeys.map(key2pos);

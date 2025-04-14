@@ -5,7 +5,7 @@
   import { CoTuLenh } from '@repo/cotulenh-core';
   import type { Square, Color, Move } from '@repo/cotulenh-core';
   import type { Key, Dests } from '@repo/cotulenh-board/types';
-  import { algebraicToNumeric } from '@repo/cotulenh-notation';
+  import { algebraicToNumeric, numericToAlgebraic, numericToAlgebraicPair } from '@repo/cotulenh-notation';
   import GameInfo from '$lib/components/GameInfo.svelte';
   import { gameStore } from '$lib/stores/game';
 
@@ -36,6 +36,7 @@
         }
       }
     }
+    console.log('Possible moves mapped to board format:', dests);
     return dests;
   }
 
@@ -52,7 +53,9 @@
     console.log('Board move attempt:', orig, '->', dest);
 
     try {
-      const moveResult = game.move({ from: orig as Square, to: dest as Square });
+      const algebraicMove = numericToAlgebraicPair(orig, dest);
+      console.log('Algebraic move:', algebraicMove);
+      const moveResult = game.move({ from: algebraicMove[0], to: algebraicMove[1] });
 
       if (moveResult) {
         console.log('Game move successful:', moveResult);
@@ -90,7 +93,7 @@
 
       return () => {
         console.log('Cleaning up board and game subscription.');
-        boardApi?.destroy(); 
+        boardApi?.destroy();
         unsubscribe();
       };
     }

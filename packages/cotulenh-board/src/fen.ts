@@ -109,7 +109,7 @@ export function write(pieces: cg.Pieces): cg.FEN {
     .map(y =>
       cg.files
         .map(x => {
-          const piece = pieces.get(`${x}-${y}` as cg.Key);
+          const piece = pieces.get(`${x}.${y}` as cg.Key);
           if (piece) {
             let p = pieceToString(piece);
 
