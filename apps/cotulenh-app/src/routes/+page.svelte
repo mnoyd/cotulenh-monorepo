@@ -5,7 +5,7 @@
   import { CoTuLenh } from '@repo/cotulenh-core';
   import type { Square, Move, PieceSymbol, Color } from '@repo/cotulenh-core';
   import type { Dests, Key, MoveMetadata } from '@repo/cotulenh-board/types';
-  import { algebraicToNumeric, toDests } from '@repo/cotulenh-notation';
+  import { algebraicToNumeric, numericToAlgebraic, toDests } from '@repo/cotulenh-notation';
 
   import '@repo/cotulenh-board/assets/commander-chess.base.css';
   import '@repo/cotulenh-board/assets/commander-chess.pieces.css';
@@ -95,7 +95,11 @@
   }
   export function playOtherSide(boardApi: Api, game: CoTuLenh) {
     return (orig: Square, dest: Square) => {
-      game.move({ from: orig, to: dest });
+      console.log('Other side move:', orig, '->', dest);
+      const numericOrig = numericToAlgebraic(orig as Key);
+      const numericDest = numericToAlgebraic(dest as Key);
+      if (!numericOrig || !numericDest) return;
+      game.move({ from: numericOrig, to: numericDest });
       boardApi.set({
         turnColor: coreToBoardColor(game.turn()),
         movable: {
