@@ -4,7 +4,7 @@ import type { Color, Key } from '@repo/cotulenh-board/types'; // Import Key type
 
 // --- Constants ---
 const FILES = 'abcdefghijk'.split(''); // 11 files
-const RANKS = '12,11,10,9,8,7,6,5,4,3,2,1'.split(','); // 12 ranks
+const RANKS = '1,2,3,4,5,6,7,8,9,10,11,12'.split(','); // 12 ranks
 const SQUARES = FILES.flatMap(f => RANKS.map(r => `${f}${r}`)) as Square[];
 
 // Type definition for the numeric coordinate system (fileIndex-rankIndex)
