@@ -1,64 +1,85 @@
 <script lang="ts">
-    import type { Move, Color } from '@repo/cotulenh-core'; // Use project's core types
     import MoveHistory from './MoveHistory.svelte';
     import { getTurnColorName } from '$lib/utils'; // Import helper
+    import { gameStore } from '$lib/stores/game'; // Import the game store
 
-    // Props from the main page
-    export let turn: Color | null; // Use Color type ('r' | 'b' or null if not started)
-    export let history: Move[];
-    // export let gameStatus: string | null = null; // Optional: Add later for checkmate/stalemate messages
-
+    // Remove props - component will read directly from the store
+    // export let turn: Color | null;
+    // export let history: Move[];
+    // export let gameStatus: string | null = null; // Remove if not used or handle via store
 </script>
 
 <div class="game-info-panel">
-    <div class="turn-indicator">
-        Current Turn: <strong>{turn ? getTurnColorName(turn) : '...'}</strong>
+    <div class="status-section">
+        {#if $gameStore.status === 'playing'}
+            <div class="turn-indicator">
+                Current Turn: 
+                <strong>{$gameStore.turn ? getTurnColorName($gameStore.turn) : '...'}</strong>
+                {#if $gameStore.check}<span class="check-indicator"> (Check)</span>{/if}
+            </div>
+        {:else}
+            <div class="game-over-indicator">
+                <strong>Game Over</strong>
+                <div class="status-message">
+                    {#if $gameStore.status === 'checkmate'}
+                        Checkmate! {$gameStore.turn ? getTurnColorName($gameStore.turn === 'r' ? 'b' : 'r') : ''} wins!
+                    {:else if $gameStore.status === 'stalemate'}
+                        Stalemate!
+                    {:else if $gameStore.status === 'draw'}
+                        Draw!
+                        <!-- Add other draw conditions if implemented in store -->
+                    {/if}
+                </div>
+            </div>
+        {/if}
     </div>
 
-    <!-- Optional: Display game status messages -->
-    <!-- {#if gameStatus}
-        <div class="game-status {turn === 'w' ? 'black-wins' : 'white-wins'}">
-            {gameStatus}
-        </div>
-    {/if} -->
-
-    <MoveHistory {history} />
+    <MoveHistory history={$gameStore.history} />
 </div>
 
 <style>
     .game-info-panel {
+        background: var(--surface-2, #f0f0f0);
+        padding: 1rem;
+        border-radius: 8px;
         display: flex;
         flex-direction: column;
-        gap: 15px;
-        padding: 15px;
-        border: 1px solid var(--border-color, #ccc);
-        border-radius: 5px;
-        background-color: var(--bg-primary, #fff);
-        min-width: 200px; /* Ensure it has some width */
+        gap: 1rem;
+        height: fit-content; /* Prevent stretching */
     }
 
-    .turn-indicator {
+    .status-section {
         text-align: center;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid var(--surface-3, #e0e0e0);
+    }
+
+    .turn-indicator,
+    .game-over-indicator {
         font-size: 1.1em;
-        padding: 8px;
-        background-color: var(--bg-accent, #e0e0e0);
-        border-radius: 4px;
         color: var(--text-primary, #333);
     }
 
-    .turn-indicator strong {
+    .turn-indicator strong,
+    .game-over-indicator strong {
         color: var(--text-emphasis, #000);
     }
 
-    /* Styles for optional game status */
-    /* .game-status {
-        text-align: center;
+    .check-indicator {
+        color: var(--text-warning, red);
         font-weight: bold;
-        padding: 8px;
-        border-radius: 4px;
-        margin-top: -5px; /* Adjust spacing */
-    /* }
-    .white-wins { background-color: lightgreen; color: black; }
-    .black-wins { background-color: lightcoral; color: white; } */
+        margin-left: 0.5em;
+    }
 
+    .game-over-indicator {
+        color: var(--text-accent, blue);
+    }
+
+    .status-message {
+        font-size: 1em;
+        margin-top: 0.25rem;
+        color: var(--text-secondary, #555);
+    }
+
+    /* Ensure MoveHistory takes remaining space if needed, or adjust styling */
 </style>

@@ -1,168 +1,156 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { CotulenhBoard } from '@repo/cotulenh-board';
+  import { CotulenhBoard } from '@repo/cotulenh-board'; 
   import type { Api } from '@repo/cotulenh-board/api';
   import { CoTuLenh } from '@repo/cotulenh-core';
-  import type { Square, Move, PieceSymbol, Color } from '@repo/cotulenh-core';
-  import type { Dests, Key, MoveMetadata } from '@repo/cotulenh-board/types';
-  import { algebraicToNumeric, numericToAlgebraic, toDests } from '@repo/cotulenh-notation';
+  import type { Square, Color, Move } from '@repo/cotulenh-core';
+  import type { Key, Dests } from '@repo/cotulenh-board/types';
+  import { algebraicToNumeric } from '@repo/cotulenh-notation';
   import GameInfo from '$lib/components/GameInfo.svelte';
-  import { getPossibleMoves } from '$lib/utils';
+  import { gameStore } from '$lib/stores/game';
 
   import '@repo/cotulenh-board/assets/commander-chess.base.css';
   import '@repo/cotulenh-board/assets/commander-chess.pieces.css';
   import '@repo/cotulenh-board/assets/commander-chess.clasic.css';
 
-  let boardContainerElement: HTMLElement | null = null;
+  let boardContainerElement: HTMLElement | null = null; 
   let boardApi: Api | null = null;
   let game: CoTuLenh | null = null;
-  let currentTurn: Color | null = null;
 
-  $: fen = game ? game.fen() : '...';
-  $: history = game ? game.moves({ verbose: true }) as Move[] : [];
-  $: possibleMoves = game ? getPossibleMoves(game) : new Map();
-  $: lastMove = history.length > 0 ? [history[history.length - 1].from, history[history.length - 1].to] as [Square, Square] : undefined;
-
-  // Reactive declaration for turn display
-  // $: turnDisplay = currentTurn ? (currentTurn === 'r' ? 'Red' : 'Blue') : '...';
-
-  // --- Type Mapping Helpers ---
-  function coreToBoardColor(coreColor: Color): 'red' | 'blue' {
-    return coreColor === 'r' ? 'red' : 'blue';
+  function coreToBoardColor(coreColor: Color | null): 'red' | 'blue' | undefined {
+    return coreColor ? (coreColor === 'r' ? 'red' : 'blue') : undefined;
   }
 
-  function coreToBoardCheck(coreColor: Color | undefined): 'red' | 'blue' | undefined {
-    return coreColor ? coreToBoardColor(coreColor) : undefined;
+  function coreToBoardCheck(check: boolean, coreColor: Color | null): 'red' | 'blue' | undefined {
+    return check ? coreToBoardColor(coreColor) : undefined;
   }
-  // ---------------------------
 
-  function movesToDests(moves: Move[]): Dests {
+  function mapPossibleMovesToDests(possibleMoves: Map<Square, Square[]>): Dests {
     const dests: Dests = new Map();
-    for (const move of moves) {
-      // Convert algebraic 'from' and 'to' squares to numeric keys
-      const fromKey = algebraicToNumeric(move.from as Square);
-      const toKey = algebraicToNumeric(move.to as Square);
-
-      // Skip if conversion failed (shouldn't happen with valid moves)
-      if (!fromKey || !toKey) {
-        console.warn(`Skipping invalid move conversion: ${move.from} -> ${move.to}`);
-        continue;
-      }
-
-      const existing = dests.get(fromKey);
-      if (existing) {
-        existing.push(toKey);
-      } else {
-        dests.set(fromKey, [toKey]);
+    for (const [fromSq, toSqs] of possibleMoves.entries()) {
+      const fromKey = algebraicToNumeric(fromSq);
+      if (fromKey) {
+        const toKeys = toSqs.map(sq => algebraicToNumeric(sq)).filter(key => key !== null) as Key[];
+        if (toKeys.length > 0) {
+          dests.set(fromKey, toKeys);
+        }
       }
     }
     return dests;
   }
 
-  function handleMove(orig: Key, dest: Key, metadata: MoveMetadata) {
-    if (!game || !boardApi) return;
+  function mapLastMoveToBoardFormat(lastMove: [Square, Square] | undefined): [Key, Key] | undefined {
+    if (!lastMove) return undefined;
+    const fromKey = algebraicToNumeric(lastMove[0]);
+    const toKey = algebraicToNumeric(lastMove[1]);
+    return fromKey && toKey ? [fromKey, toKey] : undefined;
+  }
 
-    console.log('Board move:', orig, '->', dest);
+  function handleMove(orig: Key, dest: Key) {
+    if (!game) return;
+
+    console.log('Board move attempt:', orig, '->', dest);
 
     try {
       const moveResult = game.move({ from: orig as Square, to: dest as Square });
 
       if (moveResult) {
         console.log('Game move successful:', moveResult);
-        const newFen = game.fen();
-        const newTurn = game.turn();
-        const newMoves = game.moves({ verbose: true }) as Move[];
-        const newDests = movesToDests(newMoves);
-        const checkColor = game.isCheck() ? game.turn() : undefined; // Check if the new king is in check
-
-        currentTurn = newTurn; // Update reactive turn variable
-
-        // Update the board UI
-        boardApi.set({
-          fen: newFen,
-          turnColor: coreToBoardColor(newTurn), // Use mapper
-          lastMove: [orig, dest],
-          check: coreToBoardCheck(checkColor), // Use mapper
-          movable: {
-            color: coreToBoardColor(newTurn), // Use mapper
-            dests: newDests,
-            showDests: true, // Keep showing destinations for the new turn
-            events: { after: handleMove } // Re-register the handler
-          }
-        });
-        // TODO: Update move history UI
+        gameStore.applyMove(game, moveResult);
       } else {
-        console.error('Game move failed internally, but board allowed it? FEN:', game.fen());
-        boardApi.set({ fen: game.fen() });
+        console.warn('Illegal move attempted on board:', orig, '->', dest);
       }
     } catch (error) {
       console.error('Error making move in game engine:', error);
-      boardApi.set({ fen: game.fen() });
     }
-  }
-  export function playOtherSide(boardApi: Api, game: CoTuLenh) {
-    return (orig: Square, dest: Square) => {
-      console.log('Other side move:', orig, '->', dest);
-      const numericOrig = numericToAlgebraic(orig as Key);
-      const numericDest = numericToAlgebraic(dest as Key);
-      if (!numericOrig || !numericDest) return;
-      game.move({ from: numericOrig, to: numericDest });
-      boardApi.set({
-        turnColor: coreToBoardColor(game.turn()),
-        movable: {
-          color: coreToBoardColor(game.turn()),
-          dests: toDests(game)
-        }
-      });
-    };
   }
 
   onMount(() => {
-    if (boardContainerElement) {
-      console.log('Board container element found');
+    if (boardContainerElement) { 
+      console.log('Initializing game logic and board...');
       game = new CoTuLenh();
-      console.log('toDests:', toDests(game));
-      const initialFen = game.fen();
-      const initialTurn = game.turn();
-      currentTurn = initialTurn; // Set initial turn
+      gameStore.initialize(game);
 
-      console.log('Initial turn:', initialTurn, coreToBoardColor(initialTurn));
+      const unsubscribe = gameStore.subscribe(state => {
+        // console.log('Game state updated in store:', state);
+      });
 
-      boardApi = CotulenhBoard(boardContainerElement, {
-        fen: initialFen, // Set the initial position
-        turnColor: coreToBoardColor(initialTurn), // Use mapper
+      boardApi = CotulenhBoard(boardContainerElement, { 
+        fen: $gameStore.fen,
+        turnColor: coreToBoardColor($gameStore.turn),
+        lastMove: mapLastMoveToBoardFormat($gameStore.lastMove),
+        check: coreToBoardCheck($gameStore.check, $gameStore.turn),
         movable: {
-          free: false, // Not a board editor
-          color: coreToBoardColor(initialTurn), // Use mapper
-          dests: toDests(game), // Provide map of legal moves
-          // showDests: true // Highlight legal destination squares
+          free: false,
+          color: coreToBoardColor($gameStore.turn),
+          dests: mapPossibleMovesToDests($gameStore.possibleMoves),
+          events: { after: handleMove }
         }
-        // TODO: Add other configurations like orientation, animation?
       });
-      boardApi.set({
-        movable: { events: { after: playOtherSide(boardApi, game) } }
-      });
+
+      return () => {
+        console.log('Cleaning up board and game subscription.');
+        boardApi?.destroy(); 
+        unsubscribe();
+      };
     }
   });
+
+  $: if (boardApi && $gameStore.fen) {
+    boardApi.set({
+      fen: $gameStore.fen,
+      turnColor: coreToBoardColor($gameStore.turn),
+      lastMove: mapLastMoveToBoardFormat($gameStore.lastMove),
+      check: coreToBoardCheck($gameStore.check, $gameStore.turn),
+      movable: {
+        color: coreToBoardColor($gameStore.turn),
+        dests: mapPossibleMovesToDests($gameStore.possibleMoves),
+        events: { after: handleMove }
+      }
+    });
+  }
+
 </script>
 
 <main>
-  <h1>CoTuLenh Chess</h1>
+  <div class="layout-container">
+    <h1>Commander Chess</h1>
+    <div class="game-layout">
+      <div bind:this={boardContainerElement} class="board-container">
+        {#if !boardApi}<p>Loading board...</p>{/if} 
+      </div>
 
-  <div class="game-area">
-    <div class="board-container" bind:this={boardContainerElement}>
-      <!-- Board will be rendered here by CommanderChessBoard -->
+      <GameInfo />
     </div>
-
-    <GameInfo turn={currentTurn} {history} />
   </div>
 </main>
 
 <style>
+  .layout-container {
+    max-width: 1200px;
+    margin: 1rem auto;
+    padding: 1rem;
+  }
+
+  .game-layout {
+    display: grid;
+    grid-template-columns: minmax(300px, 1fr) 250px;
+    gap: 2rem;
+    align-items: start;
+  }
+
   .board-container {
     width: 700px;
     aspect-ratio: 12 / 13; /* Adjust if necessary for CoTuLenh */
     position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
   }
-  /* TODO: Add styles for .game-area, .game-info if needed */
+
+  h1 {
+    text-align: center;
+    margin-bottom: 1.5rem;
+    color: var(--text-primary);
+  }
 </style>
