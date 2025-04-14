@@ -40,7 +40,7 @@ cg-board square.selected {
 
 /* Friendly color */
 .air-defense-influence.friendly::before {
-  background-color: rgba(31, 177, 34, 0.6);
+  background-color: rgba(23, 82, 190, 0.6);
 }
 
 /* Opponent color */

@@ -3,6 +3,7 @@
   "version": "0.0.0",
   "description": "A Javascript library for managing commander chess game",
   "license": "BSD-2-Clause",
+  "type": "module",
   "main": "./dist/cjs/src/cotulenh.js",
   "module": "./dist/esm/src/cotulenh.js",
   "types": "./dist/types/src/cotulenh.d.ts",

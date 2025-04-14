@@ -10,7 +10,7 @@
     "declarationMap": true,
     "types": ["node", "jest"]
   },
-  "include": ["src/**/*", "__tests__/**/*"],
+  "include": ["src/**/*"],
   "exclude": ["sample/**"],
   "references": [
     { "path": "./tsconfig.cjs.json" },

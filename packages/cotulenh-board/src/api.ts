@@ -30,8 +30,8 @@ export interface Api {
   // put a new piece on the board
   newPiece(piece: cg.Piece, key: cg.Key): void;
 
-   // only useful when CSS changes the board width/height ratio (for 3D)
-   redrawAll: cg.Redraw;
+  // only useful when CSS changes the board width/height ratio (for 3D)
+  redrawAll: cg.Redraw;
 
   // for crazyhouse and board editors
   dragNewPiece(piece: cg.Piece, event: cg.MouchEvent, force?: boolean): void;

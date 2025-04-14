@@ -5,7 +5,7 @@
   import { CoTuLenh } from '@repo/cotulenh-core';
   import type { Square, Move, PieceSymbol, Color } from '@repo/cotulenh-core';
   import type { Dests, Key, MoveMetadata } from '@repo/cotulenh-board/types';
-  import { algebraicToNumeric, toDests, playOtherSide } from '@repo/cotulenh-notation';
+  import { algebraicToNumeric, toDests } from '@repo/cotulenh-notation';
 
   import '@repo/cotulenh-board/assets/commander-chess.base.css';
   import '@repo/cotulenh-board/assets/commander-chess.pieces.css';
@@ -38,8 +38,8 @@
 
       // Skip if conversion failed (shouldn't happen with valid moves)
       if (!fromKey || !toKey) {
-          console.warn(`Skipping invalid move conversion: ${move.from} -> ${move.to}`);
-          continue;
+        console.warn(`Skipping invalid move conversion: ${move.from} -> ${move.to}`);
+        continue;
       }
 
       const existing = dests.get(fromKey);
@@ -81,27 +81,41 @@
             dests: newDests,
             showDests: true, // Keep showing destinations for the new turn
             events: { after: handleMove } // Re-register the handler
-          },
+          }
         });
-         // TODO: Update move history UI
+        // TODO: Update move history UI
       } else {
         console.error('Game move failed internally, but board allowed it? FEN:', game.fen());
         boardApi.set({ fen: game.fen() });
       }
     } catch (error) {
-      console.error("Error making move in game engine:", error);
+      console.error('Error making move in game engine:', error);
       boardApi.set({ fen: game.fen() });
     }
   }
-
+  export function playOtherSide(boardApi: Api, game: CoTuLenh) {
+    return (orig: Square, dest: Square) => {
+      game.move({ from: orig, to: dest });
+      boardApi.set({
+        turnColor: coreToBoardColor(game.turn()),
+        movable: {
+          color: coreToBoardColor(game.turn()),
+          dests: toDests(game)
+        }
+      });
+    };
+  }
 
   onMount(() => {
     if (boardContainerElement) {
-      game = new CoTuLenh(); 
+      console.log('Board container element found');
+      game = new CoTuLenh();
+      console.log('toDests:', toDests(game));
       const initialFen = game.fen();
       const initialTurn = game.turn();
-      const initialMoves = game.moves({ verbose: true }) as Move[];
       currentTurn = initialTurn; // Set initial turn
+
+      console.log('Initial turn:', initialTurn, coreToBoardColor(initialTurn));
 
       boardApi = CotulenhBoard(boardContainerElement, {
         fen: initialFen, // Set the initial position
@@ -110,16 +124,15 @@
           free: false, // Not a board editor
           color: coreToBoardColor(initialTurn), // Use mapper
           dests: toDests(game), // Provide map of legal moves
-          showDests: true, // Highlight legal destination squares
-        },
-         // TODO: Add other configurations like orientation, animation?
+          // showDests: true // Highlight legal destination squares
+        }
+        // TODO: Add other configurations like orientation, animation?
       });
       boardApi.set({
-        movable: { events: { after: playOtherSide(boardApi, game) } },
+        movable: { events: { after: playOtherSide(boardApi, game) } }
       });
     }
   });
-
 </script>
 
 <main>
@@ -132,11 +145,11 @@
 
     <div class="game-info">
       <h2>Game Info</h2>
-      <p>Turn: {turnDisplay}</p> 
+      <p>Turn: {turnDisplay}</p>
       <p>Orientation: ...</p>
       <h3>Move History</h3>
       <ul>
-         <li>Move history unavailable.</li>
+        <li>Move history unavailable.</li>
       </ul>
     </div>
   </div>

@@ -1,6 +1,6 @@
-import type { Square, CoTuLenh, Move } from '@repo/cotulenh-core';
+import type { Square, Move } from '@repo/cotulenh-core';
+import { CoTuLenh } from '@repo/cotulenh-core'; // Re-add CoTuLenh import
 import type { Color, Key } from '@repo/cotulenh-board/types'; // Import Key type
-import { Api } from '@repo/cotulenh-board/api';
 
 // --- Constants ---
 const FILES = 'abcdefghijk'.split(''); // 11 files
@@ -67,36 +67,24 @@ console.log('a11 ->', algebraicToNumeric('a11')); // Expected: 0-1
 console.log('k1 ->', algebraicToNumeric('k1')); // Expected: 10-11
 */
 
-export function toDests(chess: CoTuLenh): Map<Key, Key[]> {
+export function toDests(game: CoTuLenh): Map<Key, Key[]> {
   const dests = new Map<NumericCoordinate, Key[]>(); // Use NumericCoordinate (Key) as map key type
   SQUARES.forEach((s) => {
     const numericKey = algebraicToNumeric(s); // Convert algebraic source to numeric key
     if (!numericKey) return; // Skip if conversion fails
 
-    const ms = chess.moves({ square: s, verbose: true });
+    const ms = game.moves({ square: s, verbose: true });
     if (ms.length) {
-      // Assuming ms contains Moves where 'to' is already a Key
-      const validMoves = ms.map((m) => (m as Move).to).filter(key => key !== undefined) as Key[];
+      // console.log('Valid moves for square', s, ':', ms);
+      // Filter for actual Move objects before mapping
+      const validMoves = ms
+        .filter((m): m is Move => typeof m === 'object' && m !== null && 'to' in m) // Type guard
+        .map((m: Move) => algebraicToNumeric(m.to)) // Add type Move to m, Now m is guaranteed to be Move
+        .filter(key => key !== undefined) as Key[]; // Keep existing filter for algebraicToNumeric results
       if (validMoves.length > 0) {
-         dests.set(numericKey, validMoves);
+        dests.set(numericKey, validMoves);
       }
     }
   });
   return dests;
-}
-export function playOtherSide(board : Api, game: CoTuLenh) {
-  return (orig: Square, dest: Square) => {
-    game.move({ from: orig, to: dest });
-    board.set({
-      turnColor: toColor(game),
-      movable: {
-        color: toColor(game),
-        dests: toDests(game),
-      },
-    });
-  };
-}
-
-export function toColor(game: CoTuLenh): Color {
-  return game.turn() === "r" ? "red" : "blue";
 }

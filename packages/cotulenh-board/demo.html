@@ -25,42 +25,20 @@
     </style>
 
     <script type="module">
-      import { CommanderChessBoard } from './dist/index.js';
+      import { CotulenhBoard } from './dist/index.js';
 
-      const board = CommanderChessBoard(document.getElementById('board-1'), {
+      const dests = new Map();
+      dests.set('3-4', ['4-5', '5-6']);
+      dests.set('4-3', ['4-4', '4-5']);
+
+      const board = CotulenhBoard(document.getElementById('board-1'), {
         // fen: '1n8g/11/5s5/11/11/5g5/11/11/5F5/11/2N8/11',
         // fen: '3f7/11/11/11/11/11/11/11/11/1N8/2T3F4/11',
-        drawable: {
-          enabled: true, // Enable drawing
-          defaultSnapTo: false, // Disable snapping to squares by default
-          onChange: (orig, dest, shapes) => {
-            // This function is called when drawing changes
-            // orig: original square (e.g., "a1")
-            // dest: destination square (e.g., "b2") or null if no destination yet
-            // shapes: array of current shapes (we can use this to manage multiple drawings)
-            console.log('Drawing changed:', orig, dest, shapes);
-
-            //clear all shapes for re-drawing.
-            board.setShapes([]);
-
-            if (orig && dest) {
-              // Draw a vector if both origin and destination are defined
-              board.setShapes([
-                {
-                  orig: orig,
-                  dest: dest,
-                  brush: 'red', // You can customize the color here
-                  lineWidth: 4, // Customize the line width
-                  type: 'vector', // it's very importment.
-                },
-              ]);
-            }
-          },
-          autoDraw: false, // to fix bug that auto draw line when move out of board.
-        },
         movable: {
-          free: true, // Enable free move
-        },
+        color: "red",
+        free: false,
+        dests
+      },
         events: {
           move: (from, to) => {
             board.setShapes([]);
