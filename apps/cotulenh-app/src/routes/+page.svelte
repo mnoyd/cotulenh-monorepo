@@ -6,6 +6,8 @@
   import type { Square, Move, PieceSymbol, Color } from '@repo/cotulenh-core';
   import type { Dests, Key, MoveMetadata } from '@repo/cotulenh-board/types';
   import { algebraicToNumeric, numericToAlgebraic, toDests } from '@repo/cotulenh-notation';
+  import GameInfo from '$lib/components/GameInfo.svelte';
+  import { getPossibleMoves } from '$lib/utils';
 
   import '@repo/cotulenh-board/assets/commander-chess.base.css';
   import '@repo/cotulenh-board/assets/commander-chess.pieces.css';
@@ -16,8 +18,13 @@
   let game: CoTuLenh | null = null;
   let currentTurn: Color | null = null;
 
+  $: fen = game ? game.fen() : '...';
+  $: history = game ? game.moves({ verbose: true }) as Move[] : [];
+  $: possibleMoves = game ? getPossibleMoves(game) : new Map();
+  $: lastMove = history.length > 0 ? [history[history.length - 1].from, history[history.length - 1].to] as [Square, Square] : undefined;
+
   // Reactive declaration for turn display
-  $: turnDisplay = currentTurn ? (currentTurn === 'r' ? 'Red' : 'Blue') : '...';
+  // $: turnDisplay = currentTurn ? (currentTurn === 'r' ? 'Red' : 'Blue') : '...';
 
   // --- Type Mapping Helpers ---
   function coreToBoardColor(coreColor: Color): 'red' | 'blue' {
@@ -147,15 +154,7 @@
       <!-- Board will be rendered here by CommanderChessBoard -->
     </div>
 
-    <div class="game-info">
-      <h2>Game Info</h2>
-      <p>Turn: {turnDisplay}</p>
-      <p>Orientation: ...</p>
-      <h3>Move History</h3>
-      <ul>
-        <li>Move history unavailable.</li>
-      </ul>
-    </div>
+    <GameInfo turn={currentTurn} {history} />
   </div>
 </main>
 
