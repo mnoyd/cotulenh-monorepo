@@ -342,8 +342,6 @@ export class CoTuLenh {
     this._board = new Array<Piece | undefined>(256)
     this._kings = { r: -1, b: -1 }
     this._turn = RED
-    // this._castling = { r: 0, b: 0 };
-    // this._epSquare = -1;
     this._halfMoves = 0
     this._moveNumber = 1
     this._history = []
@@ -1413,13 +1411,9 @@ export class CoTuLenh {
     }
 
     // --- Update Clocks ---
-    // Reset half move counter if capture or infantry/militia/engineer move (pawn-like)
-    // Use pieceThatMoved which represents the piece whose action occurred (deployed piece or carrier/single piece)
+    // Reset half move counter if capture
     if (
-      move.flags & BITS.CAPTURE ||
-      pieceThatMoved.type === INFANTRY ||
-      pieceThatMoved.type === MILITIA ||
-      pieceThatMoved.type === ENGINEER
+      move.flags & BITS.CAPTURE
     ) {
       this._halfMoves = 0
     } else {
