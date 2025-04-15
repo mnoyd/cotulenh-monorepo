@@ -61,6 +61,7 @@ export type Piece = {
   color: Color
   type: PieceSymbol
   carried?: Piece[] // Array to hold carried pieces (excluding the carrier itself)
+  heroic?: boolean // Indicates if the piece has heroic status
 }
 
 // --- 0x88 Style Board Representation (Adapted for 16x16) ---
@@ -196,7 +197,7 @@ interface History {
   // epSquare: number; // No en passant mentioned
   halfMoves: number // Half move clock before the move
   moveNumber: number // Move number before the move
-  heroicStatus: Record<number, boolean> // Snapshot of heroic status before move
+  // heroicStatus: Record<number, boolean> // Snapshot of heroic status before move <- Removed this line
   deployState: { stackSquare: number; turn: Color } | null // Snapshot of deploy state before move
 }
 
@@ -331,7 +332,6 @@ export class CoTuLenh {
   private _history: History[] = []
   private _comments: Record<string, string> = {}
   private _positionCount: Record<string, number> = {}
-  private _heroicStatus: Record<number, boolean> = {} // Tracks heroic status by square index
   private _deployState: { stackSquare: number; turn: Color } | null = null // Tracks active deploy phase
 
   constructor(fen = DEFAULT_POSITION) {
@@ -348,9 +348,6 @@ export class CoTuLenh {
     this._comments = {}
     this._header = preserveHeaders ? this._header : {}
     this._positionCount = {}
-    this._heroicStatus = {} // Clear heroic status
-    this._deployState = null // Clear deploy state
-
     delete this._header['SetUp']
     delete this._header['FEN']
   }
@@ -447,8 +444,8 @@ export class CoTuLenh {
               type: carrierType,
               color: carrierColor,
               carried: carriedPieces.length > 0 ? carriedPieces : undefined,
+              heroic: carrierHeroic, // Add heroic status
             }
-            if (carrierHeroic) this._setHeroic(sq0x88, true)
 
             if (carrierType === COMMANDER) {
               if (this._kings[carrierColor] === -1) {
@@ -492,9 +489,7 @@ export class CoTuLenh {
           }
 
           const sq0x88 = r * 16 + fileIndex
-          this._board[sq0x88] = { type, color }
-          if (isHeroic) this._setHeroic(sq0x88, true)
-
+          this._board[sq0x88] = { type, color, heroic: isHeroic }
           if (type === COMMANDER) {
             // Only track Commander now
             if (this._kings[color] === -1) {
@@ -557,7 +552,7 @@ export class CoTuLenh {
               )
               .join('')
             stackStr = `(${stackStr})`
-            if (this.isHeroic(sq)) {
+            if (piece.heroic) {
               stackStr = '+' + stackStr
             }
             fen += stackStr
@@ -568,7 +563,7 @@ export class CoTuLenh {
                 ? piece.type.toUpperCase()
                 : piece.type.toLowerCase()
             // Add heroic marker with '+' prefix
-            if (this.isHeroic(sq)) {
+            if (piece.heroic) {
               char = '+' + char
             }
             fen += char
@@ -598,27 +593,12 @@ export class CoTuLenh {
     ].join(' ')
   }
 
-  // --- Heroic Status ---
-  isHeroic(square: Square | number): boolean {
-    const sq = typeof square === 'number' ? square : SQUARE_MAP[square]
-    if (sq === undefined) return false
-    return !!this._heroicStatus[sq]
-  }
-
-  private _setHeroic(square: number, status: boolean) {
-    if (status) {
-      this._heroicStatus[square] = true
-    } else {
-      delete this._heroicStatus[square]
-    }
-  }
-
   // --- Get/Put/Remove (Updated for Heroic) ---
-  get(square: Square): (Piece & { heroic: boolean }) | undefined {
+  get(square: Square): Piece | undefined {
     const sq = SQUARE_MAP[square]
     if (sq === undefined) return undefined
     const piece = this._board[sq]
-    return piece ? { ...piece, heroic: this.isHeroic(sq) } : undefined
+    return piece
   }
 
   put(
@@ -650,41 +630,36 @@ export class CoTuLenh {
     ) {
       this._kings[currentPiece.color] = -1
     }
-    // Remove heroic status if piece is replaced
-    if (this.isHeroic(sq)) {
-      this._setHeroic(sq, false)
-    }
 
     // Place the piece or stack
     this._board[sq] = {
       type,
       color,
       carried: carried?.length ? carried : undefined,
+      heroic: heroic ?? false, // Default to false if undefined
     }
     if (type === COMMANDER) this._kings[color] = sq
-    if (heroic) this._setHeroic(sq, true)
 
     // TODO: Update setup, etc.
     return true
   }
 
-  remove(square: Square): (Piece & { heroic: boolean }) | undefined {
+  remove(square: Square): Piece | undefined {
     if (!(square in SQUARE_MAP)) return undefined
     const sq = SQUARE_MAP[square]
     const piece = this._board[sq]
-    const wasHeroic = this.isHeroic(sq)
+    const wasHeroic = piece?.heroic
 
     if (!piece) return undefined
 
     delete this._board[sq]
-    if (wasHeroic) this._setHeroic(sq, false)
 
     if (piece.type === COMMANDER && this._kings[piece.color] === sq) {
       this._kings[piece.color] = -1
     }
 
     // TODO: Update setup, etc.
-    return { ...piece, heroic: wasHeroic }
+    return { ...piece, heroic: wasHeroic ?? false }
   }
   private isHeavyZone(sq: number): 0 | 1 | 2 {
     const f = file(sq)
@@ -866,7 +841,9 @@ export class CoTuLenh {
             }
           }
         }
-        // Note: Terrain blocking for *capture targeting* is ignored per rules.
+        // Note: Terrain blocking (`terrainBlockedMovement`) does NOT break the loop here.
+        // It only prevents adding a NORMAL move onto the blocked square.
+        // Sliding pieces continue checking subsequent squares for CAPTURES even if terrain blocks movement onto intermediate squares.
 
         // --- Target Square Analysis ---
         let canMoveToSquare = !terrainBlockedMovement // Assume can move unless terrain blocked
@@ -1088,7 +1065,7 @@ export class CoTuLenh {
         const carrierMoves = this._generateMovesForPiece(
           stackSquare,
           carrierPiece,
-          this.isHeroic(stackSquare),
+          carrierPiece.heroic ?? false,
         )
         allMoves.push(...carrierMoves) // Carrier moves normally (moving the stack)
       }
@@ -1115,7 +1092,7 @@ export class CoTuLenh {
         if (!pieceData || pieceData.color !== us) continue
         if (filterPiece && pieceData.type !== filterPiece) continue
 
-        const isHero = this.isHeroic(from)
+        const isHero = pieceData.heroic ?? false
 
         // Check if it's a stack
         if (pieceData.carried && pieceData.carried.length > 0) {
@@ -1137,7 +1114,7 @@ export class CoTuLenh {
           const carrierMoves = this._generateMovesForPiece(
             from,
             pieceData,
-            isHero,
+            pieceData.heroic ?? false,
           )
           allMoves.push(...carrierMoves)
         } else {
@@ -1145,7 +1122,7 @@ export class CoTuLenh {
           const singleMoves = this._generateMovesForPiece(
             from,
             pieceData,
-            isHero,
+            pieceData.heroic ?? false,
           )
           allMoves.push(...singleMoves)
         }
@@ -1192,7 +1169,12 @@ export class CoTuLenh {
     if (verbose) {
       // Map to Move objects, passing current heroic status
       return internalMoves.map(
-        (move) => new Move(this, move, this.isHeroic(move.from)),
+        (move) =>
+          new Move(
+            this,
+            move,
+            this.get(algebraic(move.from))?.heroic ?? false,
+          ),
       )
     } else {
       // Generate SAN strings (needs proper implementation)
@@ -1248,7 +1230,6 @@ export class CoTuLenh {
       turn: us,
       halfMoves: this._halfMoves,
       moveNumber: this._moveNumber,
-      heroicStatus: { ...this._heroicStatus },
       deployState: this._deployState, // Snapshot deploy state *before* this move
     }
     this._history.push(historyEntry)
@@ -1300,7 +1281,6 @@ export class CoTuLenh {
           return // Invalid state
         }
         delete this._board[targetSq]
-        if (this.isHeroic(targetSq)) this._setHeroic(targetSq, false)
         move.captured = capturedPieceData.type
         // Deployed piece stays with carrier, so finalSq is carrier's square
         finalSq = move.from
@@ -1319,11 +1299,9 @@ export class CoTuLenh {
             return // Invalid state
           }
           delete this._board[destSq]
-          if (this.isHeroic(destSq)) this._setHeroic(destSq, false)
           move.captured = capturedPieceData.type
         }
         this._board[destSq] = pieceThatMoved // Place deployed piece
-        // Heroic status of deployed piece? Assume non-heroic for now.
         finalSq = destSq
       }
       // Set deploy state for next move generation
@@ -1339,7 +1317,7 @@ export class CoTuLenh {
         this._history.pop() // Remove invalid history entry
         return // Should not happen
       }
-      const pieceWasHeroic = this.isHeroic(move.from) // Status of carrier/single piece
+      const pieceWasHeroic = pieceThatMoved.heroic ?? false // Status of carrier/single piece
 
       // Handle Stay Capture vs Normal Capture/Move
       if (move.flags & BITS.STAY_CAPTURE) {
@@ -1354,8 +1332,6 @@ export class CoTuLenh {
           return // Should not happen
         }
         delete this._board[targetSq]
-        // Remove heroic status of captured piece
-        if (this.isHeroic(targetSq)) this._setHeroic(targetSq, false)
         move.captured = capturedPiece.type // Ensure captured type is set
         // The moving piece stays at move.from
         finalSq = move.from
@@ -1365,13 +1341,7 @@ export class CoTuLenh {
         const capturedPieceData = this._board[destSq] // Check destination for capture
 
         delete this._board[move.from]
-        // Remove heroic status from source square (will be reapplied if needed)
-        if (pieceWasHeroic) this._setHeroic(move.from, false)
-
-        // Place piece/stack at destination
-        this._board[destSq] = pieceThatMoved
-        // Apply heroic status if it was heroic
-        if (pieceWasHeroic) this._setHeroic(destSq, true)
+        this._board[destSq] = pieceThatMoved // Move piece/stack to destination
         finalSq = destSq
 
         // Handle captured piece if any
@@ -1386,21 +1356,8 @@ export class CoTuLenh {
             return // Invalid state
           } else {
             move.captured = capturedPieceData.type // Set captured type
-            // Remove heroic status of captured piece if it existed
-            if (this.isHeroic(destSq) && !pieceWasHeroic) {
-              // If a non-heroic piece captures a heroic piece, the heroic status is lost
-              // This logic seems complex - does capturing a hero remove the capturer's hero status?
-              // Assuming the captured piece's status is simply removed.
-              // The capturer's status (pieceWasHeroic) is reapplied above.
-              // Let's simplify: just ensure the destination square has the correct final status.
-              if (!pieceWasHeroic) this._setHeroic(destSq, false) // Ensure non-heroic if capturer wasn't heroic
-            } else if (this.isHeroic(destSq)) {
-              // Ensure heroic status is removed from captured piece regardless of capturer status
-              this._setHeroic(destSq, false)
-            }
           }
         }
-
         // Update commander position if moved
         if (pieceThatMoved.type === COMMANDER) {
           this._kings[us] = destSq
@@ -1439,9 +1396,9 @@ export class CoTuLenh {
       this._turn = them
       if (this._isKingAttacked(them)) {
         // If the move puts opponent in check
-        if (!this.isHeroic(finalSq)) {
+        if (!pieceAtFinalSq.heroic) {
           // And the piece wasn't already heroic
-          this._setHeroic(finalSq, true)
+          pieceAtFinalSq.heroic = true
           becameHeroic = true
         }
       }
@@ -1453,8 +1410,6 @@ export class CoTuLenh {
     if (becameHeroic) {
       move.becameHeroic = true // Modify the move object directly (part of history)
       move.flags |= BITS.HEROIC_PROMOTION
-      // Ensure the board reflects the new heroic status
-      this._setHeroic(finalSq, true)
     }
 
     // --- Switch Turn (or maintain for deploy) ---
@@ -1480,10 +1435,7 @@ export class CoTuLenh {
     this._turn = us
     this._halfMoves = old.halfMoves
     this._moveNumber = old.moveNumber
-    // Restore heroic status snapshot - this is crucial
-    this._heroicStatus = { ...old.heroicStatus }
-    // Restore deploy state
-    this._deployState = old.deployState
+    this._deployState = old.deployState // Restore deploy state
 
     // --- Revert Board Changes ---
     let pieceThatMoved: Piece | undefined = undefined // Track the piece whose action determines clock/turn
@@ -1493,17 +1445,13 @@ export class CoTuLenh {
       // --- Undo Deploy Move ---
       const carrierPiece = this._board[move.from]
       if (!carrierPiece) {
-        // This implies the carrier itself moved after deploy, which shouldn't happen in the same history entry?
-        // Or maybe the carrier was captured? This needs careful state restoration.
-        // For now, assume carrier is still there.
         console.error(
-          'Cannot undo deploy: Carrier missing at',
+          'Cannot undo deploy: Carrier missing or empty at',
           algebraic(move.from),
         )
-        // Attempt to restore carrier based on history? Complex.
+        this._history.pop()
         return null // Cannot reliably undo
       }
-
       // The piece that was deployed
       let deployedPiece: Piece | undefined = undefined
 
@@ -1513,13 +1461,7 @@ export class CoTuLenh {
         // Restore captured piece at target square
         const targetSq = move.to
         if (move.captured) {
-          // Need to know if the captured piece was heroic
-          // We lost this info, assume non-heroic for now
           this._board[targetSq] = { type: move.captured, color: them }
-          // Restore heroic status if it was in the snapshot
-          if (old.heroicStatus[targetSq]) {
-            this._setHeroic(targetSq, true)
-          }
         }
       } else {
         // Normal deploy, piece was placed on board
@@ -1537,9 +1479,6 @@ export class CoTuLenh {
         // Restore captured piece if any
         if (move.captured) {
           this._board[destSq] = { type: move.captured, color: them }
-          if (old.heroicStatus[destSq]) {
-            this._setHeroic(destSq, true)
-          }
         }
       }
 
@@ -1566,14 +1505,11 @@ export class CoTuLenh {
       const targetSq = move.to // Target square is stored in 'to'
       if (move.captured) {
         this._board[targetSq] = { type: move.captured, color: them }
-        if (old.heroicStatus[targetSq]) {
-          this._setHeroic(targetSq, true)
-        }
       } else {
         // This case should ideally not happen for a capture flag
         delete this._board[targetSq]
       }
-      // The piece at move.from was not moved, its state is restored by heroicStatus snapshot
+      // The piece at move.from was not moved, its state is restored by history entry
     } else {
       // --- Undo Normal Move/Capture (Single piece or Carrier) ---
       const pieceThatMoved = this._board[move.to] // Get the piece/stack from destination
@@ -1586,22 +1522,15 @@ export class CoTuLenh {
       }
 
       delete this._board[move.to] // Remove from destination
-      // Clear heroic at dest if it wasn't heroic before (restored from snapshot below)
-      if (this.isHeroic(move.to) && !old.heroicStatus[move.to]) {
-        this._setHeroic(move.to, false)
-      }
-
       this._board[move.from] = pieceThatMoved // Move piece/stack back
-      // Restore heroic at source from snapshot
-      if (old.heroicStatus[move.from]) this._setHeroic(move.from, true)
-      else this._setHeroic(move.from, false) // Ensure it's cleared if it wasn't heroic
+      // Update commander position if moved
+      if (pieceThatMoved.type === COMMANDER) {
+        this._kings[us] = move.from
+      }
 
       // Restore captured piece if any
       if (move.captured) {
         this._board[move.to] = { type: move.captured, color: them }
-        if (old.heroicStatus[move.to]) {
-          this._setHeroic(move.to, true)
-        }
       }
     }
 
@@ -1687,11 +1616,11 @@ export class CoTuLenh {
     // Approximation: Check if the piece *involved* in the move was heroic *before* the move.
     // This requires looking into the history, which is complex here.
     // Let's use the Move class's logic as a reference for the final SAN string format.
-    const heroicPrefix = this.isHeroic(move.from) ? '+' : '' // Simplified: Assume Move class handles this better
+    const heroicPrefix = this.get(algebraic(move.from))?.heroic ?? false ? '+' : '' // Simplified: Assume Move class handles this better
     const heroicSuffix = move.becameHeroic ? '+' : ''
 
     if (move.flags & BITS.DEPLOY) {
-      // Deploy Move: (Stack)PieceFrom>To, (Stack)PieceFrom>xTo, (Stack)PieceFrom<Target
+      // Deploy Move: (Stack)PieceFrom>To or (Stack)PieceFrom>xTo or (Stack)PieceFrom<Target
       const stackRep = '(?)' // Placeholder - needs previous state info
       if (move.flags & BITS.STAY_CAPTURE) {
         toAlg = algebraic(move.to) // Target square
@@ -1705,15 +1634,15 @@ export class CoTuLenh {
       // Normal Stay Capture: PieceFrom<Target
       toAlg = algebraic(move.to) // Target square
       // Heroic prefix should reflect status of piece at 'from' before move
-      const approxHeroicBefore = this.isHeroic(move.from) ? '+' : '' // Approximation
-      san = `${approxHeroicBefore}${pieceChar}${fromAlg}<${toAlg}${heroicSuffix}`
+      const approxHeroicBefore = this.get(algebraic(move.from))?.heroic ?? false // Approximation
+      san = `${approxHeroicBefore ? '+' : ''}${pieceChar}${fromAlg}<${toAlg}${heroicSuffix}`
     } else {
       // Normal Move/Capture: PieceFrom-To or PieceFromxTo
       toAlg = algebraic(move.to) // Destination square
       const separator = move.flags & BITS.CAPTURE ? 'x' : '-'
       // Heroic prefix should reflect status of piece at 'from' before move
-      const approxHeroicBefore = this.isHeroic(move.from) ? '+' : '' // Approximation
-      san = `${approxHeroicBefore}${pieceChar}${fromAlg}${separator}${toAlg}${heroicSuffix}`
+      const approxHeroicBefore = this.get(algebraic(move.from))?.heroic ?? false // Approximation
+      san = `${approxHeroicBefore ? '+' : ''}${pieceChar}${fromAlg}${separator}${toAlg}${heroicSuffix}`
     }
 
     // TODO: Add ambiguity resolution (e.g., Taf1-f3 vs Tbf1-f3)
@@ -1923,7 +1852,7 @@ export class CoTuLenh {
       }
     }
 
-    const pieceWasHeroic = this.isHeroic(internalMove.from) // Get status before making move
+    const pieceWasHeroic = this.get(algebraic(internalMove.from))?.heroic ?? false // Get status before making move
     this._makeMove(internalMove)
     // TODO: Update position count: this._incPositionCount(this.fen());
 
@@ -1940,7 +1869,7 @@ export class CoTuLenh {
     const prettyMove = new Move(this, savedMove, pieceWasHeroic)
 
     // Manually set FENs on the prettyMove object
-    prettyMove.before = fenBeforeMove // FEN before this move was made
+    prettyMove.before = fenBeforeMove // FEN before this move
     prettyMove.after = this.fen() // Current FEN after the move
 
     return prettyMove
@@ -1972,7 +1901,7 @@ export class CoTuLenh {
             square: algebraic(sq),
             type: piece.type,
             color: piece.color,
-            heroic: this.isHeroic(sq),
+            heroic: piece.heroic ?? false,
           })
         } else {
           row.push(null)
@@ -2011,7 +1940,7 @@ export class CoTuLenh {
     for (let i = 0; i < this._history.length; i++) {
       const historyEntry = this._history[i] // Get original history entry
       const internalMove = historyEntry.move
-      const pieceWasHeroic = historyEntry.heroicStatus[internalMove.from] // Status before the move
+      const pieceWasHeroic = this.get(algebraic(internalMove.from))?.heroic ?? false // Status before the move
 
       // Make move on the copy to get state *after*
       // Use the move from the original history entry
@@ -2088,7 +2017,7 @@ export class CoTuLenh {
         // Use fixed-width display for all pieces (heroic or not)
         let symbol = ' '
         if (piece) {
-          symbol = this.isHeroic(sq)
+          symbol = (piece.heroic ?? false)
             ? '+' + piece.type.toUpperCase()
             : ' ' + piece.type.toUpperCase()
         } else {
