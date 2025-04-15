@@ -23,6 +23,7 @@
 	"dependencies": {
 		"@repo/cotulenh-board": "workspace:^",
 		"@repo/cotulenh-core": "workspace:^",
-		"@repo/cotulenh-notation": "workspace:^"
+		"@repo/cotulenh-notation": "workspace:^",
+		"immer": "^10.1.1"
 	}
 }

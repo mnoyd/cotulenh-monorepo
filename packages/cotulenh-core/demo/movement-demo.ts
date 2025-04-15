@@ -1,4 +1,4 @@
-import { CoTuLenh, Move } from '../src/cotulenh';
+import { CoTuLenh, Move } from '../src/cotulenh.js';
 // Helper to print moves
 function printMoves(label: string, moves: string[] | Move[]) {
     console.log(`\n${label}:`)
