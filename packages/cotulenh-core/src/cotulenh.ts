@@ -253,39 +253,11 @@ export class Move {
     }
 
     // Store FEN before move - this needs to be set externally by the move() method
-    this.before = 'FEN_BEFORE_PLACEHOLDER' // Will be set by move()
-    this.after = 'FEN_AFTER_PLACEHOLDER' // Will be set by move()
+    this.before = '' // Will be set by move()
+    this.after = '' // Will be set by move()
 
-    // --- SAN Generation (Placeholder - needs refinement in CoTuLenh class) ---
-    const pieceChar = this.piece.toUpperCase()
-    const heroicPrefix = this.heroic ? '+' : '' // Heroic status of the piece moving/deploying
-    const heroicSuffix = this.becameHeroic ? '+' : '' // Update to use '+' for heroic notation
-    let san = ''
 
-    if (this.isDeploy) {
-      // Deploy move: (Stack)PieceFrom>To or (Stack)PieceFrom>xTo or (Stack)PieceFrom<Target
-      const stackRep = this.stackBefore || '(?)' // Placeholder
-      if (flags & BITS.STAY_CAPTURE) {
-        const target = algebraic(to) // 'to' is target
-        san = `${stackRep}${heroicPrefix}${pieceChar}${this.from}<${target}${heroicSuffix}`
-      } else {
-        const separator = flags & BITS.CAPTURE ? '>x' : '>'
-        const dest = algebraic(to) // 'to' is destination
-        san = `${stackRep}${heroicPrefix}${pieceChar}${this.from}${separator}${dest}${heroicSuffix}`
-      }
-    } else if (flags & BITS.STAY_CAPTURE) {
-      // Normal Stay capture: PieceFrom<Target
-      const target = algebraic(to) // 'to' is the target
-      san = `${heroicPrefix}${pieceChar}${this.from}<${target}${heroicSuffix}`
-    } else {
-      // Normal move: PieceFrom-To or PieceFromxTo
-      const separator = flags & BITS.CAPTURE ? 'x' : '-'
-      const dest = algebraic(to) // 'to' is the destination
-      san = `${heroicPrefix}${pieceChar}${this.from}${separator}${dest}${heroicSuffix}`
-    }
-
-    // TODO: Add ambiguity resolution to SAN (needs access to all legal moves)
-    this.san = san // Store basic SAN for now
+    this.san = game['_moveToSan'](internal, game['_moves']({ legal: true }))
     this.lan = `${this.from}${algebraic(to)}` // LAN remains simple from-to (destination/target)
   }
 
@@ -1602,54 +1574,23 @@ export class CoTuLenh {
   // --- SAN Parsing/Generation (Updated for Stay Capture & Deploy) ---
   private _moveToSan(move: InternalMove, moves: InternalMove[]): string {
     const pieceChar = move.piece.toUpperCase()
-    const fromAlg = algebraic(move.from)
-    let toAlg: string
-    let san = ''
-
-    // Heroic status determination is complex here as we need the state *before* the move.
-    // The Move class constructor is better suited, but we'll approximate here for basic SAN.
-    // We check the *current* board state, which is *after* the move for legality checks.
-    // This means heroicPrefix might be wrong if the piece just moved *from* a heroic state.
-    const pieceAtFrom = this._board[move.from] // Might be undefined if piece moved
-    const pieceAtTo = this._board[move.to] // Might be the moved piece or captured piece target
-
-    // Approximation: Check if the piece *involved* in the move was heroic *before* the move.
-    // This requires looking into the history, which is complex here.
-    // Let's use the Move class's logic as a reference for the final SAN string format.
+    const disambiguator = getDisambiguator(move, moves)
+    const toAlg = algebraic(move.to) // Target square
     const heroicPrefix = this.get(algebraic(move.from))?.heroic ?? false ? '+' : '' // Simplified: Assume Move class handles this better
-    const heroicSuffix = move.becameHeroic ? '+' : ''
-
+    const heroicSuffix = move.becameHeroic ? '^' : ''
+    let separator = ''
     if (move.flags & BITS.DEPLOY) {
-      // Deploy Move: (Stack)PieceFrom>To or (Stack)PieceFrom>xTo or (Stack)PieceFrom<Target
-      const stackRep = '(?)' // Placeholder - needs previous state info
-      if (move.flags & BITS.STAY_CAPTURE) {
-        toAlg = algebraic(move.to) // Target square
-        san = `${stackRep}${heroicPrefix}${pieceChar}${fromAlg}<${toAlg}${heroicSuffix}`
-      } else {
-        toAlg = algebraic(move.to) // Destination square
-        const separator = move.flags & BITS.CAPTURE ? '>x' : '>'
-        san = `${stackRep}${heroicPrefix}${pieceChar}${fromAlg}${separator}${toAlg}${heroicSuffix}`
-      }
-    } else if (move.flags & BITS.STAY_CAPTURE) {
-      // Normal Stay Capture: PieceFrom<Target
-      toAlg = algebraic(move.to) // Target square
-      // Heroic prefix should reflect status of piece at 'from' before move
-      const approxHeroicBefore = this.get(algebraic(move.from))?.heroic ?? false // Approximation
-      san = `${approxHeroicBefore ? '+' : ''}${pieceChar}${fromAlg}<${toAlg}${heroicSuffix}`
-    } else {
-      // Normal Move/Capture: PieceFrom-To or PieceFromxTo
-      toAlg = algebraic(move.to) // Destination square
-      const separator = move.flags & BITS.CAPTURE ? 'x' : '-'
-      // Heroic prefix should reflect status of piece at 'from' before move
-      const approxHeroicBefore = this.get(algebraic(move.from))?.heroic ?? false // Approximation
-      san = `${approxHeroicBefore ? '+' : ''}${pieceChar}${fromAlg}${separator}${toAlg}${heroicSuffix}`
+      separator += '>'
+    }
+    if (move.flags & BITS.STAY_CAPTURE) {
+      separator += '<'
+    }
+    if (move.flags & BITS.CAPTURE) {
+      separator += 'x'
     }
 
-    // TODO: Add ambiguity resolution (e.g., Taf1-f3 vs Tbf1-f3)
-    // Need to check if other pieces of the same type can move to the same square
-    let disambiguator = ''
-    // Basic ambiguity check (only file/rank if needed)
-    // ... implementation needed ...
+    const san = `${heroicPrefix}${pieceChar}${disambiguator}${separator}${toAlg}${heroicSuffix}`
+
 
     // TODO: Add check/mate symbols (+/#) by temporarily making move and checking state
 
@@ -2069,4 +2010,57 @@ function addMove(
   const moveToAdd: InternalMove = { color, from, to, piece, captured, flags }
   // 'to' correctly represents destination or target based on flag context in _moves
   moves.push(moveToAdd)
+}
+
+function getDisambiguator(move: InternalMove, moves: InternalMove[]): string {
+  const from = move.from
+  const to = move.to
+  const piece = move.piece
+
+  let ambiguities = 0
+  let sameRank = 0
+  let sameFile = 0
+
+  for (let i = 0, len = moves.length; i < len; i++) {
+    const ambigFrom = moves[i].from
+    const ambigTo = moves[i].to
+    const ambigPiece = moves[i].piece
+
+    /*
+     * if a move of the same piece type ends on the same to square, we'll need
+     * to add a disambiguator to the algebraic notation
+     */
+    if (piece === ambigPiece && from !== ambigFrom && to === ambigTo) {
+      ambiguities++
+
+      if (rank(from) === rank(ambigFrom)) {
+        sameRank++
+      }
+
+      if (file(from) === file(ambigFrom)) {
+        sameFile++
+      }
+    }
+  }
+
+  if (ambiguities > 0) {
+    if (sameRank > 0 && sameFile > 0) {
+      /*
+       * if there exists a similar moving piece on the same rank and file as
+       * the move in question, use the square as the disambiguator
+       */
+      return algebraic(from)
+    } else if (sameFile > 0) {
+      /*
+       * if the moving piece rests on the same file, use the rank symbol as the
+       * disambiguator
+       */
+      return algebraic(from).charAt(1)
+    } else {
+      // else use the file symbol
+      return algebraic(from).charAt(0)
+    }
+  }
+
+  return ''
 }
