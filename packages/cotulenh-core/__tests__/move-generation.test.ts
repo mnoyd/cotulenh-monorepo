@@ -16,7 +16,7 @@ describe('CoTuLenh Move Generation', () => {
     expect(moves.length).toBeGreaterThan(0);
 
     const redInfantryMovesFromC5 = game.moves({ square: 'c5'});
-    expect(redInfantryMovesFromC5).toContain('Ic5-c6');
+    expect(redInfantryMovesFromC5).toContain('Ic6');
     const blueInfantryMovesFromC8fail = game.moves({ square: 'c8'});
     expect(blueInfantryMovesFromC8fail).toHaveLength(0);
 
@@ -25,7 +25,7 @@ describe('CoTuLenh Move Generation', () => {
     // Verify turn has changed
     expect(game.turn()).toBe(BLUE);
     const blueInfantryMovesFromC8 = game.moves({ square: 'c8'});
-    expect(blueInfantryMovesFromC8).toContain('Ic8-c7');
+    expect(blueInfantryMovesFromC8).toContain('Ic7');
   });
 
   // Add more tests for specific scenarios or Blue's turn if desired
