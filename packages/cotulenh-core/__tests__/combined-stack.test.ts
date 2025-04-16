@@ -2,15 +2,16 @@
 import {
   CoTuLenh,
   Move,
-  RED,
+
+} from '../src/cotulenh'
+import {  RED,
   BLUE,
   NAVY,
   AIR_FORCE,
   TANK,
   COMMANDER,
   Square,
-  PieceSymbol,
-} from '../src/cotulenh'
+  PieceSymbol} from '../src/type'
 
 // Helper to find a specific move in the verbose move list
 const findVerboseMove = (

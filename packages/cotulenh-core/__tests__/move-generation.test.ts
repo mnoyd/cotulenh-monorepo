@@ -1,5 +1,5 @@
-// @ts-nocheck
-import { CoTuLenh, RED, DEFAULT_POSITION, Square, BLUE } from '../src/cotulenh';
+import { CoTuLenh  } from '../src/cotulenh';
+import { RED, DEFAULT_POSITION, BLUE } from '../src/type';
 
 describe('CoTuLenh Move Generation', () => {
   it('should generate legal moves for the current player (Red) from the default position', () => {

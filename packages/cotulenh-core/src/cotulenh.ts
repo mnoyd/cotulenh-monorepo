@@ -5,192 +5,47 @@
  * All rights reserved.
  */
 
-// --- Constants ---
-export const RED = 'r' // Changed from WHITE
-export const BLUE = 'b' // Changed from BLACK
+import { createMoveCommand, MoveCommand } from './move'
 
-// Piece Symbols based on user input
-export const COMMANDER = 'c'
-export const INFANTRY = 'i'
-export const TANK = 't'
-export const MILITIA = 'm'
-export const ENGINEER = 'e' // Added Engineer
-export const ARTILLERY = 'a'
-export const ANTI_AIR = 'g'
-export const MISSILE = 's'
-export const AIR_FORCE = 'f'
-export const NAVY = 'n'
-export const HEADQUARTER = 'h'
+import {
+  algebraic,
+  BITS,
+  BLUE,
+  Color,
+  COMMANDER,
+  HEADQUARTER,
+  TANK,
+  INFANTRY,
+  MISSILE,
+  MILITIA,
+  ENGINEER,
+  ARTILLERY,
+  ANTI_AIR,
+  AIR_FORCE,
+  DEFAULT_POSITION,
+  FLAGS,
+  Piece,
+  PieceSymbol,
+  RED,
+  Square,
+  SQUARE_MAP,
+  isDigit,
+  file,
+  rank,
+  NAVY_MASK,
+  LAND_MASK,
+  CAN_STAY_CAPTURE_WHEN_CARRIED,
+  NAVY,
+  swapColor,
+  isSquareOnBoard,
+  InternalMove
+} from './type'
+import { getDisambiguator, printBoard } from './utils'
 
-// Pieces that can perform stay capture *while being carried*
-const CAN_STAY_CAPTURE_WHEN_CARRIED: PieceSymbol[] = [AIR_FORCE]
-
-// --- Types ---
-export type Color = 'r' | 'b' // Updated Color type
-export type PieceSymbol =
-  | 'c'
-  | 'i'
-  | 't'
-  | 'm'
-  | 'e'
-  | 'a'
-  | 'g'
-  | 's'
-  | 'f'
-  | 'n'
-  | 'h' // Updated PieceSymbol
-
-// Generate Square type for 11x12 board (a1 to k12)
-const FILES = 'abcdefghijk'.split('') // 11 files
-const RANKS = '12,11,10,9,8,7,6,5,4,3,2,1'.split(',') // 12 ranks
-
-type SquareTuple = {
-  [F in (typeof FILES)[number]]: {
-    [R in (typeof RANKS)[number]]: `${F}${R}`
-  }[(typeof RANKS)[number]]
-}[(typeof FILES)[number]]
-
-export type Square = SquareTuple
-
-// Corrected FEN based on user input and standard additions, updated turn to RED
-// NOTE: Engineer 'e' is not in this FEN. Needs clarification if it should be.
-export const DEFAULT_POSITION =
-  '6c4/1n2fh1hf2/3a2s2a1/2n1gt1tg2/2ie2m3i/11/11/2IE2M3I/2N1GT1TG2/3A2S2A1/1N2FH1HF2/6C4 r - - 0 1'
-
-export type Piece = {
-  color: Color
-  type: PieceSymbol
-  carried?: Piece[] // Array to hold carried pieces (excluding the carrier itself)
-  heroic?: boolean // Indicates if the piece has heroic status
-}
-
-// --- 0x88 Style Board Representation (Adapted for 16x16) ---
-// We use a 16x16 board (256 squares) to fit 11x12
-// Square 0 = a12, Square 1 = b12, ..., Square 10 = k12
-// Square 16 = a11, ..., Square 26 = k11
-// ...
-// Square 176 = a1, ..., Square 186 = k1
-
-//prettier-ignore
-const SQUARE_MAP: Record<Square, number> = {
-  // Rank 12 (top)
-  a12: 0x00, b12: 0x01, c12: 0x02, d12: 0x03, e12: 0x04, f12: 0x05, g12: 0x06, h12: 0x07, i12: 0x08, j12: 0x09, k12: 0x0A,
-  // Rank 11
-  a11: 0x10, b11: 0x11, c11: 0x12, d11: 0x13, e11: 0x14, f11: 0x15, g11: 0x16, h11: 0x17, i11: 0x18, j11: 0x19, k11: 0x1A,
-  // Rank 10
-  a10: 0x20, b10: 0x21, c10: 0x22, d10: 0x23, e10: 0x24, f10: 0x25, g10: 0x26, h10: 0x27, i10: 0x28, j10: 0x29, k10: 0x2A,
-  // Rank 9
-  a9: 0x30, b9: 0x31, c9: 0x32, d9: 0x33, e9: 0x34, f9: 0x35, g9: 0x36, h9: 0x37, i9: 0x38, j9: 0x39, k9: 0x3A,
-  // Rank 8
-  a8: 0x40, b8: 0x41, c8: 0x42, d8: 0x43, e8: 0x44, f8: 0x45, g8: 0x46, h8: 0x47, i8: 0x48, j8: 0x49, k8: 0x4A,
-  // Rank 7
-  a7: 0x50, b7: 0x51, c7: 0x52, d7: 0x53, e7: 0x54, f7: 0x55, g7: 0x56, h7: 0x57, i7: 0x58, j7: 0x59, k7: 0x5A,
-  // Rank 6
-  a6: 0x60, b6: 0x61, c6: 0x62, d6: 0x63, e6: 0x64, f6: 0x65, g6: 0x66, h6: 0x67, i6: 0x68, j6: 0x69, k6: 0x6A,
-  // Rank 5
-  a5: 0x70, b5: 0x71, c5: 0x72, d5: 0x73, e5: 0x74, f5: 0x75, g5: 0x76, h5: 0x77, i5: 0x78, j5: 0x79, k5: 0x7A,
-  // Rank 4
-  a4: 0x80, b4: 0x81, c4: 0x82, d4: 0x83, e4: 0x84, f4: 0x85, g4: 0x86, h4: 0x87, i4: 0x88, j4: 0x89, k4: 0x8A,
-  // Rank 3
-  a3: 0x90, b3: 0x91, c3: 0x92, d3: 0x93, e3: 0x94, f3: 0x95, g3: 0x96, h3: 0x97, i3: 0x98, j3: 0x99, k3: 0x9A,
-  // Rank 2
-  a2: 0xA0, b2: 0xA1, c2: 0xA2, d2: 0xA3, e2: 0xA4, f2: 0xA5, g2: 0xA6, h2: 0xA7, i2: 0xA8, j2: 0xA9, k2: 0xAA,
-  // Rank 1 (bottom)
-  a1: 0xB0, b1: 0xB1, c1: 0xB2, d1: 0xB3, e1: 0xB4, f1: 0xB5, g1: 0xB6, h1: 0xB7, i1: 0xB8, j1: 0xB9, k1: 0xBA
-};
-
-const NAVY_MASK = new Uint8Array(256) // 1 = navigable by navy
-const LAND_MASK = new Uint8Array(256) // 1 = accessible by light pieces
-
-// Initialize movement masks
-function initMovementMasks() {
-  for (let sq = 0; sq < 256; sq++) {
-    if (!isSquareOnBoard(sq)) continue // Add validity check
-    const f = file(sq)
-    const r = rank(sq)
-    const alg = algebraic(sq)
-
-    // Navy operational areas (a-c files + specific squares)
-    NAVY_MASK[sq] = f <= 2 || ['d6', 'e6', 'd7', 'e7'].includes(alg) ? 1 : 0
-
-    // Land pieces operational areas (c-k files)
-    LAND_MASK[sq] = f >= 2 ? 1 : 0
-  }
-}
-initMovementMasks()
-
-// --- Helper Functions ---
-
-// Check if a square index is on the 11x12 board within the 16x16 grid
-function isSquareOnBoard(sq: number): boolean {
-  const r = rank(sq)
-  const f = file(sq)
-  return r >= 0 && r < 12 && f >= 0 && f < 11
-}
-
-// Extracts the zero-based rank (0-11) from a 0x88 square index.
-function rank(square: number): number {
-  return square >> 4
-}
-
-// Extracts the zero-based file (0-10) from a 0x88 square index.
-function file(square: number): number {
-  return square & 0xf
-}
-
-// Converts a square index to algebraic notation (e.g., 0 -> a12, 186 -> k1).
-function algebraic(square: number): Square {
-  const f = file(square)
-  const r = rank(square)
-  if (!isSquareOnBoard(square)) {
-    throw new Error(
-      `Invalid square index for algebraic conversion: ${square} (f=${f}, r=${r})`,
-    )
-  }
-  // RANKS array is '12' down to '1', so index r corresponds to RANKS[r]
-  return (FILES[f] + RANKS[r]) as Square
-}
-
-function swapColor(color: Color): Color {
-  return color === RED ? BLUE : RED // Updated swapColor
-}
-
-function isDigit(c: string): boolean {
-  return '0123456789'.indexOf(c) !== -1
-}
-// --- Move Flags ---
-const FLAGS: Record<string, string> = {
-  NORMAL: 'n',
-  CAPTURE: 'c',
-  HEROIC_PROMOTION: 'h', // Flag for when a piece becomes heroic
-  STAY_CAPTURE: 's', // General flag for capturing without moving
-  DEPLOY: 'd', // Flag for deploy move
-}
-
-const BITS: Record<string, number> = {
-  NORMAL: 1,
-  CAPTURE: 2,
-  HEROIC_PROMOTION: 4, // Example bit
-  STAY_CAPTURE: 8, // General flag bit
-  DEPLOY: 16, // Added deploy bit
-}
-
-// --- Move/History Types ---
-// Internal representation of a move
-type InternalMove = {
-  color: Color
-  from: number // 0x88 index
-  to: number // 0x88 index (destination OR target square for stay capture)
-  piece: PieceSymbol // The piece being moved (or deployed)
-  captured?: PieceSymbol
-  // promotion?: PieceSymbol; // Promotion is status change, not piece change?
-  flags: number // Bitmask using BITS
-  becameHeroic?: boolean // Track if this move caused promotion
-}
 
 // Structure for storing history states
 interface History {
-  move: InternalMove
+  move: MoveCommand
   kings: Record<Color, number> // Position of commander before the move
   turn: Color
   // castling: Record<Color, number>; // No castling mentioned
@@ -255,7 +110,6 @@ export class Move {
     // Store FEN before move - this needs to be set externally by the move() method
     this.before = '' // Will be set by move()
     this.after = '' // Will be set by move()
-
 
     this.san = game['_moveToSan'](internal, game['_moves']({ legal: true }))
     this.lan = `${this.from}${algebraic(to)}` // LAN remains simple from-to (destination/target)
@@ -1142,11 +996,7 @@ export class CoTuLenh {
       // Map to Move objects, passing current heroic status
       return internalMoves.map(
         (move) =>
-          new Move(
-            this,
-            move,
-            this.get(algebraic(move.from))?.heroic ?? false,
-          ),
+          new Move(this, move, this.get(algebraic(move.from))?.heroic ?? false),
       )
     } else {
       // Generate SAN strings (needs proper implementation)
@@ -1195,9 +1045,13 @@ export class CoTuLenh {
     const us = this.turn()
     const them = swapColor(us)
 
-    // Capture current state for history
+    // 1. Create the command object for this move
+    const moveCommand = createMoveCommand(this, move)
+    moveCommand.execute()
+
+    // 2. Store pre-move state and the command in history
     const historyEntry: History = {
-      move,
+      move: moveCommand,
       kings: { ...this._kings },
       turn: us,
       halfMoves: this._halfMoves,
@@ -1206,144 +1060,10 @@ export class CoTuLenh {
     }
     this._history.push(historyEntry)
 
-    // --- Update Board ---
-    let pieceThatMoved: Piece | undefined = undefined // Track the piece whose action determines clock/turn
-    let finalSq: number // Track the final square for promotion checks
+    // --- 4. Update General Game State AFTER command execution ---
 
-    if (move.flags & BITS.DEPLOY) {
-      // --- Handle Deploy Move ---
-      const carrierPiece = this._board[move.from]
-      if (!carrierPiece || !carrierPiece.carried) {
-        console.error(
-          'Deploy move from non-stack or empty stack:',
-          algebraic(move.from),
-        )
-        this._history.pop()
-        return // Invalid state
-      }
-      // Find the deployed piece in the carried array
-      const deployIndex = carrierPiece.carried.findIndex(
-        (p) => p.type === move.piece && p.color === us,
-      )
-      if (deployIndex === -1) {
-        console.error(
-          'Deployed piece not found in carrier:',
-          algebraic(move.from),
-          move.piece,
-        )
-        this._history.pop()
-        return // Invalid state
-      }
-      // Remove the piece from carried array and prepare it for placement
-      pieceThatMoved = carrierPiece.carried.splice(deployIndex, 1)[0]
-      if (carrierPiece.carried.length === 0) {
-        carrierPiece.carried = undefined // Clear array if empty
-      }
-
-      // Handle placement (including stay capture for deploy)
-      if (move.flags & BITS.STAY_CAPTURE) {
-        const targetSq = move.to // Target square
-        const capturedPieceData = this._board[targetSq]
-        if (!capturedPieceData || capturedPieceData.color !== them) {
-          console.error(
-            'Deploy stay capture target square invalid:',
-            algebraic(targetSq),
-          )
-          this._history.pop()
-          return // Invalid state
-        }
-        delete this._board[targetSq]
-        move.captured = capturedPieceData.type
-        // Deployed piece stays with carrier, so finalSq is carrier's square
-        finalSq = move.from
-        // Put the deployed piece back into the carrier temporarily for promotion check? No, check the piece itself.
-      } else {
-        // Normal deploy, piece was placed on board
-        const destSq = move.to
-        const capturedPieceData = this._board[destSq]
-        if (move.flags & BITS.CAPTURE) {
-          if (!capturedPieceData || capturedPieceData.color !== them) {
-            console.error(
-              'Deploy capture destination square invalid:',
-              algebraic(destSq),
-            )
-            this._history.pop()
-            return // Invalid state
-          }
-          delete this._board[destSq]
-          move.captured = capturedPieceData.type
-        }
-        this._board[destSq] = pieceThatMoved // Place deployed piece
-        finalSq = destSq
-      }
-      // Set deploy state for next move generation
-      this._deployState = { stackSquare: move.from, turn: us }
-    } else {
-      // --- Handle Normal Move or Carrier Move ---
-      pieceThatMoved = this._board[move.from] // The piece/stack being moved
-      if (!pieceThatMoved) {
-        console.error(
-          'Attempting to move from empty square:',
-          algebraic(move.from),
-        )
-        this._history.pop() // Remove invalid history entry
-        return // Should not happen
-      }
-      const pieceWasHeroic = pieceThatMoved.heroic ?? false // Status of carrier/single piece
-
-      // Handle Stay Capture vs Normal Capture/Move
-      if (move.flags & BITS.STAY_CAPTURE) {
-        const targetSq = move.to // 'to' stores the target square in this special case
-        const capturedPiece = this._board[targetSq] // For clock reset check
-        if (!capturedPiece || capturedPiece.color !== them) {
-          console.error(
-            'Stay capture target square is empty or has own piece:',
-            algebraic(targetSq),
-          )
-          this._history.pop() // Remove invalid history entry
-          return // Should not happen
-        }
-        delete this._board[targetSq]
-        move.captured = capturedPiece.type // Ensure captured type is set
-        // The moving piece stays at move.from
-        finalSq = move.from
-      } else {
-        // Normal move/capture (could be single piece or carrier moving stack)
-        const destSq = move.to
-        const capturedPieceData = this._board[destSq] // Check destination for capture
-
-        delete this._board[move.from]
-        this._board[destSq] = pieceThatMoved // Move piece/stack to destination
-        finalSq = destSq
-
-        // Handle captured piece if any
-        if (move.flags & BITS.CAPTURE) {
-          if (!capturedPieceData || capturedPieceData.color !== them) {
-            console.error(
-              'Normal capture destination square is empty or has own piece:',
-              algebraic(destSq),
-            )
-            // Allow overwriting own piece? No, standard rules usually forbid.
-            this._history.pop() // Revert history
-            return // Invalid state
-          } else {
-            move.captured = capturedPieceData.type // Set captured type
-          }
-        }
-        // Update commander position if moved
-        if (pieceThatMoved.type === COMMANDER) {
-          this._kings[us] = destSq
-        }
-      }
-      // Clear deploy state after a normal/carrier move
-      this._deployState = null
-    }
-
-    // --- Update Clocks ---
-    // Reset half move counter if capture
-    if (
-      move.flags & BITS.CAPTURE
-    ) {
+    // Reset half moves counter if capture occurred OR commander moved
+    if (moveCommand.move.captured) {
       this._halfMoves = 0
     } else {
       this._halfMoves++
@@ -1359,7 +1079,7 @@ export class CoTuLenh {
     // Check if this move grants heroic status
     let becameHeroic = false
     // Use finalSq determined above
-    const pieceAtFinalSq = this._board[finalSq] // Get the piece that ended up there
+    const pieceAtFinalSq = this._board[moveCommand.move.to] // Get the piece that ended up there
 
     // Check for promotion conditions (e.g., putting opponent in check)
     // AND ensure the piece is not a Commander
@@ -1380,8 +1100,8 @@ export class CoTuLenh {
 
     // Update the move object in history if promotion occurred
     if (becameHeroic) {
-      move.becameHeroic = true // Modify the move object directly (part of history)
-      move.flags |= BITS.HEROIC_PROMOTION
+      moveCommand.move.becameHeroic = true // Modify the move object directly (part of history)
+      moveCommand.move.flags |= BITS.HEROIC_PROMOTION
     }
 
     // --- Switch Turn (or maintain for deploy) ---
@@ -1398,118 +1118,21 @@ export class CoTuLenh {
     const old = this._history.pop()
     if (!old) return null
 
-    const move = old.move
-    const us = old.turn // The player who made the move being undone
-    const them = swapColor(us)
+    const command = old.move // Get the command object
 
-    // Restore state from history entry BEFORE the move was made
+    // Restore general game state BEFORE the command modified the board
     this._kings = old.kings
-    this._turn = us
+    this._turn = old.turn
     this._halfMoves = old.halfMoves
     this._moveNumber = old.moveNumber
-    this._deployState = old.deployState // Restore deploy state
+    this._deployState = old.deployState
 
-    // --- Revert Board Changes ---
-    let pieceThatMoved: Piece | undefined = undefined // Track the piece whose action determines clock/turn
-    let finalSq: number // Track the final square for promotion checks
+    // Ask the command to revert its specific board changes
+    command.undo()
 
-    if (move.flags & BITS.DEPLOY) {
-      // --- Undo Deploy Move ---
-      const carrierPiece = this._board[move.from]
-      if (!carrierPiece) {
-        console.error(
-          'Cannot undo deploy: Carrier missing or empty at',
-          algebraic(move.from),
-        )
-        this._history.pop()
-        return null // Cannot reliably undo
-      }
-      // The piece that was deployed
-      let deployedPiece: Piece | undefined = undefined
+    // (Optional: Decrement position count)
 
-      if (move.flags & BITS.STAY_CAPTURE) {
-        // Deployed piece performed stay capture, it wasn't placed on board
-        deployedPiece = { type: move.piece, color: us } // Recreate the piece
-        // Restore captured piece at target square
-        const targetSq = move.to
-        if (move.captured) {
-          this._board[targetSq] = { type: move.captured, color: them }
-        }
-      } else {
-        // Normal deploy, piece was placed on board
-        const destSq = move.to
-        deployedPiece = this._board[destSq] // Get the piece from destination
-        if (!deployedPiece || deployedPiece.type !== move.piece) {
-          console.error(
-            'Cannot undo deploy: Deployed piece missing/mismatch at',
-            algebraic(destSq),
-          )
-          return null // Cannot reliably undo
-        }
-        delete this._board[destSq] // Remove from destination
-
-        // Restore captured piece if any
-        if (move.captured) {
-          this._board[destSq] = { type: move.captured, color: them }
-        }
-      }
-
-      // Add deployed piece back to carrier
-      if (deployedPiece) {
-        if (!carrierPiece.carried) {
-          carrierPiece.carried = []
-        }
-        // Ensure not adding duplicates if undoing multiple times rapidly?
-        // Check if already present (shouldn't be necessary with correct state management)
-        if (
-          !carrierPiece.carried.some(
-            (p) =>
-              p.type === deployedPiece!.type &&
-              p.color === deployedPiece!.color,
-          )
-        ) {
-          carrierPiece.carried.push(deployedPiece)
-        }
-      }
-    } else if (move.flags & BITS.STAY_CAPTURE) {
-      // --- Undo Normal Stay Capture ---
-      // Piece that moved stayed at move.from, just restore captured
-      const targetSq = move.to // Target square is stored in 'to'
-      if (move.captured) {
-        this._board[targetSq] = { type: move.captured, color: them }
-      } else {
-        // This case should ideally not happen for a capture flag
-        delete this._board[targetSq]
-      }
-      // The piece at move.from was not moved, its state is restored by history entry
-    } else {
-      // --- Undo Normal Move/Capture (Single piece or Carrier) ---
-      const pieceThatMoved = this._board[move.to] // Get the piece/stack from destination
-      if (!pieceThatMoved || pieceThatMoved.type !== move.piece) {
-        console.error(
-          'Cannot undo move: Piece missing/mismatch at destination',
-          algebraic(move.to),
-        )
-        return null
-      }
-
-      delete this._board[move.to] // Remove from destination
-      this._board[move.from] = pieceThatMoved // Move piece/stack back
-      // Update commander position if moved
-      if (pieceThatMoved.type === COMMANDER) {
-        this._kings[us] = move.from
-      }
-
-      // Restore captured piece if any
-      if (move.captured) {
-        this._board[move.to] = { type: move.captured, color: them }
-      }
-    }
-
-    // TODO: Decrement position count
-    // this._decPositionCount(this.fen()); // Fen after undo
-
-    return move
+    return command.move // Return the original InternalMove data
   }
 
   public undo(): void {
@@ -1576,7 +1199,8 @@ export class CoTuLenh {
     const pieceChar = move.piece.toUpperCase()
     const disambiguator = getDisambiguator(move, moves)
     const toAlg = algebraic(move.to) // Target square
-    const heroicPrefix = this.get(algebraic(move.from))?.heroic ?? false ? '+' : '' // Simplified: Assume Move class handles this better
+    const heroicPrefix =
+      (this.get(algebraic(move.from))?.heroic ?? false) ? '+' : '' // Simplified: Assume Move class handles this better
     const heroicSuffix = move.becameHeroic ? '^' : ''
     let separator = ''
     if (move.flags & BITS.DEPLOY) {
@@ -1590,7 +1214,6 @@ export class CoTuLenh {
     }
 
     const san = `${heroicPrefix}${pieceChar}${disambiguator}${separator}${toAlg}${heroicSuffix}`
-
 
     // TODO: Add check/mate symbols (+/#) by temporarily making move and checking state
 
@@ -1793,7 +1416,8 @@ export class CoTuLenh {
       }
     }
 
-    const pieceWasHeroic = this.get(algebraic(internalMove.from))?.heroic ?? false // Get status before making move
+    const pieceWasHeroic =
+      this.get(algebraic(internalMove.from))?.heroic ?? false // Get status before making move
     this._makeMove(internalMove)
     // TODO: Update position count: this._incPositionCount(this.fen());
 
@@ -1807,7 +1431,7 @@ export class CoTuLenh {
         : DEFAULT_POSITION // Or default if it's the first move
     // A more reliable way might be to store the FEN in the history entry itself
 
-    const prettyMove = new Move(this, savedMove, pieceWasHeroic)
+    const prettyMove = new Move(this, savedMove.move, pieceWasHeroic)
 
     // Manually set FENs on the prettyMove object
     prettyMove.before = fenBeforeMove // FEN before this move
@@ -1880,8 +1504,9 @@ export class CoTuLenh {
     // We need the original history entries for heroic status context
     for (let i = 0; i < this._history.length; i++) {
       const historyEntry = this._history[i] // Get original history entry
-      const internalMove = historyEntry.move
-      const pieceWasHeroic = this.get(algebraic(internalMove.from))?.heroic ?? false // Status before the move
+      const internalMove = historyEntry.move.move
+      const pieceWasHeroic =
+        this.get(algebraic(internalMove.from))?.heroic ?? false // Status before the move
 
       // Make move on the copy to get state *after*
       // Use the move from the original history entry
@@ -1927,69 +1552,7 @@ export class CoTuLenh {
   // Removed printTerrainZones
 
   printBoard(): void {
-    const ranks: { [key: number]: string[] } = {}
-
-    // Group squares by their display rank (12 down to 1)
-    for (const [alg, sq] of Object.entries(SQUARE_MAP)) {
-      const displayRank = 12 - rank(sq)
-      if (!ranks[displayRank]) ranks[displayRank] = []
-      ranks[displayRank].push(alg)
-    }
-
-    console.log('\nCurrent Board:')
-
-    // Print from rank 12 (top) to 1 (bottom)
-    for (let dr = 12; dr >= 1; dr--) {
-      let line = `${dr}`.padStart(2, ' ') + ' '
-      for (const alg of ranks[dr] || []) {
-        const sq = SQUARE_MAP[alg as Square]
-        const piece = this._board[sq]
-        const isNavyZone = NAVY_MASK[sq] && !LAND_MASK[sq] // Pure navy (a, b files usually)
-        const isMixedZone = NAVY_MASK[sq] && LAND_MASK[sq] // c file and river banks d6,e6,d7,e7
-        const isBridge = ['f6', 'f7', 'h6', 'h7'].includes(alg)
-
-        let bgCode = ''
-        let fgCode = piece
-          ? piece.color === RED
-            ? '\x1b[31m'
-            : '\x1b[34m'
-          : ''
-
-        // Use fixed-width display for all pieces (heroic or not)
-        let symbol = ' '
-        if (piece) {
-          symbol = (piece.heroic ?? false)
-            ? '+' + piece.type.toUpperCase()
-            : ' ' + piece.type.toUpperCase()
-        } else {
-          symbol = ' ·'
-        }
-
-        if (isBridge) {
-          bgCode = piece ? '\x1b[43m' : '\x1b[47m' // Yellow if piece, White if empty
-        } else if (isMixedZone) {
-          bgCode = '\x1b[48;5;231m' // Cyan
-        } else if (isNavyZone) {
-          bgCode = '\x1b[48;5;159m' // Blue
-        }
-        // Pure Land zones have no bgCode
-
-        if (bgCode) {
-          // Apply background and foreground colors
-          line += `${bgCode}${fgCode}${symbol}\x1b[0m${bgCode} \x1b[0m` // Add space with bg color
-        } else {
-          // No background, just foreground for piece or symbol for empty
-          line += piece ? `${fgCode}${symbol}\x1b[0m ` : `${symbol} `
-        }
-      }
-      console.log(line)
-      // Add a separator line between rank 7 (dr=7) and rank 6 (dr=6)
-      if (dr === 7) {
-        console.log('   --------------------------------') // Adjust length as needed
-      }
-    }
-    // Update the file labels to align with the 2-character piece display
-    console.log('    a  b  c  d  e  f  g  h  i  j  k')
+   printBoard(this._board)
   }
 
   // TODO: getComments, removeComments need pruning logic like chess.js if history is mutable
@@ -2010,57 +1573,4 @@ function addMove(
   const moveToAdd: InternalMove = { color, from, to, piece, captured, flags }
   // 'to' correctly represents destination or target based on flag context in _moves
   moves.push(moveToAdd)
-}
-
-function getDisambiguator(move: InternalMove, moves: InternalMove[]): string {
-  const from = move.from
-  const to = move.to
-  const piece = move.piece
-
-  let ambiguities = 0
-  let sameRank = 0
-  let sameFile = 0
-
-  for (let i = 0, len = moves.length; i < len; i++) {
-    const ambigFrom = moves[i].from
-    const ambigTo = moves[i].to
-    const ambigPiece = moves[i].piece
-
-    /*
-     * if a move of the same piece type ends on the same to square, we'll need
-     * to add a disambiguator to the algebraic notation
-     */
-    if (piece === ambigPiece && from !== ambigFrom && to === ambigTo) {
-      ambiguities++
-
-      if (rank(from) === rank(ambigFrom)) {
-        sameRank++
-      }
-
-      if (file(from) === file(ambigFrom)) {
-        sameFile++
-      }
-    }
-  }
-
-  if (ambiguities > 0) {
-    if (sameRank > 0 && sameFile > 0) {
-      /*
-       * if there exists a similar moving piece on the same rank and file as
-       * the move in question, use the square as the disambiguator
-       */
-      return algebraic(from)
-    } else if (sameFile > 0) {
-      /*
-       * if the moving piece rests on the same file, use the rank symbol as the
-       * disambiguator
-       */
-      return algebraic(from).charAt(1)
-    } else {
-      // else use the file symbol
-      return algebraic(from).charAt(0)
-    }
-  }
-
-  return ''
 }
