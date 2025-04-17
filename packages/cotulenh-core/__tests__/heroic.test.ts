@@ -1,19 +1,13 @@
- // @ts-nocheck
 import {
   CoTuLenh,
   Move,
-  RED,
+} from '../src/cotulenh'
+import {
   BLUE,
-  COMMANDER,
   INFANTRY,
   TANK,
-  MILITIA,
-  ARTILLERY,
   HEADQUARTER,
-  ENGINEER,
-  ANTI_AIR,
-  Square,
-} from '../src/cotulenh'
+  Square} from '../src/type'
 
 describe('Heroic Piece Functionality', () => {
   let game: CoTuLenh

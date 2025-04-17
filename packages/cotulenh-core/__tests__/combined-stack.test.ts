@@ -2,15 +2,16 @@
 import {
   CoTuLenh,
   Move,
-  RED,
+
+} from '../src/cotulenh'
+import {  RED,
   BLUE,
   NAVY,
   AIR_FORCE,
   TANK,
   COMMANDER,
   Square,
-  PieceSymbol,
-} from '../src/cotulenh'
+  PieceSymbol} from '../src/type'
 
 // Helper to find a specific move in the verbose move list
 const findVerboseMove = (
@@ -156,7 +157,7 @@ describe('Stack Movement and Deployment', () => {
 
     // Execute using the found Move object (if move() accepts it - needs check)
     // Or construct a simpler object if move() supports it
-    const moveResult = game.move({ from: 'c3', to: 'c4' }) // Hypothetical API
+    const moveResult = game.move({ from: 'c3', to: 'c4', piece: AIR_FORCE }) // Hypothetical API
 
     expect(moveResult).not.toBeNull()
     expect(game.turn()).toBe(RED) // Turn should NOT change
@@ -200,7 +201,7 @@ describe('Stack Movement and Deployment', () => {
       { piece: AIR_FORCE, isDeploy: true },
     )
     expect(afDeployMove).toBeDefined()
-    game.move({ from: 'c3', to: 'c4' })
+    game.move({ from: 'c3', to: 'c4', piece: AIR_FORCE })
 
     expect(game.turn()).toBe(RED) // Still Red's turn
 
@@ -269,9 +270,9 @@ describe('Stack Movement and Deployment', () => {
     game['_turn'] = RED
 
     // Deploy AF
-    game.move({ from: 'c3', to: 'c4' })
+    game.move({ from: 'c3', to: 'c4', piece: AIR_FORCE })
     // Deploy T
-    game.move({ from: 'c3', to: 'd3' })
+    game.move({ from: 'c3', to: 'd3', piece: TANK })
 
     expect(game.turn()).toBe(RED) // Still Red's turn
     expect(game.get('c3')?.carried).toBeUndefined() // Stack empty

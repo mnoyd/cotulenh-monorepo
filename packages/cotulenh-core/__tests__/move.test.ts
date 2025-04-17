@@ -1,24 +1,17 @@
-// @ts-nocheck
 import {
   CoTuLenh,
   Move,
-  RED,
+  
+} from '../src/cotulenh'
+import {RED,
   BLUE,
   NAVY,
   AIR_FORCE,
   INFANTRY,
-  MILITIA,
-  COMMANDER,
   TANK,
-  ENGINEER,
   ARTILLERY,
   ANTI_AIR,
-  MISSILE,
-  HEADQUARTER,
-  Square,
-  PieceSymbol,
-  DEFAULT_POSITION,
-} from '../src/cotulenh'
+  DEFAULT_POSITION} from '../src/type'
 
 describe('CoTuLenh Stay Capture Logic', () => {
   let game: CoTuLenh

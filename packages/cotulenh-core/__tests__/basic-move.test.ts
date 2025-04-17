@@ -1,13 +1,10 @@
 import {
-  CoTuLenh,
   TANK,
   RED,
-  Move, // Import Move type for verbose output
   Square, // Import Square type
-  PieceSymbol, // Import PieceSymbol
   AIR_FORCE, // Import AIR_FORCE
-  MISSILE, // Import MISSILE
-} from '../src/cotulenh'
+  MISSILE,} from '../src/type'
+import { CoTuLenh, Move } from '../src/cotulenh'
 
 // Simplified helper to check if a move exists in the verbose list
 // (We don't need all options of findVerboseMove for these basic tests)
