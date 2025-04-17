@@ -1493,7 +1493,11 @@ export class CoTuLenh {
     return output
   }
 
-  history({ verbose = false }: { verbose?: boolean } = {}): string[] | Move[] {
+  history(): string[]
+  history({ verbose }: { verbose: true }): Move[]
+  history({ verbose }: { verbose: false }): string[]
+  history({ verbose }: { verbose: boolean }): string[] | Move[]
+  history({ verbose = false }: { verbose?: boolean } = {}) {
     const reversedHistory = []
     const moveHistory = []
 
@@ -1515,8 +1519,9 @@ export class CoTuLenh {
       this._makeMove(move)
     }
 
-    return moveHistory as any
+    return moveHistory
   }
+
   getHeroicStatus(square: Square, pieceType?: PieceSymbol): boolean {
     const pieceAtSquare = this._board[SQUARE_MAP[square]]
     if (!pieceAtSquare) return false
