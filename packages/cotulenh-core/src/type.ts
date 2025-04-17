@@ -1,13 +1,13 @@
 // --- Constants ---
-export const RED = 'r' // Changed from WHITE
-export const BLUE = 'b' // Changed from BLACK
+export const RED = 'r'
+export const BLUE = 'b'
 
 // Piece Symbols based on user input
 export const COMMANDER = 'c'
 export const INFANTRY = 'i'
 export const TANK = 't'
 export const MILITIA = 'm'
-export const ENGINEER = 'e' // Added Engineer
+export const ENGINEER = 'e'
 export const ARTILLERY = 'a'
 export const ANTI_AIR = 'g'
 export const MISSILE = 's'
@@ -170,13 +170,12 @@ export const BITS: Record<string, number> = {
 // --- Move/History Types ---
 // Internal representation of a move
 export type InternalMove = {
-    color: Color
-    from: number // 0x88 index
-    to: number // 0x88 index (destination OR target square for stay capture)
-    piece: PieceSymbol // The piece being moved (or deployed)
-    captured?: PieceSymbol
-    // promotion?: PieceSymbol; // Promotion is status change, not piece change?
-    flags: number // Bitmask using BITS
-    becameHeroic?: boolean // Track if this move caused promotion
-  }
-  
+  color: Color
+  from: number // 0x88 index
+  to: number // 0x88 index (destination OR target square for stay capture)
+  piece: PieceSymbol // The piece being moved (or deployed)
+  captured?: PieceSymbol
+  // promotion?: PieceSymbol; // Promotion is status change, not piece change?
+  flags: number // Bitmask using BITS
+  becameHeroic?: boolean // Track if this move caused promotion
+}

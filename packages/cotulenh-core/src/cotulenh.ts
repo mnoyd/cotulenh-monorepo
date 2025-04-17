@@ -38,10 +38,9 @@ import {
   NAVY,
   swapColor,
   isSquareOnBoard,
-  InternalMove
+  InternalMove,
 } from './type'
-import { getDisambiguator, printBoard } from './utils'
-
+import { addMove, getDisambiguator, printBoard } from './utils'
 
 // Structure for storing history states
 interface History {
@@ -1047,7 +1046,6 @@ export class CoTuLenh {
 
     // 1. Create the command object for this move
     const moveCommand = createMoveCommand(this, move)
-    moveCommand.execute()
 
     // 2. Store pre-move state and the command in history
     const historyEntry: History = {
@@ -1059,6 +1057,15 @@ export class CoTuLenh {
       deployState: this._deployState, // Snapshot deploy state *before* this move
     }
     this._history.push(historyEntry)
+
+    // 3. Execute the command
+    try {
+      moveCommand.execute()
+    } catch (error) {
+      // Revert the history entry on error
+      this._history.pop()
+      throw error
+    }
 
     // --- 4. Update General Game State AFTER command execution ---
 
@@ -1337,7 +1344,12 @@ export class CoTuLenh {
   move(
     move:
       | string
-      | { from: string; to: string; stay?: boolean /* promotion?: string */ },
+      | {
+          from: string
+          to: string
+          stay?: boolean /* promotion?: string */
+          piece?: PieceSymbol
+        },
     { strict = false }: { strict?: boolean } = {},
   ): Move | null {
     let internalMove: InternalMove | null = null
@@ -1365,7 +1377,11 @@ export class CoTuLenh {
         const isStayMove = (m.flags & BITS.STAY_CAPTURE) !== 0
         const targetSquareInternal = m.to // Internal 'to' is always the target/destination
 
-        if (targetSquareInternal === toSq) {
+        if (
+          targetSquareInternal === toSq &&
+          move.piece &&
+          move.piece === m.piece
+        ) {
           // Check if stay preference matches
           if (requestedStay && isStayMove) {
             internalMove = m
@@ -1477,60 +1493,29 @@ export class CoTuLenh {
     return output
   }
 
-  squareColor(square: Square): 'light' | 'dark' | null {
-    if (!(square in SQUARE_MAP)) return null
-    const sq = SQUARE_MAP[square]
-    return (rank(sq) + file(sq)) % 2 === 0 ? 'light' : 'dark'
-  }
-
   history({ verbose = false }: { verbose?: boolean } = {}): string[] | Move[] {
-    const moveHistory: (string | Move)[] = []
-    const FENHistory: string[] = [] // Store FENs to reconstruct Moves correctly
-    const gameCopy = new CoTuLenh(this.fen()) // Create a copy to manipulate
+    const reversedHistory = []
+    const moveHistory = []
 
-    // Get FEN at the start of the actual history
-    const reversedMoves: InternalMove[] = []
-    while (gameCopy._history.length > 0) {
-      const undoneMove = gameCopy._undoMove()
-      if (undoneMove) {
-        reversedMoves.push(undoneMove) // Store the undone move
-      }
+    while (this._history.length > 0) {
+      reversedHistory.push(this._undoMove())
     }
-    const startFEN = gameCopy.fen() // FEN at the beginning
-    FENHistory.push(startFEN)
-    reversedMoves.reverse() // Put moves back in chronological order
 
-    // Replay moves on the copy to build history output
-    // We need the original history entries for heroic status context
-    for (let i = 0; i < this._history.length; i++) {
-      const historyEntry = this._history[i] // Get original history entry
-      const internalMove = historyEntry.move.move
-      const pieceWasHeroic =
-        this.get(algebraic(internalMove.from))?.heroic ?? false // Status before the move
-
-      // Make move on the copy to get state *after*
-      // Use the move from the original history entry
-      gameCopy._makeMove(internalMove)
-      const fenAfter = gameCopy.fen()
-      FENHistory.push(fenAfter) // Store FEN after the move
+    while (true) {
+      const move = reversedHistory.pop()
+      if (!move) {
+        break
+      }
 
       if (verbose) {
-        // Create Move object using the state *after* the move was made
-        const moveObj = new Move(gameCopy, internalMove, pieceWasHeroic)
-        // Manually set before/after FENs from our collected history
-        moveObj.before = FENHistory[FENHistory.length - 2] // FEN before this move
-        moveObj.after = fenAfter // FEN after this move
-        moveHistory.push(moveObj)
+        moveHistory.push(new Move(this, move, move.becameHeroic ?? false))
       } else {
-        // Generate SAN for the state *before* the move was made
-        // Need to use the state *before* this move for legality checks
-        const tempGame = new CoTuLenh(FENHistory[FENHistory.length - 2]) // Load state before
-        const movesForSAN = tempGame._moves({ legal: true }) // Get all legal moves in that state
-        moveHistory.push(tempGame._moveToSan(internalMove, movesForSAN)) // Generate SAN
+        moveHistory.push(this._moveToSan(move, this._moves()))
       }
+      this._makeMove(move)
     }
 
-    return moveHistory as any // Cast based on verbose flag
+    return moveHistory as any
   }
 
   moveNumber(): number {
@@ -1552,25 +1537,10 @@ export class CoTuLenh {
   // Removed printTerrainZones
 
   printBoard(): void {
-   printBoard(this._board)
+    printBoard(this._board)
   }
 
   // TODO: getComments, removeComments need pruning logic like chess.js if history is mutable
 }
 
-// Helper function to add a move to the list
-// Updated for Stay Capture logic
-function addMove(
-  moves: InternalMove[],
-  color: Color,
-  from: number,
-  to: number, // Destination square for normal move, Target square for stay capture
-  piece: PieceSymbol,
-  captured: PieceSymbol | undefined = undefined,
-  flags: number = BITS.NORMAL,
-) {
-  // No piece promotion in this variant based on rules
-  const moveToAdd: InternalMove = { color, from, to, piece, captured, flags }
-  // 'to' correctly represents destination or target based on flag context in _moves
-  moves.push(moveToAdd)
-}
+

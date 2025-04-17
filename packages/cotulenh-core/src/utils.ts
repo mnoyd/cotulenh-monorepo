@@ -8,7 +8,10 @@ import {
   RED,
   Square,
   SQUARE_MAP,
-  InternalMove
+  InternalMove,
+  Color,
+  PieceSymbol,
+  BITS
 } from './type'
 
 export function getDisambiguator(
@@ -128,4 +131,20 @@ export function printBoard(board: Record<number, Piece | undefined>) {
   }
   // Update the file labels to align with the 2-character piece display
   console.log('    a  b  c  d  e  f  g  h  i  j  k')
+}
+// Helper function to add a move to the list
+// Updated for Stay Capture logic
+export function addMove(
+  moves: InternalMove[],
+  color: Color,
+  from: number,
+  to: number, // Destination square for normal move, Target square for stay capture
+  piece: PieceSymbol,
+  captured: PieceSymbol | undefined = undefined,
+  flags: number = BITS.NORMAL,
+) {
+  // No piece promotion in this variant based on rules
+  const moveToAdd: InternalMove = { color, from, to, piece, captured, flags }
+  // 'to' correctly represents destination or target based on flag context in _moves
+  moves.push(moveToAdd)
 }

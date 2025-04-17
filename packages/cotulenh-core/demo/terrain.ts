@@ -1,13 +1,7 @@
-import { BLUE, CoTuLenh, INFANTRY, RED } from '../dist/esm/src/cotulenh.js'
+import { CoTuLenh } from '../src/cotulenh'
 
 console.log('Cotulenh Terrain Zones Demonstration\n')
 const game = new CoTuLenh()
-game.clear()
-game['_turn'] = RED
-// Place two infantry for simple back-and-forth
-game.put({ type: INFANTRY, color: RED }, 'e2')
-game.put({ type: INFANTRY, color: BLUE }, 'e5')
-
 
 console.log('\nNote:')
 console.log('- Water zones: Naval units can station here')

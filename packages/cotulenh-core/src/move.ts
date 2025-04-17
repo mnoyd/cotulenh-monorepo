@@ -41,7 +41,7 @@ export class NormalMoveCommand extends MoveCommand {
     const pieceThatMoved = this.game['_board'][this.move.from] // Get piece/stack
 
     if (!pieceThatMoved) {
-      console.error(
+      throw new Error(
         `Execute NormalMove Error: Piece missing from source ${algebraic(
           this.move.from,
         )}`,
@@ -54,7 +54,7 @@ export class NormalMoveCommand extends MoveCommand {
     if (this.move.flags & BITS.CAPTURE) {
       const capturedPieceData = this.game['_board'][this.move.to]
       if (!capturedPieceData || capturedPieceData.color !== them) {
-        console.error(
+        throw new Error(
           `Execute NormalMove Error: Capture target invalid ${algebraic(
             this.move.to,
           )}`,
@@ -81,7 +81,7 @@ export class NormalMoveCommand extends MoveCommand {
     // (Undo logic remains the same as before)
     const pieceThatMoved = this.game['_board'][this.move.to]
     if (!pieceThatMoved || pieceThatMoved.type !== this.move.piece) {
-      console.error(
+      throw new Error(
         `Undo NormalMove Error: Piece mismatch/missing at destination ${algebraic(
           this.move.to,
         )}`,
@@ -113,7 +113,7 @@ export class DeployMoveCommand extends MoveCommand {
     const carrierPiece = this.game['_board'][this.move.from]
 
     if (!carrierPiece || !carrierPiece.carried) {
-      console.error(
+      throw new Error(
         `Execute Deploy Error: Carrier missing or empty at ${algebraic(
           this.move.from,
         )}`,
@@ -126,7 +126,7 @@ export class DeployMoveCommand extends MoveCommand {
       (p) => p.type === this.move.piece && p.color === us,
     )
     if (deployIndex === -1) {
-      console.error(
+      throw new Error(
         `Execute Deploy Error: Deployed piece ${this.move.piece} not found in carrier ${algebraic(this.move.from)}`,
       )
       return
@@ -141,7 +141,7 @@ export class DeployMoveCommand extends MoveCommand {
       const targetSq = this.move.to
       const capturedPieceData = this.game['_board'][targetSq]
       if (!capturedPieceData || capturedPieceData.color !== them) {
-        console.error(
+        throw new Error(
           `Execute Deploy Error: Stay capture target invalid ${algebraic(
             targetSq,
           )}`,
@@ -157,7 +157,7 @@ export class DeployMoveCommand extends MoveCommand {
       if (this.move.flags & BITS.CAPTURE) {
         const capturedPieceData = this.game['_board'][destSq]
         if (!capturedPieceData || capturedPieceData.color !== them) {
-          console.error(
+          throw new Error(
             `Execute Deploy Error: Capture destination invalid ${algebraic(
               destSq,
             )}`,
@@ -183,7 +183,7 @@ export class DeployMoveCommand extends MoveCommand {
     const them = swapColor(us)
     const carrierPiece = this.game['_board'][this.move.from]
     if (!carrierPiece) {
-      console.error(
+      throw new Error(
         `Undo Deploy Error: Carrier missing at ${algebraic(this.move.from)}`,
       )
       return
@@ -207,7 +207,7 @@ export class DeployMoveCommand extends MoveCommand {
       if (
         !deployedPieceToAddBack || deployedPieceToAddBack.type !== this.move.piece
       ) {
-        console.error(
+        throw new Error(
           `Undo Deploy Error: Deployed piece missing/mismatch at ${algebraic(
             destSq,
           )}`,
@@ -252,7 +252,7 @@ export class StayCaptureMoveCommand extends MoveCommand {
 
     const capturedPiece = this.game['_board'][targetSq]
     if (!capturedPiece || capturedPiece.color !== them) {
-      console.error(
+      throw new Error(
         `Execute StayCapture Error: Target invalid ${algebraic(targetSq)}`,
       )
       return
@@ -269,7 +269,7 @@ export class StayCaptureMoveCommand extends MoveCommand {
     if (this.move.captured) {
       this.game['_board'][targetSq] = { type: this.move.captured, color: them }
     } else {
-      console.error(
+      throw new Error(
         `Undo StayCapture Error: Missing captured piece for move ${JSON.stringify(
           this.move,
         )}`,
