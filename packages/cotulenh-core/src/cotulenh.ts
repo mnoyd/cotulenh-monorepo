@@ -75,7 +75,7 @@ export class Move {
   stackBefore?: string // Optional: FEN-like representation of the stack before deploy, e.g., "(NFT)"
 
   // Constructor needs the main class instance to generate SAN, FENs etc.
-  constructor(game: CoTuLenh, internal: InternalMove, pieceWasHeroic: boolean) {
+  constructor(game: CoTuLenh, internal: InternalMove) {
     const { color, piece, from, to, flags, captured, becameHeroic } = internal
 
     this.color = color
@@ -88,7 +88,7 @@ export class Move {
       }
     }
     if (captured) this.captured = captured
-    this.heroic = pieceWasHeroic // Heroic status of the piece *before* it moved/deployed
+    this.heroic = game.getHeroicStatus(this.from) // Heroic status of the piece *before* it moved/deployed
     if (becameHeroic) this.becameHeroic = true
     this.isDeploy = (flags & BITS.DEPLOY) !== 0
 
@@ -995,7 +995,7 @@ export class CoTuLenh {
       // Map to Move objects, passing current heroic status
       return internalMoves.map(
         (move) =>
-          new Move(this, move, this.get(algebraic(move.from))?.heroic ?? false),
+          new Move(this, move),
       )
     } else {
       // Generate SAN strings (needs proper implementation)
@@ -1447,7 +1447,7 @@ export class CoTuLenh {
         : DEFAULT_POSITION // Or default if it's the first move
     // A more reliable way might be to store the FEN in the history entry itself
 
-    const prettyMove = new Move(this, savedMove.move, pieceWasHeroic)
+    const prettyMove = new Move(this, savedMove.move)
 
     // Manually set FENs on the prettyMove object
     prettyMove.before = fenBeforeMove // FEN before this move
@@ -1508,7 +1508,7 @@ export class CoTuLenh {
       }
 
       if (verbose) {
-        moveHistory.push(new Move(this, move, move.becameHeroic ?? false))
+        moveHistory.push(new Move(this, move))
       } else {
         moveHistory.push(this._moveToSan(move, this._moves()))
       }
@@ -1516,6 +1516,17 @@ export class CoTuLenh {
     }
 
     return moveHistory as any
+  }
+  getHeroicStatus(square: Square, pieceType?: PieceSymbol): boolean {
+    const pieceAtSquare = this._board[SQUARE_MAP[square]]
+    if (!pieceAtSquare) return false
+    // Check if looking piece is possibly being carried
+    if (pieceType && pieceAtSquare.type !== pieceType && pieceAtSquare.carried && pieceAtSquare.carried.length > 0) {
+      const foundCarriedPiece = pieceAtSquare.carried.find(p => p.type === pieceType)
+      if (!foundCarriedPiece) return false
+      return foundCarriedPiece.heroic ?? false
+    }
+    return pieceAtSquare.heroic ?? false
   }
 
   moveNumber(): number {

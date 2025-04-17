@@ -212,11 +212,6 @@ export class DeployMoveCommand extends MoveCommand {
             destSq,
           )}`,
         )
-         // Try to recreate if missing, otherwise undo might fail later
-         if (!deployedPieceToAddBack) {
-             deployedPieceToAddBack = { type: this.move.piece, color: us };
-             console.warn(`Undo Deploy Warning: Recreated missing deployed piece ${this.move.piece}`);
-         }
       }
       delete this.game['_board'][destSq] // Remove from destination
       if (this.move.captured) {
