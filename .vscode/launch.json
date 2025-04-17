@@ -1,20 +1,11 @@
 {
-	// Use IntelliSense to learn about possible attributes.
-	// Hover to view descriptions of existing attributes.
-	// For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
-	"version": "0.2.0",
-	"configurations": [
-		{
-			"name": "Launch cotulenh-app (Vite)",
-			"type": "node-terminal", // Use node-terminal for Vite/SvelteKit
-			"request": "launch",
-			"command": "pnpm dev",
-			"cwd": "${workspaceFolder}/apps/cotulenh-app", // Set working directory
-			"serverReadyAction": {
-				"pattern": "Local:\\s+(https?://localhost:\\d+)", // Pattern to detect server start (fixed escape chars)
-				"uriFormat": "%s",
-				"action": "debugWithChrome" // Open in Chrome debugger
-			}
-		}
-	]
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "command": "pnpm run dev",
+      "name": "Run development server",
+      "request": "launch",
+      "type": "node-terminal"
+    }
+  ]
 }

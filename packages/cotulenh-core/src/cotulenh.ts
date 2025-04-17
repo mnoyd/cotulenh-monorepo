@@ -993,10 +993,7 @@ export class CoTuLenh {
 
     if (verbose) {
       // Map to Move objects, passing current heroic status
-      return internalMoves.map(
-        (move) =>
-          new Move(this, move),
-      )
+      return internalMoves.map((move) => new Move(this, move))
     } else {
       // Generate SAN strings (needs proper implementation)
       // Pass all legal moves for ambiguity resolution
@@ -1526,8 +1523,15 @@ export class CoTuLenh {
     const pieceAtSquare = this._board[SQUARE_MAP[square]]
     if (!pieceAtSquare) return false
     // Check if looking piece is possibly being carried
-    if (pieceType && pieceAtSquare.type !== pieceType && pieceAtSquare.carried && pieceAtSquare.carried.length > 0) {
-      const foundCarriedPiece = pieceAtSquare.carried.find(p => p.type === pieceType)
+    if (
+      pieceType &&
+      pieceAtSquare.type !== pieceType &&
+      pieceAtSquare.carried &&
+      pieceAtSquare.carried.length > 0
+    ) {
+      const foundCarriedPiece = pieceAtSquare.carried.find(
+        (p) => p.type === pieceType,
+      )
       if (!foundCarriedPiece) return false
       return foundCarriedPiece.heroic ?? false
     }
@@ -1559,4 +1563,4 @@ export class CoTuLenh {
   // TODO: getComments, removeComments need pruning logic like chess.js if history is mutable
 }
 
-
+export * from './type.js'
