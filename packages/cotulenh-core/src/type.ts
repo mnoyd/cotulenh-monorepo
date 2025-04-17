@@ -101,10 +101,9 @@ function initMovementMasks() {
     if (!isSquareOnBoard(sq)) continue // Add validity check
     const f = file(sq)
     const r = rank(sq)
-    const alg = algebraic(sq)
 
     // Navy operational areas (a-c files + specific squares)
-    NAVY_MASK[sq] = f <= 2 || ['d6', 'e6', 'd7', 'e7'].includes(alg) ? 1 : 0
+    NAVY_MASK[sq] = f <= 2 || ((f === 3 || f === 4) && (r === 5 || r === 6)) ? 1 : 0
 
     // Land pieces operational areas (c-k files)
     LAND_MASK[sq] = f >= 2 ? 1 : 0

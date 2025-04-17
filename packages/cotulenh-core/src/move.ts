@@ -1,7 +1,7 @@
 // src/move.ts
 
-import type { CoTuLenh, } from './cotulenh'
-import { swapColor, algebraic, InternalMove, COMMANDER, BITS, Piece } from './type'
+import type { CoTuLenh, } from './cotulenh.js'
+import { swapColor, algebraic, InternalMove, COMMANDER, BITS, Piece } from './type.js'
 
 /**
  * Abstract base class for all move commands.

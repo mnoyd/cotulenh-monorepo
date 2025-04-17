@@ -5,7 +5,7 @@
  * All rights reserved.
  */
 
-import { createMoveCommand, MoveCommand } from './move'
+import { createMoveCommand, MoveCommand } from './move.js'
 
 import {
   algebraic,
@@ -39,8 +39,8 @@ import {
   swapColor,
   isSquareOnBoard,
   InternalMove,
-} from './type'
-import { addMove, getDisambiguator, printBoard } from './utils'
+} from './type.js'
+import { addMove, getDisambiguator, printBoard } from './utils.js'
 
 // Structure for storing history states
 interface History {

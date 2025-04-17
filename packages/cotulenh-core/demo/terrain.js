@@ -1,4 +1,4 @@
-import { CoTuLenh } from '../src/cotulenh'
+import { CoTuLenh } from '../dist/esm/src/cotulenh.js'
 
 console.log('Cotulenh Terrain Zones Demonstration\n')
 const game = new CoTuLenh()

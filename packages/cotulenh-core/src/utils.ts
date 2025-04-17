@@ -12,7 +12,7 @@ import {
   Color,
   PieceSymbol,
   BITS
-} from './type'
+} from './type.js'
 
 export function getDisambiguator(
   move: InternalMove,

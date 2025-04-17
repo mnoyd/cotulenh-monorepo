@@ -11,7 +11,7 @@
     "types": ["node", "jest"]
   },
   "include": ["src/**/*"],
-  "exclude": ["sample/**"],
+  "exclude": ["sample/**", "demo/**"],
   "references": [
     { "path": "./tsconfig.cjs.json" },
     { "path": "./tsconfig.esm.json" },
