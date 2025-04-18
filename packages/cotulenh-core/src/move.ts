@@ -137,10 +137,10 @@ class UpdateKingPositionAction implements AtomicMoveAction {
     game: CoTuLenh,
   ) {
     // _kings square should be either -1 indicating king captured, or a square index
-    if (game['_kings'][color] === -1) {
+    if (game['_commanders'][color] === -1) {
       throw new Error(`No king found for color ${color}`)
     }
-    this.oldPosition = game['_kings'][color]
+    this.oldPosition = game['_commanders'][color]
   }
 
   execute(game: CoTuLenh): void {

@@ -149,7 +149,7 @@ export class CoTuLenh {
   private _board = new Array<Piece | undefined>(256)
   private _turn: Color = RED // Default to Red
   private _header: Record<string, string> = {}
-  private _kings: Record<Color, number> = { r: -1, b: -1 } // Commander positions
+  private _commanders: Record<Color, number> = { r: -1, b: -1 } // Commander positions
   // private _castling: Record<Color, number> = { r: 0, b: 0 }; // No castling
   // private _epSquare = -1; // No en passant
   private _halfMoves = 0
@@ -165,7 +165,7 @@ export class CoTuLenh {
 
   clear({ preserveHeaders = false } = {}) {
     this._board = new Array<Piece | undefined>(256)
-    this._kings = { r: -1, b: -1 }
+    this._commanders = { r: -1, b: -1 }
     this._turn = RED
     this._halfMoves = 0
     this._moveNumber = 1
@@ -273,8 +273,8 @@ export class CoTuLenh {
             }
 
             if (carrierType === COMMANDER) {
-              if (this._kings[carrierColor] === -1) {
-                this._kings[carrierColor] = sq0x88
+              if (this._commanders[carrierColor] === -1) {
+                this._commanders[carrierColor] = sq0x88
               } else {
                 console.warn(
                   `Multiple commanders found for color ${carrierColor}.`,
@@ -317,8 +317,8 @@ export class CoTuLenh {
           this._board[sq0x88] = { type, color, heroic: isHeroic }
           if (type === COMMANDER) {
             // Only track Commander now
-            if (this._kings[color] === -1) {
-              this._kings[color] = sq0x88
+            if (this._commanders[color] === -1) {
+              this._commanders[color] = sq0x88
             } else {
               console.warn(`Multiple commanders found for color ${color}.`)
             }
@@ -441,8 +441,8 @@ export class CoTuLenh {
     // Handle commander limit
     if (
       type === COMMANDER &&
-      this._kings[color] !== -1 &&
-      this._kings[color] !== sq
+      this._commanders[color] !== -1 &&
+      this._commanders[color] !== sq
     ) {
       return false
     }
@@ -451,9 +451,9 @@ export class CoTuLenh {
     if (
       currentPiece &&
       currentPiece.type === COMMANDER &&
-      this._kings[currentPiece.color] === sq
+      this._commanders[currentPiece.color] === sq
     ) {
-      this._kings[currentPiece.color] = -1
+      this._commanders[currentPiece.color] = -1
     }
 
     // Place the piece or stack
@@ -463,7 +463,7 @@ export class CoTuLenh {
       carried: carried?.length ? carried : undefined,
       heroic: heroic ?? false, // Default to false if undefined
     }
-    if (type === COMMANDER) this._kings[color] = sq
+    if (type === COMMANDER) this._commanders[color] = sq
 
     // TODO: Update setup, etc.
     return true
@@ -479,8 +479,8 @@ export class CoTuLenh {
 
     delete this._board[sq]
 
-    if (piece.type === COMMANDER && this._kings[piece.color] === sq) {
-      this._kings[piece.color] = -1
+    if (piece.type === COMMANDER && this._commanders[piece.color] === sq) {
+      this._commanders[piece.color] = -1
     }
 
     // TODO: Update setup, etc.
@@ -961,7 +961,7 @@ export class CoTuLenh {
       // Operate on the collected allMoves array
       for (const move of allMoves) {
         this._makeMove(move)
-        if (!this._isKingAttacked(us)) {
+        if (!this._isCommanderAttacked(us)) {
           legalMoves.push(move)
         }
         this._undoMove()
@@ -1047,7 +1047,7 @@ export class CoTuLenh {
     // 2. Store pre-move state and the command in history
     const historyEntry: History = {
       move: moveCommand,
-      kings: { ...this._kings },
+      kings: { ...this._commanders },
       turn: us,
       halfMoves: this._halfMoves,
       moveNumber: this._moveNumber,
@@ -1090,7 +1090,7 @@ export class CoTuLenh {
     if (pieceAtFinalSq && pieceAtFinalSq.type !== COMMANDER) {
       // Temporarily switch turn to check opponent's king
       this._turn = them
-      if (this._isKingAttacked(them)) {
+      if (this._isCommanderAttacked(them)) {
         // If the move puts opponent in check
         if (!pieceAtFinalSq.heroic) {
           // And the piece wasn't already heroic
@@ -1125,7 +1125,7 @@ export class CoTuLenh {
     const command = old.move // Get the command object
 
     // Restore general game state BEFORE the command modified the board
-    this._kings = old.kings
+    this._commanders = old.kings
     this._turn = old.turn
     this._halfMoves = old.halfMoves
     this._moveNumber = old.moveNumber
@@ -1144,14 +1144,14 @@ export class CoTuLenh {
   }
 
   public updateKingsPosition(sq: number, color: Color): void {
-    if (this._kings[color] === -1) return // Commander captured = loss = no need to update
+    if (this._commanders[color] === -1) return // Commander captured = loss = no need to update
     // Update the king's position
-    this._kings[color] = sq
+    this._commanders[color] = sq
   }
 
   // --- Check/Game Over Detection (Updated for Stay Capture) ---
-  private _isKingAttacked(color: Color): boolean {
-    const kingSq = this._kings[color]
+  private _isCommanderAttacked(color: Color): boolean {
+    const kingSq = this._commanders[color]
     if (kingSq === -1) return true // Commander captured = loss = considered 'attacked' for game over
 
     // Generate all opponent's pseudo-legal moves
@@ -1172,17 +1172,12 @@ export class CoTuLenh {
   }
 
   isCheck(): boolean {
-    return this._isKingAttacked(this._turn)
+    return this._isCommanderAttacked(this._turn)
   }
 
   isCheckmate(): boolean {
     // Checkmate = Commander is attacked AND no legal moves exist
     return this.isCheck() && this._moves({ legal: true }).length === 0
-  }
-
-  isStalemate(): boolean {
-    // Stalemate = Commander is NOT attacked AND no legal moves exist
-    return !this.isCheck() && this._moves({ legal: true }).length === 0
   }
 
   // TODO: Implement isInsufficientMaterial, isThreefoldRepetition, isDrawByFiftyMoves based on variant rules
@@ -1191,7 +1186,7 @@ export class CoTuLenh {
   }
 
   isDraw(): boolean {
-    return this.isStalemate() || this.isDrawByFiftyMoves() // Add other draw conditions later (repetition, insufficient material)
+    return this.isDrawByFiftyMoves() // Add other draw conditions later (repetition, insufficient material)
   }
 
   isGameOver(): boolean {
@@ -1199,8 +1194,8 @@ export class CoTuLenh {
     return (
       this.isCheckmate() ||
       this.isDraw() ||
-      this._kings[RED] === -1 ||
-      this._kings[BLUE] === -1
+      this._commanders[RED] === -1 ||
+      this._commanders[BLUE] === -1
     )
   }
 
