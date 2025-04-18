@@ -1,7 +1,178 @@
 // src/move.ts
 
-import type { CoTuLenh, } from './cotulenh.js'
-import { swapColor, algebraic, InternalMove, COMMANDER, BITS, Piece } from './type.js'
+import type { Color, CoTuLenh } from './cotulenh.js'
+import {
+  swapColor,
+  algebraic,
+  InternalMove,
+  COMMANDER,
+  BITS,
+  Piece,
+} from './type.js'
+
+/**
+ * Represents an atomic board action that can be executed and undone
+ */
+interface AtomicMoveAction {
+  execute(game: CoTuLenh): void
+  undo(game: CoTuLenh): void
+}
+
+/**
+ * Removes a piece from a square
+ */
+class RemovePieceAction implements AtomicMoveAction {
+  private removedPiece?: Piece
+
+  constructor(private square: number) {}
+
+  execute(game: CoTuLenh): void {
+    this.removedPiece = game['_board'][this.square]
+    delete game['_board'][this.square]
+  }
+
+  undo(game: CoTuLenh): void {
+    if (this.removedPiece) {
+      game['_board'][this.square] = this.removedPiece
+    }
+  }
+}
+
+/**
+ * Places a piece on a square
+ */
+class PlacePieceAction implements AtomicMoveAction {
+  private existingPiece?: Piece
+
+  constructor(
+    private square: number,
+    private piece: Piece,
+  ) {}
+
+  execute(game: CoTuLenh): void {
+    this.existingPiece = game['_board'][this.square]
+    game['_board'][this.square] = this.piece
+  }
+
+  undo(game: CoTuLenh): void {
+    if (this.existingPiece) {
+      game['_board'][this.square] = this.existingPiece
+    } else {
+      delete game['_board'][this.square]
+    }
+  }
+}
+
+/**
+ * Removes a piece from a carrier's stack
+ */
+class RemoveFromStackAction implements AtomicMoveAction {
+  private removedPiece?: Piece
+  private removedIndex: number = -1
+
+  constructor(
+    private carrierSquare: number,
+    private pieceType: string,
+    private pieceColor: string,
+  ) {}
+
+  execute(game: CoTuLenh): void {
+    const carrier = game['_board'][this.carrierSquare]
+    if (!carrier || !carrier.carried) {
+      throw new Error(
+        `No carrier or carried pieces at ${algebraic(this.carrierSquare)}`,
+      )
+    }
+
+    this.removedIndex = carrier.carried.findIndex(
+      (p) => p.type === this.pieceType && p.color === this.pieceColor,
+    )
+
+    if (this.removedIndex === -1) {
+      throw new Error(
+        `Piece ${this.pieceType} not found in carrier at ${algebraic(this.carrierSquare)}`,
+      )
+    }
+
+    this.removedPiece = carrier.carried[this.removedIndex]
+    carrier.carried.splice(this.removedIndex, 1)
+
+    if (carrier.carried.length === 0) {
+      carrier.carried = undefined
+    }
+  }
+
+  undo(game: CoTuLenh): void {
+    if (!this.removedPiece) return
+
+    const carrier = game['_board'][this.carrierSquare]
+    if (!carrier) {
+      throw new Error(
+        `Carrier missing during undo at ${algebraic(this.carrierSquare)}`,
+      )
+    }
+
+    if (!carrier.carried) {
+      carrier.carried = []
+    }
+
+    // Insert at the original position if possible, otherwise just add to the end
+    if (this.removedIndex >= 0 && this.removedIndex <= carrier.carried.length) {
+      carrier.carried.splice(this.removedIndex, 0, this.removedPiece)
+    } else {
+      carrier.carried.push(this.removedPiece)
+    }
+  }
+}
+
+/**
+ * Updates the king position
+ */
+class UpdateKingPositionAction implements AtomicMoveAction {
+  private oldPosition: number
+
+  constructor(
+    private color: Color,
+    private newPosition: number,
+    game: CoTuLenh,
+  ) {
+    // _kings square should be either -1 indicating king captured, or a square index
+    if (game['_kings'][color] === -1) {
+      throw new Error(`No king found for color ${color}`)
+    }
+    this.oldPosition = game['_kings'][color]
+  }
+
+  execute(game: CoTuLenh): void {
+    game.updateKingsPosition(this.newPosition, this.color)
+  }
+
+  undo(game: CoTuLenh): void {
+    game.updateKingsPosition(this.oldPosition, this.color)
+  }
+}
+
+/**
+ * Sets the deploy state
+ */
+class SetDeployStateAction implements AtomicMoveAction {
+  private oldDeployState: { stackSquare: number; turn: Color } | null
+
+  constructor(
+    private newDeployState: { stackSquare: number; turn: Color } | null,
+    game: CoTuLenh,
+  ) {
+    this.oldDeployState = game['_deployState']
+  }
+
+  execute(game: CoTuLenh): void {
+    game['_deployState'] = this.newDeployState
+  }
+
+  undo(game: CoTuLenh): void {
+    game['_deployState'] = this.oldDeployState
+  }
+}
 
 /**
  * Abstract base class for all move commands.
@@ -9,272 +180,210 @@ import { swapColor, algebraic, InternalMove, COMMANDER, BITS, Piece } from './ty
  */
 export abstract class MoveCommand {
   public readonly move: InternalMove
+  protected actions: AtomicMoveAction[] = []
 
-  constructor(protected game: CoTuLenh, moveData: InternalMove) {
+  constructor(
+    protected game: CoTuLenh,
+    moveData: InternalMove,
+  ) {
     // Store a mutable copy for potential updates (like setting 'captured' flag)
     this.move = { ...moveData }
+    this.buildActions()
   }
+
+  /**
+   * Builds the list of atomic actions for this move
+   */
+  protected abstract buildActions(): void
 
   /**
    * Executes the move, modifying the board state.
    * Focuses *only* on board piece placement/removal and captures.
    * General state updates (turn, clocks, deploy state) are handled by _makeMove.
    */
-  execute(): void{
-    //all move that is not deploy, will reset deploy state
-    this.game['_deployState'] =null
+  execute(): void {
+    // Execute all atomic actions in sequence
+    for (const action of this.actions) {
+      action.execute(this.game)
+    }
   }
 
   /**
    * Reverts the board changes made by this command.
    */
-  abstract undo(): void
+  undo(): void {
+    // Undo actions in reverse order
+    for (let i = this.actions.length - 1; i >= 0; i--) {
+      this.actions[i].undo(this.game)
+    }
+  }
 }
 
 // --- Concrete Command Implementations ---
 
 export class NormalMoveCommand extends MoveCommand {
-  execute(): void {
-    super.execute()
+  protected buildActions(): void {
     const us = this.move.color
     const them = swapColor(us)
-    const pieceThatMoved = this.game['_board'][this.move.from] // Get piece/stack
+    const pieceThatMoved = this.game['_board'][this.move.from]
 
     if (!pieceThatMoved) {
       throw new Error(
-        `Execute NormalMove Error: Piece missing from source ${algebraic(
+        `Build NormalMove Error: Piece missing from source ${algebraic(
           this.move.from,
         )}`,
       )
-      // Should we throw? State might be inconsistent.
-      return
     }
 
-    // Handle capture first
+    // Handle capture if needed
     if (this.move.flags & BITS.CAPTURE) {
       const capturedPieceData = this.game['_board'][this.move.to]
       if (!capturedPieceData || capturedPieceData.color !== them) {
         throw new Error(
-          `Execute NormalMove Error: Capture target invalid ${algebraic(
+          `Build NormalMove Error: Capture target invalid ${algebraic(
             this.move.to,
           )}`,
         )
-        // Inconsistent state if capture flag is set but target is wrong
-        return
       }
       // Ensure the captured type is stored on the move object
       this.move.captured = capturedPieceData.type
-      // Board deletion happens when moving the piece below
+
+      // Add action to remove the captured piece
+      this.actions.push(new RemovePieceAction(this.move.to))
     }
 
-    // Move the piece
-    delete this.game['_board'][this.move.from]
-    this.game['_board'][this.move.to] = pieceThatMoved
+    // Add actions for the normal move
+    this.actions.push(new RemovePieceAction(this.move.from))
+    this.actions.push(new PlacePieceAction(this.move.to, pieceThatMoved))
 
-    // Update king position *if* the commander moved (handled AFTER execute in _makeMove)
-    // if (pieceThatMoved.type === COMMANDER) {
-    //   this.game['_kings'][us] = this.move.to;
-    // }
-  }
-
-  undo(): void {
-    // (Undo logic remains the same as before)
-    const pieceThatMoved = this.game['_board'][this.move.to]
-    if (!pieceThatMoved || pieceThatMoved.type !== this.move.piece) {
-      throw new Error(
-        `Undo NormalMove Error: Piece mismatch/missing at destination ${algebraic(
-          this.move.to,
-        )}`,
+    // Update king position if needed
+    if (pieceThatMoved.type === COMMANDER) {
+      this.actions.push(
+        new UpdateKingPositionAction(us, this.move.to, this.game),
       )
     }
-    delete this.game['_board'][this.move.to]
-    if (pieceThatMoved) {
-      this.game['_board'][this.move.from] = pieceThatMoved
-    } else {
-      console.warn(
-        `Undo NormalMove Warning: Piece not found at destination ${algebraic(
-          this.move.to,
-        )}`,
-      )
-    }
-    if (this.move.captured) {
-      this.game['_board'][this.move.to] = {
-        type: this.move.captured,
-        color: swapColor(this.move.color),
-      }
-    }
+
+    // Clear deploy state
+    this.actions.push(new SetDeployStateAction(null, this.game))
   }
 }
 
 export class DeployMoveCommand extends MoveCommand {
-  execute(): void {
+  protected buildActions(): void {
     const us = this.move.color
     const them = swapColor(us)
     const carrierPiece = this.game['_board'][this.move.from]
 
     if (!carrierPiece || !carrierPiece.carried) {
       throw new Error(
-        `Execute Deploy Error: Carrier missing or empty at ${algebraic(
+        `Build Deploy Error: Carrier missing or empty at ${algebraic(
           this.move.from,
         )}`,
       )
-      return
     }
 
-    // Find and remove the deployed piece from the carrier stack
-    const deployIndex = carrierPiece.carried.findIndex(
-      (p) => p.type === this.move.piece && p.color === us,
+    // Add action to remove the piece from the carrier's stack
+    this.actions.push(
+      new RemoveFromStackAction(this.move.from, this.move.piece, us),
     )
-    if (deployIndex === -1) {
-      throw new Error(
-        `Execute Deploy Error: Deployed piece ${this.move.piece} not found in carrier ${algebraic(this.move.from)}`,
-      )
-      return
-    }
-    const deployedPiece = carrierPiece.carried.splice(deployIndex, 1)[0]
-    if (carrierPiece.carried.length === 0) {
-      carrierPiece.carried = undefined // Clear array if empty
-    }
 
-    // Handle placement/capture based on flags
+    // Handle stay capture
     if (this.move.flags & BITS.STAY_CAPTURE) {
       const targetSq = this.move.to
       const capturedPieceData = this.game['_board'][targetSq]
+
       if (!capturedPieceData || capturedPieceData.color !== them) {
         throw new Error(
-          `Execute Deploy Error: Stay capture target invalid ${algebraic(
+          `Build Deploy Error: Stay capture target invalid ${algebraic(
             targetSq,
           )}`,
         )
-        return
       }
-      this.move.captured = capturedPieceData.type // Record capture
-      delete this.game['_board'][targetSq]       // Remove captured piece
-      // Deployed piece remains off-board (conceptually)
-    } else {
-      // Normal Deploy (with or without capture)
+
+      this.move.captured = capturedPieceData.type
+      this.actions.push(new RemovePieceAction(targetSq))
+    }
+    // Handle normal deploy (with or without capture)
+    else {
       const destSq = this.move.to
+
+      // Handle capture if needed
       if (this.move.flags & BITS.CAPTURE) {
         const capturedPieceData = this.game['_board'][destSq]
+
         if (!capturedPieceData || capturedPieceData.color !== them) {
           throw new Error(
-            `Execute Deploy Error: Capture destination invalid ${algebraic(
+            `Build Deploy Error: Capture destination invalid ${algebraic(
               destSq,
             )}`,
           )
-          return
         }
-        this.move.captured = capturedPieceData.type // Record capture
-        // Board deletion happens when placing deployed piece below
-      }
-      this.game['_board'][destSq] = deployedPiece // Place deployed piece
-      // Update king position *if* commander deployed (handled AFTER execute in _makeMove)
-      // if (deployedPiece.type === COMMANDER) {
-      //    this.game['_kings'][us] = destSq;
-      // }
-    }
-    // Set deploy state for next move generation
-    this.game["_deployState"] = { stackSquare: this.move.from, turn: us }
-  }
 
-  undo(): void {
-    // (Undo logic remains the same as before)
-    const us = this.move.color
-    const them = swapColor(us)
-    const carrierPiece = this.game['_board'][this.move.from]
-    if (!carrierPiece) {
-      throw new Error(
-        `Undo Deploy Error: Carrier missing at ${algebraic(this.move.from)}`,
+        this.move.captured = capturedPieceData.type
+        this.actions.push(new RemovePieceAction(destSq))
+      }
+
+      // Find the piece in the carrier's stack to deploy
+      const deployedPieceIndex = carrierPiece.carried!.findIndex(
+        (p) => p.type === this.move.piece && p.color === us,
       )
-      return
-    }
-    let deployedPieceToAddBack: Piece | undefined
 
-    if (this.move.flags & BITS.STAY_CAPTURE) {
-      deployedPieceToAddBack = { type: this.move.piece, color: us } // Recreate
-      const targetSq = this.move.to
-      if (this.move.captured) {
-        this.game['_board'][targetSq] = {
-          type: this.move.captured,
-          color: them,
-        }
-      } else {
-        delete this.game['_board'][targetSq]
-      }
-    } else {
-      const destSq = this.move.to
-      deployedPieceToAddBack = this.game['_board'][destSq] // Get from destination
-      if (
-        !deployedPieceToAddBack || deployedPieceToAddBack.type !== this.move.piece
-      ) {
+      if (deployedPieceIndex === -1) {
         throw new Error(
-          `Undo Deploy Error: Deployed piece missing/mismatch at ${algebraic(
-            destSq,
+          `Build Deploy Error: Piece ${this.move.piece} not found in carrier at ${algebraic(
+            this.move.from,
           )}`,
         )
       }
-      delete this.game['_board'][destSq] // Remove from destination
-      if (this.move.captured) {
-        this.game['_board'][destSq] = { type: this.move.captured, color: them }
+
+      const deployedPiece = { ...carrierPiece.carried![deployedPieceIndex] }
+
+      // Add action to place the deployed piece
+      this.actions.push(new PlacePieceAction(destSq, deployedPiece))
+
+      // Update king position if needed
+      if (deployedPiece.type === COMMANDER) {
+        this.actions.push(new UpdateKingPositionAction(us, destSq, this.game))
       }
     }
 
-    if (deployedPieceToAddBack) {
-      if (!carrierPiece.carried) {
-        carrierPiece.carried = []
-      }
-      if (
-        !carrierPiece.carried.some(
-          (p) =>
-            p.type === deployedPieceToAddBack!.type &&
-            p.color === deployedPieceToAddBack!.color,
-        )
-      ) {
-        carrierPiece.carried.push(deployedPieceToAddBack)
-      }
-    } else {
-        console.warn(`Undo Deploy Warning: Could not determine piece to add back for move ${JSON.stringify(this.move)}`);
-    }
+    // Set deploy state for next move
+    this.actions.push(
+      new SetDeployStateAction(
+        {
+          stackSquare: this.move.from,
+          turn: us,
+        },
+        this.game,
+      ),
+    )
   }
 }
 
 export class StayCaptureMoveCommand extends MoveCommand {
-  execute(): void {
-    super.execute()
+  protected buildActions(): void {
     const us = this.move.color
     const them = swapColor(us)
-    const targetSq = this.move.to // 'to' holds the target square
+    const targetSq = this.move.to
 
     const capturedPiece = this.game['_board'][targetSq]
     if (!capturedPiece || capturedPiece.color !== them) {
       throw new Error(
-        `Execute StayCapture Error: Target invalid ${algebraic(targetSq)}`,
+        `Build StayCapture Error: Target invalid ${algebraic(targetSq)}`,
       )
-      return
     }
-    this.move.captured = capturedPiece.type // Record capture
-    delete this.game['_board'][targetSq]    // Remove captured piece
-    // Moving piece stays at move.from - no board change needed for it.
-  }
 
-  undo(): void {
-    // (Undo logic remains the same as before)
-    const them = swapColor(this.move.color)
-    const targetSq = this.move.to
-    if (this.move.captured) {
-      this.game['_board'][targetSq] = { type: this.move.captured, color: them }
-    } else {
-      throw new Error(
-        `Undo StayCapture Error: Missing captured piece for move ${JSON.stringify(
-          this.move,
-        )}`,
-      )
-      delete this.game['_board'][targetSq]
-    }
+    this.move.captured = capturedPiece.type
+
+    // Only action is to remove the captured piece
+    this.actions.push(new RemovePieceAction(targetSq))
+
+    // Clear deploy state
+    this.actions.push(new SetDeployStateAction(null, this.game))
   }
 }
 
-// Factory function remains the same
+// Factory function to create the appropriate command
 export function createMoveCommand(
   game: CoTuLenh,
   move: InternalMove,

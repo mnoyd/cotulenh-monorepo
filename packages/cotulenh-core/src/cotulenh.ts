@@ -860,7 +860,7 @@ export class CoTuLenh {
 
       if (!carrierPiece || carrierPiece.color !== us || !carrierPiece.carried) {
         // Should not happen if deployState is valid, but good to check
-        console.error('Invalid deploy state detected.')
+        console.error('Invalid deploy state detected.', carrierPiece)
         this._deployState = null // Clear invalid state
         // Proceed to normal move generation? Or return empty? Let's return empty.
         return []
@@ -1143,6 +1143,12 @@ export class CoTuLenh {
     this._undoMove()
   }
 
+  public updateKingsPosition(sq: number, color: Color): void {
+    if (this._kings[color] === -1) return // Commander captured = loss = no need to update
+    // Update the king's position
+    this._kings[color] = sq
+  }
+
   // --- Check/Game Over Detection (Updated for Stay Capture) ---
   private _isKingAttacked(color: Color): boolean {
     const kingSq = this._kings[color]
@@ -1204,7 +1210,7 @@ export class CoTuLenh {
     const disambiguator = getDisambiguator(move, moves)
     const toAlg = algebraic(move.to) // Target square
     const heroicPrefix =
-      (this.get(algebraic(move.from))?.heroic ?? false) ? '+' : '' // Simplified: Assume Move class handles this better
+      (this.getHeroicStatus(move.from, move.piece) ?? false) ? '+' : '' // Simplified: Assume Move class handles this better
     const heroicSuffix = move.becameHeroic ? '^' : ''
     let separator = ''
     if (move.flags & BITS.DEPLOY) {
@@ -1520,8 +1526,11 @@ export class CoTuLenh {
   }
 
   // Get a piece at a square, optionally specifying a piece type to find in a stack
-  getPieceAtSquare(square: Square, pieceType?: PieceSymbol): Piece | undefined {
-    const sq = SQUARE_MAP[square]
+  getPieceAtSquare(
+    square: Square | number,
+    pieceType?: PieceSymbol,
+  ): Piece | undefined {
+    const sq = typeof square === 'number' ? square : SQUARE_MAP[square]
     if (sq === undefined) return undefined
 
     const pieceAtSquare = this._board[sq]
@@ -1541,7 +1550,7 @@ export class CoTuLenh {
   }
 
   // Get heroic status of a piece at a square
-  getHeroicStatus(square: Square, pieceType?: PieceSymbol): boolean {
+  getHeroicStatus(square: Square | number, pieceType?: PieceSymbol): boolean {
     const piece = this.getPieceAtSquare(square, pieceType)
     return piece?.heroic ?? false
   }
