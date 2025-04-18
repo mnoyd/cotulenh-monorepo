@@ -1519,23 +1519,31 @@ export class CoTuLenh {
     return moveHistory
   }
 
-  getHeroicStatus(square: Square, pieceType?: PieceSymbol): boolean {
-    const pieceAtSquare = this._board[SQUARE_MAP[square]]
-    if (!pieceAtSquare) return false
-    // Check if looking piece is possibly being carried
-    if (
-      pieceType &&
-      pieceAtSquare.type !== pieceType &&
-      pieceAtSquare.carried &&
-      pieceAtSquare.carried.length > 0
-    ) {
-      const foundCarriedPiece = pieceAtSquare.carried.find(
-        (p) => p.type === pieceType,
-      )
-      if (!foundCarriedPiece) return false
-      return foundCarriedPiece.heroic ?? false
+  // Get a piece at a square, optionally specifying a piece type to find in a stack
+  getPieceAtSquare(square: Square, pieceType?: PieceSymbol): Piece | undefined {
+    const sq = SQUARE_MAP[square]
+    if (sq === undefined) return undefined
+
+    const pieceAtSquare = this._board[sq]
+    if (!pieceAtSquare) return undefined
+
+    // If no specific piece type requested or the piece matches the requested type, return it
+    if (!pieceType || pieceAtSquare.type === pieceType) {
+      return pieceAtSquare
     }
-    return pieceAtSquare.heroic ?? false
+
+    // Check if the requested piece is being carried in a stack
+    if (pieceAtSquare.carried && pieceAtSquare.carried.length > 0) {
+      return pieceAtSquare.carried.find((p) => p.type === pieceType)
+    }
+
+    return undefined
+  }
+
+  // Get heroic status of a piece at a square
+  getHeroicStatus(square: Square, pieceType?: PieceSymbol): boolean {
+    const piece = this.getPieceAtSquare(square, pieceType)
+    return piece?.heroic ?? false
   }
 
   moveNumber(): number {
