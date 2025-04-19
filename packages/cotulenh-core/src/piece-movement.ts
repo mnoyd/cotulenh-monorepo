@@ -227,10 +227,10 @@ export function generateMovesInDirection(
 
     // Terrain blocking check
     terrainBlockedMovement = checkTerrainBlocking(
-      gameInstance,
       from,
       to,
       pieceData,
+      offset === 16 || offset === -16,
     )
 
     // Target square analysis
@@ -292,10 +292,10 @@ export function generateMovesInDirection(
  * Check if terrain blocks movement for a piece
  */
 function checkTerrainBlocking(
-  gameInstance: CoTuLenh,
   from: number,
   to: number,
   pieceData: Piece,
+  isHorizontalOffset: boolean,
 ): boolean {
   // Navy can only move on water
   if (pieceData.type === NAVY) {
@@ -313,7 +313,10 @@ function checkTerrainBlocking(
     const zoneTo = isHeavyZone(to)
 
     if (zoneFrom !== 0 && zoneTo !== 0 && zoneFrom !== zoneTo) {
-      return isBridgeCrossing(from, to)
+      if (isHorizontalOffset && (file(from) === 5 || file(to) === 7)) {
+        return true
+      }
+      return false
     }
   }
 
@@ -477,54 +480,6 @@ function isHeavyZone(sq: number): 0 | 1 | 2 {
   if (f < 2) return 0 // Not in heavy zone
 
   return r <= 5 ? 1 : 2 // 1 = upper half, 2 = lower half
-}
-
-function isBridgeCrossing(from: number, to: number): boolean {
-  const path = getPath(from, to)
-
-  // Check if both squares of either bridge are present in the path
-  const hasF6 = path.includes(SQUARE_MAP.f6)
-  const hasF7 = path.includes(SQUARE_MAP.f7)
-  const hasH6 = path.includes(SQUARE_MAP.h6)
-  const hasH7 = path.includes(SQUARE_MAP.h7)
-
-  // Valid crossing requires both squares of either bridge
-  return (hasF6 && hasF7) || (hasH6 && hasH7)
-}
-
-function getPath(from: number, to: number): number[] {
-  const path: number[] = []
-  const dx = file(to) - file(from)
-  const dy = rank(to) - rank(from)
-  const dirX = dx && (dx > 0 ? 1 : -1) // Horizontal direction
-  const dirY = dy && (dy > 0 ? 1 : -1) // Vertical direction
-
-  // Handle orthogonal moves
-  if (dx === 0 || dy === 0) {
-    const steps = Math.max(Math.abs(dx), Math.abs(dy))
-    const offset = dx ? dirX : dirY * 16
-
-    for (let i = 1; i <= steps; i++) {
-      const sq = from + offset * i
-      if (isSquareOnBoard(sq)) path.push(sq)
-    }
-  }
-  // Handle diagonal moves
-  else if (Math.abs(dx) === Math.abs(dy)) {
-    const offset = dirX + dirY * 16
-
-    for (let i = 1; i <= Math.abs(dx); i++) {
-      const sq = from + offset * i
-      if (isSquareOnBoard(sq)) path.push(sq)
-    }
-  }
-  // Handle knight-like moves (for Missile/Militia)
-  else if (Math.abs(dx) + Math.abs(dy) === 3 && Math.abs(dx) !== 3) {
-    // No intermediate squares for leaping pieces
-    return []
-  }
-
-  return path.filter((sq) => sq !== from) // Exclude starting square
 }
 
 /**
