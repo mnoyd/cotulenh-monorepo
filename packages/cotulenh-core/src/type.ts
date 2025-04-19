@@ -15,6 +15,21 @@ export const AIR_FORCE = 'f'
 export const NAVY = 'n'
 export const HEADQUARTER = 'h'
 
+// Centralized valid piece types set for validation
+export const VALID_PIECE_TYPES: Record<string, true> = {
+  [COMMANDER]: true,
+  [INFANTRY]: true,
+  [TANK]: true,
+  [MILITIA]: true,
+  [ENGINEER]: true,
+  [ARTILLERY]: true,
+  [ANTI_AIR]: true,
+  [MISSILE]: true,
+  [AIR_FORCE]: true,
+  [NAVY]: true,
+  [HEADQUARTER]: true,
+}
+
 // Pieces that can perform stay capture *while being carried*
 export const CAN_STAY_CAPTURE_WHEN_CARRIED: PieceSymbol[] = [AIR_FORCE]
 
@@ -103,7 +118,8 @@ function initMovementMasks() {
     const r = rank(sq)
 
     // Navy operational areas (a-c files + specific squares)
-    NAVY_MASK[sq] = f <= 2 || ((f === 3 || f === 4) && (r === 5 || r === 6)) ? 1 : 0
+    NAVY_MASK[sq] =
+      f <= 2 || ((f === 3 || f === 4) && (r === 5 || r === 6)) ? 1 : 0
 
     // Land pieces operational areas (c-k files)
     LAND_MASK[sq] = f >= 2 ? 1 : 0
