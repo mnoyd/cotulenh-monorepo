@@ -639,6 +639,15 @@ export class CoTuLenh {
   public undo(): void {
     this._undoMove()
   }
+  public getPieceAt(square: number): Piece | undefined {
+    return this._board[square]
+  }
+  public deletePieceAt(square: number): void {
+    delete this._board[square]
+  }
+  public setPieceAt(square: number, piece: Piece): void {
+    this._board[square] = piece
+  }
 
   public updateKingsPosition(sq: number, color: Color): void {
     if (this._commanders[color] === -1) return // Commander captured = loss = no need to update

@@ -27,13 +27,13 @@ class RemovePieceAction implements AtomicMoveAction {
   constructor(private square: number) {}
 
   execute(game: CoTuLenh): void {
-    this.removedPiece = game['_board'][this.square]
-    delete game['_board'][this.square]
+    this.removedPiece = game.getPieceAt(this.square)
+    game.deletePieceAt(this.square)
   }
 
   undo(game: CoTuLenh): void {
     if (this.removedPiece) {
-      game['_board'][this.square] = this.removedPiece
+      game.setPieceAt(this.square, this.removedPiece)
     }
   }
 }
@@ -50,15 +50,15 @@ class PlacePieceAction implements AtomicMoveAction {
   ) {}
 
   execute(game: CoTuLenh): void {
-    this.existingPiece = game['_board'][this.square]
-    game['_board'][this.square] = this.piece
+    this.existingPiece = game.getPieceAt(this.square)
+    game.setPieceAt(this.square, this.piece)
   }
 
   undo(game: CoTuLenh): void {
     if (this.existingPiece) {
-      game['_board'][this.square] = this.existingPiece
+      game.setPieceAt(this.square, this.existingPiece)
     } else {
-      delete game['_board'][this.square]
+      game.deletePieceAt(this.square)
     }
   }
 }
@@ -77,7 +77,7 @@ class RemoveFromStackAction implements AtomicMoveAction {
   ) {}
 
   execute(game: CoTuLenh): void {
-    const carrier = game['_board'][this.carrierSquare]
+    const carrier = game.getPieceAt(this.carrierSquare)
     if (!carrier || !carrier.carried) {
       throw new Error(
         `No carrier or carried pieces at ${algebraic(this.carrierSquare)}`,
@@ -105,7 +105,7 @@ class RemoveFromStackAction implements AtomicMoveAction {
   undo(game: CoTuLenh): void {
     if (!this.removedPiece) return
 
-    const carrier = game['_board'][this.carrierSquare]
+    const carrier = game.getPieceAt(this.carrierSquare)
     if (!carrier) {
       throw new Error(
         `Carrier missing during undo at ${algebraic(this.carrierSquare)}`,
@@ -225,7 +225,7 @@ export class NormalMoveCommand extends MoveCommand {
   protected buildActions(): void {
     const us = this.move.color
     const them = swapColor(us)
-    const pieceThatMoved = this.game['_board'][this.move.from]
+    const pieceThatMoved = this.game.getPieceAt(this.move.from)
 
     if (!pieceThatMoved) {
       throw new Error(
@@ -237,7 +237,7 @@ export class NormalMoveCommand extends MoveCommand {
 
     // Handle capture if needed
     if (this.move.flags & BITS.CAPTURE) {
-      const capturedPieceData = this.game['_board'][this.move.to]
+      const capturedPieceData = this.game.getPieceAt(this.move.to)
       if (!capturedPieceData || capturedPieceData.color !== them) {
         throw new Error(
           `Build NormalMove Error: Capture target invalid ${algebraic(
@@ -272,7 +272,7 @@ export class DeployMoveCommand extends MoveCommand {
   protected buildActions(): void {
     const us = this.move.color
     const them = swapColor(us)
-    const carrierPiece = this.game['_board'][this.move.from]
+    const carrierPiece = this.game.getPieceAt(this.move.from)
 
     if (!carrierPiece || !carrierPiece.carried) {
       throw new Error(
@@ -290,7 +290,7 @@ export class DeployMoveCommand extends MoveCommand {
     // Handle stay capture
     if (this.move.flags & BITS.STAY_CAPTURE) {
       const targetSq = this.move.to
-      const capturedPieceData = this.game['_board'][targetSq]
+      const capturedPieceData = this.game.getPieceAt(targetSq)
 
       if (!capturedPieceData || capturedPieceData.color !== them) {
         throw new Error(
@@ -309,7 +309,7 @@ export class DeployMoveCommand extends MoveCommand {
 
       // Handle capture if needed
       if (this.move.flags & BITS.CAPTURE) {
-        const capturedPieceData = this.game['_board'][destSq]
+        const capturedPieceData = this.game.getPieceAt(destSq)
 
         if (!capturedPieceData || capturedPieceData.color !== them) {
           throw new Error(
@@ -366,7 +366,7 @@ export class StayCaptureMoveCommand extends MoveCommand {
     const them = swapColor(us)
     const targetSq = this.move.to
 
-    const capturedPiece = this.game['_board'][targetSq]
+    const capturedPiece = this.game.getPieceAt(targetSq)
     if (!capturedPiece || capturedPiece.color !== them) {
       throw new Error(
         `Build StayCapture Error: Target invalid ${algebraic(targetSq)}`,

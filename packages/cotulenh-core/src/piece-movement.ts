@@ -222,7 +222,7 @@ export function generateMovesInDirection(
     if (currentRange > config.moveRange && currentRange > config.captureRange)
       break
 
-    const targetPiece = gameInstance['_board'][to]
+    const targetPiece = gameInstance.getPieceAt(to)
 
     // Terrain blocking check
     if (!terrainBlockedMovement) {
@@ -451,7 +451,7 @@ export function generateDeployMoves(
   filterPiece?: PieceSymbol,
 ): InternalMove[] {
   const moves: InternalMove[] = []
-  const carrierPiece = gameInstance['_board'][stackSquare]
+  const carrierPiece = gameInstance.getPieceAt(stackSquare)
   const us = gameInstance.turn()
 
   if (!carrierPiece || carrierPiece.color !== us) {
@@ -507,8 +507,8 @@ export function generateNormalMoves(
     const sq = SQUARE_MAP[filterSquare]
     if (
       sq === undefined ||
-      !gameInstance['_board'][sq] ||
-      gameInstance['_board'][sq]?.color !== us
+      !gameInstance.getPieceAt(sq) ||
+      gameInstance.getPieceAt(sq)?.color !== us
     )
       return []
     startSq = endSq = sq
@@ -517,7 +517,7 @@ export function generateNormalMoves(
   for (let from = startSq; from <= endSq; from++) {
     if (!isSquareOnBoard(from)) continue
 
-    const pieceData = gameInstance['_board'][from]
+    const pieceData = gameInstance.getPieceAt(from)
     if (!pieceData || pieceData.color !== us) continue
     if (filterPiece && pieceData.type !== filterPiece) continue
 
