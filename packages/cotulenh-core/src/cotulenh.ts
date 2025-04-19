@@ -877,8 +877,7 @@ export class CoTuLenh {
 
         if (
           targetSquareInternal === toSq &&
-          move.piece &&
-          move.piece === m.piece
+          (move.piece ? move.piece === m.piece : true)
         ) {
           // Check if stay preference matches
           if (requestedStay && isStayMove) {

@@ -337,7 +337,7 @@ describe('SAN Conversion', () => {
     expect(move).not.toBeNull()
     expect(move?.isStayCapture()).toBe(true)
     //TODO stay capture "<" already mean capture. so should not included "x"
-    expect(move?.san).toBe('F<xb2')
+    expect(move?.san).toBe('F<b2')
     expect(move?.from).toBe('d2')
     expect(move?.to).toBe('d2') // Piece ends up at origin
     expect(move?.targetSquare).toBe('b2') // Target was b2
