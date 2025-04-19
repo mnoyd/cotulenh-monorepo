@@ -10,11 +10,12 @@ import {
   RED,
   BLUE,
   InternalMove,
-  Color,
-  PieceSymbol,
-  INFANTRY,
   ARTILLERY,
   AIR_FORCE,
+  TANK,
+  INFANTRY,
+  NAVY,
+  COMMANDER,
 } from '../src/type.js'
 
 describe('Move Commands', () => {
@@ -25,17 +26,17 @@ describe('Move Commands', () => {
         color: RED,
         from: 0xa3, // d2
         to: 0xa5, // f2
-        piece: 't',
+        piece: TANK,
         flags: BITS.NORMAL,
       }
 
       const command = new NormalMoveCommand(game, move)
       command.execute()
       expect(game.get('d2')).toBeUndefined()
-      expect(game.get('f2')?.type).toBe('t')
+      expect(game.get('f2')?.type).toBe(TANK)
 
       command.undo()
-      expect(game.get('d2')?.type).toBe('t')
+      expect(game.get('d2')?.type).toBe(TANK)
       expect(game.get('f2')).toBeUndefined()
     })
 
@@ -45,7 +46,7 @@ describe('Move Commands', () => {
         color: RED,
         from: 0xa3,
         to: 0x83,
-        piece: 't',
+        piece: TANK,
         flags: BITS.CAPTURE,
       }
 
@@ -53,13 +54,13 @@ describe('Move Commands', () => {
       command.execute()
       expect(game.get('d2')).toBeUndefined()
       expect(game.get('d4')?.color).toBe(RED)
-      expect(command.move.captured).toBe('i')
+      expect(command.move.captured).toBe(INFANTRY)
 
       command.undo()
       expect(game.get('d2')?.color).toBe(RED)
       expect(game.get('d4')?.color).toBe(BLUE)
-      expect(game.get('d4')?.type).toBe('i')
-      expect(game.get('d2')?.type).toBe('t')
+      expect(game.get('d4')?.type).toBe(INFANTRY)
+      expect(game.get('d2')?.type).toBe(TANK)
     })
 
     it('should update commander position', () => {
@@ -68,7 +69,7 @@ describe('Move Commands', () => {
         color: RED,
         from: 0xb5,
         to: 0xb6,
-        piece: 'c',
+        piece: COMMANDER,
         flags: BITS.NORMAL,
       }
 
@@ -88,13 +89,13 @@ describe('Move Commands', () => {
         color: RED,
         from: 0x84,
         to: 0x85,
-        piece: 'i',
+        piece: INFANTRY,
         flags: BITS.DEPLOY,
       }
 
       const command = new DeployMoveCommand(game, move)
       command.execute()
-      expect(game.get('f4')?.type).toBe('i')
+      expect(game.get('f4')?.type).toBe(INFANTRY)
       expect(game.get('f4')?.color).toBe(RED)
       expect(game.get('e4')?.carried).toBeFalsy()
 
@@ -109,25 +110,25 @@ describe('Move Commands', () => {
         color: RED,
         from: 0x84,
         to: 0x85,
-        piece: 'i',
+        piece: INFANTRY,
         flags: BITS.DEPLOY | BITS.CAPTURE,
       }
 
       const command = new DeployMoveCommand(game, move)
       command.execute()
       expect(game.get('f4')?.color).toBe(RED)
-      expect(game.get('f4')?.type).toBe('i')
+      expect(game.get('f4')?.type).toBe(INFANTRY)
       expect(game.get('e4')?.carried).toBeFalsy()
-      expect(command.move.captured).toBe('f')
+      expect(command.move.captured).toBe(AIR_FORCE)
 
       command.undo()
       expect(game.get('f4')?.color).toBe(BLUE)
-      expect(game.get('f4')?.type).toBe('f')
+      expect(game.get('f4')?.type).toBe(AIR_FORCE)
       expect(game.get('e4')?.carried?.length).toBe(1)
     })
 
-    /*//TODO: Add stay capture move for air_force. When piece is air_force, in game._moves() always add stay capture and capture for same square
-    meaning if the square can be captured push both capture AND stay capture for same square to possible moves array.
+    //TODO: Add stay capture move for air_force. When piece is air_force, in game._moves() always add stay capture and capture for same square
+    //meaning if the square can be captured push both capture AND stay capture for same square to possible moves array.
 
     it('should handle deploy stay capture', () => {
       const game = new CoTuLenh('5c5/11/11/11/11/11/11/11/1(NF)3t5/11/11/5C5')
@@ -135,23 +136,23 @@ describe('Move Commands', () => {
         color: RED,
         from: 0x81,
         to: 0x85,
-        piece: 'f',
+        piece: AIR_FORCE,
         flags: BITS.DEPLOY | BITS.STAY_CAPTURE,
       }
 
-      const msan =game['_moveToSan'](move, game['_moves']())
-      game.moves({verbose: true})
+      const msan = game['_moveToSan'](move, game['_moves']())
+      game.moves({ verbose: true })
       const command = createMoveCommand(game, move)
       command.execute()
       expect(game.get('f4')?.color).toBe(undefined)
       expect(game.get('b4')?.carried?.length).toBe(1)
-      expect(command.move.captured).toBe('t')
+      expect(command.move.captured).toBe(TANK)
 
       command.undo()
       expect(game.get('f4')?.color).toBe(BLUE)
-      expect(game.get('f4')?.carried?.length).toBe(1)
+      expect(game.get('f4')?.type).toBe(TANK)
+      expect(game.get('b4')?.carried?.length).toBe(1)
     })
-    */
   })
 
   describe('StayCaptureMoveCommand', () => {
@@ -161,19 +162,19 @@ describe('Move Commands', () => {
         color: RED,
         from: 0x84,
         to: 0x81,
-        piece: 'a',
+        piece: ARTILLERY,
         flags: BITS.STAY_CAPTURE,
       }
 
       const command = new StayCaptureMoveCommand(game, move)
       command.execute()
-      expect(game.get('e4')?.type).toBe('a')
+      expect(game.get('e4')?.type).toBe(ARTILLERY)
       expect(game.get('b4')).toBeUndefined()
-      expect(command.move.captured).toBe('n')
+      expect(command.move.captured).toBe(NAVY)
 
       command.undo()
-      expect(game.get('e4')?.type).toBe('a')
-      expect(game.get('b4')?.type).toBe('n')
+      expect(game.get('e4')?.type).toBe(ARTILLERY)
+      expect(game.get('b4')?.type).toBe(NAVY)
     })
   })
 
@@ -220,7 +221,7 @@ describe('Move Commands', () => {
         color: RED,
         from: 0x00,
         to: 0x01,
-        piece: 't',
+        piece: TANK,
         flags: BITS.NORMAL,
       }
 
@@ -235,7 +236,7 @@ describe('Move Commands', () => {
         color: RED,
         from: 0x00,
         to: 0x01,
-        piece: 't',
+        piece: TANK,
         flags: BITS.CAPTURE,
       }
 
@@ -250,7 +251,7 @@ describe('Move Commands', () => {
         color: RED,
         from: 0x00,
         to: 0x01,
-        piece: 'i',
+        piece: INFANTRY,
         flags: BITS.DEPLOY,
       }
 

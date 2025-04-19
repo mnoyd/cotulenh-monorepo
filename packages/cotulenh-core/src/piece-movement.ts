@@ -246,7 +246,6 @@ export function generateMovesInDirection(
           targetPiece,
           currentRange,
           config,
-          isDeployMove,
         )
       }
 
@@ -332,7 +331,6 @@ function handleCaptureLogic(
   targetPiece: Piece,
   currentRange: number,
   config: PieceMovementConfig,
-  isDeployMove: boolean,
 ): void {
   const us = pieceData.color
 
@@ -391,7 +389,7 @@ function handleCaptureLogic(
         to,
         pieceData.type,
         targetPiece.type,
-        BITS.CAPTURE | BITS.STAY_CAPTURE,
+        BITS.STAY_CAPTURE,
       )
     }
   }

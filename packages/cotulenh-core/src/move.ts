@@ -282,11 +282,6 @@ export class DeployMoveCommand extends MoveCommand {
       )
     }
 
-    // Add action to remove the piece from the carrier's stack
-    this.actions.push(
-      new RemoveFromStackAction(this.move.from, this.move.piece, us),
-    )
-
     // Handle stay capture
     if (this.move.flags & BITS.STAY_CAPTURE) {
       const targetSq = this.move.to
@@ -305,6 +300,10 @@ export class DeployMoveCommand extends MoveCommand {
     }
     // Handle normal deploy (with or without capture)
     else {
+      // Add action to remove the piece from the carrier's stack
+      this.actions.push(
+        new RemoveFromStackAction(this.move.from, this.move.piece, us),
+      )
       const destSq = this.move.to
 
       // Handle capture if needed
