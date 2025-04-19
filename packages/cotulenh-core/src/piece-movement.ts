@@ -26,6 +26,7 @@ import {
   LAND_MASK,
   CAN_STAY_CAPTURE_WHEN_CARRIED,
   swapColor,
+  Square,
 } from './type.js'
 import { addMove } from './utils.js'
 import { BITS } from './type.js'
@@ -524,4 +525,120 @@ function getPath(from: number, to: number): number[] {
   }
 
   return path.filter((sq) => sq !== from) // Exclude starting square
+}
+
+/**
+ * Generate all moves for a stack in deploy state
+ */
+export function generateDeployMoves(
+  gameInstance: any,
+  stackSquare: number,
+  filterPiece?: PieceSymbol,
+): InternalMove[] {
+  const moves: InternalMove[] = []
+  const carrierPiece = gameInstance._board[stackSquare]
+  const us = gameInstance.turn()
+
+  if (!carrierPiece || carrierPiece.color !== us || !carrierPiece.carried) {
+    return []
+  }
+
+  // Generate Deploy Moves for remaining carried pieces
+  for (const carriedPiece of carrierPiece.carried) {
+    if (filterPiece && carriedPiece.type !== filterPiece) continue
+
+    const deployMoves = generateMovesForPiece(
+      gameInstance,
+      stackSquare,
+      carriedPiece,
+      false,
+      true,
+    )
+    deployMoves.forEach((m) => {
+      m.flags |= BITS.DEPLOY
+      moves.push(m)
+    })
+  }
+
+  // Generate Carrier Moves
+  if (!filterPiece || carrierPiece.type === filterPiece) {
+    const carrierMoves = generateMovesForPiece(
+      gameInstance,
+      stackSquare,
+      carrierPiece,
+      carrierPiece.heroic ?? false,
+    )
+    moves.push(...carrierMoves)
+  }
+
+  return moves
+}
+
+/**
+ * Generate all moves for a side in normal (non-deploy) state
+ */
+export function generateNormalMoves(
+  gameInstance: CoTuLenh,
+  us: Color,
+  filterPiece?: PieceSymbol,
+  filterSquare?: Square,
+): InternalMove[] {
+  const moves: InternalMove[] = []
+  let startSq = 0
+  let endSq = 255
+
+  if (filterSquare) {
+    const sq = SQUARE_MAP[filterSquare]
+    if (
+      sq === undefined ||
+      !gameInstance['_board'][sq] ||
+      gameInstance['_board'][sq]?.color !== us
+    )
+      return []
+    startSq = endSq = sq
+  }
+
+  for (let from = startSq; from <= endSq; from++) {
+    if (!isSquareOnBoard(from)) continue
+
+    const pieceData = gameInstance['_board'][from]
+    if (!pieceData || pieceData.color !== us) continue
+    if (filterPiece && pieceData.type !== filterPiece) continue
+
+    // Check if it's a stack
+    if (pieceData.carried && pieceData.carried.length > 0) {
+      // Generate Deploy Moves for carried pieces
+      for (const carriedPiece of pieceData.carried) {
+        const deployMoves = generateMovesForPiece(
+          gameInstance,
+          from,
+          carriedPiece,
+          false,
+          true,
+        )
+        deployMoves.forEach((m) => {
+          m.flags |= BITS.DEPLOY
+          moves.push(m)
+        })
+      }
+      // Generate Carrier Moves (moving the whole stack)
+      const carrierMoves = generateMovesForPiece(
+        gameInstance,
+        from,
+        pieceData,
+        pieceData.heroic ?? false,
+      )
+      moves.push(...carrierMoves)
+    } else {
+      // Generate moves for a single piece
+      const singleMoves = generateMovesForPiece(
+        gameInstance,
+        from,
+        pieceData,
+        pieceData.heroic ?? false,
+      )
+      moves.push(...singleMoves)
+    }
+  }
+  return moves
 }

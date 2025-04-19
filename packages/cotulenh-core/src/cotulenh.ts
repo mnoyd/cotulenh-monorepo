@@ -28,7 +28,11 @@ import {
   VALID_PIECE_TYPES,
 } from './type.js'
 import { getDisambiguator, printBoard } from './utils.js'
-import { generateMovesForPiece } from './piece-movement.js'
+import {
+  generateMovesForPiece,
+  generateDeployMoves,
+  generateNormalMoves,
+} from './piece-movement.js'
 
 // Structure for storing history states
 interface History {
@@ -453,25 +457,11 @@ export class CoTuLenh {
     return { ...piece, heroic: wasHeroic ?? false }
   }
 
-  // --- Move Generation Helper ---
-  // Generates pseudo-legal moves for a *single* piece from a given square,
-  // considering its type, color, heroic status, and board state.
-  // Does NOT handle deploy state or filtering for king safety.
-  // Added isDeployMove flag to handle special stay capture rules.
-  private _generateMovesForPiece(
-    from: number,
-    pieceData: Piece,
-    isHero: boolean,
-    isDeployMove = false,
-  ): InternalMove[] {
-    return generateMovesForPiece(this, from, pieceData, isHero, isDeployMove)
-  }
-
   // --- Main Move Generation ---
   private _moves({
     legal = true,
-    piece: filterPiece = undefined, // Renamed to avoid conflict
-    square: filterSquare = undefined, // Renamed
+    piece: filterPiece = undefined,
+    square: filterSquare = undefined,
     ignoreSafety = false,
   }: {
     legal?: boolean
@@ -479,127 +469,38 @@ export class CoTuLenh {
     square?: Square
     ignoreSafety?: boolean
   } = {}): InternalMove[] {
-    let allMoves: InternalMove[] = []
     const us = this.turn()
-    const them = swapColor(us)
+    let allMoves: InternalMove[] = []
 
-    // --- Handle Active Deploy State ---
+    // Generate moves based on game state
     if (this._deployState && this._deployState.turn === us) {
-      const stackSquare = this._deployState.stackSquare
-      const carrierPiece = this._board[stackSquare]
-
-      if (!carrierPiece || carrierPiece.color !== us || !carrierPiece.carried) {
-        // Should not happen if deployState is valid, but good to check
-        console.error('Invalid deploy state detected.', carrierPiece)
-        this._deployState = null // Clear invalid state
-        // Proceed to normal move generation? Or return empty? Let's return empty.
-        return []
-      }
-
-      // Generate Deploy Moves for remaining carried pieces
-      for (const carriedPiece of carrierPiece.carried) {
-        // TODO: Check if filterPiece matches carriedPiece.type
-        if (filterPiece && carriedPiece.type !== filterPiece) continue
-
-        // Assuming carried pieces cannot be heroic for now
-        const deployMoves = this._generateMovesForPiece(
-          stackSquare,
-          carriedPiece,
-          false,
-          true,
-        ) // Pass isDeployMove = true
-        deployMoves.forEach((m) => {
-          m.flags |= BITS.DEPLOY // Add deploy flag
-          allMoves.push(m)
-        })
-      }
-
-      // Generate Carrier Moves
-      // TODO: Check if filterPiece matches carrierPiece.type
-      if (!filterPiece || carrierPiece.type === filterPiece) {
-        const carrierMoves = this._generateMovesForPiece(
-          stackSquare,
-          carrierPiece,
-          carrierPiece.heroic ?? false,
-        )
-        allMoves.push(...carrierMoves) // Carrier moves normally (moving the stack)
-      }
+      allMoves = generateDeployMoves(
+        this,
+        this._deployState.stackSquare,
+        filterPiece,
+      )
     } else {
-      // --- Normal Move Generation (No Active Deploy State) ---
-      let startSq = 0
-      let endSq = 255 // Iterate over the whole 16x16 internal board
-
-      if (filterSquare) {
-        const sq = SQUARE_MAP[filterSquare]
-        if (
-          sq === undefined ||
-          !this._board[sq] ||
-          this._board[sq]?.color !== us
-        )
-          return []
-        startSq = endSq = sq
-      }
-
-      for (let from = startSq; from <= endSq; from++) {
-        if (!isSquareOnBoard(from)) continue
-
-        const pieceData = this._board[from]
-        if (!pieceData || pieceData.color !== us) continue
-        if (filterPiece && pieceData.type !== filterPiece) continue
-
-        const isHero = pieceData.heroic ?? false
-
-        // Check if it's a stack
-        if (pieceData.carried && pieceData.carried.length > 0) {
-          // Generate Deploy Moves for carried pieces
-          for (const carriedPiece of pieceData.carried) {
-            // Assuming carried pieces cannot be heroic
-            const deployMoves = this._generateMovesForPiece(
-              from,
-              carriedPiece,
-              false,
-              true,
-            ) // Pass isDeployMove = true
-            deployMoves.forEach((m) => {
-              m.flags |= BITS.DEPLOY // Add deploy flag
-              allMoves.push(m)
-            })
-          }
-          // Generate Carrier Moves (moving the whole stack)
-          const carrierMoves = this._generateMovesForPiece(
-            from,
-            pieceData,
-            pieceData.heroic ?? false,
-          )
-          allMoves.push(...carrierMoves)
-        } else {
-          // Generate moves for a single piece
-          const singleMoves = this._generateMovesForPiece(
-            from,
-            pieceData,
-            pieceData.heroic ?? false,
-          )
-          allMoves.push(...singleMoves)
-        }
-      }
+      allMoves = generateNormalMoves(this, us, filterPiece, filterSquare)
     }
 
     // Filter illegal moves (leaving commander in check)
     if (legal && !ignoreSafety) {
-      // Only check commander safety if we're not ignoring it
-      const legalMoves: InternalMove[] = []
-      // Operate on the collected allMoves array
-      for (const move of allMoves) {
-        this._makeMove(move)
-        if (!this._isCommanderAttacked(us)) {
-          legalMoves.push(move)
-        }
-        this._undoMove()
-      }
-      return legalMoves
+      return this._filterLegalMoves(allMoves, us)
     }
-    // Return all pseudo-legal moves if not checking legality
+
     return allMoves
+  }
+  // Helper method to filter legal moves
+  private _filterLegalMoves(moves: InternalMove[], us: Color): InternalMove[] {
+    const legalMoves: InternalMove[] = []
+    for (const move of moves) {
+      this._makeMove(move)
+      if (!this._isCommanderAttacked(us)) {
+        legalMoves.push(move)
+      }
+      this._undoMove()
+    }
+    return legalMoves
   }
 
   // Public moves method (formats output)
