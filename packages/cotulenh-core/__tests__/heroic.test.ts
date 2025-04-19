@@ -1,13 +1,5 @@
-import {
-  CoTuLenh,
-  Move,
-} from '../src/cotulenh'
-import {
-  BLUE,
-  INFANTRY,
-  TANK,
-  HEADQUARTER,
-  Square} from '../src/type'
+import { CoTuLenh, Move } from '../src/cotulenh'
+import { BLUE, INFANTRY, TANK, HEADQUARTER, Square } from '../src/type'
 
 describe('Heroic Piece Functionality', () => {
   let game: CoTuLenh
@@ -157,32 +149,5 @@ describe('Heroic Piece Functionality', () => {
     const firstMove = moves[0]
     expect(firstMove.san).toBeDefined()
     expect(firstMove.san?.startsWith('+')).toBe(true)
-  })
-
-  test('Heroic status preserved in piece.heroic property', () => {
-    // Place a piece and make it heroic
-    game.put({ type: TANK, color: BLUE }, 'e5')
-    makeHeroic('e5')
-
-    // Check the piece object
-    const piece = game.get('e5')
-    expect(piece).toBeDefined()
-    expect(piece?.heroic).toBe(true)
-
-    // Move the piece and check if status is preserved
-    game['_turn'] = BLUE
-
-    // Find a valid move
-    const moves = game.moves({
-      verbose: true,
-      square: 'e5',
-      ignoreSafety: true,
-    }) as Move[]
-    expect(moves.length).toBeGreaterThan(0)
-
-    // Instead of actually making the move (which might fail), we'll verify the move object
-    // has the correct heroic property
-    const firstMove = moves[0]
-    expect(firstMove.heroic).toBe(true) // Should preserve the heroic status in move object
   })
 })

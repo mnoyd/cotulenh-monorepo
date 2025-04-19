@@ -68,7 +68,6 @@ export class Move {
   lan?: string // Long Algebraic Notation (needs implementation)
   before: string // FEN before move
   after: string // FEN after move
-  heroic: boolean // Was the piece heroic *before* this move?
   becameHeroic?: boolean // Did the piece become heroic *on* this move?
   targetSquare?: Square // For stay capture, the square of the captured piece
   isDeploy: boolean // Was this a deploy move from a stack?
@@ -88,7 +87,6 @@ export class Move {
       }
     }
     if (captured) this.captured = captured
-    this.heroic = game.getHeroicStatus(this.from) // Heroic status of the piece *before* it moved/deployed
     if (becameHeroic) this.becameHeroic = true
     this.isDeploy = (flags & BITS.DEPLOY) !== 0
 

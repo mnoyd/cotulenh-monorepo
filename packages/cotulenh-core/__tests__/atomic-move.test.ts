@@ -74,10 +74,10 @@ describe('Move Commands', () => {
 
       const command = new NormalMoveCommand(game, move)
       command.execute()
-      expect(game['_kings'].r).toBe(0xb6)
+      expect(game['_commanders'].r).toBe(0xb6)
 
       command.undo()
-      expect(game['_kings'].r).toBe(0xb5)
+      expect(game['_commanders'].r).toBe(0xb5)
     })
   })
 
