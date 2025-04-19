@@ -5,8 +5,6 @@
  * All rights reserved.
  */
 
-import { createMoveCommand, MoveCommand } from './move.js'
-
 import {
   algebraic,
   BITS,
@@ -23,16 +21,12 @@ import {
   SQUARE_MAP,
   isDigit,
   swapColor,
-  isSquareOnBoard,
   InternalMove,
   VALID_PIECE_TYPES,
 } from './type.js'
 import { getDisambiguator, printBoard } from './utils.js'
-import {
-  generateMovesForPiece,
-  generateDeployMoves,
-  generateNormalMoves,
-} from './piece-movement.js'
+import { generateDeployMoves, generateNormalMoves } from './move-generation.js'
+import { createMoveCommand, MoveCommand } from './move-apply.js'
 
 // Structure for storing history states
 interface History {

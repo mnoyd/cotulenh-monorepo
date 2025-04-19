@@ -4,7 +4,7 @@ import {
   DeployMoveCommand,
   StayCaptureMoveCommand,
   createMoveCommand,
-} from '../src/move.js'
+} from '../src/move-apply.js'
 import {
   BITS,
   RED,
