@@ -3,7 +3,8 @@ import {
   RED,
   Square, // Import Square type
   AIR_FORCE, // Import AIR_FORCE
-  MISSILE,} from '../src/type'
+  MISSILE,
+} from '../src/type'
 import { CoTuLenh, Move } from '../src/cotulenh'
 
 // Simplified helper to check if a move exists in the verbose list
@@ -357,3 +358,6 @@ describe('Basic AIR_FORCE Moves on Empty Board', () => {
 // Add tests for other pieces (e.g., NAVY unit on these squares)
 // Example: NAVY on e4 (Land) should likely have 0 moves
 // Example: NAVY on a1 (Navy) should have moves like a2, b1
+
+//TODO: NAVY basic moves. Check navy should not move accross land to river bank
+//TODO: NAVY can move accross coast and river bank and is not blocked by land piece.

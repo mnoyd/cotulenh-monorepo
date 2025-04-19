@@ -1,17 +1,16 @@
- // @ts-nocheck
+// @ts-nocheck
+import { CoTuLenh, Move } from '../src/cotulenh'
 import {
-  CoTuLenh,
-  Move,
-
-} from '../src/cotulenh'
-import {  RED,
+  RED,
   BLUE,
   NAVY,
   AIR_FORCE,
   TANK,
   COMMANDER,
   Square,
-  PieceSymbol} from '../src/type'
+  PieceSymbol,
+  algebraic,
+} from '../src/type'
 
 // Helper to find a specific move in the verbose move list
 const findVerboseMove = (

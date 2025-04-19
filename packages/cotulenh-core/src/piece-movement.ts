@@ -226,19 +226,20 @@ export function generateMovesInDirection(
     const targetPiece = gameInstance['_board'][to]
 
     // Terrain blocking check
-    terrainBlockedMovement = checkTerrainBlocking(
-      from,
-      to,
-      pieceData,
-      offset === 16 || offset === -16,
-    )
+    if (!terrainBlockedMovement) {
+      terrainBlockedMovement = checkTerrainBlocking(
+        from,
+        to,
+        pieceData,
+        isHorizontalOffset(offset),
+      )
+    }
 
     // Target square analysis
     if (targetPiece) {
       // Capture logic
       if (targetPiece.color === them && currentRange <= config.captureRange) {
         handleCaptureLogic(
-          gameInstance,
           moves,
           from,
           to,
@@ -265,11 +266,14 @@ export function generateMovesInDirection(
         if (pieceBlockedMovement) break
       }
     } else {
+      const canLandOnSquare =
+        pieceData.type === NAVY ? NAVY_MASK[to] : LAND_MASK[to]
       // Move to empty square logic
       if (
         currentRange <= config.moveRange &&
         !terrainBlockedMovement &&
-        !pieceBlockedMovement
+        !pieceBlockedMovement &&
+        canLandOnSquare
       ) {
         addMove(moves, us, from, to, pieceData.type)
       }
@@ -327,7 +331,6 @@ function checkTerrainBlocking(
  * Handle capture logic for a piece
  */
 function handleCaptureLogic(
-  gameInstance: CoTuLenh,
   moves: InternalMove[],
   from: number,
   to: number,
@@ -441,7 +444,7 @@ function handleCaptureLogic(
  * Generate all possible moves for a piece
  */
 export function generateMovesForPiece(
-  gameInstance: any,
+  gameInstance: CoTuLenh,
   from: number,
   pieceData: Piece,
   isHero: boolean,
@@ -486,35 +489,36 @@ function isHeavyZone(sq: number): 0 | 1 | 2 {
  * Generate all moves for a stack in deploy state
  */
 export function generateDeployMoves(
-  gameInstance: any,
+  gameInstance: CoTuLenh,
   stackSquare: number,
   filterPiece?: PieceSymbol,
 ): InternalMove[] {
   const moves: InternalMove[] = []
-  const carrierPiece = gameInstance._board[stackSquare]
+  const carrierPiece = gameInstance['_board'][stackSquare]
   const us = gameInstance.turn()
 
-  if (!carrierPiece || carrierPiece.color !== us || !carrierPiece.carried) {
+  if (!carrierPiece || carrierPiece.color !== us) {
     return []
   }
 
   // Generate Deploy Moves for remaining carried pieces
-  for (const carriedPiece of carrierPiece.carried) {
-    if (filterPiece && carriedPiece.type !== filterPiece) continue
+  if (carrierPiece.carried) {
+    for (const carriedPiece of carrierPiece.carried) {
+      if (filterPiece && carriedPiece.type !== filterPiece) continue
 
-    const deployMoves = generateMovesForPiece(
-      gameInstance,
-      stackSquare,
-      carriedPiece,
-      false,
-      true,
-    )
-    deployMoves.forEach((m) => {
-      m.flags |= BITS.DEPLOY
-      moves.push(m)
-    })
+      const deployMoves = generateMovesForPiece(
+        gameInstance,
+        stackSquare,
+        carriedPiece,
+        false,
+        true,
+      )
+      deployMoves.forEach((m) => {
+        m.flags |= BITS.DEPLOY
+        moves.push(m)
+      })
+    }
   }
-
   // Generate Carrier Moves
   if (!filterPiece || carrierPiece.type === filterPiece) {
     const carrierMoves = generateMovesForPiece(
@@ -596,4 +600,8 @@ export function generateNormalMoves(
     }
   }
   return moves
+}
+
+function isHorizontalOffset(offset: number): boolean {
+  return offset === 16 || offset === -16
 }
