@@ -24,7 +24,6 @@ import {
   isSquareOnBoard,
   NAVY_MASK,
   LAND_MASK,
-  CAN_STAY_CAPTURE_WHEN_CARRIED,
   swapColor,
   Square,
 } from './type.js'
@@ -135,7 +134,7 @@ export const BASE_MOVEMENT_CONFIG: Record<PieceSymbol, PieceMovementConfig> = {
     captureRange: 4,
     isSliding: true,
     canMoveDiagonal: true,
-    captureIgnoresPieceBlocking: false,
+    captureIgnoresPieceBlocking: true,
     moveIgnoresBlocking: false,
     specialRules: { navyAttackMechanisms: true },
   },
@@ -247,8 +246,6 @@ export function generateMovesInDirection(
           targetPiece,
           currentRange,
           config,
-          pieceBlockedMovement,
-          terrainBlockedMovement,
           isDeployMove,
         )
       }
@@ -260,20 +257,17 @@ export function generateMovesInDirection(
           pieceBlockedMovement = true
         }
       }
-
-      // Check if we should stop looking in this direction
-      if (!config.captureIgnoresPieceBlocking && pieceData.type !== TANK) {
-        if (pieceBlockedMovement) break
+      // Commander cannot move past a blocking piece, stop looking further
+      if (pieceData.type === COMMANDER) {
+        break
       }
     } else {
-      const canLandOnSquare =
-        pieceData.type === NAVY ? NAVY_MASK[to] : LAND_MASK[to]
       // Move to empty square logic
       if (
         currentRange <= config.moveRange &&
         !terrainBlockedMovement &&
         !pieceBlockedMovement &&
-        canLandOnSquare
+        canLandOnSquare(to, pieceData.type)
       ) {
         addMove(moves, us, from, to, pieceData.type)
       }
@@ -338,12 +332,9 @@ function handleCaptureLogic(
   targetPiece: Piece,
   currentRange: number,
   config: PieceMovementConfig,
-  pieceBlockedMovement: boolean,
-  terrainBlockedMovement: boolean,
   isDeployMove: boolean,
 ): void {
   const us = pieceData.color
-  const isHero = pieceData.heroic ?? false
 
   let captureAllowed = true
   let addNormalCapture = true
@@ -358,60 +349,26 @@ function handleCaptureLogic(
   if (pieceData.type === NAVY) {
     if (targetPiece.type === NAVY) {
       // Torpedo attack
-      if (currentRange > (isHero ? 5 : 4)) {
+      if (currentRange > config.captureRange) {
         captureAllowed = false
       }
     } else {
       // Naval Gun attack
-      if (currentRange > (isHero ? 4 : 3)) {
+      if (currentRange > config.captureRange - 1) {
         captureAllowed = false
       }
     }
   }
 
-  // Check if path is blocked by pieces for capture
-  if (
-    captureAllowed &&
-    !config.captureIgnoresPieceBlocking &&
-    pieceBlockedMovement
-  ) {
-    // Tank special case
-    if (pieceData.type === TANK && currentRange === 2) {
-      captureAllowed = true
-    } else {
-      captureAllowed = false
-    }
+  const canLand = canLandOnSquare(to, pieceData.type)
+  if (!canLand) {
+    addStayCapture = true
+    addNormalCapture = false
   }
-
-  // Check if normal capture would land on invalid terrain
-  if (captureAllowed && addNormalCapture) {
-    const isTargetTerrainValidForAttacker =
-      pieceData.type === NAVY ? NAVY_MASK[to] : LAND_MASK[to]
-
-    if (!isTargetTerrainValidForAttacker) {
-      if (
-        isDeployMove &&
-        CAN_STAY_CAPTURE_WHEN_CARRIED.includes(pieceData.type)
-      ) {
-        if (pieceData.type === AIR_FORCE && !LAND_MASK[to]) {
-          addNormalCapture = false
-          addStayCapture = true
-        } else {
-          addNormalCapture = true
-          addStayCapture = true
-        }
-      } else if (
-        !isDeployMove &&
-        pieceData.type === AIR_FORCE &&
-        !LAND_MASK[to]
-      ) {
-        addNormalCapture = false
-        addStayCapture = true
-      } else {
-        addNormalCapture = false
-        addStayCapture = true
-      }
-    }
+  //Air Force is very powerful piece. Add both options whether it can choose to stay captured or move capture
+  if (canLand && pieceData.type === AIR_FORCE) {
+    addStayCapture = true
+    addNormalCapture = true
   }
 
   if (captureAllowed) {
@@ -604,4 +561,8 @@ export function generateNormalMoves(
 
 function isHorizontalOffset(offset: number): boolean {
   return offset === 16 || offset === -16
+}
+
+function canLandOnSquare(square: number, pieceType: PieceSymbol): boolean {
+  return pieceType === NAVY ? !!NAVY_MASK[square] : !!LAND_MASK[square]
 }

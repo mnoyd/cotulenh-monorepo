@@ -1,9 +1,6 @@
+import { CoTuLenh, Move } from '../src/cotulenh'
 import {
-  CoTuLenh,
-  Move,
-  
-} from '../src/cotulenh'
-import {RED,
+  RED,
   BLUE,
   NAVY,
   AIR_FORCE,
@@ -11,7 +8,9 @@ import {RED,
   TANK,
   ARTILLERY,
   ANTI_AIR,
-  DEFAULT_POSITION} from '../src/type'
+  DEFAULT_POSITION,
+  COMMANDER,
+} from '../src/type'
 
 describe('CoTuLenh Stay Capture Logic', () => {
   let game: CoTuLenh
@@ -351,4 +350,131 @@ describe('SAN Conversion', () => {
   // TODO: Add tests for ambiguous moves SAN if applicable
   // TODO: Add tests for Heroic promotion SAN if implemented
   // TODO: Add tests for Deploy SAN parsing/generation
+})
+
+describe('Piece Blocking Movement Logic', () => {
+  let game: CoTuLenh
+
+  beforeEach(() => {
+    game = new CoTuLenh()
+    game.clear()
+  })
+
+  test('Sliding piece (Tank) should be blocked by friendly pieces', () => {
+    // Setup: Red Tank at d3, Red Infantry at d4
+    game.put({ type: TANK, color: RED }, 'd3')
+    game.put({ type: INFANTRY, color: RED }, 'd4')
+    game['_turn'] = RED
+
+    const moves = game.moves({ verbose: true, ignoreSafety: true }) as Move[]
+
+    // Tank should not be able to move to d5 (beyond the blocking Infantry)
+    const moveToD5 = moves.find((m) => m.from === 'd3' && m.to === 'd5')
+    expect(moveToD5).toBeUndefined()
+
+    // Tank should be able to move to other squares that aren't blocked
+    const moveToE3 = moves.find((m) => m.from === 'd3' && m.to === 'e3')
+    expect(moveToE3).toBeDefined()
+  })
+
+  test('Non-sliding piece (Infantry) should be blocked by friendly pieces', () => {
+    // Setup: Red Infantry at d4, Red Tank at d5
+    game.put({ type: INFANTRY, color: RED }, 'd4')
+    game.put({ type: TANK, color: RED }, 'd5')
+    game['_turn'] = RED
+
+    const moves = game.moves({ verbose: true, ignoreSafety: true }) as Move[]
+
+    // Infantry should not be able to move to d5 (occupied by friendly Tank)
+    const moveToD5 = moves.find((m) => m.from === 'd4' && m.to === 'd5')
+    expect(moveToD5).toBeUndefined()
+
+    // Infantry should be able to move to other valid squares
+    const moveToE4 = moves.find((m) => m.from === 'd4' && m.to === 'e4')
+    expect(moveToE4).toBeDefined()
+  })
+
+  test('Air Force should ignore piece blocking', () => {
+    // Setup: Red Air Force at d4, Red Infantry at d5, Blue Tank at d6
+    game.put({ type: AIR_FORCE, color: RED }, 'd4')
+    game.put({ type: INFANTRY, color: RED }, 'd5')
+    game.put({ type: TANK, color: BLUE }, 'd6')
+    game['_turn'] = RED
+
+    const moves = game.moves({ verbose: true, ignoreSafety: true }) as Move[]
+
+    // Air Force should be able to move beyond friendly Infantry
+    const moveToD7 = moves.find((m) => m.from === 'd4' && m.to === 'd7')
+    expect(moveToD7).toBeDefined()
+
+    // Air Force should be able to capture enemy Tank
+    const captureD6 = moves.find(
+      (m) => m.from === 'd4' && m.to === 'd6' && m.captured === TANK,
+    )
+    expect(captureD6).toBeDefined()
+  })
+
+  test('Artillery should be blocked for movement but not for capture', () => {
+    // Setup: Red Artillery at d3, Red Infantry at d4, Blue Tank at d5
+    game.put({ type: ARTILLERY, color: RED }, 'd3')
+    game.put({ type: INFANTRY, color: RED }, 'd4')
+    game.put({ type: TANK, color: BLUE }, 'd5')
+    game['_turn'] = RED
+
+    const moves = game.moves({ verbose: true, ignoreSafety: true }) as Move[]
+
+    // Artillery should not be able to move to d5 or d6 (blocked by friendly Infantry)
+    const moveToD5 = moves.find(
+      (m) => m.from === 'd3' && m.to === 'd5' && !m.captured,
+    )
+    const moveToD6 = moves.find((m) => m.from === 'd3' && m.to === 'd6')
+    expect(moveToD5).toBeUndefined()
+    expect(moveToD6).toBeUndefined()
+
+    // Artillery should be able to capture enemy Tank at d5 despite blocking
+    const captureD5 = moves.find(
+      (m) => m.from === 'd3' && m.to === 'd5' && m.captured === TANK,
+    )
+    expect(captureD5).toBeDefined()
+  })
+
+  test('Navy should ignore friendly piece blocking', () => {
+    // Setup: Red Navy at b3, Red Navy at b4, Blue Navy at b5
+    game.put({ type: NAVY, color: RED }, 'b3')
+    game.put({ type: NAVY, color: RED }, 'b4')
+    game.put({ type: NAVY, color: BLUE }, 'b6')
+    game['_turn'] = RED
+
+    const moves = game.moves({ verbose: true, ignoreSafety: true }) as Move[]
+
+    // Navy should be able to move beyond friendly Navy
+    const moveToB6 = moves.find((m) => m.from === 'b3' && m.to === 'b6')
+    expect(moveToB6).toBeDefined()
+
+    // Navy should be able to capture enemy Navy
+    const captureB6 = moves.find(
+      (m) => m.from === 'b3' && m.to === 'b6' && m.captured === NAVY,
+    )
+    expect(captureB6).toBeDefined()
+  })
+
+  test('Tank special rule: cannot shoot over blocking piece at range 2', () => {
+    // Setup: Red Tank at d3, Red Infantry at d4, Blue Infantry at d5
+    game.put({ type: TANK, color: RED }, 'd3')
+    game.put({ type: INFANTRY, color: RED }, 'd4')
+    game.put({ type: INFANTRY, color: BLUE }, 'd5')
+    game['_turn'] = RED
+
+    const moves = game.moves({ verbose: true, ignoreSafety: true }) as Move[]
+
+    // Tank should not be able to move to d5 (blocked by friendly Infantry)
+    const moveToD5 = moves.find(
+      (m) => m.from === 'd3' && m.to === 'd5' && !m.captured,
+    )
+    expect(moveToD5).toBeUndefined()
+
+    // Tank should be able to capture enemy Infantry at d5 despite blocking (special rule)
+    const captureD5 = moves.find((m) => m.from === 'd3' && m.to === 'd5')
+    expect(captureD5).toBeUndefined()
+  })
 })

@@ -30,9 +30,6 @@ export const VALID_PIECE_TYPES: Record<string, true> = {
   [HEADQUARTER]: true,
 }
 
-// Pieces that can perform stay capture *while being carried*
-export const CAN_STAY_CAPTURE_WHEN_CARRIED: PieceSymbol[] = [AIR_FORCE]
-
 // --- Types ---
 export type Color = 'r' | 'b' // Updated Color type
 export type PieceSymbol =
