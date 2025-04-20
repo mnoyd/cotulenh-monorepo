@@ -73,6 +73,30 @@ importers:
         specifier: ^5.8.2
         version: 5.8.2
 
+  packages/cotulenh-combine-piece:
+    devDependencies:
+      '@repo/eslint-config':
+        specifier: '*'
+        version: link:../eslint-config
+      '@repo/typescript-config':
+        specifier: '*'
+        version: link:../typescript-config
+      '@repo/vitest-config':
+        specifier: '*'
+        version: link:../vitest-config
+      '@types/jest':
+        specifier: ^29.5.14
+        version: 29.5.14
+      ts-node:
+        specifier: ^10.9.2
+        version: 10.9.2(@types/node@22.14.1)(typescript@5.8.2)
+      typescript:
+        specifier: ^5.3.3
+        version: 5.8.2
+      vitest:
+        specifier: ^1.2.0
+        version: 1.6.1(@types/node@22.14.1)
+
   packages/cotulenh-core:
     devDependencies:
       '@repo/vitest-config':
