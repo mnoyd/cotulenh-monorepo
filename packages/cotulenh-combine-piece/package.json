@@ -22,6 +22,7 @@
     "@repo/typescript-config": "*",
     "@repo/vitest-config": "*",
     "@types/jest": "^29.5.14",
+    "@vitest/coverage-v8": "^1.6.1",
     "ts-node": "^10.9.2",
     "typescript": "^5.3.3",
     "vitest": "^1.2.0"

@@ -9,8 +9,9 @@
     "build": "$npm_execpath run dist",
     "compile": "tsc --sourceMap --declaration",
     "copy-assets": "mkdir -p dist/assets && cp -r assets/. dist/assets/",
-    "dist": "rm -rf dist tsconfig.tsbuildinfo && $npm_execpath run compile && $npm_execpath run copy-assets",
+    "dist": "rm -rf dist tsconfig.tsbuildinfo && $npm_execpath run compile && $npm_execpath run copy-assets && $npm_execpath run bundle",
     "format": "prettier --write .",
+    "bundle": "vite build",
     "check-format": "prettier --check ."
   },
   "keywords": [
@@ -22,9 +23,9 @@
   "author": "Hoang Manh",
   "license": "GPL-3.0-or-later",
   "devDependencies": {
-    "esbuild": "^0.25.1",
     "prettier": "^3.5.3",
-    "typescript": "^5.8.2"
+    "typescript": "^5.8.2",
+    "vite": "^6.2.5"
   },
   "exports": {
     ".": "./dist/index.js",
@@ -41,5 +42,8 @@
         "dist/*"
       ]
     }
+  },
+  "dependencies": {
+    "@repo/cotulenh-combine-piece": "workspace:^"
   }
 }

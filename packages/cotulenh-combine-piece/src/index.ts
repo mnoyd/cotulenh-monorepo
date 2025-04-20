@@ -50,7 +50,7 @@ export const carrierBlueprints: { [key: string]: CarrierBlueprint } = {
 
 // Generic piece interface to work with both UI and Core
 export interface GenericPiece {
-  carried?: GenericPiece[];
+  carrying?: GenericPiece[];
   [key: string]: any; // For other properties
 }
 
@@ -96,14 +96,14 @@ export function formStack<P extends GenericPiece>(
   function flattenStack(piece: P): P[] {
     // Create a new piece without carried pieces
     const clonedPiece = { ...piece } as P;
-    delete (clonedPiece as any).carried;
+    delete (clonedPiece as any).carrying;
 
     // Initialize result with the cloned piece
     const result: P[] = [clonedPiece];
 
     // Add all carried pieces
-    if (piece.carried && piece.carried.length > 0) {
-      for (const carriedPiece of piece.carried as P[]) {
+    if (piece.carrying && piece.carrying.length > 0) {
+      for (const carriedPiece of piece.carrying as P[]) {
         result.push(...flattenStack(carriedPiece));
       }
     }
@@ -233,7 +233,7 @@ export function formStack<P extends GenericPiece>(
       }
 
       // Return carrier with carried pieces
-      const result = { ...carrier, carried: carriedPieces } as P;
+      const result = { ...carrier, carrying: carriedPieces } as P;
       return result;
     }
 

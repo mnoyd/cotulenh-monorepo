@@ -456,9 +456,9 @@ export function generateDeployMoves(
     return []
   }
 
-  // Generate Deploy Moves for remaining carried pieces
-  if (carrierPiece.carried) {
-    for (const carriedPiece of carrierPiece.carried) {
+  // Generate Deploy Moves for remaining carrying pieces
+  if (carrierPiece.carrying) {
+    for (const carriedPiece of carrierPiece.carrying) {
       if (filterPiece && carriedPiece.type !== filterPiece) continue
 
       const deployMoves = generateMovesForPiece(
@@ -520,9 +520,9 @@ export function generateNormalMoves(
     if (filterPiece && pieceData.type !== filterPiece) continue
 
     // Check if it's a stack
-    if (pieceData.carried && pieceData.carried.length > 0) {
-      // Generate Deploy Moves for carried pieces
-      for (const carriedPiece of pieceData.carried) {
+    if (pieceData.carrying && pieceData.carrying.length > 0) {
+      // Generate Deploy Moves for carrying pieces
+      for (const carriedPiece of pieceData.carrying) {
         const deployMoves = generateMovesForPiece(
           gameInstance,
           from,

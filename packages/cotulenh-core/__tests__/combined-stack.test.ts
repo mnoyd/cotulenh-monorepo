@@ -62,7 +62,7 @@ describe('Stack Movement and Deployment', () => {
       {
         type: NAVY,
         color: RED,
-        carried: [
+        carrying: [
           { type: AIR_FORCE, color: RED },
           { type: TANK, color: RED },
         ],
@@ -117,7 +117,7 @@ describe('Stack Movement and Deployment', () => {
     expect(carrierN_c4?.isDeploy).toBe(false)
     expect(carrierN_c4?.piece).toBe(NAVY)
 
-    // Check a non-deploy move is not generated for carried pieces
+    // Check a non-deploy move is not generated for carrying pieces
     const nonDeployF = findVerboseMove(moves, 'c3', 'c4', {
       piece: AIR_FORCE,
       isDeploy: false,
@@ -131,7 +131,7 @@ describe('Stack Movement and Deployment', () => {
       {
         type: NAVY,
         color: RED,
-        carried: [
+        carrying: [
           { type: AIR_FORCE, color: RED },
           { type: TANK, color: RED },
         ],
@@ -161,8 +161,8 @@ describe('Stack Movement and Deployment', () => {
     expect(moveResult).not.toBeNull()
     expect(game.turn()).toBe(RED) // Turn should NOT change
     expect(game.get('c3')?.type).toBe(NAVY) // Carrier remains
-    expect(game.get('c3')?.carried?.length).toBe(1) // One piece left
-    expect(game.get('c3')?.carried?.[0].type).toBe(TANK) // Tank remains
+    expect(game.get('c3')?.carrying?.length).toBe(1) // One piece left
+    expect(game.get('c3')?.carrying?.[0].type).toBe(TANK) // Tank remains
     expect(game.get('c4')?.type).toBe(AIR_FORCE) // AF deployed
     expect(game.get('c4')?.color).toBe(RED)
     // Cannot check private _deployState directly, check behavior instead
@@ -183,7 +183,7 @@ describe('Stack Movement and Deployment', () => {
       {
         type: NAVY,
         color: RED,
-        carried: [
+        carrying: [
           { type: AIR_FORCE, color: RED },
           { type: TANK, color: RED },
         ],
@@ -217,7 +217,7 @@ describe('Stack Movement and Deployment', () => {
     expect(moveResult).not.toBeNull()
     expect(game.turn()).toBe(RED) // Turn should still be Red
     expect(game.get('c3')?.type).toBe(NAVY) // Carrier remains
-    expect(game.get('c3')?.carried).toBeUndefined() // Stack empty
+    expect(game.get('c3')?.carrying).toBeUndefined() // Stack empty
     expect(game.get('c4')?.type).toBe(AIR_FORCE) // Previous deploy
     expect(game.get('d3')?.type).toBe(TANK) // Tank deployed
     expect(game.get('d3')?.color).toBe(RED)
@@ -229,7 +229,7 @@ describe('Stack Movement and Deployment', () => {
       {
         type: NAVY,
         color: RED,
-        carried: [
+        carrying: [
           { type: AIR_FORCE, color: RED },
           { type: TANK, color: RED },
         ],
@@ -259,7 +259,7 @@ describe('Stack Movement and Deployment', () => {
       {
         type: NAVY,
         color: RED,
-        carried: [
+        carrying: [
           { type: AIR_FORCE, color: RED },
           { type: TANK, color: RED },
         ],
@@ -274,7 +274,7 @@ describe('Stack Movement and Deployment', () => {
     game.move({ from: 'c3', to: 'd3', piece: TANK })
 
     expect(game.turn()).toBe(RED) // Still Red's turn
-    expect(game.get('c3')?.carried).toBeUndefined() // Stack empty
+    expect(game.get('c3')?.carrying).toBeUndefined() // Stack empty
 
     // Find and execute the carrier move (e.g., Navy c3 to c2)
     const carrierMove = findVerboseMove(
@@ -290,7 +290,7 @@ describe('Stack Movement and Deployment', () => {
     expect(game.turn()).toBe(BLUE) // Turn SHOULD change now
     expect(game.get('c3')).toBeUndefined() // Carrier moved
     expect(game.get('c2')?.type).toBe(NAVY) // Carrier at new location
-    expect(game.get('c2')?.carried).toBeUndefined() // Still empty stack
+    expect(game.get('c2')?.carrying).toBeUndefined() // Still empty stack
     expect(game.get('c4')?.type).toBe(AIR_FORCE) // Deployed pieces remain
     expect(game.get('d3')?.type).toBe(TANK)
     // Cannot move air force at c4 because turn is blue

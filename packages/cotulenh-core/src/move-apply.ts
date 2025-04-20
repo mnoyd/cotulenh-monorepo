@@ -78,13 +78,13 @@ class RemoveFromStackAction implements AtomicMoveAction {
 
   execute(game: CoTuLenh): void {
     const carrier = game.getPieceAt(this.carrierSquare)
-    if (!carrier || !carrier.carried) {
+    if (!carrier || !carrier.carrying) {
       throw new Error(
-        `No carrier or carried pieces at ${algebraic(this.carrierSquare)}`,
+        `No carrier or carrying pieces at ${algebraic(this.carrierSquare)}`,
       )
     }
 
-    this.removedIndex = carrier.carried.findIndex(
+    this.removedIndex = carrier.carrying.findIndex(
       (p) => p.type === this.pieceType && p.color === this.pieceColor,
     )
 
@@ -94,11 +94,11 @@ class RemoveFromStackAction implements AtomicMoveAction {
       )
     }
 
-    this.removedPiece = carrier.carried[this.removedIndex]
-    carrier.carried.splice(this.removedIndex, 1)
+    this.removedPiece = carrier.carrying[this.removedIndex]
+    carrier.carrying.splice(this.removedIndex, 1)
 
-    if (carrier.carried.length === 0) {
-      carrier.carried = undefined
+    if (carrier.carrying.length === 0) {
+      carrier.carrying = undefined
     }
   }
 
@@ -112,15 +112,18 @@ class RemoveFromStackAction implements AtomicMoveAction {
       )
     }
 
-    if (!carrier.carried) {
-      carrier.carried = []
+    if (!carrier.carrying) {
+      carrier.carrying = []
     }
 
     // Insert at the original position if possible, otherwise just add to the end
-    if (this.removedIndex >= 0 && this.removedIndex <= carrier.carried.length) {
-      carrier.carried.splice(this.removedIndex, 0, this.removedPiece)
+    if (
+      this.removedIndex >= 0 &&
+      this.removedIndex <= carrier.carrying.length
+    ) {
+      carrier.carrying.splice(this.removedIndex, 0, this.removedPiece)
     } else {
-      carrier.carried.push(this.removedPiece)
+      carrier.carrying.push(this.removedPiece)
     }
   }
 }
@@ -274,7 +277,7 @@ export class DeployMoveCommand extends MoveCommand {
     const them = swapColor(us)
     const carrierPiece = this.game.getPieceAt(this.move.from)
 
-    if (!carrierPiece || !carrierPiece.carried) {
+    if (!carrierPiece || !carrierPiece.carrying) {
       throw new Error(
         `Build Deploy Error: Carrier missing or empty at ${algebraic(
           this.move.from,
@@ -323,7 +326,7 @@ export class DeployMoveCommand extends MoveCommand {
       }
 
       // Find the piece in the carrier's stack to deploy
-      const deployedPieceIndex = carrierPiece.carried!.findIndex(
+      const deployedPieceIndex = carrierPiece.carrying!.findIndex(
         (p) => p.type === this.move.piece && p.color === us,
       )
 
@@ -335,7 +338,7 @@ export class DeployMoveCommand extends MoveCommand {
         )
       }
 
-      const deployedPiece = { ...carrierPiece.carried![deployedPieceIndex] }
+      const deployedPiece = { ...carrierPiece.carrying![deployedPieceIndex] }
 
       // Add action to place the deployed piece
       this.actions.push(new PlacePieceAction(destSq, deployedPiece))

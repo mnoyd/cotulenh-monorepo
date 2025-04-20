@@ -65,7 +65,7 @@ export const DEFAULT_POSITION =
 export type Piece = {
   color: Color
   type: PieceSymbol
-  carried?: Piece[] // Array to hold carried pieces (excluding the carrier itself)
+  carrying?: Piece[] // Array to hold carrying pieces (excluding the carrier itself)
   heroic?: boolean // Indicates if the piece has heroic status
 }
 

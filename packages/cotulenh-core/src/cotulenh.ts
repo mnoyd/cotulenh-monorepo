@@ -212,16 +212,16 @@ export class CoTuLenh {
 
             const carriedPieces: Piece[] = []
             for (let j = carrierIndex + 1; j < stackContent.length; j++) {
-              // TODO: Handle heroic carried pieces if notation allows e.g. (+F)
+              // TODO: Handle heroic carrying pieces if notation allows e.g. (+F)
               const carriedChar = stackContent[j]
               const carriedColor = carriedChar < 'a' ? RED : BLUE
               const carriedType = carriedChar.toLowerCase() as PieceSymbol
-              // TODO: Validate carried type and color (must match carrier)
+              // TODO: Validate carrying type and color (must match carrier)
               if (carriedColor !== carrierColor) {
                 console.warn(
                   `Carried piece color mismatch in stack: ${stackContent}`,
                 )
-                continue // Skip invalid carried piece
+                continue // Skip invalid carrying piece
               }
               carriedPieces.push({ type: carriedType, color: carriedColor })
             }
@@ -232,7 +232,7 @@ export class CoTuLenh {
             this._board[sq0x88] = {
               type: carrierType,
               color: carrierColor,
-              carried: carriedPieces.length > 0 ? carriedPieces : undefined,
+              carrying: carriedPieces.length > 0 ? carriedPieces : undefined,
               heroic: carrierHeroic, // Add heroic status
             }
 
@@ -325,14 +325,14 @@ export class CoTuLenh {
           }
 
           // Check if it's a stack
-          if (piece.carried && piece.carried.length > 0) {
+          if (piece.carrying && piece.carrying.length > 0) {
             // Format stack: (CP1P2...) or +(CP1P2...)
             let stackStr =
               piece.color === RED
                 ? piece.type.toUpperCase()
                 : piece.type.toLowerCase()
-            // Sort carried pieces alphabetically for consistent FEN? Or keep original order? Let's sort.
-            const carriedSorted = [...piece.carried].sort((a, b) =>
+            // Sort carrying pieces alphabetically for consistent FEN? Or keep original order? Let's sort.
+            const carriedSorted = [...piece.carrying].sort((a, b) =>
               a.type.localeCompare(b.type),
             )
             stackStr += carriedSorted
@@ -395,8 +395,13 @@ export class CoTuLenh {
       type,
       color,
       heroic = false,
-      carried = undefined, // Add optional carried pieces
-    }: { type: PieceSymbol; color: Color; heroic?: boolean; carried?: Piece[] },
+      carrying = undefined, // Add optional carrying pieces
+    }: {
+      type: PieceSymbol
+      color: Color
+      heroic?: boolean
+      carrying?: Piece[]
+    },
     square: Square,
   ): boolean {
     if (!(square in SQUARE_MAP)) return false
@@ -424,7 +429,7 @@ export class CoTuLenh {
     this._board[sq] = {
       type,
       color,
-      carried: carried?.length ? carried : undefined,
+      carrying: carrying?.length ? carrying : undefined,
       heroic: heroic ?? false, // Default to false if undefined
     }
     if (type === COMMANDER) this._commanders[color] = sq
@@ -1033,9 +1038,9 @@ export class CoTuLenh {
       return pieceAtSquare
     }
 
-    // Check if the requested piece is being carried in a stack
-    if (pieceAtSquare.carried && pieceAtSquare.carried.length > 0) {
-      return pieceAtSquare.carried.find((p) => p.type === pieceType)
+    // Check if the requested piece is being carrying in a stack
+    if (pieceAtSquare.carrying && pieceAtSquare.carrying.length > 0) {
+      return pieceAtSquare.carrying.find((p) => p.type === pieceType)
     }
 
     return undefined

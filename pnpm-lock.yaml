@@ -62,16 +62,20 @@ importers:
         version: 6.2.6
 
   packages/cotulenh-board:
+    dependencies:
+      '@repo/cotulenh-combine-piece':
+        specifier: workspace:^
+        version: link:../cotulenh-combine-piece
     devDependencies:
-      esbuild:
-        specifier: ^0.25.1
-        version: 0.25.2
       prettier:
         specifier: ^3.5.3
         version: 3.5.3
       typescript:
         specifier: ^5.8.2
         version: 5.8.2
+      vite:
+        specifier: ^6.2.5
+        version: 6.2.6
 
   packages/cotulenh-combine-piece:
     devDependencies:
@@ -87,6 +91,9 @@ importers:
       '@types/jest':
         specifier: ^29.5.14
         version: 29.5.14
+      '@vitest/coverage-v8':
+        specifier: ^1.6.1
+        version: 1.6.1(vitest@1.6.1)
       ts-node:
         specifier: ^10.9.2
         version: 10.9.2(@types/node@22.14.1)(typescript@5.8.2)

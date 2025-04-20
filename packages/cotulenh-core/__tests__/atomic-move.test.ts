@@ -97,11 +97,11 @@ describe('Move Commands', () => {
       command.execute()
       expect(game.get('f4')?.type).toBe(INFANTRY)
       expect(game.get('f4')?.color).toBe(RED)
-      expect(game.get('e4')?.carried).toBeFalsy()
+      expect(game.get('e4')?.carrying).toBeFalsy()
 
       command.undo()
       expect(game.get('e5')).toBeUndefined()
-      expect(game.get('e4')?.carried?.length).toBe(1)
+      expect(game.get('e4')?.carrying?.length).toBe(1)
     })
 
     it('should handle deploy with capture', () => {
@@ -118,13 +118,13 @@ describe('Move Commands', () => {
       command.execute()
       expect(game.get('f4')?.color).toBe(RED)
       expect(game.get('f4')?.type).toBe(INFANTRY)
-      expect(game.get('e4')?.carried).toBeFalsy()
+      expect(game.get('e4')?.carrying).toBeFalsy()
       expect(command.move.captured).toBe(AIR_FORCE)
 
       command.undo()
       expect(game.get('f4')?.color).toBe(BLUE)
       expect(game.get('f4')?.type).toBe(AIR_FORCE)
-      expect(game.get('e4')?.carried?.length).toBe(1)
+      expect(game.get('e4')?.carrying?.length).toBe(1)
     })
 
     //TODO: Add stay capture move for air_force. When piece is air_force, in game._moves() always add stay capture and capture for same square
@@ -145,13 +145,13 @@ describe('Move Commands', () => {
       const command = createMoveCommand(game, move)
       command.execute()
       expect(game.get('f4')?.color).toBe(undefined)
-      expect(game.get('b4')?.carried?.length).toBe(1)
+      expect(game.get('b4')?.carrying?.length).toBe(1)
       expect(command.move.captured).toBe(TANK)
 
       command.undo()
       expect(game.get('f4')?.color).toBe(BLUE)
       expect(game.get('f4')?.type).toBe(TANK)
-      expect(game.get('b4')?.carried?.length).toBe(1)
+      expect(game.get('b4')?.carrying?.length).toBe(1)
     })
   })
 
