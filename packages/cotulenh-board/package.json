@@ -2,14 +2,14 @@
   "name": "@repo/cotulenh-board",
   "version": "0.0.0",
   "description": "A js board for commander chess",
-  "main": "dist/index.js",
+  "main": "dist/index.es.js",
   "types": "dist/index.d.ts",
   "type": "module",
   "scripts": {
     "build": "$npm_execpath run dist",
     "compile": "tsc --sourceMap --declaration",
     "copy-assets": "mkdir -p dist/assets && cp -r assets/. dist/assets/",
-    "dist": "rm -rf dist tsconfig.tsbuildinfo && $npm_execpath run compile && $npm_execpath run copy-assets && $npm_execpath run bundle",
+    "dist": "rm -rf dist tsconfig.tsbuildinfo && $npm_execpath run compile && $npm_execpath run bundle && $npm_execpath run copy-assets",
     "format": "prettier --write .",
     "bundle": "vite build",
     "check-format": "prettier --check ."
@@ -28,7 +28,7 @@
     "vite": "^6.2.5"
   },
   "exports": {
-    ".": "./dist/index.js",
+    ".": "./dist/index.es.js",
     "./assets/*": "./dist/assets/*",
     "./*": "./dist/*.js"
   },

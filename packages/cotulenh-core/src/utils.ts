@@ -11,8 +11,44 @@ import {
   InternalMove,
   Color,
   PieceSymbol,
-  BITS
+  BITS,
+  COMMANDER,
+  INFANTRY,
+  TANK,
+  MILITIA,
+  ENGINEER,
+  ARTILLERY,
+  ANTI_AIR,
+  MISSILE,
+  AIR_FORCE,
+  NAVY,
+  HEADQUARTER,
 } from './type.js'
+
+import { formStack } from '@repo/cotulenh-combine-piece'
+
+const symbolToRoleMap: Record<PieceSymbol, string> = {
+  [COMMANDER]: 'commander',
+  [INFANTRY]: 'infantry',
+  [TANK]: 'tank',
+  [MILITIA]: 'militia',
+  [ENGINEER]: 'engineer',
+  [ARTILLERY]: 'artillery',
+  [ANTI_AIR]: 'anti_air',
+  [MISSILE]: 'missile',
+  [AIR_FORCE]: 'air_force',
+  [NAVY]: 'navy',
+  [HEADQUARTER]: 'headquarter',
+}
+const getCoreRole = (piece: Piece): string => symbolToRoleMap[piece.type]
+
+export function createCombinedPiece(
+  pieceFrom: Piece,
+  pieceTo: Piece,
+): Piece | null {
+  const combinedPiece = formStack<Piece>(pieceFrom, pieceTo, getCoreRole)
+  return combinedPiece
+}
 
 export function getDisambiguator(
   move: InternalMove,

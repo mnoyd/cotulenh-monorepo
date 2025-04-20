@@ -105,6 +105,10 @@ importers:
         version: 1.6.1(@types/node@22.14.1)
 
   packages/cotulenh-core:
+    dependencies:
+      '@repo/cotulenh-combine-piece':
+        specifier: workspace:^
+        version: link:../cotulenh-combine-piece
     devDependencies:
       '@repo/vitest-config':
         specifier: '*'

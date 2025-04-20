@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { CoTuLenh, Move } from '../src/cotulenh'
 import {
   RED,
@@ -10,7 +9,11 @@ import {
   Square,
   PieceSymbol,
   algebraic,
+  INFANTRY,
+  Piece,
+  MILITIA,
 } from '../src/type'
+import { createCombinedPiece } from '../src/utils'
 
 // Helper to find a specific move in the verbose move list
 const findVerboseMove = (
@@ -300,4 +303,69 @@ describe('Stack Movement and Deployment', () => {
   // TODO: Add tests for deploy captures (normal and stay)
   // TODO: Add tests for undoing deploy/carrier moves
   // TODO: Add tests for SAN parsing/generation of deploy moves
+})
+describe('createCombinedPiece (Integration)', () => {
+  it('should correctly combine two basic pieces using formStack', () => {
+    const pieceFrom: Piece = { color: RED, type: TANK }
+    const pieceTo: Piece = { color: RED, type: INFANTRY }
+
+    // Calling the actual implementation which uses formStack internally
+    const combinedPiece = createCombinedPiece(pieceFrom, pieceTo)
+
+    // Assertions based on the expected behavior of formStack:
+    // - The resulting piece should likely retain the 'from' piece's core identity (color, type).
+    // - The 'to' piece should be added to the 'carrying' array.
+    expect(combinedPiece).toBeDefined()
+    expect(combinedPiece).not.toBeNull()
+
+    expect(combinedPiece?.color).toBe(RED)
+    expect(combinedPiece?.type).toBe(TANK)
+    expect(combinedPiece?.carrying).toBeDefined()
+    expect(combinedPiece?.carrying).toHaveLength(1)
+    expect(combinedPiece?.carrying?.[0]).toEqual(pieceTo) // Check if the carried piece is the 'to' piece
+    expect(combinedPiece?.heroic).toBeUndefined() // Assuming no heroic status change by default
+  })
+
+  it('should correctly add a piece to an existing carrying stack', () => {
+    const existingCarriedPiece: Piece = { color: RED, type: MILITIA }
+    const pieceFrom: Piece = {
+      color: RED,
+      type: AIR_FORCE,
+      carrying: [existingCarriedPiece],
+    }
+    const pieceTo: Piece = { color: RED, type: TANK }
+
+    const combinedPiece = createCombinedPiece(pieceFrom, pieceTo)
+
+    expect(combinedPiece).toBeDefined()
+    expect(combinedPiece?.color).toBe(RED)
+    expect(combinedPiece?.type).toBe(AIR_FORCE)
+    expect(combinedPiece?.carrying).toBeDefined()
+    expect(combinedPiece?.carrying).toHaveLength(2)
+    // The original carried piece should still be there (assuming order is preserved or predictable)
+    expect(combinedPiece?.carrying).toContainEqual(existingCarriedPiece)
+    // The new 'to' piece should be added
+    expect(combinedPiece?.carrying).toContainEqual(pieceTo)
+  })
+
+  it('should handle combining heroic pieces if applicable', () => {
+    const pieceFrom: Piece = { color: RED, type: TANK, heroic: true }
+    const pieceTo: Piece = { color: RED, type: INFANTRY }
+
+    const combinedPiece = createCombinedPiece(pieceFrom, pieceTo)
+
+    expect(combinedPiece).toBeDefined()
+    expect(combinedPiece?.color).toBe(RED)
+    expect(combinedPiece?.type).toBe(TANK)
+    expect(combinedPiece?.heroic).toBe(true) // Assuming heroic status is retained from 'pieceFrom'
+    expect(combinedPiece?.carrying).toBeDefined()
+    expect(combinedPiece?.carrying).toHaveLength(1)
+    expect(combinedPiece?.carrying?.[0]).toEqual(pieceTo)
+    // Check if the carried piece inherited heroic status (depends on formStack logic)
+    // Example: expect(combinedPiece.carrying?.[0].heroic).toBeUndefined(); or toBe(false);
+  })
+
+  // Add more test cases for different combinations, colors, etc.
+  // Example: combining pieces of the same color (if allowed/handled by formStack)
+  // it('should handle combining pieces of the same color', () => { ... });
 })
