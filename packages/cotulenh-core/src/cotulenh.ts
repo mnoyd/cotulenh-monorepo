@@ -386,11 +386,25 @@ export class CoTuLenh {
   }
 
   // --- Get/Put/Remove (Updated for Heroic) ---
-  get(square: Square): Piece | undefined {
-    const sq = SQUARE_MAP[square]
+  // Get a piece at a square, optionally specifying a piece type to find in a stack
+  get(square: Square | number, pieceType?: PieceSymbol): Piece | undefined {
+    const sq = typeof square === 'number' ? square : SQUARE_MAP[square]
     if (sq === undefined) return undefined
-    const piece = this._board[sq]
-    return piece
+
+    const pieceAtSquare = this._board[sq]
+    if (!pieceAtSquare) return undefined
+
+    // If no specific piece type requested or the piece matches the requested type, return it
+    if (!pieceType || pieceAtSquare.type === pieceType) {
+      return pieceAtSquare
+    }
+
+    // Check if the requested piece is being carrying in a stack
+    if (pieceAtSquare.carrying && pieceAtSquare.carrying.length > 0) {
+      return pieceAtSquare.carrying.find((p) => p.type === pieceType)
+    }
+
+    return undefined
   }
 
   put(
@@ -1030,33 +1044,9 @@ export class CoTuLenh {
     return moveHistory
   }
 
-  // Get a piece at a square, optionally specifying a piece type to find in a stack
-  getPieceAtSquare(
-    square: Square | number,
-    pieceType?: PieceSymbol,
-  ): Piece | undefined {
-    const sq = typeof square === 'number' ? square : SQUARE_MAP[square]
-    if (sq === undefined) return undefined
-
-    const pieceAtSquare = this._board[sq]
-    if (!pieceAtSquare) return undefined
-
-    // If no specific piece type requested or the piece matches the requested type, return it
-    if (!pieceType || pieceAtSquare.type === pieceType) {
-      return pieceAtSquare
-    }
-
-    // Check if the requested piece is being carrying in a stack
-    if (pieceAtSquare.carrying && pieceAtSquare.carrying.length > 0) {
-      return pieceAtSquare.carrying.find((p) => p.type === pieceType)
-    }
-
-    return undefined
-  }
-
   // Get heroic status of a piece at a square
   getHeroicStatus(square: Square | number, pieceType?: PieceSymbol): boolean {
-    const piece = this.getPieceAtSquare(square, pieceType)
+    const piece = this.get(square, pieceType)
     return piece?.heroic ?? false
   }
 
