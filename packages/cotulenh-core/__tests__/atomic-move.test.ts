@@ -17,6 +17,7 @@ import {
   NAVY,
   COMMANDER,
 } from '../src/type.js'
+import { makePiece } from './test-helpers.js'
 
 describe('Move Commands', () => {
   describe('NormalMoveCommand', () => {
@@ -26,7 +27,7 @@ describe('Move Commands', () => {
         color: RED,
         from: 0xa3, // d2
         to: 0xa5, // f2
-        piece: TANK,
+        piece: makePiece(TANK, RED),
         flags: BITS.NORMAL,
       }
 
@@ -46,7 +47,7 @@ describe('Move Commands', () => {
         color: RED,
         from: 0xa3,
         to: 0x83,
-        piece: TANK,
+        piece: makePiece(TANK, RED),
         flags: BITS.CAPTURE,
       }
 
@@ -54,7 +55,7 @@ describe('Move Commands', () => {
       command.execute()
       expect(game.get('d2')).toBeUndefined()
       expect(game.get('d4')?.color).toBe(RED)
-      expect(command.move.captured).toBe(INFANTRY)
+      expect(command.move.otherPiece?.type).toBe(INFANTRY)
 
       command.undo()
       expect(game.get('d2')?.color).toBe(RED)
@@ -69,7 +70,7 @@ describe('Move Commands', () => {
         color: RED,
         from: 0xb5,
         to: 0xb6,
-        piece: COMMANDER,
+        piece: makePiece(COMMANDER, RED),
         flags: BITS.NORMAL,
       }
 
@@ -89,7 +90,7 @@ describe('Move Commands', () => {
         color: RED,
         from: 0x84,
         to: 0x85,
-        piece: INFANTRY,
+        piece: makePiece(INFANTRY, RED),
         flags: BITS.DEPLOY,
       }
 
@@ -110,7 +111,7 @@ describe('Move Commands', () => {
         color: RED,
         from: 0x84,
         to: 0x85,
-        piece: INFANTRY,
+        piece: makePiece(INFANTRY, RED),
         flags: BITS.DEPLOY | BITS.CAPTURE,
       }
 
@@ -119,7 +120,7 @@ describe('Move Commands', () => {
       expect(game.get('f4')?.color).toBe(RED)
       expect(game.get('f4')?.type).toBe(INFANTRY)
       expect(game.get('e4')?.carrying).toBeFalsy()
-      expect(command.move.captured).toBe(AIR_FORCE)
+      expect(command.move.otherPiece?.type).toBe(AIR_FORCE)
 
       command.undo()
       expect(game.get('f4')?.color).toBe(BLUE)
@@ -136,7 +137,7 @@ describe('Move Commands', () => {
         color: RED,
         from: 0x81,
         to: 0x85,
-        piece: AIR_FORCE,
+        piece: makePiece(AIR_FORCE, RED),
         flags: BITS.DEPLOY | BITS.STAY_CAPTURE,
       }
 
@@ -146,7 +147,7 @@ describe('Move Commands', () => {
       command.execute()
       expect(game.get('f4')?.color).toBe(undefined)
       expect(game.get('b4')?.carrying?.length).toBe(1)
-      expect(command.move.captured).toBe(TANK)
+      expect(command.move.otherPiece?.type).toBe(TANK)
 
       command.undo()
       expect(game.get('f4')?.color).toBe(BLUE)
@@ -162,7 +163,7 @@ describe('Move Commands', () => {
         color: RED,
         from: 0x84,
         to: 0x81,
-        piece: ARTILLERY,
+        piece: makePiece(ARTILLERY, RED),
         flags: BITS.STAY_CAPTURE,
       }
 
@@ -170,7 +171,7 @@ describe('Move Commands', () => {
       command.execute()
       expect(game.get('e4')?.type).toBe(ARTILLERY)
       expect(game.get('b4')).toBeUndefined()
-      expect(command.move.captured).toBe(NAVY)
+      expect(command.move.otherPiece?.type).toBe(NAVY)
 
       command.undo()
       expect(game.get('e4')?.type).toBe(ARTILLERY)
@@ -187,7 +188,7 @@ describe('Move Commands', () => {
           color: RED,
           from: 0x84,
           to: 0xa4,
-          piece: ARTILLERY,
+          piece: makePiece(ARTILLERY, RED),
           flags: BITS.NORMAL,
         }),
       ).toBeInstanceOf(NormalMoveCommand)
@@ -197,7 +198,7 @@ describe('Move Commands', () => {
           color: BLUE,
           from: 0x81,
           to: 0xa3,
-          piece: AIR_FORCE,
+          piece: makePiece(AIR_FORCE, BLUE),
           flags: BITS.DEPLOY,
         }),
       ).toBeInstanceOf(DeployMoveCommand)
@@ -207,7 +208,7 @@ describe('Move Commands', () => {
           color: RED,
           from: 0x84,
           to: 0x81,
-          piece: ARTILLERY,
+          piece: makePiece(ARTILLERY, RED),
           flags: BITS.STAY_CAPTURE,
         }),
       ).toBeInstanceOf(StayCaptureMoveCommand)
@@ -221,7 +222,7 @@ describe('Move Commands', () => {
         color: RED,
         from: 0x00,
         to: 0x01,
-        piece: TANK,
+        piece: makePiece(TANK, RED),
         flags: BITS.NORMAL,
       }
 
@@ -236,7 +237,7 @@ describe('Move Commands', () => {
         color: RED,
         from: 0x00,
         to: 0x01,
-        piece: TANK,
+        piece: makePiece(TANK, RED),
         flags: BITS.CAPTURE,
       }
 
@@ -251,7 +252,7 @@ describe('Move Commands', () => {
         color: RED,
         from: 0x00,
         to: 0x01,
-        piece: INFANTRY,
+        piece: makePiece(INFANTRY, RED),
         flags: BITS.DEPLOY,
       }
 

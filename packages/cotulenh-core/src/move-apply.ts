@@ -9,6 +9,7 @@ import {
   BITS,
   Piece,
 } from './type.js'
+import { createCombinedPiece } from './utils.js'
 
 /**
  * Represents an atomic board action that can be executed and undone
@@ -249,7 +250,7 @@ export class NormalMoveCommand extends MoveCommand {
         )
       }
       // Ensure the captured type is stored on the move object
-      this.move.captured = capturedPieceData.type
+      this.move.otherPiece = capturedPieceData
 
       // Add action to remove the captured piece
       this.actions.push(new RemovePieceAction(this.move.to))
@@ -298,14 +299,14 @@ export class DeployMoveCommand extends MoveCommand {
         )
       }
 
-      this.move.captured = capturedPieceData.type
+      this.move.otherPiece = capturedPieceData
       this.actions.push(new RemovePieceAction(targetSq))
     }
     // Handle normal deploy (with or without capture)
     else {
       // Add action to remove the piece from the carrier's stack
       this.actions.push(
-        new RemoveFromStackAction(this.move.from, this.move.piece, us),
+        new RemoveFromStackAction(this.move.from, this.move.piece.type, us),
       )
       const destSq = this.move.to
 
@@ -321,13 +322,13 @@ export class DeployMoveCommand extends MoveCommand {
           )
         }
 
-        this.move.captured = capturedPieceData.type
+        this.move.otherPiece = capturedPieceData
         this.actions.push(new RemovePieceAction(destSq))
       }
 
       // Find the piece in the carrier's stack to deploy
       const deployedPieceIndex = carrierPiece.carrying!.findIndex(
-        (p) => p.type === this.move.piece && p.color === us,
+        (p) => p.type === this.move.piece.type && p.color === us,
       )
 
       if (deployedPieceIndex === -1) {
@@ -362,6 +363,59 @@ export class DeployMoveCommand extends MoveCommand {
   }
 }
 
+/**
+ * Command for combining two friendly pieces.
+ */
+class CombinationMoveCommand extends MoveCommand {
+  protected buildActions(): void {
+    const movingPieceData = this.game.getPieceAt(this.move.from)
+    const targetPieceData = this.game.getPieceAt(this.move.to)
+
+    if (
+      !movingPieceData ||
+      !targetPieceData ||
+      !(this.move.flags & BITS.COMBINATION) ||
+      !this.move.otherPiece // Sanity check
+    ) {
+      throw new Error(
+        `Invalid state for combination move: ${JSON.stringify(this.move)}`,
+      )
+    }
+
+    // Create the combined piece
+    const combinedPiece = createCombinedPiece(movingPieceData, targetPieceData)
+    if (!combinedPiece) {
+      throw new Error(
+        `Failed to create combined piece: ${JSON.stringify(this.move)}`,
+      )
+    }
+
+    // 1. Remove the moving piece from the 'from' square
+    this.actions.push(new RemovePieceAction(this.move.from))
+
+    // 2. Remove the existing piece from the 'to' square (before placing the combined one)
+    //    Using PlacePieceAction with the combined piece handles both removal and placement
+    //    and ensures correct undo behavior (restoring the original target piece).
+    // this.actions.push(new RemovePieceAction(this.move.to)) // Redundant if PlacePiece handles existing
+
+    // 3. Place the new combined piece on the 'to' square
+    this.actions.push(new PlacePieceAction(this.move.to, combinedPiece))
+
+    // Handle commander position update if the *moving* piece was a commander
+    // Note: Current canCombine logic should prevent this, but defensive coding is good.
+    if (movingPieceData.type === COMMANDER) {
+      this.actions.push(
+        new UpdateKingPositionAction(this.move.color, this.move.to, this.game),
+      )
+    }
+    // Note: If the *target* piece was a commander, it's being removed.
+    // The RemovePieceAction's undo will restore it, but the king position needs update?
+    // The standard capture logic already handles removing the opponent's king,
+    // maybe we need a similar action if a friendly commander is "removed" via combination?
+    // For now, assume canCombine prevents combining *with* a commander.
+  }
+}
+
 export class StayCaptureMoveCommand extends MoveCommand {
   protected buildActions(): void {
     const us = this.move.color
@@ -375,7 +429,7 @@ export class StayCaptureMoveCommand extends MoveCommand {
       )
     }
 
-    this.move.captured = capturedPiece.type
+    this.move.otherPiece = capturedPiece
 
     // Only action is to remove the captured piece
     this.actions.push(new RemovePieceAction(targetSq))
@@ -390,11 +444,16 @@ export function createMoveCommand(
   game: CoTuLenh,
   move: InternalMove,
 ): MoveCommand {
+  // Check flags in order of precedence (if applicable)
   if (move.flags & BITS.DEPLOY) {
     return new DeployMoveCommand(game, move)
   } else if (move.flags & BITS.STAY_CAPTURE) {
     return new StayCaptureMoveCommand(game, move)
+  } else if (move.flags & BITS.COMBINATION) {
+    // Add combination check
+    return new CombinationMoveCommand(game, move)
   } else {
+    // Default to NormalMove if no other specific flags are set
     return new NormalMoveCommand(game, move)
   }
 }

@@ -175,12 +175,12 @@ export function addMove(
   color: Color,
   from: number,
   to: number, // Destination square for normal move, Target square for stay capture
-  piece: PieceSymbol,
-  captured: PieceSymbol | undefined = undefined,
+  piece: Piece,
+  otherPiece?: Piece,
   flags: number = BITS.NORMAL,
 ) {
   // No piece promotion in this variant based on rules
-  const moveToAdd: InternalMove = { color, from, to, piece, captured, flags }
+  const moveToAdd: InternalMove = { color, from, to, piece, otherPiece, flags }
   // 'to' correctly represents destination or target based on flag context in _moves
   moves.push(moveToAdd)
 }

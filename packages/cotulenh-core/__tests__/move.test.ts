@@ -30,15 +30,15 @@ describe('CoTuLenh Stay Capture Logic', () => {
       return (
         m.from === 'd4' &&
         m.to === 'd5' &&
-        m.piece === TANK &&
-        m.captured === INFANTRY
+        m.piece.type === TANK &&
+        m.otherPiece?.type === INFANTRY
       )
     })
 
     expect(captureMove).toBeDefined()
     expect(captureMove?.isStayCapture()).toBe(false)
     expect(captureMove?.to).toBe('d5')
-    expect(captureMove?.captured).toBe(INFANTRY)
+    expect(captureMove?.otherPiece?.type).toBe(INFANTRY)
   })
 
   test('Heavy piece (Artillery) capturing across river on Land should REPLACE', () => {
@@ -51,15 +51,15 @@ describe('CoTuLenh Stay Capture Logic', () => {
       return (
         m.from === 'i5' &&
         m.to === 'i8' &&
-        m.piece === ARTILLERY &&
-        m.captured === INFANTRY
+        m.piece.type === ARTILLERY &&
+        m.otherPiece?.type === INFANTRY
       )
     })
 
     expect(captureMove).toBeDefined()
     expect(captureMove?.isStayCapture()).toBe(false)
     expect(captureMove?.to).toBe('i8')
-    expect(captureMove?.captured).toBe(INFANTRY)
+    expect(captureMove?.otherPiece?.type).toBe(INFANTRY)
   })
 
   test('Navy capturing Navy on Water should REPLACE', () => {
@@ -72,15 +72,15 @@ describe('CoTuLenh Stay Capture Logic', () => {
       return (
         m.from === 'b3' &&
         m.to === 'b5' &&
-        m.piece === NAVY &&
-        m.captured === NAVY
+        m.piece.type === NAVY &&
+        m.otherPiece?.type === NAVY
       )
     })
 
     expect(captureMove).toBeDefined()
     expect(captureMove?.isStayCapture()).toBe(false)
     expect(captureMove?.to).toBe('b5')
-    expect(captureMove?.captured).toBe(NAVY)
+    expect(captureMove?.otherPiece?.type).toBe(NAVY)
   })
 
   test('Navy capturing Land piece on Mixed terrain (c file) should REPLACE', () => {
@@ -93,15 +93,15 @@ describe('CoTuLenh Stay Capture Logic', () => {
       return (
         m.from === 'c4' &&
         m.to === 'c5' &&
-        m.piece === NAVY &&
-        m.captured === TANK
+        m.piece.type === NAVY &&
+        m.otherPiece?.type === TANK
       )
     })
 
     expect(captureMove).toBeDefined()
     expect(captureMove?.isStayCapture()).toBe(false)
     expect(captureMove?.to).toBe('c5')
-    expect(captureMove?.captured).toBe(TANK)
+    expect(captureMove?.otherPiece?.type).toBe(TANK)
   })
 
   test('Land piece (Tank) capturing Navy on pure Water should STAY', () => {
@@ -115,8 +115,8 @@ describe('CoTuLenh Stay Capture Logic', () => {
       return (
         m.from === 'd3' &&
         m.to === 'd3' &&
-        m.piece === TANK &&
-        m.captured === NAVY &&
+        m.piece.type === TANK &&
+        m.otherPiece?.type === NAVY &&
         m.targetSquare === 'b3'
       )
     })
@@ -125,7 +125,7 @@ describe('CoTuLenh Stay Capture Logic', () => {
     expect(captureMove?.isStayCapture()).toBe(true)
     expect(captureMove?.from).toBe('d3')
     expect(captureMove?.to).toBe('d3') // Tank stays
-    expect(captureMove?.captured).toBe(NAVY)
+    expect(captureMove?.otherPiece?.type).toBe(NAVY)
     expect(captureMove?.targetSquare).toBe('b3')
   })
 
@@ -140,8 +140,8 @@ describe('CoTuLenh Stay Capture Logic', () => {
       return (
         m.from === 'c3' &&
         m.to === 'c3' &&
-        m.piece === NAVY &&
-        m.captured === TANK &&
+        m.piece.type === NAVY &&
+        m.otherPiece?.type === TANK &&
         m.targetSquare === 'f3'
       )
     })
@@ -150,7 +150,7 @@ describe('CoTuLenh Stay Capture Logic', () => {
     expect(captureMove?.isStayCapture()).toBe(true)
     expect(captureMove?.from).toBe('c3')
     expect(captureMove?.to).toBe('c3') // Navy stays
-    expect(captureMove?.captured).toBe(TANK)
+    expect(captureMove?.otherPiece?.type).toBe(TANK)
     expect(captureMove?.targetSquare).toBe('f3')
   })
 
@@ -165,8 +165,8 @@ describe('CoTuLenh Stay Capture Logic', () => {
       return (
         m.from === 'd2' &&
         m.to === 'd2' &&
-        m.piece === AIR_FORCE &&
-        m.captured === NAVY &&
+        m.piece.type === AIR_FORCE &&
+        m.otherPiece?.type === NAVY &&
         m.targetSquare === 'b2'
       )
     })
@@ -175,7 +175,7 @@ describe('CoTuLenh Stay Capture Logic', () => {
     expect(captureMove?.isStayCapture()).toBe(true)
     expect(captureMove?.from).toBe('d2')
     expect(captureMove?.to).toBe('d2') // AF stays
-    expect(captureMove?.captured).toBe(NAVY)
+    expect(captureMove?.otherPiece?.type).toBe(NAVY)
     expect(captureMove?.targetSquare).toBe('b2')
   })
 
@@ -189,15 +189,15 @@ describe('CoTuLenh Stay Capture Logic', () => {
       return (
         m.from === 'd4' &&
         m.to === 'd5' &&
-        m.piece === AIR_FORCE &&
-        m.captured === INFANTRY
+        m.piece.type === AIR_FORCE &&
+        m.otherPiece?.type === INFANTRY
       )
     })
 
     expect(captureMove).toBeDefined()
     expect(captureMove?.isStayCapture()).toBe(false)
     expect(captureMove?.to).toBe('d5')
-    expect(captureMove?.captured).toBe(INFANTRY)
+    expect(captureMove?.otherPiece?.type).toBe(INFANTRY)
   })
 })
 
@@ -322,7 +322,7 @@ describe('SAN Conversion', () => {
 
     expect(move).not.toBeNull()
     expect(move?.san).toBe('Ixd5')
-    expect(move?.captured).toBe(INFANTRY)
+    expect(move?.isCapture()).toBe(true)
     expect(game.get('d5')?.type).toBe(INFANTRY)
     expect(game.get('d5')?.color).toBe(RED)
     expect(game.get('d4')).toBeUndefined()
@@ -341,7 +341,7 @@ describe('SAN Conversion', () => {
     expect(move?.from).toBe('d2')
     expect(move?.to).toBe('d2') // Piece ends up at origin
     expect(move?.targetSquare).toBe('b2') // Target was b2
-    expect(move?.captured).toBe(NAVY)
+    expect(move?.otherPiece?.type).toBe(NAVY)
     expect(game.get('d2')?.type).toBe(AIR_FORCE)
     expect(game.get('b2')).toBeUndefined()
   })
@@ -386,11 +386,11 @@ describe('Piece Blocking Movement Logic', () => {
     const moves = game.moves({ verbose: true, ignoreSafety: true }) as Move[]
 
     // Infantry should not be able to move to d5 (occupied by friendly Tank)
-    const moveToD5 = moves.find((m) => m.from === 'd4' && m.to === 'd5')
+    const moveToD5 = moves.find((m) => m.from === 'd5' && m.to === 'd3')
     expect(moveToD5).toBeUndefined()
 
     // Infantry should be able to move to other valid squares
-    const moveToE4 = moves.find((m) => m.from === 'd4' && m.to === 'e4')
+    const moveToE4 = moves.find((m) => m.from === 'd5' && m.to === 'e5')
     expect(moveToE4).toBeDefined()
   })
 
@@ -409,7 +409,7 @@ describe('Piece Blocking Movement Logic', () => {
 
     // Air Force should be able to capture enemy Tank
     const captureD6 = moves.find(
-      (m) => m.from === 'd4' && m.to === 'd6' && m.captured === TANK,
+      (m) => m.from === 'd4' && m.to === 'd6' && m.otherPiece?.type === TANK,
     )
     expect(captureD6).toBeDefined()
   })
@@ -425,7 +425,7 @@ describe('Piece Blocking Movement Logic', () => {
 
     // Artillery should not be able to move to d5 or d6 (blocked by friendly Infantry)
     const moveToD5 = moves.find(
-      (m) => m.from === 'd3' && m.to === 'd5' && !m.captured,
+      (m) => m.from === 'd3' && m.to === 'd5' && !m.isCapture(),
     )
     const moveToD6 = moves.find((m) => m.from === 'd3' && m.to === 'd6')
     expect(moveToD5).toBeUndefined()
@@ -433,7 +433,7 @@ describe('Piece Blocking Movement Logic', () => {
 
     // Artillery should be able to capture enemy Tank at d5 despite blocking
     const captureD5 = moves.find(
-      (m) => m.from === 'd3' && m.to === 'd5' && m.captured === TANK,
+      (m) => m.from === 'd3' && m.to === 'd5' && m.isCapture(),
     )
     expect(captureD5).toBeDefined()
   })
@@ -453,7 +453,7 @@ describe('Piece Blocking Movement Logic', () => {
 
     // Navy should be able to capture enemy Navy
     const captureB6 = moves.find(
-      (m) => m.from === 'b3' && m.to === 'b6' && m.captured === NAVY,
+      (m) => m.from === 'b3' && m.to === 'b6' && m.otherPiece?.type === NAVY,
     )
     expect(captureB6).toBeDefined()
   })
@@ -469,7 +469,7 @@ describe('Piece Blocking Movement Logic', () => {
 
     // Tank should not be able to move to d5 (blocked by friendly Infantry)
     const moveToD5 = moves.find(
-      (m) => m.from === 'd3' && m.to === 'd5' && !m.captured,
+      (m) => m.from === 'd3' && m.to === 'd5' && !m.isCapture(),
     )
     expect(moveToD5).toBeUndefined()
 

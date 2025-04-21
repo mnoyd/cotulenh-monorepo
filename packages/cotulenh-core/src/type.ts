@@ -185,9 +185,8 @@ export type InternalMove = {
   color: Color
   from: number // 0x88 index
   to: number // 0x88 index (destination OR target square for stay capture)
-  piece: PieceSymbol // The piece being moved (or deployed)
-  captured?: PieceSymbol
-  // promotion?: PieceSymbol; // Promotion is status change, not piece change?
+  piece: Piece // The piece being moved (or deployed)
+  otherPiece?: Piece
   flags: number // Bitmask using BITS
   becameHeroic?: boolean // Track if this move caused promotion
 }

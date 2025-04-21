@@ -27,7 +27,7 @@ import {
   swapColor,
   Square,
 } from './type.js'
-import { addMove } from './utils.js'
+import { addMove, createCombinedPiece } from './utils.js'
 import { BITS } from './type.js'
 import { CoTuLenh } from './cotulenh.js'
 
@@ -247,6 +247,30 @@ export function generateMovesInDirection(
           currentRange,
           config,
         )
+      } else if (targetPiece.color === us) {
+        // Combination logic: Check if moving piece can combine with friendly piece
+        const combinedPiece = createCombinedPiece(pieceData, targetPiece)
+        if (
+          !isDeployMove && // Cannot combine during deploy moves
+          combinedPiece &&
+          combinedPiece.carrying &&
+          combinedPiece.carrying.length > 0 &&
+          currentRange <= config.moveRange && // Must be within move range
+          !terrainBlockedMovement &&
+          !pieceBlockedMovement && // Ensure path isn't blocked *before* target
+          canLandOnSquare(to, pieceData.type) // Check if mover can land there
+          // Note: We don't check config.moveIgnoresBlocking here, as we *want* to interact
+        ) {
+          addMove(
+            moves,
+            us,
+            from,
+            to,
+            pieceData,
+            targetPiece, // Store the type combined with
+            BITS.COMBINATION, // Set combination flag
+          )
+        }
       }
 
       // Piece blocking check
@@ -268,7 +292,7 @@ export function generateMovesInDirection(
         !pieceBlockedMovement &&
         canLandOnSquare(to, pieceData.type)
       ) {
-        addMove(moves, us, from, to, pieceData.type)
+        addMove(moves, us, from, to, pieceData)
       }
     }
 
@@ -371,26 +395,10 @@ function handleCaptureLogic(
 
   if (captureAllowed) {
     if (addNormalCapture) {
-      addMove(
-        moves,
-        us,
-        from,
-        to,
-        pieceData.type,
-        targetPiece.type,
-        BITS.CAPTURE,
-      )
+      addMove(moves, us, from, to, pieceData, targetPiece, BITS.CAPTURE)
     }
     if (addStayCapture) {
-      addMove(
-        moves,
-        us,
-        from,
-        to,
-        pieceData.type,
-        targetPiece.type,
-        BITS.STAY_CAPTURE,
-      )
+      addMove(moves, us, from, to, pieceData, targetPiece, BITS.STAY_CAPTURE)
     }
   }
 }

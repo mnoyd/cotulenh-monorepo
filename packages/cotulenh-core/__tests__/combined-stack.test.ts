@@ -29,7 +29,8 @@ const findVerboseMove = (
   return moves.find((m) => {
     // 'm' is an instance of the Move class
     const matchFrom = m.from === from
-    const matchPiece = options.piece === undefined || m.piece === options.piece
+    const matchPiece =
+      options.piece === undefined || m.piece.type === options.piece
     const matchDeploy =
       options.isDeploy === undefined || m.isDeploy === options.isDeploy
     // Check stay capture based on properties, not a method call
@@ -106,19 +107,19 @@ describe('Stack Movement and Deployment', () => {
 
     expect(deployF_c4).toBeDefined()
     expect(deployF_c4?.isDeploy).toBe(true)
-    expect(deployF_c4?.piece).toBe(AIR_FORCE)
+    expect(deployF_c4?.piece?.type).toBe(AIR_FORCE)
 
     expect(deployF_d4).toBeDefined() // Check another direction
 
     expect(deployT_c4).toBeDefined()
     expect(deployT_c4?.isDeploy).toBe(true)
-    expect(deployT_c4?.piece).toBe(TANK)
+    expect(deployT_c4?.piece?.type).toBe(TANK)
 
     expect(deployT_d3).toBeDefined() // Check another direction
 
     expect(carrierN_c4).toBeDefined()
     expect(carrierN_c4?.isDeploy).toBe(false)
-    expect(carrierN_c4?.piece).toBe(NAVY)
+    expect(carrierN_c4?.piece?.type).toBe(NAVY)
 
     // Check a non-deploy move is not generated for carrying pieces
     const nonDeployF = findVerboseMove(moves, 'c3', 'c4', {
@@ -245,7 +246,7 @@ describe('Stack Movement and Deployment', () => {
     const nextMoves = game.moves({ verbose: true }) as Move[]
     expect(
       nextMoves
-        .filter((m) => m.piece !== COMMANDER)
+        .filter((m) => m.piece.type !== COMMANDER)
         .every((m) => m.from === 'c3'),
     ).toBe(true) // All moves must originate from c3 (except Commander)
     expect(

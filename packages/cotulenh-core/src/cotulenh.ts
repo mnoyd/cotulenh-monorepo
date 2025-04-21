@@ -46,8 +46,8 @@ export class Move {
   color: Color
   from: Square
   to: Square // Destination square (piece's final location)
-  piece: PieceSymbol
-  captured?: PieceSymbol
+  piece: Piece
+  otherPiece?: Piece
   // promotion?: PieceSymbol; // Not applicable?
   flags: string // String representation of flags
   san?: string // Standard Algebraic Notation (needs implementation)
@@ -61,7 +61,7 @@ export class Move {
 
   // Constructor needs the main class instance to generate SAN, FENs etc.
   constructor(game: CoTuLenh, internal: InternalMove) {
-    const { color, piece, from, to, flags, captured, becameHeroic } = internal
+    const { color, piece, from, to, flags, otherPiece, becameHeroic } = internal
 
     this.color = color
     this.piece = piece // This is the piece that MOVED (or was deployed)
@@ -72,7 +72,7 @@ export class Move {
         this.flags += FLAGS[flag]
       }
     }
-    if (captured) this.captured = captured
+    if (otherPiece) this.otherPiece = otherPiece
     if (becameHeroic) this.becameHeroic = true
     this.isDeploy = (flags & BITS.DEPLOY) !== 0
 
@@ -563,7 +563,7 @@ export class CoTuLenh {
     // --- 4. Update General Game State AFTER command execution ---
 
     // Reset half moves counter if capture occurred OR commander moved
-    if (moveCommand.move.captured) {
+    if (moveCommand.move.otherPiece) {
       this._halfMoves = 0
     } else {
       this._halfMoves++
@@ -706,11 +706,11 @@ export class CoTuLenh {
 
   // --- SAN Parsing/Generation (Updated for Stay Capture & Deploy) ---
   private _moveToSan(move: InternalMove, moves: InternalMove[]): string {
-    const pieceChar = move.piece.toUpperCase()
+    const pieceChar = move.piece.type.toUpperCase()
     const disambiguator = getDisambiguator(move, moves)
     const toAlg = algebraic(move.to) // Target square
     const heroicPrefix =
-      (this.getHeroicStatus(move.from, move.piece) ?? false) ? '+' : '' // Simplified: Assume Move class handles this better
+      (this.getHeroicStatus(move.from, move.piece.type) ?? false) ? '+' : '' // Simplified: Assume Move class handles this better
     const heroicSuffix = move.becameHeroic ? '^' : ''
     let separator = ''
     if (move.flags & BITS.DEPLOY) {
@@ -807,7 +807,7 @@ export class CoTuLenh {
 
     for (const m of candidateMoves) {
       // Check piece type (must match if provided in SAN, especially for deploy)
-      if (parsed.piece && m.piece !== parsed.piece) continue
+      if (parsed.piece && m.piece.type !== parsed.piece) continue
 
       // Check flags match the parsed separator type
       const isMoveDeploy = (m.flags & BITS.DEPLOY) !== 0
@@ -882,7 +882,7 @@ export class CoTuLenh {
 
         if (
           targetSquareInternal === toSq &&
-          (move.piece ? move.piece === m.piece : true)
+          (move.piece ? move.piece === m.piece.type : true)
         ) {
           // Check if stay preference matches
           if (requestedStay && isStayMove) {
