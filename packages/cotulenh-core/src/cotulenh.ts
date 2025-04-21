@@ -23,6 +23,9 @@ import {
   swapColor,
   InternalMove,
   VALID_PIECE_TYPES,
+  NAVY,
+  NAVY_MASK,
+  LAND_MASK,
 } from './type.js'
 import { getDisambiguator, printBoard } from './utils.js'
 import { generateDeployMoves, generateNormalMoves } from './move-generation.js'
@@ -406,6 +409,11 @@ export class CoTuLenh {
   ): boolean {
     if (!(square in SQUARE_MAP)) return false
     const sq = SQUARE_MAP[square]
+
+    //Piece should be put on correct relative terrain.
+    if (type === NAVY) {
+      if (!NAVY_MASK[sq]) return false
+    } else if (!LAND_MASK[sq]) return false
 
     // Handle commander limit
     if (

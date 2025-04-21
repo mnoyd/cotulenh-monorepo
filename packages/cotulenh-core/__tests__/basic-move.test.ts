@@ -4,6 +4,7 @@ import {
   Square, // Import Square type
   AIR_FORCE, // Import AIR_FORCE
   MISSILE,
+  NAVY,
 } from '../src/type'
 import { CoTuLenh, Move } from '../src/cotulenh'
 
@@ -14,9 +15,7 @@ const findMove = (
   from: Square,
   to: Square,
 ): Move | undefined => {
-  return moves.find(
-    (m) => m.from === from && m.to === to && !m.isDeploy && !m.isStayCapture(),
-  )
+  return moves.find((m) => m.from === from && m.to === to)
 }
 
 // Helper to extract just the 'to' squares for simple comparison
@@ -327,14 +326,18 @@ describe('Basic AIR_FORCE Moves on Empty Board', () => {
 
   test('Air Force basic moves from a1 (Water)', () => {
     const startSquare: Square = 'a1'
-    game.put({ type: AIR_FORCE, color: RED }, startSquare)
+    game.put(
+      { type: NAVY, color: RED, carrying: [{ type: AIR_FORCE, color: RED }] },
+      startSquare,
+    )
 
     const moves = game.moves({
       square: startSquare,
       verbose: true,
       ignoreSafety: true,
     }) as Move[]
-    const actualDestinations = getDestinationSquares(moves)
+    const airForceMoves = moves.filter((m) => m.piece.type === AIR_FORCE)
+    const actualDestinations = getDestinationSquares(airForceMoves)
     // Air Force can move to adjacent land/water/mixed
     //prettier-ignore
     const expectedDestinations: Square[] = [
@@ -346,10 +349,10 @@ describe('Basic AIR_FORCE Moves on Empty Board', () => {
     ].sort();
 
     expectedDestinations.forEach((dest) => {
-      expect(findMove(moves, startSquare, dest)).toBeDefined()
+      expect(findMove(airForceMoves, startSquare, dest)).toBeDefined()
     })
     expect(actualDestinations).toEqual(expectedDestinations)
-    expect(moves).toHaveLength(expectedDestinations.length)
+    expect(airForceMoves).toHaveLength(expectedDestinations.length)
   })
 
   // TODO: Add more Air Force tests (corners, edges, over water)

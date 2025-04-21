@@ -93,7 +93,7 @@ describe('_isCommanderAttacked Function Tests', () => {
     game.put({ type: COMMANDER, color: BLUE }, 'c5')
 
     // Place an enemy navy on water (assuming f5 is water)
-    game.put({ type: NAVY, color: RED }, 'f5')
+    game.put({ type: NAVY, color: RED }, 'b5')
 
     // Test if commander is attacked (should be true if within naval gun range)
     expect(game['_isCommanderAttacked'](BLUE)).toBe(true)
