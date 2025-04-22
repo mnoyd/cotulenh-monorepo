@@ -23,6 +23,7 @@ import {
   AIR_FORCE,
   NAVY,
   HEADQUARTER,
+  isDigit,
 } from './type.js'
 
 import { formStack } from '@repo/cotulenh-combine-piece'
@@ -183,4 +184,193 @@ export function addMove(
   const moveToAdd: InternalMove = { color, from, to, piece, otherPiece, flags }
   // 'to' correctly represents destination or target based on flag context in _moves
   moves.push(moveToAdd)
+}
+
+/**
+ * Validates FEN format
+ * @param tokens - The FEN tokens
+ * @throws Error if the FEN format is invalid
+ */
+export function validateFenFormat(tokens: string[]): void {
+  if (tokens.length < 6) {
+    throw new Error(
+      `Invalid FEN: expected at least 6 tokens, got ${tokens.length}`,
+    )
+  }
+  // Additional validation can be added here
+}
+
+/**
+ * Validates the position for correctness
+ * @param board - The board array
+ * @param commanders - The commanders positions
+ * @throws Error if the position is invalid
+ */
+export function validatePosition(
+  board: Array<Piece | undefined>,
+  commanders: Record<Color, number>,
+): void {
+  // Check that both commanders are present
+  if (commanders[RED] === -1) {
+    throw new Error('Invalid position: Red commander is missing')
+  }
+  if (commanders['b'] === -1) {
+    throw new Error('Invalid position: Blue commander is missing')
+  }
+
+  // Additional position validation can be added here
+  // For example, check that pieces are on valid squares (land/navy)
+  for (let sq = 0; sq < 128; sq++) {
+    if (!(sq & 0x88)) {
+      // Valid square in 0x88 board
+      const piece = board[sq]
+      if (piece) {
+        if (piece.type === NAVY && !NAVY_MASK[sq]) {
+          throw new Error(
+            `Invalid position: Navy piece at ${algebraic(sq)} is not on water`,
+          )
+        } else if (piece.type !== NAVY && !LAND_MASK[sq]) {
+          throw new Error(
+            `Invalid position: Land piece at ${algebraic(sq)} is not on land`,
+          )
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Parses a rank string from FEN
+ * @param rankStr - The rank string to parse
+ * @param r - The rank index
+ * @param fileIndex - The starting file index
+ * @returns Object containing the new index and number of empty squares
+ */
+export function handleEmptySquares(
+  rankStr: string,
+  i: number,
+  r: number,
+  fileIndex: number,
+): { newIndex: number; emptySquares: number } {
+  let numStr = rankStr.charAt(i)
+  let newIndex = i
+
+  // Check for multi-digit numbers
+  while (
+    newIndex + 1 < rankStr.length &&
+    isDigit(rankStr.charAt(newIndex + 1))
+  ) {
+    newIndex++
+    numStr += rankStr.charAt(newIndex)
+  }
+
+  const emptySquares = parseInt(numStr, 10)
+  if (fileIndex + emptySquares > 11) {
+    throw new Error(
+      `Invalid FEN: rank ${12 - r} has too many squares (${rankStr})`,
+    )
+  }
+
+  return { newIndex, emptySquares }
+}
+
+/**
+ * Validates a complete FEN string
+ * @param fen - The FEN string to validate
+ * @throws Error if the FEN is invalid
+ */
+export function validateFen(fen: string): void {
+  // Parse FEN string into tokens
+  const tokens = fen.split(/\s+/)
+  const position = tokens[0]
+
+  // Validate FEN format
+  validateFenFormat(tokens)
+
+  // Validate board position (ranks)
+  const ranks = position.split('/')
+  if (ranks.length !== 12) {
+    throw new Error(`Invalid FEN: expected 12 ranks, got ${ranks.length}`)
+  }
+
+  // Validate each rank has correct number of squares
+  for (let r = 0; r < 12; r++) {
+    let fileIndex = 0
+    let currentRankSquares = 0
+    const rankStr = ranks[r]
+
+    for (let i = 0; i < rankStr.length; i++) {
+      const char = rankStr.charAt(i)
+
+      if (isDigit(char)) {
+        // Handle multi-digit numbers for empty squares
+        const { newIndex, emptySquares } = handleEmptySquares(
+          rankStr,
+          i,
+          r,
+          fileIndex,
+        )
+        i = newIndex
+        fileIndex += emptySquares
+        currentRankSquares += emptySquares
+      } else if (char === '(') {
+        // Parse stack notation
+        const endParen = rankStr.indexOf(')', i)
+        if (endParen === -1) {
+          throw new Error(
+            `Invalid FEN: Unmatched parenthesis in rank ${12 - r}`,
+          )
+        }
+
+        const stackContent = rankStr.substring(i + 1, endParen)
+        if (stackContent.length === 0) {
+          throw new Error(`Invalid FEN: Empty stack '()' in rank ${12 - r}`)
+        }
+
+        // Skip to end of stack notation
+        i = endParen
+        fileIndex++
+        currentRankSquares++
+      } else if (char === '+') {
+        // Handle heroic piece notation ('+' followed by piece symbol)
+        if (i + 1 >= rankStr.length) {
+          throw new Error(
+            `Invalid FEN: '+' at end of rank ${12 - r} without piece symbol`,
+          )
+        }
+        // Skip the '+' and process the piece symbol in the next iteration
+        // We don't increment fileIndex or currentRankSquares here because
+        // the piece symbol will be processed in the next iteration
+      } else {
+        // Single piece (or piece symbol after '+')
+        fileIndex++
+        currentRankSquares++
+      }
+    }
+
+    if (currentRankSquares !== 11) {
+      throw new Error(
+        `Invalid FEN: rank ${12 - r} does not have 11 squares (${rankStr}, counted ${currentRankSquares})`,
+      )
+    }
+  }
+
+  // Validate turn
+  const turn = tokens[1]
+  if (turn !== 'r' && turn !== 'b') {
+    throw new Error(`Invalid FEN: turn must be 'r' or 'b', got '${turn}'`)
+  }
+
+  // Validate halfmoves and fullmoves if present
+  if (tokens[4] && !/^\d+$/.test(tokens[4])) {
+    throw new Error(
+      `Invalid FEN: halfmoves must be a number, got '${tokens[4]}'`,
+    )
+  }
+
+  if (tokens[5] && !/^\d+$/.test(tokens[5])) {
+    throw new Error(
+      `Invalid FEN: fullmoves must be a number, got '${tokens[5]}'`,
+    )
+  }
 }

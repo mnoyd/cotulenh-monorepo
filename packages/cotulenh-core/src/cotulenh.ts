@@ -27,7 +27,14 @@ import {
   NAVY_MASK,
   LAND_MASK,
 } from './type.js'
-import { getDisambiguator, printBoard } from './utils.js'
+import {
+  getDisambiguator,
+  printBoard,
+  validateFen,
+  validateFenFormat,
+  validatePosition,
+  handleEmptySquares,
+} from './utils.js'
 import { generateDeployMoves, generateNormalMoves } from './move-generation.js'
 import { createMoveCommand, MoveCommand } from './move-apply.js'
 
@@ -130,6 +137,11 @@ export class CoTuLenh {
     this.load(fen)
   }
 
+  /**
+   * Clears the board and resets the game state
+   * @param options - Clear options
+   * @param options.preserveHeaders - Whether to preserve existing headers
+   */
   clear({ preserveHeaders = false } = {}) {
     this._board = new Array<Piece | undefined>(256)
     this._commanders = { r: -1, b: -1 }
@@ -144,175 +156,281 @@ export class CoTuLenh {
     delete this._header['FEN']
   }
 
-  // FEN loading - updated for colors, needs heroic status parsing if added to FEN
+  /**
+   * Loads a game position from a FEN string
+   * @param fen - The FEN string to load
+   * @param options - Loading options
+   * @param options.skipValidation - Whether to skip FEN validation
+   * @param options.preserveHeaders - Whether to preserve existing headers
+   * @throws Error if the FEN string is invalid
+   */
   load(fen: string, { skipValidation = false, preserveHeaders = false } = {}) {
-    // TODO: Add FEN validation based on rules
+    // Parse FEN string into tokens
     const tokens = fen.split(/\s+/)
     const position = tokens[0]
 
     this.clear({ preserveHeaders })
 
-    // TODO: Parse heroic status from FEN if represented (e.g., 'C*' vs 'C')
+    // Validate FEN format if not skipping validation
+    if (!skipValidation) {
+      validateFen(fen)
+    }
 
+    // Parse board position
+    this._parseBoardPosition(position)
+
+    // Parse game state
+    this._turn = (tokens[1] as Color) || RED
+    this._halfMoves = parseInt(tokens[4], 10) || 0
+    this._moveNumber = parseInt(tokens[5], 10) || 1
+
+    // Update position counts and setup flags
+    this._updatePositionCounts()
+  }
+
+  private _parseBoardPosition(position: string): void {
     const ranks = position.split('/')
     if (ranks.length !== 12) {
       throw new Error(`Invalid FEN: expected 12 ranks, got ${ranks.length}`)
     }
 
     for (let r = 0; r < 12; r++) {
-      const rankStr = ranks[r]
-      let fileIndex = 0
-      let currentRankSquares = 0
+      this._parseRank(ranks[r], r)
+    }
+  }
 
-      for (let i = 0; i < rankStr.length; i++) {
-        const char = rankStr.charAt(i)
+  private _parseRank(rankStr: string, r: number): void {
+    let fileIndex = 0
+    let currentRankSquares = 0
 
-        if (isDigit(char)) {
-          // Handle multi-digit numbers for empty squares
-          let numStr = char
-          if (i + 1 < rankStr.length && isDigit(rankStr.charAt(i + 1))) {
-            numStr += rankStr.charAt(i + 1)
-            i++
-          }
-          const emptySquares = parseInt(numStr, 10)
-          if (fileIndex + emptySquares > 11) {
-            throw new Error(
-              `Invalid FEN: rank ${12 - r} has too many squares (${rankStr})`,
-            )
-          }
-          fileIndex += emptySquares
-          currentRankSquares += emptySquares
-        } else {
-          // Check for stack notation '('
-          if (char === '(') {
-            const endParen = rankStr.indexOf(')', i)
-            if (endParen === -1) {
-              throw new Error(
-                `Invalid FEN: Unmatched parenthesis in rank ${12 - r}`,
-              )
-            }
-            const stackContent = rankStr.substring(i + 1, endParen)
-            if (stackContent.length === 0) {
-              throw new Error(`Invalid FEN: Empty stack '()' in rank ${12 - r}`)
-            }
+    for (let i = 0; i < rankStr.length; i++) {
+      const char = rankStr.charAt(i)
 
-            let carrierHeroic = false
-            let carrierIndex = 0
-            if (stackContent[0] === '+') {
-              carrierHeroic = true
-              carrierIndex = 1
-              if (stackContent.length < 2) {
-                throw new Error(
-                  `Invalid FEN: Stack '(+)' missing carrier in rank ${12 - r}`,
-                )
-              }
-            }
-
-            const carrierChar = stackContent[carrierIndex]
-            const carrierColor = carrierChar < 'a' ? RED : BLUE
-            const carrierType = carrierChar.toLowerCase() as PieceSymbol
-            // TODO: Validate carrier type
-
-            const carriedPieces: Piece[] = []
-            for (let j = carrierIndex + 1; j < stackContent.length; j++) {
-              // TODO: Handle heroic carrying pieces if notation allows e.g. (+F)
-              const carriedChar = stackContent[j]
-              const carriedColor = carriedChar < 'a' ? RED : BLUE
-              const carriedType = carriedChar.toLowerCase() as PieceSymbol
-              // TODO: Validate carrying type and color (must match carrier)
-              if (carriedColor !== carrierColor) {
-                console.warn(
-                  `Carried piece color mismatch in stack: ${stackContent}`,
-                )
-                continue // Skip invalid carrying piece
-              }
-              carriedPieces.push({ type: carriedType, color: carriedColor })
-            }
-
-            // TODO: Validate stack based on carrierBlueprints (deferred)
-
-            const sq0x88 = r * 16 + fileIndex
-            this._board[sq0x88] = {
-              type: carrierType,
-              color: carrierColor,
-              carrying: carriedPieces.length > 0 ? carriedPieces : undefined,
-              heroic: carrierHeroic, // Add heroic status
-            }
-
-            if (carrierType === COMMANDER) {
-              if (this._commanders[carrierColor] === -1) {
-                this._commanders[carrierColor] = sq0x88
-              } else {
-                console.warn(
-                  `Multiple commanders found for color ${carrierColor}.`,
-                )
-              }
-            }
-
-            fileIndex++
-            currentRankSquares++
-            i = endParen // Move parser past the closing parenthesis
-            continue // Skip to next char in rank string
-          }
-
-          // Check for heroic status with '+' prefix (for single pieces)
-          let isHeroic = false
-          if (char === '+') {
-            isHeroic = true
-            i++ // Move to the next character (the actual piece)
-            if (i >= rankStr.length) {
-              throw new Error(`Invalid FEN: '+' at the end of rank ${12 - r}`)
-            }
-          }
-
-          // Handle piece character
-          const pieceChar = isHeroic ? rankStr.charAt(i) : char
-          const color = pieceChar < 'a' ? RED : BLUE // Use RED/BLUE constants
-          let type = pieceChar.toLowerCase() as PieceSymbol
-
-          // TODO: Validate piece type is known
-          // Use 'in' operator which works across ES versions
-          if (!(type in VALID_PIECE_TYPES) && type !== HEADQUARTER) {
-            console.warn(`Unknown piece type in FEN: ${type}`)
-            // Decide how to handle: error or skip? Skipping for now.
-            fileIndex++
-            currentRankSquares++
-            continue
-          }
-
-          const sq0x88 = r * 16 + fileIndex
-          this._board[sq0x88] = { type, color, heroic: isHeroic }
-          if (type === COMMANDER) {
-            // Only track Commander now
-            if (this._commanders[color] === -1) {
-              this._commanders[color] = sq0x88
-            } else {
-              console.warn(`Multiple commanders found for color ${color}.`)
-            }
-          }
-
-          fileIndex++
-          currentRankSquares++
-        }
+      if (isDigit(char)) {
+        // Handle multi-digit numbers for empty squares
+        const { newIndex, emptySquares } = handleEmptySquares(
+          rankStr,
+          i,
+          r,
+          fileIndex,
+        )
+        i = newIndex
+        fileIndex += emptySquares
+        currentRankSquares += emptySquares
+      } else if (char === '(') {
+        // Parse stack notation
+        const { newIndex } = this._parseStack(rankStr, i, r, fileIndex)
+        i = newIndex
+        fileIndex++
+        currentRankSquares++
+      } else {
+        // Parse single piece
+        const { newIndex } = this._parseSinglePiece(rankStr, i, r, fileIndex)
+        i = newIndex
+        fileIndex++
+        currentRankSquares++
       }
-      if (currentRankSquares !== 11) {
+    }
+
+    if (currentRankSquares !== 11) {
+      throw new Error(
+        `Invalid FEN: rank ${12 - r} does not have 11 squares (${rankStr}, counted ${currentRankSquares})`,
+      )
+    }
+  }
+
+  private _parseStack(
+    rankStr: string,
+    i: number,
+    r: number,
+    fileIndex: number,
+  ): { newIndex: number } {
+    const endParen = rankStr.indexOf(')', i)
+    if (endParen === -1) {
+      throw new Error(`Invalid FEN: Unmatched parenthesis in rank ${12 - r}`)
+    }
+
+    const stackContent = rankStr.substring(i + 1, endParen)
+    if (stackContent.length === 0) {
+      throw new Error(`Invalid FEN: Empty stack '()' in rank ${12 - r}`)
+    }
+
+    let carrierHeroic = false
+    let carrierIndex = 0
+    if (stackContent[0] === '+') {
+      carrierHeroic = true
+      carrierIndex = 1
+      if (stackContent.length < 2) {
         throw new Error(
-          `Invalid FEN: rank ${
-            12 - r
-          } does not have 11 squares (${rankStr}, counted ${currentRankSquares})`,
+          `Invalid FEN: Stack '(+)' missing carrier in rank ${12 - r}`,
         )
       }
     }
 
-    this._turn = (tokens[1] as Color) || RED
-    // No castling or EP to parse based on rules provided
-    this._halfMoves = parseInt(tokens[4], 10) || 0
-    this._moveNumber = parseInt(tokens[5], 10) || 1
+    const carrierChar = stackContent[carrierIndex]
+    const carrierColor = carrierChar < 'a' ? RED : BLUE
+    const carrierType = carrierChar.toLowerCase() as PieceSymbol
 
-    // TODO: _updateSetup, _incPositionCount
+    // Validate carrier type
+    if (!(carrierType in VALID_PIECE_TYPES)) {
+      throw new Error(
+        `Invalid FEN: Unknown carrier type '${carrierType}' in stack at rank ${12 - r}`,
+      )
+    }
+
+    // Parse carried pieces with validation
+    const carriedPieces = this._parseCarriedPieces(
+      stackContent,
+      carrierIndex + 1,
+      carrierColor,
+      r,
+    )
+
+    const sq0x88 = r * 16 + fileIndex
+    this._board[sq0x88] = {
+      type: carrierType,
+      color: carrierColor,
+      carrying: carriedPieces.length > 0 ? carriedPieces : undefined,
+      heroic: carrierHeroic, // Add heroic status
+    }
+
+    if (carrierType === COMMANDER) {
+      if (this._commanders[carrierColor] === -1) {
+        this._commanders[carrierColor] = sq0x88
+      } else {
+        throw new Error(
+          `Invalid FEN: Multiple commanders found for color ${carrierColor}`,
+        )
+      }
+    }
+
+    return { newIndex: endParen } // Move parser past the closing parenthesis
+  }
+  /**
+   * Updates position counts and setup flags
+   * @private
+   */
+  private _updatePositionCounts(): void {
+    const fen = this.fen()
+
+    // Update position count for threefold repetition detection
+    if (!(fen in this._positionCount)) {
+      this._positionCount[fen] = 0
+    }
+    this._positionCount[fen]++
+
+    // Update setup flags
+    this._header['SetUp'] = '1'
+    this._header['FEN'] = fen
   }
 
-  // FEN generation - needs heroic status representation
+  private _parseCarriedPieces(
+    stackContent: string,
+    startIndex: number,
+    carrierColor: Color,
+    r: number,
+  ): Piece[] {
+    const carriedPieces: Piece[] = []
+
+    for (let j = startIndex; j < stackContent.length; j++) {
+      let isHeroic = false
+      let currentPieceIndex = j
+
+      // Check for heroic marker '+'
+      if (stackContent[currentPieceIndex] === '+') {
+        isHeroic = true
+        currentPieceIndex++ // Move to the actual piece symbol
+
+        // Check if '+' is the last character in the stack content
+        if (currentPieceIndex >= stackContent.length) {
+          throw new Error(
+            `Invalid FEN: '+' at the end of stack content in rank ${12 - r}`,
+          )
+        }
+        j = currentPieceIndex // Update the main loop index
+      }
+
+      const carriedChar = stackContent[currentPieceIndex]
+      const carriedColor = carriedChar < 'a' ? RED : BLUE
+      const carriedType = carriedChar.toLowerCase() as PieceSymbol
+
+      // Validate carried piece type
+      if (!(carriedType in VALID_PIECE_TYPES)) {
+        throw new Error(
+          `Invalid FEN: Unknown carried piece type '${carriedType}' in stack at rank ${12 - r}`,
+        )
+      }
+
+      // Validate color match
+      if (carriedColor !== carrierColor) {
+        throw new Error(
+          `Invalid FEN: Carried piece color mismatch in stack at rank ${12 - r}`,
+        )
+      }
+
+      // Add the piece with its heroic status
+      carriedPieces.push({
+        type: carriedType,
+        color: carriedColor,
+        heroic: isHeroic,
+      })
+    }
+
+    return carriedPieces
+  }
+
+  private _parseSinglePiece(
+    rankStr: string,
+    i: number,
+    r: number,
+    fileIndex: number,
+  ): { newIndex: number } {
+    let isHeroic = false
+    let currentIndex = i
+
+    if (rankStr.charAt(currentIndex) === '+') {
+      isHeroic = true
+      currentIndex++
+
+      if (currentIndex >= rankStr.length) {
+        throw new Error(
+          `Invalid FEN: '+' at the end of rank ${12 - r} without a piece`,
+        )
+      }
+    }
+
+    const pieceChar = rankStr.charAt(currentIndex)
+    const color = pieceChar < 'a' ? RED : BLUE
+    const type = pieceChar.toLowerCase() as PieceSymbol
+
+    // Validate piece type
+    if (!(type in VALID_PIECE_TYPES) && type !== HEADQUARTER) {
+      throw new Error(
+        `Invalid FEN: Unknown piece type '${type}' in rank ${12 - r}`,
+      )
+    }
+
+    const sq0x88 = r * 16 + fileIndex
+    this._board[sq0x88] = { type, color, heroic: isHeroic }
+
+    if (type === COMMANDER) {
+      // Track Commander position
+      if (this._commanders[color] === -1) {
+        this._commanders[color] = sq0x88
+      } else {
+        throw new Error(
+          `Invalid FEN: Multiple commanders found for color ${color}`,
+        )
+      }
+    }
+
+    return { newIndex: currentIndex }
+  }
+
+  /**
+   * Generates a FEN string representing the current position
+   * @returns The FEN string
+   */
   fen(): string {
     let empty = 0
     let fen = ''
@@ -385,8 +503,12 @@ export class CoTuLenh {
     ].join(' ')
   }
 
-  // --- Get/Put/Remove (Updated for Heroic) ---
-  // Get a piece at a square, optionally specifying a piece type to find in a stack
+  /**
+   * Gets a piece at a square, optionally specifying a piece type to find in a stack
+   * @param square - The square to check
+   * @param pieceType - Optional piece type to find in a stack
+   * @returns The piece at the square, or undefined if no piece is found
+   */
   get(square: Square | number, pieceType?: PieceSymbol): Piece | undefined {
     const sq = typeof square === 'number' ? square : SQUARE_MAP[square]
     if (sq === undefined) return undefined
@@ -407,6 +529,16 @@ export class CoTuLenh {
     return undefined
   }
 
+  /**
+   * Places a piece on the board
+   * @param piece - The piece to place
+   * @param piece.type - The type of piece
+   * @param piece.color - The color of the piece
+   * @param piece.heroic - Whether the piece is heroic
+   * @param piece.carrying - Optional pieces being carried by this piece
+   * @param square - The square to place the piece on
+   * @returns True if the piece was successfully placed, false otherwise
+   */
   put(
     {
       type,
@@ -460,6 +592,11 @@ export class CoTuLenh {
     return true
   }
 
+  /**
+   * Removes a piece from the board
+   * @param square - The square to remove the piece from
+   * @returns The removed piece, or undefined if no piece was at the square
+   */
   remove(square: Square): Piece | undefined {
     if (!(square in SQUARE_MAP)) return undefined
     const sq = SQUARE_MAP[square]
@@ -632,8 +769,8 @@ export class CoTuLenh {
     }
     // If it was a deploy move, turn remains `us`
 
-    // TODO: Update position count for threefold repetition
-    // this._incPositionCount(this.fen());
+    // Update position count for threefold repetition
+    this._updatePositionCounts()
   }
 
   private _undoMove(): InternalMove | null {
@@ -657,19 +794,41 @@ export class CoTuLenh {
     return command.move // Return the original InternalMove data
   }
 
+  /**
+   * Undoes the last move
+   */
   public undo(): void {
     this._undoMove()
   }
+  /**
+   * Gets a piece at a square using internal 0x88 coordinates
+   * @param square - The square in 0x88 format
+   * @returns The piece at the square, or undefined if no piece is found
+   */
   public getPieceAt(square: number): Piece | undefined {
     return this._board[square]
   }
+  /**
+   * Deletes a piece at a square using internal 0x88 coordinates
+   * @param square - The square in 0x88 format
+   */
   public deletePieceAt(square: number): void {
     delete this._board[square]
   }
+  /**
+   * Sets a piece at a square using internal 0x88 coordinates
+   * @param square - The square in 0x88 format
+   * @param piece - The piece to place
+   */
   public setPieceAt(square: number, piece: Piece): void {
     this._board[square] = piece
   }
 
+  /**
+   * Updates the position of a commander
+   * @param sq - The new square in 0x88 format
+   * @param color - The color of the commander
+   */
   public updateKingsPosition(sq: number, color: Color): void {
     if (this._commanders[color] === -1) return // Commander captured = loss = no need to update
     // Update the king's position
@@ -698,24 +857,52 @@ export class CoTuLenh {
     return false
   }
 
+  /**
+   * Determines if the current player is in check
+   * @returns True if the current player is in check, false otherwise
+   */
   isCheck(): boolean {
     return this._isCommanderAttacked(this._turn)
   }
 
+  /**
+   * Determines if the current player is in checkmate
+   * @returns True if the current player is in checkmate, false otherwise
+   */
   isCheckmate(): boolean {
     // Checkmate = Commander is attacked AND no legal moves exist
     return this.isCheck() && this._moves({ legal: true }).length === 0
   }
 
   // TODO: Implement isInsufficientMaterial, isThreefoldRepetition, isDrawByFiftyMoves based on variant rules
+  /**
+   * Determines if the game is a draw by the fifty-move rule
+   * @returns True if the game is a draw by the fifty-move rule, false otherwise
+   */
   isDrawByFiftyMoves(): boolean {
     return this._halfMoves >= 100 // 50 moves per side
   }
 
-  isDraw(): boolean {
-    return this.isDrawByFiftyMoves() // Add other draw conditions later (repetition, insufficient material)
+  /**
+   * Determines if the game is a draw by threefold repetition
+   * @returns True if the game is a draw by threefold repetition, false otherwise
+   */
+  isThreefoldRepetition(): boolean {
+    return this._positionCount[this.fen()] >= 3
   }
 
+  /**
+   * Determines if the game is a draw
+   * @returns True if the game is a draw, false otherwise
+   */
+  isDraw(): boolean {
+    return this.isDrawByFiftyMoves() || this.isThreefoldRepetition() // Add other draw conditions later (insufficient material)
+  }
+
+  /**
+   * Determines if the game is over
+   * @returns True if the game is over, false otherwise
+   */
   isGameOver(): boolean {
     // Game over if checkmate, stalemate, draw, or commander captured
     return (
@@ -866,6 +1053,14 @@ export class CoTuLenh {
   }
 
   // Public move method using SAN or object (Updated for Stay Capture)
+  /**
+   * Makes a move on the board
+   * @param move - The move to make, either in SAN format or as an object
+   * @param options - Move options
+   * @param options.strict - Whether to use strict parsing for SAN moves
+   * @returns The move that was made, or null if the move was invalid
+   * @throws Error if the move is invalid or illegal
+   */
   move(
     move:
       | string
@@ -957,7 +1152,6 @@ export class CoTuLenh {
     }
 
     this._makeMove(internalMove)
-    // TODO: Update position count: this._incPositionCount(this.fen());
 
     // Create Move object *after* making the move to get correct 'after' FEN and 'becameHeroic' status
     // Need to re-fetch the move from history to get the potentially updated 'becameHeroic' flag
@@ -978,11 +1172,19 @@ export class CoTuLenh {
     return prettyMove
   }
 
+  /**
+   * Gets the color of the player whose turn it is
+   * @returns The color of the player whose turn it is
+   */
   turn(): Color {
     return this._turn
   }
 
   // ... (board, squareColor, history, comments, moveNumber need review/adaptation) ...
+  /**
+   * Gets a representation of the board
+   * @returns A 2D array representing the board, with each element being a piece or null
+   */
   board(): ({
     square: Square
     type: PieceSymbol
@@ -1015,6 +1217,12 @@ export class CoTuLenh {
     return output
   }
 
+  /**
+   * Gets the move history
+   * @param options - History options
+   * @param options.verbose - Whether to return detailed move objects
+   * @returns An array of moves, either as strings or Move objects
+   */
   history(): string[]
   history({ verbose }: { verbose: true }): Move[]
   history({ verbose }: { verbose: false }): string[]
@@ -1044,23 +1252,43 @@ export class CoTuLenh {
     return moveHistory
   }
 
-  // Get heroic status of a piece at a square
+  /**
+   * Gets the heroic status of a piece at a square
+   * @param square - The square to check
+   * @param pieceType - Optional piece type to find in a stack
+   * @returns True if the piece is heroic, false otherwise
+   */
   getHeroicStatus(square: Square | number, pieceType?: PieceSymbol): boolean {
     const piece = this.get(square, pieceType)
     return piece?.heroic ?? false
   }
 
+  /**
+   * Gets the current move number
+   * @returns The current move number
+   */
   moveNumber(): number {
     return this._moveNumber
   }
 
-  // --- Comments ---
+  /**
+   * Gets the comment for the current position
+   * @returns The comment for the current position, or undefined if no comment exists
+   */
   getComment(): string | undefined {
     return this._comments[this.fen()]
   }
+  /**
+   * Sets a comment for the current position
+   * @param comment - The comment to set
+   */
   setComment(comment: string) {
     this._comments[this.fen()] = comment
   }
+  /**
+   * Removes the comment for the current position
+   * @returns The removed comment, or undefined if no comment existed
+   */
   removeComment(): string | undefined {
     const comment = this._comments[this.fen()]
     delete this._comments[this.fen()]
@@ -1068,6 +1296,9 @@ export class CoTuLenh {
   }
   // Removed printTerrainZones
 
+  /**
+   * Prints a text representation of the board to the console
+   */
   printBoard(): void {
     printBoard(this._board)
   }
@@ -1076,3 +1307,17 @@ export class CoTuLenh {
 }
 
 export * from './type.js'
+
+/**
+ * Validates a FEN string
+ * @param fen - The FEN string to validate
+ * @returns true if the FEN is valid, false otherwise
+ */
+export function validateFenString(fen: string): boolean {
+  try {
+    validateFen(fen)
+    return true
+  } catch (e) {
+    return false
+  }
+}

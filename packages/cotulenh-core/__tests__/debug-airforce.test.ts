@@ -1,6 +1,5 @@
- // @ts-nocheck
+// @ts-nocheck
 import { CoTuLenh, NAVY, AIR_FORCE, Move } from '../src/cotulenh'
-
 
 describe('Debug Air Force Capturing Navy', () => {
   let game: CoTuLenh
@@ -22,7 +21,7 @@ describe('Debug Air Force Capturing Navy', () => {
     game.clear()
 
     // FEN: Red Air Force at c2, Blue Navy at b2
-    const testPosition = '11/11/11/11/11/11/11/11/11/1n1F7/11/11 r - - 0 1'
+    const testPosition = '5c5/11/11/11/11/11/11/11/11/1n1F7/11/5C5 r - - 0 1'
     game.load(testPosition)
 
     // Print initial board state

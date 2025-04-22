@@ -205,8 +205,8 @@ describe('CoTuLenh.getHeroicStatus', () => {
         heroic: true,
       })
       expect(game.get('e5')).toMatchObject({
-        type: INFANTRY,
-        color: RED,
+        type: TANK,
+        color: BLUE,
         heroic: false,
       })
     })

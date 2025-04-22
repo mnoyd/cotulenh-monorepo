@@ -20,9 +20,17 @@ import {
 import { makePiece } from './test-helpers.js'
 
 describe('Move Commands', () => {
+  let game: CoTuLenh
+  beforeEach(() => {
+    game = new CoTuLenh()
+    game.clear()
+  })
+
   describe('NormalMoveCommand', () => {
     it('should execute and undo a simple move', () => {
-      const game = new CoTuLenh('5c5/11/11/11/11/11/11/11/11/11/3T6R/5C5')
+      game.load('5c5/11/11/11/11/11/11/11/11/11/3T6G/5C5', {
+        skipValidation: true,
+      })
       const move: InternalMove = {
         color: RED,
         from: 0xa3, // d2
@@ -42,7 +50,9 @@ describe('Move Commands', () => {
     })
 
     it('should handle capture moves', () => {
-      const game = new CoTuLenh('5c5/11/11/11/11/11/11/11/3i6R/11/3T6R/5C5')
+      game.load('5c5/11/11/11/11/11/11/11/3i7/11/3T7/5C5', {
+        skipValidation: true,
+      })
       const move: InternalMove = {
         color: RED,
         from: 0xa3,
@@ -65,7 +75,9 @@ describe('Move Commands', () => {
     })
 
     it('should update commander position', () => {
-      const game = new CoTuLenh('5c5/11/11/11/11/11/11/11/3i6R/11/3T6R/5C5')
+      game.load('5c5/11/11/11/11/11/11/11/3i7/11/3T7/5C5', {
+        skipValidation: true,
+      })
       const move: InternalMove = {
         color: RED,
         from: 0xb5,
@@ -85,7 +97,9 @@ describe('Move Commands', () => {
 
   describe('DeployMoveCommand', () => {
     it('should deploy piece from stack', () => {
-      const game = new CoTuLenh('5c5/11/11/11/11/11/11/11/4(TI)6/11/11/5C5')
+      game.load('5c5/11/11/11/11/11/11/11/4(TI)6/11/11/5C5', {
+        skipValidation: true,
+      })
       const move: InternalMove = {
         color: RED,
         from: 0x84,
@@ -106,7 +120,9 @@ describe('Move Commands', () => {
     })
 
     it('should handle deploy with capture', () => {
-      const game = new CoTuLenh('5c5/11/11/11/11/11/11/11/4(TI)f5/11/11/5C5')
+      game.load('5c5/11/11/11/11/11/11/11/4(TI)f5/11/11/5C5', {
+        skipValidation: true,
+      })
       const move: InternalMove = {
         color: RED,
         from: 0x84,
@@ -132,7 +148,9 @@ describe('Move Commands', () => {
     //meaning if the square can be captured push both capture AND stay capture for same square to possible moves array.
 
     it('should handle deploy stay capture', () => {
-      const game = new CoTuLenh('5c5/11/11/11/11/11/11/11/1(NF)3t5/11/11/5C5')
+      game.load('5c5/11/11/11/11/11/11/11/1(NF)3t5/11/11/5C5', {
+        skipValidation: true,
+      })
       const move: InternalMove = {
         color: RED,
         from: 0x81,
@@ -158,7 +176,9 @@ describe('Move Commands', () => {
 
   describe('StayCaptureMoveCommand', () => {
     it('should execute stay capture', () => {
-      const game = new CoTuLenh('5c5/11/11/11/11/11/11/11/1n2A6/11/11/5C5')
+      game.load('5c5/11/11/11/11/11/11/11/1n2A6/11/11/5C5', {
+        skipValidation: true,
+      })
       const move: InternalMove = {
         color: RED,
         from: 0x84,
@@ -181,7 +201,9 @@ describe('Move Commands', () => {
 
   describe('createMoveCommand', () => {
     it('should create the correct MoveCommand based on flags', () => {
-      const game = new CoTuLenh('5c5/11/11/11/11/11/11/4i6/1(nf)2A6/11/11/5C5')
+      game.load('5c5/11/11/11/11/11/11/4i6/1(nf)2A6/11/11/5C5', {
+        skipValidation: true,
+      })
 
       expect(
         createMoveCommand(game, {
@@ -217,7 +239,7 @@ describe('Move Commands', () => {
 
   describe('Error cases', () => {
     it('should throw on invalid source square', () => {
-      const game = new CoTuLenh('11/11/11/11/11/11/11/11/11/11/11/11')
+      game.load('11/11/11/11/11/11/11/11/11/11/11/11', { skipValidation: true })
       const move: InternalMove = {
         color: RED,
         from: 0x00,
@@ -232,7 +254,9 @@ describe('Move Commands', () => {
     })
 
     it('should throw on invalid capture target', () => {
-      const game = new CoTuLenh('t10/11/11/11/11/11/11/11/11/11/11/11')
+      game.load('t10/11/11/11/11/11/11/11/11/11/11/11', {
+        skipValidation: true,
+      })
       const move: InternalMove = {
         color: RED,
         from: 0x00,
@@ -247,7 +271,9 @@ describe('Move Commands', () => {
     })
 
     it('should throw on invalid deploy from empty carrier', () => {
-      const game = new CoTuLenh('t10/11/11/11/11/11/11/11/11/11/11/11')
+      game.load('t10/11/11/11/11/11/11/11/11/11/11/11', {
+        skipValidation: true,
+      })
       const move: InternalMove = {
         color: RED,
         from: 0x00,
