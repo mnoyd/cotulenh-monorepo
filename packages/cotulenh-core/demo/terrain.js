@@ -1,10 +1,8 @@
 import { CoTuLenh } from '../dist/esm/src/cotulenh.js'
-
-// Default FEN string if no argument is provided
-const defaultFen = '11/11/11/11/11/2c1I4C1/11/11/11/11/11/11 r - - 0 1'
+import { DEFAULT_POSITION } from '../dist/esm/src/type.js'
 
 // Get FEN string from command line arguments (process.argv[2]) or use default
-const fen = process.argv[2] || defaultFen
+const fen = process.argv[2] || DEFAULT_POSITION
 
 console.log('Cotulenh Terrain Zones Demonstration\n')
 console.log(`Using FEN: ${fen}\n`) // Log the FEN being used
