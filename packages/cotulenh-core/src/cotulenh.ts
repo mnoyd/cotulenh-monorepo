@@ -76,7 +76,7 @@ export class Move {
 
   // Constructor needs the main class instance to generate SAN, FENs etc.
   constructor(game: CoTuLenh, internal: InternalMove) {
-    const { color, piece, from, to, flags, otherPiece, becameHeroic } = internal
+    const { color, piece, from, to, flags, otherPiece } = internal
 
     this.color = color
     this.piece = piece // This is the piece that MOVED (or was deployed)
@@ -88,7 +88,6 @@ export class Move {
       }
     }
     if (otherPiece) this.otherPiece = otherPiece
-    if (becameHeroic) this.becameHeroic = true
     this.isDeploy = (flags & BITS.DEPLOY) !== 0
 
     // TODO: Populate this.stackBefore if isDeploy (requires looking at state before move)
@@ -801,12 +800,6 @@ export class CoTuLenh {
     }
     // TODO: Check for last piece auto-promotion (also needs Commander check)
 
-    // Update the move object in history if promotion occurred
-    if (becameHeroic) {
-      moveCommand.move.becameHeroic = true // Modify the move object directly (part of history)
-      moveCommand.move.flags |= BITS.HEROIC_PROMOTION
-    }
-
     // --- Switch Turn (or maintain for deploy) ---
     if (!(move.flags & BITS.DEPLOY)) {
       this._turn = them // Switch turn only for non-deploy moves
@@ -964,7 +957,6 @@ export class CoTuLenh {
     const toAlg = algebraic(move.to) // Target square
     const heroicPrefix =
       (this.getHeroicStatus(move.from, move.piece.type) ?? false) ? '+' : '' // Simplified: Assume Move class handles this better
-    const heroicSuffix = move.becameHeroic ? '^' : ''
     let separator = ''
     if (move.flags & BITS.DEPLOY) {
       separator += '>'
@@ -975,8 +967,19 @@ export class CoTuLenh {
     if (move.flags & BITS.CAPTURE) {
       separator += 'x'
     }
+    let checkingSuffix = '' // Simplified: Assume Move class handles this better
 
-    const san = `${heroicPrefix}${pieceChar}${disambiguator}${separator}${toAlg}${heroicSuffix}`
+    this._makeMove(move)
+    if (this.isCheck()) {
+      if (this.isCheckmate()) {
+        checkingSuffix = '#'
+      } else {
+        checkingSuffix = '+'
+      }
+    }
+    this._undoMove()
+
+    const san = `${heroicPrefix}${pieceChar}${disambiguator}${separator}${toAlg}${checkingSuffix}`
 
     // TODO: Add check/mate symbols (+/#) by temporarily making move and checking state
 
