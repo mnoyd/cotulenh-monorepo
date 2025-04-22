@@ -26,6 +26,7 @@ import {
   NAVY,
   NAVY_MASK,
   LAND_MASK,
+  isSquareOnBoard,
 } from './type.js'
 import {
   getDisambiguator,
@@ -35,7 +36,11 @@ import {
   validatePosition,
   handleEmptySquares,
 } from './utils.js'
-import { generateDeployMoves, generateNormalMoves } from './move-generation.js'
+import {
+  generateDeployMoves,
+  generateNormalMoves,
+  ORTHOGONAL_OFFSETS,
+} from './move-generation.js'
 import { createMoveCommand, MoveCommand } from './move-apply.js'
 
 // Structure for storing history states
@@ -648,12 +653,51 @@ export class CoTuLenh {
 
     return allMoves
   }
+  /**
+   * Checks if the commander of the given color is directly exposed
+   * (horizontally or vertically) to the enemy commander.
+   * @param color The color of the commander to check.
+   * @returns True if the commander is exposed, false otherwise.
+   * @private
+   */
+  private _isCommanderExposed(color: Color): boolean {
+    const usCommanderSq = this._commanders[color]
+    const them = swapColor(color)
+    const themCommanderSq = this._commanders[them]
+
+    // If either commander is off board (e.g., during setup or error), they can't be exposed
+    if (usCommanderSq === -1 || themCommanderSq === -1) {
+      return false
+    }
+
+    // Check only orthogonal directions
+    for (const offset of ORTHOGONAL_OFFSETS) {
+      let sq = usCommanderSq + offset
+      while (isSquareOnBoard(sq)) {
+        const piece = this._board[sq]
+        if (piece) {
+          // If the first piece encountered is the enemy commander, we are exposed
+          if (sq === themCommanderSq) {
+            return true
+          }
+          // If it's any other piece, the line of sight is blocked in this direction
+          break
+        }
+        sq += offset
+      }
+    }
+
+    // Not exposed in any orthogonal direction
+    return false
+  }
+
   // Helper method to filter legal moves
   private _filterLegalMoves(moves: InternalMove[], us: Color): InternalMove[] {
     const legalMoves: InternalMove[] = []
     for (const move of moves) {
       this._makeMove(move)
-      if (!this._isCommanderAttacked(us)) {
+      // A move is legal if it doesn't leave the commander attacked AND doesn't expose the commander
+      if (!this._isCommanderAttacked(us) && !this._isCommanderExposed(us)) {
         legalMoves.push(move)
       }
       this._undoMove()

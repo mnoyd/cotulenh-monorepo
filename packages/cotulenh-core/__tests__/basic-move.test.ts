@@ -7,21 +7,7 @@ import {
   NAVY,
 } from '../src/type'
 import { CoTuLenh, Move } from '../src/cotulenh'
-
-// Simplified helper to check if a move exists in the verbose list
-// (We don't need all options of findVerboseMove for these basic tests)
-const findMove = (
-  moves: Move[],
-  from: Square,
-  to: Square,
-): Move | undefined => {
-  return moves.find((m) => m.from === from && m.to === to)
-}
-
-// Helper to extract just the 'to' squares for simple comparison
-const getDestinationSquares = (moves: Move[]): Square[] => {
-  return moves.map((m) => m.to).sort()
-}
+import { findMove, getDestinationSquares } from './test-helpers'
 
 describe('Basic TANK Moves on Empty Board', () => {
   let game: CoTuLenh

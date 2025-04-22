@@ -1,5 +1,12 @@
-import { Piece, PieceSymbol, Color, InternalMove, RED } from '../src/type'
-import { CoTuLenh } from '../src/cotulenh'
+import {
+  Piece,
+  PieceSymbol,
+  Color,
+  InternalMove,
+  RED,
+  Square,
+} from '../src/type'
+import { CoTuLenh, Move } from '../src/cotulenh'
 
 /**
  * Create a Piece object for testing
@@ -41,4 +48,18 @@ export function makeMove(
  */
 export function setupGame(fen: string): CoTuLenh {
   return new CoTuLenh(fen)
+}
+// Simplified helper to check if a move exists in the verbose list
+// (We don't need all options of findVerboseMove for these basic tests)
+export const findMove = (
+  moves: Move[],
+  from: Square,
+  to: Square,
+): Move | undefined => {
+  return moves.find((m) => m.from === from && m.to === to)
+}
+
+// Helper to extract just the 'to' squares for simple comparison
+export const getDestinationSquares = (moves: Move[]): Square[] => {
+  return moves.map((m) => m.to).sort()
 }

@@ -57,7 +57,7 @@ describe('Stack Movement and Deployment', () => {
     game.clear() // Start with an empty board for specific setups
     //need to put commander for a legal move (a legal move is a move that don't cause a check)
     game.put({ type: COMMANDER, color: RED }, 'g1')
-    game.put({ type: COMMANDER, color: BLUE }, 'g12')
+    game.put({ type: COMMANDER, color: BLUE }, 'h12')
   })
 
   test('Generate deploy moves for (NFT) stack', () => {

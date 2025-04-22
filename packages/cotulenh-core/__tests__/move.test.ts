@@ -276,7 +276,7 @@ describe('Move History and Undo', () => {
 
   test('undo() a stay capture move', () => {
     // Setup: Red Air Force d2, Blue Navy b2
-    game.load('5c5/11/11/11/11/11/11/11/11/11/1n1F7/5C5 r - - 0 1')
+    game.load('5c5/11/11/11/11/11/11/11/11/11/1n1F7/4C6 r - - 0 1')
     const initialFen = game.fen()
     const move = game.move({ from: 'd2', to: 'b2', stay: true }) // AF attacks Navy
 
@@ -317,7 +317,7 @@ describe('SAN Conversion', () => {
 
   test('move() should handle SAN for captures', () => {
     // Setup: Red Infantry d4, Blue Infantry d5
-    game.load('5c5/11/11/11/11/11/11/3i7/3I7/11/11/5C5 r - - 0 1')
+    game.load('5c5/11/11/11/11/11/11/3i7/3I7/11/11/4C6 r - - 0 1')
     const move = game.move('Id4xd5') // Capture using SAN
 
     expect(move).not.toBeNull()
@@ -330,7 +330,7 @@ describe('SAN Conversion', () => {
 
   test('move() should handle SAN for stay captures', () => {
     // Setup: Red AF d2, Blue Navy b2
-    game.load('5c5/11/11/11/11/11/11/11/11/11/1n1F7/5C5 r - - 0 1')
+    game.load('5c5/11/11/11/11/11/11/11/11/11/1n1F7/4C6 r - - 0 1')
     //TODO update ambiguous moves SAN
     const move = game.move('Fd2<b2') // Stay capture SAN
 

@@ -1,16 +1,21 @@
-import { CoTuLenh } from '../src/cotulenh'
+import { CoTuLenh, Move } from '../src/cotulenh'
 import {
   AIR_FORCE,
   BLUE,
   COMMANDER,
+  file,
   INFANTRY,
   MILITIA,
   NAVY,
   Piece,
   PieceSymbol,
+  rank,
   RED,
+  Square,
+  SQUARE_MAP,
   TANK,
 } from '../src/type'
+import { findMove } from './test-helpers'
 
 describe('CoTuLenh.getHeroicStatus', () => {
   let game: CoTuLenh
@@ -258,5 +263,124 @@ describe('CoTuLenh.getHeroicStatus', () => {
       expect(game._moveNumber).toBe(12)
     })
     //TODO: add fen write for middle deploy state move
+  })
+})
+
+describe('CoTuLenh Commander Rules', () => {
+  describe('Commander Exposure (_isCommanderExposed)', () => {
+    // ... existing code ...
+
+    test('should detect exposed commanders on the same file (clear path)', () => {
+      // c on g12, C on g7, Red to move. Path is clear.
+      // Test by trying to move a blocking piece away.
+      const blockingGame = new CoTuLenh(
+        '6c4/11/6I4/11/11/6C4/11/11/11/11/11/11 r - - 0 1',
+      ) // Corrected: k->c, K->C
+      const moves = blockingGame.moves({
+        square: 'g10',
+        verbose: true,
+      }) as Move[] // Move Infantry OFF the file
+      expect(findMove(moves, 'g10', 'f10')).toBeUndefined() // Should be illegal as it exposes Red Commander
+    })
+
+    test('should detect exposed commanders on the same rank (clear path)', () => {
+      // c on a6, C on k6, Red to move. Path is clear.
+      const blockingGame = new CoTuLenh(
+        '11/11/11/11/11/2c1I4C1/11/11/11/11/11/11 r - - 0 1',
+      ) // Corrected: k->c, K->C
+      const moves = blockingGame.moves({
+        square: 'e7',
+        verbose: true,
+      }) as Move[] // Move Infantry OFF the rank
+      expect(findMove(moves, 'e7', 'e8')).toBeUndefined() // Should be illegal as it exposes Red Commander
+    })
+
+    test('should NOT detect exposure if path is blocked (file)', () => {
+      // c on e12, C on e6, Infantry on e9 blocks. Red to move.
+      const fen = '6c4/11/11/6I4/11/6C4/11/11/11/11/11/11 r - - 0 1' // Corrected: k->c, K->C
+      const game = new CoTuLenh(fen)
+      // Try moving the Commander itself (which is legal if not into check/exposure)
+      const commanderMove = game.moves({
+        square: 'g7',
+        verbose: true,
+      }) as Move[] // Move commander one step off the file
+      expect(findMove(commanderMove, 'g7', 'g1')).toBeDefined() // Should be legal as path is blocked
+    })
+
+    test('should NOT detect exposure if path is blocked (rank)', () => {
+      // c on a6, C on k6, Infantry on e6 blocks. Red to move.
+      const fen = '11/11/11/11/11/2c1I4C1/11/11/11/11/11/11 r - - 0 1' // Corrected: k->c, K->C
+      const game = new CoTuLenh(fen)
+      // Move the commander itself
+      const commanderMove = game.moves({
+        square: 'j7',
+        verbose: true,
+      }) as Move[] // Move commander one step off the rank
+      expect(findMove(commanderMove, 'j7', 'g7')).toBeDefined() // Should be legal as path is blocked
+    })
+
+    test('should NOT allow move to exposed square', () => {
+      const fen = '3c1i5/11/11/5I5/11/7C3/11/11/11/11/11/11 r - - 0 1' // Corrected: k->c, K->C
+      const game = new CoTuLenh(fen)
+      // Any legal commander move should be allowed
+      const commanderMove = game.moves({
+        square: 'h7',
+        verbose: true,
+      }) as Move[]
+      expect(findMove(commanderMove, 'h7', 'd7')).toBeUndefined() // Should be illegal as it exposes Red Commander
+      expect(findMove(commanderMove, 'h7', 'h12')).toBeDefined() // Should be legal as path is blocked by blue Infantry
+    })
+  })
+
+  describe('Commander Capture (Flying General)', () => {
+    test('should generate capture move when commanders are exposed (file)', () => {
+      // c on e12, C on e6, Red to move. Path is clear.
+      const fen = '6c4/11/11/11/11/6C4/11/11/11/11/11/11 r - - 0 1' // Corrected: k->c, K->C
+      const game = new CoTuLenh(fen)
+      const moves = game.moves({ square: 'g7', verbose: true }) as Move[]
+      const captureMove = moves.find((m) => m.to === 'g12' && m.isCapture())
+      expect(captureMove).toBeDefined()
+      // Check piece type and color
+      expect(captureMove?.piece.type).toBe(COMMANDER)
+      expect(captureMove?.piece.color).toBe(RED)
+      // Check captured piece type and color
+      expect(captureMove?.otherPiece?.type).toBe(COMMANDER)
+      expect(captureMove?.otherPiece?.color).toBe(BLUE)
+      expect(captureMove?.from).toBe('g7')
+      expect(captureMove?.to).toBe('g12')
+    })
+
+    test('should generate capture move when commanders are exposed (rank)', () => {
+      // c on a6, C on k6, Red to move. Path is clear.
+      const fen = '11/11/11/11/11/3c5C1/11/11/11/11/11/11 r - - 0 1' // Corrected: k->c, K->C
+      const game = new CoTuLenh(fen)
+      const moves = game.moves({ square: 'j7', verbose: true }) as Move[] // Red Commander at k6
+      const captureMove = moves.find((m) => m.to === 'd7' && m.isCapture())
+      expect(captureMove).toBeDefined()
+      expect(captureMove?.piece.type).toBe(COMMANDER)
+      expect(captureMove?.piece.color).toBe(RED)
+      expect(captureMove?.otherPiece?.type).toBe(COMMANDER)
+      expect(captureMove?.otherPiece?.color).toBe(BLUE)
+      expect(captureMove?.from).toBe('j7')
+      expect(captureMove?.to).toBe('d7')
+    })
+
+    test('should NOT generate capture move if path is blocked (file)', () => {
+      // c on e12, C on e6, Infantry on e9 blocks. Red to move.
+      const fen = '6c4/11/11/6I4/11/6C4/11/11/11/11/11/11 r - - 0 1' // Corrected: k->c, K->C
+      const game = new CoTuLenh(fen)
+      const moves = game.moves({ square: 'g7', verbose: true }) as Move[]
+      const captureMove = moves.find((m) => m.to === 'g12' && m.isCapture())
+      expect(captureMove).toBeUndefined() // Capture should not be possible
+    })
+
+    test('should NOT generate capture move if path is blocked (rank)', () => {
+      // c on a6, C on k6, Infantry on e6 blocks. Red to move.
+      const fen = '11/11/11/11/11/2c1I4C1/11/11/11/11/11/11 r - - 0 1' // Corrected: k->c, K->C
+      const game = new CoTuLenh(fen)
+      const moves = game.moves({ square: 'j7', verbose: true }) as Move[]
+      const captureMove = moves.find((m) => m.to === 'c7' && m.isCapture())
+      expect(captureMove).toBeUndefined() // Capture should not be possible
+    })
   })
 })

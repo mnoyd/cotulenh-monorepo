@@ -154,15 +154,15 @@ describe('_isCommanderAttacked Function Tests', () => {
     expect(game['_isCommanderAttacked'](BLUE)).toBe(true)
   })
 
-  test('Commander is not attacked by enemy commander beyond range 1', () => {
+  test('Commander is attacked by enemy commander beyond range 1', () => {
     // Place a commander
-    game.put({ type: COMMANDER, color: BLUE }, 'e5')
+    game.put({ type: COMMANDER, color: BLUE }, 'e3')
 
     // Place an enemy commander 2 squares away
     game.put({ type: COMMANDER, color: RED }, 'e7')
 
-    // Test if commander is attacked (should be false as commander can only capture adjacent)
-    expect(game['_isCommanderAttacked'](BLUE)).toBe(false)
+    // Test if commander is attacked (should be true as commander can capture beyond range 1)
+    expect(game['_isCommanderAttacked'](BLUE)).toBe(true)
   })
 
   test('Commander is attacked during stay capture scenario', () => {

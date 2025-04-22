@@ -58,7 +58,7 @@ export const BASE_MOVEMENT_CONFIG: Record<PieceSymbol, PieceMovementConfig> = {
     moveRange: Infinity,
     captureRange: 1,
     isSliding: true,
-    canMoveDiagonal: true,
+    canMoveDiagonal: false,
     captureIgnoresPieceBlocking: false,
     moveIgnoresBlocking: false,
     specialRules: { commanderAdjacentCaptureOnly: true },
@@ -201,6 +201,7 @@ export function generateMovesInDirection(
   let to = from
   let pieceBlockedMovement = false
   let terrainBlockedMovement = false
+  const isOrthogonal = ORTHOGONAL_OFFSETS.includes(offset) // Check if moving orthogonally
 
   while (true) {
     to += offset
@@ -209,7 +210,7 @@ export function generateMovesInDirection(
     // Check if square is on board
     if (!isSquareOnBoard(to)) break
 
-    // Special case for Missile diagonal movement
+    // Special case for Missile diagonal movement (remains unchanged)
     if (
       pieceData.type === MISSILE &&
       DIAGONAL_OFFSETS.includes(offset) &&
@@ -218,92 +219,147 @@ export function generateMovesInDirection(
       break
     }
 
-    // Check if we've exceeded maximum ranges
-    if (currentRange > config.moveRange && currentRange > config.captureRange)
+    // Check if we've exceeded maximum ranges (for non-commander moves)
+    // Commander capture range is handled specially below
+    if (
+      pieceData.type !== COMMANDER &&
+      currentRange > config.moveRange &&
+      currentRange > config.captureRange
+    )
       break
 
     const targetPiece = gameInstance.getPieceAt(to)
 
-    // Terrain blocking check
+    // Terrain blocking check (remains unchanged)
     if (!terrainBlockedMovement) {
       terrainBlockedMovement = checkTerrainBlocking(
         from,
         to,
         pieceData,
-        isHorizontalOffset(offset),
+        isHorizontalOffset(offset), // Assuming isHorizontalOffset exists
       )
     }
 
     // Target square analysis
     if (targetPiece) {
-      // Capture logic
+      // *** Special Commander Capture Rule ***
+      if (
+        pieceData.type === COMMANDER &&
+        targetPiece.type === COMMANDER &&
+        targetPiece.color === them &&
+        isOrthogonal
+      ) {
+        // Commander sees enemy commander orthogonally - immediate capture regardless of range/blockers
+        addMove(moves, us, from, to, pieceData, targetPiece, BITS.CAPTURE)
+        break // Stop searching in this direction after finding the commander
+      }
+      // *** End Special Commander Capture Rule ***
+
+      // Normal Capture logic (only if not commander vs commander)
       if (targetPiece.color === them && currentRange <= config.captureRange) {
-        handleCaptureLogic(
-          moves,
-          from,
-          to,
-          pieceData,
-          targetPiece,
-          currentRange,
-          config,
-        )
-      } else if (targetPiece.color === us) {
-        // Combination logic: Check if moving piece can combine with friendly piece
-        const combinedPiece = createCombinedPiece(pieceData, targetPiece)
-        if (
-          !isDeployMove && // Cannot combine during deploy moves
-          combinedPiece &&
-          combinedPiece.carrying &&
-          combinedPiece.carrying.length > 0 &&
-          currentRange <= config.moveRange && // Must be within move range
-          !terrainBlockedMovement &&
-          !pieceBlockedMovement && // Ensure path isn't blocked *before* target
-          canLandOnSquare(to, pieceData.type) // Check if mover can land there
-          // Note: We don't check config.moveIgnoresBlocking here, as we *want* to interact
-        ) {
-          addMove(
+        // Ensure we don't double-add the commander capture handled above
+        if (!(pieceData.type === COMMANDER && targetPiece.type === COMMANDER)) {
+          handleCaptureLogic(
             moves,
-            us,
             from,
             to,
             pieceData,
-            targetPiece, // Store the type combined with
-            BITS.COMBINATION, // Set combination flag
+            targetPiece,
+            currentRange,
+            config,
           )
+        }
+      } else if (targetPiece.color === us) {
+        // Combination logic (remains unchanged)
+        const combinedPiece = createCombinedPiece(pieceData, targetPiece)
+        if (
+          !isDeployMove &&
+          combinedPiece &&
+          combinedPiece.carrying &&
+          combinedPiece.carrying.length > 0 &&
+          currentRange <= config.moveRange &&
+          !terrainBlockedMovement &&
+          !pieceBlockedMovement &&
+          canLandOnSquare(to, pieceData.type)
+        ) {
+          addMove(moves, us, from, to, pieceData, targetPiece, BITS.COMBINATION)
         }
       }
 
-      // Piece blocking check
+      // Piece blocking check (remains unchanged)
       if (!config.moveIgnoresBlocking) {
-        // Navy ignores friendly piece blocking
         if (!(pieceData.type === NAVY && targetPiece.color === us)) {
           pieceBlockedMovement = true
         }
       }
-      // Commander cannot move past a blocking piece, stop looking further
-      if (pieceData.type === COMMANDER) {
+      // Commander cannot move *past* a blocking piece (unless capturing enemy commander)
+      if (
+        pieceData.type === COMMANDER &&
+        !(
+          targetPiece.type === COMMANDER &&
+          targetPiece.color === them &&
+          isOrthogonal
+        )
+      ) {
         break
       }
     } else {
-      // Move to empty square logic
+      // Move to empty square logic (remains unchanged)
       if (
         currentRange <= config.moveRange &&
         !terrainBlockedMovement &&
         !pieceBlockedMovement &&
         canLandOnSquare(to, pieceData.type)
       ) {
-        addMove(moves, us, from, to, pieceData)
+        // Commander cannot slide past where an enemy commander *would* be captured
+        if (pieceData.type === COMMANDER && isOrthogonal) {
+          // Check if enemy commander is further along this line
+          let lookAheadSq = to + offset
+          let enemyCommanderFound = false
+          while (isSquareOnBoard(lookAheadSq)) {
+            const lookAheadPiece = gameInstance.getPieceAt(lookAheadSq)
+            if (lookAheadPiece) {
+              if (
+                lookAheadPiece.type === COMMANDER &&
+                lookAheadPiece.color === them
+              ) {
+                enemyCommanderFound = true
+              }
+              break // Path blocked by some piece
+            }
+            lookAheadSq += offset
+          }
+          if (!enemyCommanderFound) {
+            // Only add move if enemy commander isn't further along
+            addMove(moves, us, from, to, pieceData)
+          }
+        } else {
+          addMove(moves, us, from, to, pieceData)
+        }
       }
     }
 
-    // Loop termination logic
+    // Loop termination logic (remains mostly unchanged)
     if (!config.isSliding) break
 
+    // Stop if blocked, unless it's a commander seeing another commander orthogonally
     if (
       pieceBlockedMovement &&
       !config.captureIgnoresPieceBlocking &&
-      !config.moveIgnoresBlocking
+      !config.moveIgnoresBlocking &&
+      !(
+        pieceData.type === COMMANDER &&
+        targetPiece?.type === COMMANDER &&
+        targetPiece?.color === them &&
+        isOrthogonal
+      )
     ) {
+      break
+    }
+
+    // Stop commander sliding if range exceeded (since capture is special)
+    if (pieceData.type === COMMANDER && currentRange >= 11) {
+      // Max board dimension
       break
     }
   }
