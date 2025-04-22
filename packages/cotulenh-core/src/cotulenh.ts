@@ -35,6 +35,8 @@ import {
   validateFenFormat,
   validatePosition,
   handleEmptySquares,
+  makeSanPiece,
+  createCombinedPiece,
 } from './utils.js'
 import {
   generateDeployMoves,
@@ -282,10 +284,16 @@ export class CoTuLenh {
       )
     }
 
+    // Determine the starting index for carried pieces, skipping optional '|'
+    let carriedStartIndex = carrierIndex + 1
+    if (stackContent[carriedStartIndex] === '|') {
+      carriedStartIndex++ // Skip the '|' separator
+    }
+
     // Parse carried pieces with validation
     const carriedPieces = this._parseCarriedPieces(
       stackContent,
-      carrierIndex + 1,
+      carriedStartIndex, // Use the adjusted start index
       carrierColor,
       r,
     )
@@ -777,27 +785,26 @@ export class CoTuLenh {
       this._moveNumber++
     }
 
+    //TODO: Handle promotion as atomic move and can be undone
     // --- Handle Promotion ---
     // Check if this move grants heroic status
-    let becameHeroic = false
     // Use finalSq determined above
-    const pieceAtFinalSq = this._board[moveCommand.move.to] // Get the piece that ended up there
+    // const pieceAtFinalSq = this._board[moveCommand.move.to] // Get the piece that ended up there
 
-    // Check for promotion conditions (e.g., putting opponent in check)
-    // AND ensure the piece is not a Commander
-    if (pieceAtFinalSq && pieceAtFinalSq.type !== COMMANDER) {
-      // Temporarily switch turn to check opponent's king
-      this._turn = them
-      if (this._isCommanderAttacked(them)) {
-        // If the move puts opponent in check
-        if (!pieceAtFinalSq.heroic) {
-          // And the piece wasn't already heroic
-          pieceAtFinalSq.heroic = true
-          becameHeroic = true
-        }
-      }
-      this._turn = us // Switch back
-    }
+    // // Check for promotion conditions (e.g., putting opponent in check)
+    // // AND ensure the piece is not a Commander
+    // if (pieceAtFinalSq && pieceAtFinalSq.type !== COMMANDER) {
+    //   // Temporarily switch turn to check opponent's king
+    //   this._turn = them
+    //   if (this._isCommanderAttacked(them)) {
+    //     // If the move puts opponent in check
+    //     if (!pieceAtFinalSq.heroic) {
+    //       // And the piece wasn't already heroic
+    //       pieceAtFinalSq.heroic = true
+    //     }
+    //   }
+    //   this._turn = us // Switch back
+    // }
     // TODO: Check for last piece auto-promotion (also needs Commander check)
 
     // --- Switch Turn (or maintain for deploy) ---
@@ -955,6 +962,7 @@ export class CoTuLenh {
     const pieceChar = move.piece.type.toUpperCase()
     const disambiguator = getDisambiguator(move, moves)
     const toAlg = algebraic(move.to) // Target square
+    let combinationSuffix = '' // Initialize combination suffix
     const heroicPrefix =
       (this.getHeroicStatus(move.from, move.piece.type) ?? false) ? '+' : '' // Simplified: Assume Move class handles this better
     let separator = ''
@@ -967,19 +975,32 @@ export class CoTuLenh {
     if (move.flags & BITS.CAPTURE) {
       separator += 'x'
     }
+    if (move.flags & BITS.COMBINATION) {
+      separator += '&'
+      if (!move.otherPiece) {
+        throw new Error('Move must have otherPiece for combination')
+      }
+      const combined = createCombinedPiece(move.piece, move.otherPiece)
+      if (!combined) {
+        throw new Error(
+          'Should have successfully combined pieces in combine move',
+        )
+      }
+      combinationSuffix = makeSanPiece(combined)
+    }
     let checkingSuffix = '' // Simplified: Assume Move class handles this better
 
-    this._makeMove(move)
-    if (this.isCheck()) {
-      if (this.isCheckmate()) {
-        checkingSuffix = '#'
-      } else {
-        checkingSuffix = '+'
-      }
-    }
-    this._undoMove()
+    // this._makeMove(move)
+    // if (this.isCheck()) {
+    //   if (this.isCheckmate()) {
+    //     checkingSuffix = '#'
+    //   } else {
+    //     checkingSuffix = '^'
+    //   }
+    // }
+    // this._undoMove()
 
-    const san = `${heroicPrefix}${pieceChar}${disambiguator}${separator}${toAlg}${checkingSuffix}`
+    const san = `${heroicPrefix}${pieceChar}${disambiguator}${separator}${toAlg}${combinationSuffix}${checkingSuffix}`
 
     // TODO: Add check/mate symbols (+/#) by temporarily making move and checking state
 

@@ -38,7 +38,6 @@ export function makeMove(
     to: params.to ?? 1,
     piece: params.piece,
     flags: params.flags ?? 1,
-    becameHeroic: params.becameHeroic,
     otherPiece: params.otherPiece,
   }
 }

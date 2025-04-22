@@ -3,6 +3,7 @@ import {
   AIR_FORCE,
   BLUE,
   COMMANDER,
+  DEFAULT_POSITION,
   file,
   INFANTRY,
   MILITIA,
@@ -381,6 +382,89 @@ describe('CoTuLenh Commander Rules', () => {
       const moves = game.moves({ square: 'j7', verbose: true }) as Move[]
       const captureMove = moves.find((m) => m.to === 'c7' && m.isCapture())
       expect(captureMove).toBeUndefined() // Capture should not be possible
+    })
+  })
+
+  describe('load', () => {
+    it('should load the default position correctly', () => {
+      const game = new CoTuLenh()
+      // No need to call load explicitly, constructor does it.
+      // Check some basic state from default FEN
+      expect(game.turn()).toBe(RED)
+      expect(game.fen()).toBe(DEFAULT_POSITION)
+      expect(game['_moveNumber']).toBe(1) // Access private for test or add getter
+      expect(game['_halfMoves']).toBe(0) // Access private for test or add getter
+    })
+
+    it('should load a fen and return the same fen', () => {
+      const fen = '5c5/11/4T6/11/11/8E2/11/11/11/11/11/4C6 r - - 0 1'
+      const game = new CoTuLenh()
+      game.load(fen)
+      expect(game.fen()).toEqual(fen)
+    })
+
+    it('should load a valid FEN string', () => {
+      const fen = '11/11/11/5I5/11/11/11/5i5/11/11/3c7/4C6 b - - 10 5'
+      const game = new CoTuLenh()
+      game.load(fen)
+      expect(game.fen()).toEqual(fen)
+      expect(game.turn()).toBe(BLUE)
+      expect(game['_halfMoves']).toBe(10) // Access private for test or add getter
+      expect(game['_moveNumber']).toBe(5) // Access private for test or add getter
+      // Optionally check a piece position
+      expect(game.get('e1')?.type).toBe('c')
+      expect(game.get('e1')?.color).toBe(RED)
+      expect(game.get('d2')?.type).toBe('c')
+      expect(game.get('d2')?.color).toBe(BLUE)
+    })
+
+    it('should throw an error for an invalid FEN string by default', () => {
+      const invalidFen = '11/11/11/11/11/11/11/11/11/11/4c6/4C6/11 b - - 0 1' // Extra rank
+      const game = new CoTuLenh()
+      expect(() => game.load(invalidFen)).toThrow(
+        /Invalid FEN: expected 12 ranks/,
+      )
+    })
+
+    it('should clear headers by default when loading', () => {
+      const game = new CoTuLenh()
+      game['_header'] = { Event: 'Test Event' }
+      expect(game['_header']['Event']).toBe('Test Event')
+      game.load(DEFAULT_POSITION) // Load again
+      expect(game['_header']['Event']).toBeUndefined()
+      // Standard FEN headers might be added back
+      expect(game['_header']['SetUp']).toBe('1')
+      expect(game['_header']['FEN']).toBe(DEFAULT_POSITION)
+    })
+
+    it('should preserve headers when preserveHeaders is true', () => {
+      const game = new CoTuLenh()
+      game['_header'] = { Event: 'Test Event Preserve' }
+      expect(game['_header']['Event']).toBe('Test Event Preserve')
+      const fen = '11/11/11/11/11/11/11/11/11/11/4c6/4C6 b - - 10 5'
+      game.load(fen, { preserveHeaders: true })
+      expect(game['_header']['Event']).toBe('Test Event Preserve')
+      // Standard FEN headers should still be updated/added
+      expect(game['_header']['SetUp']).toBe('1')
+      expect(game['_header']['FEN']).toBe(fen)
+    })
+
+    it('should correctly parse turn, halfMoves, and moveNumber', () => {
+      const fen = '11/11/11/11/11/11/11/11/11/11/11/11 b - - 25 15'
+      const game = new CoTuLenh(fen)
+      expect(game.turn()).toBe(BLUE)
+      expect(game['_halfMoves']).toBe(25)
+      expect(game['_moveNumber']).toBe(15)
+    })
+
+    it('should handle missing halfMoves and moveNumber (defaulting to 0 and 1)', () => {
+      const fen = '11/11/11/11/11/11/11/11/11/11/11/11 r - -' // Missing last two tokens
+      const game = new CoTuLenh()
+      // Need skipValidation because the FEN is technically incomplete per standard
+      game.load(fen, { skipValidation: true })
+      expect(game.turn()).toBe(RED)
+      expect(game['_halfMoves']).toBe(0)
+      expect(game['_moveNumber']).toBe(1)
     })
   })
 })

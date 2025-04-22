@@ -374,3 +374,15 @@ export function validateFen(fen: string): void {
     )
   }
 }
+export function makeSanSinglePiece(piece: Piece): string {
+  const symbol = piece.type.toUpperCase()
+  const heroic = piece.heroic ? '+' : ''
+  return heroic + symbol
+}
+
+export function makeSanPiece(combinedPiece: Piece): string {
+  const carrier = makeSanSinglePiece(combinedPiece)
+  if (!combinedPiece.carrying?.length) return carrier
+  const stack = combinedPiece.carrying?.map(makeSanSinglePiece).join('') || ''
+  return `(${carrier}|${stack})`
+}
