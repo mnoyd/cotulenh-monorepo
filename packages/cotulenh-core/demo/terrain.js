@@ -1,7 +1,15 @@
 import { CoTuLenh } from '../dist/esm/src/cotulenh.js'
 
+// Default FEN string if no argument is provided
+const defaultFen = '11/11/11/11/11/2c1I4C1/11/11/11/11/11/11 r - - 0 1'
+
+// Get FEN string from command line arguments (process.argv[2]) or use default
+const fen = process.argv[2] || defaultFen
+
 console.log('Cotulenh Terrain Zones Demonstration\n')
-const game = new CoTuLenh()
+console.log(`Using FEN: ${fen}\n`) // Log the FEN being used
+
+const game = new CoTuLenh(fen) // Use the determined FEN string
 
 console.log('\nNote:')
 console.log('- Water zones: Naval units can station here')
