@@ -178,6 +178,7 @@ export const BITS: Record<string, number> = {
   HEROIC_PROMOTION: 4, // Example bit
   STAY_CAPTURE: 8, // General flag bit
   DEPLOY: 16, // Added deploy bit
+  COMBINATION: 32, // Added combination bit
 }
 // --- Move/History Types ---
 // Internal representation of a move
