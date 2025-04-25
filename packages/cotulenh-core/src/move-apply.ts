@@ -28,8 +28,11 @@ class RemovePieceAction implements AtomicMoveAction {
   constructor(private square: number) {}
 
   execute(game: CoTuLenh): void {
-    this.removedPiece = game.getPieceAt(this.square)
-    game.deletePieceAt(this.square)
+    const piece = game.getPieceAt(this.square)
+    if (piece) {
+      this.removedPiece = { ...piece }
+      game.deletePieceAt(this.square)
+    }
   }
 
   undo(game: CoTuLenh): void {
@@ -51,7 +54,10 @@ class PlacePieceAction implements AtomicMoveAction {
   ) {}
 
   execute(game: CoTuLenh): void {
-    this.existingPiece = game.getPieceAt(this.square)
+    const piece = game.getPieceAt(this.square)
+    if (piece) {
+      this.existingPiece = { ...piece }
+    }
     game.setPieceAt(this.square, this.piece)
   }
 
@@ -95,7 +101,12 @@ class RemoveFromStackAction implements AtomicMoveAction {
       )
     }
 
-    this.removedPiece = carrier.carrying[this.removedIndex]
+    const originalPiece = carrier.carrying[this.removedIndex]
+    this.removedPiece = {
+      type: originalPiece.type,
+      color: originalPiece.color,
+      heroic: originalPiece.heroic || false,
+    }
     carrier.carrying.splice(this.removedIndex, 1)
 
     if (carrier.carrying.length === 0) {
