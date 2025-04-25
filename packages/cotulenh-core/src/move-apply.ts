@@ -1,6 +1,6 @@
 // src/move.ts
 
-import type { Color, CoTuLenh } from './cotulenh.js'
+import type { Color, CoTuLenh, PieceSymbol } from './cotulenh.js'
 import {
   swapColor,
   algebraic,
@@ -269,6 +269,9 @@ export class NormalMoveCommand extends MoveCommand {
 
     // Clear deploy state
     this.actions.push(new SetDeployStateAction(null, this.game))
+
+    // Add check and promote action
+    this.actions.push(new CheckAndPromoteAttackersAction(this.move))
   }
 }
 
@@ -360,6 +363,9 @@ export class DeployMoveCommand extends MoveCommand {
         this.game,
       ),
     )
+
+    // Add check and promote action
+    this.actions.push(new CheckAndPromoteAttackersAction(this.move))
   }
 }
 
@@ -402,17 +408,17 @@ class CombinationMoveCommand extends MoveCommand {
     this.actions.push(new PlacePieceAction(this.move.to, combinedPiece))
 
     // Handle commander position update if the *moving* piece was a commander
-    // Note: Current canCombine logic should prevent this, but defensive coding is good.
     if (movingPieceData.type === COMMANDER) {
       this.actions.push(
         new UpdateKingPositionAction(this.move.color, this.move.to, this.game),
       )
     }
-    // Note: If the *target* piece was a commander, it's being removed.
-    // The RemovePieceAction's undo will restore it, but the king position needs update?
-    // The standard capture logic already handles removing the opponent's king,
-    // maybe we need a similar action if a friendly commander is "removed" via combination?
-    // For now, assume canCombine prevents combining *with* a commander.
+
+    // Clear deploy state (combination breaks deploy sequence)
+    this.actions.push(new SetDeployStateAction(null, this.game))
+
+    // Add check and promote action
+    this.actions.push(new CheckAndPromoteAttackersAction(this.move))
   }
 }
 
@@ -436,6 +442,9 @@ export class StayCaptureMoveCommand extends MoveCommand {
 
     // Clear deploy state
     this.actions.push(new SetDeployStateAction(null, this.game))
+
+    // Add check and promote action
+    this.actions.push(new CheckAndPromoteAttackersAction(this.move))
   }
 }
 
@@ -455,5 +464,100 @@ export function createMoveCommand(
   } else {
     // Default to NormalMove if no other specific flags are set
     return new NormalMoveCommand(game, move)
+  }
+}
+
+/**
+ * Sets or unsets the heroic status of a piece
+ */
+class SetHeroicAction implements AtomicMoveAction {
+  private wasHeroic?: boolean
+
+  constructor(
+    private square: number,
+    private type: PieceSymbol,
+    private setHeroic: boolean = true,
+  ) {}
+
+  execute(game: CoTuLenh): void {
+    // Get the piece we want to modify (could be direct or nested)
+    const piece = game.get(this.square, this.type)
+    if (!piece) return
+
+    // Store original heroic state for undo
+    this.wasHeroic = piece.heroic
+
+    // Use the setHeroicStatus method to update the heroic status
+    game.setHeroicStatus(this.square, this.type, this.setHeroic)
+  }
+
+  undo(game: CoTuLenh): void {
+    // Only undo if we have a valid previous state
+    // Use the setHeroicStatus method to restore the original heroic status
+    game.setHeroicStatus(this.square, this.type, this.wasHeroic ?? false)
+  }
+}
+
+/**
+ * Checks if the opponent's commander is attacked after a move
+ * and promotes the attacking pieces to heroic.
+ */
+class CheckAndPromoteAttackersAction implements AtomicMoveAction {
+  private heroicActions: SetHeroicAction[] = []
+  private moveColor: Color
+
+  constructor(move: InternalMove) {
+    this.moveColor = move.color
+  }
+
+  execute(game: CoTuLenh): void {
+    this.heroicActions = [] // Clear previous actions if re-executed
+    const us = this.moveColor
+    const them = swapColor(us)
+    const themCommanderSq = game.getCommanderSquare(them)
+
+    if (themCommanderSq === -1) return // No commander to check
+
+    // Check if the commander is attacked by 'us' AFTER the move's primary actions
+    const attackers = game.getAttackers(themCommanderSq, us)
+
+    // Skip if no attackers found
+    if (attackers.length === 0) return
+
+    // Track which squares we've already processed to avoid duplicate promotions
+    // This is useful when multiple pieces of different types at the same square attack
+    const processedAttackers = new Set<string>()
+
+    for (const { square, type } of attackers) {
+      // Create a unique key for this attacker to avoid duplicates
+      const attackerKey = `${square}:${type}`
+
+      // Skip if we've already processed this exact attacker
+      if (processedAttackers.has(attackerKey)) continue
+
+      // Mark this attacker as processed
+      processedAttackers.add(attackerKey)
+
+      // Check if the piece is already heroic
+      const isHeroic = game.getHeroicStatus(square, type)
+
+      // Promote only if the attacker exists and is not already heroic
+      if (!isHeroic) {
+        // Create a SetHeroicAction with the new constructor signature that includes setHeroic parameter
+        const promoteAction = new SetHeroicAction(square, type, true)
+        // Store it so we can undo it later
+        this.heroicActions.push(promoteAction)
+        // Execute the promotion after storing
+        promoteAction.execute(game)
+      }
+    }
+  }
+
+  undo(game: CoTuLenh): void {
+    // Undo the promotions in reverse order
+    for (let i = this.heroicActions.length - 1; i >= 0; i--) {
+      this.heroicActions[i].undo(game)
+    }
+    this.heroicActions = [] // Clear actions after undoing
   }
 }

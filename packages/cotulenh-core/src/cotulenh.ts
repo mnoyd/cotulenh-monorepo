@@ -32,8 +32,6 @@ import {
   getDisambiguator,
   printBoard,
   validateFen,
-  validateFenFormat,
-  validatePosition,
   handleEmptySquares,
   makeSanPiece,
   createCombinedPiece,
@@ -42,13 +40,15 @@ import {
   generateDeployMoves,
   generateNormalMoves,
   ORTHOGONAL_OFFSETS,
+  ALL_OFFSETS,
+  getPieceMovementConfig,
 } from './move-generation.js'
 import { createMoveCommand, MoveCommand } from './move-apply.js'
 
 // Structure for storing history states
 interface History {
   move: MoveCommand
-  kings: Record<Color, number> // Position of commander before the move
+  commanders: Record<Color, number> // Position of commander before the move
   turn: Color
   // castling: Record<Color, number>; // No castling mentioned
   // epSquare: number; // No en passant mentioned
@@ -141,6 +141,72 @@ export class CoTuLenh {
 
   constructor(fen = DEFAULT_POSITION) {
     this.load(fen)
+  }
+
+  /**
+   * Creates a deep copy of the current CoTuLenh instance
+   * @returns A new CoTuLenh instance with the same state
+   */
+  clone(): CoTuLenh {
+    // Create a new instance without initializing from FEN
+    const clone = Object.create(CoTuLenh.prototype)
+
+    // Deep copy the board with all pieces and their properties
+    clone._board = new Array<Piece | undefined>(256)
+    for (let i = 0; i < 256; i++) {
+      const piece = this._board[i]
+      if (piece) {
+        // Deep copy the piece
+        const pieceCopy: Piece = {
+          type: piece.type,
+          color: piece.color,
+          heroic: piece.heroic,
+        }
+
+        // Deep copy carried pieces if they exist
+        if (piece.carrying && piece.carrying.length > 0) {
+          pieceCopy.carrying = piece.carrying.map((carried) => ({
+            type: carried.type,
+            color: carried.color,
+            heroic: carried.heroic,
+          }))
+        }
+
+        clone._board[i] = pieceCopy
+      }
+    }
+
+    // Copy primitive values
+    clone._turn = this._turn
+    clone._halfMoves = this._halfMoves
+    clone._moveNumber = this._moveNumber
+
+    // Deep copy commanders
+    clone._commanders = { ...this._commanders }
+
+    // Deep copy header
+    clone._header = { ...this._header }
+
+    // Deep copy history (without the actual move commands to avoid circular references)
+    clone._history = this._history.map((hist) => ({
+      move: hist.move, // Note: this is a shallow copy of the move command
+      commanders: { ...hist.commanders },
+      turn: hist.turn,
+      halfMoves: hist.halfMoves,
+      moveNumber: hist.moveNumber,
+      deployState: hist.deployState ? { ...hist.deployState } : null,
+    }))
+
+    // Deep copy comments
+    clone._comments = { ...this._comments }
+
+    // Deep copy position count
+    clone._positionCount = { ...this._positionCount }
+
+    // Deep copy deploy state
+    clone._deployState = this._deployState ? { ...this._deployState } : null
+
+    return clone
   }
 
   /**
@@ -298,8 +364,8 @@ export class CoTuLenh {
       r,
     )
 
-    const sq0x88 = r * 16 + fileIndex
-    this._board[sq0x88] = {
+    const sq0xf0 = r * 16 + fileIndex
+    this._board[sq0xf0] = {
       type: carrierType,
       color: carrierColor,
       carrying: carriedPieces.length > 0 ? carriedPieces : undefined,
@@ -308,7 +374,7 @@ export class CoTuLenh {
 
     if (carrierType === COMMANDER) {
       if (this._commanders[carrierColor] === -1) {
-        this._commanders[carrierColor] = sq0x88
+        this._commanders[carrierColor] = sq0xf0
       } else {
         throw new Error(
           `Invalid FEN: Multiple commanders found for color ${carrierColor}`,
@@ -422,13 +488,13 @@ export class CoTuLenh {
       )
     }
 
-    const sq0x88 = r * 16 + fileIndex
-    this._board[sq0x88] = { type, color, heroic: isHeroic }
+    const sq0xf0 = r * 16 + fileIndex
+    this._board[sq0xf0] = { type, color, heroic: isHeroic }
 
     if (type === COMMANDER) {
       // Track Commander position
       if (this._commanders[color] === -1) {
-        this._commanders[color] = sq0x88
+        this._commanders[color] = sq0xf0
       } else {
         throw new Error(
           `Invalid FEN: Multiple commanders found for color ${color}`,
@@ -700,14 +766,18 @@ export class CoTuLenh {
 
   // Helper method to filter legal moves
   private _filterLegalMoves(moves: InternalMove[], us: Color): InternalMove[] {
+    const clonedGame = this.clone()
     const legalMoves: InternalMove[] = []
     for (const move of moves) {
-      this._makeMove(move)
+      clonedGame._makeMove(move)
       // A move is legal if it doesn't leave the commander attacked AND doesn't expose the commander
-      if (!this._isCommanderAttacked(us) && !this._isCommanderExposed(us)) {
+      if (
+        !clonedGame._isCommanderAttacked(us) &&
+        !clonedGame._isCommanderExposed(us)
+      ) {
         legalMoves.push(move)
       }
-      this._undoMove()
+      clonedGame._undoMove()
     }
     return legalMoves
   }
@@ -750,25 +820,30 @@ export class CoTuLenh {
     // 1. Create the command object for this move
     const moveCommand = createMoveCommand(this, move)
 
-    // 2. Store pre-move state and the command in history
-    const historyEntry: History = {
-      move: moveCommand,
-      kings: { ...this._commanders },
-      turn: us,
-      halfMoves: this._halfMoves,
-      moveNumber: this._moveNumber,
-      deployState: this._deployState, // Snapshot deploy state *before* this move
-    }
-    this._history.push(historyEntry)
+    // Store pre-move state
+    const preCommanderState = { ...this._commanders }
+    const preTurn = us
+    const preHalfMoves = this._halfMoves
+    const preMoveNumber = this._moveNumber
+    const preDeployState = this._deployState
 
-    // 3. Execute the command
+    // 2. Execute the command
     try {
       moveCommand.execute()
     } catch (error) {
-      // Revert the history entry on error
-      this._history.pop()
       throw error
     }
+
+    // 3. Store post-execution command and pre-move state in history
+    const historyEntry: History = {
+      move: moveCommand, // Now contains updated heroicActions
+      commanders: preCommanderState,
+      turn: preTurn,
+      halfMoves: preHalfMoves,
+      moveNumber: preMoveNumber,
+      deployState: preDeployState,
+    }
+    this._history.push(historyEntry)
 
     // --- 4. Update General Game State AFTER command execution ---
 
@@ -824,7 +899,7 @@ export class CoTuLenh {
     const command = old.move // Get the command object
 
     // Restore general game state BEFORE the command modified the board
-    this._commanders = old.kings
+    this._commanders = old.commanders
     this._turn = old.turn
     this._halfMoves = old.halfMoves
     this._moveNumber = old.moveNumber
@@ -845,23 +920,23 @@ export class CoTuLenh {
     this._undoMove()
   }
   /**
-   * Gets a piece at a square using internal 0x88 coordinates
-   * @param square - The square in 0x88 format
+   * Gets a piece at a square using internal 0xf0 coordinates
+   * @param square - The square in 0xf0 format
    * @returns The piece at the square, or undefined if no piece is found
    */
   public getPieceAt(square: number): Piece | undefined {
     return this._board[square]
   }
   /**
-   * Deletes a piece at a square using internal 0x88 coordinates
-   * @param square - The square in 0x88 format
+   * Deletes a piece at a square using internal 0xf0 coordinates
+   * @param square - The square in 0xf0 format
    */
   public deletePieceAt(square: number): void {
     delete this._board[square]
   }
   /**
-   * Sets a piece at a square using internal 0x88 coordinates
-   * @param square - The square in 0x88 format
+   * Sets a piece at a square using internal 0xf0 coordinates
+   * @param square - The square in 0xf0 format
    * @param piece - The piece to place
    */
   public setPieceAt(square: number, piece: Piece): void {
@@ -870,13 +945,106 @@ export class CoTuLenh {
 
   /**
    * Updates the position of a commander
-   * @param sq - The new square in 0x88 format
+   * @param sq - The new square in 0xf0 format
    * @param color - The color of the commander
    */
   public updateKingsPosition(sq: number, color: Color): void {
     if (this._commanders[color] === -1) return // Commander captured = loss = no need to update
     // Update the king's position
     this._commanders[color] = sq
+  }
+
+  /**
+   * Gets the square index of the commander for a given color
+   * @param color - The color of the commander
+   * @returns The square index of the commander, or -1 if not on board
+   */
+  getCommanderSquare(color: Color): number {
+    return this._commanders[color]
+  }
+
+  /**
+   * Gets all pieces of a specific color that are attacking a given square
+   * @param square - The square to check for attackers
+   * @param attackerColor - The color of the potential attackers
+   * @returns An array of objects containing the square and type of pieces that attack the given square
+   */
+  getAttackers(
+    square: number,
+    attackerColor: Color,
+  ): { square: number; type: PieceSymbol }[] {
+    const attackers: { square: number; type: PieceSymbol }[] = []
+
+    // Check in all directions from the target square
+    // Use ALL_OFFSETS to check both orthogonal and diagonal directions
+    for (const offset of ALL_OFFSETS) {
+      let currentSquare = square
+      let pieceBlocking = false
+      let distance = 0
+
+      // Check up to 5 squares in each direction (maximum range of heroic air_force)
+      while (distance < 5) {
+        currentSquare += offset
+        distance++
+
+        // Stop if we're off the board
+        if (!isSquareOnBoard(currentSquare)) break
+
+        const piece = this._board[currentSquare]
+
+        // If no piece at this square, continue to next square in this direction
+        if (!piece) continue
+
+        // Check if the main piece at this square can attack the target
+        if (piece.color === attackerColor) {
+          // Get movement configuration for this piece
+          const config = getPieceMovementConfig(
+            piece.type,
+            piece.heroic ?? false,
+          )
+
+          // Check if the piece's range allows it to reach the target
+          if (distance <= config.captureRange) {
+            // Check if the piece can attack through blocking pieces
+            if (!pieceBlocking || config.captureIgnoresPieceBlocking) {
+              attackers.push({ square: currentSquare, type: piece.type })
+            }
+          }
+
+          // Check carried pieces in stacks
+          if (piece.carrying && piece.carrying.length > 0) {
+            for (const carriedPiece of piece.carrying) {
+              if (carriedPiece.color === attackerColor) {
+                // Get movement configuration for the carried piece
+                const carriedConfig = getPieceMovementConfig(
+                  carriedPiece.type,
+                  carriedPiece.heroic ?? false,
+                )
+
+                // Check if the carried piece's range allows it to reach the target
+                if (distance <= carriedConfig.captureRange) {
+                  // Check if the carried piece can attack through blocking pieces
+                  if (
+                    !pieceBlocking ||
+                    carriedConfig.captureIgnoresPieceBlocking
+                  ) {
+                    attackers.push({
+                      square: currentSquare,
+                      type: carriedPiece.type,
+                    })
+                  }
+                }
+              }
+            }
+          }
+        }
+
+        // Mark that we've encountered a piece in this direction
+        pieceBlocking = true
+      }
+    }
+
+    return attackers
   }
 
   // --- Check/Game Over Detection (Updated for Stay Capture) ---
@@ -1329,6 +1497,57 @@ export class CoTuLenh {
   getHeroicStatus(square: Square | number, pieceType?: PieceSymbol): boolean {
     const piece = this.get(square, pieceType)
     return piece?.heroic ?? false
+  }
+
+  /**
+   * Set the heroic status of a piece at a square
+   * @param square - The square to check
+   * @param pieceType - Optional piece type to find in a stack
+   * @param heroic - The heroic status to set
+   * @returns True if the heroic status was successfully set, false otherwise
+   */
+  setHeroicStatus(
+    square: Square | number,
+    pieceType: PieceSymbol | undefined,
+    heroic: boolean,
+  ): boolean {
+    const sq = typeof square === 'number' ? square : SQUARE_MAP[square]
+    if (sq === undefined) return false
+
+    const pieceAtSquare = this._board[sq]
+    if (!pieceAtSquare) return false
+
+    // Case 1: No specific piece type requested or the piece matches the requested type
+    if (!pieceType || pieceAtSquare.type === pieceType) {
+      pieceAtSquare.heroic = heroic
+      return true
+    }
+
+    // Case 2: Check if the requested piece is being carried in a stack
+    if (pieceAtSquare.carrying && pieceAtSquare.carrying.length > 0) {
+      const carriedPieceIndex = pieceAtSquare.carrying.findIndex(
+        (p) => p.type === pieceType,
+      )
+
+      if (carriedPieceIndex !== -1) {
+        // Create a new array to avoid mutation issues
+        const updatedCarrying = [...pieceAtSquare.carrying]
+        updatedCarrying[carriedPieceIndex] = {
+          ...updatedCarrying[carriedPieceIndex],
+          heroic: heroic,
+        }
+
+        // Update the carrier with the modified carrying array
+        this._board[sq] = {
+          ...pieceAtSquare,
+          carrying: updatedCarrying,
+        }
+
+        return true
+      }
+    }
+
+    return false
   }
 
   /**

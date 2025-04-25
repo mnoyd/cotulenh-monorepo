@@ -201,45 +201,6 @@ export function validateFenFormat(tokens: string[]): void {
 }
 
 /**
- * Validates the position for correctness
- * @param board - The board array
- * @param commanders - The commanders positions
- * @throws Error if the position is invalid
- */
-export function validatePosition(
-  board: Array<Piece | undefined>,
-  commanders: Record<Color, number>,
-): void {
-  // Check that both commanders are present
-  if (commanders[RED] === -1) {
-    throw new Error('Invalid position: Red commander is missing')
-  }
-  if (commanders['b'] === -1) {
-    throw new Error('Invalid position: Blue commander is missing')
-  }
-
-  // Additional position validation can be added here
-  // For example, check that pieces are on valid squares (land/navy)
-  for (let sq = 0; sq < 128; sq++) {
-    if (!(sq & 0x88)) {
-      // Valid square in 0x88 board
-      const piece = board[sq]
-      if (piece) {
-        if (piece.type === NAVY && !NAVY_MASK[sq]) {
-          throw new Error(
-            `Invalid position: Navy piece at ${algebraic(sq)} is not on water`,
-          )
-        } else if (piece.type !== NAVY && !LAND_MASK[sq]) {
-          throw new Error(
-            `Invalid position: Land piece at ${algebraic(sq)} is not on land`,
-          )
-        }
-      }
-    }
-  }
-}
-
-/**
  * Parses a rank string from FEN
  * @param rankStr - The rank string to parse
  * @param r - The rank index
