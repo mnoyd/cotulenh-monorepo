@@ -159,8 +159,6 @@ describe('Move Commands', () => {
         flags: BITS.DEPLOY | BITS.STAY_CAPTURE,
       }
 
-      const msan = game['_moveToSan'](move, game['_moves']())
-      game.moves({ verbose: true })
       const command = createMoveCommand(game, move)
       command.execute()
       expect(game.get('f4')?.color).toBe(undefined)

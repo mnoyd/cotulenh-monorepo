@@ -43,32 +43,27 @@ describe('CoTuLenh', () => {
     })
 
     //TODO: handle check suffix (^)
-    // it('should generate SAN with check suffix (^)', () => {
-    //     // Setup FEN where moving Tank from e5 to f5 checks the blue commander at f12
-    //     const fen = '5c5/11/4T6/11/11/8E2/11/11/11/11/11/4C6 r - - 0 1';
-    //     const game = new CoTuLenh(fen);
-    //     expect(game.fen()).toEqual(fen);
-    //     const moves = game.moves({ square: 'e10', verbose: true }) as Move[];
-    //     const move = findMove(moves, 'e10', 'f10');
-    //     expect(move?.san).toBe('T&e10-d10^');
-    // });
+    it('should generate SAN with check suffix (^)', () => {
+      // Setup FEN where moving Tank from e5 to f5 checks the blue commander at f12
+      const fen = '5ca4/5m5/3T7/11/11/8E2/11/11/11/11/11/4C6 r - - 0 1'
+      const game = new CoTuLenh(fen)
+      expect(game.fen()).toEqual(fen)
+      const moves = game.moves({ square: 'd10', verbose: true }) as Move[]
+      const move = findMove(moves, 'd10', 'd12')
+      expect(move?.san).toBe('Td12^')
+    })
 
     //TODO: handle checkmate suffix (#)
-    //  it('should generate SAN with checkmate suffix (#)', () => {
-    //     // Setup FEN where moving Tank from e11 to f11 checkmates blue commander at f12 (simplified example)
-    //     const fen = '5c5/4T2/11/11/11/11/11/11/11/11/11/11 r - - 0 1';
-    //     const game = new CoTuLenh(fen);
-    //     // Manually verify this position is actually checkmate after Te11-f11
-    //     // This might require a more complex setup for a realistic checkmate
-    //     const moves = game.moves({ square: 'e11' }) as Move[];
-    //     const move = moves.find(m => m.to === 'f11');
-    //     // Note: The checkmate detection logic needs to be robust for this test to pass reliably.
-    //     // If the position isn't actually mate, it might show '+' instead.
-    //     expect(move?.san).toContain('#'); // Use toContain if exact SAN (e.g., disambiguator) is uncertain
-    //     // Or expect(move?.san).toBe('Te11-f11#'); if certain
-    // });
-
-    // Add more tests for deploy moves (>), captures (x), stay captures (<), disambiguation etc.
+    it('should generate SAN with checkmate suffix (#)', () => {
+      // Setup FEN where moving Tank from e11 to f11 checkmates blue commander at f12 (simplified example)
+      const fen = '5ct4/3T1i5/11/11/11/11/11/11/11/11/11/4C6 r - - 0 1'
+      const game = new CoTuLenh(fen)
+      // Manually verify this position is actually checkmate after Te11-f11
+      // This might require a more complex setup for a realistic checkmate
+      const moves = game.moves({ square: 'd11', verbose: true }) as Move[]
+      const move = findMove(moves, 'd11', 'd12')
+      expect(move?.san).toBe('Td12#')
+    })
   })
 
   // ... other describe blocks ...

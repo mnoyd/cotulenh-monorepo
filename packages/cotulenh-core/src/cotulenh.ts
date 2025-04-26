@@ -110,8 +110,12 @@ export class Move {
     this.before = '' // Will be set by move()
     this.after = '' // Will be set by move()
 
-    this.san = game['_moveToSan'](internal, game['_moves']({ legal: true }))
-    this.lan = `${this.from}${algebraic(to)}` // LAN remains simple from-to (destination/target)
+    const [san, lan] = game['_moveToSanLan'](
+      internal,
+      game['_moves']({ legal: true }),
+    )
+    this.san = san
+    this.lan = lan
   }
 
   // Add helper methods like isCapture(), isPromotion() etc. if needed
@@ -808,7 +812,9 @@ export class CoTuLenh {
       // Generate SAN strings (needs proper implementation)
       // Pass all legal moves for ambiguity resolution
       const allLegalMoves = this._moves({ legal: true, ignoreSafety })
-      return internalMoves.map((move) => this._moveToSan(move, allLegalMoves))
+      return internalMoves.map(
+        (move) => this._moveToSanLan(move, allLegalMoves)[0],
+      )
     }
   }
 
@@ -1126,10 +1132,14 @@ export class CoTuLenh {
   }
 
   // --- SAN Parsing/Generation (Updated for Stay Capture & Deploy) ---
-  private _moveToSan(move: InternalMove, moves: InternalMove[]): string {
+  private _moveToSanLan(
+    move: InternalMove,
+    moves: InternalMove[],
+  ): [string, string] {
     const pieceChar = move.piece.type.toUpperCase()
     const disambiguator = getDisambiguator(move, moves)
     const toAlg = algebraic(move.to) // Target square
+    const fromAlg = algebraic(move.from) // Origin square
     let combinationSuffix = '' // Initialize combination suffix
     const heroicPrefix =
       (this.getHeroicStatus(move.from, move.piece.type) ?? false) ? '+' : '' // Simplified: Assume Move class handles this better
@@ -1169,10 +1179,9 @@ export class CoTuLenh {
     this._undoMove()
 
     const san = `${heroicPrefix}${pieceChar}${disambiguator}${separator}${toAlg}${combinationSuffix}${checkingSuffix}`
+    const lan = `${heroicPrefix}${pieceChar}${fromAlg}${separator}${toAlg}${combinationSuffix}${checkingSuffix}`
 
-    // TODO: Add check/mate symbols (+/#) by temporarily making move and checking state
-
-    return san // Return the generated SAN string
+    return [san, lan] // Return both SAN and LAN strings
   }
 
   private _moveFromSan(move: string, strict = false): InternalMove | null {
@@ -1447,7 +1456,7 @@ export class CoTuLenh {
       if (verbose) {
         moveHistory.push(new Move(this, move))
       } else {
-        moveHistory.push(this._moveToSan(move, this._moves()))
+        moveHistory.push(this._moveToSanLan(move, this._moves())[0])
       }
       this._makeMove(move)
     }
