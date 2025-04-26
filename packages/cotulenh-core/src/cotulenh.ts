@@ -1158,15 +1158,15 @@ export class CoTuLenh {
     }
     let checkingSuffix = '' // Simplified: Assume Move class handles this better
 
-    // this._makeMove(move)
-    // if (this.isCheck()) {
-    //   if (this.isCheckmate()) {
-    //     checkingSuffix = '#'
-    //   } else {
-    //     checkingSuffix = '^'
-    //   }
-    // }
-    // this._undoMove()
+    this._makeMove(move)
+    if (this.isCheck()) {
+      if (this.isCheckmate()) {
+        checkingSuffix = '#'
+      } else {
+        checkingSuffix = '^'
+      }
+    }
+    this._undoMove()
 
     const san = `${heroicPrefix}${pieceChar}${disambiguator}${separator}${toAlg}${combinationSuffix}${checkingSuffix}`
 
@@ -1288,7 +1288,6 @@ export class CoTuLenh {
     return null // No matching legal move found
   }
 
-  // Public move method using SAN or object (Updated for Stay Capture)
   /**
    * Makes a move on the board
    * @param move - The move to make, either in SAN format or as an object
@@ -1303,18 +1302,19 @@ export class CoTuLenh {
       | {
           from: string
           to: string
-          stay?: boolean /* promotion?: string */
+          stay?: boolean
           piece?: PieceSymbol
         },
     { strict = false }: { strict?: boolean } = {},
   ): Move | null {
     let internalMove: InternalMove | null = null
 
+    // 1. Parse move
     if (typeof move === 'string') {
       internalMove = this._moveFromSan(move, strict)
     } else if (typeof move === 'object') {
       const fromSq = SQUARE_MAP[move.from as Square]
-      const toSq = SQUARE_MAP[move.to as Square] // Target or Destination square
+      const toSq = SQUARE_MAP[move.to as Square]
       const requestedStay = move.stay === true
 
       if (fromSq === undefined || toSq === undefined) {
@@ -1328,82 +1328,49 @@ export class CoTuLenh {
         legal: true,
         square: move.from as Square,
       })
-
+      const foundMoves: InternalMove[] = []
       for (const m of legalMoves) {
         const isStayMove = (m.flags & BITS.STAY_CAPTURE) !== 0
-        const targetSquareInternal = m.to // Internal 'to' is always the target/destination
+        const targetSquareInternal = m.to
 
         if (
+          m.from === fromSq &&
           targetSquareInternal === toSq &&
-          (move.piece ? move.piece === m.piece.type : true)
+          (move.piece === undefined || m.piece.type === move.piece) &&
+          requestedStay === isStayMove
         ) {
-          // Check if stay preference matches
-          if (requestedStay && isStayMove) {
-            internalMove = m
-            break
-          } else if (!requestedStay && !isStayMove) {
-            internalMove = m
-            break
-          }
-          // If stay preference doesn't match, but target is correct, keep searching
-          // (e.g., Air Force might have both stay and replace options to the same target)
-          // If only one option exists, we might select it even if stay preference mismatches?
-          // For now, require exact match including stay flag if specified.
+          foundMoves.push(m)
         }
       }
-      // Fallback: If exact stay match failed, but only one move targets the square, take it?
-      if (!internalMove) {
-        const possibleMoves = legalMoves.filter((m) => m.to === toSq)
-        if (possibleMoves.length === 1) {
-          // Check if the single option is a capture if the object implies one (e.g. piece on target)
-          const targetPiece = this.get(move.to as Square)
-          if (targetPiece && targetPiece.color === swapColor(this.turn())) {
-            if (possibleMoves[0].flags & BITS.CAPTURE) {
-              internalMove = possibleMoves[0]
-            }
-          } else if (!targetPiece) {
-            // Moving to empty square
-            internalMove = possibleMoves[0]
-          }
-        }
+
+      if (foundMoves.length === 0) {
+        throw new Error(`No matching legal move found: ${JSON.stringify(move)}`)
       }
+      if (foundMoves.length > 1) {
+        throw new Error(
+          `Multiple matching legal moves found: ${JSON.stringify(move)}`,
+        )
+      }
+
+      internalMove = foundMoves[0]
     }
 
+    // 2. Validate move
     if (!internalMove) {
-      // Try generating moves without specifying square/piece if initial parse failed (for SAN string)
-      if (typeof move === 'string') {
-        const allLegalMoves = this._moves({ legal: true })
-        for (const m of allLegalMoves) {
-          // Check if SAN matches (requires better _moveToSan)
-          if (this._moveToSan(m, allLegalMoves) === move) {
-            internalMove = m
-            break
-          }
-        }
-      }
-      if (!internalMove) {
-        // Still not found
-        throw new Error(`Invalid or illegal move: ${JSON.stringify(move)}`)
-      }
+      throw new Error(`Invalid or illegal move: ${JSON.stringify(move)}`)
     }
 
+    // 3. Record FEN before the move
+    const fenBeforeMove =
+      this._history.length > 0 ? this.fen() : DEFAULT_POSITION
+    const prettyMove = new Move(this, internalMove)
+    prettyMove.before = fenBeforeMove
+
+    // 4. Make the move
     this._makeMove(internalMove)
 
-    // Create Move object *after* making the move to get correct 'after' FEN and 'becameHeroic' status
-    // Need to re-fetch the move from history to get the potentially updated 'becameHeroic' flag
-    const savedMove = this._history[this._history.length - 1].move
-    const fenBeforeMove =
-      this._history[this._history.length - 1].turn === RED &&
-      this._history.length > 1
-        ? new CoTuLenh(this.fen()).fen() // FEN after previous move
-        : DEFAULT_POSITION // Or default if it's the first move
-    // A more reliable way might be to store the FEN in the history entry itself
-
-    const prettyMove = new Move(this, savedMove.move)
-
-    // Manually set FENs on the prettyMove object
-    prettyMove.before = fenBeforeMove // FEN before this move
-    prettyMove.after = this.fen() // Current FEN after the move
+    // 5. Set FEN after the move
+    prettyMove.after = this.fen()
 
     return prettyMove
   }

@@ -184,7 +184,7 @@ describe('Move makes piece heroic test', () => {
     game['_turn'] = RED
 
     // Move infantry to d4, attacking the commander
-    const moveResult = game.move({ from: 'e11', to: 'e12' }) // Use algebraic notation for move
+    const moveResult = game.move({ from: 'e11', to: 'e12', piece: TANK }) // Use algebraic notation for move
 
     // Assertions
     expect(moveResult).not.toBeNull() // Move should be successful
@@ -206,7 +206,7 @@ describe('Move makes piece heroic test', () => {
     game['_turn'] = RED
 
     // Move tank to capture infantry at c5, checking the commander
-    const moveResult = game.move({ from: 'g10', to: 'g11' }) // Use SAN for capture
+    const moveResult = game.move({ from: 'g10', to: 'g11', piece: INFANTRY }) // Use SAN for capture
 
     // Assertions
     expect(moveResult).not.toBeNull()
