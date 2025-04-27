@@ -27,6 +27,7 @@ import {
   NAVY_MASK,
   LAND_MASK,
   isSquareOnBoard,
+  INFANTRY,
 } from './type.js'
 import {
   getDisambiguator,
@@ -35,6 +36,8 @@ import {
   handleEmptySquares,
   makeSanPiece,
   createCombinedPiece,
+  strippedSan,
+  inferPieceType,
 } from './utils.js'
 import {
   generateDeployMoves,
@@ -700,12 +703,12 @@ export class CoTuLenh {
   // --- Main Move Generation ---
   private _moves({
     legal = true,
-    piece: filterPiece = undefined,
+    pieceType: filterPiece = undefined,
     square: filterSquare = undefined,
     ignoreSafety = false,
   }: {
     legal?: boolean
-    piece?: PieceSymbol
+    pieceType?: PieceSymbol
     square?: Square
     ignoreSafety?: boolean
   } = {}): InternalMove[] {
@@ -790,17 +793,17 @@ export class CoTuLenh {
   moves({
     verbose = false,
     square = undefined,
-    piece = undefined,
+    pieceType = undefined,
     ignoreSafety = false,
   }: {
     verbose?: boolean
     square?: Square
-    piece?: PieceSymbol
+    pieceType?: PieceSymbol
     ignoreSafety?: boolean
   } = {}): string[] | Move[] {
     const internalMoves = this._moves({
       square,
-      piece,
+      pieceType,
       legal: true,
       ignoreSafety,
     }) // Generate legal moves
@@ -1184,117 +1187,102 @@ export class CoTuLenh {
     return [san, lan] // Return both SAN and LAN strings
   }
 
+  /**
+  /**
+   * Parses a move in Standard Algebraic Notation (SAN) and returns the corresponding
+   * internal move object if legal. Handles various formats including simplified
+   * (e.g., "Nc3"), full (e.g., "Nb1-c3", "Ie2xe3"), stay capture ("Td2<d3", "A<b2", "A2<b2", "Ab<b2"),
+   * deploy ("(T|I)c2>c3", "(T|I)c2>xd3"), and combination ("T&e6(T|I)").
+   *
+   * @param move The move string in SAN format.
+   * @param strict If true, requires stricter format matching (currently unused).
+   * @returns The matching InternalMove object, or null if the move is illegal, ambiguous, or unparseable.
+   * @private
+   */
   private _moveFromSan(move: string, strict = false): InternalMove | null {
-    // Strip extras like check/mate symbols, heroic markers for basic parsing
-    const cleanMove = move.replace(/[+#*?!]/g, '')
+    const cleanMove = strippedSan(move)
+    let pieceType = inferPieceType(cleanMove)
+    let moves = this._moves({ legal: true, pieceType: pieceType })
 
-    // Regex to handle different formats:
-    // 1. Normal: Pf1-f3, Pf1xf3
-    // 2. Stay Capture: Pf1<f3
-    // 3. Deploy: (Stack)Pf1>f3, (Stack)Pf1>xf3
-    // 4. Deploy Stay Capture: (Stack)Pf1<f3
-    const deployStackRegex =
-      /^(\(\?*\))?([CIITMEAGSFNH])([a-k](?:1[0-2]|[1-9]))([>x<])([a-k](?:1[0-2]|[1-9]))$/i
-    const normalMoveRegex =
-      /^([CIITMEAGSFNH])?([a-k](?:1[0-2]|[1-9]))([x<-])([a-k](?:1[0-2]|[1-9]))$/i
-    // Note: Ambiguity resolution (e.g., Nbf1 vs Ndf1) is NOT handled here yet.
-
-    let parsed: {
-      stack?: string
-      piece?: PieceSymbol
-      from: Square
-      separator: string
-      to: Square
-    } | null = null
-
-    const deployMatch = cleanMove.match(deployStackRegex)
-    if (deployMatch) {
-      parsed = {
-        stack: deployMatch[1], // Optional stack representation (currently ignored)
-        piece: deployMatch[2].toLowerCase() as PieceSymbol,
-        from: deployMatch[3] as Square,
-        separator: deployMatch[4], // '>', '>x', '<'
-        to: deployMatch[5] as Square,
-      }
-    } else {
-      const normalMatch = cleanMove.match(normalMoveRegex)
-      if (normalMatch) {
-        parsed = {
-          piece: (normalMatch[1] || '').toLowerCase() as PieceSymbol, // Piece type might be missing for pawns/infantry
-          from: normalMatch[2] as Square,
-          separator: normalMatch[3], // '-', 'x', '<'
-          to: normalMatch[4] as Square,
-        }
+    // strict parser
+    for (let i = 0, len = moves.length; i < len; i++) {
+      const [san, lan] = this._moveToSanLan(moves[i], moves)
+      if (cleanMove === strippedSan(san) || cleanMove === strippedSan(lan)) {
+        return moves[i]
       }
     }
 
-    if (!parsed) {
-      return null // Could not parse
+    // the strict parser failed
+    if (strict) {
+      return null
+    }
+    let heroic = undefined
+    let matches = undefined
+    let from = undefined
+    let to = undefined
+    let flag = undefined
+    let check = undefined
+
+    let overlyDisambiguated = false
+
+    const regex =
+      /^(\(.*\))?(\+)?([CITMEAGSFNH])?([a-k]?(?:1[0-2]|[1-9])?)([x<>\+&-]|>x)?([a-k](?:1[0-2]|[1-9]))([#\^]?)?$/
+    matches = cleanMove.match(regex)
+    if (matches) {
+      heroic = matches[2]
+      pieceType = matches[3] as PieceSymbol
+      from = matches[4] as Square
+      flag = matches[5]
+      to = matches[6] as Square
+      check = matches[7]
+
+      if (from.length == 1) {
+        overlyDisambiguated = true
+      }
     }
 
-    const fromSq = SQUARE_MAP[parsed.from]
-    const toSq = SQUARE_MAP[parsed.to] // Destination or Target square
-    if (fromSq === undefined || toSq === undefined) return null
-
-    // Determine expected flags based on separator
-    let expectedFlags = 0
-    let isDeploy = false
-    if (parsed.separator === '>' || parsed.separator === '>x') {
-      expectedFlags =
-        BITS.DEPLOY | (parsed.separator === '>x' ? BITS.CAPTURE : 0)
-      isDeploy = true
-    } else if (parsed.separator === '<') {
-      expectedFlags = BITS.STAY_CAPTURE | BITS.CAPTURE // Stay capture always implies capture
-      isDeploy = !!parsed.stack // Check if stack prefix exists
-      if (isDeploy) expectedFlags |= BITS.DEPLOY
-    } else if (parsed.separator === 'x') {
-      expectedFlags = BITS.CAPTURE
-    } else {
-      expectedFlags = BITS.NORMAL
-    }
-
-    // Find the matching move among legal moves for the source square
-    const candidateMoves = this._moves({
+    moves = this._moves({
       legal: true,
-      square: parsed.from, // Filter by starting square
+      ...(pieceType && { pieceType: pieceType }),
     })
-
-    for (const m of candidateMoves) {
-      // Check piece type (must match if provided in SAN, especially for deploy)
-      if (parsed.piece && m.piece.type !== parsed.piece) continue
-
-      // Check flags match the parsed separator type
-      const isMoveDeploy = (m.flags & BITS.DEPLOY) !== 0
-      const isMoveStayCapture = (m.flags & BITS.STAY_CAPTURE) !== 0
-      const isMoveNormalCapture =
-        (m.flags & BITS.CAPTURE) !== 0 && !isMoveStayCapture
-      const isMoveNormal = !(
-        m.flags &
-        (BITS.CAPTURE | BITS.DEPLOY | BITS.STAY_CAPTURE)
-      )
-
-      if (isDeploy && isMoveDeploy) {
-        if (isMoveStayCapture && parsed.separator === '<' && m.to === toSq)
-          return m // Deploy Stay Capture
+    if (!to) {
+      return null
+    }
+    for (let i = 0, len = moves.length; i < len; i++) {
+      const [curSan, curLan] = this._moveToSanLan(moves[i], moves)
+      if (!from) {
+        // if there is no from square, it could be just 'x' missing from a capture
         if (
-          !isMoveStayCapture &&
-          (parsed.separator === '>' || parsed.separator === '>x') &&
-          m.to === toSq
+          cleanMove === strippedSan(curSan).replace(/[x<>+&-]|>x/g, '') ||
+          cleanMove === strippedSan(curLan).replace(/[x<>+&-]|>x/g, '')
         ) {
-          // Check capture flag consistency
-          if ((parsed.separator === '>x') === ((m.flags & BITS.CAPTURE) !== 0))
-            return m // Deploy Normal/Capture
+          return moves[i]
         }
-      } else if (!isDeploy && !isMoveDeploy) {
-        if (isMoveStayCapture && parsed.separator === '<' && m.to === toSq)
-          return m // Normal Stay Capture
-        if (isMoveNormalCapture && parsed.separator === 'x' && m.to === toSq)
-          return m // Normal Capture
-        if (isMoveNormal && parsed.separator === '-' && m.to === toSq) return m // Normal Move
+        // hand-compare move properties with the results from our permissive regex
+      } else if (
+        (!pieceType || pieceType.toLowerCase() == moves[i].piece.type) &&
+        SQUARE_MAP[from] == moves[i].from &&
+        SQUARE_MAP[to] == moves[i].to
+      ) {
+        return moves[i]
+      } else if (overlyDisambiguated) {
+        /*
+         * SPECIAL CASE: we parsed a move string that may have an unneeded
+         * rank/file disambiguator (e.g. Nge7).  The 'from' variable will
+         */
+
+        const square = algebraic(moves[i].from)
+        if (
+          (!pieceType || pieceType.toLowerCase() == moves[i].piece.type) &&
+          SQUARE_MAP[to] == moves[i].to &&
+          (from == square[0] || from == square[1])
+        ) {
+          return moves[i]
+        }
       }
     }
 
-    return null // No matching legal move found
+    return null
   }
 
   /**

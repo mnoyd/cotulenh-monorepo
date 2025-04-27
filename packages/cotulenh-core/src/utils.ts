@@ -24,6 +24,7 @@ import {
   NAVY,
   HEADQUARTER,
   isDigit,
+  VALID_PIECE_TYPES,
 } from './type.js'
 
 import { formStack } from '@repo/cotulenh-combine-piece'
@@ -57,7 +58,7 @@ export function getDisambiguator(
 ): string {
   const from = move.from
   const to = move.to
-  const piece = move.piece
+  const pieceType = move.piece.type
 
   let ambiguities = 0
   let sameRank = 0
@@ -66,13 +67,13 @@ export function getDisambiguator(
   for (let i = 0, len = moves.length; i < len; i++) {
     const ambigFrom = moves[i].from
     const ambigTo = moves[i].to
-    const ambigPiece = moves[i].piece
+    const ambigPieceType = moves[i].piece.type
 
     /*
      * if a move of the same piece type ends on the same to square, we'll need
      * to add a disambiguator to the algebraic notation
      */
-    if (piece === ambigPiece && from !== ambigFrom && to === ambigTo) {
+    if (pieceType === ambigPieceType && from !== ambigFrom && to === ambigTo) {
       ambiguities++
 
       if (rank(from) === rank(ambigFrom)) {
@@ -346,4 +347,22 @@ export function makeSanPiece(combinedPiece: Piece): string {
   if (!combinedPiece.carrying?.length) return carrier
   const stack = combinedPiece.carrying?.map(makeSanSinglePiece).join('') || ''
   return `(${carrier}|${stack})`
+}
+
+export function strippedSan(move: string): string {
+  let cleanMove = move.replace(/\([^)]*\)/g, '') //Drop combination guide
+  cleanMove = cleanMove.replace(/[+#]?[?!]*$/, '') //Drop flags and modifiers
+  return cleanMove
+}
+
+export function inferPieceType(san: string): PieceSymbol | undefined {
+  let pieceType = san.charAt(0)
+  if (pieceType === '+') {
+    pieceType = san.charAt(1)
+  }
+  pieceType = pieceType.toLowerCase()
+  if (VALID_PIECE_TYPES[pieceType]) {
+    return pieceType as PieceSymbol
+  }
+  return undefined
 }

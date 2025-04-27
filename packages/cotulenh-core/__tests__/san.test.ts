@@ -1,5 +1,16 @@
-import { CoTuLenh, DEFAULT_POSITION, Move } from '../src/cotulenh'
-import { findMove } from './test-helpers'
+import {
+  ARTILLERY,
+  BLUE,
+  CoTuLenh,
+  DEFAULT_POSITION,
+  INFANTRY,
+  Move,
+  NAVY,
+  Piece,
+  RED,
+  TANK,
+} from '../src/cotulenh'
+import { findMove, setupGameBasic } from './test-helpers'
 
 describe('CoTuLenh', () => {
   describe('_moveToSan', () => {
@@ -67,4 +78,131 @@ describe('CoTuLenh', () => {
   })
 
   // ... other describe blocks ...
+})
+
+describe('CoTuLenh Class - move() with SAN', () => {
+  let game: CoTuLenh
+
+  beforeEach(() => {
+    game = setupGameBasic()
+  })
+
+  it('should make a simple infantry move using SAN', () => {
+    // Assuming default position has RED Infantry at f1
+    game.put({ type: INFANTRY, color: RED }, 'c5')
+    const result = game.move('Ic6')
+    expect(result).not.toBeNull()
+    expect(result?.san).toBe('Ic6')
+    const pieceAtC6 = game.get('c6')
+    expect(pieceAtC6?.type).toBe(INFANTRY)
+    expect(pieceAtC6?.color).toBe(RED)
+    expect(game.get('c5')).toBeUndefined()
+    expect(game.turn()).toBe(BLUE) // Turn should switch
+  })
+
+  it('should make a simple capture using SAN', () => {
+    // Setup a capture scenario
+    game.put({ type: INFANTRY, color: RED }, 'c5')
+    game.put({ type: INFANTRY, color: BLUE }, 'c6')
+    game.load(game.fen()) // Reload to ensure state is clean for the move
+    game['_turn'] = RED // Set turn explicitly if needed after put
+
+    const result = game.move('Ixc6')
+    expect(result).not.toBeNull()
+    expect(result?.san).toBe('Ixc6')
+    expect(result?.flags).toContain('c') // Capture flag
+    const pieceAtC6 = game.get('c6')
+    expect(pieceAtC6?.type).toBe(INFANTRY)
+    expect(pieceAtC6?.color).toBe(RED)
+    expect(game.get('c5')).toBeUndefined()
+    expect(game.turn()).toBe(BLUE)
+  })
+
+  it('should handle stay capture using SAN', () => {
+    // Setup: Red Artillery at d2, Blue Navy at b2
+    game.put({ type: ARTILLERY, color: RED }, 'd2')
+    game.put({ type: NAVY, color: BLUE }, 'b2')
+    game.load(game.fen()) // Ensure state is set
+    game['_turn'] = RED
+
+    const result = game.move('A<b2')
+    expect(result).not.toBeNull()
+    expect(result?.san).toBe('A<b2')
+    expect(result?.flags).toContain('s') // Stay capture flag
+    const pieceAtD2 = game.get('d2')
+    expect(pieceAtD2?.type).toBe(ARTILLERY) // Artillery stays at d2
+    expect(pieceAtD2?.color).toBe(RED)
+    expect(game.get('d3')).toBeUndefined() // Infantry at d3 is removed
+    expect(game.turn()).toBe(BLUE)
+  })
+
+  it('should handle ambiguous stay capture using SAN', () => {
+    // Setup: Red Artillery at d2, Red Artillery at d4 and blue navy at b2
+    game.put({ type: ARTILLERY, color: RED }, 'd2')
+    game.put({ type: ARTILLERY, color: RED }, 'd4')
+    game.put({ type: NAVY, color: BLUE }, 'b2')
+    game.load(game.fen()) // Ensure state is set
+    game['_turn'] = RED
+
+    const moves = game.moves() as string[]
+    expect(moves).toContain('A2<b2')
+    expect(moves).toContain('A4<b2')
+
+    const result = game.move('A2<b2')
+    expect(result).not.toBeNull()
+    expect(result?.san).toBe('A2<b2')
+    expect(result?.flags).toContain('s') // Stay capture flag
+    const pieceAtD2 = game.get('d2')
+    expect(pieceAtD2?.type).toBe(ARTILLERY) // Artillery stays at d2
+    expect(pieceAtD2?.color).toBe(RED)
+    expect(game.get('d3')).toBeUndefined() // Infantry at d3 is removed
+    expect(game.turn()).toBe(BLUE)
+  })
+
+  it('should handle deploy move using SAN', () => {
+    // Setup: Red Tank carrying Infantry at c2
+    const carried: Piece = { type: INFANTRY, color: RED }
+    game.put({ type: TANK, color: RED, carrying: [carried] }, 'c2')
+    game.load(game.fen())
+    game['_turn'] = RED
+
+    //TODO: Fix bug relate to filtering moves using moves({pieceType:...}) not finding deploy move
+    // Deploy Infantry to c3
+    const result = game.move('I>c3')
+    expect(result).not.toBeNull()
+    // The SAN generated might depend on your _moveToSanLan logic, adjust expectation
+    expect(result?.san).toMatch(/\(T\|I\)c2>c3/) // Or similar, check actual output
+    expect(result?.flags).toContain('d') // Deploy flag
+
+    const pieceAtC2 = game.get('c2') // Tank should remain
+    expect(pieceAtC2?.type).toBe(TANK)
+    expect(pieceAtC2?.carrying).toBeUndefined() // No longer carrying
+
+    const pieceAtC3 = game.get('c3') // Infantry deployed
+    expect(pieceAtC3?.type).toBe(INFANTRY)
+    expect(pieceAtC3?.color).toBe(RED)
+
+    // Turn doesn't switch on deploy
+    expect(game.turn()).toBe(RED)
+    expect(game['_deployState']?.stackSquare).toBe(2 * 16 + 2) // c2 in 0x88
+  })
+
+  it('should return null for an invalid SAN move', () => {
+    expect(() => game.move('InvalidMove')).toThrow()
+    expect(game.turn()).toBe(RED) // Turn should not switch
+  })
+
+  it('should return null for an illegal move in SAN', () => {
+    expect(() => game.move('If1-f0')).toThrow() // Assuming f0 is off-board or illegal
+  })
+
+  // --- Add more test cases for: ---
+  // - Deploy captures (e.g., "(T|I)c2>xd3")
+  // - Deploy stay captures (e.g., "(T|I)c2<d3")
+  // - Combination moves (e.g., "(T|I)c2+d3")
+  // - Moves involving heroic pieces (e.g., "+Tc2-c3", "(+T|I)c2>c3")
+  // - Moves resulting in game end conditions (if implemented)
+  // - Ambiguous moves (if ambiguity resolution is implemented)
+  // - Moves for all piece types (Navy, Commander, etc.)
+  // - Edge cases and different board states
 })

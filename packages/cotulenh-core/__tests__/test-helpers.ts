@@ -5,6 +5,9 @@ import {
   InternalMove,
   RED,
   Square,
+  COMMANDER,
+  BLUE,
+  INFANTRY,
 } from '../src/type'
 import { CoTuLenh, Move } from '../src/cotulenh'
 
@@ -48,6 +51,17 @@ export function makeMove(
 export function setupGame(fen: string): CoTuLenh {
   return new CoTuLenh(fen)
 }
+
+export function setupGameBasic(): CoTuLenh {
+  const game = new CoTuLenh()
+  game.clear()
+  game.put({ type: COMMANDER, color: RED }, 'f1')
+  game.put({ type: COMMANDER, color: BLUE }, 'g12')
+  game.put({ type: INFANTRY, color: RED }, 'f2')
+  game.put({ type: INFANTRY, color: BLUE }, 'g11')
+  return game
+}
+
 // Simplified helper to check if a move exists in the verbose list
 // (We don't need all options of findVerboseMove for these basic tests)
 export const findMove = (
