@@ -8,6 +8,7 @@ import {
   NAVY,
   Piece,
   RED,
+  SQUARE_MAP,
   TANK,
 } from '../src/cotulenh'
 import { findMove, setupGameBasic } from './test-helpers'
@@ -171,7 +172,7 @@ describe('CoTuLenh Class - move() with SAN', () => {
     const result = game.move('I>c3')
     expect(result).not.toBeNull()
     // The SAN generated might depend on your _moveToSanLan logic, adjust expectation
-    expect(result?.san).toMatch(/\(T\|I\)c2>c3/) // Or similar, check actual output
+    expect(result?.san).toBe('I>c3') // Or similar, check actual output
     expect(result?.flags).toContain('d') // Deploy flag
 
     const pieceAtC2 = game.get('c2') // Tank should remain
@@ -184,7 +185,7 @@ describe('CoTuLenh Class - move() with SAN', () => {
 
     // Turn doesn't switch on deploy
     expect(game.turn()).toBe(RED)
-    expect(game['_deployState']?.stackSquare).toBe(2 * 16 + 2) // c2 in 0x88
+    expect(game['_deployState']?.stackSquare).toBe(SQUARE_MAP['c2']) // c2 in 0x88
   })
 
   it('should return null for an invalid SAN move', () => {

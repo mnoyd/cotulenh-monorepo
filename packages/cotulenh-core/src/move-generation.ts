@@ -581,12 +581,10 @@ export function generateNormalMoves(
 
     const pieceData = gameInstance.getPieceAt(from)
     if (!pieceData || pieceData.color !== us) continue
-    if (filterPiece && pieceData.type !== filterPiece) continue
 
-    // Check if it's a stack
     if (pieceData.carrying && pieceData.carrying.length > 0) {
-      // Generate Deploy Moves for carrying pieces
       for (const carriedPiece of pieceData.carrying) {
+        if (filterPiece && carriedPiece.type !== filterPiece) continue
         const deployMoves = generateMovesForPiece(
           gameInstance,
           from,
@@ -599,16 +597,10 @@ export function generateNormalMoves(
           moves.push(m)
         })
       }
-      // Generate Carrier Moves (moving the whole stack)
-      const carrierMoves = generateMovesForPiece(
-        gameInstance,
-        from,
-        pieceData,
-        pieceData.heroic ?? false,
-      )
-      moves.push(...carrierMoves)
-    } else {
-      // Generate moves for a single piece
+    }
+
+    // Always generate moves for the piece itself (carrier or not)
+    if (!filterPiece || pieceData.type === filterPiece) {
       const singleMoves = generateMovesForPiece(
         gameInstance,
         from,

@@ -10,7 +10,9 @@ import {
   ANTI_AIR,
   DEFAULT_POSITION,
   COMMANDER,
+  Piece,
 } from '../src/type'
+import { setupGameBasic } from './test-helpers'
 
 describe('CoTuLenh Stay Capture Logic', () => {
   let game: CoTuLenh
@@ -475,5 +477,28 @@ describe('Piece Blocking Movement Logic', () => {
     // Tank should be able to capture enemy Infantry at d5 despite blocking (special rule)
     const captureD5 = moves.find((m) => m.from === 'd3' && m.to === 'd5')
     expect(captureD5).toBeUndefined()
+  })
+})
+
+describe('Generate Moves', () => {
+  let game: CoTuLenh
+  beforeEach(() => {
+    game = setupGameBasic()
+  })
+  test('should correctly filter moves by piece type', () => {
+    const carried: Piece = { type: INFANTRY, color: RED }
+    game.put({ type: TANK, color: RED, carrying: [carried] }, 'c2')
+    game.load(game.fen())
+    game['_turn'] = RED
+
+    const allMoves = game.moves({ verbose: true }) as Move[]
+    const filteredMoves = game.moves({
+      verbose: true,
+      pieceType: INFANTRY,
+    }) as Move[]
+    const infantryMovesFromAll = allMoves.filter(
+      (m) => m.piece.type === INFANTRY,
+    )
+    expect(filteredMoves.length).toEqual(infantryMovesFromAll.length)
   })
 })
