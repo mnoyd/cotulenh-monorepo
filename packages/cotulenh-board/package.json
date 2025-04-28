@@ -2,8 +2,9 @@
   "name": "@repo/cotulenh-board",
   "version": "0.0.0",
   "description": "A js board for commander chess",
-  "main": "dist/index.es.js",
-  "types": "dist/index.d.ts",
+  "main": "./dist/index.cjs.js",
+  "module": "./dist/index.es.js",
+  "types": "./dist/index.d.ts",
   "type": "module",
   "scripts": {
     "build": "$npm_execpath run dist",
@@ -28,21 +29,17 @@
     "vite": "^6.2.5"
   },
   "exports": {
-    ".": "./dist/index.es.js",
-    "./assets/*": "./dist/assets/*",
-    "./*": "./dist/*.js"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.es.js",
+      "require": "./dist/index.cjs.js"
+    },
+    "./assets/*": "./dist/assets/*"
   },
   "files": [
     "dist/**/*",
     "assets/**/*"
   ],
-  "typesVersions": {
-    "*": {
-      "*": [
-        "dist/*"
-      ]
-    }
-  },
   "dependencies": {
     "@repo/cotulenh-combine-piece": "workspace:^"
   }

@@ -15,7 +15,7 @@ export default defineConfig({
       formats: ['es', 'cjs'],
     },
     outDir: 'dist',
-    emptyOutDir: true,
+    emptyOutDir: false,
     sourcemap: true,
     minify: false,
     rollupOptions: {
