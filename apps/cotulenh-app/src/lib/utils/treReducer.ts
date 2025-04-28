@@ -1,5 +1,5 @@
 import { DEFAULT_POSITION, Move, RED } from '@repo/cotulenh-core';
-import type { DrawShape } from '@repo/cotulenh-board/draw';
+import type { DrawShape } from '@repo/cotulenh-board/';
 import type { Annotation } from './annotation';
 import type { Outcome } from './types';
 import { positionFromFen } from './core-intergrate';

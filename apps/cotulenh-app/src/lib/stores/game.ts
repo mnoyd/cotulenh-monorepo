@@ -15,7 +15,8 @@ function createGameStore() {
     possibleMoves: new Map<Square, Square[]>(),
     status: 'playing',
     check: false,
-    lastMove: undefined
+    lastMove: undefined,
+    deployState: null
   };
 
   const { subscribe, set, update } = writable<GameState>(initialState);
@@ -25,11 +26,6 @@ function createGameStore() {
    */
   function calculateGameStatus(game: CoTuLenh): GameStatus {
     if (game.isCheckmate()) return 'checkmate';
-    if (game.isStalemate()) return 'stalemate';
-    // Note: CoTuLenh core might not have draw/threefold detection yet.
-    // Add these checks if/when available in the core library.
-    // if (game.isThreefoldRepetition()) return 'threefold';
-    // if (game.isDraw()) return 'draw';
     return 'playing';
   }
 
@@ -47,7 +43,8 @@ function createGameStore() {
         possibleMoves: getPossibleMoves(game),
         check: game.isCheck(),
         status: calculateGameStatus(game),
-        lastMove: undefined
+        lastMove: undefined,
+        deployState: game['_deployState']
       });
     },
 
@@ -65,7 +62,8 @@ function createGameStore() {
         possibleMoves: getPossibleMoves(game),
         lastMove: [move.from, move.to],
         check: game.isCheck(),
-        status: calculateGameStatus(game)
+        status: calculateGameStatus(game),
+        deployState: game['_deployState']
       }));
     },
 
