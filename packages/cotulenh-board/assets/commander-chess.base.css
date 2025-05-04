@@ -1,5 +1,6 @@
-/* --- Existing styles (no changes here) --- */
+/* --- Chess Board Core Styles --- */
 
+/* Basic layout containers */
 .cg-wrap {
   box-sizing: content-box;
   position: relative;
@@ -8,71 +9,45 @@
 
 cg-container {
   position: absolute;
+  top: 0;
   width: 100%;
   height: 100%;
   display: block;
-  top: 0;
-}
-.board-orientation-blue {
-  transform: rotate(180deg);
-}
-cg-background {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  -webkit-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
-  user-select: none;
-  background-size: cover;
 }
 
-cg-piece-star {
-  position: absolute;
-  top: 15%;
-  width: 20%;
-  height: 20%;
-  user-select: none;
-  background-size: contain; /* Changed from cover to contain */
-  background-repeat: no-repeat; /*add this line*/
-  background-position: center; /* Add this line */
-  z-index: 3; /* Ensure it is above the pieces */
-}
-
+/* Board and background */
+cg-background,
 cg-board {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  -webkit-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
   user-select: none;
+}
+
+cg-background {
+  background-size: cover;
+}
+
+cg-board {
   line-height: 0;
 }
 
-.cg-wrap cg-auto-pieces,
-.cg-wrap .cg-shapes,
-.cg-wrap .cg-custom-svgs {
-  overflow: visible;
+/* Star piece */
+cg-piece-star {
   position: absolute;
-  top: 0px;
-  left: 0px;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
+  top: 15%;
+  width: 20%;
+  height: 20%;
+  user-select: none;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  z-index: 3;
 }
 
-.cg-wrap cg-auto-pieces {
-  z-index: 2;
-}
-
-.cg-wrap cg-auto-pieces piece {
-  opacity: 0.3;
-}
+/* Square positioning */
 cg-board square {
   position: absolute;
   top: 3.84%;
@@ -82,37 +57,36 @@ cg-board square {
   pointer-events: none;
 }
 
-.cg-wrap piece svg {
-  overflow: hidden;
-  position: relative;
-  top: 0px;
-  left: 0px;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-  z-index: 2;
-  opacity: 0.6;
-}
+/* Pieces */
 .cg-wrap piece {
   position: absolute;
   top: 3.84%;
   left: 4.16%;
   width: 8.3%;
   height: 7.7%;
-  /* background-size: cover; */
   z-index: 2;
   will-change: transform;
   pointer-events: none;
-  display: flex; /* Keep flex for regular pieces */
-  justify-content: center; /* Keep centering for regular pieces */
+  display: flex;
+  justify-content: center;
 }
 
+.cg-wrap piece svg {
+  position: relative;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 2;
+  opacity: 0.6;
+  overflow: hidden;
+}
+
+/* Piece states */
 cg-board piece.dragging {
   cursor: move;
-  /* !important to override z-index from 3D piece inline style */
   z-index: 11 !important;
-  /* top: 1.92%;
-  left: 2.08%; */
 }
 
 piece.anim {
@@ -124,18 +98,28 @@ piece.fading {
   opacity: 0.5;
 }
 
+/* Auto-pieces, shapes and SVGs */
 .cg-wrap cg-auto-pieces,
 .cg-wrap .cg-shapes,
 .cg-wrap .cg-custom-svgs {
-  overflow: visible;
   position: absolute;
-  top: 0px;
-  left: 0px;
+  top: 0;
+  left: 0;
   width: 100%;
   height: 100%;
   pointer-events: none;
+  overflow: visible;
 }
 
+.cg-wrap cg-auto-pieces {
+  z-index: 2;
+}
+
+.cg-wrap cg-auto-pieces piece {
+  opacity: 0.3;
+}
+
+/* Coordinates */
 .cg-wrap coords {
   position: absolute;
   display: flex;
@@ -153,10 +137,6 @@ piece.fading {
   margin: 7.7% 0;
 }
 
-.cg-wrap coords.ranks.blue {
-  flex-flow: column;
-}
-
 .cg-wrap coords.files {
   bottom: -4px;
   flex-flow: row;
@@ -167,9 +147,6 @@ piece.fading {
   margin: 0 8.3%;
 }
 
-.cg-wrap coords.files.blue {
-  flex-flow: row-reverse;
-}
 .cg-wrap coords.squares {
   bottom: 0;
   left: 0;
@@ -180,58 +157,71 @@ piece.fading {
   width: 12.5%;
 }
 
-.cg-wrap coords.squares.blue {
-  flex-flow: column;
-}
-
 .cg-wrap coords coord {
   flex: 1 1 auto;
 }
 
-/* --- Combined Stack Styles (Corrected) --- */
+/* Blue orientation */
+.board-orientation-blue {
+  transform: rotate(180deg);
+}
 
-/* Styles for the combined stack container */
+.cg-wrap coords.ranks.blue {
+  flex-flow: column;
+}
+
+.cg-wrap coords.files.blue {
+  flex-flow: row-reverse;
+}
+
+.cg-wrap coords.squares.blue {
+  flex-flow: column;
+}
+
+/* --- Combined Stack Styles --- */
 .cg-wrap piece.combined-stack {
-  overflow: visible; /* Allow children to overflow */
-  pointer-events: auto; /* Make the whole stack clickable */
+  pointer-events: auto;
   background: none;
   overflow: visible;
 }
 
-/* Styles for individual pieces WITHIN the stack */
+/* --- Stack Pieces Styles --- */
+
+/* Individual pieces within the stack */
 .cg-wrap piece.combined-stack > piece {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background-size: contain; /* Ensure background image fits */
+  background-size: contain;
   background-position: center;
   background-repeat: no-repeat;
-  /*display: block; /* Override flex display */
 }
 
-/* Highlight valid move destinations */
+/* --- Move Indicator Styles --- */
+
+/* Valid move destination indicator */
 cg-board square.move-dest::before {
   content: '';
   position: absolute;
   border-radius: 50%;
   background: radial-gradient(rgba(20, 85, 30, 0.5) 22%, transparent 0);
-  width: 40%; /* Adjust size as needed */
-  height: 40%; /* Adjust size as needed */
+  width: 40%;
+  height: 40%;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  pointer-events: none; /* Prevent interference with clicks */
-  z-index: 3; /* Ensure it's above the square but below pieces */
+  pointer-events: none;
+  z-index: 3;
 }
 
-/* Highlight valid capture destinations */
+/* Valid capture destination */
 cg-board square.move-dest.oc::before {
   background: radial-gradient(transparent 0%, transparent 70%, rgba(80, 35, 35, 0.7) 70%);
-  /* Optional: Make capture indication different, e.g., outer ring */
 }
 
+/* --- Piece Popup UI --- */
 .combined-piece-popup {
   position: absolute;
   background: rgba(255, 255, 255, 0.9);
@@ -246,6 +236,7 @@ cg-board square.move-dest.oc::before {
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
 }
 
+/* Popup piece styling */
 .combined-piece-popup piece {
   cursor: grab;
   transition: transform 0.1s;
@@ -260,6 +251,7 @@ cg-board square.move-dest.oc::before {
   user-select: none;
 }
 
+/* Popup piece states */
 .combined-piece-popup piece:active {
   cursor: grabbing;
 }
@@ -274,12 +266,11 @@ cg-board square.move-dest.oc::before {
   transform: scale(1.1);
 }
 
-/* Update carrier piece separator */
+/* Carrier piece styling */
 .combined-piece-popup .carrier-piece {
   position: relative;
 }
 
-/* Add separator after carrier piece */
 .combined-piece-popup .carrier-piece::after {
   content: '';
   position: absolute;
@@ -290,6 +281,7 @@ cg-board square.move-dest.oc::before {
   background-color: #ccc;
 }
 
+/* --- Stack Interaction States --- */
 .cg-wrap piece.combined-stack .selected-stack-piece {
   filter: brightness(1.2);
   z-index: 10 !important;
