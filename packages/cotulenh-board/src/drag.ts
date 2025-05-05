@@ -65,6 +65,23 @@ export function start(s: State, e: cg.MouchEvent): void {
         // No drag initiated here, just selection set.
         // The next click on a valid square will trigger the move via selectSquare -> userMove -> baseMove
       }
+      const selectedPiece = pieceIndex === -1 ? piece : piece.carrying![pieceIndex!];
+      const tempKey = '11.12';
+      s.pieces.set(tempKey, selectedPiece);
+      s.dom.redraw();
+
+      s.draggable.current = {
+        orig: tempKey,
+        piece: selectedPiece,
+        origPos: position,
+        pos: position,
+        started: true,
+        element: () => pieceElementByKey(s, key),
+        originTarget: e.target,
+        newPiece: true,
+        keyHasChanged: false,
+      };
+      processDrag(s);
 
       removeCombinedPiecePopup(s); // Close popup after interaction
       // No return here, allow flow to continue if needed, though popup interaction usually ends here.
@@ -170,7 +187,7 @@ function processDrag(s: State): void {
     if (s.animation.current?.plan.anims.has(cur.orig)) s.animation.current = undefined;
     // if moving piece is gone, cancel
     const origPiece = s.pieces.get(cur.orig);
-    if (!origPiece || !util.samePiece(origPiece, cur.piece)) cancel(s);
+    if (!s.selectedPieceInfo && (!origPiece || !util.samePiece(origPiece, cur.piece))) cancel(s);
     else {
       if (!cur.started && util.distanceSq(cur.pos, cur.origPos) >= Math.pow(s.draggable.distance, 2))
         cur.started = true;
