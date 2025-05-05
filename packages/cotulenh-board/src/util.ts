@@ -76,3 +76,9 @@ export const setVisible = (el: HTMLElement, v: boolean): void => {
   el.style.visibility = v ? 'visible' : 'hidden';
 };
 export const invRanks: readonly cg.Rank[] = [...cg.ranks].reverse();
+
+export const pieceNameOf = (piece: cg.Piece): string => {
+  const base = `${piece.color} ${piece.role} ${piece.promoted ? 'promoted' : ''}`;
+  const carrying = piece.carrying?.reduce((acc, p) => acc + ' ' + pieceNameOf(p), '-');
+  return base + (carrying ?? '');
+};
