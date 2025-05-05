@@ -70,6 +70,7 @@ export interface HeadlessState {
     lastMove: boolean; // add last-move class to squares
     check: boolean; // add check class to squares
     custom: cg.SquareClasses; // add custom classes to custom squares
+    //TODO: add air defense influence zones
   };
   exploding?: cg.Exploding;
   addPieceZIndex: boolean; // adds z-index values to pieces (for 3D)

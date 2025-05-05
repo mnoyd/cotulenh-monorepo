@@ -30,6 +30,7 @@ export function setSelected(state: HeadlessState, key: cg.Key): void {
 
 export function unselect(state: HeadlessState): void {
   state.selected = undefined;
+  state.selectedPieceInfo = undefined;
   state.hold.cancel();
 }
 
