@@ -3,7 +3,14 @@ import { redPov } from './board.js';
 import { DragCurrent } from './drag.js';
 import { HeadlessState, State } from './state.js';
 import * as cg from './types.js';
-import { createEl, translate, posToTranslate as posToTranslateFromBounds, key2pos, pos2key } from './util.js';
+import {
+  createEl,
+  translate,
+  posToTranslate as posToTranslateFromBounds,
+  key2pos,
+  pos2key,
+  pieceNameOf,
+} from './util.js';
 
 type PieceName = string; // `$color $role`
 const COMBINED_PIECE_OFFSET_BASE = 50; // Determines the how much the combined pieces are offset from each other
@@ -353,11 +360,6 @@ export function render(s: State): void {
   for (const nodes of movedPieces.values()) removeNodes(s, nodes);
   for (const nodes of movedSquares.values()) removeNodes(s, nodes);
 }
-const pieceNameOf = (piece: cg.Piece): string => {
-  const base = `${piece.color} ${piece.role} ${piece.promoted ? 'promoted' : ''}`;
-  const carrying = piece.carrying?.reduce((acc, p) => acc + ' ' + pieceNameOf(p), '-');
-  return base + (carrying ?? '');
-};
 
 export const orientRed = (s: HeadlessState): boolean => s.orientation === 'red';
 
