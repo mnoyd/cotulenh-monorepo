@@ -85,6 +85,10 @@ export interface HeadlessState {
     piece: cg.Piece;
     containerEl: HTMLElement;
   };
+  lastPopupInfo?: {
+    bounds: DOMRect;
+    pieces: Array<{ bounds: DOMRect; index: number }>;
+  };
 }
 
 export interface State extends HeadlessState {

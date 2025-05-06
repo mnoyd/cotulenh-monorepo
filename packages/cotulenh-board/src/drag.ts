@@ -64,24 +64,24 @@ export function start(s: State, e: cg.MouchEvent): void {
         s.selected = key; // Select the square where the stack is
         // No drag initiated here, just selection set.
         // The next click on a valid square will trigger the move via selectSquare -> userMove -> baseMove
-      }
-      const selectedPiece = pieceIndex === -1 ? piece : piece.carrying![pieceIndex!];
-      const tempKey = '11.12';
-      s.pieces.set(tempKey, selectedPiece);
-      s.dom.redraw();
+        const selectedPiece = piece.carrying![pieceIndex!];
+        const tempKey = '11.12';
+        s.pieces.set(tempKey, selectedPiece);
+        s.dom.redraw();
 
-      s.draggable.current = {
-        orig: tempKey,
-        piece: selectedPiece,
-        origPos: position,
-        pos: position,
-        started: true,
-        element: () => pieceElementByKey(s, key),
-        originTarget: e.target,
-        newPiece: true,
-        keyHasChanged: false,
-      };
-      processDrag(s);
+        s.draggable.current = {
+          orig: tempKey,
+          piece: selectedPiece,
+          origPos: position,
+          pos: position,
+          started: true,
+          element: () => pieceElementByKey(s, tempKey),
+          originTarget: e.target,
+          newPiece: true,
+          keyHasChanged: false,
+        };
+        processDrag(s);
+      }
 
       removeCombinedPiecePopup(s); // Close popup after interaction
       // No return here, allow flow to continue if needed, though popup interaction usually ends here.
@@ -182,6 +182,8 @@ function processDrag(s: State): void {
     if (!cur) return;
     if (s.combinedPiecePopup) {
       removeCombinedPiecePopup(s);
+      // Clear lastPopupInfo to prevent stale popup information during drag
+      s.lastPopupInfo = undefined;
     }
     // cancel animations while dragging
     if (s.animation.current?.plan.anims.has(cur.orig)) s.animation.current = undefined;
@@ -252,9 +254,26 @@ export function end(s: State, e: cg.MouchEvent): void {
 
   // touchend has no position; so use the last touchmove position instead
   const eventPos = util.eventPosition(e) || cur.pos;
+
+  // Check if the cursor is still within the combined piece popup
+  // This will check both active popup and lastPopupInfo
+  const { inPopup } = isPositionInPopup(s, eventPos);
+  if (inPopup) {
+    // If cursor is still in popup, cancel the drag operation
+    s.draggable.current = undefined;
+    // Clear lastPopupInfo to prevent stale popup information
+    s.lastPopupInfo = undefined;
+    s.pieces.delete('11.12');
+    s.dom.redraw();
+    return;
+  }
+
   const dest = board.getKeyAtDomPos(eventPos, board.redPov(s), s.dom.bounds());
 
-  if (dest && cur.started && cur.orig !== dest) {
+  // Check if this was a click in a combined piece popup that shouldn't trigger a move
+  const isPopupPieceSelection = s.selectedPieceInfo?.isFromStack && cur.newPiece && !cur.started;
+
+  if (dest && cur.started && cur.orig !== dest && !isPopupPieceSelection) {
     // Handle piece from stack being dragged
     if (s.selectedPieceInfo?.isFromStack && cur.newPiece) {
       const { originalKey } = s.selectedPieceInfo;
@@ -310,6 +329,8 @@ export function end(s: State, e: cg.MouchEvent): void {
     s.dom.redraw();
   }
 
+  // Clear lastPopupInfo to prevent stale popup information affecting future interactions
+  s.lastPopupInfo = undefined;
   s.draggable.current = undefined;
   s.dom.redraw();
 }
