@@ -301,6 +301,21 @@ export function removeCombinedPiecePopup(s: State): void {
 
   if (s.combinedPiecePopup?.containerEl) {
     try {
+      // Store popup position information before removing
+      if (!s.lastPopupInfo) {
+        const popup = s.combinedPiecePopup.containerEl;
+        const popupBounds = popup.getBoundingClientRect();
+        const pieces = Array.from(popup.querySelectorAll('piece'));
+
+        s.lastPopupInfo = {
+          bounds: popupBounds,
+          pieces: pieces.map((piece, i) => ({
+            bounds: piece.getBoundingClientRect(),
+            index: i === 0 ? -1 : i - 1, // -1 for carrier, i-1 for carried pieces
+          })),
+        };
+      }
+
       // Remove the element from DOM
       s.combinedPiecePopup.containerEl.remove();
     } catch (error) {
@@ -321,43 +336,71 @@ export function isPositionInPopup(
   s: State,
   position: cg.NumberPair,
 ): { inPopup: boolean; pieceIndex?: number } {
-  if (!s || !position || !s.combinedPiecePopup) return { inPopup: false };
+  // First check active popup if it exists
+  if (s && position && s.combinedPiecePopup) {
+    const popup = s.combinedPiecePopup.containerEl;
+    if (popup) {
+      try {
+        const popupBounds = popup.getBoundingClientRect();
 
-  const popup = s.combinedPiecePopup.containerEl;
-  if (!popup) return { inPopup: false };
+        // Check if position is within popup bounds
+        if (
+          position[0] >= popupBounds.left &&
+          position[0] <= popupBounds.right &&
+          position[1] >= popupBounds.top &&
+          position[1] <= popupBounds.bottom
+        ) {
+          // Find which piece was clicked
+          const pieces = Array.from(popup.querySelectorAll('piece'));
+          for (let i = 0; i < pieces.length; i++) {
+            const pieceBounds = pieces[i].getBoundingClientRect();
+            if (
+              position[0] >= pieceBounds.left &&
+              position[0] <= pieceBounds.right &&
+              position[1] >= pieceBounds.top &&
+              position[1] <= pieceBounds.bottom
+            ) {
+              // If it's the carrier piece (first piece)
+              if (i === 0) {
+                return { inPopup: true, pieceIndex: -1 }; // -1 indicates carrier piece
+              } else {
+                return { inPopup: true, pieceIndex: i - 1 }; // Adjust index for carried pieces
+              }
+            }
+          }
+          return { inPopup: true }; // In popup but not on a piece
+        }
+      } catch (error) {
+        console.error('Error checking position in popup:', error);
+      }
+    }
+  }
 
-  try {
-    const popupBounds = popup.getBoundingClientRect();
+  // If no active popup or position not in active popup, check lastPopupInfo
+  if (s && position && s.lastPopupInfo) {
+    const { bounds, pieces } = s.lastPopupInfo;
 
-    // Check if position is within popup bounds
+    // Check if position is within the last popup bounds
     if (
-      position[0] >= popupBounds.left &&
-      position[0] <= popupBounds.right &&
-      position[1] >= popupBounds.top &&
-      position[1] <= popupBounds.bottom
+      position[0] >= bounds.left &&
+      position[0] <= bounds.right &&
+      position[1] >= bounds.top &&
+      position[1] <= bounds.bottom
     ) {
       // Find which piece was clicked
-      const pieces = Array.from(popup.querySelectorAll('piece'));
-      for (let i = 0; i < pieces.length; i++) {
-        const pieceBounds = pieces[i].getBoundingClientRect();
+      for (const piece of pieces) {
+        const pieceBounds = piece.bounds;
         if (
           position[0] >= pieceBounds.left &&
           position[0] <= pieceBounds.right &&
           position[1] >= pieceBounds.top &&
           position[1] <= pieceBounds.bottom
         ) {
-          // If it's the carrier piece (first piece)
-          if (i === 0) {
-            return { inPopup: true, pieceIndex: -1 }; // -1 indicates carrier piece
-          } else {
-            return { inPopup: true, pieceIndex: i - 1 }; // Adjust index for carried pieces
-          }
+          return { inPopup: true, pieceIndex: piece.index };
         }
       }
       return { inPopup: true }; // In popup but not on a piece
     }
-  } catch (error) {
-    console.error('Error checking position in popup:', error);
   }
 
   return { inPopup: false };
