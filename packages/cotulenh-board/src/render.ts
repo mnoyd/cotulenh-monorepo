@@ -235,97 +235,23 @@ export function render(s: State): void {
     if (!samePieces.has(k)) {
       pMvdset = movedPieces.get(pieceNameOf(p));
       pMvd = pMvdset && pMvdset.pop();
-
       // a same piece was moved
       if (pMvd) {
-        const pos = key2pos(k);
-        const isCombined = p.carrying && p.carrying.length > 0;
-
-        // Apply common DOM changes that should happen before animation/placement
+        // apply dom changes
         pMvd.cgKey = k;
         if (pMvd.cgFading) {
           pMvd.classList.remove('fading');
           pMvd.cgFading = false;
         }
-        // Set z-index early for stacking during potential animation
-        if (!isCombined && s.addPieceZIndex) {
-          pMvd.style.zIndex = posZIndex(pos, asRed);
-        }
-
-        // Define the final state action (after animation or immediately)
-        const onFinish = () => {
-          // Ensure the element still exists in the DOM before modifying/replacing
-          if (!pMvd!.parentNode) return;
-
-          if (isCombined) {
-            // --- Combined Piece Final State ---
-            // Clean up any children (like promotion stars from previous state) before replacing
-            while (pMvd!.firstChild) {
-              pMvd!.removeChild(pMvd!.firstChild);
-            }
-            const parent = pMvd!.parentNode;
-            if (parent) {
-              const combinedPieceElement = createCombinedPieceElement(
-                p,
-                pos,
-                posToTranslate,
-                asRed,
-                undefined,
-                s,
-              );
-              parent.removeChild(pMvd!); // Explicitly remove old node
-              parent.appendChild(combinedPieceElement); // Append new node
-            }
-          } else {
-            // --- Normal Piece Final State ---
-            // Remove animation class and flag if it was animating
-            if (pMvd!.cgAnimating) {
-              pMvd!.classList.remove('anim');
-              pMvd!.cgAnimating = false;
-            }
-
-            // Handle promotion star based on the final piece state 'p'
-            if (p.promoted) {
-              if (!pMvd!.querySelector('cg-piece-star')) {
-                const pieceStar = createEl('cg-piece-star') as HTMLElement;
-                pieceStar.style.zIndex = '3';
-                pMvd!.appendChild(pieceStar);
-              }
-            } else {
-              const pieceStarNode = pMvd!.querySelector('cg-piece-star') as HTMLElement;
-              if (pieceStarNode) pMvd!.removeChild(pieceStarNode);
-            }
-          }
-        };
-
-        // Apply animation or final position to the existing pMvd element
+        const pos = key2pos(k);
+        if (s.addPieceZIndex) pMvd.style.zIndex = posZIndex(pos, asRed);
         if (anim) {
           pMvd.cgAnimating = true;
           pMvd.classList.add('anim');
-          // Calculate the ORIGIN position for the start of the animation
-          const animPos = [...pos] as cg.Pos; // Start with destination
-          animPos[0] -= anim[2]; // Subtract delta X to get origin X
-          animPos[1] -= anim[3]; // Subtract delta Y to get origin Y
-          translate(pMvd, posToTranslate(animPos, asRed)); // Position pMvd at origin
-
-          // Force reflow to ensure the transform is applied before the transition starts
-          pMvd.offsetWidth;
-
-          // Set the destination position to trigger the CSS transition
-          translate(pMvd, posToTranslate(pos, asRed));
-
-          // Add the listener to handle the final state after animation
-          pMvd.addEventListener('transitionend', onFinish, { once: true });
-        } else {
-          // No animation, directly apply final position and state
-          translate(pMvd, posToTranslate(pos, asRed));
-          // Ensure animation properties are cleared if somehow set previously
-          if (pMvd.cgAnimating) {
-            pMvd.classList.remove('anim');
-            pMvd.cgAnimating = false;
-          }
-          onFinish(); // Apply final state immediately
+          pos[0] += anim[2];
+          pos[1] += anim[3];
         }
+        translate(pMvd, posToTranslate(pos, asRed));
       }
       // no piece in moved obj: insert the new piece
       // assumes the new piece is not being dragged
