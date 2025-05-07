@@ -1,4 +1,4 @@
-import { HeadlessState, State } from './state.js';
+import { State } from './state.js';
 import * as board from './board.js';
 import * as util from './util.js';
 import { clear as drawClear } from './draw.js';
@@ -10,6 +10,7 @@ import {
   updateAirDefenseInfluenceZones,
 } from './air-defense.js';
 import { showCombinedPiecePopup, isPositionInPopup, removeCombinedPiecePopup } from './combined-piece.js';
+import { TEMP_KEY } from './types.js';
 
 export interface DragCurrent {
   orig: cg.Key; // orig key of dragging piece
@@ -154,7 +155,7 @@ function handlePopupInteraction(s: State, e: cg.MouchEvent, position: cg.NumberP
       piece,
       origPos: position,
       pos: position,
-      started: true,
+      started: false,
       element,
       previouslySelected,
       originTarget: e.target,
@@ -173,7 +174,7 @@ function handlePopupInteraction(s: State, e: cg.MouchEvent, position: cg.NumberP
 
     // Create temporary piece for dragging
     const selectedPiece = piece.carrying![pieceIndex!];
-    const tempKey = '11.12';
+    const tempKey = TEMP_KEY;
     s.pieces.set(tempKey, selectedPiece);
     s.dom.redraw();
 
@@ -183,7 +184,7 @@ function handlePopupInteraction(s: State, e: cg.MouchEvent, position: cg.NumberP
       piece: selectedPiece,
       origPos: position,
       pos: position,
-      started: true,
+      started: false,
       element: () => pieceElementByKey(s, tempKey),
       originTarget: e.target,
       newPiece: true,
@@ -207,12 +208,14 @@ function processDrag(s: State): void {
     if (s.animation.current?.plan.anims.has(cur.orig)) s.animation.current = undefined;
     // if moving piece is gone, cancel
     const origPiece = s.pieces.get(cur.orig);
-    if (!s.selectedPieceInfo && (!origPiece || !util.samePiece(origPiece, cur.piece))) cancel(s);
+    if (!origPiece || !util.samePiece(origPiece, cur.piece)) cancel(s);
     else {
-      if (!cur.started && util.distanceSq(cur.pos, cur.origPos) >= 100) cur.started = true;
+      if (!cur.started && util.distanceSq(cur.pos, cur.origPos) >= Math.pow(s.draggable.distance, 2)) {
+        cur.started = true;
+        console.log('cur.started', cur.started);
+      }
       if (cur.started) {
         // Remove any active popup during drag
-
         if (s.combinedPiecePopup) {
           removeCombinedPiecePopup(s);
           // Clear lastPopupInfo to prevent stale popup information during drag
@@ -225,6 +228,9 @@ function processDrag(s: State): void {
           found.cgDragging = true;
           found.classList.add('dragging');
           cur.element = found;
+        }
+        if (!util.isVisible(cur.element)) {
+          util.setVisible(cur.element, true);
         }
 
         const bounds = s.dom.bounds();
@@ -271,7 +277,7 @@ export function move(s: State, e: cg.MouchEvent): void {
 function cleanupPopupState(s: State): void {
   s.draggable.current = undefined;
   s.lastPopupInfo = undefined;
-  s.pieces.delete('11.12');
+  s.pieces.delete(TEMP_KEY);
   s.dom.redraw();
 }
 
@@ -337,11 +343,11 @@ function handlePieceMove(s: State, e: cg.MouchEvent, cur: DragCurrent, dest: cg.
     const { originalKey } = s.selectedPieceInfo;
     // Treat this as a move from the original position to the destination
     board.userMove(s, originalKey, dest);
-    s.pieces.delete('11.12');
+    s.pieces.delete(TEMP_KEY);
   } else if (cur.originalStackKey) {
     // Handle dragging whole stack
     board.userMove(s, cur.originalStackKey, dest);
-    s.pieces.delete('11.12');
+    s.pieces.delete(TEMP_KEY);
   } else if (cur.newPiece) {
     board.dropNewPiece(s, cur.orig, dest, cur.force);
   } else {
@@ -355,7 +361,7 @@ function handlePieceMove(s: State, e: cg.MouchEvent, cur: DragCurrent, dest: cg.
  */
 function handlePieceReturn(s: State, cur: DragCurrent): void {
   if (cur.originalStackKey) {
-    s.pieces.delete('11.12');
+    s.pieces.delete(TEMP_KEY);
   }
 
   // Reset the piece to original position
@@ -413,18 +419,6 @@ function pieceElementByKey(s: State, key: cg.Key): cg.PieceNode | undefined {
     el = el.nextSibling;
   }
   return;
-}
-
-export function unselect(state: HeadlessState): void {
-  state.selected = undefined;
-  state.hold.cancel();
-}
-
-export function callUserFunction<T extends (...args: any[]) => void>(
-  f: T | undefined,
-  ...args: Parameters<T>
-): void {
-  if (f) setTimeout(() => f(...args), 1);
 }
 
 export function dragNewPiece(s: State, piece: cg.Piece, e: cg.MouchEvent, force?: boolean): void {
