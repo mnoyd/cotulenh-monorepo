@@ -220,7 +220,7 @@ export function getKeyAtDomPos(
   // Check if it is inside the valid range
   if (file < 0 || file > 10 || rank < 0 || rank > 11) return undefined;
 
-  return `${file}.${rank}`;
+  return pos2key([file, rank]);
 }
 
 export const redPov = (s: HeadlessState): boolean => s.orientation === 'red';

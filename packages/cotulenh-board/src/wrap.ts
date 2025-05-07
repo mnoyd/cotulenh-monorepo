@@ -1,4 +1,5 @@
 import { HeadlessState } from './state.js';
+import { files, ranks } from './types.js';
 import { createEl } from './util.js';
 
 export function renderWrap(element: HTMLElement, s: HeadlessState): any {
@@ -21,8 +22,8 @@ export function renderWrap(element: HTMLElement, s: HeadlessState): any {
   if (s.coordinates) {
     const orientClass = s.orientation === 'blue' ? 'blue' : '';
 
-    container.appendChild(renderCoords('ranks', orientClass));
-    container.appendChild(renderCoords('files', orientClass));
+    container.appendChild(renderCoords(ranks, 'ranks' + orientClass));
+    container.appendChild(renderCoords(files, 'files' + orientClass));
   }
 
   return {
@@ -32,13 +33,24 @@ export function renderWrap(element: HTMLElement, s: HeadlessState): any {
   };
 }
 
-function renderCoords(coordType: string, className: string): HTMLElement {
-  const el = createEl('coords', `${coordType} ${className}`);
+// function renderCoords(coordType: string, className: string): HTMLElement {
+//   const el = createEl('coords', `${coordType} ${className}`);
+//   let f: HTMLElement;
+//   const numberOfLine = coordType === 'ranks' ? 11 : 10;
+//   for (let i = 0; i <= numberOfLine; i++) {
+//     f = createEl('coord');
+//     f.textContent = i.toString();
+//     el.appendChild(f);
+//   }
+//   return el;
+// }
+
+function renderCoords(elems: readonly string[], className: string): HTMLElement {
+  const el = createEl('coords', className);
   let f: HTMLElement;
-  const numberOfLine = coordType === 'ranks' ? 11 : 10;
-  for (let i = 0; i <= numberOfLine; i++) {
+  for (const elem of elems) {
     f = createEl('coord');
-    f.textContent = i.toString();
+    f.textContent = elem;
     el.appendChild(f);
   }
   return el;

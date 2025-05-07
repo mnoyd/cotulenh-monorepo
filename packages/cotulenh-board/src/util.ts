@@ -29,15 +29,15 @@ export function memo<A>(f: () => A): cg.Memo<A> {
 }
 export const opposite = (c: cg.Color): cg.Color => (c === 'red' ? 'blue' : 'red');
 
-export const allKeys: readonly cg.Key[] = (() => {
-  let allKeys: cg.Key[] = [];
-  for (let i = 0; i < 10; i++) {
-    for (let j = 0; j < 11; j++) {
-      allKeys.push(`${i}.${j}`);
-    }
-  }
-  return allKeys;
-})();
+// export const allKeys: readonly cg.Key[] = (() => {
+//   let allKeys: cg.Key[] = [];
+//   for (let i = 0; i < 10; i++) {
+//     for (let j = 0; j < 11; j++) {
+//       allKeys.push(`${i}.${j}`);
+//     }
+//   }
+//   return allKeys;
+// })();
 
 export const samePiece = (p1: cg.Piece, p2: cg.Piece): boolean =>
   p1.role === p2.role && p1.color === p2.color;
@@ -54,8 +54,15 @@ export const eventPosition = (e: cg.MouchEvent): cg.NumberPair | undefined => {
   return; // touchend has no position!
 };
 
-export const key2pos = (k: cg.Key): cg.Pos => k.split('.').map(Number) as cg.Pos;
-export const pos2key = (pos: cg.Pos): cg.Key => `${pos[0]}.${pos[1]}`;
+// export const key2pos = (k: cg.Key): cg.Pos => k.split('.').map(Number) as cg.Pos;
+// export const pos2key = (pos: cg.Pos): cg.Key => `${pos[0]}.${pos[1]}`;
+export const allKeys: readonly cg.Key[] = Array.prototype.concat(
+  ...cg.files.map(c => cg.ranks.map(r => c + r)),
+);
+
+export const pos2key = (pos: cg.Pos): cg.Key => allKeys[12 * pos[0] + pos[1]];
+
+export const key2pos = (k: cg.Key): cg.Pos => [k.charCodeAt(0) - 97, Number(k.substring(1)) - 1];
 
 export const isRightButton = (e: cg.MouchEvent): boolean => e.button === 2;
 export const allPos: readonly cg.Pos[] = allKeys.map(key2pos);

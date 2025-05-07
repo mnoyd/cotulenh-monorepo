@@ -2,10 +2,11 @@ export type Color = (typeof colors)[number];
 export type Role = (typeof roles)[number];
 export type File = (typeof files)[number];
 export type Rank = (typeof ranks)[number];
-export type Key = '0.0' | `${File}.${Rank}`;
+export type Key = 'a0' | `${File}${Rank}`;
+export type FEN = string;
 export type Pos = [number, number];
 
-export const TEMP_KEY = '11.12';
+export const TEMP_KEY = 'a0';
 
 export const colors = ['red', 'blue'] as const;
 export const roles = [
@@ -24,8 +25,8 @@ export const roles = [
 export const airDefenseRoles: Role[] = ['anti_air', 'navy', 'missile'];
 export const isAirDefense = (role: Role): boolean => airDefenseRoles.includes(role);
 
-export const files: readonly number[] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
-export const ranks: readonly number[] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
+export const files: readonly string[] = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k'];
+export const ranks: readonly string[] = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'];
 
 export interface KeyedNode extends HTMLElement {
   cgKey: Key;
@@ -82,7 +83,6 @@ export interface Memo<A> {
 
 export type Redraw = () => void;
 export type Unbind = () => void;
-export type FEN = string;
 export type KHz = number;
 export type Dests = Map<Key, Key[]>;
 export interface MoveMetadata {
