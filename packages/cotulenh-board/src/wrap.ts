@@ -1,5 +1,5 @@
 import { HeadlessState } from './state.js';
-import { files, ranks } from './types.js';
+import { files, ranks, Color as cgColor } from './types.js'; // Import Color as cgColor to avoid conflict if any
 import { createEl } from './util.js';
 
 export function renderWrap(element: HTMLElement, s: HeadlessState): any {
@@ -22,8 +22,8 @@ export function renderWrap(element: HTMLElement, s: HeadlessState): any {
   if (s.coordinates) {
     const orientClass = s.orientation === 'blue' ? 'blue' : '';
 
-    container.appendChild(renderCoords(ranks, 'ranks' + orientClass));
-    container.appendChild(renderCoords(files, 'files' + orientClass));
+    container.appendChild(renderCoords(ranks, 'ranks ' + orientClass, s.numericCoordinates, s.orientation));
+    container.appendChild(renderCoords(files, 'files ' + orientClass, s.numericCoordinates, s.orientation));
   }
 
   return {
@@ -45,10 +45,27 @@ export function renderWrap(element: HTMLElement, s: HeadlessState): any {
 //   return el;
 // }
 
-function renderCoords(elems: readonly string[], className: string): HTMLElement {
+function renderCoords(
+  elems: readonly string[],
+  className: string,
+  numeric?: boolean,
+  orientation?: cgColor,
+): HTMLElement {
   const el = createEl('coords', className);
   let f: HTMLElement;
-  for (const elem of elems) {
+  let coordElements = [...elems];
+
+  if (numeric) {
+    coordElements = Array.from({ length: elems.length }, (_, i) => i.toString());
+  }
+  // For ranks, numbers are already used, so no change if numeric is true.
+  // If numeric is false for ranks (though not typical for chess), it would still use the default rank numbers.
+
+  if (orientation === 'blue') {
+    coordElements.reverse();
+  }
+
+  for (const elem of coordElements) {
     f = createEl('coord');
     f.textContent = elem;
     el.appendChild(f);

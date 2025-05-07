@@ -6,6 +6,7 @@ import { setCheck, setSelected } from './board.js';
 
 export interface Config {
   orientation?: cg.Color;
+  numericCoordinates?: boolean;
   turnColor?: cg.Color;
   fen?: cg.FEN;
   check?: cg.Color | boolean; // true for current color, false to unset

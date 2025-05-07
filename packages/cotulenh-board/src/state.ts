@@ -6,6 +6,7 @@ import { DragCurrent } from './drag.js';
 
 export interface HeadlessState {
   orientation: cg.Color;
+  numericCoordinates?: boolean;
   coordinates?: boolean;
   turnColor: cg.Color; // turn to play.
   pieces: cg.Pieces;
@@ -103,6 +104,7 @@ export function defaults(): HeadlessState {
     pieces: fen.read(fen.initial),
     orientation: 'red',
     turnColor: 'red',
+    numericCoordinates: false, // Default to true as per user's request for number-based coordinates initially
     coordinates: true,
     disableContextMenu: true,
     showAirDefenseInfluence: true,
