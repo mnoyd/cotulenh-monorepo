@@ -5,6 +5,7 @@
  * All rights reserved.
  */
 
+import QuickLRU from 'quick-lru'
 import {
   algebraic,
   BITS,
@@ -130,6 +131,7 @@ export class Move {
 
 // --- CoTuLenh Class (Additions) ---
 export class CoTuLenh {
+  private _movesCache = new QuickLRU<string, InternalMove[]>({ maxSize: 1000 })
   private _board = new Array<Piece | undefined>(256)
   private _turn: Color = RED // Default to Red
   private _header: Record<string, string> = {}
@@ -210,6 +212,9 @@ export class CoTuLenh {
     // Deep copy deploy state
     clone._deployState = this._deployState ? { ...this._deployState } : null
 
+    // Deep copy moves cache
+    clone._movesCache = new Map(this._movesCache)
+
     return clone
   }
 
@@ -219,6 +224,7 @@ export class CoTuLenh {
    * @param options.preserveHeaders - Whether to preserve existing headers
    */
   clear({ preserveHeaders = false } = {}) {
+    this._movesCache.clear()
     this._board = new Array<Piece | undefined>(256)
     this._commanders = { r: -1, b: -1 }
     this._turn = RED
@@ -241,6 +247,7 @@ export class CoTuLenh {
    * @throws Error if the FEN string is invalid
    */
   load(fen: string, { skipValidation = false, preserveHeaders = false } = {}) {
+    this._movesCache.clear()
     // Parse FEN string into tokens
     const tokens = fen.split(/\s+/)
     const position = tokens[0]
@@ -635,6 +642,7 @@ export class CoTuLenh {
     },
     square: Square,
   ): boolean {
+    this._movesCache.clear()
     if (!(square in SQUARE_MAP)) return false
     const sq = SQUARE_MAP[square]
 
@@ -680,6 +688,7 @@ export class CoTuLenh {
    * @returns The removed piece, or undefined if no piece was at the square
    */
   remove(square: Square): Piece | undefined {
+    this._movesCache.clear()
     if (!(square in SQUARE_MAP)) return undefined
     const sq = SQUARE_MAP[square]
     const piece = this._board[sq]
@@ -698,6 +707,20 @@ export class CoTuLenh {
   }
 
   // --- Main Move Generation ---
+  private _getMovesCacheKey(args: {
+    legal?: boolean
+    pieceType?: PieceSymbol
+    square?: Square
+  }): string {
+    // Key based on FEN, deploy state, and arguments
+    const fen = this.fen()
+    const deploy = this._deployState
+      ? `${this._deployState.stackSquare}:${this._deployState.turn}`
+      : 'none'
+    const { legal = true, pieceType, square } = args
+    return `${fen}|deploy:${deploy}|legal:${legal}|pieceType:${pieceType ?? ''}|square:${square ?? ''}`
+  }
+
   private _moves({
     legal = true,
     pieceType: filterPiece = undefined,
@@ -707,6 +730,14 @@ export class CoTuLenh {
     pieceType?: PieceSymbol
     square?: Square
   } = {}): InternalMove[] {
+    const cacheKey = this._getMovesCacheKey({
+      legal,
+      pieceType: filterPiece,
+      square: filterSquare,
+    })
+    if (this._movesCache.has(cacheKey)) {
+      return this._movesCache.get(cacheKey)!
+    }
     const us = this.turn()
     let allMoves: InternalMove[] = []
 
@@ -722,11 +753,14 @@ export class CoTuLenh {
     }
 
     // Filter illegal moves (leaving commander in check)
+    let result: InternalMove[]
     if (legal) {
-      return this._filterLegalMoves(allMoves, us)
+      result = this._filterLegalMoves(allMoves, us)
+    } else {
+      result = allMoves
     }
-
-    return allMoves
+    this._movesCache.set(cacheKey, result)
+    return result
   }
   /**
    * Checks if the commander of the given color is directly exposed
@@ -815,6 +849,7 @@ export class CoTuLenh {
 
   // --- Move Execution/Undo (Updated for Stay Capture & Deploy) ---
   private _makeMove(move: InternalMove) {
+    // this._movesCache.clear()
     const us = this.turn()
     const them = swapColor(us)
 
@@ -894,6 +929,7 @@ export class CoTuLenh {
   }
 
   private _undoMove(): InternalMove | null {
+    // this._movesCache.clear()
     const old = this._history.pop()
     if (!old) return null
 

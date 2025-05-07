@@ -36,6 +36,7 @@
     "vitest": "^1.2.0"
   },
   "dependencies": {
-    "@repo/cotulenh-combine-piece": "workspace:^"
+    "@repo/cotulenh-combine-piece": "workspace:^",
+    "quick-lru": "^7.0.1"
   }
 }
