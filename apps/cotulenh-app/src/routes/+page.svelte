@@ -5,11 +5,6 @@
   import { CoTuLenh } from '@repo/cotulenh-core';
   import type { Square, Color, Move } from '@repo/cotulenh-core';
   import type { Key, Dests } from '@repo/cotulenh-board';
-  import {
-    algebraicToNumeric,
-    numericToAlgebraic,
-    numericToAlgebraicPair
-  } from '@repo/cotulenh-notation';
   import GameInfo from '$lib/components/GameInfo.svelte';
   import DeployPanel from '$lib/components/DeployPanel.svelte';
   import CombinationPanel from '$lib/components/CombinationPanel.svelte';
@@ -36,11 +31,9 @@
   function mapPossibleMovesToDests(possibleMoves: Map<Square, Square[]>): Dests {
     const dests: Dests = new Map();
     for (const [fromSq, toSqs] of possibleMoves.entries()) {
-      const fromKey = algebraicToNumeric(fromSq);
+      const fromKey = fromSq;
       if (fromKey) {
-        const toKeys = toSqs
-          .map((sq) => algebraicToNumeric(sq))
-          .filter((key) => key !== null) as Key[];
+        const toKeys = toSqs.map((sq) => sq).filter((key) => key !== null) as Key[];
         if (toKeys.length > 0) {
           dests.set(fromKey, toKeys);
         }
@@ -54,8 +47,8 @@
     lastMove: [Square, Square] | undefined
   ): [Key, Key] | undefined {
     if (!lastMove) return undefined;
-    const fromKey = algebraicToNumeric(lastMove[0]);
-    const toKey = algebraicToNumeric(lastMove[1]);
+    const fromKey = lastMove[0];
+    const toKey = lastMove[1];
     return fromKey && toKey ? [fromKey, toKey] : undefined;
   }
 
@@ -65,9 +58,7 @@
     console.log('Board move attempt:', orig, '->', dest);
 
     try {
-      const algebraicMove = numericToAlgebraicPair(orig, dest);
-      console.log('Algebraic move:', algebraicMove);
-      const moveResult = game.move({ from: algebraicMove[0], to: algebraicMove[1] });
+      const moveResult = game.move({ from: orig, to: dest });
 
       if (moveResult) {
         console.log('Game move successful:', moveResult);
