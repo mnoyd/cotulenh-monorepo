@@ -150,75 +150,6 @@ export class CoTuLenh {
   }
 
   /**
-   * Creates a deep copy of the current CoTuLenh instance
-   * @returns A new CoTuLenh instance with the same state
-   */
-  clone(): CoTuLenh {
-    // Create a new instance without initializing from FEN
-    const clone = Object.create(CoTuLenh.prototype)
-
-    // Deep copy the board with all pieces and their properties
-    clone._board = new Array<Piece | undefined>(256)
-    for (let i = 0; i < 256; i++) {
-      const piece = this._board[i]
-      if (piece) {
-        // Deep copy the piece
-        const pieceCopy: Piece = {
-          type: piece.type,
-          color: piece.color,
-          heroic: piece.heroic,
-        }
-
-        // Deep copy carried pieces if they exist
-        if (piece.carrying && piece.carrying.length > 0) {
-          pieceCopy.carrying = piece.carrying.map((carried) => ({
-            type: carried.type,
-            color: carried.color,
-            heroic: carried.heroic,
-          }))
-        }
-
-        clone._board[i] = pieceCopy
-      }
-    }
-
-    // Copy primitive values
-    clone._turn = this._turn
-    clone._halfMoves = this._halfMoves
-    clone._moveNumber = this._moveNumber
-
-    // Deep copy commanders
-    clone._commanders = { ...this._commanders }
-
-    // Deep copy header
-    clone._header = { ...this._header }
-
-    // Deep copy history (without the actual move commands to avoid circular references)
-    clone._history = this._history.map((hist) => ({
-      move: hist.move, // Note: this is a shallow copy of the move command
-      commanders: { ...hist.commanders },
-      turn: hist.turn,
-      halfMoves: hist.halfMoves,
-      moveNumber: hist.moveNumber,
-      deployState: hist.deployState ? { ...hist.deployState } : null,
-    }))
-
-    // Deep copy comments
-    clone._comments = { ...this._comments }
-
-    // Deep copy position count
-    clone._positionCount = { ...this._positionCount }
-
-    // Deep copy deploy state
-    clone._deployState = this._deployState ? { ...this._deployState } : null
-
-    // Deep copy moves cache
-    clone._movesCache = new Map(this._movesCache)
-
-    return clone
-  }
-
-  /**
    * Clears the board and resets the game state
    * @param options - Clear options
    * @param options.preserveHeaders - Whether to preserve existing headers
@@ -802,18 +733,14 @@ export class CoTuLenh {
 
   // Helper method to filter legal moves
   private _filterLegalMoves(moves: InternalMove[], us: Color): InternalMove[] {
-    const clonedGame = this.clone()
     const legalMoves: InternalMove[] = []
     for (const move of moves) {
-      clonedGame._makeMove(move)
+      this._makeMove(move)
       // A move is legal if it doesn't leave the commander attacked AND doesn't expose the commander
-      if (
-        !clonedGame._isCommanderAttacked(us) &&
-        !clonedGame._isCommanderExposed(us)
-      ) {
+      if (!this._isCommanderAttacked(us) && !this._isCommanderExposed(us)) {
         legalMoves.push(move)
       }
-      clonedGame._undoMove()
+      this._undoMove()
     }
     return legalMoves
   }
