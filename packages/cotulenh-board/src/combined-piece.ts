@@ -301,21 +301,6 @@ export function removeCombinedPiecePopup(s: State): void {
 
   if (s.combinedPiecePopup?.containerEl) {
     try {
-      // Store popup position information before removing
-      if (!s.lastPopupInfo) {
-        const popup = s.combinedPiecePopup.containerEl;
-        const popupBounds = popup.getBoundingClientRect();
-        const pieces = Array.from(popup.querySelectorAll('piece'));
-
-        s.lastPopupInfo = {
-          bounds: popupBounds,
-          pieces: pieces.map((piece, i) => ({
-            bounds: piece.getBoundingClientRect(),
-            index: i === 0 ? -1 : i - 1, // -1 for carrier, i-1 for carried pieces
-          })),
-        };
-      }
-
       // Remove the element from DOM
       s.combinedPiecePopup.containerEl.remove();
     } catch (error) {
@@ -375,33 +360,6 @@ export function isPositionInPopup(
       }
     }
   }
-
-  // // If no active popup or position not in active popup, check lastPopupInfo
-  // if (s && position && s.lastPopupInfo) {
-  //   const { bounds, pieces } = s.lastPopupInfo;
-
-  //   // Check if position is within the last popup bounds
-  //   if (
-  //     position[0] >= bounds.left &&
-  //     position[0] <= bounds.right &&
-  //     position[1] >= bounds.top &&
-  //     position[1] <= bounds.bottom
-  //   ) {
-  //     // Find which piece was clicked
-  //     for (const piece of pieces) {
-  //       const pieceBounds = piece.bounds;
-  //       if (
-  //         position[0] >= pieceBounds.left &&
-  //         position[0] <= pieceBounds.right &&
-  //         position[1] >= pieceBounds.top &&
-  //         position[1] <= pieceBounds.bottom
-  //       ) {
-  //         return { inPopup: true, pieceIndex: piece.index };
-  //       }
-  //     }
-  //     return { inPopup: true }; // In popup but not on a piece
-  //   }
-  // }
 
   return { inPopup: false };
 }

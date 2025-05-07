@@ -218,8 +218,6 @@ function processDrag(s: State): void {
         // Remove any active popup during drag
         if (s.combinedPiecePopup) {
           removeCombinedPiecePopup(s);
-          // Clear lastPopupInfo to prevent stale popup information during drag
-          s.lastPopupInfo = undefined;
         }
         // support lazy elements
         if (typeof cur.element === 'function') {
@@ -276,7 +274,6 @@ export function move(s: State, e: cg.MouchEvent): void {
  */
 function cleanupPopupState(s: State): void {
   s.draggable.current = undefined;
-  s.lastPopupInfo = undefined;
   s.pieces.delete(TEMP_KEY);
   s.dom.redraw();
 }
@@ -391,8 +388,6 @@ function finalizeDrag(s: State): void {
     s.highlight.custom.clear();
   }
 
-  // Clear popup information to prevent stale data
-  s.lastPopupInfo = undefined;
   s.draggable.current = undefined;
   s.dom.redraw();
 }
