@@ -68,13 +68,11 @@ export class Move {
   to: Square // Destination square (piece's final location)
   piece: Piece
   otherPiece?: Piece
-  // promotion?: PieceSymbol; // Not applicable?
   flags: string // String representation of flags
   san?: string // Standard Algebraic Notation (needs implementation)
   lan?: string // Long Algebraic Notation (needs implementation)
   before: string // FEN before move
   after: string // FEN after move
-  becameHeroic?: boolean // Did the piece become heroic *on* this move?
   targetSquare?: Square // For stay capture, the square of the captured piece
   isDeploy: boolean // Was this a deploy move from a stack?
   stackBefore?: string // Optional: FEN-like representation of the stack before deploy, e.g., "(NFT)"

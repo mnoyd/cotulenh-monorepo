@@ -20,7 +20,8 @@
     "clean": "rm -rf ./dist",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "test": "vitest"
+    "test": "vitest",
+    "bench": "vitest bench"
   },
   "author": "Hoang Manh",
   "devDependencies": {
