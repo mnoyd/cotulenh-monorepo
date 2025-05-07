@@ -161,6 +161,8 @@ function handlePopupInteraction(s: State, e: cg.MouchEvent, position: cg.NumberP
       originTarget: e.target,
       keyHasChanged: false,
     };
+    element.cgDragging = true;
+    element.classList.add('dragging');
     processDrag(s);
   } else if (pieceIndex !== undefined) {
     // Carried piece clicked - select the specific piece from the stack
