@@ -5,6 +5,8 @@ export type Rank = (typeof ranks)[number];
 export type Key = '0.0' | `${File}.${Rank}`;
 export type Pos = [number, number];
 
+export const TEMP_KEY = '11.12';
+
 export const colors = ['red', 'blue'] as const;
 export const roles = [
   'commander',

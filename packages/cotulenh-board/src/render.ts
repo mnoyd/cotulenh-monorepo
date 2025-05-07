@@ -3,6 +3,7 @@ import { redPov } from './board.js';
 import { DragCurrent } from './drag.js';
 import { HeadlessState, State } from './state.js';
 import * as cg from './types.js';
+import { TEMP_KEY } from './types.js';
 import {
   createEl,
   translate,
@@ -10,6 +11,7 @@ import {
   key2pos,
   pos2key,
   pieceNameOf,
+  setVisible,
 } from './util.js';
 
 type PieceName = string; // `$color $role`
@@ -276,6 +278,9 @@ export function render(s: State): void {
           translate(pieceNode, posToTranslate(pos, asRed));
         }
         pieceNode.cgKey = k;
+        if (k === TEMP_KEY) {
+          setVisible(pieceNode, false);
+        }
         if (s.addPieceZIndex) pieceNode.style.zIndex = posZIndex(pos, asRed);
         boardEl.appendChild(pieceNode);
       }
