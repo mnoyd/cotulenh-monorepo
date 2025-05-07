@@ -11,13 +11,13 @@ import {
   NAVY,
   AIR_FORCE,
 } from '../src/type'
+import { setupGameBasic } from './test-helpers'
 
 describe('Heroic Piece Functionality', () => {
   let game: CoTuLenh
 
   beforeEach(() => {
-    game = new CoTuLenh()
-    game.clear()
+    game = setupGameBasic()
   })
 
   // Helper to make a piece heroic directly
@@ -39,7 +39,6 @@ describe('Heroic Piece Functionality', () => {
     const movesBefore = game.moves({
       verbose: true,
       square: 'd5',
-      ignoreSafety: true,
     }) as Move[]
 
     // Check for diagonal moves
@@ -57,7 +56,6 @@ describe('Heroic Piece Functionality', () => {
     const movesAfter = game.moves({
       verbose: true,
       square: 'd5',
-      ignoreSafety: true,
     }) as Move[]
 
     // Check for diagonal moves again
@@ -78,7 +76,6 @@ describe('Heroic Piece Functionality', () => {
     const movesBeforeHeroic = game.moves({
       verbose: true,
       square: 'e5',
-      ignoreSafety: true,
     }) as Move[]
 
     // Check if it can reach e3 (2 spaces away) but not e2 (3 spaces away)
@@ -95,7 +92,6 @@ describe('Heroic Piece Functionality', () => {
     const movesAfterHeroic = game.moves({
       verbose: true,
       square: 'e5',
-      ignoreSafety: true,
     }) as Move[]
 
     // Now check if it can reach e2 (3 spaces away)
@@ -111,7 +107,6 @@ describe('Heroic Piece Functionality', () => {
     const movesBefore = game.moves({
       verbose: true,
       square: 'd5',
-      ignoreSafety: true,
     }) as Move[]
     expect(movesBefore.length).toBe(0) // Shouldn't be able to move
 
@@ -122,7 +117,6 @@ describe('Heroic Piece Functionality', () => {
     const movesAfter = game.moves({
       verbose: true,
       square: 'd5',
-      ignoreSafety: true,
     }) as Move[]
 
     // Now HQ should move like militia (1 square in any direction)
@@ -151,7 +145,6 @@ describe('Heroic Piece Functionality', () => {
     const moves = game.moves({
       verbose: true,
       square: 'e4',
-      ignoreSafety: true,
     }) as Move[]
 
     expect(moves.length).toBeGreaterThan(0)

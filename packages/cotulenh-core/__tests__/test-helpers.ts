@@ -57,8 +57,8 @@ export function setupGameBasic(): CoTuLenh {
   game.clear()
   game.put({ type: COMMANDER, color: RED }, 'f1')
   game.put({ type: COMMANDER, color: BLUE }, 'g12')
-  game.put({ type: INFANTRY, color: RED }, 'f2')
-  game.put({ type: INFANTRY, color: BLUE }, 'g11')
+  game.put({ type: INFANTRY, color: RED }, 'k1')
+  game.put({ type: INFANTRY, color: BLUE }, 'k12')
   return game
 }
 

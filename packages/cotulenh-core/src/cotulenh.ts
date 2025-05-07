@@ -27,7 +27,6 @@ import {
   NAVY_MASK,
   LAND_MASK,
   isSquareOnBoard,
-  INFANTRY,
 } from './type.js'
 import {
   getDisambiguator,
@@ -703,12 +702,10 @@ export class CoTuLenh {
     legal = true,
     pieceType: filterPiece = undefined,
     square: filterSquare = undefined,
-    ignoreSafety = false,
   }: {
     legal?: boolean
     pieceType?: PieceSymbol
     square?: Square
-    ignoreSafety?: boolean
   } = {}): InternalMove[] {
     const us = this.turn()
     let allMoves: InternalMove[] = []
@@ -725,7 +722,7 @@ export class CoTuLenh {
     }
 
     // Filter illegal moves (leaving commander in check)
-    if (legal && !ignoreSafety) {
+    if (legal) {
       return this._filterLegalMoves(allMoves, us)
     }
 
@@ -792,18 +789,15 @@ export class CoTuLenh {
     verbose = false,
     square = undefined,
     pieceType = undefined,
-    ignoreSafety = false,
   }: {
     verbose?: boolean
     square?: Square
     pieceType?: PieceSymbol
-    ignoreSafety?: boolean
   } = {}): string[] | Move[] {
     const internalMoves = this._moves({
       square,
       pieceType,
       legal: true,
-      ignoreSafety,
     }) // Generate legal moves
 
     if (verbose) {
@@ -812,7 +806,7 @@ export class CoTuLenh {
     } else {
       // Generate SAN strings (needs proper implementation)
       // Pass all legal moves for ambiguity resolution
-      const allLegalMoves = this._moves({ legal: true, ignoreSafety })
+      const allLegalMoves = this._moves({ legal: true })
       return internalMoves.map(
         (move) => this._moveToSanLan(move, allLegalMoves)[0],
       )

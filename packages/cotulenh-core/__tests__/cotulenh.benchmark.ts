@@ -20,9 +20,5 @@ describe('CoTuLenh.moves performance', () => {
       const game = fen ? new CoTuLenh(fen) : new CoTuLenh()
       game.moves({ verbose: true })
     })
-    // bench(`moves(ignoreSafety: true) [fen: ${fenLabel}]`, () => {
-    //   const game = fen ? new CoTuLenh(fen) : new CoTuLenh();
-    //   game.moves({ ignoreSafety: true });
-    // });
   }
 })

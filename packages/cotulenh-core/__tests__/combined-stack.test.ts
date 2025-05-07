@@ -298,7 +298,7 @@ describe('Stack Movement and Deployment', () => {
     expect(game.get('c4')?.type).toBe(AIR_FORCE) // Deployed pieces remain
     expect(game.get('d3')?.type).toBe(TANK)
     // Cannot move air force at c4 because turn is blue
-    expect(game.moves({ square: 'c4', ignoreSafety: true }).length).toEqual(0)
+    expect(game.moves({ square: 'c4' }).length).toEqual(0)
   })
 
   // TODO: Add tests for deploy captures (normal and stay)

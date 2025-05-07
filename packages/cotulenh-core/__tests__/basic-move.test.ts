@@ -7,15 +7,13 @@ import {
   NAVY,
 } from '../src/type'
 import { CoTuLenh, Move } from '../src/cotulenh'
-import { findMove, getDestinationSquares } from './test-helpers'
+import { findMove, getDestinationSquares, setupGameBasic } from './test-helpers'
 
 describe('Basic TANK Moves on Empty Board', () => {
   let game: CoTuLenh
 
   beforeEach(() => {
-    game = new CoTuLenh()
-    game.clear()
-    game['_turn'] = RED // Set turn for the piece being tested
+    game = setupGameBasic()
   })
 
   it('should return correct moves for TANK in the middle (e4 - Land)', () => {
@@ -26,7 +24,6 @@ describe('Basic TANK Moves on Empty Board', () => {
     const moves = game.moves({
       square: startSquare,
       verbose: true,
-      ignoreSafety: true,
     }) as Move[]
 
     //prettier-ignore
@@ -57,7 +54,6 @@ describe('Basic TANK Moves on Empty Board', () => {
     const moves = game.moves({
       square: startSquare,
       verbose: true,
-      ignoreSafety: true,
     }) as Move[]
     const actualDestinations = getDestinationSquares(moves)
 
@@ -72,7 +68,6 @@ describe('Basic TANK Moves on Empty Board', () => {
     const moves = game.moves({
       square: startSquare,
       verbose: true,
-      ignoreSafety: true,
     }) as Move[]
 
     //prettier-ignore
@@ -105,9 +100,7 @@ describe('Basic MISSILE Moves on Empty Board', () => {
   let game: CoTuLenh
 
   beforeEach(() => {
-    game = new CoTuLenh()
-    game.clear()
-    game['_turn'] = RED // Set turn for the piece being tested
+    game = setupGameBasic()
   })
 
   test('Missile basic moves from g3 (Land - middle)', () => {
@@ -118,7 +111,6 @@ describe('Basic MISSILE Moves on Empty Board', () => {
     const moves = game.moves({
       square: startSquare,
       verbose: true,
-      ignoreSafety: true,
     }) as Move[]
     const actualDestinations = getDestinationSquares(moves)
 
@@ -169,7 +161,6 @@ describe('Basic MISSILE Moves on Empty Board', () => {
     const moves = game.moves({
       square: startSquare,
       verbose: true,
-      ignoreSafety: true,
     }) as Move[]
 
     //prettier-ignore
@@ -213,7 +204,6 @@ describe('Basic MISSILE Moves on Empty Board', () => {
     const moves = game.moves({
       square: startSquare,
       verbose: true,
-      ignoreSafety: true,
     }) as Move[]
 
     //prettier-ignore
@@ -239,9 +229,7 @@ describe('Basic AIR_FORCE Moves on Empty Board', () => {
   let game: CoTuLenh
 
   beforeEach(() => {
-    game = new CoTuLenh()
-    game.clear()
-    game['_turn'] = RED // Set turn for the piece being tested
+    game = setupGameBasic()
   })
 
   test('Air Force basic moves from g5 (Land)', () => {
@@ -252,7 +240,6 @@ describe('Basic AIR_FORCE Moves on Empty Board', () => {
     const moves = game.moves({
       square: startSquare,
       verbose: true,
-      ignoreSafety: true,
     }) as Move[]
     const actualDestinations = getDestinationSquares(moves)
 
@@ -287,7 +274,6 @@ describe('Basic AIR_FORCE Moves on Empty Board', () => {
     const moves = game.moves({
       square: startSquare,
       verbose: true,
-      ignoreSafety: true,
     }) as Move[]
     const actualDestinations = getDestinationSquares(moves)
     //prettier-ignore
@@ -320,7 +306,6 @@ describe('Basic AIR_FORCE Moves on Empty Board', () => {
     const moves = game.moves({
       square: startSquare,
       verbose: true,
-      ignoreSafety: true,
     }) as Move[]
     const airForceMoves = moves.filter((m) => m.piece.type === AIR_FORCE)
     const actualDestinations = getDestinationSquares(airForceMoves)

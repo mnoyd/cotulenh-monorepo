@@ -9,7 +9,6 @@ import {
   ARTILLERY,
   ANTI_AIR,
   DEFAULT_POSITION,
-  COMMANDER,
   Piece,
 } from '../src/type'
 import { setupGameBasic } from './test-helpers'
@@ -18,8 +17,7 @@ describe('CoTuLenh Stay Capture Logic', () => {
   let game: CoTuLenh
 
   beforeEach(() => {
-    game = new CoTuLenh()
-    game.clear()
+    game = setupGameBasic()
   })
 
   test('Land piece (Tank) capturing on Land should REPLACE', () => {
@@ -27,7 +25,7 @@ describe('CoTuLenh Stay Capture Logic', () => {
     game.put({ type: INFANTRY, color: BLUE }, 'd5')
     game['_turn'] = RED // Access private for test setup
 
-    const moves = game.moves({ verbose: true, ignoreSafety: true }) as Move[]
+    const moves = game.moves({ verbose: true }) as Move[]
     const captureMove = moves.find((m) => {
       return (
         m.from === 'd4' &&
@@ -48,7 +46,7 @@ describe('CoTuLenh Stay Capture Logic', () => {
     game.put({ type: INFANTRY, color: BLUE }, 'i8')
     game['_turn'] = RED
 
-    const moves = game.moves({ verbose: true, ignoreSafety: true }) as Move[]
+    const moves = game.moves({ verbose: true }) as Move[]
     const captureMove = moves.find((m) => {
       return (
         m.from === 'i5' &&
@@ -69,7 +67,7 @@ describe('CoTuLenh Stay Capture Logic', () => {
     game.put({ type: NAVY, color: BLUE }, 'b5')
     game['_turn'] = RED
 
-    const moves = game.moves({ verbose: true, ignoreSafety: true }) as Move[]
+    const moves = game.moves({ verbose: true }) as Move[]
     const captureMove = moves.find((m) => {
       return (
         m.from === 'b3' &&
@@ -90,7 +88,7 @@ describe('CoTuLenh Stay Capture Logic', () => {
     game.put({ type: TANK, color: BLUE }, 'c5')
     game['_turn'] = RED
 
-    const moves = game.moves({ verbose: true, ignoreSafety: true }) as Move[]
+    const moves = game.moves({ verbose: true }) as Move[]
     const captureMove = moves.find((m) => {
       return (
         m.from === 'c4' &&
@@ -112,7 +110,7 @@ describe('CoTuLenh Stay Capture Logic', () => {
     game.put({ type: NAVY, color: BLUE }, 'b3')
     game['_turn'] = RED
 
-    const moves = game.moves({ verbose: true, ignoreSafety: true }) as Move[]
+    const moves = game.moves({ verbose: true }) as Move[]
     const captureMove = moves.find((m) => {
       return (
         m.from === 'd3' &&
@@ -137,7 +135,7 @@ describe('CoTuLenh Stay Capture Logic', () => {
     game.put({ type: TANK, color: BLUE }, 'f3')
     game['_turn'] = RED
 
-    const moves = game.moves({ verbose: true, ignoreSafety: true }) as Move[]
+    const moves = game.moves({ verbose: true }) as Move[]
     const captureMove = moves.find((m) => {
       return (
         m.from === 'c3' &&
@@ -162,7 +160,7 @@ describe('CoTuLenh Stay Capture Logic', () => {
     game.put({ type: NAVY, color: BLUE }, 'b2')
     game['_turn'] = RED
 
-    const moves = game.moves({ verbose: true, ignoreSafety: true }) as Move[]
+    const moves = game.moves({ verbose: true }) as Move[]
     const captureMove = moves.find((m) => {
       return (
         m.from === 'd2' &&
@@ -186,7 +184,7 @@ describe('CoTuLenh Stay Capture Logic', () => {
     game.put({ type: INFANTRY, color: BLUE }, 'd5')
     game['_turn'] = RED
 
-    const moves = game.moves({ verbose: true, ignoreSafety: true }) as Move[]
+    const moves = game.moves({ verbose: true }) as Move[]
     const captureMove = moves.find((m) => {
       return (
         m.from === 'd4' &&
@@ -357,8 +355,7 @@ describe('Piece Blocking Movement Logic', () => {
   let game: CoTuLenh
 
   beforeEach(() => {
-    game = new CoTuLenh()
-    game.clear()
+    game = setupGameBasic()
   })
 
   test('Sliding piece (Tank) should be blocked by friendly pieces', () => {
@@ -367,7 +364,7 @@ describe('Piece Blocking Movement Logic', () => {
     game.put({ type: INFANTRY, color: RED }, 'd4')
     game['_turn'] = RED
 
-    const moves = game.moves({ verbose: true, ignoreSafety: true }) as Move[]
+    const moves = game.moves({ verbose: true }) as Move[]
 
     // Tank should not be able to move to d5 (beyond the blocking Infantry)
     const moveToD5 = moves.find((m) => m.from === 'd3' && m.to === 'd5')
@@ -384,7 +381,7 @@ describe('Piece Blocking Movement Logic', () => {
     game.put({ type: TANK, color: RED }, 'd5')
     game['_turn'] = RED
 
-    const moves = game.moves({ verbose: true, ignoreSafety: true }) as Move[]
+    const moves = game.moves({ verbose: true }) as Move[]
 
     // Infantry should not be able to move to d5 (occupied by friendly Tank)
     const moveToD5 = moves.find((m) => m.from === 'd5' && m.to === 'd3')
@@ -402,7 +399,7 @@ describe('Piece Blocking Movement Logic', () => {
     game.put({ type: TANK, color: BLUE }, 'd6')
     game['_turn'] = RED
 
-    const moves = game.moves({ verbose: true, ignoreSafety: true }) as Move[]
+    const moves = game.moves({ verbose: true }) as Move[]
 
     // Air Force should be able to move beyond friendly Infantry
     const moveToD7 = moves.find((m) => m.from === 'd4' && m.to === 'd7')
@@ -422,7 +419,7 @@ describe('Piece Blocking Movement Logic', () => {
     game.put({ type: TANK, color: BLUE }, 'd5')
     game['_turn'] = RED
 
-    const moves = game.moves({ verbose: true, ignoreSafety: true }) as Move[]
+    const moves = game.moves({ verbose: true }) as Move[]
 
     // Artillery should not be able to move to d5 or d6 (blocked by friendly Infantry)
     const moveToD5 = moves.find(
@@ -446,7 +443,7 @@ describe('Piece Blocking Movement Logic', () => {
     game.put({ type: NAVY, color: BLUE }, 'b6')
     game['_turn'] = RED
 
-    const moves = game.moves({ verbose: true, ignoreSafety: true }) as Move[]
+    const moves = game.moves({ verbose: true }) as Move[]
 
     // Navy should be able to move beyond friendly Navy
     const moveToB6 = moves.find((m) => m.from === 'b3' && m.to === 'b6')
@@ -466,7 +463,7 @@ describe('Piece Blocking Movement Logic', () => {
     game.put({ type: INFANTRY, color: BLUE }, 'd5')
     game['_turn'] = RED
 
-    const moves = game.moves({ verbose: true, ignoreSafety: true }) as Move[]
+    const moves = game.moves({ verbose: true }) as Move[]
 
     // Tank should not be able to move to d5 (blocked by friendly Infantry)
     const moveToD5 = moves.find(
