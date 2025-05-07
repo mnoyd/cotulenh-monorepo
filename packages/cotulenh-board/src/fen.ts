@@ -46,20 +46,25 @@ function charToPiece(c: string, promoted: boolean): cg.Piece {
 export function read(fen: string): cg.Pieces {
   if (fen === 'start') fen = initial;
   const pieces: cg.Pieces = new Map();
-  let row = 11,
-    col = 0;
+  let row = 11;
+  let col = 0;
   let promoteNextPiece = false;
   let readingCombinedPiece = false;
   let combinedPiece: cg.Piece | null = null;
-  for (const c of fen) {
-    switch (c) {
-      case ' ':
-      case '[':
-        return pieces;
+
+  const piecePlacement = fen.split(' ')[0]; // Process only the piece placement part
+
+  for (let i = 0; i < piecePlacement.length; i++) {
+    const char = piecePlacement[i];
+
+    switch (char) {
       case '/':
-        --row;
-        if (row < 0) return pieces;
+        row--;
         col = 0;
+        if (row < 0) {
+          // console.warn("FEN parsing warning: row became negative."); // Optional: for debugging
+          return pieces;
+        }
         break;
       case '+':
         promoteNextPiece = true;
@@ -69,29 +74,50 @@ export function read(fen: string): cg.Pieces {
         break;
       case ')':
         readingCombinedPiece = false;
-        pieces.set(pos2key([col, row]), combinedPiece!);
-        combinedPiece = null;
+        if (combinedPiece) {
+          pieces.set(pos2key([col, row]), combinedPiece);
+          combinedPiece = null;
+          col++; // A combined piece occupies one square, so advance column
+        } else {
+          // console.warn("FEN parsing warning: ')' encountered without an active combined piece."); // Optional
+        }
         break;
-      default: {
-        const nb = c.charCodeAt(0);
-        if (nb < 57) col += nb - 48;
-        else {
-          // const role = c.toLowerCase();
+      default:
+        if (char >= '0' && char <= '9') {
+          let numStr = char;
+          while (
+            i + 1 < piecePlacement.length &&
+            piecePlacement[i + 1] >= '0' &&
+            piecePlacement[i + 1] <= '9'
+          ) {
+            i++; // Consume the digit
+            numStr += piecePlacement[i];
+          }
+          const emptySquares = parseInt(numStr, 10);
+          if (isNaN(emptySquares)) {
+            // console.warn(`FEN parsing warning: Could not parse number '${numStr}'.`); // Optional
+          } else {
+            col += emptySquares;
+          }
+        } else {
+          // It's a piece character
+          const currentPiece = charToPiece(char, promoteNextPiece);
+          promoteNextPiece = false; // Reset promotion flag
+
           if (readingCombinedPiece) {
             if (combinedPiece === null) {
-              combinedPiece = charToPiece(c, promoteNextPiece);
-              combinedPiece.carrying = [];
+              combinedPiece = currentPiece;
+              combinedPiece.carrying = []; // Initialize for the main carrier piece
             } else {
-              combinedPiece.carrying?.push(charToPiece(c, promoteNextPiece));
-              promoteNextPiece = false;
+              // combinedPiece exists and its .carrying array is initialized
+              combinedPiece.carrying!.push(currentPiece); // Add to existing array, ! asserts carrying is not null
             }
-            break;
+          } else {
+            pieces.set(pos2key([col, row]), currentPiece);
+            col++; // Advance column for a standalone piece
           }
-          pieces.set(pos2key([col, row]), charToPiece(c, promoteNextPiece));
-          promoteNextPiece = false;
-          ++col;
         }
-      }
+        break;
     }
   }
   return pieces;
@@ -109,7 +135,7 @@ export function write(pieces: cg.Pieces): cg.FEN {
     .map(y =>
       cg.files
         .map(x => {
-          const piece = pieces.get(`${x}.${y}` as cg.Key);
+          const piece = pieces.get(x + y);
           if (piece) {
             let p = pieceToString(piece);
 
