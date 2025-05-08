@@ -69,3 +69,33 @@ export const findMove = (
 export const getDestinationSquares = (moves: Move[]): Square[] => {
   return moves.map((m) => m.to).sort()
 }
+
+// Helper to find a specific move in the verbose move list
+export const findVerboseMove = (
+  moves: Move[],
+  from: Square,
+  to: Square, // Destination or Target
+  options: {
+    piece?: PieceSymbol
+    isDeploy?: boolean
+    isStayCapture?: boolean // Option parameter
+  } = {},
+): Move | undefined => {
+  return moves.find((m) => {
+    // 'm' is an instance of the Move class
+    const matchFrom = m.from === from
+    const matchTo = m.to === to
+    const matchPieceType =
+      options.piece === undefined || m.piece.type === options.piece
+    const matchDeploy =
+      options.isDeploy === undefined || m.isDeploy() === options.isDeploy
+    const matchStayCapture =
+      options.isStayCapture === undefined ||
+      (m.otherPiece !== undefined && m.isStayCapture()) ===
+        options.isStayCapture
+
+    return (
+      matchFrom && matchPieceType && matchDeploy && matchStayCapture && matchTo
+    )
+  })
+}

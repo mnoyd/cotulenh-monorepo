@@ -14,40 +14,7 @@ import {
   MILITIA,
 } from '../src/type'
 import { createCombinedPiece } from '../src/utils'
-
-// Helper to find a specific move in the verbose move list
-const findVerboseMove = (
-  moves: Move[],
-  from: Square,
-  to: Square, // Destination or Target
-  options: {
-    piece?: PieceSymbol
-    isDeploy?: boolean
-    isStayCapture?: boolean // Option parameter
-  } = {},
-): Move | undefined => {
-  return moves.find((m) => {
-    // 'm' is an instance of the Move class
-    const matchFrom = m.from === from
-    const matchPiece =
-      options.piece === undefined || m.piece.type === options.piece
-    const matchDeploy =
-      options.isDeploy === undefined || m.isDeploy === options.isDeploy
-    // Check stay capture based on properties, not a method call
-    const isActuallyStayCapture =
-      m.targetSquare !== undefined && m.to === m.from
-    const matchStay =
-      options.isStayCapture === undefined ||
-      isActuallyStayCapture === options.isStayCapture
-
-    // Adjust 'to' matching based on stay capture
-    const matchTo = options.isStayCapture
-      ? m.to === from && m.targetSquare === to // Stay capture: 'to' is origin, 'targetSquare' is target
-      : m.to === to // Normal move/deploy: 'to' is destination
-
-    return matchFrom && matchPiece && matchDeploy && matchStay && matchTo
-  })
-}
+import { findVerboseMove } from './test-helpers'
 
 describe('Stack Movement and Deployment', () => {
   let game: CoTuLenh
@@ -106,19 +73,19 @@ describe('Stack Movement and Deployment', () => {
     })
 
     expect(deployF_c4).toBeDefined()
-    expect(deployF_c4?.isDeploy).toBe(true)
+    expect(deployF_c4?.isDeploy()).toBe(true)
     expect(deployF_c4?.piece?.type).toBe(AIR_FORCE)
 
     expect(deployF_d4).toBeDefined() // Check another direction
 
     expect(deployT_c4).toBeDefined()
-    expect(deployT_c4?.isDeploy).toBe(true)
+    expect(deployT_c4?.isDeploy()).toBe(true)
     expect(deployT_c4?.piece?.type).toBe(TANK)
 
     expect(deployT_d3).toBeDefined() // Check another direction
 
     expect(carrierN_c4).toBeDefined()
-    expect(carrierN_c4?.isDeploy).toBe(false)
+    expect(carrierN_c4?.isDeploy()).toBe(false)
     expect(carrierN_c4?.piece?.type).toBe(NAVY)
 
     // Check a non-deploy move is not generated for carrying pieces

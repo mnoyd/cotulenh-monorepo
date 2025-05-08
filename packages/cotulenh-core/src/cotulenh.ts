@@ -53,11 +53,8 @@ interface History {
   move: MoveCommand
   commanders: Record<Color, number> // Position of commander before the move
   turn: Color
-  // castling: Record<Color, number>; // No castling mentioned
-  // epSquare: number; // No en passant mentioned
   halfMoves: number // Half move clock before the move
   moveNumber: number // Move number before the move
-  // heroicStatus: Record<number, boolean> // Snapshot of heroic status before move <- Removed this line
   deployState: { stackSquare: number; turn: Color } | null // Snapshot of deploy state before move
 }
 
@@ -131,8 +128,6 @@ export class CoTuLenh {
   private _turn: Color = RED // Default to Red
   private _header: Record<string, string> = {}
   private _commanders: Record<Color, number> = { r: -1, b: -1 } // Commander positions
-  // private _castling: Record<Color, number> = { r: 0, b: 0 }; // No castling
-  // private _epSquare = -1; // No en passant
   private _halfMoves = 0
   private _moveNumber = 1
   private _history: History[] = []
@@ -817,27 +812,6 @@ export class CoTuLenh {
       // Only increment if not a deploy move by blue
       this._moveNumber++
     }
-
-    //TODO: Handle promotion as atomic move and can be undone
-    // --- Handle Promotion ---
-    // Check if this move grants heroic status
-    // Use finalSq determined above
-    // const pieceAtFinalSq = this._board[moveCommand.move.to] // Get the piece that ended up there
-
-    // // Check for promotion conditions (e.g., putting opponent in check)
-    // // AND ensure the piece is not a Commander
-    // if (pieceAtFinalSq && pieceAtFinalSq.type !== COMMANDER) {
-    //   // Temporarily switch turn to check opponent's king
-    //   this._turn = them
-    //   if (this._isCommanderAttacked(them)) {
-    //     // If the move puts opponent in check
-    //     if (!pieceAtFinalSq.heroic) {
-    //       // And the piece wasn't already heroic
-    //       pieceAtFinalSq.heroic = true
-    //     }
-    //   }
-    //   this._turn = us // Switch back
-    // }
     // TODO: Check for last piece auto-promotion (also needs Commander check)
 
     // --- Switch Turn (or maintain for deploy) ---
