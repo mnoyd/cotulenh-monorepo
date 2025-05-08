@@ -60,13 +60,19 @@ export function isMovable(state: HeadlessState, orig: cg.Key): boolean {
   );
 }
 
-export function baseMove(state: HeadlessState, orig: cg.Key, dest: cg.Key): cg.Piece | boolean {
+interface MoveResult {
+  pieceType: cg.Role;
+  deployed?: boolean;
+  capturedPiece?: cg.Piece;
+}
+
+export function baseMove(state: HeadlessState, orig: cg.Key, dest: cg.Key): MoveResult | boolean {
   if (orig === dest) return false;
 
   const pieceThatMoves = getPieceThatMoves(state, orig);
   if (!pieceThatMoves) return false;
-  const preparedDestPiece = prepareDestPiece(state, pieceThatMoves, dest);
-  const preparedOrigPiece = prepareOrigPiece(state);
+  const { piece: preparedDestPiece, capturedPiece } = prepareDestPiece(state, pieceThatMoves, dest);
+  const { piece: preparedOrigPiece, deployed } = prepareOrigPiece(state);
 
   if (dest === state.selected) unselect(state);
   callUserFunction(state.events.move, orig, dest);
@@ -79,14 +85,18 @@ export function baseMove(state: HeadlessState, orig: cg.Key, dest: cg.Key): cg.P
   state.lastMove = [orig, dest];
   state.check = undefined;
   callUserFunction(state.events.change);
-  return true;
+  return {
+    pieceType: pieceThatMoves.role,
+    deployed,
+    capturedPiece,
+  };
 }
 
-function baseUserMove(state: HeadlessState, orig: cg.Key, dest: cg.Key): cg.Piece | boolean {
-  const result = baseMove(state, orig, dest);
+function baseUserMove(state: HeadlessState, orig: cg.Key, dest: cg.Key): MoveResult | boolean {
+  const result = baseMove(state, orig, dest) as MoveResult;
   if (result) {
     state.movable.dests = undefined;
-    state.turnColor = opposite(state.turnColor);
+    state.turnColor = result.deployed ? state.turnColor : opposite(state.turnColor);
     state.animation.current = undefined;
   }
   return result;
@@ -98,9 +108,7 @@ export function userMove(state: HeadlessState, orig: cg.Key, dest: cg.Key): bool
     return false;
   }
 
-  const isStackMove = state.selectedPieceInfo?.isFromStack && orig === state.selectedPieceInfo.originalKey;
-  const moveFn = isStackMove ? baseMove : baseUserMove;
-  const result = moveFn(state, orig, dest);
+  const result = baseUserMove(state, orig, dest) as MoveResult;
 
   if (result) {
     const holdTime = state.hold.stop();
@@ -109,9 +117,9 @@ export function userMove(state: HeadlessState, orig: cg.Key, dest: cg.Key): bool
       premove: false,
       ctrlKey: state.stats.ctrlKey,
       holdTime,
+      ...(result.capturedPiece && { captured: result.capturedPiece }),
     };
-    if (result !== true) metadata.captured = result as cg.Piece;
-    callUserFunction(state.movable.events.after, orig, dest, metadata);
+    callUserFunction(state.movable.events.after, orig, dest, result.pieceType as cg.Role, metadata);
     return true;
   }
 
@@ -282,21 +290,22 @@ function prepareDestPiece(
   state: HeadlessState,
   pieceThatMoves: cg.Piece,
   dest: cg.Key,
-): cg.Piece | undefined {
-  const piece = state.pieces.get(dest);
-  if (!piece) {
-    return pieceThatMoves;
+): { piece: cg.Piece | undefined; capturedPiece?: cg.Piece } {
+  const pieceAtDest = state.pieces.get(dest);
+  if (!pieceAtDest) {
+    return { piece: pieceThatMoves };
   }
-  if (piece.color === pieceThatMoves.color) {
-    return tryCombinePieces(pieceThatMoves, piece);
+  if (pieceAtDest.color === pieceThatMoves.color) {
+    const combinedPiece = tryCombinePieces(pieceThatMoves, pieceAtDest);
+    return { piece: combinedPiece };
   }
-  if (piece.color !== pieceThatMoves.color) {
-    return pieceThatMoves;
+  if (pieceAtDest.color !== pieceThatMoves.color) {
+    return { piece: pieceThatMoves, capturedPiece: pieceAtDest };
   }
-  return undefined;
+  return { piece: undefined };
 }
 
-function prepareOrigPiece(state: HeadlessState): cg.Piece | undefined {
+function prepareOrigPiece(state: HeadlessState): { piece: cg.Piece | undefined; deployed?: boolean } {
   if (state.selectedPieceInfo?.isFromStack) {
     const { originalPiece, carriedPieceIndex } = state.selectedPieceInfo;
     const newCarrying = [...originalPiece.carrying!];
@@ -306,7 +315,7 @@ function prepareOrigPiece(state: HeadlessState): cg.Piece | undefined {
       ...originalPiece,
       carrying: newCarrying.length > 0 ? newCarrying : undefined,
     };
-    return updatedOriginalPiece;
+    return { piece: updatedOriginalPiece, deployed: true };
   }
-  return undefined;
+  return { piece: undefined };
 }

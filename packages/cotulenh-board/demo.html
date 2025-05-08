@@ -44,6 +44,22 @@
         //     console.log('piece moved from:', from, 'to:', to);
         //   },
         // },
+        movable: {
+          events: {
+            after: (orig, dest, pieceType, metadata) => {
+              console.log(
+                'piece moved from:',
+                orig,
+                'to:',
+                dest,
+                'pieceType:',
+                pieceType,
+                'metadata:',
+                metadata,
+              );
+            },
+          },
+        },
       });
 
       // Function to print the current FEN to the console
