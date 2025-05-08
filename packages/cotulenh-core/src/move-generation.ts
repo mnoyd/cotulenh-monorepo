@@ -274,7 +274,7 @@ export function generateMovesInDirection(
           currentRange <= config.moveRange &&
           !terrainBlockedMovement &&
           !pieceBlockedMovement &&
-          canLandOnSquare(to, pieceData.type)
+          canLandOnSquare(to, combinedPiece.type)
         ) {
           addMove(moves, us, from, to, pieceData, targetPiece, BITS.COMBINATION)
         }
