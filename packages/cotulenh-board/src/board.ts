@@ -297,6 +297,9 @@ function prepareDestPiece(
   }
   if (pieceAtDest.color === pieceThatMoves.color) {
     const combinedPiece = tryCombinePieces(pieceThatMoves, pieceAtDest);
+    if (!combinedPiece) {
+      return { piece: pieceThatMoves };
+    }
     return { piece: combinedPiece };
   }
   if (pieceAtDest.color !== pieceThatMoves.color) {
