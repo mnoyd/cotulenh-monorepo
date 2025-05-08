@@ -1,12 +1,12 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { CotulenhBoard } from '@repo/cotulenh-board';
-  import type { Api } from '@repo/cotulenh-board';
-  import { CoTuLenh } from '@repo/cotulenh-core';
-  import type { Square, Color, Move } from '@repo/cotulenh-core';
+  import type { Api, Role as BoardRole } from '@repo/cotulenh-board';
+  import { CoTuLenh, getCoreTypeFromRole } from '@repo/cotulenh-core';
+  import type { Square, Color } from '@repo/cotulenh-core';
   import type { Key, Dests } from '@repo/cotulenh-board';
   import GameInfo from '$lib/components/GameInfo.svelte';
-  import DeployPanel from '$lib/components/DeployPanel.svelte';
+  // import DeployPanel from '$lib/components/DeployPanel.svelte';
   import CombinationPanel from '$lib/components/CombinationPanel.svelte';
   import HeroicStatusPanel from '$lib/components/HeroicStatusPanel.svelte';
   import GameControls from '$lib/components/GameControls.svelte';
@@ -52,13 +52,18 @@
     return fromKey && toKey ? [fromKey, toKey] : undefined;
   }
 
-  function handleMove(orig: Key, dest: Key) {
+  function handleMove(orig: Key, dest: Key, pieceType: BoardRole) {
     if (!game) return;
 
     console.log('Board move attempt:', orig, '->', dest);
+    const corePieceType = getCoreTypeFromRole(pieceType);
+    if (!corePieceType) {
+      console.warn('Invalid piece type:', pieceType);
+      return;
+    }
 
     try {
-      const moveResult = game.move({ from: orig, to: dest });
+      const moveResult = game.move({ from: orig, to: dest, piece: corePieceType });
 
       if (moveResult) {
         console.log('Game move successful:', moveResult);
@@ -67,6 +72,20 @@
         console.warn('Illegal move attempted on board:', orig, '->', dest);
       }
     } catch (error) {
+      if (boardApi) {
+        boardApi.set({
+          fen: $gameStore.fen,
+          turnColor: coreToBoardColor($gameStore.turn),
+          lastMove: mapLastMoveToBoardFormat($gameStore.lastMove),
+          check: coreToBoardCheck($gameStore.check, $gameStore.turn),
+          movable: {
+            free: false,
+            color: coreToBoardColor($gameStore.turn),
+            dests: mapPossibleMovesToDests($gameStore.possibleMoves),
+            events: { after: handleMove }
+          }
+        });
+      }
       console.error('Error making move in game engine:', error);
     }
   }
@@ -128,7 +147,7 @@
       <div class="game-info-container">
         <GameInfo />
         <GameControls {game} />
-        <DeployPanel {game} />
+        <!-- <DeployPanel {game} /> -->
         <CombinationPanel {game} />
         <HeroicStatusPanel {game} />
       </div>

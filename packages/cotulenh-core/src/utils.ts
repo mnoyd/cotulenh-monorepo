@@ -42,6 +42,27 @@ const symbolToRoleMap: Record<PieceSymbol, string> = {
   [NAVY]: 'navy',
   [HEADQUARTER]: 'headquarter',
 }
+
+// Reverse map: role string to core type (symbol)
+const roleToSymbolMap: Record<string, PieceSymbol> = Object.entries(
+  symbolToRoleMap,
+).reduce(
+  (acc, [symbol, role]) => {
+    acc[role] = symbol as PieceSymbol
+    return acc
+  },
+  {} as Record<string, PieceSymbol>,
+)
+
+/**
+ * Converts a full string role (e.g., 'commander') to its core type (symbol, e.g., COMMANDER)
+ * @param role - The role string
+ * @returns The PieceSymbol or undefined if not found
+ */
+export function getCoreTypeFromRole(role: string): PieceSymbol | undefined {
+  return roleToSymbolMap[role]
+}
+
 const getCoreRole = (piece: Piece): string => symbolToRoleMap[piece.type]
 
 export function createCombinedPiece(

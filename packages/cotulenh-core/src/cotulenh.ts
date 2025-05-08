@@ -38,6 +38,7 @@ import {
   createCombinedPiece,
   strippedSan,
   inferPieceType,
+  getCoreTypeFromRole,
 } from './utils.js'
 import {
   generateDeployMoves,
@@ -1479,6 +1480,7 @@ export class CoTuLenh {
 }
 
 export * from './type.js'
+export { getCoreTypeFromRole } from './utils.js'
 
 /**
  * Validates a FEN string
