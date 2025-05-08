@@ -51,7 +51,7 @@ export const canMove = (state: HeadlessState, orig: cg.Key, dest: cg.Key): boole
   );
 };
 
-function isMovable(state: HeadlessState, orig: cg.Key): boolean {
+export function isMovable(state: HeadlessState, orig: cg.Key): boolean {
   const piece = state.pieces.get(orig);
   return (
     !!piece &&

@@ -46,7 +46,7 @@ export function start(s: State, e: cg.MouchEvent): void {
   const piece = s.pieces.get(orig);
 
   // Handle combined piece click: Show popup only if no piece is currently selected
-  if (!s.selected && piece && piece.carrying && piece.carrying.length > 0) {
+  if (!s.selected && piece && piece.carrying && piece.carrying.length > 0 && board.isMovable(s, orig)) {
     showCombinedPiecePopup(s, orig, piece, position);
     return;
   }
