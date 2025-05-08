@@ -37,7 +37,7 @@ function createCombinedPieceElement(
   basePieceNode.cgPiece = basePieceName;
 
   // Apply opacity if there's a selected piece from the stack
-  if (state?.selectedPieceInfo?.isFromStack && state.selectedPieceInfo.originalKey === pos2key(pos)) {
+  if (state?.selected?.pieceInfo?.isFromStack && state.selected.key === pos2key(pos)) {
     basePieceNode.style.opacity = '0.4';
   }
 
@@ -63,8 +63,8 @@ function createCombinedPieceElement(
       carriedPieceNode.cgPiece = carriedPieceName;
 
       // Apply opacity and highlight class based on selection
-      if (state?.selectedPieceInfo?.isFromStack && state.selectedPieceInfo.originalKey === pos2key(pos)) {
-        if (state.selectedPieceInfo.carriedPieceIndex === i) {
+      if (state?.selected?.pieceInfo?.isFromStack && state.selected.key === pos2key(pos)) {
+        if (state.selected.pieceInfo.carriedPieceIndex === i) {
           // This is the selected piece in the stack
           carriedPieceNode.style.opacity = '1'; // Ensure full opacity
           carriedPieceNode.classList.add('selected-stack-piece'); // Add highlight class
@@ -328,9 +328,9 @@ function computeSquareClasses(s: State): cg.SquareClasses {
     }
   if (s.check && s.highlight.check) addSquare(squares, s.check, 'check');
   if (s.selected) {
-    addSquare(squares, s.selected, 'selected');
+    addSquare(squares, s.selected.key, 'selected');
     if (s.movable.showDests) {
-      const dests = s.movable.dests?.get(s.selected);
+      const dests = s.movable.dests?.get(s.selected.key);
       if (dests)
         for (const k of dests) {
           addSquare(squares, k, 'move-dest' + (s.pieces.has(k) ? ' oc' : ''));

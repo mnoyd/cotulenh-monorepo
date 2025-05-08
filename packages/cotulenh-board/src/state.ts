@@ -66,7 +66,6 @@ export interface HeadlessState {
     ctrlKey?: boolean;
   };
   hold: cg.Timer;
-  selected?: cg.Key;
   highlight: {
     lastMove: boolean; // add last-move class to squares
     check: boolean; // add check class to squares
@@ -75,11 +74,13 @@ export interface HeadlessState {
   };
   exploding?: cg.Exploding;
   addPieceZIndex: boolean; // adds z-index values to pieces (for 3D)
-  selectedPieceInfo?: {
-    originalKey: cg.Key;
-    originalPiece: cg.Piece;
-    carriedPieceIndex: number;
-    isFromStack: boolean;
+  selected?: {
+    key: cg.Key;
+    pieceInfo?: {
+      originalPiece: cg.Piece;
+      carriedPieceIndex: number;
+      isFromStack: boolean;
+    };
   };
   combinedPiecePopup?: {
     key: cg.Key;

@@ -89,7 +89,7 @@ export function configure(state: HeadlessState, config: Config): void {
   else if (config.lastMove) state.lastMove = config.lastMove;
 
   // fix move/premove dests
-  if (state.selected) setSelected(state, state.selected);
+  if (state.selected) setSelected(state, state.selected.key);
 
   applyAnimation(state, config);
 }

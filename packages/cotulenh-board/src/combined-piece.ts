@@ -285,11 +285,7 @@ function adjustPopupPosition(
 export function isStackPieceSelected(s: State, index: number): boolean {
   if (!s || index < 0) return false;
 
-  return !!(
-    s.selectedPieceInfo?.isFromStack &&
-    s.selectedPieceInfo.originalKey === s.selected &&
-    s.selectedPieceInfo.carriedPieceIndex === index
-  );
+  return !!(s.selected?.pieceInfo?.isFromStack && s.selected.pieceInfo.carriedPieceIndex === index);
 }
 
 /**
