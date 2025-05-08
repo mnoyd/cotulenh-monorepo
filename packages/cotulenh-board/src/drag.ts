@@ -213,7 +213,6 @@ function processDrag(s: State): void {
     else {
       if (!cur.started && util.distanceSq(cur.pos, cur.origPos) >= Math.pow(s.draggable.distance, 2)) {
         cur.started = true;
-        console.log('cur.started', cur.started);
       }
       if (cur.started) {
         // Remove any active popup during drag
@@ -250,7 +249,6 @@ function processDrag(s: State): void {
           isAirDefensePieceOrCarryingAirDefensePiece(cur.piece) &&
           keyAtCurrentPosition
         ) {
-          console.log('updateAirDefenseInfluenceZones called processDrag');
           // Store the current position to avoid calling updateAirDefenseInfluenceZones multiple times
           cur.temporaryPos = keyAtCurrentPosition;
           updateAirDefenseInfluenceZones(s, cur.piece, 'friendly', keyAtCurrentPosition); // Pass keyAtCurrentPosition

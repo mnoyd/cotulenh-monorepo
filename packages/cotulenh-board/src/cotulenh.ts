@@ -11,7 +11,6 @@ export function initModule({ el, config }: { el: HTMLElement; config?: Config })
 }
 
 export function CotulenhBoard(element: HTMLElement, config?: Config): Api {
-  console.log('CotulenhBoard');
   const maybeState: State | HeadlessState = defaults();
 
   configure(maybeState, config || {});

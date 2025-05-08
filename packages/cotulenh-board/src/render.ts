@@ -120,7 +120,6 @@ function createCombinedPieceElement(
 }
 
 export function render(s: State): void {
-  // console.log('render', s);
   const asRed: boolean = orientRed(s),
     posToTranslate = posToTranslateFromBounds(s.dom.bounds()),
     pieces: cg.Pieces = s.pieces,

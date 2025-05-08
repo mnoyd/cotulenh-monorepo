@@ -78,8 +78,6 @@ export function read(fen: string): cg.Pieces {
           pieces.set(pos2key([col, row]), combinedPiece);
           combinedPiece = null;
           col++; // A combined piece occupies one square, so advance column
-        } else {
-          // console.warn("FEN parsing warning: ')' encountered without an active combined piece."); // Optional
         }
         break;
       default:
@@ -95,7 +93,6 @@ export function read(fen: string): cg.Pieces {
           }
           const emptySquares = parseInt(numStr, 10);
           if (isNaN(emptySquares)) {
-            // console.warn(`FEN parsing warning: Could not parse number '${numStr}'.`); // Optional
           } else {
             col += emptySquares;
           }
