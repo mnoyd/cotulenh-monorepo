@@ -114,19 +114,17 @@ describe('CoTuLenh Stay Capture Logic', () => {
     const captureMove = moves.find((m) => {
       return (
         m.from === 'd3' &&
-        m.to === 'd3' &&
+        m.to === 'b3' &&
         m.piece.type === TANK &&
-        m.otherPiece?.type === NAVY &&
-        m.targetSquare === 'b3'
+        m.otherPiece?.type === NAVY
       )
     })
 
     expect(captureMove).toBeDefined()
     expect(captureMove?.isStayCapture()).toBe(true)
     expect(captureMove?.from).toBe('d3')
-    expect(captureMove?.to).toBe('d3') // Tank stays
+    expect(captureMove?.to).toBe('b3') // Tank stays
     expect(captureMove?.otherPiece?.type).toBe(NAVY)
-    expect(captureMove?.targetSquare).toBe('b3')
   })
 
   test('Navy capturing Land piece on pure Land should STAY', () => {
@@ -139,19 +137,17 @@ describe('CoTuLenh Stay Capture Logic', () => {
     const captureMove = moves.find((m) => {
       return (
         m.from === 'c3' &&
-        m.to === 'c3' &&
+        m.to === 'f3' &&
         m.piece.type === NAVY &&
-        m.otherPiece?.type === TANK &&
-        m.targetSquare === 'f3'
+        m.otherPiece?.type === TANK
       )
     })
 
     expect(captureMove).toBeDefined()
     expect(captureMove?.isStayCapture()).toBe(true)
     expect(captureMove?.from).toBe('c3')
-    expect(captureMove?.to).toBe('c3') // Navy stays
+    expect(captureMove?.to).toBe('f3') // Navy stays
     expect(captureMove?.otherPiece?.type).toBe(TANK)
-    expect(captureMove?.targetSquare).toBe('f3')
   })
 
   test('Air Force capturing Navy on pure Water should STAY', () => {
@@ -164,19 +160,17 @@ describe('CoTuLenh Stay Capture Logic', () => {
     const captureMove = moves.find((m) => {
       return (
         m.from === 'd2' &&
-        m.to === 'd2' &&
+        m.to === 'b2' &&
         m.piece.type === AIR_FORCE &&
-        m.otherPiece?.type === NAVY &&
-        m.targetSquare === 'b2'
+        m.otherPiece?.type === NAVY
       )
     })
 
     expect(captureMove).toBeDefined()
     expect(captureMove?.isStayCapture()).toBe(true)
     expect(captureMove?.from).toBe('d2')
-    expect(captureMove?.to).toBe('d2') // AF stays
+    expect(captureMove?.to).toBe('b2') // AF stays
     expect(captureMove?.otherPiece?.type).toBe(NAVY)
-    expect(captureMove?.targetSquare).toBe('b2')
   })
 
   test('Air Force capturing Land piece on Land should REPLACE', () => {
@@ -338,8 +332,7 @@ describe('SAN Conversion', () => {
     expect(move?.isStayCapture()).toBe(true)
     expect(move?.san).toBe('F<b2')
     expect(move?.from).toBe('d2')
-    expect(move?.to).toBe('d2') // Piece ends up at origin
-    expect(move?.targetSquare).toBe('b2') // Target was b2
+    expect(move?.to).toBe('b2') // Piece ends up at origin
     expect(move?.otherPiece?.type).toBe(NAVY)
     expect(game.get('d2')?.type).toBe(AIR_FORCE)
     expect(game.get('b2')).toBeUndefined()
@@ -534,13 +527,35 @@ describe('Terrain blocking movement logic', () => {
     expect(captureD5D8).toBeDefined()
   })
 
-  // test('should allow air force to fly to navy at sea', () => {
-  //   game.put({ type: AIR_FORCE, color: RED }, 'e2')
-  //   game.put({ type: NAVY, color: RED }, 'a2')
-  //   game['_turn'] = RED
+  test('should allow heavy piece capture enemy navy at sea', () => {
+    game.put({ type: ARTILLERY, color: RED }, 'd5')
+    game.put({ type: NAVY, color: BLUE }, 'b5')
+    game['_turn'] = RED
 
-  //   const moves = game.moves({ verbose: true }) as Move[]
-  //   const combineE2A2 = moves.find((m) => m.from === 'e2' && m.to === 'a2')
-  //   expect(combineE2A2).toBeDefined()
-  // })
+    const moves = game.moves({ verbose: true }) as Move[]
+    const captureD5B5 = moves.find(
+      (m) => m.from === 'd5' && m.to === 'b5' && m.otherPiece?.type === NAVY,
+    )
+    expect(captureD5B5).toBeDefined()
+  })
+
+  test('should allow air force to fly to navy at sea and combine', () => {
+    game.put({ type: AIR_FORCE, color: RED }, 'e2')
+    game.put({ type: NAVY, color: RED }, 'a2')
+    game['_turn'] = RED
+
+    const moves = game.moves({ verbose: true }) as Move[]
+    const combineE2A2 = moves.find((m) => m.from === 'e2' && m.to === 'a2')
+    expect(combineE2A2).toBeDefined()
+  })
+
+  test('should not allow navy to create combination with air force on land', () => {
+    game.put({ type: AIR_FORCE, color: RED }, 'e2')
+    game.put({ type: NAVY, color: RED }, 'b2')
+    game['_turn'] = RED
+
+    const moves = game.moves({ verbose: true }) as Move[]
+    const combineE2B2 = moves.find((m) => m.from === 'b2' && m.to === 'e2')
+    expect(combineE2B2).toBeUndefined()
+  })
 })

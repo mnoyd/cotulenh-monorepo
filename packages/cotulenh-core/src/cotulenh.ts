@@ -73,7 +73,6 @@ export class Move {
   lan?: string // Long Algebraic Notation (needs implementation)
   before: string // FEN before move
   after: string // FEN after move
-  targetSquare?: Square // For stay capture, the square of the captured piece
   isDeploy: boolean // Was this a deploy move from a stack?
   stackBefore?: string // Optional: FEN-like representation of the stack before deploy, e.g., "(NFT)"
 
@@ -97,19 +96,14 @@ export class Move {
     // This is tricky here, better done when generating the verbose history or SAN string
     // this.stackBefore = this.isDeploy ? game.getStackRepresentation(internal.from) : undefined;
 
-    // Determine 'to' square (final location) and 'targetSquare' for display/Move object
-    if (flags & BITS.STAY_CAPTURE) {
-      // For stay capture (including deploy stay capture), the piece ends up back 'from'
-      this.to = algebraic(from)
-      this.targetSquare = algebraic(to) // 'to' in internal move holds the target square
-    } else {
-      // For normal moves/captures (including normal deploy), the piece ends up at 'to'
-      this.to = algebraic(to)
-    }
+    this.to = algebraic(to)
 
-    // Store FEN before move - this needs to be set externally by the move() method
-    this.before = '' // Will be set by move()
-    this.after = '' // Will be set by move()
+    this.before = game.fen()
+
+    // Generate the FEN for the 'after' key
+    game['_makeMove'](internal)
+    this.after = game.fen()
+    game['_undoMove']()
 
     const [san, lan] = game['_moveToSanLan'](
       internal,
@@ -1316,17 +1310,10 @@ export class CoTuLenh {
       throw new Error(`Invalid or illegal move: ${JSON.stringify(move)}`)
     }
 
-    // 3. Record FEN before the move
-    const fenBeforeMove =
-      this._history.length > 0 ? this.fen() : DEFAULT_POSITION
     const prettyMove = new Move(this, internalMove)
-    prettyMove.before = fenBeforeMove
 
     // 4. Make the move
     this._makeMove(internalMove)
-
-    // 5. Set FEN after the move
-    prettyMove.after = this.fen()
 
     return prettyMove
   }
