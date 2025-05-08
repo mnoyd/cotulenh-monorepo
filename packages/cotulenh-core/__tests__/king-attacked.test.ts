@@ -175,4 +175,15 @@ describe('_isCommanderAttacked Function Tests', () => {
     // Test if commander is attacked
     expect(game['_isCommanderAttacked'](BLUE)).toBe(true)
   })
+
+  test('Commander is attacked by enemy navy', () => {
+    // Place a commander
+    game.put({ type: COMMANDER, color: BLUE }, 'g12')
+
+    // Place an enemy navy 4 steps away
+    game.put({ type: NAVY, color: RED }, 'c12')
+
+    // Test if commander is attacked (should be false as naval gun range is 3)
+    expect(game['_isCommanderAttacked'](BLUE)).toBe(false)
+  })
 })
