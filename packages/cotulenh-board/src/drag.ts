@@ -144,8 +144,8 @@ function handlePopupInteraction(s: State, e: cg.MouchEvent, position: cg.NumberP
 
   if (pieceIndex === -1) {
     // Carrier piece clicked - select the entire stack
-    s.selected = { key };
-    const previouslySelected = s.selected.key;
+    board.selectSquare(s, key);
+    const previouslySelected = s.selected?.key;
     const element = pieceElementByKey(s, key) as cg.PieceNode;
     s.draggable.current = {
       originalStackKey: key,
@@ -164,14 +164,11 @@ function handlePopupInteraction(s: State, e: cg.MouchEvent, position: cg.NumberP
     processDrag(s);
   } else if (pieceIndex !== undefined) {
     // Carried piece clicked - select the specific piece from the stack
-    s.selected = {
-      key,
-      pieceInfo: {
-        originalPiece: piece,
-        carriedPieceIndex: pieceIndex,
-        isFromStack: true,
-      },
-    };
+    board.selectSquare(s, key, undefined, {
+      originalPiece: piece,
+      carriedPieceIndex: pieceIndex,
+      isFromStack: true,
+    });
 
     // Create temporary piece for dragging
     const selectedPiece = piece.carrying![pieceIndex!];

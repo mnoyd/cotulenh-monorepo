@@ -76,11 +76,7 @@ export interface HeadlessState {
   addPieceZIndex: boolean; // adds z-index values to pieces (for 3D)
   selected?: {
     key: cg.Key;
-    pieceInfo?: {
-      originalPiece: cg.Piece;
-      carriedPieceIndex: number;
-      isFromStack: boolean;
-    };
+    pieceInfo?: cg.SelectedPieceInfo;
   };
   combinedPiecePopup?: {
     key: cg.Key;

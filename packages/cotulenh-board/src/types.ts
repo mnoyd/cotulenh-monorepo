@@ -110,3 +110,9 @@ export interface Exploding {
   stage: number;
   keys: readonly Key[];
 }
+
+export interface SelectedPieceInfo {
+  originalPiece: Piece;
+  carriedPieceIndex: number;
+  isFromStack: boolean;
+}

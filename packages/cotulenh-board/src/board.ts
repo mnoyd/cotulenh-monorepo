@@ -24,8 +24,8 @@ export function setCheck(state: HeadlessState, color: cg.Color | boolean): void 
     }
 }
 
-export function setSelected(state: HeadlessState, key: cg.Key): void {
-  state.selected = { key };
+export function setSelected(state: HeadlessState, key: cg.Key, pieceInfo?: cg.SelectedPieceInfo): void {
+  state.selected = { key, ...(pieceInfo && { pieceInfo }) };
 }
 
 export function unselect(state: HeadlessState): void {
@@ -181,7 +181,12 @@ export const distanceSq = (pos1: cg.Pos, pos2: cg.Pos): number => {
   return dx * dx + dy * dy;
 };
 
-export function selectSquare(state: HeadlessState, key: cg.Key, force?: boolean): void {
+export function selectSquare(
+  state: HeadlessState,
+  key: cg.Key,
+  force?: boolean,
+  pieceInfo?: cg.SelectedPieceInfo,
+): void {
   callUserFunction(state.events.select, key);
 
   if (state.selected) {
@@ -207,7 +212,7 @@ export function selectSquare(state: HeadlessState, key: cg.Key, force?: boolean)
 
   // Handle new selection
   if ((state.selectable.enabled || state.draggable.enabled) && isMovable(state, key)) {
-    setSelected(state, key);
+    setSelected(state, key, pieceInfo);
     state.hold.start();
   }
 }
