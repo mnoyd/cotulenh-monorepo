@@ -73,8 +73,6 @@ export class Move {
   lan?: string // Long Algebraic Notation (needs implementation)
   before: string // FEN before move
   after: string // FEN after move
-  isDeploy: boolean // Was this a deploy move from a stack?
-  stackBefore?: string // Optional: FEN-like representation of the stack before deploy, e.g., "(NFT)"
 
   // Constructor needs the main class instance to generate SAN, FENs etc.
   constructor(game: CoTuLenh, internal: InternalMove) {
@@ -90,11 +88,6 @@ export class Move {
       }
     }
     if (otherPiece) this.otherPiece = otherPiece
-    this.isDeploy = (flags & BITS.DEPLOY) !== 0
-
-    // TODO: Populate this.stackBefore if isDeploy (requires looking at state before move)
-    // This is tricky here, better done when generating the verbose history or SAN string
-    // this.stackBefore = this.isDeploy ? game.getStackRepresentation(internal.from) : undefined;
 
     this.to = algebraic(to)
 
@@ -115,11 +108,19 @@ export class Move {
 
   // Add helper methods like isCapture(), isPromotion() etc. if needed
   isCapture(): boolean {
-    return this.flags.includes(FLAGS.CAPTURE)
+    return this.flags.indexOf(FLAGS.CAPTURE) > -1
   }
 
   isStayCapture(): boolean {
-    return this.flags.includes(FLAGS.STAY_CAPTURE)
+    return this.flags.indexOf(FLAGS.STAY_CAPTURE) > -1
+  }
+
+  isDeploy(): boolean {
+    return this.flags.indexOf(FLAGS.DEPLOY) > -1
+  }
+
+  isCombination(): boolean {
+    return this.flags.indexOf(FLAGS.COMBINATION) > -1
   }
 }
 
