@@ -26,9 +26,11 @@ cg-board square.move-dest:hover {
 }
 cg-board square.last-move {
   background-color: rgba(155, 199, 0, 0.41);
+  border-radius: 10px; /* Added to make corners rounder */
 }
 cg-board square.selected {
   background-color: rgba(20, 85, 30, 0.5);
+  border-radius: 10px; /* Added to make corners rounder */
 }
 cg-board square.check {
   background: radial-gradient(

@@ -83,6 +83,14 @@ cg-board square {
   overflow: hidden;
 }
 
+cg-board square.move-dest {
+  pointer-events: auto;
+}
+
+cg-board square.last-move {
+  will-change: transform;
+}
+
 /* Piece states */
 cg-board piece.dragging {
   cursor: move;
@@ -297,9 +305,4 @@ cg-board .combined-piece-popup .carrier-piece::after {
 
 .cg-wrap piece.ghost {
   opacity: 0.3;
-}
-cg-board piece.dragging {
-  cursor: move;
-  /* !important to override z-index from 3D piece inline style */
-  z-index: 11 !important;
 }
