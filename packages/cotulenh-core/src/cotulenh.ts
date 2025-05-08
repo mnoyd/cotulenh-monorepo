@@ -938,6 +938,7 @@ export class CoTuLenh {
     attackerColor: Color,
   ): { square: number; type: PieceSymbol }[] {
     const attackers: { square: number; type: PieceSymbol }[] = []
+    const isLandPiece = this.getPieceAt(square)?.type !== NAVY
 
     // Check in all directions from the target square
     // Use ALL_OFFSETS to check both orthogonal and diagonal directions
@@ -966,6 +967,9 @@ export class CoTuLenh {
             piece.type,
             piece.heroic ?? false,
           )
+          if (isLandPiece && config.specialRules?.navyAttackMechanisms) {
+            config.captureRange = 3
+          }
 
           // Check if the piece's range allows it to reach the target
           if (distance <= config.captureRange) {
