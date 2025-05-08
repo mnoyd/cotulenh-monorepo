@@ -6,13 +6,14 @@ export default {
   test: {
     environment: 'node',
     globals: true,
+    watch: false,
     include: ['**/__tests__/**/*.test.ts'],
     coverage: {
       provider: 'v8',
-      reporter: ['text', 'json', 'html'],
+      reporter: ['text', 'json', 'html']
     },
     typecheck: {
-      enabled: true,
-    },
-  },
+      enabled: true
+    }
+  }
 };

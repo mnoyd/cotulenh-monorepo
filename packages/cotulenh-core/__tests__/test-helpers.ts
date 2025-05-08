@@ -45,13 +45,6 @@ export function makeMove(
   }
 }
 
-/**
- * Create a CoTuLenh game instance for testing
- */
-export function setupGame(fen: string): CoTuLenh {
-  return new CoTuLenh(fen)
-}
-
 export function setupGameBasic(): CoTuLenh {
   const game = new CoTuLenh()
   game.clear()
