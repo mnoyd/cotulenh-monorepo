@@ -30,6 +30,8 @@ export const VALID_PIECE_TYPES: Record<string, true> = {
   [HEADQUARTER]: true,
 }
 
+export const HEAVY_PIECES = new Set([ARTILLERY, ANTI_AIR, MISSILE])
+
 // --- Types ---
 export type Color = 'r' | 'b' // Updated Color type
 export type PieceSymbol =

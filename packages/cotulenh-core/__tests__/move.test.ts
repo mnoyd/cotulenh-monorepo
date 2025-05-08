@@ -499,3 +499,48 @@ describe('Generate Moves', () => {
     expect(filteredMoves.length).toEqual(infantryMovesFromAll.length)
   })
 })
+
+describe('Terrain blocking movement logic', () => {
+  let game: CoTuLenh
+  beforeEach(() => {
+    game = setupGameBasic()
+  })
+
+  test('should block heavy piece movement across river', () => {
+    game.put({ type: ARTILLERY, color: RED }, 'd5')
+    game['_turn'] = RED
+
+    const moves = game.moves({ verbose: true }) as Move[]
+    const moveD5D8 = moves.find((m) => m.from === 'd5' && m.to === 'd8')
+    expect(moveD5D8).toBeUndefined()
+  })
+
+  test('should allow light piece movement across river', () => {
+    game.put({ type: TANK, color: RED }, 'd5')
+    game['_turn'] = RED
+
+    const moves = game.moves({ verbose: true }) as Move[]
+    const moveD5D7 = moves.find((m) => m.from === 'd5' && m.to === 'd7')
+    expect(moveD5D7).toBeDefined()
+  })
+
+  test('should allow heavy piece capture across river', () => {
+    game.put({ type: ARTILLERY, color: RED }, 'd5')
+    game.put({ type: INFANTRY, color: BLUE }, 'd8')
+    game['_turn'] = RED
+
+    const moves = game.moves({ verbose: true }) as Move[]
+    const captureD5D8 = moves.find((m) => m.from === 'd5' && m.to === 'd8')
+    expect(captureD5D8).toBeDefined()
+  })
+
+  // test('should allow air force to fly to navy at sea', () => {
+  //   game.put({ type: AIR_FORCE, color: RED }, 'e2')
+  //   game.put({ type: NAVY, color: RED }, 'a2')
+  //   game['_turn'] = RED
+
+  //   const moves = game.moves({ verbose: true }) as Move[]
+  //   const combineE2A2 = moves.find((m) => m.from === 'e2' && m.to === 'a2')
+  //   expect(combineE2A2).toBeDefined()
+  // })
+})

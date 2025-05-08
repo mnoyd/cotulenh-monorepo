@@ -26,6 +26,7 @@ import {
   LAND_MASK,
   swapColor,
   Square,
+  HEAVY_PIECES,
 } from './type.js'
 import { addMove, createCombinedPiece } from './utils.js'
 import { BITS } from './type.js'
@@ -177,13 +178,6 @@ export function getPieceMovementConfig(
 }
 
 /**
- * Helper function to check if a piece is a heavy piece (for river crossing rules)
- */
-export function isHeavyPiece(pieceType: PieceSymbol): boolean {
-  return [ARTILLERY, MISSILE, ANTI_AIR].includes(pieceType)
-}
-
-/**
  * Generate moves for a piece in a specific direction
  */
 export function generateMovesInDirection(
@@ -235,8 +229,8 @@ export function generateMovesInDirection(
       terrainBlockedMovement = checkTerrainBlocking(
         from,
         to,
-        pieceData,
-        isHorizontalOffset(offset), // Assuming isHorizontalOffset exists
+        pieceData.type,
+        isHorizontalOffset(offset),
       )
     }
 
@@ -371,29 +365,29 @@ export function generateMovesInDirection(
 function checkTerrainBlocking(
   from: number,
   to: number,
-  pieceData: Piece,
+  pieceDataType: PieceSymbol,
   isHorizontalOffset: boolean,
 ): boolean {
   // Navy can only move on water
-  if (pieceData.type === NAVY) {
+  if (pieceDataType === NAVY) {
     return !NAVY_MASK[to]
   }
 
   // Land pieces can't move on water
   if (!LAND_MASK[to]) {
-    return pieceData.type !== AIR_FORCE // Air Force can fly over water
+    return pieceDataType !== AIR_FORCE // Air Force can fly over water
   }
 
   // Heavy piece river crossing rule
-  if (isHeavyPiece(pieceData.type)) {
+  if (HEAVY_PIECES.has(pieceDataType)) {
     const zoneFrom = isHeavyZone(from)
     const zoneTo = isHeavyZone(to)
 
     if (zoneFrom !== 0 && zoneTo !== 0 && zoneFrom !== zoneTo) {
       if (isHorizontalOffset && (file(from) === 5 || file(to) === 7)) {
-        return true
+        return false
       }
-      return false
+      return true
     }
   }
 
