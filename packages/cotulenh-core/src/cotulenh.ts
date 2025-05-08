@@ -1262,7 +1262,7 @@ export class CoTuLenh {
           m.from === fromSq &&
           targetSquareInternal === toSq &&
           (move.piece === undefined || m.piece.type === move.piece) &&
-          requestedStay === isStayMove
+          (requestedStay ? requestedStay === isStayMove : true)
         ) {
           foundMoves.push(m)
         }
