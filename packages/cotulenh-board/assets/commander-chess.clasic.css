@@ -14,19 +14,37 @@ cg-piece-star {
   background-image: url('data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiIHN0YW5kYWxvbmU9Im5vIj8+CjwhLS0gQ3JlYXRlZCB3aXRoIElua3NjYXBlIChodHRwOi8vd3d3Lmlua3NjYXBlLm9yZy8pIC0tPgoKPHN2ZwogICB2ZXJzaW9uPSIxLjEiCiAgIGlkPSJzdmcxIgogICB3aWR0aD0iNzY4LjU4Nzg5IgogICBoZWlnaHQ9IjczMi4wMjUwOSIKICAgdmlld0JveD0iMCAwIDc2OC41ODc4OSA3MzIuMDI1MDkiCiAgIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIKICAgeG1sbnM6c3ZnPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CiAgPGRlZnMKICAgICBpZD0iZGVmczEiIC8+CiAgPGcKICAgICBpZD0iZzEiCiAgICAgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoLTEwODkuODAzNywtOTUuMzExNTc2KSI+CiAgICA8cGF0aAogICAgICAgc3R5bGU9ImZpbGw6I2ZmZDQyYSIKICAgICAgIGlkPSJwYXRoMzQyNCIKICAgICAgIGQ9Ik0gMTU4MC42ODM5LDgyNy4zMzY2OCAxMTM4LjQzNiw1OTIuMzIwODcgNjk0LjExODUxLDgyMy40MDAwOSA3ODAuOTY5NywzMzAuMTczNDMgNDIzLjg5ODY0LC0yMC45OTAyMTQgOTE5LjgyMzU3LC05MC44MDUyNDggMTE0My40NTksLTUzOC45MTU1NCBsIDIxOS42NDczLDQ1MC4wNzg2MDEgNDk1LjI4NTMsNzQuMjE2MjUxIC0zNjAuMTc1NCwzNDcuOTc4OTA4IHoiCiAgICAgICB0cmFuc2Zvcm09Im1hdHJpeCgwLjUzNTc5MDYsMCwwLDAuNTM1NzkwNiw4NjIuNjgyODYsMzg0LjA1NzQ2KSIgLz4KICA8L2c+Cjwvc3ZnPgo=');
 }
 
+/** Interactive board square colors */
+cg-board square.move-dest {
+  background: radial-gradient(rgba(20, 85, 30, 0.5) 22%, #208530 0, rgba(0, 0, 0, 0.3) 0, rgba(0, 0, 0, 0) 0);
+}
+cg-board square.oc.move-dest {
+  background: radial-gradient(transparent 0%, transparent 80%, rgba(20, 85, 0, 0.3) 80%);
+}
+cg-board square.move-dest:hover {
+  background: rgba(20, 85, 30, 0.3);
+}
 cg-board square.last-move {
   background-color: rgba(155, 199, 0, 0.41);
 }
 cg-board square.selected {
   background-color: rgba(20, 85, 30, 0.5);
 }
-
+cg-board square.check {
+  background: radial-gradient(
+    ellipse at center,
+    rgba(255, 0, 0, 1) 0%,
+    rgba(231, 0, 0, 1) 25%,
+    rgba(169, 0, 0, 0) 89%,
+    rgba(158, 0, 0, 0) 100%
+  );
+}
 /* Base styles for all influence markers */
-.air-defense-influence {
+cg-board .air-defense-influence {
   /* position: relative; */
   z-index: 3;
 }
-.air-defense-influence::before {
+cg-board .air-defense-influence::before {
   content: '';
   position: absolute;
   top: 50%;
@@ -39,17 +57,17 @@ cg-board square.selected {
 }
 
 /* Friendly color */
-.air-defense-influence.friendly::before {
+cg-board .air-defense-influence.friendly::before {
   background-color: rgba(23, 82, 190, 0.6);
 }
 
 /* Opponent color */
-.air-defense-influence.opponent::before {
+cg-board .air-defense-influence.opponent::before {
   background-color: rgba(255, 0, 0, 0.6);
 }
 
 /* Highlight for a selected piece within a combined stack */
-piece.selected-stack-piece {
+cg-board piece.selected-stack-piece {
   outline: 2px solid yellow; /* Or another visual indicator */
   outline-offset: 1px;
   /* Ensure it's visually distinct even with opacity changes */

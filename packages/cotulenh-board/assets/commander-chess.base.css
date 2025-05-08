@@ -162,7 +162,7 @@ piece.fading {
 }
 
 /* Blue orientation */
-.board-orientation-blue {
+.cg-wrap .board-orientation-blue {
   transform: rotate(180deg);
 }
 
@@ -222,7 +222,7 @@ cg-board square.move-dest.oc::before {
 }
 
 /* --- Piece Popup UI --- */
-.combined-piece-popup {
+cg-board .combined-piece-popup {
   position: absolute;
   background: rgba(255, 255, 255, 0.9);
   border: 1px solid #ccc;
@@ -237,7 +237,7 @@ cg-board square.move-dest.oc::before {
 }
 
 /* Popup piece styling */
-.combined-piece-popup piece {
+cg-board .combined-piece-popup piece {
   cursor: grab;
   transition: transform 0.1s;
   width: 50px;
@@ -252,26 +252,26 @@ cg-board square.move-dest.oc::before {
 }
 
 /* Popup piece states */
-.combined-piece-popup piece:active {
+cg-board .combined-piece-popup piece:active {
   cursor: grabbing;
 }
 
-.combined-piece-popup piece:hover {
+cg-board .combined-piece-popup piece:hover {
   transform: scale(1.1);
   z-index: 2;
 }
 
-.combined-piece-popup piece.selected {
+cg-board .combined-piece-popup piece.selected {
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
   transform: scale(1.1);
 }
 
 /* Carrier piece styling */
-.combined-piece-popup .carrier-piece {
+cg-board .combined-piece-popup .carrier-piece {
   position: relative;
 }
 
-.combined-piece-popup .carrier-piece::after {
+cg-board .combined-piece-popup .carrier-piece::after {
   content: '';
   position: absolute;
   right: -4px;
@@ -297,4 +297,9 @@ cg-board square.move-dest.oc::before {
 
 .cg-wrap piece.ghost {
   opacity: 0.3;
+}
+cg-board piece.dragging {
+  cursor: move;
+  /* !important to override z-index from 3D piece inline style */
+  z-index: 11 !important;
 }
