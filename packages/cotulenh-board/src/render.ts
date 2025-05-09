@@ -9,7 +9,6 @@ import {
   translate,
   posToTranslate as posToTranslateFromBounds,
   key2pos,
-  pos2key,
   pieceNameOf,
   setVisible,
 } from './util.js';
@@ -23,7 +22,6 @@ function createCombinedPieceElement(
   posToTranslate: (pos: cg.Pos, asRed: boolean) => cg.Pos,
   asRed: boolean,
   anim?: AnimVector,
-  state?: State,
 ): cg.PieceNode {
   const container = createEl('piece', 'combined-stack') as cg.PieceNode;
   container.classList.add('piece');
@@ -35,11 +33,6 @@ function createCombinedPieceElement(
   const basePieceName = `${piece.color} ${piece.role}`;
   const basePieceNode = createEl('piece', basePieceName) as cg.PieceNode;
   basePieceNode.cgPiece = basePieceName;
-
-  // Apply opacity if there's a selected piece from the stack
-  if (state?.selected?.pieceInfo?.isFromStack && state.selected.key === pos2key(pos)) {
-    basePieceNode.style.opacity = '0.4';
-  }
 
   translate(basePieceNode, [0, 0]);
   basePieceNode.style.zIndex = posZIndex(pos, asRed);
@@ -61,23 +54,6 @@ function createCombinedPieceElement(
       const carriedPieceName = `${carriedPiece.color} ${carriedPiece.role}`;
       const carriedPieceNode = createEl('piece', carriedPieceName) as cg.PieceNode;
       carriedPieceNode.cgPiece = carriedPieceName;
-
-      // Apply opacity and highlight class based on selection
-      if (state?.selected?.pieceInfo?.isFromStack && state.selected.key === pos2key(pos)) {
-        if (state.selected.pieceInfo.carriedPieceIndex === i) {
-          // This is the selected piece in the stack
-          carriedPieceNode.style.opacity = '1'; // Ensure full opacity
-          carriedPieceNode.classList.add('selected-stack-piece'); // Add highlight class
-        } else {
-          // Other pieces in the stack when one is selected
-          carriedPieceNode.style.opacity = '0.4'; // Dim other pieces
-          carriedPieceNode.classList.remove('selected-stack-piece'); // Ensure highlight class is removed
-        }
-      } else {
-        // No piece selected from this stack, ensure normal state
-        carriedPieceNode.style.opacity = '1';
-        carriedPieceNode.classList.remove('selected-stack-piece');
-      }
 
       const offsetX = offsetStepX * (i + 1);
       const offsetY = offsetStepY * (i + 1);
@@ -260,7 +236,7 @@ export function render(s: State): void {
         const pos = key2pos(k);
         let pieceNode: cg.PieceNode;
         if (p.carrying && p.carrying.length > 0) {
-          pieceNode = createCombinedPieceElement(p, pos, posToTranslate, asRed, anim, s);
+          pieceNode = createCombinedPieceElement(p, pos, posToTranslate, asRed, anim);
         } else {
           const pieceName = pieceNameOf(p);
           pieceNode = createEl('piece', pieceName) as cg.PieceNode;
@@ -327,12 +303,12 @@ function computeSquareClasses(s: State): cg.SquareClasses {
     }
   if (s.check && s.highlight.check) addSquare(squares, s.check, 'check');
   if (s.selected) {
-    addSquare(squares, s.selected.key, 'selected');
+    addSquare(squares, s.selected.square, 'selected');
     if (s.movable.showDests) {
-      const dests = s.movable.dests?.get(s.selected.key);
+      const dests = s.movable.dests?.get(s.selected);
       if (dests)
         for (const k of dests) {
-          addSquare(squares, k, 'move-dest' + (s.pieces.has(k) ? ' oc' : ''));
+          addSquare(squares, k.square, 'move-dest' + (s.pieces.has(k.square) ? ' oc' : ''));
         }
     }
   }

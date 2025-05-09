@@ -84,7 +84,10 @@ export interface Memo<A> {
 export type Redraw = () => void;
 export type Unbind = () => void;
 export type KHz = number;
-export type Dests = Map<Key, Key[]>;
+
+export type OrigMove = { square: Key; type?: Role };
+export type DestMove = { square: Key; stay?: boolean };
+export type Dests = Map<OrigMove, DestMove[]>;
 export interface MoveMetadata {
   premove: boolean;
   ctrlKey?: boolean;

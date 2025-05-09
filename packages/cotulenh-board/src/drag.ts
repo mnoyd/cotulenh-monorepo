@@ -25,7 +25,7 @@ export interface DragCurrent {
   originTarget: EventTarget | null;
   keyHasChanged: boolean; // whether the drag has left the orig key
   temporaryPos?: cg.Key; // potential new position
-  originalStackKey?: cg.Key; // Add this to track if dragging whole stack
+  fromStack?: boolean;
 }
 
 export function start(s: State, e: cg.MouchEvent): void {
@@ -41,17 +41,23 @@ export function start(s: State, e: cg.MouchEvent): void {
   }
 
   const bounds = s.dom.bounds(),
-    orig = board.getKeyAtDomPos(position, board.redPov(s), bounds);
-  if (!orig) return;
-  const piece = s.pieces.get(orig);
+    keyAtPosition = board.getKeyAtDomPos(position, board.redPov(s), bounds);
+  if (!keyAtPosition) return;
+  const piece = s.pieces.get(keyAtPosition);
 
   // Handle combined piece click: Show popup only if no piece is currently selected
-  if (!s.selected && piece && piece.carrying && piece.carrying.length > 0 && board.isMovable(s, orig)) {
-    showCombinedPiecePopup(s, orig, piece, position);
+  if (
+    !s.selected &&
+    piece &&
+    piece.carrying &&
+    piece.carrying.length > 0 &&
+    board.isMovable(s, { square: keyAtPosition } as cg.OrigMove)
+  ) {
+    showCombinedPiecePopup(s, keyAtPosition, piece, position);
     return;
   }
 
-  const previouslySelected = s.selected?.key;
+  const previouslySelected = s.selected?.square;
   if (
     !previouslySelected &&
     s.drawable.enabled &&
@@ -68,16 +74,16 @@ export function start(s: State, e: cg.MouchEvent): void {
   else if (e.touches) return; // Handle only corresponding mouse event https://github.com/lichess-org/chessground/pull/268
 
   s.stats.ctrlKey = e.ctrlKey;
-  if (s.selected && board.canMove(s, s.selected.key, orig)) {
-    anim(state => board.selectSquare(state, orig), s);
+  if (s.selected && board.canMove(s, s.selected, { square: keyAtPosition } as cg.DestMove)) {
+    anim(state => board.selectSquare(state, { square: keyAtPosition } as cg.OrigMove), s);
   } else {
-    board.selectSquare(s, orig);
+    board.selectSquare(s, { square: keyAtPosition } as cg.OrigMove);
   }
-  const stillSelected = s.selected?.key === orig;
-  const element = pieceElementByKey(s, orig);
-  if (piece && element && stillSelected && board.isDraggable(s, orig)) {
+  const stillSelected = s.selected?.square === keyAtPosition;
+  const element = pieceElementByKey(s, keyAtPosition);
+  if (piece && element && stillSelected && board.isDraggable(s, keyAtPosition)) {
     s.draggable.current = {
-      orig,
+      orig: keyAtPosition,
       piece,
       origPos: position,
       pos: position,
@@ -93,7 +99,7 @@ export function start(s: State, e: cg.MouchEvent): void {
     const ghost = s.dom.elements.ghost;
     if (ghost) {
       ghost.className = `ghost ${piece.color} ${piece.role}`;
-      util.translate(ghost, util.posToTranslate(bounds)(util.key2pos(orig), board.redPov(s)));
+      util.translate(ghost, util.posToTranslate(bounds)(util.key2pos(keyAtPosition), board.redPov(s)));
       util.setVisible(ghost, true);
     }
     const defenseInfluenceZoneType = isAirDefenseInfluenceZonePiece(piece);
@@ -144,11 +150,11 @@ function handlePopupInteraction(s: State, e: cg.MouchEvent, position: cg.NumberP
 
   if (pieceIndex === -1) {
     // Carrier piece clicked - select the entire stack
-    board.selectSquare(s, key);
-    const previouslySelected = s.selected?.key;
+    board.selectSquare(s, { square: key, type: piece.role } as cg.OrigMove);
+    const previouslySelected = s.selected?.square;
     const element = pieceElementByKey(s, key) as cg.PieceNode;
     s.draggable.current = {
-      originalStackKey: key,
+      fromStack: true,
       orig: key,
       piece,
       origPos: position,
@@ -164,11 +170,7 @@ function handlePopupInteraction(s: State, e: cg.MouchEvent, position: cg.NumberP
     processDrag(s);
   } else if (pieceIndex !== undefined) {
     // Carried piece clicked - select the specific piece from the stack
-    board.selectSquare(s, key, undefined, {
-      originalPiece: piece,
-      carriedPieceIndex: pieceIndex,
-      isFromStack: true,
-    });
+    board.selectSquare(s, { square: key, type: piece.carrying![pieceIndex!].role } as cg.OrigMove);
 
     // Create temporary piece for dragging
     const selectedPiece = piece.carrying![pieceIndex!];
@@ -300,26 +302,30 @@ export function end(s: State, e: cg.MouchEvent): void {
     return;
   }
 
-  const dest = board.getKeyAtDomPos(eventPos, board.redPov(s), s.dom.bounds());
+  const keyAtCurrentPosition = board.getKeyAtDomPos(eventPos, board.redPov(s), s.dom.bounds());
 
   // Check if this was a click in a combined piece popup that shouldn't trigger a move
-  const isPopupPieceSelection = s.selected?.pieceInfo?.isFromStack && cur.newPiece && !cur.started;
+  const isPopupPieceSelection =
+    s.selected && util.isPieceFromStack(s, s.selected) && cur.newPiece && !cur.started;
 
-  if (dest && cur.started && cur.orig !== dest && !isPopupPieceSelection) {
+  if (keyAtCurrentPosition && cur.started && cur.orig !== keyAtCurrentPosition && !isPopupPieceSelection) {
     // Handle different types of moves based on piece origin
-    handlePieceMove(s, e, cur, dest);
-  } else if (!dest && !cur.newPiece) {
+    handlePieceMove(s, e, cur, keyAtCurrentPosition);
+  } else if (!keyAtCurrentPosition && !cur.newPiece) {
     // Handle case when piece is dropped off board or returned to original position
     handlePieceReturn(s, cur);
   } else if (cur.newPiece) {
     s.pieces.delete(cur.orig);
-  } else if (s.draggable.deleteOnDropOff && !dest) {
+  } else if (s.draggable.deleteOnDropOff && !keyAtCurrentPosition) {
     s.pieces.delete(cur.orig);
     board.callUserFunction(s.events.change);
   }
 
   // Handle selection state
-  if ((cur.orig === cur.previouslySelected || cur.keyHasChanged) && (cur.orig === dest || !dest))
+  if (
+    (cur.orig === cur.previouslySelected || cur.keyHasChanged) &&
+    (cur.orig === keyAtCurrentPosition || !keyAtCurrentPosition)
+  )
     board.unselect(s);
   else if (!s.selectable.enabled) board.unselect(s);
 
@@ -332,19 +338,30 @@ export function end(s: State, e: cg.MouchEvent): void {
  */
 function handlePieceMove(s: State, e: cg.MouchEvent, cur: DragCurrent, dest: cg.Key): void {
   // Handle piece from stack being dragged
-  if (s.selected?.pieceInfo?.isFromStack && cur.newPiece) {
+  if (s.selected && util.isPieceFromStack(s, s.selected) && cur.newPiece) {
     // Treat this as a move from the original position to the destination
-    board.userMove(s, s.selected.key, dest);
+    board.userMove(s, s.selected, { square: dest } as cg.DestMove);
     s.pieces.delete(TEMP_KEY);
-  } else if (cur.originalStackKey) {
+  } else if (cur.fromStack) {
     // Handle dragging whole stack
-    board.userMove(s, cur.originalStackKey, dest);
+    board.userMove(
+      s,
+      { square: cur.orig, type: cur.piece.role } as cg.OrigMove,
+      { square: dest } as cg.DestMove,
+    );
     s.pieces.delete(TEMP_KEY);
   } else if (cur.newPiece) {
     board.dropNewPiece(s, cur.orig, dest, cur.force);
   } else {
     s.stats.ctrlKey = e.ctrlKey;
-    if (board.userMove(s, cur.orig, dest)) s.stats.dragged = true;
+    if (
+      board.userMove(
+        s,
+        { square: cur.orig, type: cur.piece.role } as cg.OrigMove,
+        { square: dest } as cg.DestMove,
+      )
+    )
+      s.stats.dragged = true;
   }
 }
 
@@ -352,7 +369,7 @@ function handlePieceMove(s: State, e: cg.MouchEvent, cur: DragCurrent, dest: cg.
  * Handles returning a piece to its original position
  */
 function handlePieceReturn(s: State, cur: DragCurrent): void {
-  if (cur.originalStackKey) {
+  if (cur.fromStack) {
     s.pieces.delete(TEMP_KEY);
   }
 

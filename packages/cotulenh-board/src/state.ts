@@ -27,7 +27,7 @@ export interface HeadlessState {
     dests?: cg.Dests; // valid moves. {"a2" ["a3" "a4"] "b1" ["a3" "c3"]}
     showDests: boolean; // whether to add the move-dest class on squares
     events: {
-      after?: (orig: cg.Key, dest: cg.Key, pieceType: cg.Role, metadata: cg.MoveMetadata) => void; // called after the move has been played
+      after?: (orig: cg.OrigMove, dest: cg.DestMove, metadata: cg.MoveMetadata) => void; // called after the move has been played
       afterNewPiece?: (role: cg.Role, key: cg.Key, metadata: cg.MoveMetadata) => void; // called after a new piece is dropped on the board
     };
   };
@@ -54,9 +54,9 @@ export interface HeadlessState {
     change?: () => void; // called after the situation changes on the board
     // called after a piece has been moved.
     // capturedPiece is undefined or like {color: 'white'; 'role': 'queen'}
-    move?: (orig: cg.Key, dest: cg.Key, capturedPiece?: cg.Piece) => void;
+    move?: (orig: cg.OrigMove, dest: cg.DestMove, capturedPiece?: cg.Piece) => void;
     dropNewPiece?: (piece: cg.Piece, key: cg.Key) => void;
-    select?: (key: cg.Key) => void; // called when a square is selected
+    select?: (key: cg.OrigMove) => void; // called when a square is selected
     insert?: (elements: cg.Elements) => void; // when the board DOM has been (re)inserted
   };
   stats: {
@@ -74,10 +74,7 @@ export interface HeadlessState {
   };
   exploding?: cg.Exploding;
   addPieceZIndex: boolean; // adds z-index values to pieces (for 3D)
-  selected?: {
-    key: cg.Key;
-    pieceInfo?: cg.SelectedPieceInfo;
-  };
+  selected?: cg.OrigMove;
   combinedPiecePopup?: {
     key: cg.Key;
     piece: cg.Piece;

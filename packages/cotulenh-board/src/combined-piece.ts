@@ -277,18 +277,6 @@ function adjustPopupPosition(
 }
 
 /**
- * Checks if a specific piece in a stack is currently selected
- * @param s Game state
- * @param index Index of the piece in the stack
- * @returns True if the piece at the given index is selected
- */
-export function isStackPieceSelected(s: State, index: number): boolean {
-  if (!s || index < 0) return false;
-
-  return !!(s.selected?.pieceInfo?.isFromStack && s.selected.pieceInfo.carriedPieceIndex === index);
-}
-
-/**
  * Removes the combined piece popup from the DOM and state
  * @param s Game state
  */

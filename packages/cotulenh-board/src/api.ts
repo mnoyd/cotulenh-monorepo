@@ -22,7 +22,7 @@ export interface Api {
   setShapes(shapes: DrawShape[]): void;
 
   // perform a move programmatically
-  move(orig: cg.Key, dest: cg.Key): void;
+  move(orig: cg.OrigMove, dest: cg.DestMove): void;
 
   // add and/or remove arbitrary pieces on the board
   setPieces(pieces: cg.PiecesDiff): void;

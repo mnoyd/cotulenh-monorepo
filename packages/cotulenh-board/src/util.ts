@@ -1,3 +1,4 @@
+import { HeadlessState } from './state.js';
 import * as cg from './types.js';
 
 export const createEl = (tagName: string, className?: string): HTMLElement => {
@@ -93,3 +94,24 @@ export const pieceNameOf = (piece: cg.Piece): string => {
   const carrying = piece.carrying?.reduce((acc, p) => acc + ' ' + pieceNameOf(p), '-');
   return base + (carrying ?? '');
 };
+
+interface PieceFound {
+  piece: cg.Piece | undefined;
+  carrier: cg.Piece | undefined;
+}
+
+export function getPieceFromOrigMove(state: HeadlessState, origMove: cg.OrigMove): PieceFound {
+  const pieceAtSquare = state.pieces.get(origMove.square);
+  if (!pieceAtSquare) return { piece: undefined, carrier: undefined };
+  //If type is not specified, return the piece at the square
+  if (!origMove.type || pieceAtSquare.role === origMove.type)
+    return { piece: pieceAtSquare, carrier: undefined };
+  if (pieceAtSquare.carrying?.length && pieceAtSquare.carrying.some(p => p.role === origMove.type))
+    return { piece: pieceAtSquare.carrying?.find(p => p.role === origMove.type), carrier: pieceAtSquare };
+  return { piece: undefined, carrier: undefined };
+}
+
+export function isPieceFromStack(state: HeadlessState, origMove: cg.OrigMove): boolean {
+  const { piece, carrier } = getPieceFromOrigMove(state, origMove);
+  return piece !== undefined && carrier !== undefined;
+}

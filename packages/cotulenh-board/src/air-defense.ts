@@ -97,7 +97,7 @@ function calculateAndHighlightInfluence(
 
   // Use draggedToKey if provided and the piece is the selected one, otherwise use the actual key
   let pos: cg.Pos;
-  if (draggedToKey && s.selected?.key === key) {
+  if (draggedToKey && s.selected?.square === key) {
     pos = key2pos(draggedToKey); // Use the *potential* position
   } else {
     pos = key2pos(key as cg.Key); // Use the *actual* position
