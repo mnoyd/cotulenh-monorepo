@@ -2,9 +2,9 @@ import { HeadlessState } from './state';
 import {
   allPos,
   computeSquareCenter,
+  findDestInDests,
   getPieceFromOrigMove,
   opposite,
-  origMoveToKey,
   pos2key,
 } from './util.js';
 import * as cg from './types.js';
@@ -45,7 +45,7 @@ export const canMove = (state: HeadlessState, orig: cg.OrigMove, dest: cg.DestMo
   return (
     orig.square !== dest.square &&
     isMovable(state, orig) &&
-    (state.movable.free || !!state.movable.dests?.get(origMoveToKey(orig))?.includes(dest))
+    (state.movable.free || !!findDestInDests(state, orig, dest))
   );
 };
 
@@ -65,6 +65,7 @@ interface MoveResult {
 }
 
 export function baseMove(state: HeadlessState, orig: cg.OrigMove, dest: cg.DestMove): MoveResult | boolean {
+  console.log('baseMove', orig, dest);
   if (orig.square === dest.square) return false;
 
   const { piece: pieceThatMoves, carrier } = getPieceFromOrigMove(state, orig);
@@ -181,24 +182,30 @@ export const distanceSq = (pos1: cg.Pos, pos2: cg.Pos): number => {
   return dx * dx + dy * dy;
 };
 
-export function selectSquare(state: HeadlessState, origMove: cg.OrigMove, force?: boolean): void {
+export function selectSquare(
+  state: HeadlessState,
+  selectedSquare: cg.Key,
+  selectedPiece?: cg.Role,
+  force?: boolean,
+): void {
+  const origMove = { square: selectedSquare, type: selectedPiece } as cg.OrigMove;
   callUserFunction(state.events.select, origMove);
 
   if (state.selected) {
     // If a piece from a stack is selected and we're clicking on a destination
     if (getPieceFromOrigMove(state, state.selected).carrier !== undefined) {
-      if (userMove(state, state.selected, { square: origMove.square } as cg.DestMove)) {
+      if (userMove(state, state.selected, { square: selectedSquare } as cg.DestMove)) {
         state.stats.dragged = false;
         return;
       }
     }
     // If the same square is selected and it's not a draggable piece
-    else if (state.selected === origMove && !state.draggable.enabled) {
+    else if (state.selected.square === selectedSquare && !state.draggable.enabled) {
       unselect(state);
       state.hold.cancel();
       return;
-    } else if ((state.selectable.enabled || force) && state.selected !== origMove) {
-      if (userMove(state, state.selected, { square: origMove.square } as cg.DestMove)) {
+    } else if ((state.selectable.enabled || force) && state.selected.square !== selectedSquare) {
+      if (userMove(state, state.selected, { square: selectedSquare } as cg.DestMove)) {
         state.stats.dragged = false;
         return;
       }

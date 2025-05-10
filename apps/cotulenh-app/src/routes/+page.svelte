@@ -1,9 +1,9 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { CotulenhBoard } from '@repo/cotulenh-board';
-  import type { Api, Role as BoardRole } from '@repo/cotulenh-board';
-  import { CoTuLenh, getCoreTypeFromRole } from '@repo/cotulenh-core';
-  import type { Square, Color } from '@repo/cotulenh-core';
+  import { CotulenhBoard, origMoveToKey } from '@repo/cotulenh-board';
+  import type { Api, Role as BoardRole, DestMove, OrigMove, OrigMoveKey, Role } from '@repo/cotulenh-board';
+  import { CoTuLenh, getCoreTypeFromRole, getRoleFromCoreType } from '@repo/cotulenh-core';
+  import type { Square, Color, Move } from '@repo/cotulenh-core';
   import type { Key, Dests } from '@repo/cotulenh-board';
   import GameInfo from '$lib/components/GameInfo.svelte';
   // import DeployPanel from '$lib/components/DeployPanel.svelte';
@@ -15,6 +15,7 @@
   import '@repo/cotulenh-board/assets/commander-chess.base.css';
   import '@repo/cotulenh-board/assets/commander-chess.pieces.css';
   import '@repo/cotulenh-board/assets/commander-chess.clasic.css';
+    import { makeCoreMove } from '$lib/utils';
 
   let boardContainerElement: HTMLElement | null = null;
   let boardApi: Api | null = null;
@@ -28,51 +29,8 @@
     return check ? coreToBoardColor(coreColor) : undefined;
   }
 
-  function mapPossibleMovesToDests(possibleMoves: Map<Square, Square[]>): Dests {
-    const dests: Dests = new Map();
-    for (const [fromSq, toSqs] of possibleMoves.entries()) {
-      const fromKey = fromSq;
-      if (fromKey) {
-        const toKeys = toSqs.map((sq) => sq).filter((key) => key !== null) as Key[];
-        if (toKeys.length > 0) {
-          dests.set(fromKey, toKeys);
-        }
-      }
-    }
-    console.log('Possible moves mapped to board format:', dests);
-    return dests;
-  }
-
-  function mapLastMoveToBoardFormat(
-    lastMove: [Square, Square] | undefined
-  ): [Key, Key] | undefined {
-    if (!lastMove) return undefined;
-    const fromKey = lastMove[0];
-    const toKey = lastMove[1];
-    return fromKey && toKey ? [fromKey, toKey] : undefined;
-  }
-
-  function handleMove(orig: Key, dest: Key, pieceType: BoardRole) {
-    if (!game) return;
-
-    console.log('Board move attempt:', orig, '->', dest);
-    const corePieceType = getCoreTypeFromRole(pieceType);
-    if (!corePieceType) {
-      console.warn('Invalid piece type:', pieceType);
-      return;
-    }
-
-    try {
-      const moveResult = game.move({ from: orig, to: dest, piece: corePieceType });
-
-      if (moveResult) {
-        console.log('Game move successful:', moveResult);
-        gameStore.applyMove(game, moveResult);
-      } else {
-        console.warn('Illegal move attempted on board:', orig, '->', dest);
-      }
-    } catch (error) {
-      if (boardApi) {
+  function reSetupBoard() {
+    if (boardApi) {
         boardApi.set({
           fen: $gameStore.fen,
           turnColor: coreToBoardColor($gameStore.turn),
@@ -86,6 +44,54 @@
           }
         });
       }
+  }
+
+  function mapPossibleMovesToDests(possibleMoves: Move[]): Dests {
+    const dests = new Map<OrigMoveKey, DestMove[]>();
+    for (const move of possibleMoves) {
+        const moveOrig: OrigMove = {
+            square: move.from,
+            type: getRoleFromCoreType(move.piece) as Role,
+        }
+        const moveDest: DestMove = {
+            square: move.to,
+            stay: move.isStayCapture(),
+        }
+        const key = origMoveToKey(moveOrig);
+        if (!dests.has(key)) {
+            dests.set(key, []);
+        }
+        dests.get(key)!.push(moveDest);
+    }
+    console.log('Mapped possible moves to dests:', dests);
+    return dests;
+  }
+
+  function mapLastMoveToBoardFormat(
+    lastMove: [Square, Square] | undefined
+  ): [Key, Key] | undefined {
+    if (!lastMove) return undefined;
+    const fromKey = lastMove[0];
+    const toKey = lastMove[1];
+    return fromKey && toKey ? [fromKey, toKey] : undefined;
+  }
+
+  function handleMove(orig: OrigMove, dest: DestMove) {
+    if (!game) return;
+
+    console.log('Board move attempt:', orig, '->', dest);
+
+    try {
+      const moveResult = makeCoreMove(game, orig, dest);
+
+      if (moveResult) {
+        console.log('Game move successful:', moveResult);
+        gameStore.applyMove(game, moveResult);
+      } else {
+        console.warn('Illegal move attempted on board:', orig, '->', dest);
+      }
+    } catch (error) {
+      // reSetupBoard();
       console.error('Error making move in game engine:', error);
     }
   }

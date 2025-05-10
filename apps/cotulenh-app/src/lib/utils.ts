@@ -1,22 +1,27 @@
-import type { CoTuLenh, Square, Move, Color } from '@repo/cotulenh-core';
+import {
+  origMoveToKey,
+  roles,
+  type Dests as BoardDest,
+  type DestMove,
+  type OrigMove,
+  type OrigMoveKey,
+  type Role
+} from '@repo/cotulenh-board';
+import {
+  type CoTuLenh,
+  type Move,
+  type Color,
+  getRoleFromCoreType,
+  getCoreTypeFromRole
+} from '@repo/cotulenh-core';
 
 /**
  * Calculates the possible destinations for each piece on the board for CoTuLenh.
  * @param game - The CoTuLenh game instance.
  * @returns A Map where keys are origin squares (e.g., 'e2') and values are arrays of destination squares (e.g., ['e3', 'e4']).
  */
-export function getPossibleMoves(game: CoTuLenh): Map<Square, Square[]> {
-    const dests = new Map<Square, Square[]>();
-    const moves = game.moves({ verbose: true }) as Move[];
-
-    for (const move of moves) {
-        if (!dests.has(move.from)) {
-            dests.set(move.from, []);
-        }
-        dests.get(move.from)!.push(move.to);
-    }
-
-    return dests;
+export function getPossibleMoves(game: CoTuLenh): Move[] {
+  return game.moves({ verbose: true }) as Move[];
 }
 
 /**
@@ -25,5 +30,19 @@ export function getPossibleMoves(game: CoTuLenh): Map<Square, Square[]> {
  * @returns 'Red' or 'Blue'.
  */
 export function getTurnColorName(turn: Color): string {
-    return turn === 'r' ? 'Red' : 'Blue';
+  return turn === 'r' ? 'Red' : 'Blue';
+}
+
+export function makeCoreMove(game: CoTuLenh, orig: OrigMove, dest: DestMove): Move | null {
+  try {
+    const moveResult = game.move({
+      from: orig.square,
+      to: dest.square,
+      ...(orig.type && { piece: getCoreTypeFromRole(orig.type) }),
+      ...(dest.stay && { stay: true })
+    });
+    return moveResult;
+  } catch (error) {
+    throw error;
+  }
 }

@@ -75,9 +75,9 @@ export function start(s: State, e: cg.MouchEvent): void {
 
   s.stats.ctrlKey = e.ctrlKey;
   if (s.selected && board.canMove(s, s.selected, { square: keyAtPosition } as cg.DestMove)) {
-    anim(state => board.selectSquare(state, { square: keyAtPosition } as cg.OrigMove), s);
+    anim(state => board.selectSquare(state, keyAtPosition, piece?.role), s);
   } else {
-    board.selectSquare(s, { square: keyAtPosition } as cg.OrigMove);
+    board.selectSquare(s, keyAtPosition, piece?.role);
   }
   const stillSelected = s.selected?.square === keyAtPosition;
   const element = pieceElementByKey(s, keyAtPosition);
@@ -150,7 +150,7 @@ function handlePopupInteraction(s: State, e: cg.MouchEvent, position: cg.NumberP
 
   if (pieceIndex === -1) {
     // Carrier piece clicked - select the entire stack
-    board.selectSquare(s, { square: key, type: piece.role } as cg.OrigMove);
+    board.selectSquare(s, key, piece.role);
     const previouslySelected = s.selected?.square;
     const element = pieceElementByKey(s, key) as cg.PieceNode;
     s.draggable.current = {
@@ -170,7 +170,7 @@ function handlePopupInteraction(s: State, e: cg.MouchEvent, position: cg.NumberP
     processDrag(s);
   } else if (pieceIndex !== undefined) {
     // Carried piece clicked - select the specific piece from the stack
-    board.selectSquare(s, { square: key, type: piece.carrying![pieceIndex!].role } as cg.OrigMove);
+    board.selectSquare(s, key, piece.carrying![pieceIndex].role);
 
     // Create temporary piece for dragging
     const selectedPiece = piece.carrying![pieceIndex!];
@@ -277,6 +277,7 @@ function cleanupPopupState(s: State): void {
 }
 
 export function end(s: State, e: cg.MouchEvent): void {
+  console.log('end', e);
   const cur = s.draggable.current;
   if (!cur) return;
 
@@ -337,6 +338,7 @@ export function end(s: State, e: cg.MouchEvent): void {
  * Handles moving a piece to a destination
  */
 function handlePieceMove(s: State, e: cg.MouchEvent, cur: DragCurrent, dest: cg.Key): void {
+  console.log('handlePieceMove', e, cur, dest);
   // Handle piece from stack being dragged
   if (s.selected && util.isPieceFromStack(s, s.selected) && cur.newPiece) {
     // Treat this as a move from the original position to the destination

@@ -28,12 +28,18 @@
       import { CotulenhBoard } from './dist/index.es.js';
 
       const dests = new Map();
-      dests.set('3-4', ['4-5', '5-6']);
-      dests.set('4-3', ['4-4', '4-5']);
+      dests.set('g2.air_force', [
+        { square: 'g3', stay: false },
+        { square: 'g4', stay: false },
+        { square: 'g5', stay: false },
+        { square: 'g6', stay: false },
+        { square: 'g7', stay: false },
+        { square: 'g8', stay: false },
+      ]);
 
       const board = CotulenhBoard(document.getElementById('board-1'), {
         // fen: '1n8g/11/5s5/11/11/5g5/11/11/5F5/11/2N8/11',
-        // fen: '3f7/11/11/11/11/11/11/11/11/1N8/2T3F4/11',
+        fen: '11/11/11/11/11/11/11/11/11/11/6F4/11',
         //   movable: {
         //   color: "red",
         //   free: true,
@@ -45,6 +51,8 @@
         //   },
         // },
         movable: {
+          color: 'red',
+          dests,
           events: {
             after: (orig, dest, pieceType, metadata) => {
               console.log(

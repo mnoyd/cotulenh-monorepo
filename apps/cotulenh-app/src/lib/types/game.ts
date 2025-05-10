@@ -12,7 +12,7 @@ export interface GameState {
   fen: string; // Forsyth–Edwards Notation of the board
   turn: Color | null; // Current player's turn ('r' or 'b')
   history: Move[]; // History of moves made
-  possibleMoves: Map<Square, Square[]>; // Possible moves for the current turn
+  possibleMoves: Move[]; // Possible moves for the current turn
   lastMove?: [Square, Square]; // The last move made [from, to]
   status: GameStatus; // Current status of the game
   check: boolean; // Is the current player in check?

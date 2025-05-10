@@ -1,7 +1,7 @@
 import { writable } from 'svelte/store';
 import type { GameState, GameStatus } from '$lib/types/game';
 import { CoTuLenh } from '@repo/cotulenh-core';
-import type { Square, Move } from '@repo/cotulenh-core';
+import { type Square, Move } from '@repo/cotulenh-core';
 import { getPossibleMoves } from '$lib/utils';
 
 /**
@@ -12,7 +12,7 @@ function createGameStore() {
     fen: '',
     turn: null,
     history: [],
-    possibleMoves: new Map<Square, Square[]>(),
+    possibleMoves: [],
     status: 'playing',
     check: false,
     lastMove: undefined,
