@@ -11,6 +11,7 @@ import {
   key2pos,
   pieceNameOf,
   setVisible,
+  origMoveToKey,
 } from './util.js';
 
 type PieceName = string; // `$color $role`
@@ -305,7 +306,7 @@ function computeSquareClasses(s: State): cg.SquareClasses {
   if (s.selected) {
     addSquare(squares, s.selected.square, 'selected');
     if (s.movable.showDests) {
-      const dests = s.movable.dests?.get(s.selected);
+      const dests = s.movable.dests?.get(origMoveToKey(s.selected)) || [];
       if (dests)
         for (const k of dests) {
           addSquare(squares, k.square, 'move-dest' + (s.pieces.has(k.square) ? ' oc' : ''));

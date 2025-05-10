@@ -1,5 +1,12 @@
 import { HeadlessState } from './state';
-import { allPos, computeSquareCenter, getPieceFromOrigMove, opposite, pos2key } from './util.js';
+import {
+  allPos,
+  computeSquareCenter,
+  getPieceFromOrigMove,
+  opposite,
+  origMoveToKey,
+  pos2key,
+} from './util.js';
 import * as cg from './types.js';
 import { tryCombinePieces } from './combined-piece.js';
 
@@ -38,7 +45,7 @@ export const canMove = (state: HeadlessState, orig: cg.OrigMove, dest: cg.DestMo
   return (
     orig.square !== dest.square &&
     isMovable(state, orig) &&
-    (state.movable.free || !!state.movable.dests?.get(orig)?.includes(dest))
+    (state.movable.free || !!state.movable.dests?.get(origMoveToKey(orig))?.includes(dest))
   );
 };
 

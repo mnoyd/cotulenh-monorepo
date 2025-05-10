@@ -87,7 +87,8 @@ export type KHz = number;
 
 export type OrigMove = { square: Key; type?: Role };
 export type DestMove = { square: Key; stay?: boolean };
-export type Dests = Map<OrigMove, DestMove[]>;
+export type OrigMoveKey = `${Key}.${Role}` | `${Key}`;
+export type Dests = Map<OrigMoveKey, DestMove[]>;
 export interface MoveMetadata {
   premove: boolean;
   ctrlKey?: boolean;

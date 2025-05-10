@@ -115,3 +115,10 @@ export function isPieceFromStack(state: HeadlessState, origMove: cg.OrigMove): b
   const { piece, carrier } = getPieceFromOrigMove(state, origMove);
   return piece !== undefined && carrier !== undefined;
 }
+export const origMoveToKey = (origMove: cg.OrigMove): cg.OrigMoveKey =>
+  `${origMove.square}${origMove.type ? '.' + origMove.type : ''}`;
+export const keyToOrigMove = (key: cg.OrigMoveKey): cg.OrigMove => {
+  const [square, type] = key.split('.');
+  if (type === undefined) return { square };
+  return { square, type: type as cg.Role };
+};
