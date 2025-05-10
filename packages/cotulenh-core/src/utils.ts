@@ -63,13 +63,18 @@ export function getCoreTypeFromRole(role: string): PieceSymbol | undefined {
   return roleToSymbolMap[role]
 }
 
-const getCoreRole = (piece: Piece): string => symbolToRoleMap[piece.type]
+export const getRoleFromCoreType = (piece: Piece): string =>
+  symbolToRoleMap[piece.type]
 
 export function createCombinedPiece(
   pieceFrom: Piece,
   pieceTo: Piece,
 ): Piece | null {
-  const combinedPiece = formStack<Piece>(pieceFrom, pieceTo, getCoreRole)
+  const combinedPiece = formStack<Piece>(
+    pieceFrom,
+    pieceTo,
+    getRoleFromCoreType,
+  )
   return combinedPiece
 }
 

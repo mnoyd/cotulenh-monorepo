@@ -1480,7 +1480,7 @@ export class CoTuLenh {
 }
 
 export * from './type.js'
-export { getCoreTypeFromRole } from './utils.js'
+export { getCoreTypeFromRole, getRoleFromCoreType } from './utils.js'
 
 /**
  * Validates a FEN string
