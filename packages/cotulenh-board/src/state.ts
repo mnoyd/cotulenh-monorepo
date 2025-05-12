@@ -75,6 +75,7 @@ export interface HeadlessState {
   exploding?: cg.Exploding;
   addPieceZIndex: boolean; // adds z-index values to pieces (for 3D)
   selected?: cg.OrigMove;
+  deployState?: Map<cg.Key, cg.Piece[]>; // tracks which pieces in a stack are marked to stay
   combinedPiecePopup?: {
     key: cg.Key;
     piece: cg.Piece;
@@ -125,7 +126,7 @@ export function defaults(): HeadlessState {
       showDests: true,
       events: {},
     },
-
+    deployState: new Map<cg.Key, cg.Piece[]>(),
     events: {},
     stats: {
       dragged: false,

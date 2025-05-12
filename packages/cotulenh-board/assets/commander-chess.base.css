@@ -35,7 +35,7 @@ cg-board {
 }
 
 /* Star piece */
-cg-piece-star {
+.cg-wrap cg-piece-star {
   position: absolute;
   top: 15%;
   width: 20%;
@@ -306,3 +306,6 @@ cg-board .combined-piece-popup .carrier-piece::after {
 .cg-wrap piece.ghost {
   opacity: 0.3;
 }
+
+/* Import combined piece stay styles */
+@import url('./combined-piece-stay.css');

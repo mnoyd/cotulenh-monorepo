@@ -39,7 +39,7 @@
 
       const board = CotulenhBoard(document.getElementById('board-1'), {
         // fen: '1n8g/11/5s5/11/11/5g5/11/11/5F5/11/2N8/11',
-        fen: '11/11/11/11/11/11/11/11/11/11/6F4/11',
+        // fen: '11/11/11/11/11/11/11/11/11/11/6F4/11',
         //   movable: {
         //   color: "red",
         //   free: true,
@@ -51,8 +51,8 @@
         //   },
         // },
         movable: {
-          color: 'red',
-          dests,
+          // color: 'red',
+          // dests,
           events: {
             after: (orig, dest, pieceType, metadata) => {
               console.log(

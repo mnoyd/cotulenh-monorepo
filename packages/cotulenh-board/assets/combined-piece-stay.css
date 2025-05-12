@@ -1,0 +1,60 @@
+/* Styles for combined piece popup stay functionality */
+
+/* Stay button styling */
+.combined-piece-popup .stay-button {
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background-image: url('data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiIHN0YW5kYWxvbmU9Im5vIj8+CjwhLS0gQ3JlYXRlZCB3aXRoIElua3NjYXBlIChodHRwOi8vd3d3Lmlua3NjYXBlLm9yZy8pIC0tPgoKPHN2ZwogICB3aWR0aD0iODcuODk4MTU1bW0iCiAgIGhlaWdodD0iODcuNzk4MDA0bW0iCiAgIHZpZXdCb3g9IjAgMCA4Ny44OTgxNTUgODcuNzk4MDA0IgogICB2ZXJzaW9uPSIxLjEiCiAgIGlkPSJzdmcxIgogICB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciCiAgIHhtbG5zOnN2Zz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgogIDxkZWZzCiAgICAgaWQ9ImRlZnMxIiAvPgogIDxnCiAgICAgaWQ9ImxheWVyMSIKICAgICB0cmFuc2Zvcm09InRyYW5zbGF0ZSgtNTQuNzYzOTIsLTkyLjM1MDAyNSkiPgogICAgPGVsbGlwc2UKICAgICAgIHN0eWxlPSJmaWxsOm5vbmU7c3Ryb2tlOiNmZjAwMDg7c3Ryb2tlLXdpZHRoOjUuOTk2NTg7c3Ryb2tlLWRhc2hhcnJheTpub25lO3N0cm9rZS1vcGFjaXR5OjEiCiAgICAgICBpZD0icGF0aDciCiAgICAgICBjeD0iOTguNzEyOTk3IgogICAgICAgY3k9IjEzNi4yNDkwMiIKICAgICAgIHJ4PSI0MC45NTA3ODciCiAgICAgICByeT0iNDAuOTAwNzExIiAvPgogICAgPHJlY3QKICAgICAgIHN0eWxlPSJmaWxsOiNmZjAwMDA7c3Ryb2tlOiNmZjAwMDg7c3Ryb2tlLXdpZHRoOjEuNTAxOTI7c3Ryb2tlLWRhc2hhcnJheTpub25lO3N0cm9rZS1vcGFjaXR5OjEiCiAgICAgICBpZD0icmVjdDkiCiAgICAgICB3aWR0aD0iODIuNjkzMzY3IgogICAgICAgaGVpZ2h0PSI1LjAwNTQwNTkiCiAgICAgICB4PSItMjYuODgzMiIKICAgICAgIHk9IjE2NC4zMTgxOSIKICAgICAgIHJ5PSI1LjExNTkxODYiCiAgICAgICByeD0iMCIKICAgICAgIHRyYW5zZm9ybT0ibWF0cml4KC0wLjcxMDM3NTQsMC43MDM4MjI5OCwwLjY1MTIyOTA3LDAuNzU4ODgxMjEsMCwwKSIgLz4KICA8L2c+Cjwvc3ZnPgo=');
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+  border: none;
+  background-color: transparent;
+}
+/* 
+.combined-piece-popup .stay-button:hover {
+  transform: scale(1.1);
+}
+
+.combined-piece-popup .stay-button:active {
+  transform: scale(0.95);
+} */
+
+/* Staying piece styling */
+.combined-piece-popup .staying-piece {
+  position: relative;
+  box-shadow: 0 0 10px rgba(255, 0, 0, 0.5) !important;
+  border: 2px solid #ff0008 !important;
+  transform: scale(1.05);
+  z-index: 2;
+}
+
+.combined-piece-popup .staying-piece::after {
+  content: '';
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 20px;
+  height: 20px;
+  background-image: url('data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiIHN0YW5kYWxvbmU9Im5vIj8+CjwhLS0gQ3JlYXRlZCB3aXRoIElua3NjYXBlIChodHRwOi8vd3d3Lmlua3NjYXBlLm9yZy8pIC0tPgoKPHN2ZwogICB3aWR0aD0iODcuODk4MTU1bW0iCiAgIGhlaWdodD0iODcuNzk4MDA0bW0iCiAgIHZpZXdCb3g9IjAgMCA4Ny44OTgxNTUgODcuNzk4MDA0IgogICB2ZXJzaW9uPSIxLjEiCiAgIGlkPSJzdmcxIgogICB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciCiAgIHhtbG5zOnN2Zz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgogIDxkZWZzCiAgICAgaWQ9ImRlZnMxIiAvPgogIDxnCiAgICAgaWQ9ImxheWVyMSIKICAgICB0cmFuc2Zvcm09InRyYW5zbGF0ZSgtNTQuNzYzOTIsLTkyLjM1MDAyNSkiPgogICAgPGVsbGlwc2UKICAgICAgIHN0eWxlPSJmaWxsOm5vbmU7c3Ryb2tlOiNmZjAwMDg7c3Ryb2tlLXdpZHRoOjUuOTk2NTg7c3Ryb2tlLWRhc2hhcnJheTpub25lO3N0cm9rZS1vcGFjaXR5OjEiCiAgICAgICBpZD0icGF0aDciCiAgICAgICBjeD0iOTguNzEyOTk3IgogICAgICAgY3k9IjEzNi4yNDkwMiIKICAgICAgIHJ4PSI0MC45NTA3ODciCiAgICAgICByeT0iNDAuOTAwNzExIiAvPgogICAgPHJlY3QKICAgICAgIHN0eWxlPSJmaWxsOiNmZjAwMDA7c3Ryb2tlOiNmZjAwMDg7c3Ryb2tlLXdpZHRoOjEuNTAxOTI7c3Ryb2tlLWRhc2hhcnJheTpub25lO3N0cm9rZS1vcGFjaXR5OjEiCiAgICAgICBpZD0icmVjdDkiCiAgICAgICB3aWR0aD0iODIuNjkzMzY3IgogICAgICAgaGVpZ2h0PSI1LjAwNTQwNTkiCiAgICAgICB4PSItMjYuODgzMiIKICAgICAgIHk9IjE2NC4zMTgxOSIKICAgICAgIHJ5PSI1LjExNTkxODYiCiAgICAgICByeD0iMCIKICAgICAgIHRyYW5zZm9ybT0ibWF0cml4KC0wLjcxMDM3NTQsMC43MDM4MjI5OCwwLjY1MTIyOTA3LDAuNzU4ODgxMjEsMCwwKSIgLz4KICA8L2c+Cjwvc3ZnPgo=');
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Button and piece row styling */
+.combined-piece-popup .stay-button-row,
+.combined-piece-popup .piece-row {
+  display: flex;
+  width: 100%;
+  justify-content: space-around;
+  align-items: center;
+}
+
+/* Improve popup appearance */
+.combined-piece-popup {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2) !important;
+}

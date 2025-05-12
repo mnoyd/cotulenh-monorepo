@@ -94,8 +94,9 @@ export function calculatePopupPosition(
   const scaledGap = Math.min(PIECE_GAP, bounds.width / 60);
   const scaledPadding = Math.min(POPUP_PADDING, bounds.width / 60);
 
+  // Add height for stay buttons
   const popupWidth = totalPieces * scaledPieceWidth + (totalPieces - 1) * scaledGap + scaledPadding * 2;
-  const popupHeight = scaledPieceWidth + scaledPadding * 2;
+  const popupHeight = scaledPieceWidth * 2 + scaledPadding * 2; // Double height to accommodate stay buttons
 
   // Calculate vertical offset based on board height
   const verticalOffset = Math.min(POPUP_VERTICAL_OFFSET, bounds.height / 8);
@@ -146,8 +147,11 @@ export function showCombinedPiecePopup(
   position: cg.NumberPair,
 ): void {
   // Validate inputs
-  if (!s || !key || !piece || !position) return;
+  if (!s || !key || !piece) return;
   if (!piece.carrying || piece.carrying.length === 0) return;
+
+  const bounds = s.dom.bounds();
+  // const position = getDomPosAtKey(key, board.redPov(s), bounds);
 
   // Remove any existing popup first
   removeCombinedPiecePopup(s);
@@ -162,20 +166,56 @@ export function showCombinedPiecePopup(
   translate(containerEl, popupPosition);
 
   // Get board dimensions for scaling
-  const bounds = s.dom.bounds();
   const scaledPieceWidth = Math.min(PIECE_WIDTH, bounds.width / 12);
 
   // Set container style with dynamic sizing
   containerEl.style.display = 'flex';
+  containerEl.style.flexDirection = 'column'; // Changed to column to stack buttons above pieces
   containerEl.style.alignItems = 'center';
   containerEl.style.justifyContent = 'space-around';
   containerEl.style.padding = `${Math.min(POPUP_PADDING, bounds.width / 60)}px`;
   containerEl.style.gap = `${Math.min(PIECE_GAP, bounds.width / 60)}px`;
 
+  // Create a row for stay buttons and a row for pieces
+  const buttonRow = createEl('div', 'stay-button-row') as HTMLElement;
+  buttonRow.style.display = 'flex';
+  buttonRow.style.width = '100%';
+  buttonRow.style.justifyContent = 'space-around';
+  buttonRow.style.gap = `${Math.min(PIECE_GAP, bounds.width / 60)}px`;
+
+  const pieceRow = createEl('div', 'piece-row') as HTMLElement;
+  pieceRow.style.display = 'flex';
+  pieceRow.style.width = '100%';
+  pieceRow.style.justifyContent = 'space-around';
+  pieceRow.style.gap = `${Math.min(PIECE_GAP, bounds.width / 60)}px`;
+
+  containerEl.appendChild(buttonRow);
+  containerEl.appendChild(pieceRow);
+
+  // Initialize deployState if it doesn't exist
+  if (!s.deployState) {
+    s.deployState = new Map<cg.Key, cg.Piece[]>();
+  }
+
+  // Get the list of pieces marked to stay for this key
+  const stayingPieces = s.deployState.get(key) || [];
+
+  // Add carrier piece button
+  const carrierButton = createEl('button', 'stay-button') as HTMLButtonElement;
+  carrierButton.setAttribute('data-index', '-1');
+  carrierButton.style.width = `${scaledPieceWidth}px`;
+  carrierButton.style.height = `${scaledPieceWidth}px`;
+  carrierButton.style.fontSize = `${Math.max(10, scaledPieceWidth / 4)}px`;
+  carrierButton.style.padding = '2px';
+  carrierButton.style.cursor = 'pointer';
+  carrierButton.style.display = 'block';
+  buttonRow.appendChild(carrierButton);
+
   // Add carrier piece to popup with appropriate styling
   const carrierEl = createEl('piece', `${piece.color} ${piece.role}`) as cg.PieceNode;
   carrierEl.classList.add('carrier-piece');
   carrierEl.setAttribute('data-key', key);
+  carrierEl.setAttribute('data-index', '-1');
   carrierEl.setAttribute('title', `${piece.color} ${piece.role}`);
 
   // Apply dynamic sizing to piece
@@ -188,14 +228,38 @@ export function showCombinedPiecePopup(
     carrierEl.appendChild(pieceStar);
   }
 
-  containerEl.appendChild(carrierEl);
+  pieceRow.appendChild(carrierEl);
 
   // Add carried pieces to popup with appropriate styling and attributes
   piece.carrying.forEach((carriedPiece, index) => {
+    // Check if this piece is marked to stay
+    const isStaying = stayingPieces.some(p => p.role === carriedPiece.role && p.color === carriedPiece.color);
+
+    // Add stay button for this piece
+    const stayButton = createEl('button', 'stay-button') as HTMLButtonElement;
+    stayButton.setAttribute('data-index', index.toString());
+    stayButton.style.width = `${scaledPieceWidth}px`;
+    stayButton.style.height = `${scaledPieceWidth}px`;
+    stayButton.style.fontSize = `${Math.max(10, scaledPieceWidth / 4)}px`;
+    stayButton.style.padding = '2px';
+    stayButton.style.cursor = 'pointer';
+    stayButton.style.display = isStaying ? 'none' : 'block';
+    buttonRow.appendChild(stayButton);
+
+    // Create piece element
     const pieceEl = createEl('piece', `${carriedPiece.color} ${carriedPiece.role}`) as cg.PieceNode;
     pieceEl.setAttribute('data-index', index.toString());
     pieceEl.setAttribute('title', `${carriedPiece.color} ${carriedPiece.role}`);
-    pieceEl.style.cursor = 'grab';
+
+    // Set cursor and class based on staying status
+    if (isStaying) {
+      pieceEl.classList.add('staying-piece');
+      pieceEl.style.cursor = 'pointer';
+      pieceEl.style.boxShadow = '0 0 10px rgba(0, 255, 0, 0.5)';
+      pieceEl.style.border = '2px solid green';
+    } else {
+      pieceEl.style.cursor = 'grab';
+    }
 
     // Add visual indication for pieces that can be selected
     pieceEl.classList.add('carried-piece');
@@ -210,7 +274,7 @@ export function showCombinedPiecePopup(
       pieceEl.appendChild(pieceStar);
     }
 
-    containerEl.appendChild(pieceEl);
+    pieceRow.appendChild(pieceEl);
   });
 
   // Add popup to DOM
@@ -296,15 +360,15 @@ export function removeCombinedPiecePopup(s: State): void {
 }
 
 /**
- * Checks if a position is inside the popup and which piece was clicked
+ * Checks if a position is inside the popup and which piece or button was clicked
  * @param s Game state
  * @param position The position to check
- * @returns Object indicating if position is in popup and which piece was clicked
+ * @returns Object indicating if position is in popup and details about what was clicked
  */
 export function isPositionInPopup(
   s: State,
   position: cg.NumberPair,
-): { inPopup: boolean; pieceIndex?: number } {
+): { inPopup: boolean; pieceIndex?: number; isButton?: boolean; isStayingPiece?: boolean } {
   // First check active popup if it exists
   if (s && position && s.combinedPiecePopup) {
     const popup = s.combinedPiecePopup.containerEl;
@@ -319,6 +383,21 @@ export function isPositionInPopup(
           position[1] >= popupBounds.top &&
           position[1] <= popupBounds.bottom
         ) {
+          // Check if a stay button was clicked
+          const buttons = Array.from(popup.querySelectorAll('button.stay-button'));
+          for (let i = 0; i < buttons.length; i++) {
+            const buttonBounds = buttons[i].getBoundingClientRect();
+            if (
+              position[0] >= buttonBounds.left &&
+              position[0] <= buttonBounds.right &&
+              position[1] >= buttonBounds.top &&
+              position[1] <= buttonBounds.bottom
+            ) {
+              const index = parseInt(buttons[i].getAttribute('data-index') || '0');
+              return { inPopup: true, pieceIndex: index, isButton: true };
+            }
+          }
+
           // Find which piece was clicked
           const pieces = Array.from(popup.querySelectorAll('piece'));
           for (let i = 0; i < pieces.length; i++) {
@@ -329,12 +408,9 @@ export function isPositionInPopup(
               position[1] >= pieceBounds.top &&
               position[1] <= pieceBounds.bottom
             ) {
-              // If it's the carrier piece (first piece)
-              if (i === 0) {
-                return { inPopup: true, pieceIndex: -1 }; // -1 indicates carrier piece
-              } else {
-                return { inPopup: true, pieceIndex: i - 1 }; // Adjust index for carried pieces
-              }
+              const index = parseInt(pieces[i].getAttribute('data-index') || '0');
+              const isStaying = pieces[i].classList.contains('staying-piece');
+              return { inPopup: true, pieceIndex: index, isStayingPiece: isStaying };
             }
           }
           return { inPopup: true }; // In popup but not on a piece

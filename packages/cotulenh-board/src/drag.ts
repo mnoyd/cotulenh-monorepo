@@ -132,7 +132,7 @@ function pieceCloseTo(s: State, pos: cg.NumberPair): boolean {
  * @returns True if popup interaction was handled
  */
 function handlePopupInteraction(s: State, e: cg.MouchEvent, position: cg.NumberPair): boolean {
-  const { inPopup, pieceIndex } = isPositionInPopup(s, position);
+  const { inPopup, pieceIndex, isButton, isStayingPiece } = isPositionInPopup(s, position);
 
   // No popup or not interacting with popup
   if (!inPopup) {
@@ -148,54 +148,129 @@ function handlePopupInteraction(s: State, e: cg.MouchEvent, position: cg.NumberP
   if (!s.combinedPiecePopup) return false;
   const { key, piece } = s.combinedPiecePopup;
 
-  if (pieceIndex === -1) {
-    // Carrier piece clicked - select the entire stack
-    board.selectSquare(s, key, piece.role);
-    const previouslySelected = s.selected?.square;
-    const element = pieceElementByKey(s, key) as cg.PieceNode;
-    s.draggable.current = {
-      fromStack: true,
-      orig: key,
-      piece,
-      origPos: position,
-      pos: position,
-      started: false,
-      element,
-      previouslySelected,
-      originTarget: e.target,
-      keyHasChanged: false,
-    };
-    element.cgDragging = true;
-    element.classList.add('dragging');
-    processDrag(s);
-  } else if (pieceIndex !== undefined) {
-    // Carried piece clicked - select the specific piece from the stack
-    board.selectSquare(s, key, piece.carrying![pieceIndex].role);
-
-    // Create temporary piece for dragging
-    const selectedPiece = piece.carrying![pieceIndex!];
-    const tempKey = TEMP_KEY;
-    s.pieces.set(tempKey, selectedPiece);
-    s.dom.redraw();
-
-    // Initialize drag
-    s.draggable.current = {
-      orig: tempKey,
-      piece: selectedPiece,
-      origPos: position,
-      pos: position,
-      started: false,
-      element: () => pieceElementByKey(s, tempKey),
-      originTarget: e.target,
-      newPiece: true,
-      keyHasChanged: false,
-    };
-    processDrag(s);
+  // Initialize deployState if it doesn't exist
+  if (!s.deployState) {
+    s.deployState = new Map<cg.Key, cg.Piece[]>();
   }
 
-  // Clean up and redraw
-  removeCombinedPiecePopup(s);
-  s.dom.redraw();
+  // Handle stay button click
+  if (isButton && pieceIndex !== undefined) {
+    // Get current staying pieces for this key
+    const stayingPieces = s.deployState.get(key) || [];
+
+    // Determine which piece to mark as staying
+    let pieceToStay: cg.Piece;
+    if (pieceIndex === -1) {
+      // Carrier piece
+      pieceToStay = piece;
+    } else {
+      // Carried piece
+      pieceToStay = piece.carrying![pieceIndex];
+    }
+
+    // Add piece to staying pieces if not already there
+    if (!stayingPieces.some(p => p.role === pieceToStay.role && p.color === pieceToStay.color)) {
+      stayingPieces.push(pieceToStay);
+      s.deployState.set(key, stayingPieces);
+    }
+
+    // Redraw the popup to reflect changes
+    removeCombinedPiecePopup(s);
+    showCombinedPiecePopup(s, key, piece, position);
+    return true;
+  }
+
+  // Handle clicking on a staying piece (to unmark it)
+  if (isStayingPiece && pieceIndex !== undefined) {
+    // Get current staying pieces for this key
+    const stayingPieces = s.deployState.get(key) || [];
+
+    // Determine which piece to unmark
+    let pieceToUnmark: cg.Piece;
+    if (pieceIndex === -1) {
+      // Carrier piece
+      pieceToUnmark = piece;
+    } else {
+      // Carried piece
+      pieceToUnmark = piece.carrying![pieceIndex];
+    }
+
+    // Remove piece from staying pieces
+    const updatedStayingPieces = stayingPieces.filter(
+      p => p.role !== pieceToUnmark.role || p.color !== pieceToUnmark.color,
+    );
+
+    // Update state
+    if (updatedStayingPieces.length === 0) {
+      s.deployState.delete(key);
+    } else {
+      s.deployState.set(key, updatedStayingPieces);
+    }
+
+    // Redraw the popup to reflect changes
+    removeCombinedPiecePopup(s);
+    showCombinedPiecePopup(s, key, piece, position);
+    return true;
+  }
+
+  // Handle regular piece interaction (not staying pieces)
+  if (!isStayingPiece) {
+    if (pieceIndex === -1) {
+      // Carrier piece clicked - select the entire stack
+      board.selectSquare(s, key, piece.role);
+      const previouslySelected = s.selected?.square;
+      const element = pieceElementByKey(s, key) as cg.PieceNode;
+      s.draggable.current = {
+        fromStack: true,
+        orig: key,
+        piece,
+        origPos: position,
+        pos: position,
+        started: false,
+        element,
+        previouslySelected,
+        originTarget: e.target,
+        keyHasChanged: false,
+      };
+      element.cgDragging = true;
+      element.classList.add('dragging');
+      processDrag(s);
+
+      // Clean up and redraw
+      removeCombinedPiecePopup(s);
+      s.dom.redraw();
+      return true;
+    } else if (pieceIndex !== undefined) {
+      // Carried piece clicked - select the specific piece from the stack
+      board.selectSquare(s, key, piece.carrying![pieceIndex].role);
+
+      // Create temporary piece for dragging
+      const selectedPiece = piece.carrying![pieceIndex];
+      const tempKey = TEMP_KEY;
+      s.pieces.set(tempKey, selectedPiece);
+      s.dom.redraw();
+
+      // Initialize drag
+      s.draggable.current = {
+        orig: tempKey,
+        piece: selectedPiece,
+        origPos: position,
+        pos: position,
+        started: false,
+        element: () => pieceElementByKey(s, tempKey),
+        originTarget: e.target,
+        newPiece: true,
+        keyHasChanged: false,
+      };
+      processDrag(s);
+
+      // Clean up and redraw
+      removeCombinedPiecePopup(s);
+      s.dom.redraw();
+      return true;
+    }
+  }
+
   return true;
 }
 

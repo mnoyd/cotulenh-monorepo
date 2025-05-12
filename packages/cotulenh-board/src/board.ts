@@ -4,6 +4,7 @@ import {
   computeSquareCenter,
   findDestInDests,
   getPieceFromOrigMove,
+  key2pos,
   opposite,
   pos2key,
 } from './util.js';
@@ -129,6 +130,29 @@ export function userMove(state: HeadlessState, origMove: cg.OrigMove, destMove: 
 
 export function cancelMove(state: HeadlessState): void {
   unselect(state);
+}
+
+export function getDomPosAtKey(key: cg.Key, asRed: boolean, bounds: DOMRectReadOnly): cg.NumberPair {
+  const pos = key2pos(key);
+  let [file, rank] = pos;
+
+  // Adjust for perspective
+  if (!asRed) {
+    file = 10 - file;
+    rank = 11 - rank;
+  }
+
+  // Calculate the DOM position
+  const boardWidth = bounds.width;
+  const boardHeight = bounds.height;
+  const fileWidth = boardWidth / 12;
+  const rankHeight = boardHeight / 13;
+
+  // Calculate the center of the square
+  const x = bounds.left + (file + 1) * fileWidth + fileWidth / 2;
+  const y = bounds.top + (11 - rank + 1) * rankHeight + rankHeight / 2;
+
+  return [x, y];
 }
 
 export function getKeyAtDomPos(
