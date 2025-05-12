@@ -80,6 +80,22 @@ export interface HeadlessState {
     piece: cg.Piece;
     containerEl: HTMLElement;
   };
+  stackPieceMoves?: {
+    key: cg.Key;
+    originalPiece: cg.Piece;
+    waitingPiece: StackPieceMove[];
+    movedPieces: StackPieceMove[];
+  };
+}
+interface StackPieceMove {
+  piece: cg.Piece;
+  type: 'carrier' | 'carried';
+  move:
+    | {
+        from: cg.OrigMove;
+        to: cg.DestMove;
+      }
+    | 'stay';
 }
 
 export interface State extends HeadlessState {
