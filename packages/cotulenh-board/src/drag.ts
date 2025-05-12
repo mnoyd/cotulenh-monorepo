@@ -132,7 +132,7 @@ function pieceCloseTo(s: State, pos: cg.NumberPair): boolean {
  * @returns True if popup interaction was handled
  */
 function handlePopupInteraction(s: State, e: cg.MouchEvent, position: cg.NumberPair): boolean {
-  const { inPopup, pieceIndex } = isPositionInPopup(s, position);
+  const { inPopup, pieceIndex, isEndStackMoveBtn } = isPositionInPopup(s, position);
 
   // No popup or not interacting with popup
   if (!inPopup) {
@@ -148,6 +148,19 @@ function handlePopupInteraction(s: State, e: cg.MouchEvent, position: cg.NumberP
   if (!s.combinedPiecePopup) return false;
   const { key, piece } = s.combinedPiecePopup;
 
+  // Handle end stack move button click
+  if (isEndStackMoveBtn) {
+    // Clear the stackPieceMoves state
+    if (s.stackPieceMoves && s.stackPieceMoves.key === key) {
+      s.stackPieceMoves = undefined;
+      // Clean up and redraw
+      removeCombinedPiecePopup(s);
+      s.dom.redraw();
+      return true;
+    }
+  }
+
+  // Handle piece interaction
   if (pieceIndex === -1) {
     // Carrier piece clicked - select the entire stack
     board.selectSquare(s, key, piece.role);
@@ -168,15 +181,37 @@ function handlePopupInteraction(s: State, e: cg.MouchEvent, position: cg.NumberP
     element.cgDragging = true;
     element.classList.add('dragging');
     processDrag(s);
+
+    // Clean up and redraw
+    removeCombinedPiecePopup(s);
+    s.dom.redraw();
+    return true;
   } else if (pieceIndex !== undefined) {
     // Carried piece clicked - select the specific piece from the stack
     board.selectSquare(s, key, piece.carrying![pieceIndex].role);
 
     // Create temporary piece for dragging
-    const selectedPiece = piece.carrying![pieceIndex!];
+    const selectedPiece = piece.carrying![pieceIndex];
     const tempKey = TEMP_KEY;
     s.pieces.set(tempKey, selectedPiece);
     s.dom.redraw();
+
+    // Initialize stackPieceMoves state
+    s.stackPieceMoves = {
+      key,
+      originalPiece: piece,
+      waitingPiece: [],
+      movedPieces: [
+        {
+          piece: selectedPiece,
+          type: 'carried',
+          move: {
+            from: { square: key, type: selectedPiece.role },
+            to: { square: tempKey },
+          },
+        },
+      ],
+    };
 
     // Initialize drag
     s.draggable.current = {
@@ -189,13 +224,16 @@ function handlePopupInteraction(s: State, e: cg.MouchEvent, position: cg.NumberP
       originTarget: e.target,
       newPiece: true,
       keyHasChanged: false,
+      fromStack: true,
     };
     processDrag(s);
+
+    // Clean up and redraw
+    removeCombinedPiecePopup(s);
+    s.dom.redraw();
+    return true;
   }
 
-  // Clean up and redraw
-  removeCombinedPiecePopup(s);
-  s.dom.redraw();
   return true;
 }
 
@@ -277,7 +315,6 @@ function cleanupPopupState(s: State): void {
 }
 
 export function end(s: State, e: cg.MouchEvent): void {
-  console.log('end', e);
   const cur = s.draggable.current;
   if (!cur) return;
 

@@ -51,6 +51,19 @@ export const canMove = (state: HeadlessState, orig: cg.OrigMove, dest: cg.DestMo
 
 export function isMovable(state: HeadlessState, orig: cg.OrigMove): boolean {
   const piece = state.pieces.get(orig.square);
+
+  // If stackPieceMoves is active, only allow moves from the stack key
+  if (state.stackPieceMoves) {
+    // Only allow moves from the original stack position
+    return (
+      !!piece &&
+      orig.square === state.stackPieceMoves.key &&
+      (state.movable.color === 'both' ||
+        (state.movable.color === piece.color && state.turnColor === piece.color))
+    );
+  }
+
+  // Normal move validation when stackPieceMoves is not active
   return (
     !!piece &&
     (state.movable.color === 'both' ||

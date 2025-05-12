@@ -213,6 +213,33 @@ export function showCombinedPiecePopup(
     containerEl.appendChild(pieceEl);
   });
 
+  // Add end stack move button only if there are active stack piece moves for this key
+  if (s.stackPieceMoves && s.stackPieceMoves.key === key) {
+    const endStackMoveBtn = createEl('cg-end-stack-move') as HTMLElement;
+    endStackMoveBtn.style.width = `${scaledPieceWidth}px`;
+    endStackMoveBtn.style.height = `${scaledPieceWidth}px`;
+    endStackMoveBtn.style.cursor = 'pointer';
+    endStackMoveBtn.setAttribute('title', 'End stack move');
+    endStackMoveBtn.setAttribute('data-key', key);
+
+    // Add background styling
+    endStackMoveBtn.style.backgroundColor = '#4CAF50';
+    endStackMoveBtn.style.borderRadius = '50%';
+    endStackMoveBtn.style.display = 'flex';
+    endStackMoveBtn.style.alignItems = 'center';
+    endStackMoveBtn.style.justifyContent = 'center';
+
+    // Add checkmark icon
+    const checkmark = document.createElement('div');
+    checkmark.innerHTML = '✓';
+    checkmark.style.color = 'white';
+    checkmark.style.fontSize = `${Math.round(scaledPieceWidth * 0.6)}px`;
+    checkmark.style.fontWeight = 'bold';
+
+    endStackMoveBtn.appendChild(checkmark);
+    containerEl.appendChild(endStackMoveBtn);
+  }
+
   // Add popup to DOM
   s.dom.elements.board.appendChild(containerEl);
 
@@ -304,7 +331,7 @@ export function removeCombinedPiecePopup(s: State): void {
 export function isPositionInPopup(
   s: State,
   position: cg.NumberPair,
-): { inPopup: boolean; pieceIndex?: number } {
+): { inPopup: boolean; pieceIndex?: number; isEndStackMoveBtn?: boolean } {
   // First check active popup if it exists
   if (s && position && s.combinedPiecePopup) {
     const popup = s.combinedPiecePopup.containerEl;
@@ -319,6 +346,20 @@ export function isPositionInPopup(
           position[1] >= popupBounds.top &&
           position[1] <= popupBounds.bottom
         ) {
+          // Check if end stack move button was clicked
+          const endStackMoveBtn = popup.querySelector('cg-end-stack-move');
+          if (endStackMoveBtn) {
+            const btnBounds = endStackMoveBtn.getBoundingClientRect();
+            if (
+              position[0] >= btnBounds.left &&
+              position[0] <= btnBounds.right &&
+              position[1] >= btnBounds.top &&
+              position[1] <= btnBounds.bottom
+            ) {
+              return { inPopup: true, isEndStackMoveBtn: true };
+            }
+          }
+
           // Find which piece was clicked
           const pieces = Array.from(popup.querySelectorAll('piece'));
           for (let i = 0; i < pieces.length; i++) {
