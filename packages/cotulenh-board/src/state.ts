@@ -83,7 +83,7 @@ export interface HeadlessState {
   stackPieceMoves?: {
     key: cg.Key;
     originalPiece: cg.Piece;
-    waitingPiece: StackPieceMove[];
+    waitingPieces: StackPieceMove[];
     movedPieces: StackPieceMove[];
   };
 }

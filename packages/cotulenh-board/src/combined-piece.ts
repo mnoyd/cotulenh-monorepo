@@ -388,3 +388,21 @@ export function isPositionInPopup(
 
   return { inPopup: false };
 }
+
+export function createCombineStackFromPieces(pieces: cg.Piece[]): {
+  combined: cg.Piece | undefined;
+  uncombined: cg.Piece[] | undefined;
+} {
+  if (!pieces || pieces.length === 0) return { combined: undefined, uncombined: undefined };
+  const uncombined: cg.Piece[] = [];
+  const piece = pieces.reduce((acc, p) => {
+    if (!acc) return p;
+    const combined = tryCombinePieces(acc, p);
+    if (!combined) {
+      uncombined.push(p);
+      return acc;
+    }
+    return combined;
+  }, pieces[0]);
+  return { combined: piece, uncombined };
+}
