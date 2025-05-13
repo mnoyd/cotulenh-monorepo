@@ -2,7 +2,6 @@ import { State } from './state.js';
 import * as drag from './drag.js';
 import * as draw from './draw.js';
 import { drop } from './drop.js';
-import { isRightButton } from './util.js';
 import * as cg from './types.js';
 
 type MouchBind = (e: cg.MouchEvent) => void;
@@ -68,7 +67,7 @@ const startDragOrDraw =
   e => {
     if (s.draggable.current) drag.cancel(s);
     else if (s.drawable.current) draw.cancel(s);
-    else if (e.shiftKey || isRightButton(e)) {
+    else if (e.shiftKey) {
       if (s.drawable.enabled) draw.start(s, e);
     } else if (!s.viewOnly) {
       if (s.dropmode.active) drop(s, e);

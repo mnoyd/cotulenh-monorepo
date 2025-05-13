@@ -30,8 +30,9 @@ export interface DragCurrent {
 
 export function start(s: State, e: cg.MouchEvent): void {
   if (!(s.trustAllEvents || e.isTrusted)) return; // only trust when trustAllEvents is enabled
-  if (e.buttons !== undefined && e.buttons > 1) return; // only touch or left click
+  if (e.buttons !== undefined && e.buttons > 2) return; // only touch or left click and right click
   if (e.touches && e.touches.length > 1) return; // support one finger touch only
+  console.log('start', e);
 
   const position = util.eventPosition(e)!;
 
@@ -45,14 +46,21 @@ export function start(s: State, e: cg.MouchEvent): void {
   if (!keyAtPosition) return;
   const piece = s.pieces.get(keyAtPosition);
 
-  // Handle combined piece click: Show popup only if no piece is currently selected
+  // Check for right-click on a piece
+  const isRightClick = util.isRightButton(e);
+
+  // Handle combined piece: Show popup on right-click or if no piece is currently selected on left-click
   if (
-    !s.selected &&
     piece &&
     piece.carrying &&
     piece.carrying.length > 0 &&
-    board.isMovable(s, { square: keyAtPosition } as cg.OrigMove)
+    board.isMovable(s, { square: keyAtPosition } as cg.OrigMove) &&
+    isRightClick
   ) {
+    // Prevent context menu on right-click
+    if (isRightClick && e.preventDefault) {
+      e.preventDefault();
+    }
     showCombinedPiecePopup(s, keyAtPosition, piece, position);
     return;
   }
