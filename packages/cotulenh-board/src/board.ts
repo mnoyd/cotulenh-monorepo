@@ -77,7 +77,7 @@ interface MoveResult {
 }
 
 export function baseMove(state: HeadlessState, orig: cg.OrigMove, dest: cg.DestMove): MoveResult | boolean {
-  console.log('baseMove', orig, dest);
+  // console.log('baseMove', orig, dest);
   if (orig.square === dest.square) return false;
 
   const { pieceAtDest, pieceAtOrig, capturedPiece } = preparePieceThatChanges(state, orig, dest);

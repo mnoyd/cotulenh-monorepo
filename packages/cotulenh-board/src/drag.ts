@@ -32,38 +32,13 @@ export function start(s: State, e: cg.MouchEvent): void {
   if (!(s.trustAllEvents || e.isTrusted)) return; // only trust when trustAllEvents is enabled
   if (e.buttons !== undefined && e.buttons > 2) return; // only touch or left click and right click
   if (e.touches && e.touches.length > 1) return; // support one finger touch only
-  console.log('start', e);
 
   const position = util.eventPosition(e)!;
-
-  // Handle popup interaction if active popup exists
-  if (handlePopupInteraction(s, e, position)) {
-    return; // Return if popup interaction was handled
-  }
 
   const bounds = s.dom.bounds(),
     keyAtPosition = board.getKeyAtDomPos(position, board.redPov(s), bounds);
   if (!keyAtPosition) return;
   const piece = s.pieces.get(keyAtPosition);
-
-  // Check for right-click on a piece
-  const isRightClick = util.isRightButton(e);
-
-  // Handle combined piece: Show popup on right-click or if no piece is currently selected on left-click
-  if (
-    piece &&
-    piece.carrying &&
-    piece.carrying.length > 0 &&
-    board.isMovable(s, { square: keyAtPosition } as cg.OrigMove) &&
-    isRightClick
-  ) {
-    // Prevent context menu on right-click
-    if (isRightClick && e.preventDefault) {
-      e.preventDefault();
-    }
-    showCombinedPiecePopup(s, keyAtPosition, piece, position);
-    return;
-  }
 
   const previouslySelected = s.selected?.square;
   if (
@@ -80,6 +55,26 @@ export function start(s: State, e: cg.MouchEvent): void {
   )
     e.preventDefault();
   else if (e.touches) return; // Handle only corresponding mouse event https://github.com/lichess-org/chessground/pull/268
+
+  // Handle popup interaction if active popup exists
+  if (handlePopupInteraction(s, e, position)) {
+    return; // Return if popup interaction was handled
+  }
+  // Check for right-click on a piece
+  const isRightClick = util.isRightButton(e);
+  const isTouchStart = e.type === 'touchstart';
+
+  // Handle combined piece: Show popup on right-click or if no piece is currently selected on left-click
+  if (
+    piece &&
+    piece.carrying &&
+    piece.carrying.length > 0 &&
+    board.isMovable(s, { square: keyAtPosition } as cg.OrigMove) &&
+    (isRightClick || isTouchStart)
+  ) {
+    showCombinedPiecePopup(s, keyAtPosition, piece, position);
+    return;
+  }
 
   s.stats.ctrlKey = e.ctrlKey;
   if (s.selected && board.canMove(s, s.selected, { square: keyAtPosition } as cg.DestMove)) {
@@ -151,8 +146,6 @@ function handlePopupInteraction(s: State, e: cg.MouchEvent, position: cg.NumberP
     return false;
   }
 
-  // We're interacting with a popup
-  e.preventDefault();
   if (!s.combinedPiecePopup) return false;
   const { key, piece } = s.combinedPiecePopup;
 
@@ -179,19 +172,22 @@ function handlePopupInteraction(s: State, e: cg.MouchEvent, position: cg.NumberP
     s.pieces.set(tempKey, pieceToDrag);
 
     // Initialize drag
-    s.draggable.current = {
-      orig: tempKey,
-      piece: pieceToDrag,
-      origPos: position,
-      pos: position,
-      started: false,
-      element: () => pieceElementByKey(s, tempKey),
-      originTarget: e.target,
-      newPiece: true,
-      keyHasChanged: false,
-      fromStack: true,
-    };
-    processDrag(s);
+    //TODO: add drag support for stack pieces on touch screens
+    if (!e.touches) {
+      s.draggable.current = {
+        orig: tempKey,
+        piece: pieceToDrag,
+        origPos: position,
+        pos: position,
+        started: false,
+        element: () => pieceElementByKey(s, tempKey),
+        originTarget: e.target,
+        newPiece: true,
+        keyHasChanged: false,
+        fromStack: true,
+      };
+      processDrag(s);
+    }
 
     // Clean up and redraw
     removeCombinedPiecePopup(s);
