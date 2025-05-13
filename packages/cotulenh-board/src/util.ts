@@ -97,23 +97,33 @@ export const pieceNameOf = (piece: cg.Piece): string => {
 
 interface PieceFound {
   piece: cg.Piece | undefined;
-  carrier: cg.Piece | undefined;
+  original?: cg.Piece;
+  type?: cg.StackPieceType;
 }
 
 export function getPieceFromOrigMove(state: HeadlessState, origMove: cg.OrigMove): PieceFound {
   const pieceAtSquare = state.pieces.get(origMove.square);
-  if (!pieceAtSquare) return { piece: undefined, carrier: undefined };
+  if (!pieceAtSquare) return { piece: undefined };
   //If type is not specified, return the piece at the square
-  if (!origMove.type || pieceAtSquare.role === origMove.type)
-    return { piece: pieceAtSquare, carrier: undefined };
+  if (!origMove.type) return { piece: pieceAtSquare };
+  if (pieceAtSquare.role === origMove.type) {
+    if (origMove.stackMove) {
+      return { piece: { ...pieceAtSquare, carrying: [] }, original: pieceAtSquare, type: 'carrier' };
+    }
+    return { piece: pieceAtSquare };
+  }
   if (pieceAtSquare.carrying?.length && pieceAtSquare.carrying.some(p => p.role === origMove.type))
-    return { piece: pieceAtSquare.carrying?.find(p => p.role === origMove.type), carrier: pieceAtSquare };
-  return { piece: undefined, carrier: undefined };
+    return {
+      piece: pieceAtSquare.carrying?.find(p => p.role === origMove.type),
+      original: pieceAtSquare,
+      type: 'carried',
+    };
+  return { piece: undefined };
 }
 
 export function isPieceFromStack(state: HeadlessState, origMove: cg.OrigMove): boolean {
-  const { piece, carrier } = getPieceFromOrigMove(state, origMove);
-  return piece !== undefined && carrier !== undefined;
+  const { piece, original } = getPieceFromOrigMove(state, origMove);
+  return piece !== undefined && original !== undefined;
 }
 export const origMoveToKey = (origMove: cg.OrigMove): cg.OrigMoveKey => `${origMove.square}.${origMove.type}`;
 

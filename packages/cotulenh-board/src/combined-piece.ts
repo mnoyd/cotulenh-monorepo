@@ -404,5 +404,5 @@ export function createCombineStackFromPieces(pieces: cg.Piece[]): {
     }
     return combined;
   }, pieces[0]);
-  return { combined: piece, uncombined };
+  return { combined: piece, uncombined: uncombined.splice(1) };
 }

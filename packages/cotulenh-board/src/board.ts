@@ -4,11 +4,12 @@ import {
   computeSquareCenter,
   findDestInDests,
   getPieceFromOrigMove,
+  isPieceFromStack,
   opposite,
   pos2key,
 } from './util.js';
 import * as cg from './types.js';
-import { tryCombinePieces } from './combined-piece.js';
+import { createCombineStackFromPieces, tryCombinePieces } from './combined-piece.js';
 
 export function toggleOrientation(state: HeadlessState): void {
   state.orientation = opposite(state.orientation);
@@ -72,8 +73,6 @@ export function isMovable(state: HeadlessState, orig: cg.OrigMove): boolean {
 }
 
 interface MoveResult {
-  pieceType: cg.Role;
-  deployed?: boolean;
   capturedPiece?: cg.Piece;
 }
 
@@ -81,26 +80,20 @@ export function baseMove(state: HeadlessState, orig: cg.OrigMove, dest: cg.DestM
   console.log('baseMove', orig, dest);
   if (orig.square === dest.square) return false;
 
-  const { piece: pieceThatMoves, carrier } = getPieceFromOrigMove(state, orig);
-  if (!pieceThatMoves) return false;
-  const pieceAtDest = state.pieces.get(dest.square);
-  const { piece: preparedDestPiece, capturedPiece } = prepareDestPiece(pieceThatMoves, pieceAtDest);
-  const { piece: preparedOrigPiece, deployed } = prepareOrigPiece(pieceThatMoves, carrier);
+  const { pieceAtDest, pieceAtOrig, capturedPiece } = preparePieceThatChanges(state, orig, dest);
 
   if (dest.square === state.selected?.square) unselect(state);
   callUserFunction(state.events.move, orig, dest);
 
-  if (preparedDestPiece) state.pieces.set(dest.square, preparedDestPiece);
+  if (pieceAtDest) state.pieces.set(dest.square, pieceAtDest);
   else state.pieces.delete(dest.square);
-  if (preparedOrigPiece) state.pieces.set(orig.square, preparedOrigPiece);
+  if (pieceAtOrig) state.pieces.set(orig.square, pieceAtOrig);
   else state.pieces.delete(orig.square);
 
   state.lastMove = [orig.square, dest.square];
   state.check = undefined;
   callUserFunction(state.events.change);
   return {
-    pieceType: pieceThatMoves.role,
-    deployed,
     capturedPiece,
   };
 }
@@ -109,7 +102,7 @@ function baseUserMove(state: HeadlessState, orig: cg.OrigMove, dest: cg.DestMove
   const result = baseMove(state, orig, dest) as MoveResult;
   if (result) {
     state.movable.dests = undefined;
-    state.turnColor = result.deployed ? state.turnColor : opposite(state.turnColor);
+    state.turnColor = opposite(state.turnColor);
     state.animation.current = undefined;
   }
   return result;
@@ -199,14 +192,15 @@ export function selectSquare(
   state: HeadlessState,
   selectedSquare: cg.Key,
   selectedPiece?: cg.Role,
+  stackMove?: boolean,
   force?: boolean,
 ): void {
-  const origMove = { square: selectedSquare, type: selectedPiece } as cg.OrigMove;
+  const origMove = { square: selectedSquare, type: selectedPiece, stackMove } as cg.OrigMove;
   callUserFunction(state.events.select, origMove);
 
   if (state.selected) {
     // If a piece from a stack is selected and we're clicking on a destination
-    if (getPieceFromOrigMove(state, state.selected).carrier !== undefined) {
+    if (isPieceFromStack(state, state.selected)) {
       if (userMove(state, state.selected, { square: selectedSquare } as cg.DestMove)) {
         state.stats.dragged = false;
         return;
@@ -296,7 +290,11 @@ export function stop(state: HeadlessState): void {
 function prepareDestPiece(
   pieceThatMoves: cg.Piece,
   pieceAtDest: cg.Piece | undefined,
+  remainingCarried?: cg.Piece[],
 ): { piece: cg.Piece | undefined; capturedPiece?: cg.Piece } {
+  if (remainingCarried) {
+    pieceThatMoves.carrying = remainingCarried;
+  }
   if (!pieceAtDest) {
     return { piece: pieceThatMoves };
   }
@@ -315,16 +313,50 @@ function prepareDestPiece(
 
 function prepareOrigPiece(
   pieceThatMoves: cg.Piece,
-  carrier?: cg.Piece,
-): { piece: cg.Piece | undefined; deployed?: boolean } {
-  if (carrier) {
-    const newCarrying = [...carrier.carrying!];
-    newCarrying.splice(newCarrying.indexOf(pieceThatMoves), 1);
-    const updatedCarrier = {
-      ...carrier,
-      carrying: newCarrying.length > 0 ? newCarrying : undefined,
-    };
-    return { piece: updatedCarrier, deployed: true };
+  original?: cg.Piece,
+  stackPieceType?: cg.StackPieceType,
+): { piece: cg.Piece | undefined; uncombined?: cg.Piece[] } {
+  if (original) {
+    if (stackPieceType === 'carrier') {
+      const { combined, uncombined } = createCombineStackFromPieces([...original.carrying!]);
+      return { piece: combined, uncombined };
+    } else if (stackPieceType === 'carried') {
+      const newCarrying = [...original.carrying!];
+      newCarrying.splice(newCarrying.indexOf(pieceThatMoves), 1);
+      const updatedCarrier = {
+        ...original,
+        carrying: newCarrying.length > 0 ? newCarrying : undefined,
+      };
+      return { piece: updatedCarrier };
+    }
   }
   return { piece: undefined };
+}
+
+interface PiecesUpdated {
+  pieceAtDest: cg.Piece | undefined;
+  pieceAtOrig: cg.Piece | undefined;
+  pieceThatMoves: cg.Piece | undefined;
+  capturedPiece?: cg.Piece | undefined;
+}
+
+function preparePieceThatChanges(state: HeadlessState, orig: cg.OrigMove, dest: cg.DestMove): PiecesUpdated {
+  const { piece: pieceThatMoves, original, type: stackPieceType } = getPieceFromOrigMove(state, orig);
+  const { piece: preparedOrigPiece, uncombined: remainingCarried } = prepareOrigPiece(
+    pieceThatMoves!,
+    original,
+    stackPieceType,
+  );
+  const pieceAtDest = state.pieces.get(dest.square);
+  const { piece: preparedDestPiece, capturedPiece } = prepareDestPiece(
+    pieceThatMoves!,
+    pieceAtDest,
+    remainingCarried,
+  );
+  return {
+    pieceAtDest: preparedDestPiece,
+    pieceAtOrig: preparedOrigPiece,
+    pieceThatMoves: pieceThatMoves,
+    capturedPiece,
+  };
 }

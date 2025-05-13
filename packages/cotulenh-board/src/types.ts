@@ -85,7 +85,7 @@ export type Redraw = () => void;
 export type Unbind = () => void;
 export type KHz = number;
 
-export type OrigMove = { square: Key; type: Role };
+export type OrigMove = { square: Key; type: Role; stackMove?: boolean };
 export type DestMove = { square: Key; stay?: boolean };
 export type OrigMoveKey = `${Key}.${Role}`;
 export type Dests = Map<OrigMoveKey, DestMove[]>;
@@ -120,3 +120,4 @@ export interface SelectedPieceInfo {
   carriedPieceIndex: number;
   isFromStack: boolean;
 }
+export type StackPieceType = 'carrier' | 'carried';

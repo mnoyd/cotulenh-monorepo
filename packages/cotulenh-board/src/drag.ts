@@ -163,24 +163,12 @@ function handlePopupInteraction(s: State, e: cg.MouchEvent, position: cg.NumberP
   if (pieceIndex !== undefined) {
     // Carried piece clicked - select the specific piece from the stack
     const selectedPiece = pieceIndex === -1 ? piece : piece.carrying![pieceIndex];
-    board.selectSquare(s, key, selectedPiece.role);
+    board.selectSquare(s, key, selectedPiece.role, true);
 
     // Create temporary piece for dragging
     const pieceToDrag = { ...selectedPiece, carrying: [] } as cg.Piece;
-    // let remainedStack: cg.Piece | undefined;
-    // if(pieceIndex === -1) {
-    //   const {combined} = createCombineStackFromPieces([...selectedPiece.carrying!]);
-    //   remainedStack = combined;
-    // }else {
-    //   remainedStack = {...piece, carrying:  piece.carrying!.filter((_, i) => i !== pieceIndex)};
-    // }
     const tempKey = TEMP_KEY;
     s.pieces.set(tempKey, pieceToDrag);
-    // if(remainedStack) {
-    //   s.pieces.set(key, remainedStack)
-    // }else {
-    //   s.pieces.delete(key);
-    // }
 
     // Initialize drag
     s.draggable.current = {
