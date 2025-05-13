@@ -64,16 +64,20 @@ export function start(s: State, e: cg.MouchEvent): void {
   const isRightClick = util.isRightButton(e);
   const isTouchStart = e.type === 'touchstart';
 
+  const selectedBefore = s.selected && s.selected.square === keyAtPosition;
   // Handle combined piece: Show popup on right-click or if no piece is currently selected on left-click
   if (
     piece &&
     piece.carrying &&
     piece.carrying.length > 0 &&
     board.isMovable(s, { square: keyAtPosition } as cg.OrigMove) &&
-    (isRightClick || isTouchStart)
+    (isRightClick || (isTouchStart && selectedBefore))
   ) {
-    showCombinedPiecePopup(s, keyAtPosition, piece, position);
-    return;
+    if (!s.selected?.stackMove) {
+      showCombinedPiecePopup(s, keyAtPosition, piece, position);
+      return;
+    }
+    board.unselect(s);
   }
 
   s.stats.ctrlKey = e.ctrlKey;
@@ -188,7 +192,6 @@ function handlePopupInteraction(s: State, e: cg.MouchEvent, position: cg.NumberP
       };
       processDrag(s);
     }
-
     // Clean up and redraw
     removeCombinedPiecePopup(s);
     s.dom.redraw();

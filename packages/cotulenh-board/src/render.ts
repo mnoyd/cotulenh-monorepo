@@ -304,7 +304,7 @@ function computeSquareClasses(s: State): cg.SquareClasses {
     }
   if (s.check && s.highlight.check) addSquare(squares, s.check, 'check');
   if (s.selected) {
-    addSquare(squares, s.selected.square, 'selected');
+    addSquare(squares, s.selected.square, 'selected' + (s.selected.stackMove ? ' sm' : ''));
     if (s.movable.showDests) {
       const dests = s.movable.dests?.get(origMoveToKey(s.selected)) || [];
       if (dests)
