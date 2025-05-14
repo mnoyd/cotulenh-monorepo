@@ -323,3 +323,24 @@ cg-board .combined-piece-popup .carrier-piece::after {
 .cg-wrap piece.ghost {
   opacity: 0.3;
 }
+
+piece-attack {
+  display: block;
+  position: absolute;
+  left: 0;
+  top: 0;
+  will-change: transform;
+  pointer-events: none;
+  z-index: 30;
+  /* Center the attack marker visually if needed */
+  /* transform: translate(-50%, -50%); */
+  transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  top: 3.84%;
+  left: 4.16%;
+  width: 8.3%;
+  height: 7.7%;
+}
+piece-attack piece {
+  height: 100% !important;
+  width: 100% !important;
+}

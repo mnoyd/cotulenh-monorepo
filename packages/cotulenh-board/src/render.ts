@@ -25,6 +25,8 @@ function createPiecesStackElement(
 ): HTMLElement {
   if (!pieces.length) throw new Error('No pieces provided');
 
+  // pieces = [{color:'blue', role: 'artillery', carrying: [{color: 'blue', role: 'engineer'}]}, {color: 'red', role: 'air_force'}]
+
   const basePiece = pieces[0];
   const basePieceName = `${basePiece.color} ${basePiece.role}`;
   const basePieceNode = createEl('piece', basePieceName) as cg.PieceNode;
@@ -66,47 +68,67 @@ function createPiecesStackElement(
   return stackContainer;
 }
 
-function createCombinedPieceElement(
-  piece: cg.Piece,
-  pos: cg.Pos,
-  posToTranslate: (pos: cg.Pos, asRed: boolean) => cg.Pos,
-  asRed: boolean,
-  anim?: AnimVector,
-): cg.PieceNode {
+function createSinglePieceElement(piece: cg.Piece): cg.PieceNode {
+  const pieceName = pieceNameOf(piece);
+  const pieceNode = createEl('piece', pieceName) as cg.PieceNode;
+
+  if (piece.promoted) {
+    const pieceStar = createEl('cg-piece-star') as HTMLElement;
+    pieceNode.appendChild(pieceStar);
+    pieceStar.style.zIndex = '3';
+  }
+  (pieceNode as cg.PieceNode).cgPiece = pieceName;
+  return pieceNode;
+}
+
+function createCombinedPieceElement(piece: cg.Piece): cg.PieceNode {
   const container = createEl('piece', 'combined-stack') as cg.PieceNode;
   container.classList.add('piece');
-  if (anim) {
-    container.classList.add('anim');
-  }
-
   // Create the stack of pieces
-  const allPiecesInStack: cg.Piece[] = [piece, ...(piece.carrying || [])];
+  const allPiecesInStack: cg.Piece[] = [{ ...piece, carrying: [] } as cg.Piece, ...(piece.carrying || [])];
   createPiecesStackElement(container, allPiecesInStack);
 
   container.cgPiece = pieceNameOf(piece); // The cgPiece of the container refers to the base piece
+  return container;
+}
 
-  // Calculate the final destination position
-  const destinationPos = posToTranslate(pos, asRed);
+function createPieceAttackElement(attackerPiece: cg.Piece, attackedPiece: cg.Piece): cg.KeyedNode {
+  const attackElement = createEl('piece-attack') as cg.KeyedNode;
+  attackElement.classList.add('piece-attack'); // For potential styling via CSS
 
-  if (anim) {
-    // Calculate the ORIGIN position for animation start
-    const originPosVec = [...pos] as cg.Pos; // Start with destination coords
-    originPosVec[0] -= anim[2]; // Subtract delta X -> origin X
-    originPosVec[1] -= anim[3]; // Subtract delta Y -> origin Y
-    const originPos = posToTranslate(originPosVec, asRed); // Convert to translation
-
-    // Apply origin position first
-    translate(container, originPos);
-    // Force reflow to apply the transform before adding class/changing transform
-    container.offsetWidth;
-    // Apply destination position - the .anim class handles the transition
-    translate(container, destinationPos);
+  // Create attacked element (rendered visually below)
+  let attackedElementNode: cg.PieceNode;
+  if (attackedPiece.carrying && attackedPiece.carrying.length > 0) {
+    attackedElementNode = createCombinedPieceElement(attackedPiece);
   } else {
-    // No animation, just apply the final destination position
-    translate(container, destinationPos);
+    attackedElementNode = createSinglePieceElement(attackedPiece);
   }
 
-  return container;
+  // Create attacker element (rendered visually above and offset)
+  let attackerElementNode: cg.PieceNode;
+  if (attackerPiece.carrying && attackerPiece.carrying.length > 0) {
+    attackerElementNode = createCombinedPieceElement(attackerPiece);
+  } else {
+    attackerElementNode = createSinglePieceElement(attackerPiece);
+  }
+
+  // Apply a slight vertical offset to the attacker piece to position it above the attacked piece.
+  // translate uses percentages of the element's own size.
+  // A negative Y value moves it upwards.
+  translate(attackerElementNode, [0, -25]); // Offset by -25% of its height upwards
+
+  // Append attacked piece first (bottom layer), then attacker piece (top layer, offset)
+  attackElement.appendChild(attackedElementNode);
+  attackElement.appendChild(attackerElementNode);
+
+  // The caller will be responsible for positioning this 'attackElement' onto the board square.
+  // Example usage by caller:
+  // const visualAttack = createPieceAttackElement(attacker, attacked);
+  // visualAttack.cgKey = square; // Assign key for reference if needed
+  // translate(visualAttack, posToTranslate(key2pos(square), asRed));
+  // boardEl.appendChild(visualAttack);
+
+  return attackElement;
 }
 
 export function render(s: State): void {
@@ -123,6 +145,7 @@ export function render(s: State): void {
     sameSquares: Set<cg.Key> = new Set(),
     movedPieces: Map<PieceName, cg.PieceNode[]> = new Map(),
     movedSquares: Map<string, cg.SquareNode[]> = new Map(); // by class name
+  let attackedPieceNode: cg.PieceNode | undefined;
 
   let k: cg.Key,
     el: cg.PieceNode | cg.SquareNode | undefined,
@@ -196,6 +219,8 @@ export function render(s: State): void {
       const cn = el.className;
       if (squares.get(k) === cn) sameSquares.add(k);
       else appendValue(movedSquares, cn, el);
+    } else if (isAttackNode(el) && s.attackedPiece?.square === k) {
+      attackedPieceNode = el;
     }
     el = el.nextSibling as cg.PieceNode | cg.SquareNode | undefined;
   }
@@ -223,7 +248,7 @@ export function render(s: State): void {
   // or append new pieces
   for (const [k, p] of pieces) {
     anim = anims.get(k);
-    if (!samePieces.has(k)) {
+    if (!samePieces.has(k) && s.attackedPiece?.square !== k) {
       pMvdset = movedPieces.get(pieceNameOf(p));
       pMvd = pMvdset && pMvdset.pop();
       // a same piece was moved
@@ -250,22 +275,14 @@ export function render(s: State): void {
         const pos = key2pos(k);
         let pieceNode: cg.PieceNode;
         if (p.carrying && p.carrying.length > 0) {
-          pieceNode = createCombinedPieceElement(p, pos, posToTranslate, asRed, anim);
+          pieceNode = createCombinedPieceElement(p);
         } else {
-          const pieceName = pieceNameOf(p);
-          pieceNode = createEl('piece', pieceName) as cg.PieceNode;
-
-          if (p.promoted) {
-            const pieceStar = createEl('cg-piece-star') as HTMLElement;
-            pieceNode.appendChild(pieceStar);
-            pieceStar.style.zIndex = '3';
-          }
-          (pieceNode as cg.PieceNode).cgPiece = pieceName;
-          if (anim) {
-            pieceNode.classList.add('anim'); // Fix: Use classList.add
-          }
-          translate(pieceNode, posToTranslate(pos, asRed));
+          pieceNode = createSinglePieceElement(p);
         }
+        if (anim) {
+          pieceNode.classList.add('anim'); // Fix: Use classList.add
+        }
+        translate(pieceNode, posToTranslate(pos, asRed));
         pieceNode.cgKey = k;
         if (k === TEMP_KEY) {
           setVisible(pieceNode, false);
@@ -274,6 +291,19 @@ export function render(s: State): void {
         boardEl.appendChild(pieceNode);
       }
     }
+  }
+
+  //render attack element
+  if (s.attackedPiece) {
+    if (!attackedPieceNode) {
+      const attackElement = createPieceAttackElement(s.attackedPiece.attacker, s.attackedPiece.attacked);
+      attackElement.cgKey = s.attackedPiece.square;
+      translate(attackElement, posToTranslate(key2pos(s.attackedPiece.square), asRed));
+      boardEl.appendChild(attackElement);
+    }
+  } else {
+    //remove attacked piece
+    if (attackedPieceNode) removeNodes(s, [attackedPieceNode]);
   }
 
   // remove any element that remains in the moved sets
@@ -343,6 +373,7 @@ function computeSquareClasses(s: State): cg.SquareClasses {
 const isPieceNode = (el: HTMLElement): el is cg.PieceNode =>
   el.tagName === 'PIECE' || el.classList.contains('combined-stack');
 const isSquareNode = (el: cg.PieceNode | cg.SquareNode): el is cg.SquareNode => el.tagName === 'SQUARE';
+const isAttackNode = (el: HTMLElement): el is cg.AttackNode => el.tagName === 'PIECE-ATTACK';
 
 function addSquare(squares: cg.SquareClasses, key: cg.Key, klass: string): void {
   const classes = squares.get(key);

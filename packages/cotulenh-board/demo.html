@@ -29,9 +29,14 @@
 
       const dests = new Map();
       dests.set('g2.air_force', [
+        { square: 'h2', stay: false },
+        { square: 'i2', stay: false },
+        { square: 'j2', stay: false },
+        { square: 'k2', stay: false },
         { square: 'g3', stay: false },
         { square: 'g4', stay: false },
         { square: 'g5', stay: false },
+        { square: 'g5', stay: true },
         { square: 'g6', stay: false },
         { square: 'g7', stay: false },
         { square: 'g8', stay: false },
@@ -39,7 +44,7 @@
 
       const board = CotulenhBoard(document.getElementById('board-1'), {
         // fen: '1n8g/11/5s5/11/11/5g5/11/11/5F5/11/2N8/11',
-        fen: '11/11/11/11/11/11/11/11/11/11/6F4/11',
+        fen: '11/11/11/11/11/11/11/6i4/11/11/6F1T4/11',
         //   movable: {
         //   color: "red",
         //   free: true,

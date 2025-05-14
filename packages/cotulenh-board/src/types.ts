@@ -42,6 +42,9 @@ export interface PieceNode extends KeyedNode {
 export interface SquareNode extends KeyedNode {
   tagName: 'SQUARE';
 }
+export interface AttackNode extends KeyedNode {
+  tagName: 'PIECE-ATTACK';
+}
 
 export interface Piece {
   role: Role;
