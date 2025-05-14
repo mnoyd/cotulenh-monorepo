@@ -17,6 +17,55 @@ import {
 type PieceName = string; // `$color $role`
 const COMBINED_PIECE_OFFSET_BASE = 50; // Determines the how much the combined pieces are offset from each other
 
+function createPiecesStackElement(
+  stackContainer: HTMLElement,
+  pieces: cg.Piece[],
+  // pos: cg.Pos, // for zIndex calculation of the base piece
+  // asRed: boolean,
+): HTMLElement {
+  if (!pieces.length) throw new Error('No pieces provided');
+
+  const basePiece = pieces[0];
+  const basePieceName = `${basePiece.color} ${basePiece.role}`;
+  const basePieceNode = createEl('piece', basePieceName) as cg.PieceNode;
+  basePieceNode.cgPiece = basePieceName;
+
+  // translate(basePieceNode, [0, 0]);
+  // basePieceNode.style.zIndex = posZIndex(pos, asRed); // Use original pos for base zIndex
+  stackContainer.appendChild(basePieceNode);
+
+  if (basePiece.promoted) {
+    const pieceStar = createEl('cg-piece-star') as HTMLElement;
+    pieceStar.style.zIndex = '3';
+    basePieceNode.appendChild(pieceStar);
+  }
+
+  const offsetStepX = 0.1 * COMBINED_PIECE_OFFSET_BASE;
+  const offsetStepY = -0.2 * COMBINED_PIECE_OFFSET_BASE;
+  let zIndex = parseInt(basePieceNode.style.zIndex, 10) + 1;
+
+  for (let i = 1; i < pieces.length; i++) {
+    const carriedPiece = pieces[i];
+    const carriedPieceName = `${carriedPiece.color} ${carriedPiece.role}`;
+    const carriedPieceNode = createEl('piece', carriedPieceName) as cg.PieceNode;
+    carriedPieceNode.cgPiece = carriedPieceName;
+
+    const offsetX = offsetStepX * i; // Offset relative to the base piece
+    const offsetY = offsetStepY * i; // Offset relative to the base piece
+
+    translate(carriedPieceNode, [offsetX, offsetY]);
+    carriedPieceNode.style.zIndex = `${zIndex++}`;
+    stackContainer.appendChild(carriedPieceNode);
+
+    if (carriedPiece.promoted) {
+      const pieceStar = createEl('cg-piece-star') as HTMLElement;
+      pieceStar.style.zIndex = '3';
+      carriedPieceNode.appendChild(pieceStar);
+    }
+  }
+  return stackContainer;
+}
+
 function createCombinedPieceElement(
   piece: cg.Piece,
   pos: cg.Pos,
@@ -30,47 +79,11 @@ function createCombinedPieceElement(
     container.classList.add('anim');
   }
 
-  // Create base piece (carrier)
-  const basePieceName = `${piece.color} ${piece.role}`;
-  const basePieceNode = createEl('piece', basePieceName) as cg.PieceNode;
-  basePieceNode.cgPiece = basePieceName;
+  // Create the stack of pieces
+  const allPiecesInStack: cg.Piece[] = [piece, ...(piece.carrying || [])];
+  createPiecesStackElement(container, allPiecesInStack);
 
-  translate(basePieceNode, [0, 0]);
-  basePieceNode.style.zIndex = posZIndex(pos, asRed);
-  container.appendChild(basePieceNode);
-
-  if (piece.promoted) {
-    const pieceStar = createEl('cg-piece-star') as HTMLElement;
-    pieceStar.style.zIndex = '3';
-    basePieceNode.appendChild(pieceStar);
-  }
-
-  if (piece.carrying) {
-    const offsetStepX = 0.1 * COMBINED_PIECE_OFFSET_BASE;
-    const offsetStepY = -0.2 * COMBINED_PIECE_OFFSET_BASE;
-    let zIndex = parseInt(basePieceNode.style.zIndex, 10) + 1;
-
-    for (let i = 0; i < piece.carrying.length; i++) {
-      const carriedPiece = piece.carrying[i];
-      const carriedPieceName = `${carriedPiece.color} ${carriedPiece.role}`;
-      const carriedPieceNode = createEl('piece', carriedPieceName) as cg.PieceNode;
-      carriedPieceNode.cgPiece = carriedPieceName;
-
-      const offsetX = offsetStepX * (i + 1);
-      const offsetY = offsetStepY * (i + 1);
-
-      translate(carriedPieceNode, [offsetX, offsetY]);
-      carriedPieceNode.style.zIndex = `${zIndex++}`;
-      container.appendChild(carriedPieceNode);
-
-      if (carriedPiece.promoted) {
-        const pieceStar = createEl('cg-piece-star') as HTMLElement;
-        pieceStar.style.zIndex = '3';
-        carriedPieceNode.appendChild(pieceStar);
-      }
-    }
-  }
-  container.cgPiece = pieceNameOf(piece);
+  container.cgPiece = pieceNameOf(piece); // The cgPiece of the container refers to the base piece
 
   // Calculate the final destination position
   const destinationPos = posToTranslate(pos, asRed);
