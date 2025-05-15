@@ -87,9 +87,15 @@ export interface HeadlessState {
     movedPieces: StackPieceMove[];
   };
   attackedPiece?: {
-    square: cg.Key;
+    attackerSquare: cg.Key;
+    attackedSquare: cg.Key;
+    originalPiece: cg.Piece;
     attacker: cg.Piece;
     attacked: cg.Piece;
+  };
+  popup?: {
+    type: string;
+    containerEl: HTMLElement;
   };
 }
 interface StackPieceMove {

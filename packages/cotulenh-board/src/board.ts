@@ -104,7 +104,9 @@ function baseUserMove(state: HeadlessState, orig: cg.OrigMove, dest: cg.DestMove
   if (result) {
     if (result.updatedPieces.captureMoveStay === 'need_clarify') {
       state.attackedPiece = {
-        square: dest.square,
+        attackerSquare: orig.square,
+        attackedSquare: dest.square,
+        originalPiece: result.updatedPieces.originalPiece,
         attacker: result.updatedPieces.pieceThatMoves!,
         attacked: result.updatedPieces.capturedPiece!,
       };
@@ -341,7 +343,6 @@ function prepareOrigPiece(
   }
   if (captureMoveStay === 'need_clarify') {
     console.warn('Need clarify not fully implemented, temporarily deleting the target');
-    return { piece: undefined };
   }
   if (original) {
     if (stackPieceType === 'carrier') {
@@ -388,7 +389,8 @@ function isStayCaptureMove(
 interface PiecesUpdated {
   pieceAtDest: cg.Piece | undefined;
   pieceAtOrig: cg.Piece | undefined;
-  pieceThatMoves: cg.Piece | undefined;
+  pieceThatMoves: cg.Piece;
+  originalPiece: cg.Piece;
   capturedPiece?: cg.Piece | undefined;
   captureMoveStay: captureMoveStay;
 }
@@ -398,6 +400,9 @@ function preparePieceThatChanges(state: HeadlessState, orig: cg.OrigMove, dest: 
   const pieceAtDest = state.pieces.get(dest.square);
   const captureMoveStay = pieceAtDest ? isStayCaptureMove(orig, dest, dests) : false;
   const { piece: pieceThatMoves, original, type: stackPieceType } = getPieceFromOrigMove(state, orig);
+  if (!pieceThatMoves) {
+    throw new Error('No piece that moves');
+  }
   const { piece: preparedOrigPiece, uncombined: remainingCarried } = prepareOrigPiece(
     captureMoveStay,
     pieceThatMoves!,
@@ -414,6 +419,7 @@ function preparePieceThatChanges(state: HeadlessState, orig: cg.OrigMove, dest: 
     pieceAtDest: preparedDestPiece,
     pieceAtOrig: preparedOrigPiece,
     pieceThatMoves: pieceThatMoves,
+    originalPiece: original!,
     capturedPiece,
     captureMoveStay,
   };
