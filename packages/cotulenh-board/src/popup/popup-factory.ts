@@ -1,7 +1,7 @@
 import { State } from '../state.js';
 import * as board from '../board.js';
 import * as util from '../util.js';
-import * as types from '../types.js';
+import * as cg from '../types.js';
 
 // Constants for popup dimensions and positioning
 // These values serve as defaults and will be scaled based on board dimensions
@@ -22,7 +22,7 @@ type PopupFactoryOptions<T> = {
   /**
    * Function called when an item in the popup is selected
    */
-  onSelect: (item: T, index: number) => void;
+  onSelect: (index: number) => void;
   /**
    * Optional class name for the popup container
    */
@@ -30,10 +30,9 @@ type PopupFactoryOptions<T> = {
 };
 
 interface CTLPopup<T> {
-  setPopup(s: State, items: T[], position: types.NumberPair): HTMLElement | undefined;
+  setPopup(s: State, items: T[], position: cg.NumberPair): HTMLElement | undefined;
   clearPopup(s: State): void;
-  isPositionInPopup(s: State, position: types.NumberPair): { inPopup: boolean; pieceIndex?: number };
-  handlePopupClick(s: State, event: MouseEvent, position: types.NumberPair): void;
+  handlePopupClick(s: State, position: cg.NumberPair): void;
 }
 
 /**
@@ -64,7 +63,6 @@ export function createPopupFactory<T>(options: PopupFactoryOptions<T>): CTLPopup
   const popup: CTLPopup<T> = {
     setPopup: createSetPopUp(options),
     clearPopup,
-    isPositionInPopup,
     handlePopupClick: createHandlePopupClick(options),
   };
 
@@ -79,7 +77,7 @@ export function createPopupFactory<T>(options: PopupFactoryOptions<T>): CTLPopup
  */
 export function isPositionInPopup(
   s: State,
-  position: types.NumberPair,
+  position: cg.NumberPair,
 ): { inPopup: boolean; pieceIndex?: number } {
   // First check active popup if it exists
   if (s && position && s.combinedPiecePopup) {
@@ -126,8 +124,8 @@ export function isPositionInPopup(
 export function calculatePopupPosition<T>(
   s: State,
   items: T[],
-  position: types.NumberPair,
-): { position: types.NumberPair; dimensions: { width: number; height: number } } {
+  position: cg.NumberPair,
+): { position: cg.NumberPair; dimensions: { width: number; height: number } } {
   // Create popup container with appropriate class
   const containerEl = util.createEl('div', 'popup') as HTMLElement;
   const bounds = s.dom.bounds();
@@ -138,7 +136,7 @@ export function calculatePopupPosition<T>(
   // Default return for invalid cases
   const defaultReturn = {
     containerEl,
-    position: [0, 0] as types.NumberPair,
+    position: [0, 0] as cg.NumberPair,
     dimensions: { width: 0, height: 0 },
   };
 
@@ -182,15 +180,56 @@ export function calculatePopupPosition<T>(
     }
   }
 
-  const popupPosition: types.NumberPair = [popupX, popupY];
+  const popupPosition: cg.NumberPair = [popupX, popupY];
 
   return {
     position: popupPosition,
     dimensions: { width: popupWidth, height: popupHeight },
   };
 }
+function adjustPopupPosition(
+  popupEl: HTMLElement,
+  boardEl: HTMLElement,
+  initialPosition: cg.NumberPair,
+  dimensions: { width: number; height: number },
+): void {
+  const popupBounds = popupEl.getBoundingClientRect();
+  const boardBounds = boardEl.getBoundingClientRect();
+  let adjustedPosition = [...initialPosition] as cg.NumberPair;
+
+  // Calculate padding based on board size
+  const padding = Math.max(5, Math.min(POPUP_PADDING, boardBounds.width / 60));
+
+  // Adjust horizontal position if needed
+  if (popupBounds.left < boardBounds.left + padding) {
+    // Align with left edge of board with padding
+    adjustedPosition[0] = padding;
+  } else if (popupBounds.right > boardBounds.right - padding) {
+    // Align with right edge of board with padding
+    adjustedPosition[0] = boardBounds.width - dimensions.width - padding;
+  }
+
+  // Adjust vertical position if needed
+  if (popupBounds.top < boardBounds.top + padding) {
+    // Check if there's enough space below
+    const belowPosition = initialPosition[1] + dimensions.height + padding * 2;
+    if (belowPosition + dimensions.height < boardBounds.height - padding) {
+      // Show below the piece
+      adjustedPosition[1] = belowPosition;
+    } else {
+      // If neither above nor below works well, position at top with padding
+      adjustedPosition[1] = padding;
+    }
+  } else if (popupBounds.bottom > boardBounds.bottom - padding) {
+    // If popup extends beyond bottom edge, move it up
+    adjustedPosition[1] = boardBounds.height - dimensions.height - padding;
+  }
+
+  // Apply the adjusted position
+  util.translate(popupEl, adjustedPosition);
+}
 function createSetPopUp<T>(options: PopupFactoryOptions<T>): CTLPopup<T>['setPopup'] {
-  return (s: State, items: T[], position: types.NumberPair): HTMLElement | undefined => {
+  return (s: State, items: T[], position: cg.NumberPair): HTMLElement | undefined => {
     // Remove any existing popup first
     clearPopup(s);
     const { position: popupPosition, dimensions: popupDimensions } = calculatePopupPosition(
@@ -202,7 +241,10 @@ function createSetPopUp<T>(options: PopupFactoryOptions<T>): CTLPopup<T>['setPop
     if (!popup) {
       return undefined;
     }
+    // Ensure popup stays within board bounds by adjusting position if needed
+    adjustPopupPosition(popup, s.dom.elements.board, popupPosition, popupDimensions);
     s.popup = {
+      items,
       type: options.type,
       containerEl: popup,
     };
@@ -214,7 +256,7 @@ function createSetPopUp<T>(options: PopupFactoryOptions<T>): CTLPopup<T>['setPop
 function createPopupElement<T>(
   options: PopupFactoryOptions<T>,
   items: T[],
-  position: types.NumberPair,
+  position: cg.NumberPair,
   dimensions: { width: number; height: number },
 ): HTMLElement | undefined {
   // Create container element
@@ -241,6 +283,26 @@ function createPopupElement<T>(
 }
 function createHandlePopupClick<T>(
   options: PopupFactoryOptions<T>,
-): (s: State, event: MouseEvent, position: types.NumberPair) => void {
-  throw new Error('Function not implemented.');
+): (s: State, position: cg.NumberPair) => void {
+  return (s: State, position: cg.NumberPair) => {
+    const { inPopup, pieceIndex } = isPositionInPopup(s, position);
+    if (!inPopup) return;
+    if (pieceIndex === undefined) return;
+    options.onSelect(pieceIndex);
+  };
 }
+
+// export function getPopup(s: State): CTLPopup | undefined {
+//   const combinedPiecePopup = createPopupFactory({
+//     type: 'combinedPiece',
+//     renderItem: (item, index) => {
+//       const pieceEl = util.createEl('div', 'popup-item');
+//       pieceEl.textContent = item.role;
+//       return pieceEl;
+//     },
+//     onSelect: (index) => {
+//       console.log('Selected piece:', index);
+//     },
+//   });
+//   throw(new Error('Not implemented'))
+// }

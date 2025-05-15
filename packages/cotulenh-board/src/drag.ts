@@ -306,15 +306,15 @@ export function move(s: State, e: cg.MouchEvent): void {
   }
 }
 
-/**
- * Cleans up popup-related state
- * @param s Game state
- */
-function cleanupPopupState(s: State): void {
-  s.draggable.current = undefined;
-  s.pieces.delete(TEMP_KEY);
-  s.dom.redraw();
-}
+// /**
+//  * Cleans up popup-related state
+//  * @param s Game state
+//  */
+// function cleanupPopupState(s: State): void {
+//   s.draggable.current = undefined;
+//   s.pieces.delete(TEMP_KEY);
+//   s.dom.redraw();
+// }
 
 export function end(s: State, e: cg.MouchEvent): void {
   const cur = s.draggable.current;
@@ -331,16 +331,16 @@ export function end(s: State, e: cg.MouchEvent): void {
   const eventPos = util.eventPosition(e) || cur.pos;
 
   // Check if cursor is still within popup
-  const { inPopup } = isPositionInPopup(s, eventPos);
-  if (inPopup) {
-    cleanupPopupState(s);
-    util.translate(
-      cur.element as cg.PieceNode,
-      util.posToTranslate(s.dom.bounds())(util.key2pos(cur.orig), board.redPov(s)),
-    );
-    finalizeDrag(s);
-    return;
-  }
+  // const { inPopup } = isPositionInPopup(s, eventPos);
+  // if (inPopup) {
+  //   cleanupPopupState(s);
+  //   util.translate(
+  //     cur.element as cg.PieceNode,
+  //     util.posToTranslate(s.dom.bounds())(util.key2pos(cur.orig), board.redPov(s)),
+  //   );
+  //   finalizeDrag(s);
+  //   return;
+  // }
 
   const keyAtCurrentPosition = board.getKeyAtDomPos(eventPos, board.redPov(s), s.dom.bounds());
 

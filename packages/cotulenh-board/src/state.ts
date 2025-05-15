@@ -94,6 +94,7 @@ export interface HeadlessState {
     attacked: cg.Piece;
   };
   popup?: {
+    items: any[];
     type: string;
     containerEl: HTMLElement;
   };
