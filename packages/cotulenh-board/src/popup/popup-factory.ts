@@ -2,7 +2,7 @@ import { State } from '../state.js';
 import * as board from '../board.js';
 import * as util from '../util.js';
 import * as cg from '../types.js';
-import { combinedPiecePopup } from '../new-combine-piece.js';
+import { combinedPiecePopup } from '../combined-piece.js';
 
 // Constants for popup dimensions and positioning
 // These values serve as defaults and will be scaled based on board dimensions

@@ -10,7 +10,7 @@ import {
   updateAirDefenseInfluenceZones,
 } from './air-defense.js';
 import { TEMP_KEY } from './types.js';
-import { combinedPiecePopup } from './new-combine-piece.js';
+import { combinedPiecePopup } from './combined-piece.js';
 import { isPositionInPopup, clearPopup, getPopup } from './popup/popup-factory.js';
 
 export interface DragCurrent {
