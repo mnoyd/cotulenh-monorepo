@@ -9,8 +9,9 @@ import {
   isAirDefensePieceOrCarryingAirDefensePiece,
   updateAirDefenseInfluenceZones,
 } from './air-defense.js';
-import { showCombinedPiecePopup, isPositionInPopup, removeCombinedPiecePopup } from './combined-piece.js';
+import { isPositionInPopup, removeCombinedPiecePopup } from './combined-piece.js';
 import { TEMP_KEY } from './types.js';
+import { combinedPiecePopup } from './new-combine-piece.js';
 
 export interface DragCurrent {
   orig: cg.Key; // orig key of dragging piece
@@ -74,7 +75,8 @@ export function start(s: State, e: cg.MouchEvent): void {
     (isRightClick || (isTouchStart && selectedBefore))
   ) {
     if (!s.selected?.stackMove) {
-      showCombinedPiecePopup(s, keyAtPosition, piece, position);
+      // showCombinedPiecePopup(s, keyAtPosition, piece, position);
+      combinedPiecePopup.setPopup(s, [piece, ...piece.carrying], position);
       return;
     }
     board.unselect(s);
@@ -139,43 +141,6 @@ function pieceCloseTo(s: State, pos: cg.NumberPair): boolean {
  * @returns True if popup interaction was handled
  */
 function handlePopupInteraction(s: State, e: cg.MouchEvent, position: cg.NumberPair): boolean {
-  // First check for attack action popup interaction
-  if (s.attackedPiece) {
-    const attackElement = document.querySelector(`piece[cg-key="${s.attackedPiece.attackedSquare}"]`);
-    if (attackElement) {
-      const popup = attackElement.querySelector('.attack-action-popup');
-      if (popup) {
-        const stayBtn = popup.querySelector('.attack-action-stay');
-        const backBtn = popup.querySelector('.attack-action-back');
-
-        const target = e.target as HTMLElement;
-        if (stayBtn && stayBtn.contains(target)) {
-          const { attackerSquare, attackedSquare, attacker, attacked, originalPiece } = s.attackedPiece;
-          s.pieces.set(attackedSquare, attacked);
-          s.pieces.set(attackerSquare, originalPiece);
-          board.userMove(
-            s,
-            { square: attackerSquare, type: attacker.role } as cg.OrigMove,
-            { square: attackedSquare, stay: true } as cg.DestMove,
-          );
-          s.attackedPiece = undefined;
-          return true;
-        } else if (backBtn && backBtn.contains(target)) {
-          const { attackerSquare, attackedSquare, attacker, attacked, originalPiece } = s.attackedPiece;
-          s.pieces.set(attackedSquare, attacked);
-          s.pieces.set(attackerSquare, originalPiece);
-          board.userMove(
-            s,
-            { square: attackerSquare, type: attacker.role } as cg.OrigMove,
-            { square: attackedSquare, stay: false } as cg.DestMove,
-          );
-          s.attackedPiece = undefined;
-          return true;
-        }
-      }
-    }
-  }
-
   // Then handle combined piece popup interaction
   const { inPopup, pieceIndex, isEndStackMoveBtn } = isPositionInPopup(s, position);
 

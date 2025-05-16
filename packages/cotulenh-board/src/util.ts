@@ -68,15 +68,15 @@ export const key2pos = (k: cg.Key): cg.Pos => [k.charCodeAt(0) - 97, Number(k.su
 export const isRightButton = (e: cg.MouchEvent): boolean => e.button === 2;
 export const allPos: readonly cg.Pos[] = allKeys.map(key2pos);
 
-export function computeSquareCenter(key: cg.Key, asWhite: boolean, bounds: DOMRectReadOnly): cg.NumberPair {
+export function computeSquareCenter(key: cg.Key, asRed: boolean, bounds: DOMRectReadOnly): cg.NumberPair {
   const pos = key2pos(key);
-  if (!asWhite) {
-    pos[0] = 7 - pos[0];
-    pos[1] = 7 - pos[1];
+  if (!asRed) {
+    pos[0] = 11 - pos[0];
+    pos[1] = 10 - pos[1];
   }
   return [
-    bounds.left + (bounds.width * pos[0]) / 8 + bounds.width / 16,
-    bounds.top + (bounds.height * (7 - pos[1])) / 8 + bounds.height / 16,
+    bounds.left + (bounds.width * pos[0]) / 12 + bounds.width / 24,
+    bounds.top + (bounds.height * (10 - pos[1])) / 11 + bounds.height / 22,
   ];
 }
 
@@ -88,6 +88,10 @@ export const isVisible = (el: HTMLElement): boolean => {
   return el.style.visibility === 'visible';
 };
 export const invRanks: readonly cg.Rank[] = [...cg.ranks].reverse();
+
+export function computeSquareSize(bounds: DOMRectReadOnly): number {
+  return Math.min(bounds.width / 12, bounds.height / 11);
+}
 
 export const pieceNameOf = (piece: cg.Piece): string => {
   const base = `${piece.color} ${piece.role} ${piece.promoted ? 'promoted' : ''}`;

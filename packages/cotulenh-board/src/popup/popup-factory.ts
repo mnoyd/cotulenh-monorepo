@@ -2,6 +2,7 @@ import { State } from '../state.js';
 import * as board from '../board.js';
 import * as util from '../util.js';
 import * as cg from '../types.js';
+import { combinedPiecePopup } from '../new-combine-piece.js';
 
 // Constants for popup dimensions and positioning
 // These values serve as defaults and will be scaled based on board dimensions
@@ -18,18 +19,18 @@ type PopupFactoryOptions<T> = {
   /**
    * Function to convert each array element to an HTML element
    */
-  renderItem: (item: T, index: number) => HTMLElement;
+  renderItem: (s: State, item: T, index: number) => HTMLElement;
   /**
    * Function called when an item in the popup is selected
    */
-  onSelect: (index: number) => void;
+  onSelect: (s: State, index: number) => void;
   /**
    * Optional class name for the popup container
    */
   className?: string;
 };
 
-interface CTLPopup<T> {
+export interface CTLPopup<T> {
   setPopup(s: State, items: T[], position: cg.NumberPair): HTMLElement | undefined;
   clearPopup(s: State): void;
   handlePopupClick(s: State, position: cg.NumberPair): void;
@@ -237,7 +238,7 @@ function createSetPopUp<T>(options: PopupFactoryOptions<T>): CTLPopup<T>['setPop
       items,
       position,
     );
-    const popup = createPopupElement(options, items, popupPosition, popupDimensions);
+    const popup = createPopupElement(s, options, items, popupPosition, popupDimensions);
     if (!popup) {
       return undefined;
     }
@@ -254,6 +255,7 @@ function createSetPopUp<T>(options: PopupFactoryOptions<T>): CTLPopup<T>['setPop
 }
 
 function createPopupElement<T>(
+  s: State,
   options: PopupFactoryOptions<T>,
   items: T[],
   position: cg.NumberPair,
@@ -273,7 +275,7 @@ function createPopupElement<T>(
 
   // Add items to popup
   items.forEach((item, index) => {
-    const itemEl = options.renderItem(item, index);
+    const itemEl = options.renderItem(s, item, index);
     itemEl.classList.add('popup-item');
     containerEl.appendChild(itemEl);
   });
@@ -288,21 +290,19 @@ function createHandlePopupClick<T>(
     const { inPopup, pieceIndex } = isPositionInPopup(s, position);
     if (!inPopup) return;
     if (pieceIndex === undefined) return;
-    options.onSelect(pieceIndex);
+    options.onSelect(s, pieceIndex);
   };
 }
 
-// export function getPopup(s: State): CTLPopup | undefined {
-//   const combinedPiecePopup = createPopupFactory({
-//     type: 'combinedPiece',
-//     renderItem: (item, index) => {
-//       const pieceEl = util.createEl('div', 'popup-item');
-//       pieceEl.textContent = item.role;
-//       return pieceEl;
-//     },
-//     onSelect: (index) => {
-//       console.log('Selected piece:', index);
-//     },
-//   });
-//   throw(new Error('Not implemented'))
-// }
+export function getPopup(s: State, type: string): CTLPopup<any> | undefined {
+  if (!s.popup || s.popup.type !== type) {
+    return undefined;
+  }
+  const filter = type ? type : s.popup.type;
+  switch (filter) {
+    case 'combined-piece':
+      return combinedPiecePopup;
+    default:
+      return undefined;
+  }
+}

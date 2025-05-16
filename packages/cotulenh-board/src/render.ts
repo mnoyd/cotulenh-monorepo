@@ -17,40 +17,27 @@ import {
 type PieceName = string; // `$color $role`
 const COMBINED_PIECE_OFFSET_BASE = 50; // Determines the how much the combined pieces are offset from each other
 
-function createPiecesStackElement(
-  stackContainer: HTMLElement,
-  pieces: cg.Piece[],
-  // pos: cg.Pos, // for zIndex calculation of the base piece
-  // asRed: boolean,
-): HTMLElement {
+function createPiecesStackElement(s: State, stackContainer: HTMLElement, pieces: cg.Piece[]): HTMLElement {
   if (!pieces.length) throw new Error('No pieces provided');
 
   // pieces = [{color:'blue', role: 'artillery', carrying: [{color: 'blue', role: 'engineer'}]}, {color: 'red', role: 'air_force'}]
 
+  // Create base piece using createSinglePieceElement
   const basePiece = pieces[0];
-  const basePieceName = `${basePiece.color} ${basePiece.role}`;
-  const basePieceNode = createEl('piece', basePieceName) as cg.PieceNode;
-  basePieceNode.cgPiece = basePieceName;
+  const basePieceNode = createSinglePieceElement(s, basePiece);
 
   // translate(basePieceNode, [0, 0]);
   // basePieceNode.style.zIndex = posZIndex(pos, asRed); // Use original pos for base zIndex
   stackContainer.appendChild(basePieceNode);
 
-  if (basePiece.promoted) {
-    const pieceStar = createEl('cg-piece-star') as HTMLElement;
-    pieceStar.style.zIndex = '3';
-    basePieceNode.appendChild(pieceStar);
-  }
-
   const offsetStepX = 0.1 * COMBINED_PIECE_OFFSET_BASE;
   const offsetStepY = -0.2 * COMBINED_PIECE_OFFSET_BASE;
-  let zIndex = parseInt(basePieceNode.style.zIndex, 10) + 1;
+  let zIndex = parseInt(basePieceNode.style.zIndex || '1', 10) + 1;
 
+  // Create carried pieces using createSinglePieceElement
   for (let i = 1; i < pieces.length; i++) {
     const carriedPiece = pieces[i];
-    const carriedPieceName = `${carriedPiece.color} ${carriedPiece.role}`;
-    const carriedPieceNode = createEl('piece', carriedPieceName) as cg.PieceNode;
-    carriedPieceNode.cgPiece = carriedPieceName;
+    const carriedPieceNode = createSinglePieceElement(s, carriedPiece);
 
     const offsetX = offsetStepX * i; // Offset relative to the base piece
     const offsetY = offsetStepY * i; // Offset relative to the base piece
@@ -58,20 +45,18 @@ function createPiecesStackElement(
     translate(carriedPieceNode, [offsetX, offsetY]);
     carriedPieceNode.style.zIndex = `${zIndex++}`;
     stackContainer.appendChild(carriedPieceNode);
-
-    if (carriedPiece.promoted) {
-      const pieceStar = createEl('cg-piece-star') as HTMLElement;
-      pieceStar.style.zIndex = '3';
-      carriedPieceNode.appendChild(pieceStar);
-    }
   }
+
   return stackContainer;
 }
 
-function createSinglePieceElement(piece: cg.Piece): cg.PieceNode {
+export function createSinglePieceElement(s: State, piece: cg.Piece): cg.PieceNode {
   const pieceName = pieceNameOf(piece);
   const pieceNode = createEl('piece', pieceName) as cg.PieceNode;
+  console.log(s.dom.bounds());
 
+  // pieceNode.style.width = `${s.dom.bounds().squareSize}px`;
+  // pieceNode.style.height = `${s.dom.bounds().squareSize}px`;
   if (piece.promoted) {
     const pieceStar = createEl('cg-piece-star') as HTMLElement;
     pieceNode.appendChild(pieceStar);
@@ -81,35 +66,35 @@ function createSinglePieceElement(piece: cg.Piece): cg.PieceNode {
   return pieceNode;
 }
 
-function createCombinedPieceElement(piece: cg.Piece): cg.PieceNode {
+function createCombinedPieceElement(s: State, piece: cg.Piece): cg.PieceNode {
   const container = createEl('piece', 'combined-stack') as cg.PieceNode;
   container.classList.add('piece');
   // Create the stack of pieces
   const allPiecesInStack: cg.Piece[] = [{ ...piece, carrying: [] } as cg.Piece, ...(piece.carrying || [])];
-  createPiecesStackElement(container, allPiecesInStack);
+  createPiecesStackElement(s, container, allPiecesInStack);
 
   container.cgPiece = pieceNameOf(piece); // The cgPiece of the container refers to the base piece
   return container;
 }
 
-function createPieceAttackElement(attackerPiece: cg.Piece, attackedPiece: cg.Piece): cg.KeyedNode {
+function createPieceAttackElement(s: State, attackerPiece: cg.Piece, attackedPiece: cg.Piece): cg.KeyedNode {
   const attackElement = createEl('piece-attack') as cg.KeyedNode;
   attackElement.classList.add('piece-attack'); // For potential styling via CSS
 
   // Create attacked element (rendered visually below)
   let attackedElementNode: cg.PieceNode;
   if (attackedPiece.carrying && attackedPiece.carrying.length > 0) {
-    attackedElementNode = createCombinedPieceElement(attackedPiece);
+    attackedElementNode = createCombinedPieceElement(s, attackedPiece);
   } else {
-    attackedElementNode = createSinglePieceElement(attackedPiece);
+    attackedElementNode = createSinglePieceElement(s, attackedPiece);
   }
 
   // Create attacker element (rendered visually above and offset)
   let attackerElementNode: cg.PieceNode;
   if (attackerPiece.carrying && attackerPiece.carrying.length > 0) {
-    attackerElementNode = createCombinedPieceElement(attackerPiece);
+    attackerElementNode = createCombinedPieceElement(s, attackerPiece);
   } else {
-    attackerElementNode = createSinglePieceElement(attackerPiece);
+    attackerElementNode = createSinglePieceElement(s, attackerPiece);
   }
 
   // Apply a slight vertical offset to the attacker piece to position it above the attacked piece.
@@ -275,9 +260,9 @@ export function render(s: State): void {
         const pos = key2pos(k);
         let pieceNode: cg.PieceNode;
         if (p.carrying && p.carrying.length > 0) {
-          pieceNode = createCombinedPieceElement(p);
+          pieceNode = createCombinedPieceElement(s, p);
         } else {
-          pieceNode = createSinglePieceElement(p);
+          pieceNode = createSinglePieceElement(s, p);
         }
         if (anim) {
           pieceNode.classList.add('anim'); // Fix: Use classList.add
@@ -296,7 +281,7 @@ export function render(s: State): void {
   //render attack element
   if (s.attackedPiece) {
     if (!attackedPieceNode) {
-      const attackElement = createPieceAttackElement(s.attackedPiece.attacker, s.attackedPiece.attacked);
+      const attackElement = createPieceAttackElement(s, s.attackedPiece.attacker, s.attackedPiece.attacked);
       attackElement.cgKey = s.attackedPiece.attackedSquare;
       translate(attackElement, posToTranslate(key2pos(s.attackedPiece.attackedSquare), asRed));
       boardEl.appendChild(attackElement);
