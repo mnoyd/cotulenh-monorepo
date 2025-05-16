@@ -6,8 +6,8 @@ import { combinedPiecePopup } from '../new-combine-piece.js';
 
 // Constants for popup dimensions and positioning
 // These values serve as defaults and will be scaled based on board dimensions
-const ITEM_GAP = 8;
-const POPUP_PADDING = 8;
+const ITEM_GAP = 6;
+const POPUP_PADDING = 6;
 const POPUP_VERTICAL_OFFSET = 60;
 
 type PopupFactoryOptions<T> = {
@@ -22,7 +22,7 @@ type PopupFactoryOptions<T> = {
   /**
    * Function called when an item in the popup is selected
    */
-  onSelect: (s: State, index: number) => void;
+  onSelect: (s: State, index: number, e?: cg.MouchEvent) => void;
   /**
    * Optional class name for the popup container
    */
@@ -31,15 +31,14 @@ type PopupFactoryOptions<T> = {
 
 export interface CTLPopup<T> {
   setPopup(s: State, items: T[], position: cg.NumberPair): HTMLElement | undefined;
-  clearPopup(s: State): void;
-  handlePopupClick(s: State, position: cg.NumberPair): void;
+  handlePopupClick(s: State, itemIndex: number, e?: cg.MouchEvent): void;
 }
 
 /**
  * Removes the popup from the DOM and state
  * @param s Game state
  */
-function clearPopup(s: State): void {
+export function clearPopup(s: State): void {
   if (!s) return;
 
   if (s.popup?.containerEl) {
@@ -62,7 +61,6 @@ function clearPopup(s: State): void {
 export function createPopupFactory<T>(options: PopupFactoryOptions<T>): CTLPopup<T> {
   const popup: CTLPopup<T> = {
     setPopup: createSetPopUp(options),
-    clearPopup,
     handlePopupClick: createHandlePopupClick(options),
   };
 
@@ -78,10 +76,10 @@ export function createPopupFactory<T>(options: PopupFactoryOptions<T>): CTLPopup
 export function isPositionInPopup(
   s: State,
   position: cg.NumberPair,
-): { inPopup: boolean; pieceIndex?: number } {
+): { inPopup: boolean; itemIndex?: number } {
   // First check active popup if it exists
-  if (s && position && s.combinedPiecePopup) {
-    const popup = s.combinedPiecePopup.containerEl;
+  if (s && position && s.popup) {
+    const popup = s.popup.containerEl;
     if (popup) {
       try {
         const popupBounds = popup.getBoundingClientRect();
@@ -103,12 +101,7 @@ export function isPositionInPopup(
               position[1] >= pieceBounds.top &&
               position[1] <= pieceBounds.bottom
             ) {
-              // If it's the carrier piece (first piece)
-              if (i === 0) {
-                return { inPopup: true, pieceIndex: -1 }; // -1 indicates carrier piece
-              } else {
-                return { inPopup: true, pieceIndex: i - 1 }; // Adjust index for carried pieces
-              }
+              return { inPopup: true, itemIndex: i };
             }
           }
           return { inPopup: true }; // In popup but not on a piece
@@ -256,12 +249,10 @@ function createPopupElement(itemElements: HTMLElement[], position: cg.NumberPair
 }
 function createHandlePopupClick<T>(
   options: PopupFactoryOptions<T>,
-): (s: State, position: cg.NumberPair) => void {
-  return (s: State, position: cg.NumberPair) => {
-    const { inPopup, pieceIndex } = isPositionInPopup(s, position);
-    if (!inPopup) return;
-    if (pieceIndex === undefined) return;
-    options.onSelect(s, pieceIndex);
+): (s: State, itemIndex: number, e?: cg.MouchEvent) => void {
+  return (s: State, itemIndex: number, e?: cg.MouchEvent) => {
+    if (itemIndex === undefined) return;
+    options.onSelect(s, itemIndex, e);
   };
 }
 

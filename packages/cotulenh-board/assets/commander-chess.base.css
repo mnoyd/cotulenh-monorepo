@@ -243,11 +243,11 @@ cg-board .popup-container {
   background: rgba(255, 255, 255, 0.9);
   border: 1px solid #ccc;
   border-radius: 4px;
-  padding: 8px;
+  padding: 6px;
   display: flex;
   flex-direction: row;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   z-index: 100;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
 }

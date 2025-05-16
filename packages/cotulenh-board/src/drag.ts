@@ -9,9 +9,9 @@ import {
   isAirDefensePieceOrCarryingAirDefensePiece,
   updateAirDefenseInfluenceZones,
 } from './air-defense.js';
-import { isPositionInPopup, removeCombinedPiecePopup } from './combined-piece.js';
 import { TEMP_KEY } from './types.js';
 import { combinedPiecePopup } from './new-combine-piece.js';
+import { isPositionInPopup, clearPopup, getPopup } from './popup/popup-factory.js';
 
 export interface DragCurrent {
   orig: cg.Key; // orig key of dragging piece
@@ -36,6 +36,11 @@ export function start(s: State, e: cg.MouchEvent): void {
 
   const position = util.eventPosition(e)!;
 
+  // Handle popup interaction if active popup exists
+  if (handlePopupInteraction(s, e, position)) {
+    return; // Return if popup interaction was handled
+  }
+
   const bounds = s.dom.bounds(),
     keyAtPosition = board.getKeyAtDomPos(position, board.redPov(s), bounds);
   if (!keyAtPosition) return;
@@ -57,10 +62,6 @@ export function start(s: State, e: cg.MouchEvent): void {
     e.preventDefault();
   else if (e.touches) return; // Handle only corresponding mouse event https://github.com/lichess-org/chessground/pull/268
 
-  // Handle popup interaction if active popup exists
-  if (handlePopupInteraction(s, e, position)) {
-    return; // Return if popup interaction was handled
-  }
   // Check for right-click on a piece
   const isRightClick = util.isRightButton(e);
   const isTouchStart = e.type === 'touchstart';
@@ -74,9 +75,9 @@ export function start(s: State, e: cg.MouchEvent): void {
     board.isMovable(s, { square: keyAtPosition } as cg.OrigMove) &&
     (isRightClick || (isTouchStart && selectedBefore))
   ) {
-    if (!s.selected?.stackMove) {
+    if (!s.selected || !s.selected.stackMove) {
       // showCombinedPiecePopup(s, keyAtPosition, piece, position);
-      combinedPiecePopup.setPopup(s, [piece, ...piece.carrying], position);
+      combinedPiecePopup.setPopup(s, [{ ...piece, carrying: [] }, ...piece.carrying], position);
       return;
     }
     board.unselect(s);
@@ -142,69 +143,27 @@ function pieceCloseTo(s: State, pos: cg.NumberPair): boolean {
  */
 function handlePopupInteraction(s: State, e: cg.MouchEvent, position: cg.NumberPair): boolean {
   // Then handle combined piece popup interaction
-  const { inPopup, pieceIndex, isEndStackMoveBtn } = isPositionInPopup(s, position);
+  const { inPopup, itemIndex } = isPositionInPopup(s, position);
 
   // No popup or not interacting with popup
   if (!inPopup) {
     // If we have an active popup but clicked outside, remove it
-    if (s.combinedPiecePopup) {
-      removeCombinedPiecePopup(s);
+    if (s.popup) {
+      clearPopup(s);
     }
     return false;
   }
 
-  if (!s.combinedPiecePopup) return false;
-  const { key, piece } = s.combinedPiecePopup;
-
-  // Handle end stack move button click
-  if (isEndStackMoveBtn) {
-    // Clear the stackPieceMoves state
-    if (s.stackPieceMoves && s.stackPieceMoves.key === key) {
-      s.stackPieceMoves = undefined;
-      // Clean up and redraw
-      removeCombinedPiecePopup(s);
-      s.dom.redraw();
-      return true;
-    }
-  }
-
-  if (pieceIndex !== undefined) {
-    // Carried piece clicked - select the specific piece from the stack
-    const selectedPiece = pieceIndex === -1 ? piece : piece.carrying![pieceIndex];
-    board.selectSquare(s, key, selectedPiece.role, true);
-
-    // Create temporary piece for dragging
-    const pieceToDrag = { ...selectedPiece, carrying: [] } as cg.Piece;
-    const tempKey = TEMP_KEY;
-    s.pieces.set(tempKey, pieceToDrag);
-
-    // Initialize drag
-    //TODO: add drag support for stack pieces on touch screens
-    if (!e.touches) {
-      s.draggable.current = {
-        orig: tempKey,
-        piece: pieceToDrag,
-        origPos: position,
-        pos: position,
-        started: false,
-        element: () => pieceElementByKey(s, tempKey),
-        originTarget: e.target,
-        newPiece: true,
-        keyHasChanged: false,
-        fromStack: true,
-      };
-      processDrag(s);
-    }
-    // Clean up and redraw
-    removeCombinedPiecePopup(s);
-    s.dom.redraw();
-    return true;
-  }
+  if (!s.popup) return false;
+  const popup = getPopup(s, s.popup.type);
+  if (!popup) return false;
+  if (itemIndex === undefined) return false;
+  popup.handlePopupClick(s, itemIndex, e);
 
   return true;
 }
 
-function processDrag(s: State): void {
+export function processDrag(s: State): void {
   requestAnimationFrame(() => {
     const cur = s.draggable.current;
     if (!cur) return;
@@ -220,8 +179,8 @@ function processDrag(s: State): void {
       }
       if (cur.started) {
         // Remove any active popup during drag
-        if (s.combinedPiecePopup) {
-          removeCombinedPiecePopup(s);
+        if (s.popup) {
+          clearPopup(s);
         }
         // support lazy elements
         if (typeof cur.element === 'function') {
@@ -406,7 +365,7 @@ function removeDragElements(s: State): void {
   if (e.ghost) util.setVisible(e.ghost, false);
 }
 
-function pieceElementByKey(s: State, key: cg.Key): cg.PieceNode | undefined {
+export function pieceElementByKey(s: State, key: cg.Key): cg.PieceNode | undefined {
   let el = s.dom.elements.board.firstChild;
   while (el) {
     if ((el as cg.KeyedNode).cgKey === key && (el as cg.KeyedNode).tagName === 'PIECE')

@@ -1,7 +1,10 @@
-import { createPopupFactory } from './popup/popup-factory';
+import { clearPopup, createPopupFactory } from './popup/popup-factory';
 import { createSinglePieceElement } from './render';
 import * as cg from './types';
 import { State } from './state';
+import * as board from './board.js';
+import * as util from './util.js';
+import * as drag from './drag.js';
 
 const combinedPiecePopup = createPopupFactory<cg.Piece>({
   type: 'combined-piece',
@@ -10,8 +13,46 @@ const combinedPiecePopup = createPopupFactory<cg.Piece>({
     piece.setAttribute('data-index', index.toString());
     return piece;
   },
-  onSelect: (s: State, index: number) => {
-    console.log('Selected piece:', index, s);
+  onSelect: (s: State, index: number, e?: cg.MouchEvent) => {
+    console.log('Selected piece:', index, s, e);
+
+    if (!e) return;
+    const position = util.eventPosition(e)!;
+    const bounds = s.dom.bounds(),
+      keyAtPosition = board.getKeyAtDomPos(position, board.redPov(s), bounds);
+    if (!keyAtPosition) return;
+    const piece = s.pieces.get(keyAtPosition);
+    if (!piece) return;
+    // Carried piece clicked - select the specific piece from the stack
+    const selectedPiece = index === 0 ? piece : piece.carrying![index - 1];
+    board.selectSquare(s, keyAtPosition, selectedPiece.role, true);
+
+    // Create temporary piece for dragging
+    const pieceToDrag = { ...selectedPiece, carrying: [] } as cg.Piece;
+    const tempKey = cg.TEMP_KEY;
+    s.pieces.set(tempKey, pieceToDrag);
+
+    // Initialize drag
+    //TODO: add drag support for stack pieces on touch screens
+    if (!e.touches) {
+      s.draggable.current = {
+        orig: tempKey,
+        piece: pieceToDrag,
+        origPos: position,
+        pos: position,
+        started: false,
+        element: () => drag.pieceElementByKey(s, tempKey),
+        originTarget: e.target,
+        newPiece: true,
+        keyHasChanged: false,
+        fromStack: true,
+      };
+      drag.processDrag(s);
+    }
+    // Clean up and redraw
+    clearPopup(s);
+    s.dom.redraw();
+    return true;
   },
 });
 export { combinedPiecePopup };
