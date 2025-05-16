@@ -50,20 +50,12 @@ cg-piece-star {
 /* Square positioning */
 cg-board square {
   position: absolute;
-  top: 3.84%;
-  left: 4.16%;
-  width: 8.3%;
-  height: 7.7%;
   pointer-events: none;
 }
 
 /* Pieces */
 .cg-wrap piece {
   position: absolute;
-  top: 3.84%;
-  left: 4.16%;
-  width: 8.3%;
-  height: 7.7%;
   z-index: 2;
   will-change: transform;
   pointer-events: none;

@@ -70,9 +70,13 @@ export interface Elements {
   customSvg?: SVGElement;
   autoPieces?: HTMLElement;
 }
+
+export interface Bounds extends DOMRectReadOnly {
+  squareSize: number;
+}
 export interface Dom {
   elements: Elements;
-  bounds: Memo<DOMRectReadOnly>;
+  bounds: Memo<Bounds>;
   redraw: () => void;
   redrawNow: (skipSvg?: boolean) => void;
   unbind?: Unbind;

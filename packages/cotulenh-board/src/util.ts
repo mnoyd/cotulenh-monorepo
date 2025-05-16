@@ -13,8 +13,8 @@ export const translate = (el: HTMLElement, pos: cg.NumberPair): void => {
 export const posToTranslate =
   (bounds: DOMRectReadOnly): ((pos: cg.Pos, asRed: boolean) => cg.NumberPair) =>
   (pos, asRed) => [
-    ((asRed ? pos[0] : 10 - pos[0]) * bounds.width) / 12,
-    ((asRed ? 11 - pos[1] : pos[1]) * bounds.height) / 13,
+    ((asRed ? pos[0] : 10 - pos[0]) * bounds.width) / 12 + bounds.width / 24,
+    ((asRed ? 11 - pos[1] : pos[1]) * bounds.height) / 13 + bounds.height / 26,
   ];
 
 export function memo<A>(f: () => A): cg.Memo<A> {

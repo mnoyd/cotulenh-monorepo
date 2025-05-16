@@ -5,6 +5,7 @@ import * as util from './util.js';
 import { render, renderResized, updateBounds } from './render.js';
 import * as events from './events.js';
 import { Config, configure } from './config.js';
+import { Bounds } from './types.js';
 
 export function initModule({ el, config }: { el: HTMLElement; config?: Config }): Api {
   return CotulenhBoard(el, config);
@@ -17,7 +18,11 @@ export function CotulenhBoard(element: HTMLElement, config?: Config): Api {
   function redrawAll(): State {
     const prevUnbind = 'dom' in maybeState ? maybeState.dom.unbind : undefined;
     const elements = renderWrap(element, maybeState),
-      bounds = util.memo(() => elements.board.getBoundingClientRect()),
+      bounds = util.memo(() => {
+        const bounds = elements.board.getBoundingClientRect() as Bounds;
+        bounds.squareSize = util.computeSquareSize(bounds);
+        return bounds;
+      }),
       redrawNow = (): void => {
         render(state);
       },

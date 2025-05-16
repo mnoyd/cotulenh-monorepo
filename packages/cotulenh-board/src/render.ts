@@ -53,10 +53,9 @@ function createPiecesStackElement(s: State, stackContainer: HTMLElement, pieces:
 export function createSinglePieceElement(s: State, piece: cg.Piece): cg.PieceNode {
   const pieceName = pieceNameOf(piece);
   const pieceNode = createEl('piece', pieceName) as cg.PieceNode;
-  console.log(s.dom.bounds());
 
-  // pieceNode.style.width = `${s.dom.bounds().squareSize}px`;
-  // pieceNode.style.height = `${s.dom.bounds().squareSize}px`;
+  pieceNode.style.width = `${s.dom.bounds().squareSize}px`;
+  pieceNode.style.height = `${s.dom.bounds().squareSize}px`;
   if (piece.promoted) {
     const pieceStar = createEl('cg-piece-star') as HTMLElement;
     pieceNode.appendChild(pieceStar);
@@ -222,6 +221,8 @@ export function render(s: State): void {
         translate(sMvd, translation);
       } else {
         const squareNode = createEl('square', className) as cg.SquareNode;
+        squareNode.style.height = `${s.dom.bounds().squareSize}px`;
+        squareNode.style.width = `${s.dom.bounds().squareSize}px`;
         squareNode.cgKey = sk;
         translate(squareNode, translation);
         boardEl.insertBefore(squareNode, boardEl.firstChild);
