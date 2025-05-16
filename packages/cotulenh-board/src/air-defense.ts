@@ -105,6 +105,7 @@ function calculateAndHighlightInfluence(
   const influence = getInfluence(pos);
   influence.forEach(infPos => {
     const squareKey = pos2key(infPos);
+    if (!squareKey) return;
     s.highlight.custom.set(squareKey, 'air-defense-influence ' + defenseInfluenceZoneType);
   });
 }
