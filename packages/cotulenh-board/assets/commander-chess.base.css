@@ -61,6 +61,8 @@ cg-board square {
   pointer-events: none;
   display: flex;
   justify-content: center;
+  background-repeat: no-repeat;
+  background-size: contain;
 }
 
 .cg-wrap piece svg {
@@ -236,23 +238,31 @@ cg-board .combined-piece-popup {
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
 }
 
+cg-board .popup-container {
+  position: absolute;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 8px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  z-index: 100;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
 /* Popup piece styling */
-cg-board .combined-piece-popup piece {
+cg-board .popup-container piece {
   cursor: grab;
   transition: transform 0.1s;
-  width: 50px;
-  height: 50px;
   position: relative;
-  background-size: contain;
-  background-position: center;
-  background-repeat: no-repeat;
-  flex-shrink: 0;
   pointer-events: auto;
   user-select: none;
 }
 
 /* Popup piece states */
-cg-board .combined-piece-popup piece:active {
+cg-board .popup-container piece:active {
   cursor: grabbing;
 }
 
@@ -273,12 +283,12 @@ cg-board .combined-piece-popup cg-end-stack-move:hover {
   transform: scale(0.9);
 }
 
-cg-board .combined-piece-popup piece:hover {
+cg-board .popup-container piece:hover {
   transform: scale(1.1);
   z-index: 2;
 }
 
-cg-board .combined-piece-popup piece.selected {
+cg-board .popup-container piece.selected {
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
   transform: scale(1.1);
 }
@@ -327,8 +337,6 @@ piece-attack {
   /* Center the attack marker visually if needed */
   /* transform: translate(-50%, -50%); */
   transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1);
-  top: 3.84%;
-  left: 4.16%;
   width: 8.3%;
   height: 7.7%;
 }
