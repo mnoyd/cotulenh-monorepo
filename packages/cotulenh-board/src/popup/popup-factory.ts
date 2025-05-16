@@ -6,8 +6,7 @@ import { combinedPiecePopup } from '../new-combine-piece.js';
 
 // Constants for popup dimensions and positioning
 // These values serve as defaults and will be scaled based on board dimensions
-const PIECE_WIDTH = 50;
-const PIECE_GAP = 8;
+const ITEM_GAP = 8;
 const POPUP_PADDING = 8;
 const POPUP_VERTICAL_OFFSET = 60;
 
@@ -122,13 +121,12 @@ export function isPositionInPopup(
 
   return { inPopup: false };
 }
-export function calculatePopupPosition<T>(
+export function calculatePopupPosition(
   s: State,
-  items: T[],
+  items: HTMLElement[],
   position: cg.NumberPair,
 ): { position: cg.NumberPair; dimensions: { width: number; height: number } } {
   // Create popup container with appropriate class
-  const containerEl = util.createEl('div', 'popup') as HTMLElement;
   const bounds = s.dom.bounds();
   const asRed = board.redPov(s);
   const posToTranslateFn = util.posToTranslate(bounds);
@@ -136,7 +134,6 @@ export function calculatePopupPosition<T>(
 
   // Default return for invalid cases
   const defaultReturn = {
-    containerEl,
     position: [0, 0] as cg.NumberPair,
     dimensions: { width: 0, height: 0 },
   };
@@ -144,16 +141,38 @@ export function calculatePopupPosition<T>(
   // Validate inputs
   if (!pieceKey || !items || items.length === 0) return defaultReturn;
 
-  // Calculate dimensions based on the number of pieces and board size
-  const totalPieces = items.length;
+  // Calculate dimensions based on the actual HTML elements
+  const totalItems = items.length;
 
-  // Calculate piece width based on board dimensions for better scaling
-  const scaledPieceWidth = Math.min(PIECE_WIDTH, bounds.width / 12);
-  const scaledGap = Math.min(PIECE_GAP, bounds.width / 60);
+  // Calculate scaled gap and padding based on board dimensions
+  const scaledGap = Math.min(ITEM_GAP, bounds.width / 60);
   const scaledPadding = Math.min(POPUP_PADDING, bounds.width / 60);
 
-  const popupWidth = totalPieces * scaledPieceWidth + (totalPieces - 1) * scaledGap + scaledPadding * 2;
-  const popupHeight = scaledPieceWidth + scaledPadding * 2;
+  // Calculate total width and maximum height from actual item elements
+  let totalWidth = 0;
+  let maxHeight = 0;
+
+  // Measure each item's dimensions
+  items.forEach((itemEl, index) => {
+    // Get the actual size of each item element
+    const itemWidth = itemEl.offsetWidth || itemEl.clientWidth || parseInt(itemEl.style.width);
+    const itemHeight = itemEl.offsetHeight || itemEl.clientHeight || parseInt(itemEl.style.height);
+
+    // Add item width to total
+    totalWidth += itemWidth;
+
+    // Add gap between items (except after the last item)
+    if (index < totalItems - 1) {
+      totalWidth += scaledGap;
+    }
+
+    // Track maximum height
+    maxHeight = Math.max(maxHeight, itemHeight);
+  });
+
+  // Add padding to dimensions
+  const popupWidth = totalWidth + scaledPadding * 2;
+  const popupHeight = maxHeight + scaledPadding * 2;
 
   // Calculate vertical offset based on board height
   const verticalOffset = Math.min(POPUP_VERTICAL_OFFSET, bounds.height / 8);
@@ -171,7 +190,9 @@ export function calculatePopupPosition<T>(
   // Ensure popup stays within vertical bounds
   // If not enough space above, try positioning below
   if (popupY < scaledPadding) {
-    const belowY = piecePos[1] + scaledPieceWidth + scaledPadding;
+    // Use the height of the first item or maxHeight if no items
+    const itemHeight = items.length > 0 ? items[0].offsetHeight || items[0].clientHeight : maxHeight;
+    const belowY = piecePos[1] + itemHeight + scaledPadding;
     // Check if there's enough space below
     if (belowY + popupHeight < bounds.height - scaledPadding) {
       popupY = belowY;
@@ -188,62 +209,24 @@ export function calculatePopupPosition<T>(
     dimensions: { width: popupWidth, height: popupHeight },
   };
 }
-function adjustPopupPosition(
-  popupEl: HTMLElement,
-  boardEl: HTMLElement,
-  initialPosition: cg.NumberPair,
-  dimensions: { width: number; height: number },
-): void {
-  const popupBounds = popupEl.getBoundingClientRect();
-  const boardBounds = boardEl.getBoundingClientRect();
-  let adjustedPosition = [...initialPosition] as cg.NumberPair;
 
-  // Calculate padding based on board size
-  const padding = Math.max(5, Math.min(POPUP_PADDING, boardBounds.width / 60));
-
-  // Adjust horizontal position if needed
-  if (popupBounds.left < boardBounds.left + padding) {
-    // Align with left edge of board with padding
-    adjustedPosition[0] = padding;
-  } else if (popupBounds.right > boardBounds.right - padding) {
-    // Align with right edge of board with padding
-    adjustedPosition[0] = boardBounds.width - dimensions.width - padding;
-  }
-
-  // Adjust vertical position if needed
-  if (popupBounds.top < boardBounds.top + padding) {
-    // Check if there's enough space below
-    const belowPosition = initialPosition[1] + dimensions.height + padding * 2;
-    if (belowPosition + dimensions.height < boardBounds.height - padding) {
-      // Show below the piece
-      adjustedPosition[1] = belowPosition;
-    } else {
-      // If neither above nor below works well, position at top with padding
-      adjustedPosition[1] = padding;
-    }
-  } else if (popupBounds.bottom > boardBounds.bottom - padding) {
-    // If popup extends beyond bottom edge, move it up
-    adjustedPosition[1] = boardBounds.height - dimensions.height - padding;
-  }
-
-  // Apply the adjusted position
-  util.translate(popupEl, adjustedPosition);
-}
 function createSetPopUp<T>(options: PopupFactoryOptions<T>): CTLPopup<T>['setPopup'] {
   return (s: State, items: T[], position: cg.NumberPair): HTMLElement | undefined => {
     // Remove any existing popup first
     clearPopup(s);
-    const { position: popupPosition, dimensions: popupDimensions } = calculatePopupPosition(
-      s,
-      items,
-      position,
-    );
-    const popup = createPopupElement(s, options, items, popupPosition, popupDimensions);
+    const itemElements = items.map((item, index) => {
+      const itemEl = options.renderItem(s, item, index);
+      itemEl.classList.add('popup-item');
+      itemEl.setAttribute('data-index', index.toString());
+      return itemEl;
+    });
+    const { position: popupPosition } = calculatePopupPosition(s, itemElements, position);
+    const popup = createPopupElement(itemElements, popupPosition);
     if (!popup) {
       return undefined;
     }
     // Ensure popup stays within board bounds by adjusting position if needed
-    adjustPopupPosition(popup, s.dom.elements.board, popupPosition, popupDimensions);
+    // adjustPopupPosition(popup, s.dom.elements.board, popupPosition, popupDimensions);
     s.popup = {
       items,
       type: options.type,
@@ -254,19 +237,9 @@ function createSetPopUp<T>(options: PopupFactoryOptions<T>): CTLPopup<T>['setPop
   };
 }
 
-function createPopupElement<T>(
-  s: State,
-  options: PopupFactoryOptions<T>,
-  items: T[],
-  position: cg.NumberPair,
-  dimensions: { width: number; height: number },
-): HTMLElement | undefined {
+function createPopupElement(itemElements: HTMLElement[], position: cg.NumberPair): HTMLElement | undefined {
   // Create container element
   const containerEl = util.createEl('popup', 'popup-container');
-
-  // Apply dimensions
-  containerEl.style.width = `${dimensions.width}px`;
-  containerEl.style.height = `${dimensions.height}px`;
 
   // Position the popup
   containerEl.style.position = 'absolute';
@@ -274,9 +247,7 @@ function createPopupElement<T>(
   containerEl.style.top = `${position[1]}px`;
 
   // Add items to popup
-  items.forEach((item, index) => {
-    const itemEl = options.renderItem(s, item, index);
-    itemEl.classList.add('popup-item');
+  itemElements.forEach(itemEl => {
     containerEl.appendChild(itemEl);
   });
 
