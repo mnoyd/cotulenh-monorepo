@@ -221,6 +221,7 @@ function createSetPopUp<T>(options: PopupFactoryOptions<T>): CTLPopup<T>['setPop
     // Ensure popup stays within board bounds by adjusting position if needed
     // adjustPopupPosition(popup, s.dom.elements.board, popupPosition, popupDimensions);
     s.popup = {
+      square: board.getKeyAtDomPos(position, board.redPov(s), s.dom.bounds()),
       items,
       type: options.type,
       containerEl: popup,

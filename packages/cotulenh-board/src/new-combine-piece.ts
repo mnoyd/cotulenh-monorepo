@@ -18,26 +18,22 @@ const combinedPiecePopup = createPopupFactory<cg.Piece>({
 
     if (!e) return;
     const position = util.eventPosition(e)!;
-    const bounds = s.dom.bounds(),
-      keyAtPosition = board.getKeyAtDomPos(position, board.redPov(s), bounds);
-    if (!keyAtPosition) return;
-    const piece = s.pieces.get(keyAtPosition);
-    if (!piece) return;
+
     // Carried piece clicked - select the specific piece from the stack
-    const selectedPiece = index === 0 ? piece : piece.carrying![index - 1];
-    board.selectSquare(s, keyAtPosition, selectedPiece.role, true);
+    const selectedPiece = s.popup?.items[index];
+    if (!s.popup?.square || !selectedPiece) return;
+    board.selectSquare(s, s.popup.square, selectedPiece.role, true);
 
     // Create temporary piece for dragging
-    const pieceToDrag = { ...selectedPiece, carrying: [] } as cg.Piece;
     const tempKey = cg.TEMP_KEY;
-    s.pieces.set(tempKey, pieceToDrag);
+    s.pieces.set(tempKey, selectedPiece);
 
     // Initialize drag
     //TODO: add drag support for stack pieces on touch screens
     if (!e.touches) {
       s.draggable.current = {
         orig: tempKey,
-        piece: pieceToDrag,
+        piece: selectedPiece,
         origPos: position,
         pos: position,
         started: false,

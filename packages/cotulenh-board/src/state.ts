@@ -94,6 +94,7 @@ export interface HeadlessState {
     attacked: cg.Piece;
   };
   popup?: {
+    square?: cg.Key; // square where it initiate this popup
     items: any[];
     type: string;
     containerEl: HTMLElement;
