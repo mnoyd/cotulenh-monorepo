@@ -197,11 +197,10 @@ export function processDrag(s: State): void {
         const bounds = s.dom.bounds();
         const fileWidth = bounds.width / 12;
         const rankHeight = bounds.height / 13;
-        const pieceWidth = bounds.width / 12;
-        const pieceHeight = bounds.height / 13;
+
         util.translate(cur.element, [
-          cur.pos[0] - bounds.left - fileWidth / 2 - pieceWidth / 2, // Calculate the extra offset
-          cur.pos[1] - bounds.top - rankHeight / 2 - pieceHeight / 2, // Calculate the extra offset
+          cur.pos[0] - bounds.left - fileWidth / 2,
+          cur.pos[1] - bounds.top - rankHeight / 2,
         ]);
         const keyAtCurrentPosition = board.getKeyAtDomPos(cur.pos, board.redPov(s), bounds);
         cur.keyHasChanged ||= cur.orig !== keyAtCurrentPosition;
