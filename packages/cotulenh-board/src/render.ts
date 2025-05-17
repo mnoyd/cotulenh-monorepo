@@ -1,6 +1,7 @@
 import { AnimCurrent, AnimFadings, AnimVector, AnimVectors } from './anim.js';
-import { redPov, userMove } from './board.js';
+import { redPov } from './board.js';
 import { DragCurrent } from './drag.js';
+import { pieceAttackPopup } from './piece-attack.js';
 import { HeadlessState, State } from './state.js';
 import * as cg from './types.js';
 import { TEMP_KEY } from './types.js';
@@ -99,7 +100,7 @@ function createPieceAttackElement(s: State, attackerPiece: cg.Piece, attackedPie
   // Apply a slight vertical offset to the attacker piece to position it above the attacked piece.
   // translate uses percentages of the element's own size.
   // A negative Y value moves it upwards.
-  translate(attackerElementNode, [0, -25]); // Offset by -25% of its height upwards
+  translate(attackerElementNode, [0, -15]); // Offset by -25% of its height upwards
 
   // Append attacked piece first (bottom layer), then attacker piece (top layer, offset)
   attackElement.appendChild(attackedElementNode);
@@ -203,7 +204,7 @@ export function render(s: State): void {
       const cn = el.className;
       if (squares.get(k) === cn) sameSquares.add(k);
       else appendValue(movedSquares, cn, el);
-    } else if (isAttackNode(el) && s.attackedPiece?.attackedSquare === k) {
+    } else if (isAttackNode(el)) {
       attackedPieceNode = el;
     }
     el = el.nextSibling as cg.PieceNode | cg.SquareNode | undefined;
@@ -286,42 +287,8 @@ export function render(s: State): void {
       attackElement.cgKey = s.attackedPiece.attackedSquare;
       translate(attackElement, posToTranslate(key2pos(s.attackedPiece.attackedSquare), asRed));
       boardEl.appendChild(attackElement);
-
-      // Create and attach attack action popup
-      const popup = document.createElement('div');
-      popup.className = 'attack-action-popup';
-
-      const handlePopup = (stay: boolean) => () => {
-        const { attackerSquare, attackedSquare, attacker, attacked, originalPiece } = s.attackedPiece!;
-        s.pieces.set(attackedSquare, attacked);
-        s.pieces.set(attackerSquare, originalPiece);
-        userMove(
-          s,
-          { square: attackerSquare, type: attacker.role } as cg.OrigMove,
-          { square: attackedSquare, stay } as cg.DestMove,
-        );
-        s.attackedPiece = undefined;
-        popup.remove();
-      };
-
-      const stayBtn = document.createElement('button');
-      stayBtn.className = 'attack-action-stay';
-      stayBtn.textContent = 'Stay';
-      stayBtn.addEventListener('click', handlePopup(false));
-
-      const backBtn = document.createElement('button');
-      backBtn.className = 'attack-action-back';
-      backBtn.textContent = 'Back';
-      stayBtn.addEventListener('click', handlePopup(true));
-
-      popup.appendChild(stayBtn);
-      popup.appendChild(backBtn);
-      attackElement.appendChild(popup);
-
-      // Position popup above the attack element
-      const bounds = attackElement.getBoundingClientRect();
-      popup.style.left = `${bounds.width / 2 - 70}px`;
-      popup.style.top = `-60px`;
+      pieceAttackPopup.setPopup(s, ['stay', 'back'], s.attackedPiece.attackedSquare);
+      s.dom.redraw();
     }
   } else {
     //remove attacked piece
