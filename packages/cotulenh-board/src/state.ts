@@ -75,16 +75,10 @@ export interface HeadlessState {
   exploding?: cg.Exploding;
   addPieceZIndex: boolean; // adds z-index values to pieces (for 3D)
   selected?: cg.OrigMove;
-  combinedPiecePopup?: {
-    key: cg.Key;
-    piece: cg.Piece;
-    containerEl: HTMLElement;
-  };
   stackPieceMoves?: {
     key: cg.Key;
     originalPiece: cg.Piece;
-    waitingPieces: StackPieceMove[];
-    movedPieces: StackPieceMove[];
+    moves: StackPieceMove[];
   };
   attackedPiece?: {
     attackerSquare: cg.Key;
@@ -102,13 +96,8 @@ export interface HeadlessState {
 }
 interface StackPieceMove {
   piece: cg.Piece;
-  type: 'carrier' | 'carried';
-  move:
-    | {
-        from: cg.OrigMove;
-        to: cg.DestMove;
-      }
-    | 'stay';
+  newSquare: cg.Key | 'no_move';
+  stayCapture: boolean;
 }
 
 export interface State extends HeadlessState {

@@ -73,8 +73,6 @@ const combinedPiecePopup = createPopupFactory<cg.Piece>({
     return piece;
   },
   onSelect: (s: State, index: number, e?: cg.MouchEvent) => {
-    console.log('Selected piece:', index, s, e);
-
     if (!e) return;
     const position = util.eventPosition(e)!;
 

@@ -24,7 +24,6 @@ const pieceAttackPopup = createPopupFactory<string>({
     return el;
   },
   onSelect: (s: State, index: number) => {
-    console.log('Selected piece:', index, s.popup?.items[index]);
     if (!s.attackedPiece) return;
     returnToOriginalPieceState(s);
     const origMove = {

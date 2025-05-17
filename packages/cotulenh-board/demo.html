@@ -42,6 +42,69 @@
         { square: 'g8', stay: false },
         { square: 'b2', stay: true },
       ]);
+      dests.set('f8.air_force', [
+        { square: 'f7', stay: false },
+        { square: 'f6', stay: false },
+        { square: 'f5', stay: false },
+        { square: 'f4', stay: false },
+        { square: 'f3', stay: false },
+        { square: 'c8', stay: false },
+        { square: 'd8', stay: false },
+        { square: 'e8', stay: false },
+        { square: 'g8', stay: false },
+        { square: 'h8', stay: false },
+        { square: 'e7', stay: false },
+        { square: 'd6', stay: false },
+        { square: 'c5', stay: false },
+        { square: 'g9', stay: false },
+        { square: 'h10', stay: false },
+        { square: 'i11', stay: false },
+        { square: 'j12', stay: false },
+        { square: 'f9', stay: false },
+        { square: 'e9', stay: false },
+        { square: 'd10', stay: false },
+        { square: 'c11', stay: false },
+        { square: 'j12', stay: false },
+        { square: 'g7', stay: false },
+        { square: 'h6', stay: false },
+        { square: 'i5', stay: false },
+        { square: 'j4', stay: false },
+        { square: 'f10', stay: false },
+        { square: 'f11', stay: false },
+      ]);
+      dests.set('f8.navy', [
+        { square: 'f7', stay: false },
+        { square: 'f6', stay: false },
+        { square: 'f5', stay: false },
+        { square: 'f4', stay: false },
+        { square: 'f3', stay: false },
+        { square: 'c8', stay: false },
+        { square: 'd8', stay: false },
+        { square: 'e8', stay: false },
+        { square: 'g8', stay: false },
+        { square: 'h8', stay: false },
+        { square: 'f9', stay: false },
+        { square: 'f10', stay: false },
+        { square: 'f11', stay: false },
+        { square: 'b8', stay: false },
+        { square: 'a8', stay: false },
+      ]);
+      dests.set('f8.infantry', [
+        { square: 'f7', stay: false },
+        { square: 'f9', stay: false },
+        { square: 'e8', stay: false },
+        { square: 'g8', stay: false },
+      ]);
+      dests.set('i2.tank', [
+        { square: 'i1', stay: false },
+        { square: 'i3', stay: false },
+        { square: 'j2', stay: false },
+        { square: 'k2', stay: false },
+        { square: 'h2', stay: false },
+        { square: 'g2', stay: false },
+        { square: 'i3', stay: false },
+        { square: 'i4', stay: false },
+      ]);
 
       const board = CotulenhBoard(document.getElementById('board-1'), {
         // fen: '1n8g/11/5s5/11/11/5g5/11/11/5F5/11/2N8/11',
@@ -60,6 +123,7 @@
         movable: {
           color: 'red',
           dests,
+          free: false,
           events: {
             after: (orig, dest, pieceType, metadata) => {
               console.log(

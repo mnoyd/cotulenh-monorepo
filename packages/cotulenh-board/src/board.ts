@@ -106,6 +106,7 @@ export function baseMove(
 function baseUserMove(state: HeadlessState, orig: cg.OrigMove, dest: cg.DestMove): MoveResult | boolean {
   const piecesPrepared = baseMove(state, orig, dest);
   if (piecesPrepared && typeof piecesPrepared === 'object') {
+    //Move not finished
     if (piecesPrepared.updatedPieces.captureMoveStay === 'need_clarify') {
       state.attackedPiece = {
         attackerSquare: orig.square,
@@ -116,6 +117,12 @@ function baseUserMove(state: HeadlessState, orig: cg.OrigMove, dest: cg.DestMove
       };
       return { piecesPrepared, moveFinished: false };
     }
+    if (piecesPrepared.updatedPieces.deploy || state.stackPieceMoves) {
+      handleStackPieceMoves(state, piecesPrepared, orig, dest);
+      unselect(state);
+      return { piecesPrepared, moveFinished: false };
+    }
+    //Move finished
     state.lastMove = [orig.square, dest.square];
     state.check = undefined;
     state.movable.dests = undefined;
@@ -401,6 +408,7 @@ interface PiecesUpdated {
   pieceThatMoves: cg.Piece;
   capture: boolean;
   captureMoveStay: captureMoveStay;
+  deploy: boolean;
 }
 interface OriginalPiece {
   originalOrigPiece: cg.Piece;
@@ -437,10 +445,85 @@ function preparePieceThatChanges(state: HeadlessState, orig: cg.OrigMove, dest: 
       pieceThatMoves: pieceThatMoves,
       capture: !!capturedPiece,
       captureMoveStay,
+      deploy: !!original,
     },
     originalPiece: {
-      originalOrigPiece: stackPieceType === 'carried' ? original! : pieceThatMoves,
+      originalOrigPiece: original || pieceThatMoves,
       originalDestPiece: pieceAtDestBeforeMove,
     },
   };
+}
+
+function handleStackPieceMoves(
+  state: HeadlessState,
+  piecesPrepared: PiecesPrepared,
+  origMove: cg.OrigMove,
+  destMove: cg.DestMove,
+): void {
+  if (!state.stackPieceMoves) {
+    state.stackPieceMoves = {
+      key: origMove.square,
+      originalPiece: piecesPrepared.originalPiece.originalOrigPiece,
+      moves: [
+        {
+          newSquare: destMove.square,
+          stayCapture: !!piecesPrepared.updatedPieces.captureMoveStay,
+          piece: piecesPrepared.updatedPieces.pieceThatMoves!,
+        },
+      ],
+    };
+  } else {
+    state.stackPieceMoves.moves.push({
+      newSquare: destMove.square,
+      stayCapture: !!piecesPrepared.updatedPieces.captureMoveStay,
+      piece: piecesPrepared.updatedPieces.pieceThatMoves!,
+    });
+  }
+  const originalPiece = state.stackPieceMoves.originalPiece;
+  const remainingCarried = originalPiece.carrying?.filter(
+    p => !state.stackPieceMoves?.moves.some(m => m.piece.role === p.role),
+  );
+  const dests = state.movable.dests;
+  if (dests) {
+    const keys = [
+      ...originalPiece.carrying!.map(piece =>
+        origMoveToKey({
+          square: origMove.square,
+          type: piece.role,
+        }),
+      ),
+      origMoveToKey({
+        square: origMove.square,
+        type: originalPiece.role,
+      }),
+    ];
+    const newDest = new Map();
+    keys.forEach(key => {
+      const dest = dests.get(key);
+      if (dest) {
+        newDest.set(key, dest);
+      }
+    });
+    remainingCarried?.forEach(carriedPiece => {
+      state.stackPieceMoves?.moves.forEach(m => {
+        const combined = tryCombinePieces(m.piece, carriedPiece);
+        if (combined && combined.role === m.piece.role) {
+          const k = origMoveToKey({
+            square: state.stackPieceMoves!.key,
+            type: carriedPiece.role,
+          });
+          const dest = newDest.get(k)?.some((d: cg.DestMove) => d.square === m.newSquare);
+          if (!dest) {
+            newDest.get(k)?.push({
+              square: m.newSquare,
+              stay: false,
+            });
+          }
+        }
+      });
+    });
+    console.log(newDest);
+    state.movable.dests = newDest;
+    state.lastMove = [state.stackPieceMoves!.key, ...state.stackPieceMoves.moves.map(m => m.newSquare)];
+  }
 }
