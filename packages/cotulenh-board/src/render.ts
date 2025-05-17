@@ -13,6 +13,7 @@ import {
   pieceNameOf,
   setVisible,
   origMoveToKey,
+  flatOutPiece,
 } from './util.js';
 
 type PieceName = string; // `$color $role`
@@ -70,7 +71,7 @@ function createCombinedPieceElement(s: State, piece: cg.Piece): cg.PieceNode {
   const container = createEl('piece', 'combined-stack') as cg.PieceNode;
   container.classList.add('piece');
   // Create the stack of pieces
-  const allPiecesInStack: cg.Piece[] = [{ ...piece, carrying: [] } as cg.Piece, ...(piece.carrying || [])];
+  const allPiecesInStack: cg.Piece[] = flatOutPiece(piece);
   createPiecesStackElement(s, container, allPiecesInStack);
 
   container.cgPiece = pieceNameOf(piece); // The cgPiece of the container refers to the base piece

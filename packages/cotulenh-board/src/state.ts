@@ -97,7 +97,7 @@ export interface HeadlessState {
 interface StackPieceMove {
   piece: cg.Piece;
   newSquare: cg.Key | 'no_move';
-  stayCapture: boolean;
+  capturedPiece?: cg.Piece;
 }
 
 export interface State extends HeadlessState {

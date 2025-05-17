@@ -142,3 +142,8 @@ export function findDestInDests(
 ): cg.DestMove | undefined {
   return state.movable.dests?.get(origMoveToKey(orig))?.find(d => d.square === dest.square);
 }
+
+export const flatOutPiece = (p: cg.Piece): cg.Piece[] => {
+  if (!p.carrying) return [p];
+  return [{ ...p, carrying: [] }, ...p.carrying];
+};

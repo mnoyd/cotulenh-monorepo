@@ -3,6 +3,7 @@ import {
   allPos,
   computeSquareCenter,
   findDestInDests,
+  flatOutPiece,
   getPieceFromOrigMove,
   isPieceFromStack,
   opposite,
@@ -119,6 +120,8 @@ function baseUserMove(state: HeadlessState, orig: cg.OrigMove, dest: cg.DestMove
     }
     if (piecesPrepared.updatedPieces.deploy || state.stackPieceMoves) {
       handleStackPieceMoves(state, piecesPrepared, orig, dest);
+      const deployMove = deployStateToMove(state);
+      console.log('deployMove', deployMove);
       unselect(state);
       return { piecesPrepared, moveFinished: false };
     }
@@ -460,51 +463,54 @@ function handleStackPieceMoves(
   origMove: cg.OrigMove,
   destMove: cg.DestMove,
 ): void {
+  const movedPieces = flatOutPiece(piecesPrepared.updatedPieces.pieceThatMoves!);
   if (!state.stackPieceMoves) {
     state.stackPieceMoves = {
       key: origMove.square,
       originalPiece: piecesPrepared.originalPiece.originalOrigPiece,
-      moves: [
-        {
-          newSquare: destMove.square,
-          stayCapture: !!piecesPrepared.updatedPieces.captureMoveStay,
-          piece: piecesPrepared.updatedPieces.pieceThatMoves!,
-        },
-      ],
+      moves: movedPieces.map(p => ({
+        newSquare: destMove.square,
+        ...(piecesPrepared.updatedPieces.capture && {
+          capturedPiece: piecesPrepared.originalPiece.originalDestPiece,
+        }),
+        piece: p,
+      })),
     };
   } else {
-    state.stackPieceMoves.moves.push({
-      newSquare: destMove.square,
-      stayCapture: !!piecesPrepared.updatedPieces.captureMoveStay,
-      piece: piecesPrepared.updatedPieces.pieceThatMoves!,
-    });
+    state.stackPieceMoves.moves.push(
+      ...movedPieces.map(p => ({
+        newSquare: destMove.square,
+        ...(piecesPrepared.updatedPieces.capture && {
+          capturedPiece: piecesPrepared.originalPiece.originalDestPiece,
+        }),
+        piece: p,
+      })),
+    );
   }
   const originalPiece = state.stackPieceMoves.originalPiece;
-  const remainingCarried = originalPiece.carrying?.filter(
+  const allPieces = flatOutPiece(originalPiece);
+  const remainingPieces = allPieces.filter(
     p => !state.stackPieceMoves?.moves.some(m => m.piece.role === p.role),
   );
   const dests = state.movable.dests;
   if (dests) {
-    const keys = [
-      ...originalPiece.carrying!.map(piece =>
-        origMoveToKey({
-          square: origMove.square,
-          type: piece.role,
-        }),
-      ),
+    const keys = remainingPieces.map(piece =>
       origMoveToKey({
         square: origMove.square,
-        type: originalPiece.role,
+        type: piece.role,
       }),
-    ];
+    );
     const newDest = new Map();
     keys.forEach(key => {
       const dest = dests.get(key);
       if (dest) {
-        newDest.set(key, dest);
+        newDest.set(
+          key,
+          dest.filter(d => !state.stackPieceMoves?.moves.some(m => m.newSquare === d.square)),
+        );
       }
     });
-    remainingCarried?.forEach(carriedPiece => {
+    remainingPieces.forEach(carriedPiece => {
       state.stackPieceMoves?.moves.forEach(m => {
         const combined = tryCombinePieces(m.piece, carriedPiece);
         if (combined && combined.role === m.piece.role) {
@@ -526,4 +532,58 @@ function handleStackPieceMoves(
     state.movable.dests = newDest;
     state.lastMove = [state.stackPieceMoves!.key, ...state.stackPieceMoves.moves.map(m => m.newSquare)];
   }
+}
+
+interface SingleMove {
+  piece: cg.Piece;
+  orig: cg.Key;
+  dest: cg.Key;
+  capturedPiece?: cg.Piece;
+}
+interface DeployMove {
+  moves: SingleMove[];
+  stay: cg.Piece;
+}
+
+function deployStateToMove(s: HeadlessState): DeployMove {
+  const deployState = s.stackPieceMoves;
+  if (!deployState) {
+    throw new Error('No deploy state');
+  }
+  const originalPiece = deployState.originalPiece;
+  let remainingPieces = flatOutPiece(originalPiece);
+  const destsMap = new Map<cg.Key, { piece: cg.Piece[]; capturedPiece?: cg.Piece }>();
+  deployState.moves.forEach(m => {
+    const piece = m.piece;
+    const key = m.newSquare;
+    remainingPieces = remainingPieces.filter(p => p.role !== piece.role);
+    if (destsMap.has(key)) {
+      const value = destsMap.get(key)!;
+      value.piece.push(piece);
+      if (m.capturedPiece) {
+        value.capturedPiece = m.capturedPiece;
+      }
+    } else {
+      destsMap.set(key, { piece: [piece], capturedPiece: m.capturedPiece });
+    }
+  });
+  const moves: SingleMove[] = [];
+  destsMap.forEach((value, key) => {
+    const { combined, uncombined } = createCombineStackFromPieces([...value.piece]);
+    if (combined == null && uncombined != null)
+      throw new Error('the piece is not suitable to stay in one square');
+    moves.push({
+      piece: combined!,
+      orig: deployState.key,
+      dest: key,
+      ...(value.capturedPiece && { capturedPiece: value.capturedPiece }),
+    });
+  });
+  const { combined: stayPiece, uncombined } = createCombineStackFromPieces([...remainingPieces]);
+  if (stayPiece == null && uncombined != null)
+    throw new Error('the piece is not suitable to stay in one square');
+  return {
+    moves,
+    stay: stayPiece!,
+  };
 }
