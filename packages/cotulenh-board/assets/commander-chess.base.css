@@ -224,30 +224,16 @@ cg-board square.move-dest.oc::before {
 }
 
 /* --- Piece Popup UI --- */
-cg-board .combined-piece-popup {
-  position: absolute;
-  background: rgba(255, 255, 255, 0.9);
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  padding: 8px;
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 8px;
-  z-index: 100;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-}
-
 cg-board .popup-container {
   position: absolute;
   background: rgba(255, 255, 255, 0.9);
   border: 1px solid #ccc;
   border-radius: 4px;
-  padding: 6px;
+  padding: 5px;
   display: flex;
   flex-direction: row;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   z-index: 100;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
 }
@@ -291,31 +277,6 @@ cg-board .popup-container piece:hover {
 cg-board .popup-container piece.selected {
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
   transform: scale(1.1);
-}
-
-/* Carrier piece styling */
-cg-board .combined-piece-popup .carrier-piece {
-  position: relative;
-}
-
-cg-board .combined-piece-popup .carrier-piece::after {
-  content: '';
-  position: absolute;
-  right: -4px;
-  top: 10%;
-  height: 80%;
-  width: 1px;
-  background-color: #ccc;
-}
-
-/* --- Stack Interaction States --- */
-.cg-wrap piece.combined-stack .selected-stack-piece {
-  filter: brightness(1.2);
-  z-index: 10 !important;
-}
-
-.cg-wrap piece.combined-stack piece {
-  transition: opacity 0.3s ease;
 }
 
 .dragging {

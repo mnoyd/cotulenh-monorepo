@@ -7,8 +7,8 @@ import { pieceAttackPopup } from '../piece-attack.js';
 
 // Constants for popup dimensions and positioning
 // These values serve as defaults and will be scaled based on board dimensions
-const ITEM_GAP = 6;
-const POPUP_PADDING = 6;
+const ITEM_GAP = 5;
+const POPUP_PADDING = 5;
 const POPUP_VERTICAL_OFFSET = 60;
 
 type PopupFactoryOptions<T> = {
