@@ -3,6 +3,7 @@ import * as board from '../board.js';
 import * as util from '../util.js';
 import * as cg from '../types.js';
 import { combinedPiecePopup } from '../combined-piece.js';
+import { pieceAttackPopup } from '../piece-attack.js';
 
 // Constants for popup dimensions and positioning
 // These values serve as defaults and will be scaled based on board dimensions
@@ -24,14 +25,19 @@ type PopupFactoryOptions<T> = {
    */
   onSelect: (s: State, index: number, e?: cg.MouchEvent) => void;
   /**
+   * Optional function called when the popup is closed
+   */
+  onClose?: (s: State) => void;
+  /**
    * Optional class name for the popup container
    */
   className?: string;
 };
 
 export interface CTLPopup<T> {
-  setPopup(s: State, items: T[], position: cg.NumberPair): HTMLElement | undefined;
+  setPopup(s: State, items: T[], key: cg.Key): HTMLElement | undefined;
   handlePopupClick(s: State, itemIndex: number, e?: cg.MouchEvent): void;
+  clearPopup?: (s: State) => void;
 }
 
 /**
@@ -40,6 +46,7 @@ export interface CTLPopup<T> {
  */
 export function clearPopup(s: State): void {
   if (!s) return;
+  getPopup(s)?.clearPopup?.(s);
 
   if (s.popup?.containerEl) {
     try {
@@ -48,9 +55,10 @@ export function clearPopup(s: State): void {
     } catch (error) {
       console.error('Error removing popup:', error);
     }
-    // Clear the state reference
-    s.popup = undefined;
   }
+  // Clear the state reference
+  s.popup = undefined;
+  s.dom.redraw();
 }
 
 /**
@@ -62,6 +70,7 @@ export function createPopupFactory<T>(options: PopupFactoryOptions<T>): CTLPopup
   const popup: CTLPopup<T> = {
     setPopup: createSetPopUp(options),
     handlePopupClick: createHandlePopupClick(options),
+    clearPopup: options.onClose,
   };
 
   return popup;
@@ -117,13 +126,13 @@ export function isPositionInPopup(
 export function calculatePopupPosition(
   s: State,
   items: HTMLElement[],
-  position: cg.NumberPair,
+  key: cg.Key,
 ): { position: cg.NumberPair; dimensions: { width: number; height: number } } {
   // Create popup container with appropriate class
   const bounds = s.dom.bounds();
   const asRed = board.redPov(s);
   const posToTranslateFn = util.posToTranslate(bounds);
-  const pieceKey = board.getKeyAtDomPos(position, asRed, bounds);
+  const pieceKey = key;
 
   // Default return for invalid cases
   const defaultReturn = {
@@ -204,7 +213,7 @@ export function calculatePopupPosition(
 }
 
 function createSetPopUp<T>(options: PopupFactoryOptions<T>): CTLPopup<T>['setPopup'] {
-  return (s: State, items: T[], position: cg.NumberPair): HTMLElement | undefined => {
+  return (s: State, items: T[], key: cg.Key): HTMLElement | undefined => {
     // Remove any existing popup first
     clearPopup(s);
     const itemElements = items.map((item, index) => {
@@ -213,7 +222,7 @@ function createSetPopUp<T>(options: PopupFactoryOptions<T>): CTLPopup<T>['setPop
       itemEl.setAttribute('data-index', index.toString());
       return itemEl;
     });
-    const { position: popupPosition } = calculatePopupPosition(s, itemElements, position);
+    const { position: popupPosition } = calculatePopupPosition(s, itemElements, key);
     const popup = createPopupElement(itemElements, popupPosition);
     if (!popup) {
       return undefined;
@@ -221,7 +230,7 @@ function createSetPopUp<T>(options: PopupFactoryOptions<T>): CTLPopup<T>['setPop
     // Ensure popup stays within board bounds by adjusting position if needed
     // adjustPopupPosition(popup, s.dom.elements.board, popupPosition, popupDimensions);
     s.popup = {
-      square: board.getKeyAtDomPos(position, board.redPov(s), s.dom.bounds()),
+      square: key,
       items,
       type: options.type,
       containerEl: popup,
@@ -257,14 +266,16 @@ function createHandlePopupClick<T>(
   };
 }
 
-export function getPopup(s: State, type: string): CTLPopup<any> | undefined {
-  if (!s.popup || s.popup.type !== type) {
+export function getPopup(s: State, type?: string): CTLPopup<any> | undefined {
+  if (!s.popup || (type && s.popup.type !== type)) {
     return undefined;
   }
   const filter = type ? type : s.popup.type;
   switch (filter) {
     case 'combined-piece':
       return combinedPiecePopup;
+    case 'piece-attack':
+      return pieceAttackPopup;
     default:
       return undefined;
   }

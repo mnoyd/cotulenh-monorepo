@@ -77,7 +77,7 @@ export function start(s: State, e: cg.MouchEvent): void {
   ) {
     if (!s.selected || !s.selected.stackMove) {
       // showCombinedPiecePopup(s, keyAtPosition, piece, position);
-      combinedPiecePopup.setPopup(s, [{ ...piece, carrying: [] }, ...piece.carrying], position);
+      combinedPiecePopup.setPopup(s, [{ ...piece, carrying: [] }, ...piece.carrying], keyAtPosition);
       return;
     }
     board.unselect(s);
