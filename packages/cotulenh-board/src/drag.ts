@@ -36,11 +36,6 @@ export function start(s: State, e: cg.MouchEvent): void {
 
   const position = util.eventPosition(e)!;
 
-  // Handle popup interaction if active popup exists
-  if (handlePopupInteraction(s, e, position)) {
-    return; // Return if popup interaction was handled
-  }
-
   const bounds = s.dom.bounds(),
     keyAtPosition = board.getKeyAtDomPos(position, board.redPov(s), bounds);
   if (!keyAtPosition) return;
@@ -61,6 +56,12 @@ export function start(s: State, e: cg.MouchEvent): void {
   )
     e.preventDefault();
   else if (e.touches) return; // Handle only corresponding mouse event https://github.com/lichess-org/chessground/pull/268
+
+  // Handle popup interaction if active popup exists
+  // handle popup should be put here to prevent default action which send touchend event
+  if (handlePopupInteraction(s, e, position)) {
+    return; // Return if popup interaction was handled
+  }
 
   // Check for right-click on a piece
   const isRightClick = util.isRightButton(e);
