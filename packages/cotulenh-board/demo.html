@@ -40,7 +40,7 @@
         { square: 'g6', stay: false },
         { square: 'g7', stay: false },
         { square: 'g8', stay: false },
-        { square: 'b2', stay: false },
+        { square: 'b2', stay: true },
       ]);
 
       const board = CotulenhBoard(document.getElementById('board-1'), {
@@ -56,6 +56,7 @@
         //     console.log('piece moved from:', from, 'to:', to);
         //   },
         // },
+        lastMove: ['b4', 'b2'],
         movable: {
           color: 'red',
           dests,

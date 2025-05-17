@@ -287,7 +287,7 @@ export function render(s: State): void {
       attackElement.cgKey = s.attackedPiece.attackedSquare;
       translate(attackElement, posToTranslate(key2pos(s.attackedPiece.attackedSquare), asRed));
       boardEl.appendChild(attackElement);
-      pieceAttackPopup.setPopup(s, ['stay', 'back'], s.attackedPiece.attackedSquare);
+      pieceAttackPopup.setPopup(s, ['normal', 'stay'], s.attackedPiece.attackedSquare);
       s.dom.redraw();
     }
   } else {

@@ -74,49 +74,56 @@ export function isMovable(state: HeadlessState, orig: cg.OrigMove): boolean {
 }
 
 interface MoveResult {
-  updatedPieces: PiecesUpdated;
+  piecesPrepared: PiecesPrepared;
+  moveFinished: boolean;
 }
 
-export function baseMove(state: HeadlessState, orig: cg.OrigMove, dest: cg.DestMove): MoveResult | boolean {
-  // console.log('baseMove', orig, dest);
+export function baseMove(
+  state: HeadlessState,
+  orig: cg.OrigMove,
+  dest: cg.DestMove,
+): PiecesPrepared | boolean {
   if (orig.square === dest.square) return false;
 
-  const updatedPieces = preparePieceThatChanges(state, orig, dest);
+  const piecesPrepared = preparePieceThatChanges(state, orig, dest);
 
   if (dest.square === state.selected?.square) unselect(state);
   callUserFunction(state.events.move, orig, dest);
 
-  if (updatedPieces.pieceAtDest) state.pieces.set(dest.square, updatedPieces.pieceAtDest);
+  const { pieceAtDest, pieceAtOrig } = piecesPrepared.updatedPieces;
+
+  if (pieceAtDest) state.pieces.set(dest.square, pieceAtDest);
   else state.pieces.delete(dest.square);
-  if (updatedPieces.pieceAtOrig) state.pieces.set(orig.square, updatedPieces.pieceAtOrig);
+  if (pieceAtOrig) state.pieces.set(orig.square, pieceAtOrig);
   else state.pieces.delete(orig.square);
 
-  state.lastMove = [orig.square, dest.square];
-  state.check = undefined;
+  // state.lastMove = [orig.square, dest.square];
+  // state.check = undefined;
   callUserFunction(state.events.change);
-  return {
-    updatedPieces,
-  };
+  return piecesPrepared;
 }
 
 function baseUserMove(state: HeadlessState, orig: cg.OrigMove, dest: cg.DestMove): MoveResult | boolean {
-  const result = baseMove(state, orig, dest) as MoveResult;
-  if (result) {
-    if (result.updatedPieces.captureMoveStay === 'need_clarify') {
+  const piecesPrepared = baseMove(state, orig, dest);
+  if (piecesPrepared && typeof piecesPrepared === 'object') {
+    if (piecesPrepared.updatedPieces.captureMoveStay === 'need_clarify') {
       state.attackedPiece = {
         attackerSquare: orig.square,
         attackedSquare: dest.square,
-        originalPiece: result.updatedPieces.originalPiece,
-        attacker: result.updatedPieces.pieceThatMoves!,
-        attacked: result.updatedPieces.capturedPiece!,
+        originalPiece: piecesPrepared.originalPiece.originalOrigPiece,
+        attacker: piecesPrepared.updatedPieces.pieceThatMoves,
+        attacked: piecesPrepared.originalPiece.originalDestPiece!,
       };
-      return result;
+      return { piecesPrepared, moveFinished: false };
     }
+    state.lastMove = [orig.square, dest.square];
+    state.check = undefined;
     state.movable.dests = undefined;
     state.turnColor = opposite(state.turnColor);
     state.animation.current = undefined;
+    return { piecesPrepared, moveFinished: true };
   }
-  return result;
+  return false;
 }
 
 export function userMove(state: HeadlessState, origMove: cg.OrigMove, destMove: cg.DestMove): boolean {
@@ -128,13 +135,18 @@ export function userMove(state: HeadlessState, origMove: cg.OrigMove, destMove: 
   const result = baseUserMove(state, origMove, destMove) as MoveResult;
 
   if (result) {
+    if (!result.moveFinished) {
+      return true;
+    }
     const holdTime = state.hold.stop();
     unselect(state);
     const metadata: cg.MoveMetadata = {
       premove: false,
       ctrlKey: state.stats.ctrlKey,
       holdTime,
-      ...(result.updatedPieces.capturedPiece && { captured: result.updatedPieces.capturedPiece }),
+      ...(result.piecesPrepared.updatedPieces.capture && {
+        captured: result.piecesPrepared.originalPiece.originalDestPiece,
+      }),
     };
     callUserFunction(state.movable.events.after, origMove, destMove, metadata);
     return true;
@@ -341,9 +353,6 @@ function prepareOrigPiece(
     //If stay capture original square remain unchanged
     return { piece: original ? original : pieceThatMoves };
   }
-  if (captureMoveStay === 'need_clarify') {
-    console.warn('Need clarify not fully implemented, temporarily deleting the target');
-  }
   if (original) {
     if (stackPieceType === 'carrier') {
       const { combined, uncombined } = createCombineStackFromPieces([...original.carrying!]);
@@ -390,15 +399,21 @@ interface PiecesUpdated {
   pieceAtDest: cg.Piece | undefined;
   pieceAtOrig: cg.Piece | undefined;
   pieceThatMoves: cg.Piece;
-  originalPiece: cg.Piece;
-  capturedPiece?: cg.Piece | undefined;
+  capture: boolean;
   captureMoveStay: captureMoveStay;
 }
-
-function preparePieceThatChanges(state: HeadlessState, orig: cg.OrigMove, dest: cg.DestMove): PiecesUpdated {
+interface OriginalPiece {
+  originalOrigPiece: cg.Piece;
+  originalDestPiece: cg.Piece | undefined;
+}
+interface PiecesPrepared {
+  updatedPieces: PiecesUpdated;
+  originalPiece: OriginalPiece;
+}
+function preparePieceThatChanges(state: HeadlessState, orig: cg.OrigMove, dest: cg.DestMove): PiecesPrepared {
   const dests = state.movable.dests;
-  const pieceAtDest = state.pieces.get(dest.square);
-  const captureMoveStay = pieceAtDest ? isStayCaptureMove(orig, dest, dests) : false;
+  const pieceAtDestBeforeMove = state.pieces.get(dest.square);
+  const captureMoveStay = pieceAtDestBeforeMove ? isStayCaptureMove(orig, dest, dests) : false;
   const { piece: pieceThatMoves, original, type: stackPieceType } = getPieceFromOrigMove(state, orig);
   if (!pieceThatMoves) {
     throw new Error('No piece that moves');
@@ -412,15 +427,20 @@ function preparePieceThatChanges(state: HeadlessState, orig: cg.OrigMove, dest: 
   const { piece: preparedDestPiece, capturedPiece } = prepareDestPiece(
     captureMoveStay,
     pieceThatMoves!,
-    pieceAtDest,
+    pieceAtDestBeforeMove,
     remainingCarried,
   );
   return {
-    pieceAtDest: preparedDestPiece,
-    pieceAtOrig: preparedOrigPiece,
-    pieceThatMoves: pieceThatMoves,
-    originalPiece: original!,
-    capturedPiece,
-    captureMoveStay,
+    updatedPieces: {
+      pieceAtDest: preparedDestPiece,
+      pieceAtOrig: preparedOrigPiece,
+      pieceThatMoves: pieceThatMoves,
+      capture: !!capturedPiece,
+      captureMoveStay,
+    },
+    originalPiece: {
+      originalOrigPiece: stackPieceType === 'carried' ? original! : pieceThatMoves,
+      originalDestPiece: pieceAtDestBeforeMove,
+    },
   };
 }

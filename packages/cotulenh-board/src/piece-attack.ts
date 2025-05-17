@@ -1,7 +1,15 @@
-import { createPopupFactory } from './popup/popup-factory';
+import { unselect, userMove } from './board';
+import { clearPopup, createPopupFactory } from './popup/popup-factory';
 import { State } from './state';
-import * as cg from './types.js';
 import { createEl } from './util';
+
+export function returnToOriginalPieceState(s: State) {
+  const attackedPiece = s.attackedPiece;
+  if (!attackedPiece) return;
+  const originalPiece = attackedPiece.originalPiece ? attackedPiece.originalPiece : attackedPiece.attacker;
+  s.pieces.set(attackedPiece.attackedSquare, attackedPiece.attacked);
+  s.pieces.set(attackedPiece.attackerSquare, originalPiece);
+}
 
 const pieceAttackPopup = createPopupFactory<string>({
   type: 'piece-attack',
@@ -15,17 +23,30 @@ const pieceAttackPopup = createPopupFactory<string>({
     el.style.height = `${squareSize}px`;
     return el;
   },
-  onSelect: (s: State, index: number, e?: cg.MouchEvent) => {
-    console.log('Selected piece:', index, s, e);
+  onSelect: (s: State, index: number) => {
+    console.log('Selected piece:', index, s.popup?.items[index]);
+    if (!s.attackedPiece) return;
+    returnToOriginalPieceState(s);
+    const origMove = {
+      square: s.attackedPiece.attackerSquare,
+      type: s.attackedPiece.attacker.role,
+    };
+    const destMove = {
+      square: s.attackedPiece.attackedSquare,
+      stay: s.popup?.items[index] === 'stay',
+    };
+    const result = userMove(s, origMove, destMove);
+    if (result) {
+    }
+    //Must clear attackedPiece before onClose as it will return board to original state if not cleared.
+    s.attackedPiece = undefined;
+    clearPopup(s);
+    s.dom.redraw();
   },
   onClose: (s: State) => {
-    console.log('Popup closed:', s);
-    const attackedPiece = s.attackedPiece;
-    if (!attackedPiece) return;
-    const originalPiece = attackedPiece.originalPiece ? attackedPiece.originalPiece : attackedPiece.attacker;
-    s.pieces.set(attackedPiece.attackedSquare, attackedPiece.attacked);
-    s.pieces.set(attackedPiece.attackerSquare, originalPiece);
+    returnToOriginalPieceState(s);
     s.attackedPiece = undefined;
+    unselect(s);
   },
 });
 export { pieceAttackPopup };
