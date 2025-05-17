@@ -76,6 +76,7 @@ export function isMovable(state: HeadlessState, orig: cg.OrigMove): boolean {
 
 interface MoveResult {
   piecesPrepared: PiecesPrepared;
+  deployMove?: cg.DeployMove;
   moveFinished: boolean;
 }
 
@@ -123,7 +124,15 @@ function baseUserMove(state: HeadlessState, orig: cg.OrigMove, dest: cg.DestMove
       const deployMove = deployStateToMove(state);
       console.log('deployMove', deployMove);
       unselect(state);
-      return { piecesPrepared, moveFinished: false };
+      if (deployMove.stay === undefined) {
+        state.stackPieceMoves = undefined;
+        state.check = undefined;
+        state.movable.dests = undefined;
+        state.turnColor = opposite(state.turnColor);
+        state.animation.current = undefined;
+        return { piecesPrepared, deployMove, moveFinished: true };
+      }
+      return { piecesPrepared, deployMove, moveFinished: false };
     }
     //Move finished
     state.lastMove = [orig.square, dest.square];
@@ -151,14 +160,17 @@ export function userMove(state: HeadlessState, origMove: cg.OrigMove, destMove: 
     const holdTime = state.hold.stop();
     unselect(state);
     const metadata: cg.MoveMetadata = {
-      premove: false,
       ctrlKey: state.stats.ctrlKey,
       holdTime,
       ...(result.piecesPrepared.updatedPieces.capture && {
         captured: result.piecesPrepared.originalPiece.originalDestPiece,
       }),
     };
-    callUserFunction(state.movable.events.after, origMove, destMove, metadata);
+    if (result.deployMove) {
+      callUserFunction(state.movable.events.afterDeploy, result.deployMove, metadata);
+    } else {
+      callUserFunction(state.movable.events.after, origMove, destMove, metadata);
+    }
     return true;
   }
 
@@ -274,10 +286,7 @@ export function dropNewPiece(state: HeadlessState, orig: cg.Key, dest: cg.Key, f
   if (piece && (canDrop(state, orig, dest) || force)) {
     state.pieces.delete(orig);
     baseNewPiece(state, piece, dest, force);
-    callUserFunction(state.movable.events.afterNewPiece, piece.role, dest, {
-      premove: false,
-      predrop: false,
-    });
+    callUserFunction(state.movable.events.afterNewPiece, piece.role, dest, {});
   }
   state.pieces.delete(orig);
   unselect(state);
@@ -534,18 +543,7 @@ function handleStackPieceMoves(
   }
 }
 
-interface SingleMove {
-  piece: cg.Piece;
-  orig: cg.Key;
-  dest: cg.Key;
-  capturedPiece?: cg.Piece;
-}
-interface DeployMove {
-  moves: SingleMove[];
-  stay: cg.Piece;
-}
-
-function deployStateToMove(s: HeadlessState): DeployMove {
+function deployStateToMove(s: HeadlessState): cg.DeployMove {
   const deployState = s.stackPieceMoves;
   if (!deployState) {
     throw new Error('No deploy state');
@@ -567,7 +565,7 @@ function deployStateToMove(s: HeadlessState): DeployMove {
       destsMap.set(key, { piece: [piece], capturedPiece: m.capturedPiece });
     }
   });
-  const moves: SingleMove[] = [];
+  const moves: cg.SingleMove[] = [];
   destsMap.forEach((value, key) => {
     const { combined, uncombined } = createCombineStackFromPieces([...value.piece]);
     if (combined == null && uncombined != null)

@@ -97,11 +97,9 @@ export type DestMove = { square: Key; stay?: boolean };
 export type OrigMoveKey = `${Key}.${Role}`;
 export type Dests = Map<OrigMoveKey, DestMove[]>;
 export interface MoveMetadata {
-  premove: boolean;
   ctrlKey?: boolean;
   holdTime?: number;
   captured?: Piece;
-  predrop?: boolean;
 }
 export type BrushColor = 'green' | 'red' | 'blue' | 'yellow';
 export type KeyPair = [Key, Key];
@@ -128,3 +126,14 @@ export interface SelectedPieceInfo {
   isFromStack: boolean;
 }
 export type StackPieceType = 'carrier' | 'carried';
+
+export interface SingleMove {
+  piece: Piece;
+  orig: Key;
+  dest: Key;
+  capturedPiece?: Piece;
+}
+export interface DeployMove {
+  moves: SingleMove[];
+  stay: Piece;
+}

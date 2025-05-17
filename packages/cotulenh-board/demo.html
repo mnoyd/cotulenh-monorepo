@@ -138,6 +138,9 @@
                 metadata,
               );
             },
+            afterDeploy: (move, metadata) => {
+              console.log('piece deployed:', move, 'metadata:', metadata);
+            },
           },
         },
       });
