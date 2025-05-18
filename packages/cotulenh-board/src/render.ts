@@ -331,9 +331,11 @@ export function renderResized(s: State): void {
 
 function computeSquareClasses(s: State): cg.SquareClasses {
   const squares: cg.SquareClasses = new Map();
+  let isFirstSquareInLastMove = true;
   if (s.lastMove && s.highlight.lastMove)
     for (const k of s.lastMove) {
-      addSquare(squares, k, 'last-move');
+      addSquare(squares, k, 'last-move ' + (isFirstSquareInLastMove ? 'from' : 'to'));
+      isFirstSquareInLastMove = false;
     }
   if (s.check && s.highlight.check) addSquare(squares, s.check, 'check');
   if (s.selected) {

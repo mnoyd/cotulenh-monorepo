@@ -29,13 +29,21 @@ cg-board square.oc.move-dest {
 cg-board square.move-dest:hover {
   background: rgba(20, 85, 30, 0.3);
 }
-cg-board square.last-move {
+/* cg-board square.last-move {
   background-color: rgba(155, 199, 0, 0.41);
-  border-radius: 10px; /* Added to make corners rounder */
+  border-radius: 10px;
+} */
+cg-board square.last-move.from {
+  background-color: #31ce8f7d;
+  border-radius: 10px;
+}
+cg-board square.last-move.to {
+  background-color: #ce317081;
+  border-radius: 10px;
 }
 cg-board square.selected {
   background-color: rgba(20, 85, 30, 0.5);
-  border-radius: 10px; /* Added to make corners rounder */
+  border-radius: 10px;
 }
 cg-board square.sm.selected {
   background-color: rgba(237, 174, 27, 0.5);
