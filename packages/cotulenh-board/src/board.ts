@@ -99,8 +99,6 @@ export function baseMove(
   if (pieceAtOrig) state.pieces.set(orig.square, pieceAtOrig);
   else state.pieces.delete(orig.square);
 
-  // state.lastMove = [orig.square, dest.square];
-  // state.check = undefined;
   callUserFunction(state.events.change);
   return piecesPrepared;
 }
@@ -159,6 +157,7 @@ export function userMove(state: HeadlessState, origMove: cg.OrigMove, destMove: 
     }
     const holdTime = state.hold.stop();
     unselect(state);
+    //TODO: Should implement metadata specificlly for deployMove
     const metadata: cg.MoveMetadata = {
       ctrlKey: state.stats.ctrlKey,
       holdTime,
@@ -572,7 +571,6 @@ function deployStateToMove(s: HeadlessState): cg.DeployMove {
       throw new Error('the piece is not suitable to stay in one square');
     moves.push({
       piece: combined!,
-      orig: deployState.key,
       dest: key,
       ...(value.capturedPiece && { capturedPiece: value.capturedPiece }),
     });
@@ -582,6 +580,7 @@ function deployStateToMove(s: HeadlessState): cg.DeployMove {
     throw new Error('the piece is not suitable to stay in one square');
   return {
     moves,
+    orig: deployState.key,
     stay: stayPiece!,
   };
 }

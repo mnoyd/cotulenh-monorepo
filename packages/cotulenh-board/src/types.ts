@@ -129,11 +129,11 @@ export type StackPieceType = 'carrier' | 'carried';
 
 export interface SingleMove {
   piece: Piece;
-  orig: Key;
   dest: Key;
   capturedPiece?: Piece;
 }
 export interface DeployMove {
+  orig: Key;
   moves: SingleMove[];
   stay: Piece;
 }
