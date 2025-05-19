@@ -261,6 +261,7 @@ export function generateMovesInDirection(
             targetPiece,
             currentRange,
             config,
+            isDeployMove,
           )
         }
       } else if (targetPiece.color === us) {
@@ -405,6 +406,7 @@ function handleCaptureLogic(
   targetPiece: Piece,
   currentRange: number,
   config: PieceMovementConfig,
+  isDeployMove: boolean,
 ): void {
   const us = pieceData.color
 
@@ -439,7 +441,9 @@ function handleCaptureLogic(
   }
   //Air Force is very powerful piece. Add both options whether it can choose to stay captured or move capture
   if (canLand && pieceData.type === AIR_FORCE) {
-    addStayCapture = true
+    if (!isDeployMove) {
+      addStayCapture = true
+    }
     addNormalCapture = true
   }
 
