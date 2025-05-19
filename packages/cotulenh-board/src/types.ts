@@ -99,7 +99,7 @@ export type Dests = Map<OrigMoveKey, DestMove[]>;
 export interface MoveMetadata {
   ctrlKey?: boolean;
   holdTime?: number;
-  captured?: Piece;
+  captured?: Piece[];
 }
 export type BrushColor = 'green' | 'red' | 'blue' | 'yellow';
 export type KeyPair = [Key, Key];

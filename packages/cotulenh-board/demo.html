@@ -109,7 +109,7 @@
 
       const board = CotulenhBoard(document.getElementById('board-1'), {
         // fen: '1n8g/11/5s5/11/11/5g5/11/11/5F5/11/2N8/11',
-        fen: 'c4(FTI)5/11/11/11/2a2(NFI)5/11/6E4/6i4/11/11/1n4F1T4/10(NTI)',
+        fen: 'c4(FTI)5/11/11/11/2(ea)2(NFI)i4/5(fti)5/6E4/6i4/11/11/1n4F1T4/10(NTI)',
         //   movable: {
         //   color: "red",
         //   free: true,
@@ -126,17 +126,8 @@
           dests,
           free: false,
           events: {
-            after: (orig, dest, pieceType, metadata) => {
-              console.log(
-                'piece moved from:',
-                orig,
-                'to:',
-                dest,
-                'pieceType:',
-                pieceType,
-                'metadata:',
-                metadata,
-              );
+            after: (orig, dest, metadata) => {
+              console.log('piece moved from:', orig, 'to:', dest, 'metadata:', metadata);
             },
             afterDeploy: (move, metadata) => {
               console.log('piece deployed:', move, 'metadata:', metadata);

@@ -158,13 +158,28 @@ export function userMove(state: HeadlessState, origMove: cg.OrigMove, destMove: 
     const holdTime = state.hold.stop();
     unselect(state);
     //TODO: Should implement metadata specificlly for deployMove
-    const metadata: cg.MoveMetadata = {
-      ctrlKey: state.stats.ctrlKey,
-      holdTime,
-      ...(result.piecesPrepared.updatedPieces.capture && {
-        captured: result.piecesPrepared.originalPiece.originalDestPiece,
-      }),
-    };
+    let metadata: cg.MoveMetadata;
+    if (result.deployMove) {
+      let captures: cg.Piece[] | undefined;
+      captures = result.deployMove.moves.map(move => move.capturedPiece!);
+      captures = captures.filter(capture => capture !== undefined);
+      const capturesFlatedout = captures.reduce<cg.Piece[]>(
+        (acc, piece) => [...acc, ...flatOutPiece(piece)],
+        [],
+      );
+      metadata = {
+        holdTime,
+        captured: capturesFlatedout,
+      };
+    } else {
+      metadata = {
+        ctrlKey: state.stats.ctrlKey,
+        holdTime,
+        ...(result.piecesPrepared.updatedPieces.capture && {
+          captured: flatOutPiece(result.piecesPrepared.updatedPieces.pieceAtDest!),
+        }),
+      };
+    }
     if (result.deployMove) {
       callUserFunction(state.movable.events.afterDeploy, result.deployMove, metadata);
     } else {
