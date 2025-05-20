@@ -77,6 +77,24 @@ export function createCombinedPiece(
   )
   return combinedPiece
 }
+export function createCombineStackFromPieces(pieces: Piece[]): {
+  combined: Piece | undefined
+  uncombined: Piece[] | undefined
+} {
+  if (!pieces || pieces.length === 0)
+    return { combined: undefined, uncombined: undefined }
+  const uncombined: Piece[] = []
+  const piece = pieces.reduce((acc, p) => {
+    if (!acc) return p
+    const combined = createCombinedPiece(acc, p)
+    if (!combined) {
+      uncombined.push(p)
+      return acc
+    }
+    return combined
+  }, pieces[0])
+  return { combined: piece, uncombined: uncombined.splice(1) }
+}
 
 export function getDisambiguator(
   move: InternalMove,
@@ -391,4 +409,10 @@ export function inferPieceType(san: string): PieceSymbol | undefined {
     return pieceType as PieceSymbol
   }
   return undefined
+}
+
+//Flatten a combined piece to a multiple single pieces
+export function flattenPiece(piece: Piece): Piece[] {
+  if (!piece.carrying?.length) return [piece]
+  return [{ ...piece, carrying: undefined }, ...piece.carrying]
 }

@@ -9,7 +9,11 @@ import {
   BITS,
   Piece,
 } from './type.js'
-import { createCombinedPiece } from './utils.js'
+import {
+  createCombinedPiece,
+  createCombineStackFromPieces,
+  flattenPiece,
+} from './utils.js'
 
 /**
  * Represents an atomic board action that can be executed and undone
@@ -74,13 +78,11 @@ class PlacePieceAction implements AtomicMoveAction {
  * Removes a piece from a carrier's stack
  */
 class RemoveFromStackAction implements AtomicMoveAction {
-  private removedPiece?: Piece
-  private removedIndex: number = -1
+  private removedPiece: Piece[] | null = null
 
   constructor(
     private carrierSquare: number,
-    private pieceType: string,
-    private pieceColor: string,
+    private piece: Piece,
   ) {}
 
   execute(game: CoTuLenh): void {
@@ -90,28 +92,27 @@ class RemoveFromStackAction implements AtomicMoveAction {
         `No carrier or carrying pieces at ${algebraic(this.carrierSquare)}`,
       )
     }
-
-    this.removedIndex = carrier.carrying.findIndex(
-      (p) => p.type === this.pieceType && p.color === this.pieceColor,
+    const movingPiece = flattenPiece(this.piece)
+    this.removedPiece = [...movingPiece] //set the value of moving piece here.
+    const allPieces = flattenPiece(carrier)
+    const remainingPiece = allPieces.filter(
+      (p) => !movingPiece.some((p2) => p2.type === p.type),
     )
 
-    if (this.removedIndex === -1) {
+    if (remainingPiece.length + movingPiece.length !== allPieces.length) {
       throw new Error(
-        `Piece ${this.pieceType} not found in carrier at ${algebraic(this.carrierSquare)}`,
+        `Request moving piece ${algebraic(this.carrierSquare)} not found in the stack`,
+      )
+    }
+    const { combined: combinedPiece, uncombined } =
+      createCombineStackFromPieces(remainingPiece)
+    if (!combinedPiece || (uncombined?.length ?? 0) > 0) {
+      throw new Error(
+        `Failed to remove piece from stack at ${algebraic(this.carrierSquare)}`,
       )
     }
 
-    const originalPiece = carrier.carrying[this.removedIndex]
-    this.removedPiece = {
-      type: originalPiece.type,
-      color: originalPiece.color,
-      heroic: originalPiece.heroic || false,
-    }
-    carrier.carrying.splice(this.removedIndex, 1)
-
-    if (carrier.carrying.length === 0) {
-      carrier.carrying = undefined
-    }
+    game.setPieceAt(this.carrierSquare, combinedPiece)
   }
 
   undo(game: CoTuLenh): void {
@@ -123,20 +124,15 @@ class RemoveFromStackAction implements AtomicMoveAction {
         `Carrier missing during undo at ${algebraic(this.carrierSquare)}`,
       )
     }
-
-    if (!carrier.carrying) {
-      carrier.carrying = []
+    const allPieces = flattenPiece(carrier)
+    const { combined: combinedPiece, uncombined } =
+      createCombineStackFromPieces([...allPieces, ...this.removedPiece])
+    if (!combinedPiece || (uncombined?.length ?? 0) > 0) {
+      throw new Error(
+        `Failed to remove piece from stack at ${algebraic(this.carrierSquare)}`,
+      )
     }
-
-    // Insert at the original position if possible, otherwise just add to the end
-    if (
-      this.removedIndex >= 0 &&
-      this.removedIndex <= carrier.carrying.length
-    ) {
-      carrier.carrying.splice(this.removedIndex, 0, this.removedPiece)
-    } else {
-      carrier.carrying.push(this.removedPiece)
-    }
+    game.setPieceAt(this.carrierSquare, combinedPiece)
   }
 }
 
@@ -302,25 +298,26 @@ export class DeployMoveCommand extends MoveCommand {
 
     // Handle stay capture
     if (this.move.flags & BITS.STAY_CAPTURE) {
-      const targetSq = this.move.to
-      const capturedPieceData = this.game.getPieceAt(targetSq)
+      // const targetSq = this.move.to
+      // const capturedPieceData = this.game.getPieceAt(targetSq)
 
-      if (!capturedPieceData || capturedPieceData.color !== them) {
-        throw new Error(
-          `Build Deploy Error: Stay capture target invalid ${algebraic(
-            targetSq,
-          )}`,
-        )
-      }
+      // if (!capturedPieceData || capturedPieceData.color !== them) {
+      //   throw new Error(
+      //     `Build Deploy Error: Stay capture target invalid ${algebraic(
+      //       targetSq,
+      //     )}`,
+      //   )
+      // }
 
-      this.move.otherPiece = capturedPieceData
-      this.actions.push(new RemovePieceAction(targetSq))
+      // this.move.otherPiece = capturedPieceData
+      // this.actions.push(new RemovePieceAction(targetSq))
+      throw new Error('Stay capture not allowed')
     }
     // Handle normal deploy (with or without capture)
     else {
       // Add action to remove the piece from the carrier's stack
       this.actions.push(
-        new RemoveFromStackAction(this.move.from, this.move.piece.type, us),
+        new RemoveFromStackAction(this.move.from, this.move.piece),
       )
       const destSq = this.move.to
 
@@ -340,26 +337,16 @@ export class DeployMoveCommand extends MoveCommand {
         this.actions.push(new RemovePieceAction(destSq))
       }
 
-      // Find the piece in the carrier's stack to deploy
-      const deployedPieceIndex = carrierPiece.carrying!.findIndex(
-        (p) => p.type === this.move.piece.type && p.color === us,
+      // Add action to place the deployed piece
+      this.actions.push(new PlacePieceAction(destSq, this.move.piece))
+
+      const flattendMovingPieces = flattenPiece(this.move.piece)
+      const haveCommander = flattendMovingPieces.some(
+        (p) => p.type === COMMANDER,
       )
 
-      if (deployedPieceIndex === -1) {
-        throw new Error(
-          `Build Deploy Error: Piece ${this.move.piece} not found in carrier at ${algebraic(
-            this.move.from,
-          )}`,
-        )
-      }
-
-      const deployedPiece = { ...carrierPiece.carrying![deployedPieceIndex] }
-
-      // Add action to place the deployed piece
-      this.actions.push(new PlacePieceAction(destSq, deployedPiece))
-
       // Update king position if needed
-      if (deployedPiece.type === COMMANDER) {
+      if (haveCommander) {
         this.actions.push(new UpdateKingPositionAction(us, destSq, this.game))
       }
     }

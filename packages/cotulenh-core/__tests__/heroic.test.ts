@@ -252,7 +252,12 @@ describe('Move makes piece heroic test', () => {
     )
     game['_turn'] = BLUE
 
-    const moveResult = game.move({ from: 'b2', to: 'c1', piece: NAVY })
+    const moveResult = game.move({
+      from: 'b2',
+      to: 'c1',
+      piece: NAVY,
+      deploy: false,
+    })
 
     // Assertions
     expect(moveResult).not.toBeNull()

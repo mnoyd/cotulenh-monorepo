@@ -1228,8 +1228,9 @@ export class CoTuLenh {
       | {
           from: string
           to: string
-          stay?: boolean
           piece?: PieceSymbol
+          stay?: boolean
+          deploy?: boolean
         },
     { strict = false }: { strict?: boolean } = {},
   ): Move | null {
@@ -1242,6 +1243,7 @@ export class CoTuLenh {
       const fromSq = SQUARE_MAP[move.from as Square]
       const toSq = SQUARE_MAP[move.to as Square]
       const requestedStay = move.stay === true
+      const requestedDeploy = move.deploy
 
       if (fromSq === undefined || toSq === undefined) {
         throw new Error(
@@ -1253,17 +1255,23 @@ export class CoTuLenh {
       const legalMoves = this._moves({
         legal: true,
         square: move.from as Square,
+        ...(move.piece && { pieceType: move.piece }),
       })
       const foundMoves: InternalMove[] = []
       for (const m of legalMoves) {
         const isStayMove = (m.flags & BITS.STAY_CAPTURE) !== 0
         const targetSquareInternal = m.to
 
+        const isDeployMove = (m.flags & BITS.DEPLOY) !== 0
+
         if (
           m.from === fromSq &&
           targetSquareInternal === toSq &&
           (move.piece === undefined || m.piece.type === move.piece) &&
-          (requestedStay ? requestedStay === isStayMove : true)
+          (requestedStay ? requestedStay === isStayMove : true) &&
+          (requestedDeploy !== undefined
+            ? requestedDeploy === isDeployMove
+            : true)
         ) {
           foundMoves.push(m)
         }

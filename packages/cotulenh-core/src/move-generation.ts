@@ -28,7 +28,7 @@ import {
   Square,
   HEAVY_PIECES,
 } from './type.js'
-import { addMove, createCombinedPiece } from './utils.js'
+import { addMove, createCombinedPiece, flattenPiece } from './utils.js'
 import { BITS } from './type.js'
 import { CoTuLenh } from './cotulenh.js'
 
@@ -520,13 +520,14 @@ export function generateDeployMoves(
 
   // Generate Deploy Moves for remaining carrying pieces
   if (carrierPiece.carrying) {
-    for (const carriedPiece of carrierPiece.carrying) {
-      if (filterPiece && carriedPiece.type !== filterPiece) continue
+    const deployMoveCandidates = flattenPiece(carrierPiece)
+    for (const deployMoveCandidate of deployMoveCandidates) {
+      if (filterPiece && deployMoveCandidate.type !== filterPiece) continue
 
       const deployMoves = generateMovesForPiece(
         gameInstance,
         stackSquare,
-        carriedPiece,
+        deployMoveCandidate,
         false,
         true,
       )
@@ -581,12 +582,13 @@ export function generateNormalMoves(
     if (!pieceData || pieceData.color !== us) continue
 
     if (pieceData.carrying && pieceData.carrying.length > 0) {
-      for (const carriedPiece of pieceData.carrying) {
-        if (filterPiece && carriedPiece.type !== filterPiece) continue
+      const deployMoveCandidates = flattenPiece(pieceData)
+      for (const deployMoveCandidate of deployMoveCandidates) {
+        if (filterPiece && deployMoveCandidate.type !== filterPiece) continue
         const deployMoves = generateMovesForPiece(
           gameInstance,
           from,
-          carriedPiece,
+          deployMoveCandidate,
           false,
           true,
         )

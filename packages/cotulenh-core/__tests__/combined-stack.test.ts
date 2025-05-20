@@ -31,6 +31,58 @@ describe('Stack Movement and Deployment', () => {
     // Setup: Red Navy at c3 carrying AirForce and Tank
     game.put(
       {
+        type: TANK,
+        color: RED,
+        carrying: [{ type: INFANTRY, color: RED } as Piece],
+      } as Piece,
+      'c1',
+    )
+
+    game['_turn'] = RED // Set turn for testing
+
+    const moves = game.moves({ verbose: true, square: 'c1' }) as Move[]
+
+    // Expect deploy moves for F and T, plus carrier moves for N
+    const deployI_c2 = findVerboseMove(moves, 'c1', 'c2', {
+      piece: INFANTRY,
+      isDeploy: true,
+      isStayCapture: false,
+    })
+
+    const deployT_c2 = findVerboseMove(moves, 'c1', 'c2', {
+      piece: TANK,
+      isDeploy: true,
+      isStayCapture: false,
+    })
+
+    expect(deployI_c2).toBeDefined()
+    expect(deployT_c2).toBeDefined()
+
+    const moveResult = game.move({
+      from: 'c1',
+      to: 'c2',
+      piece: TANK,
+      deploy: true,
+    })
+    expect(moveResult).not.toBeNull()
+    expect(game.get('c2')?.type).toBe(TANK)
+    expect(game.get('c2')?.color).toBe(RED)
+    expect(game.get('c1')?.type).toBe(INFANTRY)
+    expect(game.get('c1')?.color).toBe(RED)
+    expect(game.get('c1')?.carrying).toBeFalsy()
+    expect(game.get('c2')?.carrying).toBeFalsy()
+    game.undo()
+    expect(game.get('c1')?.type).toBe(TANK)
+    expect(game.get('c1')?.color).toBe(RED)
+    expect(game.get('c2')).toBeUndefined()
+    expect(game.get('c1')?.carrying).toHaveLength(1)
+    expect(game.get('c1')?.carrying?.[0].type).toBe(INFANTRY)
+    expect(game.get('c1')?.carrying?.[0].color).toBe(RED)
+  })
+
+  test('Deploy carrier from (NFT) stack', () => {
+    game.put(
+      {
         type: NAVY,
         color: RED,
         carrying: [
