@@ -191,3 +191,9 @@ export type InternalMove = {
   otherPiece?: Piece
   flags: number // Bitmask using BITS
 }
+export type DeployState = {
+  stackSquare: number
+  turn: Color
+  originalPiece: Piece
+  movedPieces: Piece[]
+}

@@ -307,7 +307,12 @@ describe('Stack Movement and Deployment', () => {
       { piece: NAVY, isDeploy: false },
     )
     expect(carrierMove).toBeDefined()
-    const moveResult = game.move({ from: 'c3', to: 'c2', piece: NAVY }) // Normal move object for carrier
+    const moveResult = game.move({
+      from: 'c3',
+      to: 'c2',
+      piece: NAVY,
+      deploy: false,
+    }) // Normal move object for carrier
 
     expect(moveResult).not.toBeNull()
     expect(game.turn()).toBe(BLUE) // Turn SHOULD change now
@@ -318,6 +323,40 @@ describe('Stack Movement and Deployment', () => {
     expect(game.get('d3')?.type).toBe(TANK)
     // Cannot move air force at c4 because turn is blue
     expect(game.moves({ square: 'c4' }).length).toEqual(0)
+  })
+
+  it('check deploy state after all deploy moves', () => {
+    // Setup: Red Navy at c3 carrying AirForce and Tank
+    game.put(
+      {
+        type: NAVY,
+        color: RED,
+        carrying: [
+          { type: AIR_FORCE, color: RED },
+          { type: TANK, color: RED },
+        ],
+      },
+      'c3',
+    )
+    game['_turn'] = RED
+
+    // Deploy carrier
+    game.move({ from: 'c3', to: 'c2', piece: NAVY, deploy: true }) // Normal move object for carrier
+    // Deploy AF
+    game.move({ from: 'c3', to: 'c4', piece: AIR_FORCE, deploy: true })
+    // Deploy T
+    game.move({ from: 'c3', to: 'd3', piece: TANK, deploy: true })
+
+    expect(game.turn()).toBe(BLUE) // Turn SHOULD change now
+    expect(game.get('c3')).toBeUndefined() // Carrier moved
+    expect(game.get('c2')?.type).toBe(NAVY) // Carrier at new location
+    expect(game.get('c2')?.carrying).toBeUndefined() // Still empty stack
+    expect(game.get('c4')?.type).toBe(AIR_FORCE) // Deployed pieces remain
+    expect(game.get('d3')?.type).toBe(TANK)
+    // Cannot move air force at c4 because turn is blue
+    expect(game.moves({ square: 'c4' }).length).toEqual(0)
+
+    expect(game['_deployState']).toBeDefined()
   })
 
   // TODO: Add tests for deploy captures (normal and stay)

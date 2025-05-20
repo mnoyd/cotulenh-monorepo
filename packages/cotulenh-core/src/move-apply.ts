@@ -8,6 +8,7 @@ import {
   COMMANDER,
   BITS,
   Piece,
+  DeployState,
 } from './type.js'
 import {
   createCombinedPiece,
@@ -87,7 +88,7 @@ class RemoveFromStackAction implements AtomicMoveAction {
 
   execute(game: CoTuLenh): void {
     const carrier = game.getPieceAt(this.carrierSquare)
-    if (!carrier || !carrier.carrying) {
+    if (!carrier) {
       throw new Error(
         `No carrier or carrying pieces at ${algebraic(this.carrierSquare)}`,
       )
@@ -104,6 +105,10 @@ class RemoveFromStackAction implements AtomicMoveAction {
         `Request moving piece ${algebraic(this.carrierSquare)} not found in the stack`,
       )
     }
+    if (remainingPiece.length === 0) {
+      game.deletePieceAt(this.carrierSquare)
+      return
+    }
     const { combined: combinedPiece, uncombined } =
       createCombineStackFromPieces(remainingPiece)
     if (!combinedPiece || (uncombined?.length ?? 0) > 0) {
@@ -119,12 +124,8 @@ class RemoveFromStackAction implements AtomicMoveAction {
     if (!this.removedPiece) return
 
     const carrier = game.getPieceAt(this.carrierSquare)
-    if (!carrier) {
-      throw new Error(
-        `Carrier missing during undo at ${algebraic(this.carrierSquare)}`,
-      )
-    }
-    const allPieces = flattenPiece(carrier)
+
+    const allPieces = carrier ? flattenPiece(carrier) : []
     const { combined: combinedPiece, uncombined } =
       createCombineStackFromPieces([...allPieces, ...this.removedPiece])
     if (!combinedPiece || (uncombined?.length ?? 0) > 0) {
@@ -167,21 +168,50 @@ class UpdateKingPositionAction implements AtomicMoveAction {
  * Sets the deploy state
  */
 class SetDeployStateAction implements AtomicMoveAction {
-  private oldDeployState: { stackSquare: number; turn: Color } | null
+  private oldDeployState: DeployState | null
 
   constructor(
-    private newDeployState: { stackSquare: number; turn: Color } | null,
+    private newDeployState: DeployState | null,
     game: CoTuLenh,
   ) {
     this.oldDeployState = game['_deployState']
   }
 
   execute(game: CoTuLenh): void {
-    game['_deployState'] = this.newDeployState
+    if (this.newDeployState === null) {
+      game['_deployState'] = null
+      return
+    }
+    if (this.oldDeployState) {
+      const updatedMovedPiece = [
+        ...this.oldDeployState.movedPieces,
+        ...this.newDeployState.movedPieces,
+      ]
+      if (
+        updatedMovedPiece.length ===
+        flattenPiece(this.oldDeployState.originalPiece).length
+      ) {
+        game['_deployState'] = null
+        game['_turn'] = swapColor(this.newDeployState.turn)
+        return
+      }
+
+      game['_deployState'] = {
+        stackSquare: this.newDeployState.stackSquare,
+        turn: this.newDeployState?.turn || -1,
+        originalPiece: this.oldDeployState.originalPiece,
+        movedPieces: updatedMovedPiece,
+      }
+    } else {
+      game['_deployState'] = this.newDeployState
+    }
   }
 
   undo(game: CoTuLenh): void {
     game['_deployState'] = this.oldDeployState
+    if (this.oldDeployState) {
+      game['_turn'] = this.oldDeployState.turn
+    }
   }
 }
 
@@ -288,7 +318,7 @@ export class DeployMoveCommand extends MoveCommand {
     const them = swapColor(us)
     const carrierPiece = this.game.getPieceAt(this.move.from)
 
-    if (!carrierPiece || !carrierPiece.carrying) {
+    if (!carrierPiece) {
       throw new Error(
         `Build Deploy Error: Carrier missing or empty at ${algebraic(
           this.move.from,
@@ -296,6 +326,7 @@ export class DeployMoveCommand extends MoveCommand {
       )
     }
 
+    const flattendMovingPieces = flattenPiece(this.move.piece)
     // Handle stay capture
     if (this.move.flags & BITS.STAY_CAPTURE) {
       // const targetSq = this.move.to
@@ -340,7 +371,6 @@ export class DeployMoveCommand extends MoveCommand {
       // Add action to place the deployed piece
       this.actions.push(new PlacePieceAction(destSq, this.move.piece))
 
-      const flattendMovingPieces = flattenPiece(this.move.piece)
       const haveCommander = flattendMovingPieces.some(
         (p) => p.type === COMMANDER,
       )
@@ -357,6 +387,8 @@ export class DeployMoveCommand extends MoveCommand {
         {
           stackSquare: this.move.from,
           turn: us,
+          originalPiece: carrierPiece,
+          movedPieces: flattendMovingPieces,
         },
         this.game,
       ),

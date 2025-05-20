@@ -519,24 +519,24 @@ export function generateDeployMoves(
   }
 
   // Generate Deploy Moves for remaining carrying pieces
-  if (carrierPiece.carrying) {
-    const deployMoveCandidates = flattenPiece(carrierPiece)
-    for (const deployMoveCandidate of deployMoveCandidates) {
-      if (filterPiece && deployMoveCandidate.type !== filterPiece) continue
 
-      const deployMoves = generateMovesForPiece(
-        gameInstance,
-        stackSquare,
-        deployMoveCandidate,
-        false,
-        true,
-      )
-      deployMoves.forEach((m) => {
-        m.flags |= BITS.DEPLOY
-        moves.push(m)
-      })
-    }
+  const deployMoveCandidates = flattenPiece(carrierPiece)
+  for (const deployMoveCandidate of deployMoveCandidates) {
+    if (filterPiece && deployMoveCandidate.type !== filterPiece) continue
+
+    const deployMoves = generateMovesForPiece(
+      gameInstance,
+      stackSquare,
+      deployMoveCandidate,
+      false,
+      true,
+    )
+    deployMoves.forEach((m) => {
+      m.flags |= BITS.DEPLOY
+      moves.push(m)
+    })
   }
+
   // Generate Carrier Moves
   if (!filterPiece || carrierPiece.type === filterPiece) {
     const carrierMoves = generateMovesForPiece(

@@ -28,6 +28,7 @@ import {
   NAVY_MASK,
   LAND_MASK,
   isSquareOnBoard,
+  DeployState,
 } from './type.js'
 import {
   getDisambiguator,
@@ -56,7 +57,7 @@ interface History {
   turn: Color
   halfMoves: number // Half move clock before the move
   moveNumber: number // Move number before the move
-  deployState: { stackSquare: number; turn: Color } | null // Snapshot of deploy state before move
+  deployState: DeployState | null // Snapshot of deploy state before move
 }
 
 // Public Move class (similar to chess.js) - can be fleshed out later
@@ -134,7 +135,12 @@ export class CoTuLenh {
   private _history: History[] = []
   private _comments: Record<string, string> = {}
   private _positionCount: Record<string, number> = {}
-  private _deployState: { stackSquare: number; turn: Color } | null = null // Tracks active deploy phase
+  private _deployState: {
+    stackSquare: number
+    turn: Color
+    originalPiece: Piece
+    movedPieces: Piece[]
+  } | null = null // Tracks active deploy phase
 
   constructor(fen = DEFAULT_POSITION) {
     this.load(fen)
