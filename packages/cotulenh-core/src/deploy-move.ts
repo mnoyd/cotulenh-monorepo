@@ -67,15 +67,14 @@ export function createInternalDeployMove(
 
   const foundMove: InternalMove[] = []
   for (const move of validMoves) {
-    if (
-      toSquareNumDests.some(
-        (dest) =>
-          dest.from === move.from &&
-          dest.to === move.to &&
-          dest.piece.type === move.piece.type,
-      )
-    ) {
-      foundMove.push(move)
+    const destIndex = toSquareNumDests.findIndex(
+      (dest) =>
+        dest.from === move.from &&
+        dest.to === move.to &&
+        dest.piece.type === move.piece.type,
+    )
+    if (destIndex !== -1) {
+      foundMove.push({ ...move, piece: toSquareNumDests[destIndex].piece })
     }
   }
   if (foundMove.length !== toSquareNumDests.length) {

@@ -461,4 +461,78 @@ describe('Use deploy move', () => {
     expect(game['_deployState']).toBeNull()
     expect(game['_turn']).toBe(BLUE)
   })
+
+  it('should deploy nested piece', () => {
+    game.put(
+      {
+        type: NAVY,
+        color: RED,
+        carrying: [
+          { type: AIR_FORCE, color: RED },
+          { type: TANK, color: RED },
+        ],
+      },
+      'c3',
+    )
+    game['_turn'] = RED
+
+    const deployMove: DeployMove = {
+      from: 'c3',
+      moves: [
+        {
+          piece: {
+            type: AIR_FORCE,
+            color: RED,
+            carrying: [{ type: TANK, color: RED }],
+          },
+          to: 'c4',
+        },
+        { piece: { type: NAVY, color: RED }, to: 'a3' },
+      ],
+      stay: [],
+    }
+    game.deployMove(deployMove)
+    expect(game.get('c3')).toBeUndefined()
+    expect(game.get('c4')?.type).toBe(AIR_FORCE)
+    expect(game.get('c4')?.carrying).toHaveLength(1)
+    expect(game.get('c4')?.carrying?.[0].type).toBe(TANK)
+    expect(game.get('a3')?.type).toBe(NAVY)
+    expect(game.get('a3')?.carrying).toBeUndefined()
+    expect(game['_deployState']).toBeNull()
+    expect(game['_turn']).toBe(BLUE)
+  })
+
+  // it('stay piece should stay', () => {
+  //   game.put(
+  //     {
+  //       type: NAVY,
+  //       color: RED,
+  //       carrying: [
+  //         { type: AIR_FORCE, color: RED },
+  //         { type: TANK, color: RED },
+  //       ],
+  //     },
+  //     'c3',
+  //   )
+  //   game['_turn'] = RED
+
+  //   const deployMove: DeployMove = {
+  //     from: 'c3',
+  //     moves: [
+  //       { piece: { type: NAVY, color: RED }, to: 'a3' },
+  //     ],
+  //     stay: [
+  //       { type: AIR_FORCE, color: RED },
+  //       { type: TANK, color: RED },
+  //     ],
+  //   }
+  //   game.deployMove(deployMove)
+  //   expect(game.get('c3')?.type).toBe(AIR_FORCE)
+  //   expect(game.get('c3')?.carrying).toHaveLength(1)
+  //   expect(game.get('c3')?.carrying?.[0].type).toBe(TANK)
+  //   expect(game.get('a3')?.type).toBe(NAVY)
+  //   expect(game.get('a3')?.carrying).toBeFalsy()
+  //   expect(game['_deployState']).toBeNull()
+  //   expect(game['_turn']).toBe(BLUE)
+  // })
 })
