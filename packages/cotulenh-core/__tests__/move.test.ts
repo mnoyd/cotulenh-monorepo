@@ -326,11 +326,11 @@ describe('SAN Conversion', () => {
     // Setup: Red AF d2, Blue Navy b2
     game.load('5c5/11/11/11/11/11/11/11/11/11/1n1F7/4C6 r - - 0 1')
     //TODO update ambiguous moves SAN
-    const move = game.move('Fd2<b2') // Stay capture SAN
+    const move = game.move('Fd2_b2') // Stay capture SAN
 
     expect(move).not.toBeNull()
     expect(move?.isStayCapture()).toBe(true)
-    expect(move?.san).toBe('F<b2')
+    expect(move?.san).toBe('F_b2')
     expect(move?.from).toBe('d2')
     expect(move?.to).toBe('b2') // Piece ends up at origin
     expect(move?.captured?.type).toBe(NAVY)

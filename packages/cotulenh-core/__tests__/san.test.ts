@@ -126,9 +126,9 @@ describe('CoTuLenh Class - move() with SAN', () => {
     game.load(game.fen()) // Ensure state is set
     game['_turn'] = RED
 
-    const result = game.move('A<b2')
+    const result = game.move('A_b2')
     expect(result).not.toBeNull()
-    expect(result?.san).toBe('A<b2')
+    expect(result?.san).toBe('A_b2')
     expect(result?.flags).toContain('s') // Stay capture flag
     const pieceAtD2 = game.get('d2')
     expect(pieceAtD2?.type).toBe(ARTILLERY) // Artillery stays at d2
@@ -146,12 +146,12 @@ describe('CoTuLenh Class - move() with SAN', () => {
     game['_turn'] = RED
 
     const moves = game.moves() as string[]
-    expect(moves).toContain('A2<b2')
-    expect(moves).toContain('A4<b2')
+    expect(moves).toContain('A2_b2')
+    expect(moves).toContain('A4_b2')
 
-    const result = game.move('A2<b2')
+    const result = game.move('A2_b2')
     expect(result).not.toBeNull()
-    expect(result?.san).toBe('A2<b2')
+    expect(result?.san).toBe('A2_b2')
     expect(result?.flags).toContain('s') // Stay capture flag
     const pieceAtD2 = game.get('d2')
     expect(pieceAtD2?.type).toBe(ARTILLERY) // Artillery stays at d2

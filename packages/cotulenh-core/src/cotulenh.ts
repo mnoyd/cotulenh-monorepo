@@ -1123,7 +1123,7 @@ export class CoTuLenh {
       separator += '>'
     }
     if (move.flags & BITS.STAY_CAPTURE) {
-      separator += '<'
+      separator += '_'
     }
     if (move.flags & BITS.CAPTURE) {
       separator += 'x'
