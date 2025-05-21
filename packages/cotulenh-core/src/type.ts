@@ -197,4 +197,5 @@ export type DeployState = {
   turn: Color
   originalPiece: Piece
   movedPieces: Piece[]
+  stay?: Piece[]
 }

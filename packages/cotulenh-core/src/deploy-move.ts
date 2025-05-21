@@ -12,7 +12,7 @@ export interface DeployMove {
 }
 
 export interface InternalDeployMove {
-  from: Square
+  from: number
   moves: InternalMove[]
   stay: Piece[]
 }
@@ -88,7 +88,7 @@ export function createInternalDeployMove(
     return aSteps > bSteps ? -1 : 1
   })
   return {
-    from: deployMove.from,
+    from: SQUARE_MAP[deployMove.from],
     moves: foundMove,
     stay: deployMove.stay,
   }

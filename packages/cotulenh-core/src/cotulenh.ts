@@ -146,12 +146,7 @@ export class CoTuLenh {
   private _history: History[] = []
   private _comments: Record<string, string> = {}
   private _positionCount: Record<string, number> = {}
-  private _deployState: {
-    stackSquare: number
-    turn: Color
-    originalPiece: Piece
-    movedPieces: Piece[]
-  } | null = null // Tracks active deploy phase
+  private _deployState: DeployState | null = null // Tracks active deploy phase
 
   constructor(fen = DEFAULT_POSITION) {
     this.load(fen)

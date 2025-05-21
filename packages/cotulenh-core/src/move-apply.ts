@@ -169,42 +169,43 @@ class UpdateKingPositionAction implements AtomicMoveAction {
  * Sets the deploy state
  */
 class SetDeployStateAction implements AtomicMoveAction {
-  private oldDeployState: DeployState | null
+  private oldDeployState: DeployState | null = null
 
-  constructor(
-    private newDeployState: DeployState | null,
-    game: CoTuLenh,
-  ) {
-    this.oldDeployState = game['_deployState']
+  constructor(private newDeployState: Partial<DeployState> | null) {
+    // Don't capture oldDeployState here, we'll do it in execute()
   }
 
   execute(game: CoTuLenh): void {
+    // Capture the current deploy state at execution time, not construction time
+    this.oldDeployState = game['_deployState']
     if (this.newDeployState === null) {
       game['_deployState'] = null
       return
     }
-    if (game['_deployState'] !== null) {
+    if (this.oldDeployState) {
       const updatedMovedPiece = [
-        ...game['_deployState'].movedPieces,
-        ...this.newDeployState.movedPieces,
+        ...this.oldDeployState.movedPieces,
+        ...(this.newDeployState.movedPieces ?? []),
       ]
+      const originalLen = flattenPiece(this.oldDeployState.originalPiece).length
       if (
-        updatedMovedPiece.length ===
-        flattenPiece(game['_deployState'].originalPiece).length
+        updatedMovedPiece.length + (this.oldDeployState.stay?.length ?? 0) ===
+        originalLen
       ) {
         game['_deployState'] = null
-        game['_turn'] = swapColor(this.newDeployState.turn)
+        game['_turn'] = swapColor(this.oldDeployState.turn)
         return
       }
 
       game['_deployState'] = {
-        stackSquare: this.newDeployState.stackSquare,
-        turn: this.newDeployState?.turn || -1,
-        originalPiece: game['_deployState'].originalPiece,
+        stackSquare: this.oldDeployState.stackSquare,
+        turn: this.oldDeployState.turn,
+        originalPiece: this.oldDeployState.originalPiece,
         movedPieces: updatedMovedPiece,
+        stay: this.oldDeployState.stay,
       }
     } else {
-      game['_deployState'] = this.newDeployState
+      game['_deployState'] = this.newDeployState as DeployState
     }
   }
 
@@ -312,7 +313,7 @@ export class NormalMoveCommand extends MoveCommand {
     }
 
     // Clear deploy state
-    this.actions.push(new SetDeployStateAction(null, this.game))
+    this.actions.push(new SetDeployStateAction(null))
 
     // Add check and promote action
     this.actions.push(new CheckAndPromoteAttackersAction(this.move))
@@ -377,15 +378,12 @@ export class SingleDeployMoveCommand extends MoveCommand {
 
     // Set deploy state for next move
     this.actions.push(
-      new SetDeployStateAction(
-        {
-          stackSquare: this.move.from,
-          turn: us,
-          originalPiece: carrierPiece,
-          movedPieces: flattendMovingPieces,
-        },
-        this.game,
-      ),
+      new SetDeployStateAction({
+        stackSquare: this.move.from,
+        turn: us,
+        originalPiece: carrierPiece,
+        movedPieces: flattendMovingPieces,
+      }),
     )
 
     // Add check and promote action
@@ -439,7 +437,7 @@ class CombinationMoveCommand extends MoveCommand {
     }
 
     // Clear deploy state (combination breaks deploy sequence)
-    this.actions.push(new SetDeployStateAction(null, this.game))
+    this.actions.push(new SetDeployStateAction(null))
 
     // Add check and promote action
     this.actions.push(new CheckAndPromoteAttackersAction(this.move))
@@ -465,7 +463,7 @@ export class StayCaptureMoveCommand extends MoveCommand {
     this.actions.push(new RemovePieceAction(targetSq))
 
     // Clear deploy state
-    this.actions.push(new SetDeployStateAction(null, this.game))
+    this.actions.push(new SetDeployStateAction(null))
 
     // Add check and promote action
     this.actions.push(new CheckAndPromoteAttackersAction(this.move))
@@ -592,6 +590,7 @@ class CheckAndPromoteAttackersAction implements AtomicMoveAction {
 export abstract class SequenceMoveCommand implements MoveCommandInteface {
   public readonly move: InternalDeployMove
   protected moveCommands: MoveCommand[] = []
+  protected atomicActions: AtomicMoveAction[] = []
 
   constructor(
     protected game: CoTuLenh,
@@ -606,7 +605,18 @@ export abstract class SequenceMoveCommand implements MoveCommandInteface {
    */
   protected abstract createMoveSequence(): MoveCommand[]
 
+  /**
+   * Creates atomic actions to be executed before the move sequence
+   * Override this method to add custom atomic actions
+   */
+  protected createAtomicActions(): AtomicMoveAction[] {
+    return []
+  }
+
   protected buildActions(): void {
+    // Create atomic actions to be executed before the move sequence
+    this.atomicActions = this.createAtomicActions()
+
     // Create the sequence of move commands
     this.moveCommands = this.createMoveSequence()
     // We don't add the commands directly to the actions array
@@ -614,16 +624,26 @@ export abstract class SequenceMoveCommand implements MoveCommandInteface {
   }
 
   execute(): void {
-    // Execute each move command in sequence
+    // First execute any atomic actions
+    for (const action of this.atomicActions) {
+      action.execute(this.game)
+    }
+
+    // Then execute each move command in sequence
     for (const command of this.moveCommands) {
       command.execute()
     }
   }
 
   undo(): void {
-    // Undo moves in reverse order
+    // First undo moves in reverse order
     for (let i = this.moveCommands.length - 1; i >= 0; i--) {
       this.moveCommands[i].undo()
+    }
+
+    // Then undo atomic actions in reverse order
+    for (let i = this.atomicActions.length - 1; i >= 0; i--) {
+      this.atomicActions[i].undo(this.game)
     }
   }
 }
@@ -637,6 +657,19 @@ export class DeployMoveCommand extends SequenceMoveCommand {
     protected moveData: InternalDeployMove,
   ) {
     super(game, moveData)
+  }
+
+  protected createAtomicActions(): AtomicMoveAction[] {
+    // Add a SetDeployStateAction to be executed before the move sequence
+    return [
+      new SetDeployStateAction({
+        stackSquare: this.moveData.from,
+        turn: this.game['_turn'],
+        originalPiece: this.game.getPieceAt(this.moveData.from) || undefined,
+        movedPieces: [],
+        stay: [...this.moveData.stay],
+      }),
+    ]
   }
 
   protected createMoveSequence(): MoveCommand[] {

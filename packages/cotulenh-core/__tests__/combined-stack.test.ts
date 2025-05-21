@@ -435,7 +435,7 @@ describe('Use deploy move', () => {
   beforeEach(() => {
     game = setupGameBasic()
   })
-  it('should deploy all pieces', () => {
+  it('should deploy all 2 pieces', () => {
     game.put(
       {
         type: TANK,
@@ -458,6 +458,46 @@ describe('Use deploy move', () => {
     expect(game.get('c4')?.type).toBe(INFANTRY)
     expect(game.get('d3')?.type).toBe(TANK)
     expect(game.get('d3')?.carrying).toBeUndefined()
+    expect(game['_deployState']).toBeNull()
+    expect(game['_turn']).toBe(BLUE)
+  })
+  it('should deploy all 3 pieces', () => {
+    game.put(
+      {
+        type: NAVY,
+        color: RED,
+        carrying: [
+          { type: AIR_FORCE, color: RED },
+          { type: TANK, color: RED },
+        ],
+      },
+      'c3',
+    )
+    game['_turn'] = RED
+
+    const deployMove: DeployMove = {
+      from: 'c3',
+      moves: [
+        { piece: { type: TANK, color: RED }, to: 'd3' },
+        {
+          piece: {
+            type: AIR_FORCE,
+            color: RED,
+          },
+          to: 'c6',
+        },
+        { piece: { type: NAVY, color: RED }, to: 'a3' },
+      ],
+      stay: [],
+    }
+    game.deployMove(deployMove)
+    expect(game.get('c3')).toBeUndefined()
+    expect(game.get('c6')?.type).toBe(AIR_FORCE)
+    expect(game.get('c6')?.carrying).toBeFalsy()
+    expect(game.get('a3')?.type).toBe(NAVY)
+    expect(game.get('a3')?.carrying).toBeFalsy()
+    expect(game.get('d3')?.type).toBe(TANK)
+    expect(game.get('d3')?.carrying).toBeFalsy()
     expect(game['_deployState']).toBeNull()
     expect(game['_turn']).toBe(BLUE)
   })
@@ -502,37 +542,35 @@ describe('Use deploy move', () => {
     expect(game['_turn']).toBe(BLUE)
   })
 
-  // it('stay piece should stay', () => {
-  //   game.put(
-  //     {
-  //       type: NAVY,
-  //       color: RED,
-  //       carrying: [
-  //         { type: AIR_FORCE, color: RED },
-  //         { type: TANK, color: RED },
-  //       ],
-  //     },
-  //     'c3',
-  //   )
-  //   game['_turn'] = RED
+  it('stay piece should stay', () => {
+    game.put(
+      {
+        type: NAVY,
+        color: RED,
+        carrying: [
+          { type: AIR_FORCE, color: RED },
+          { type: TANK, color: RED },
+        ],
+      },
+      'c3',
+    )
+    game['_turn'] = RED
 
-  //   const deployMove: DeployMove = {
-  //     from: 'c3',
-  //     moves: [
-  //       { piece: { type: NAVY, color: RED }, to: 'a3' },
-  //     ],
-  //     stay: [
-  //       { type: AIR_FORCE, color: RED },
-  //       { type: TANK, color: RED },
-  //     ],
-  //   }
-  //   game.deployMove(deployMove)
-  //   expect(game.get('c3')?.type).toBe(AIR_FORCE)
-  //   expect(game.get('c3')?.carrying).toHaveLength(1)
-  //   expect(game.get('c3')?.carrying?.[0].type).toBe(TANK)
-  //   expect(game.get('a3')?.type).toBe(NAVY)
-  //   expect(game.get('a3')?.carrying).toBeFalsy()
-  //   expect(game['_deployState']).toBeNull()
-  //   expect(game['_turn']).toBe(BLUE)
-  // })
+    const deployMove: DeployMove = {
+      from: 'c3',
+      moves: [{ piece: { type: NAVY, color: RED }, to: 'a3' }],
+      stay: [
+        { type: AIR_FORCE, color: RED },
+        { type: TANK, color: RED },
+      ],
+    }
+    game.deployMove(deployMove)
+    expect(game.get('c3')?.type).toBe(AIR_FORCE)
+    expect(game.get('c3')?.carrying).toHaveLength(1)
+    expect(game.get('c3')?.carrying?.[0].type).toBe(TANK)
+    expect(game.get('a3')?.type).toBe(NAVY)
+    expect(game.get('a3')?.carrying).toBeFalsy()
+    expect(game['_deployState']).toBeNull()
+    expect(game['_turn']).toBe(BLUE)
+  })
 })
