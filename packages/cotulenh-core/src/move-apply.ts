@@ -1,6 +1,7 @@
 // src/move.ts
 
 import type { Color, CoTuLenh, PieceSymbol } from './cotulenh.js'
+import { InternalDeployMove } from './deploy-move.js'
 import {
   swapColor,
   algebraic,
@@ -215,11 +216,17 @@ class SetDeployStateAction implements AtomicMoveAction {
   }
 }
 
+export interface MoveCommandInteface {
+  move: InternalMove | InternalDeployMove
+  execute(): void
+  undo(): void
+}
+
 /**
  * Abstract base class for all move commands.
  * Each command knows how to execute and undo itself.
  */
-export abstract class MoveCommand {
+export abstract class MoveCommand implements MoveCommandInteface {
   public readonly move: InternalMove
   protected actions: AtomicMoveAction[] = []
 
@@ -312,7 +319,7 @@ export class NormalMoveCommand extends MoveCommand {
   }
 }
 
-export class DeployMoveCommand extends MoveCommand {
+export class SingleDeployMoveCommand extends MoveCommand {
   protected buildActions(): void {
     const us = this.move.color
     const them = swapColor(us)
@@ -329,19 +336,6 @@ export class DeployMoveCommand extends MoveCommand {
     const flattendMovingPieces = flattenPiece(this.move.piece)
     // Handle stay capture
     if (this.move.flags & BITS.STAY_CAPTURE) {
-      // const targetSq = this.move.to
-      // const capturedPieceData = this.game.getPieceAt(targetSq)
-
-      // if (!capturedPieceData || capturedPieceData.color !== them) {
-      //   throw new Error(
-      //     `Build Deploy Error: Stay capture target invalid ${algebraic(
-      //       targetSq,
-      //     )}`,
-      //   )
-      // }
-
-      // this.move.otherPiece = capturedPieceData
-      // this.actions.push(new RemovePieceAction(targetSq))
       throw new Error('Stay capture not allowed')
     }
     // Handle normal deploy (with or without capture)
@@ -485,7 +479,7 @@ export function createMoveCommand(
 ): MoveCommand {
   // Check flags in order of precedence (if applicable)
   if (move.flags & BITS.DEPLOY) {
-    return new DeployMoveCommand(game, move)
+    return new SingleDeployMoveCommand(game, move)
   } else if (move.flags & BITS.STAY_CAPTURE) {
     return new StayCaptureMoveCommand(game, move)
   } else if (move.flags & BITS.COMBINATION) {
@@ -590,4 +584,73 @@ class CheckAndPromoteAttackersAction implements AtomicMoveAction {
     }
     this.heroicActions = [] // Clear actions after undoing
   }
+}
+/**
+ * Abstract base class for commands that handle sequences of moves.
+ * Provides common functionality for executing and undoing sequences.
+ */
+export abstract class SequenceMoveCommand implements MoveCommandInteface {
+  public readonly move: InternalDeployMove
+  protected moveCommands: MoveCommand[] = []
+
+  constructor(
+    protected game: CoTuLenh,
+    protected moveData: InternalDeployMove,
+  ) {
+    this.move = moveData
+    this.buildActions()
+  }
+
+  /**
+   * Creates the sequence of move commands to be executed
+   */
+  protected abstract createMoveSequence(): MoveCommand[]
+
+  protected buildActions(): void {
+    // Create the sequence of move commands
+    this.moveCommands = this.createMoveSequence()
+    // We don't add the commands directly to the actions array
+    // Instead, we'll handle them in execute() and undo()
+  }
+
+  execute(): void {
+    // Execute each move command in sequence
+    for (const command of this.moveCommands) {
+      command.execute()
+    }
+  }
+
+  undo(): void {
+    // Undo moves in reverse order
+    for (let i = this.moveCommands.length - 1; i >= 0; i--) {
+      this.moveCommands[i].undo()
+    }
+  }
+}
+
+/**
+ * Handles the entire sequence of moves in a deploy move.
+ */
+export class DeployMoveCommand extends SequenceMoveCommand {
+  constructor(
+    protected game: CoTuLenh,
+    protected moveData: InternalDeployMove,
+  ) {
+    super(game, moveData)
+  }
+
+  protected createMoveSequence(): MoveCommand[] {
+    // Create individual MoveCommand for each move in the sequence
+    return this.moveData.moves.map((move) => createMoveCommand(this.game, move))
+  }
+}
+
+/**
+ * Creates a DeployMoveCommand for handling sequences of deploy moves
+ */
+export function createDeployMoveCommand(
+  game: CoTuLenh,
+  move: InternalDeployMove,
+): DeployMoveCommand {
+  return new DeployMoveCommand(game, move)
 }

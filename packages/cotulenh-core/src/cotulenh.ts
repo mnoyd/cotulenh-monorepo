@@ -39,7 +39,6 @@ import {
   createCombinedPiece,
   strippedSan,
   inferPieceType,
-  getCoreTypeFromRole,
 } from './utils.js'
 import {
   generateDeployMoves,
@@ -48,11 +47,22 @@ import {
   ALL_OFFSETS,
   getPieceMovementConfig,
 } from './move-generation.js'
-import { createMoveCommand, MoveCommand } from './move-apply.js'
+import {
+  createMoveCommand,
+  DeployMoveCommand,
+  MoveCommand,
+  MoveCommandInteface,
+} from './move-apply.js'
+import {
+  createInternalDeployMove,
+  DeployMove,
+  InternalDeployMove,
+  isInternalDeployMove,
+} from './deploy-move.js'
 
 // Structure for storing history states
 interface History {
-  move: MoveCommand
+  move: MoveCommandInteface
   commanders: Record<Color, number> // Position of commander before the move
   turn: Color
   halfMoves: number // Half move clock before the move
@@ -643,6 +653,7 @@ export class CoTuLenh {
   }): string {
     // Key based on FEN, deploy state, and arguments
     const fen = this.fen()
+
     let deployState = 'none'
     if (args.deploy) {
       deployState = `${args.square}:${this.turn()}`
@@ -788,13 +799,18 @@ export class CoTuLenh {
   }
 
   // --- Move Execution/Undo (Updated for Stay Capture & Deploy) ---
-  private _makeMove(move: InternalMove) {
+  private _makeMove(move: InternalMove | InternalDeployMove) {
     // this._movesCache.clear()
     const us = this.turn()
     const them = swapColor(us)
 
     // 1. Create the command object for this move
-    const moveCommand = createMoveCommand(this, move)
+    let moveCommand: MoveCommandInteface
+    if (isInternalDeployMove(move)) {
+      moveCommand = new DeployMoveCommand(this, move)
+    } else {
+      moveCommand = createMoveCommand(this, move)
+    }
 
     // Store pre-move state
     const preCommanderState = { ...this._commanders }
@@ -823,22 +839,26 @@ export class CoTuLenh {
 
     // --- 4. Update General Game State AFTER command execution ---
 
-    // Reset half moves counter if capture occurred OR commander moved
-    if (moveCommand.move.otherPiece) {
-      this._halfMoves = 0
-    } else {
-      this._halfMoves++
-    }
+    // // Reset half moves counter if capture occurred OR commander moved
+    // if (moveCommand.move.otherPiece) {
+    //   this._halfMoves = 0
+    // } else {
+    //   this._halfMoves++
+    // }
 
-    // Increment move number if Blue moved
-    if (us === BLUE && !(move.flags & BITS.DEPLOY)) {
+    // // Increment move number if Blue moved
+    if (
+      !isInternalDeployMove(move) &&
+      us === BLUE &&
+      !(move.flags & BITS.DEPLOY)
+    ) {
       // Only increment if not a deploy move by blue
       this._moveNumber++
     }
-    // TODO: Check for last piece auto-promotion (also needs Commander check)
+    // // TODO: Check for last piece auto-promotion (also needs Commander check)
 
     // --- Switch Turn (or maintain for deploy) ---
-    if (!(move.flags & BITS.DEPLOY)) {
+    if (!isInternalDeployMove(move) && !(move.flags & BITS.DEPLOY)) {
       this._turn = them // Switch turn only for non-deploy moves
     }
     // If it was a deploy move, turn remains `us`
@@ -847,7 +867,7 @@ export class CoTuLenh {
     this._updatePositionCounts()
   }
 
-  private _undoMove(): InternalMove | null {
+  private _undoMove(): InternalMove | InternalDeployMove | null {
     // this._movesCache.clear()
     const old = this._history.pop()
     if (!old) return null
@@ -1324,6 +1344,21 @@ export class CoTuLenh {
     return prettyMove
   }
 
+  deployMove(deployMove: DeployMove): void {
+    const sqFrom = SQUARE_MAP[deployMove.from]
+    const deployMoves = this._moves({ deploy: true })
+    const originalPiece = this._board[sqFrom]
+
+    if (!originalPiece)
+      throw new Error('Deploy move error: original piece not found')
+    const internalDeployMove = createInternalDeployMove(
+      originalPiece,
+      deployMove,
+      deployMoves,
+    )
+    this._makeMove(internalDeployMove)
+  }
+
   /**
    * Gets the color of the player whose turn it is
    * @returns The color of the player whose turn it is
@@ -1375,34 +1410,36 @@ export class CoTuLenh {
    * @param options.verbose - Whether to return detailed move objects
    * @returns An array of moves, either as strings or Move objects
    */
-  history(): string[]
-  history({ verbose }: { verbose: true }): Move[]
-  history({ verbose }: { verbose: false }): string[]
-  history({ verbose }: { verbose: boolean }): string[] | Move[]
-  history({ verbose = false }: { verbose?: boolean } = {}) {
-    const reversedHistory = []
-    const moveHistory = []
+  // history(): string[]
+  // history({ verbose }: { verbose: true }): Move[]
+  // history({ verbose }: { verbose: false }): string[]
+  // history({ verbose }: { verbose: boolean }): string[] | Move[]
+  // history({ verbose = false }: { verbose?: boolean } = {}) {
+  //   console.warn('history is not tested')
+  //   console.warn('history deploy move not implemented')
+  //   const reversedHistory = []
+  //   const moveHistory = []
 
-    while (this._history.length > 0) {
-      reversedHistory.push(this._undoMove())
-    }
+  //   while (this._history.length > 0) {
+  //     reversedHistory.push(this._undoMove())
+  //   }
 
-    while (true) {
-      const move = reversedHistory.pop()
-      if (!move) {
-        break
-      }
+  //   while (true) {
+  //     const move = reversedHistory.pop()
+  //     if (!move) {
+  //       break
+  //     }
 
-      if (verbose) {
-        moveHistory.push(new Move(this, move))
-      } else {
-        moveHistory.push(this._moveToSanLan(move, this._moves())[0])
-      }
-      this._makeMove(move)
-    }
+  //     if (verbose) {
+  //       moveHistory.push(new Move(this, move))
+  //     } else {
+  //       moveHistory.push(this._moveToSanLan(move, this._moves())[0])
+  //     }
+  //     this._makeMove(move)
+  //   }
 
-    return moveHistory
-  }
+  //   return moveHistory
+  // }
 
   /**
    * Gets the heroic status of a piece at a square

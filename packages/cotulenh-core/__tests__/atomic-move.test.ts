@@ -1,7 +1,7 @@
 import { CoTuLenh } from '../src/cotulenh.js'
 import {
   NormalMoveCommand,
-  DeployMoveCommand,
+  SingleDeployMoveCommand,
   StayCaptureMoveCommand,
   createMoveCommand,
 } from '../src/move-apply.js'
@@ -95,7 +95,7 @@ describe('Move Commands', () => {
     })
   })
 
-  describe('DeployMoveCommand', () => {
+  describe('SingleDeployMoveCommand', () => {
     it('should deploy piece from stack', () => {
       game.load('5c5/11/11/11/11/11/11/11/4(TI)6/11/11/5C5', {
         skipValidation: true,
@@ -108,7 +108,7 @@ describe('Move Commands', () => {
         flags: BITS.DEPLOY,
       }
 
-      const command = new DeployMoveCommand(game, move)
+      const command = new SingleDeployMoveCommand(game, move)
       command.execute()
       expect(game.get('f4')?.type).toBe(INFANTRY)
       expect(game.get('f4')?.color).toBe(RED)
@@ -131,7 +131,7 @@ describe('Move Commands', () => {
         flags: BITS.DEPLOY | BITS.CAPTURE,
       }
 
-      const command = new DeployMoveCommand(game, move)
+      const command = new SingleDeployMoveCommand(game, move)
       command.execute()
       expect(game.get('f4')?.color).toBe(RED)
       expect(game.get('f4')?.type).toBe(INFANTRY)
@@ -221,7 +221,7 @@ describe('Move Commands', () => {
           piece: makePiece(AIR_FORCE, BLUE),
           flags: BITS.DEPLOY,
         }),
-      ).toBeInstanceOf(DeployMoveCommand)
+      ).toBeInstanceOf(SingleDeployMoveCommand)
 
       expect(
         createMoveCommand(game, {
@@ -281,7 +281,7 @@ describe('Move Commands', () => {
       }
 
       expect(() => {
-        new DeployMoveCommand(game, move).execute()
+        new SingleDeployMoveCommand(game, move).execute()
       }).toThrow()
     })
   })

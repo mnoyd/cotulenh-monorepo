@@ -25,6 +25,7 @@ import {
   HEADQUARTER,
   isDigit,
   VALID_PIECE_TYPES,
+  isSquareOnBoard,
 } from './type.js'
 
 import { formStack } from '@repo/cotulenh-combine-piece'
@@ -415,4 +416,20 @@ export function inferPieceType(san: string): PieceSymbol | undefined {
 export function flattenPiece(piece: Piece): Piece[] {
   if (!piece.carrying?.length) return [piece]
   return [{ ...piece, carrying: undefined }, ...piece.carrying]
+}
+
+export function getStepsBetweenSquares(
+  square1: number,
+  square2: number,
+): number {
+  if (!isSquareOnBoard(square1) || !isSquareOnBoard(square2)) return -1
+
+  // Get the rank and file differences
+  const rankDiff = Math.abs(rank(square1) - rank(square2))
+  const fileDiff = Math.abs(file(square1) - file(square2))
+
+  if (rankDiff === 0 || fileDiff === 0) return Math.max(rankDiff, fileDiff)
+  else if (rankDiff === fileDiff) return rankDiff
+
+  return -1 //nor diagonal or horizontal
 }
