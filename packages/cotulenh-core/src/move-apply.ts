@@ -294,7 +294,7 @@ export class NormalMoveCommand extends MoveCommand {
         )
       }
       // Ensure the captured type is stored on the move object
-      this.move.otherPiece = capturedPieceData
+      this.move.captured = capturedPieceData
 
       // Add action to remove the captured piece
       this.actions.push(new RemovePieceAction(this.move.to))
@@ -358,7 +358,7 @@ export class SingleDeployMoveCommand extends MoveCommand {
           )
         }
 
-        this.move.otherPiece = capturedPieceData
+        this.move.captured = capturedPieceData
         this.actions.push(new RemovePieceAction(destSq))
       }
 
@@ -405,7 +405,7 @@ class CombinationMoveCommand extends MoveCommand {
       !movingPieceData ||
       !targetPieceData ||
       !(this.move.flags & BITS.COMBINATION) ||
-      !this.move.otherPiece // Sanity check
+      !this.move.combined // Sanity check
     ) {
       throw new Error(
         `Invalid state for combination move: ${JSON.stringify(this.move)}`,
@@ -459,7 +459,7 @@ export class StayCaptureMoveCommand extends MoveCommand {
       )
     }
 
-    this.move.otherPiece = capturedPiece
+    this.move.captured = capturedPiece
 
     // Only action is to remove the captured piece
     this.actions.push(new RemovePieceAction(targetSq))

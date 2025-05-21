@@ -41,7 +41,8 @@ export function makeMove(
     to: params.to ?? 1,
     piece: params.piece,
     flags: params.flags ?? 1,
-    otherPiece: params.otherPiece,
+    captured: params.captured,
+    combined: params.combined,
   }
 }
 
@@ -91,8 +92,7 @@ export const findVerboseMove = (
       options.isDeploy === undefined || m.isDeploy() === options.isDeploy
     const matchStayCapture =
       options.isStayCapture === undefined ||
-      (m.otherPiece !== undefined && m.isStayCapture()) ===
-        options.isStayCapture
+      (m.captured !== undefined && m.isStayCapture()) === options.isStayCapture
 
     return (
       matchFrom && matchPieceType && matchDeploy && matchStayCapture && matchTo

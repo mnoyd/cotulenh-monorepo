@@ -76,7 +76,8 @@ export class Move {
   from: Square
   to: Square // Destination square (piece's final location)
   piece: Piece
-  otherPiece?: Piece
+  captured?: Piece
+  combined?: Piece
   flags: string // String representation of flags
   san?: string // Standard Algebraic Notation (needs implementation)
   lan?: string // Long Algebraic Notation (needs implementation)
@@ -85,7 +86,7 @@ export class Move {
 
   // Constructor needs the main class instance to generate SAN, FENs etc.
   constructor(game: CoTuLenh, internal: InternalMove) {
-    const { color, piece, from, to, flags, otherPiece } = internal
+    const { color, piece, from, to, flags, captured, combined } = internal
 
     this.color = color
     this.piece = piece // This is the piece that MOVED (or was deployed)
@@ -96,8 +97,8 @@ export class Move {
         this.flags += FLAGS[flag]
       }
     }
-    if (otherPiece) this.otherPiece = otherPiece
-
+    if (captured) this.captured = captured
+    if (combined) this.combined = combined
     this.to = algebraic(to)
 
     this.before = game.fen()
@@ -1129,10 +1130,10 @@ export class CoTuLenh {
     }
     if (move.flags & BITS.COMBINATION) {
       separator += '&'
-      if (!move.otherPiece) {
-        throw new Error('Move must have otherPiece for combination')
+      if (!move.combined) {
+        throw new Error('Move must have combined for combination')
       }
-      const combined = createCombinedPiece(move.piece, move.otherPiece)
+      const combined = createCombinedPiece(move.piece, move.combined)
       if (!combined) {
         throw new Error(
           'Should have successfully combined pieces in combine move',

@@ -188,7 +188,8 @@ export type InternalMove = {
   from: number // 0x88 index
   to: number // 0x88 index (destination OR target square for stay capture)
   piece: Piece // The piece being moved (or deployed)
-  otherPiece?: Piece
+  captured?: Piece
+  combined?: Piece
   flags: number // Bitmask using BITS
 }
 export type DeployState = {

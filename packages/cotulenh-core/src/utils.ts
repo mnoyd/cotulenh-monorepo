@@ -227,7 +227,15 @@ export function addMove(
   flags: number = BITS.NORMAL,
 ) {
   // No piece promotion in this variant based on rules
-  const moveToAdd: InternalMove = { color, from, to, piece, otherPiece, flags }
+  const moveToAdd: InternalMove = {
+    color,
+    from,
+    to,
+    piece,
+    ...(flags & (BITS.CAPTURE | BITS.STAY_CAPTURE) && { captured: otherPiece }),
+    ...(flags & BITS.COMBINATION && { combined: otherPiece }),
+    flags,
+  }
   // 'to' correctly represents destination or target based on flag context in _moves
   moves.push(moveToAdd)
 }

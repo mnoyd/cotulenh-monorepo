@@ -65,7 +65,7 @@ describe('Move Commands', () => {
       command.execute()
       expect(game.get('d2')).toBeUndefined()
       expect(game.get('d4')?.color).toBe(RED)
-      expect(command.move.otherPiece?.type).toBe(INFANTRY)
+      expect(command.move.captured?.type).toBe(INFANTRY)
 
       command.undo()
       expect(game.get('d2')?.color).toBe(RED)
@@ -136,7 +136,7 @@ describe('Move Commands', () => {
       expect(game.get('f4')?.color).toBe(RED)
       expect(game.get('f4')?.type).toBe(INFANTRY)
       expect(game.get('e4')?.carrying).toBeFalsy()
-      expect(command.move.otherPiece?.type).toBe(AIR_FORCE)
+      expect(command.move.captured?.type).toBe(AIR_FORCE)
 
       command.undo()
       expect(game.get('f4')?.color).toBe(BLUE)
@@ -189,7 +189,7 @@ describe('Move Commands', () => {
       command.execute()
       expect(game.get('e4')?.type).toBe(ARTILLERY)
       expect(game.get('b4')).toBeUndefined()
-      expect(command.move.otherPiece?.type).toBe(NAVY)
+      expect(command.move.captured?.type).toBe(NAVY)
 
       command.undo()
       expect(game.get('e4')?.type).toBe(ARTILLERY)

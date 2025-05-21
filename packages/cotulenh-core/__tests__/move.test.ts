@@ -31,14 +31,14 @@ describe('CoTuLenh Stay Capture Logic', () => {
         m.from === 'd4' &&
         m.to === 'd5' &&
         m.piece.type === TANK &&
-        m.otherPiece?.type === INFANTRY
+        m.captured?.type === INFANTRY
       )
     })
 
     expect(captureMove).toBeDefined()
     expect(captureMove?.isStayCapture()).toBe(false)
     expect(captureMove?.to).toBe('d5')
-    expect(captureMove?.otherPiece?.type).toBe(INFANTRY)
+    expect(captureMove?.captured?.type).toBe(INFANTRY)
   })
 
   test('Heavy piece (Artillery) capturing across river on Land should REPLACE', () => {
@@ -52,14 +52,14 @@ describe('CoTuLenh Stay Capture Logic', () => {
         m.from === 'i5' &&
         m.to === 'i8' &&
         m.piece.type === ARTILLERY &&
-        m.otherPiece?.type === INFANTRY
+        m.captured?.type === INFANTRY
       )
     })
 
     expect(captureMove).toBeDefined()
     expect(captureMove?.isStayCapture()).toBe(false)
     expect(captureMove?.to).toBe('i8')
-    expect(captureMove?.otherPiece?.type).toBe(INFANTRY)
+    expect(captureMove?.captured?.type).toBe(INFANTRY)
   })
 
   test('Navy capturing Navy on Water should REPLACE', () => {
@@ -73,14 +73,14 @@ describe('CoTuLenh Stay Capture Logic', () => {
         m.from === 'b3' &&
         m.to === 'b5' &&
         m.piece.type === NAVY &&
-        m.otherPiece?.type === NAVY
+        m.captured?.type === NAVY
       )
     })
 
     expect(captureMove).toBeDefined()
     expect(captureMove?.isStayCapture()).toBe(false)
     expect(captureMove?.to).toBe('b5')
-    expect(captureMove?.otherPiece?.type).toBe(NAVY)
+    expect(captureMove?.captured?.type).toBe(NAVY)
   })
 
   test('Navy capturing Land piece on Mixed terrain (c file) should REPLACE', () => {
@@ -94,14 +94,14 @@ describe('CoTuLenh Stay Capture Logic', () => {
         m.from === 'c4' &&
         m.to === 'c5' &&
         m.piece.type === NAVY &&
-        m.otherPiece?.type === TANK
+        m.captured?.type === TANK
       )
     })
 
     expect(captureMove).toBeDefined()
     expect(captureMove?.isStayCapture()).toBe(false)
     expect(captureMove?.to).toBe('c5')
-    expect(captureMove?.otherPiece?.type).toBe(TANK)
+    expect(captureMove?.captured?.type).toBe(TANK)
   })
 
   test('Land piece (Tank) capturing Navy on pure Water should STAY', () => {
@@ -116,7 +116,7 @@ describe('CoTuLenh Stay Capture Logic', () => {
         m.from === 'd3' &&
         m.to === 'b3' &&
         m.piece.type === TANK &&
-        m.otherPiece?.type === NAVY
+        m.captured?.type === NAVY
       )
     })
 
@@ -124,7 +124,7 @@ describe('CoTuLenh Stay Capture Logic', () => {
     expect(captureMove?.isStayCapture()).toBe(true)
     expect(captureMove?.from).toBe('d3')
     expect(captureMove?.to).toBe('b3') // Tank stays
-    expect(captureMove?.otherPiece?.type).toBe(NAVY)
+    expect(captureMove?.captured?.type).toBe(NAVY)
   })
 
   test('Navy capturing Land piece on pure Land should STAY', () => {
@@ -139,7 +139,7 @@ describe('CoTuLenh Stay Capture Logic', () => {
         m.from === 'c3' &&
         m.to === 'f3' &&
         m.piece.type === NAVY &&
-        m.otherPiece?.type === TANK
+        m.captured?.type === TANK
       )
     })
 
@@ -147,7 +147,7 @@ describe('CoTuLenh Stay Capture Logic', () => {
     expect(captureMove?.isStayCapture()).toBe(true)
     expect(captureMove?.from).toBe('c3')
     expect(captureMove?.to).toBe('f3') // Navy stays
-    expect(captureMove?.otherPiece?.type).toBe(TANK)
+    expect(captureMove?.captured?.type).toBe(TANK)
   })
 
   test('Air Force capturing Navy on pure Water should STAY', () => {
@@ -162,7 +162,7 @@ describe('CoTuLenh Stay Capture Logic', () => {
         m.from === 'd2' &&
         m.to === 'b2' &&
         m.piece.type === AIR_FORCE &&
-        m.otherPiece?.type === NAVY
+        m.captured?.type === NAVY
       )
     })
 
@@ -170,7 +170,7 @@ describe('CoTuLenh Stay Capture Logic', () => {
     expect(captureMove?.isStayCapture()).toBe(true)
     expect(captureMove?.from).toBe('d2')
     expect(captureMove?.to).toBe('b2') // AF stays
-    expect(captureMove?.otherPiece?.type).toBe(NAVY)
+    expect(captureMove?.captured?.type).toBe(NAVY)
   })
 
   test('Air Force capturing Land piece on Land should REPLACE', () => {
@@ -184,14 +184,14 @@ describe('CoTuLenh Stay Capture Logic', () => {
         m.from === 'd4' &&
         m.to === 'd5' &&
         m.piece.type === AIR_FORCE &&
-        m.otherPiece?.type === INFANTRY
+        m.captured?.type === INFANTRY
       )
     })
 
     expect(captureMove).toBeDefined()
     expect(captureMove?.isStayCapture()).toBe(false)
     expect(captureMove?.to).toBe('d5')
-    expect(captureMove?.otherPiece?.type).toBe(INFANTRY)
+    expect(captureMove?.captured?.type).toBe(INFANTRY)
   })
 })
 
@@ -333,7 +333,7 @@ describe('SAN Conversion', () => {
     expect(move?.san).toBe('F<b2')
     expect(move?.from).toBe('d2')
     expect(move?.to).toBe('b2') // Piece ends up at origin
-    expect(move?.otherPiece?.type).toBe(NAVY)
+    expect(move?.captured?.type).toBe(NAVY)
     expect(game.get('d2')?.type).toBe(AIR_FORCE)
     expect(game.get('b2')).toBeUndefined()
   })
@@ -400,7 +400,7 @@ describe('Piece Blocking Movement Logic', () => {
 
     // Air Force should be able to capture enemy Tank
     const captureD6 = moves.find(
-      (m) => m.from === 'd4' && m.to === 'd6' && m.otherPiece?.type === TANK,
+      (m) => m.from === 'd4' && m.to === 'd6' && m.captured?.type === TANK,
     )
     expect(captureD6).toBeDefined()
   })
@@ -444,7 +444,7 @@ describe('Piece Blocking Movement Logic', () => {
 
     // Navy should be able to capture enemy Navy
     const captureB6 = moves.find(
-      (m) => m.from === 'b3' && m.to === 'b6' && m.otherPiece?.type === NAVY,
+      (m) => m.from === 'b3' && m.to === 'b6' && m.captured?.type === NAVY,
     )
     expect(captureB6).toBeDefined()
   })
@@ -534,7 +534,7 @@ describe('Terrain blocking movement logic', () => {
 
     const moves = game.moves({ verbose: true }) as Move[]
     const captureD5B5 = moves.find(
-      (m) => m.from === 'd5' && m.to === 'b5' && m.otherPiece?.type === NAVY,
+      (m) => m.from === 'd5' && m.to === 'b5' && m.captured?.type === NAVY,
     )
     expect(captureD5B5).toBeDefined()
   })
