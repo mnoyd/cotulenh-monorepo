@@ -15,6 +15,7 @@ export interface InternalDeployMove {
   from: number
   moves: InternalMove[]
   stay?: Piece
+  captured?: Piece[]
 }
 
 export function createInternalDeployMove(
@@ -98,10 +99,15 @@ export function createInternalDeployMove(
       throw new Error('Deploy move error: invalid move')
     return aSteps > bSteps ? -1 : 1
   })
+  const captured: Piece[] = []
+  foundMove.forEach((move) => {
+    captured.push(move.piece)
+  })
   return {
     from: SQUARE_MAP[deployMove.from],
     moves: foundMove,
     stay: deployMove.stay,
+    captured,
   }
 }
 export function isInternalDeployMove(

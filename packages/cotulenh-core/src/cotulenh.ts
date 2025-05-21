@@ -796,7 +796,6 @@ export class CoTuLenh {
 
   // --- Move Execution/Undo (Updated for Stay Capture & Deploy) ---
   private _makeMove(move: InternalMove | InternalDeployMove) {
-    // this._movesCache.clear()
     const us = this.turn()
     const them = swapColor(us)
 
@@ -835,12 +834,16 @@ export class CoTuLenh {
 
     // --- 4. Update General Game State AFTER command execution ---
 
-    // // Reset half moves counter if capture occurred OR commander moved
-    // if (moveCommand.move.otherPiece) {
-    //   this._halfMoves = 0
-    // } else {
-    //   this._halfMoves++
-    // }
+    // Reset half moves counter if capture occurred OR commander moved
+    if (
+      (Array.isArray(moveCommand.move.captured) &&
+        moveCommand.move.captured.length > 0) ||
+      moveCommand.move.captured
+    ) {
+      this._halfMoves = 0
+    } else {
+      this._halfMoves++
+    }
 
     // // Increment move number if Blue moved
     if (
