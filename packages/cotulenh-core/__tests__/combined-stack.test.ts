@@ -451,7 +451,6 @@ describe('Use deploy move', () => {
         { piece: { type: INFANTRY, color: RED }, to: 'c4' },
         { piece: { type: TANK, color: RED }, to: 'd3' },
       ],
-      stay: [],
     }
     game.deployMove(deployMove)
     expect(game.get('c3')).toBeUndefined()
@@ -488,7 +487,6 @@ describe('Use deploy move', () => {
         },
         { piece: { type: NAVY, color: RED }, to: 'a3' },
       ],
-      stay: [],
     }
     game.deployMove(deployMove)
     expect(game.get('c3')).toBeUndefined()
@@ -529,7 +527,6 @@ describe('Use deploy move', () => {
         },
         { piece: { type: NAVY, color: RED }, to: 'a3' },
       ],
-      stay: [],
     }
     game.deployMove(deployMove)
     expect(game.get('c3')).toBeUndefined()
@@ -559,10 +556,11 @@ describe('Use deploy move', () => {
     const deployMove: DeployMove = {
       from: 'c3',
       moves: [{ piece: { type: NAVY, color: RED }, to: 'a3' }],
-      stay: [
-        { type: AIR_FORCE, color: RED },
-        { type: TANK, color: RED },
-      ],
+      stay: {
+        type: AIR_FORCE,
+        color: RED,
+        carrying: [{ type: TANK, color: RED }],
+      },
     }
     game.deployMove(deployMove)
     expect(game.get('c3')?.type).toBe(AIR_FORCE)

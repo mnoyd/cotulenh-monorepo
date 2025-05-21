@@ -667,7 +667,7 @@ export class DeployMoveCommand extends SequenceMoveCommand {
         turn: this.game['_turn'],
         originalPiece: this.game.getPieceAt(this.moveData.from) || undefined,
         movedPieces: [],
-        stay: [...this.moveData.stay],
+        stay: this.moveData.stay ? flattenPiece(this.moveData.stay) : [],
       }),
     ]
   }

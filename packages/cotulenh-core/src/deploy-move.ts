@@ -8,13 +8,13 @@ import {
 export interface DeployMove {
   from: Square
   moves: { piece: Piece; to: Square }[]
-  stay: Piece[]
+  stay?: Piece
 }
 
 export interface InternalDeployMove {
   from: number
   moves: InternalMove[]
-  stay: Piece[]
+  stay?: Piece
 }
 
 export function createInternalDeployMove(
@@ -22,6 +22,14 @@ export function createInternalDeployMove(
   deployMove: DeployMove,
   validMoves: InternalMove[],
 ): InternalDeployMove {
+  if (deployMove.stay) {
+    const { combined, uncombined } = createCombineStackFromPieces(
+      flattenPiece(deployMove.stay),
+    )
+    if (!combined || (uncombined?.length ?? 0) > 0) {
+      throw new Error('Deploy move error: stay piece not valid')
+    }
+  }
   const dests = new Map<Square, Piece[]>()
   for (const move of deployMove.moves) {
     if (dests.has(move.to)) {
@@ -53,7 +61,10 @@ export function createInternalDeployMove(
     acc.push(...flattenPiece(dest.piece))
     return acc
   }, [])
-  const allPieces = [...cleanedAllMovingPiece, ...deployMove.stay]
+  const allPieces = [
+    ...cleanedAllMovingPiece,
+    ...(deployMove.stay ? flattenPiece(deployMove.stay) : []),
+  ]
   if (allPieces.length !== flattenPiece(originalPiece).length) {
     throw new Error('Deploy move error: moving piece not found')
   }
