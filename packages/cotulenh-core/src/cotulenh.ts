@@ -1347,7 +1347,7 @@ export class CoTuLenh {
 
   deployMove(deployMove: DeployMove): void {
     const sqFrom = SQUARE_MAP[deployMove.from]
-    const deployMoves = this._moves({ deploy: true })
+    const deployMoves = this._moves({ square: deployMove.from, deploy: true })
     const originalPiece = this._board[sqFrom]
 
     if (!originalPiece)

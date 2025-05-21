@@ -537,16 +537,16 @@ export function generateDeployMoves(
     })
   }
 
-  // Generate Carrier Moves
-  if (!filterPiece || carrierPiece.type === filterPiece) {
-    const carrierMoves = generateMovesForPiece(
-      gameInstance,
-      stackSquare,
-      carrierPiece,
-      carrierPiece.heroic ?? false,
-    )
-    moves.push(...carrierMoves)
-  }
+  // // Generate Carrier Moves
+  // if (!filterPiece || carrierPiece.type === filterPiece) {
+  //   const carrierMoves = generateMovesForPiece(
+  //     gameInstance,
+  //     stackSquare,
+  //     carrierPiece,
+  //     carrierPiece.heroic ?? false,
+  //   )
+  //   moves.push(...carrierMoves)
+  // }
 
   return moves
 }

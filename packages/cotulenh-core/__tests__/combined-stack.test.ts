@@ -1,4 +1,5 @@
 import { CoTuLenh, Move } from '../src/cotulenh'
+import { DeployMove } from '../src/deploy-move'
 import {
   RED,
   BLUE,
@@ -14,7 +15,7 @@ import {
   MILITIA,
 } from '../src/type'
 import { createCombinedPiece } from '../src/utils'
-import { findVerboseMove } from './test-helpers'
+import { findVerboseMove, setupGameBasic } from './test-helpers'
 
 describe('Stack Movement and Deployment', () => {
   let game: CoTuLenh
@@ -196,7 +197,7 @@ describe('Stack Movement and Deployment', () => {
       findVerboseMove(nextMoves, 'c3', 'd3', { piece: TANK, isDeploy: true }),
     ).toBeDefined() // Tank deploy possible
     expect(
-      findVerboseMove(nextMoves, 'c3', 'c2', { piece: NAVY, isDeploy: false }),
+      findVerboseMove(nextMoves, 'c3', 'c2', { piece: NAVY, isDeploy: true }),
     ).toBeDefined() // Carrier move possible
   })
 
@@ -304,14 +305,14 @@ describe('Stack Movement and Deployment', () => {
       game.moves({ verbose: true, square: 'c3' }) as Move[],
       'c3',
       'c2',
-      { piece: NAVY, isDeploy: false },
+      { piece: NAVY, isDeploy: true },
     )
     expect(carrierMove).toBeDefined()
     const moveResult = game.move({
       from: 'c3',
       to: 'c2',
       piece: NAVY,
-      deploy: false,
+      deploy: true,
     }) // Normal move object for carrier
 
     expect(moveResult).not.toBeNull()
@@ -427,4 +428,37 @@ describe('createCombinedPiece (Integration)', () => {
   // Add more test cases for different combinations, colors, etc.
   // Example: combining pieces of the same color (if allowed/handled by formStack)
   // it('should handle combining pieces of the same color', () => { ... });
+})
+
+describe('Use deploy move', () => {
+  let game: CoTuLenh
+  beforeEach(() => {
+    game = setupGameBasic()
+  })
+  it('should deploy all pieces', () => {
+    game.put(
+      {
+        type: TANK,
+        color: RED,
+        carrying: [{ type: INFANTRY, color: RED }],
+      },
+      'c3',
+    )
+    game['_turn'] = RED
+    const deployMove: DeployMove = {
+      from: 'c3',
+      moves: [
+        { piece: { type: INFANTRY, color: RED }, to: 'c4' },
+        { piece: { type: TANK, color: RED }, to: 'd3' },
+      ],
+      stay: [],
+    }
+    game.deployMove(deployMove)
+    expect(game.get('c3')).toBeUndefined()
+    expect(game.get('c4')?.type).toBe(INFANTRY)
+    expect(game.get('d3')?.type).toBe(TANK)
+    expect(game.get('d3')?.carrying).toBeUndefined()
+    expect(game['_deployState']).toBeNull()
+    expect(game['_turn']).toBe(BLUE)
+  })
 })

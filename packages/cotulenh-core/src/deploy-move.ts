@@ -65,13 +65,6 @@ export function createInternalDeployMove(
     }
   })
 
-  toSquareNumDests.sort((a, b) => {
-    const aSteps = getStepsBetweenSquares(a.from, a.to)
-    const bSteps = getStepsBetweenSquares(b.from, b.to)
-    if (aSteps === -1 || bSteps === -1)
-      throw new Error('Deploy move error: invalid move')
-    return aSteps > bSteps ? -1 : 1
-  })
   const foundMove: InternalMove[] = []
   for (const move of validMoves) {
     if (
@@ -79,8 +72,7 @@ export function createInternalDeployMove(
         (dest) =>
           dest.from === move.from &&
           dest.to === move.to &&
-          dest.piece.type === move.piece.type &&
-          dest.piece.color === move.piece.color,
+          dest.piece.type === move.piece.type,
       )
     ) {
       foundMove.push(move)

@@ -183,14 +183,14 @@ class SetDeployStateAction implements AtomicMoveAction {
       game['_deployState'] = null
       return
     }
-    if (this.oldDeployState) {
+    if (game['_deployState'] !== null) {
       const updatedMovedPiece = [
-        ...this.oldDeployState.movedPieces,
+        ...game['_deployState'].movedPieces,
         ...this.newDeployState.movedPieces,
       ]
       if (
         updatedMovedPiece.length ===
-        flattenPiece(this.oldDeployState.originalPiece).length
+        flattenPiece(game['_deployState'].originalPiece).length
       ) {
         game['_deployState'] = null
         game['_turn'] = swapColor(this.newDeployState.turn)
@@ -200,7 +200,7 @@ class SetDeployStateAction implements AtomicMoveAction {
       game['_deployState'] = {
         stackSquare: this.newDeployState.stackSquare,
         turn: this.newDeployState?.turn || -1,
-        originalPiece: this.oldDeployState.originalPiece,
+        originalPiece: game['_deployState'].originalPiece,
         movedPieces: updatedMovedPiece,
       }
     } else {
