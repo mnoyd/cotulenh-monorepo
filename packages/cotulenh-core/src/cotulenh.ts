@@ -50,12 +50,11 @@ import {
 import {
   createMoveCommand,
   DeployMoveCommand,
-  MoveCommand,
   MoveCommandInteface,
 } from './move-apply.js'
 import {
   createInternalDeployMove,
-  DeployMove,
+  DeployMoveRequest,
   InternalDeployMove,
   isInternalDeployMove,
 } from './deploy-move.js'
@@ -77,7 +76,6 @@ export class Move {
   to: Square // Destination square (piece's final location)
   piece: Piece
   captured?: Piece
-  combined?: Piece
   flags: string // String representation of flags
   san?: string // Standard Algebraic Notation (needs implementation)
   lan?: string // Long Algebraic Notation (needs implementation)
@@ -98,7 +96,6 @@ export class Move {
       }
     }
     if (captured) this.captured = captured
-    if (combined) this.combined = combined
     this.to = algebraic(to)
 
     this.before = game.fen()
@@ -1108,8 +1105,10 @@ export class CoTuLenh {
   private _moveToSanLan(
     move: InternalMove,
     moves: InternalMove[],
+    encodeCarrying: boolean = false,
   ): [string, string] {
     const pieceChar = move.piece.type.toUpperCase()
+    const pieceEncoded = encodeCarrying ? makeSanPiece(move.piece) : pieceChar
     const disambiguator = getDisambiguator(move, moves)
     const toAlg = algebraic(move.to) // Target square
     const fromAlg = algebraic(move.from) // Origin square
@@ -1151,8 +1150,8 @@ export class CoTuLenh {
     }
     this._undoMove()
 
-    const san = `${heroicPrefix}${pieceChar}${disambiguator}${separator}${toAlg}${combinationSuffix}${checkingSuffix}`
-    const lan = `${heroicPrefix}${pieceChar}${fromAlg}${separator}${toAlg}${combinationSuffix}${checkingSuffix}`
+    const san = `${heroicPrefix}${pieceEncoded}${disambiguator}${separator}${toAlg}${combinationSuffix}${checkingSuffix}`
+    const lan = `${heroicPrefix}${pieceEncoded}${fromAlg}${separator}${toAlg}${combinationSuffix}${checkingSuffix}`
 
     return [san, lan] // Return both SAN and LAN strings
   }
@@ -1343,7 +1342,7 @@ export class CoTuLenh {
     return prettyMove
   }
 
-  deployMove(deployMove: DeployMove): void {
+  deployMove(deployMove: DeployMoveRequest): void {
     const sqFrom = SQUARE_MAP[deployMove.from]
     const deployMoves = this._moves({ square: deployMove.from, deploy: true })
     const originalPiece = this._board[sqFrom]

@@ -147,29 +147,20 @@ describe('Move Commands', () => {
     //TODO: Add stay capture move for air_force. When piece is air_force, in game._moves() always add stay capture and capture for same square
     //meaning if the square can be captured push both capture AND stay capture for same square to possible moves array.
 
-    // it('should handle deploy stay capture', () => {
-    //   game.load('5c5/11/11/11/11/11/11/11/1(NF)3t5/11/11/5C5', {
-    //     skipValidation: true,
-    //   })
-    //   const move: InternalMove = {
-    //     color: RED,
-    //     from: 0x81,
-    //     to: 0x85,
-    //     piece: makePiece(AIR_FORCE, RED),
-    //     flags: BITS.DEPLOY | BITS.STAY_CAPTURE,
-    //   }
+    it('should not allow stay capture for deploy move', () => {
+      game.load('5c5/11/11/11/11/11/11/11/1(NF)3t5/11/11/5C5', {
+        skipValidation: true,
+      })
+      const move: InternalMove = {
+        color: RED,
+        from: 0x81,
+        to: 0x85,
+        piece: makePiece(AIR_FORCE, RED),
+        flags: BITS.DEPLOY | BITS.STAY_CAPTURE,
+      }
 
-    //   const command = createMoveCommand(game, move)
-    //   command.execute()
-    //   expect(game.get('f4')?.color).toBe(undefined)
-    //   expect(game.get('b4')?.carrying?.length).toBe(1)
-    //   expect(command.move.otherPiece?.type).toBe(TANK)
-
-    //   command.undo()
-    //   expect(game.get('f4')?.color).toBe(BLUE)
-    //   expect(game.get('f4')?.type).toBe(TANK)
-    //   expect(game.get('b4')?.carrying?.length).toBe(1)
-    // })
+      expect(() => createMoveCommand(game, move)).toThrow()
+    })
   })
 
   describe('StayCaptureMoveCommand', () => {

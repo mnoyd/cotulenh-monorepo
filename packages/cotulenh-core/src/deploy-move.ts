@@ -1,11 +1,20 @@
-import { InternalMove, Piece, Square, SQUARE_MAP } from './type'
+import { CoTuLenh } from './cotulenh'
+import {
+  algebraic,
+  Color,
+  InternalMove,
+  Piece,
+  Square,
+  SQUARE_MAP,
+} from './type'
 import {
   createCombineStackFromPieces,
   flattenPiece,
   getStepsBetweenSquares,
+  makeSanPiece,
 } from './utils'
 
-export interface DeployMove {
+export interface DeployMoveRequest {
   from: Square
   moves: { piece: Piece; to: Square }[]
   stay?: Piece
@@ -20,9 +29,10 @@ export interface InternalDeployMove {
 
 export function createInternalDeployMove(
   originalPiece: Piece,
-  deployMove: DeployMove,
+  deployMove: DeployMoveRequest,
   validMoves: InternalMove[],
 ): InternalDeployMove {
+  if (!originalPiece) throw new Error('Original piece not found')
   if (deployMove.stay) {
     const { combined, uncombined } = createCombineStackFromPieces(
       flattenPiece(deployMove.stay),
@@ -114,4 +124,50 @@ export function isInternalDeployMove(
   move: InternalMove | InternalDeployMove,
 ): move is InternalDeployMove {
   return (move as InternalDeployMove).moves !== undefined
+}
+export class DeployMove {
+  color: Color
+  from: Square
+  to: Map<Square, Piece> // Destination square (piece's final location)
+  stay: Piece | undefined
+  captured?: Piece[]
+  san?: string // Standard Algebraic Notation (needs implementation)
+  lan?: string // Long Algebraic Notation (needs implementation)
+  before: string // FEN before move
+  after: string // FEN after move
+  constructor(game: CoTuLenh, internal: InternalDeployMove) {
+    this.color = internal.moves[0].color
+    this.from = algebraic(internal.from)
+    this.to = internal.moves.reduce<Map<Square, Piece>>((acc, move) => {
+      acc.set(algebraic(move.to), move.piece)
+      return acc
+    }, new Map())
+    this.stay = internal.stay
+    this.captured = internal.captured
+    this.before = game.fen()
+
+    // Generate the FEN for the 'after' key
+    game['_makeMove'](internal)
+    this.after = game.fen()
+    game['_undoMove']()
+
+    const [san, lan] = deployMoveToSanLan(game, internal)
+    this.san = san
+    this.lan = lan
+  }
+}
+
+export function deployMoveToSanLan(
+  game: CoTuLenh,
+  move: InternalDeployMove,
+): [string, string] {
+  const legalMoves = game['_moves']({ legal: true })
+  const allMoveSan = move.moves.map((m: InternalMove) => {
+    return game['_moveToSanLan'](m, legalMoves, true)[0]
+  })
+  const movesSan = allMoveSan.join(',')
+  const stay = move.stay ? `${makeSanPiece(move.stay)}<` : ''
+  const san = `${stay}${movesSan}`
+  const lan = `${algebraic(move.from)}:${san}`
+  return [san, lan]
 }

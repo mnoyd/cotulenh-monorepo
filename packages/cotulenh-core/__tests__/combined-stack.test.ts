@@ -1,5 +1,10 @@
 import { CoTuLenh, Move } from '../src/cotulenh'
-import { DeployMove } from '../src/deploy-move'
+import {
+  createInternalDeployMove,
+  DeployMove,
+  DeployMoveRequest,
+  deployMoveToSanLan,
+} from '../src/deploy-move'
 import {
   RED,
   BLUE,
@@ -13,6 +18,7 @@ import {
   INFANTRY,
   Piece,
   MILITIA,
+  InternalMove,
 } from '../src/type'
 import { createCombinedPiece } from '../src/utils'
 import { findVerboseMove, setupGameBasic } from './test-helpers'
@@ -445,7 +451,7 @@ describe('Use deploy move', () => {
       'c3',
     )
     game['_turn'] = RED
-    const deployMove: DeployMove = {
+    const deployMove: DeployMoveRequest = {
       from: 'c3',
       moves: [
         { piece: { type: INFANTRY, color: RED }, to: 'c4' },
@@ -474,7 +480,7 @@ describe('Use deploy move', () => {
     )
     game['_turn'] = RED
 
-    const deployMove: DeployMove = {
+    const deployMove: DeployMoveRequest = {
       from: 'c3',
       moves: [
         { piece: { type: TANK, color: RED }, to: 'd3' },
@@ -514,7 +520,7 @@ describe('Use deploy move', () => {
     )
     game['_turn'] = RED
 
-    const deployMove: DeployMove = {
+    const deployMove: DeployMoveRequest = {
       from: 'c3',
       moves: [
         {
@@ -553,7 +559,7 @@ describe('Use deploy move', () => {
     )
     game['_turn'] = RED
 
-    const deployMove: DeployMove = {
+    const deployMove: DeployMoveRequest = {
       from: 'c3',
       moves: [{ piece: { type: NAVY, color: RED }, to: 'a3' }],
       stay: {
@@ -570,5 +576,101 @@ describe('Use deploy move', () => {
     expect(game.get('a3')?.carrying).toBeFalsy()
     expect(game['_deployState']).toBeNull()
     expect(game['_turn']).toBe(BLUE)
+  })
+})
+
+describe('deployMoveToSanLan', () => {
+  it('should return SAN and LAN for deploy move', () => {
+    const game = setupGameBasic()
+    game.put(
+      {
+        type: NAVY,
+        color: RED,
+        carrying: [
+          { type: AIR_FORCE, color: RED },
+          { type: TANK, color: RED },
+        ],
+      },
+      'c3',
+    )
+    const deployMove: DeployMoveRequest = {
+      from: 'c3',
+      moves: [
+        {
+          piece: {
+            type: NAVY,
+            color: RED,
+            carrying: [{ type: TANK, color: RED }],
+          },
+          to: 'a3',
+        },
+        {
+          piece: {
+            type: AIR_FORCE,
+            color: RED,
+          },
+          to: 'c4',
+        },
+      ],
+    }
+    const originalPiece = game.get('c3')
+    if (!originalPiece) throw new Error('Original piece not found')
+    const legalMoveAtc3 = game['_moves']({
+      square: 'c3',
+      deploy: true,
+    }) as InternalMove[]
+    const internalDeployMove = createInternalDeployMove(
+      originalPiece,
+      deployMove,
+      legalMoveAtc3,
+    )
+    const [san, lan] = deployMoveToSanLan(game, internalDeployMove)
+    expect(san).toBe('(N|T)>a3,F>c4')
+    expect(lan).toBe('c3:(N|T)>a3,F>c4')
+  })
+  it('should return SAN and LAN for deploy move with stay', () => {
+    const game = setupGameBasic()
+    game.put(
+      {
+        type: NAVY,
+        color: RED,
+        carrying: [
+          { type: AIR_FORCE, color: RED },
+          { type: TANK, color: RED },
+        ],
+      },
+      'c3',
+    )
+    const deployMove: DeployMoveRequest = {
+      from: 'c3',
+      moves: [
+        {
+          piece: {
+            type: NAVY,
+            color: RED,
+          },
+          to: 'a3',
+        },
+      ],
+      stay: {
+        type: AIR_FORCE,
+        color: RED,
+        carrying: [{ type: TANK, color: RED }],
+      },
+    }
+    const originalPiece = game.get('c3')
+    if (!originalPiece) throw new Error('Original piece not found')
+    const legalMoveAtc3 = game['_moves']({
+      square: 'c3',
+      deploy: true,
+    }) as InternalMove[]
+    const internalDeployMove = createInternalDeployMove(
+      originalPiece,
+      deployMove,
+      legalMoveAtc3,
+    )
+    const [san, lan] = deployMoveToSanLan(game, internalDeployMove)
+    expect(san).toBe('(F|T)<N>a3')
+    expect(lan).toBe('c3:(F|T)<N>a3')
   })
 })
