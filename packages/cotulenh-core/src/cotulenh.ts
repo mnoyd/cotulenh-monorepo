@@ -639,29 +639,42 @@ export class CoTuLenh {
     legal?: boolean
     pieceType?: PieceSymbol
     square?: Square
+    deploy?: boolean
   }): string {
     // Key based on FEN, deploy state, and arguments
     const fen = this.fen()
-    const deploy = this._deployState
-      ? `${this._deployState.stackSquare}:${this._deployState.turn}`
-      : 'none'
+    let deployState = 'none'
+    if (args.deploy) {
+      deployState = `${args.square}:${this.turn()}`
+    } else if (this._deployState) {
+      deployState = `${this._deployState.stackSquare}:${this._deployState.turn}`
+    } else {
+      deployState = 'none'
+    }
     const { legal = true, pieceType, square } = args
-    return `${fen}|deploy:${deploy}|legal:${legal}|pieceType:${pieceType ?? ''}|square:${square ?? ''}`
+    return `${fen}|deploy:${deployState}|legal:${legal}|pieceType:${pieceType ?? ''}|square:${square ?? ''}`
   }
 
   private _moves({
     legal = true,
     pieceType: filterPiece = undefined,
     square: filterSquare = undefined,
+    deploy = false,
   }: {
     legal?: boolean
     pieceType?: PieceSymbol
     square?: Square
+    deploy?: boolean
   } = {}): InternalMove[] {
+    if (deploy) {
+      if (!filterSquare)
+        throw new Error('Deploy move error: square is required')
+    }
     const cacheKey = this._getMovesCacheKey({
       legal,
       pieceType: filterPiece,
       square: filterSquare,
+      deploy,
     })
     if (this._movesCache.has(cacheKey)) {
       return this._movesCache.get(cacheKey)!
@@ -670,12 +683,14 @@ export class CoTuLenh {
     let allMoves: InternalMove[] = []
 
     // Generate moves based on game state
-    if (this._deployState && this._deployState.turn === us) {
-      allMoves = generateDeployMoves(
-        this,
-        this._deployState.stackSquare,
-        filterPiece,
-      )
+    if ((this._deployState && this._deployState.turn === us) || deploy) {
+      let deployFilterSquare: number
+      if (deploy) {
+        deployFilterSquare = SQUARE_MAP[filterSquare!]
+      } else {
+        deployFilterSquare = this._deployState!.stackSquare
+      }
+      allMoves = generateDeployMoves(this, deployFilterSquare, filterPiece)
     } else {
       allMoves = generateNormalMoves(this, us, filterPiece, filterSquare)
     }
@@ -690,6 +705,7 @@ export class CoTuLenh {
     this._movesCache.set(cacheKey, result)
     return result
   }
+
   /**
    * Checks if the commander of the given color is directly exposed
    * (horizontally or vertically) to the enemy commander.
