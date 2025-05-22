@@ -54,6 +54,7 @@ import {
 } from './move-apply.js'
 import {
   createInternalDeployMove,
+  DeployMove,
   DeployMoveRequest,
   InternalDeployMove,
   isInternalDeployMove,
@@ -1342,7 +1343,7 @@ export class CoTuLenh {
     return prettyMove
   }
 
-  deployMove(deployMove: DeployMoveRequest): void {
+  deployMove(deployMove: DeployMoveRequest): DeployMove {
     const sqFrom = SQUARE_MAP[deployMove.from]
     const deployMoves = this._moves({ square: deployMove.from, deploy: true })
     const originalPiece = this._board[sqFrom]
@@ -1354,7 +1355,10 @@ export class CoTuLenh {
       deployMove,
       deployMoves,
     )
+    const prettyMove = new DeployMove(this, internalDeployMove)
     this._makeMove(internalDeployMove)
+
+    return prettyMove
   }
 
   /**

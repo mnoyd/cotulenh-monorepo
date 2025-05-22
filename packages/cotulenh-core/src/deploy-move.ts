@@ -77,7 +77,9 @@ export function createInternalDeployMove(
     ...(deployMove.stay ? flattenPiece(deployMove.stay) : []),
   ]
   if (allPieces.length !== flattenPiece(originalPiece).length) {
-    throw new Error('Deploy move error: moving piece not found')
+    throw new Error(
+      'Deploy move error: ambiguous deploy move. some pieces are not clear whether moved or stay',
+    )
   }
   const toSquareNumDests = combinedDests.map((dest) => {
     return {
@@ -111,7 +113,9 @@ export function createInternalDeployMove(
   })
   const captured: Piece[] = []
   foundMove.forEach((move) => {
-    captured.push(move.piece)
+    if (move.captured) {
+      captured.push(move.captured)
+    }
   })
   return {
     from: SQUARE_MAP[deployMove.from],

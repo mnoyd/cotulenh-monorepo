@@ -21,7 +21,7 @@ import {
   InternalMove,
 } from '../src/type'
 import { createCombinedPiece } from '../src/utils'
-import { findVerboseMove, setupGameBasic } from './test-helpers'
+import { findVerboseMove, makePiece, setupGameBasic } from './test-helpers'
 
 describe('Stack Movement and Deployment', () => {
   let game: CoTuLenh
@@ -672,5 +672,108 @@ describe('deployMoveToSanLan', () => {
     const [san, lan] = deployMoveToSanLan(game, internalDeployMove)
     expect(san).toBe('(F|T)<N>a3')
     expect(lan).toBe('c3:(F|T)<N>a3')
+  })
+})
+describe('DeployMove', () => {
+  let game: CoTuLenh
+  beforeEach(() => {
+    game = setupGameBasic()
+  })
+
+  it('should correctly construct DeployMove for a simple deploy', () => {
+    // Place a stack on e4
+    const carrier = makePiece(TANK, RED, false, [makePiece(INFANTRY, RED)])
+    const from: Square = 'e4'
+    game.put(carrier, from)
+
+    // Deploy the stack to two squares (simulate splitting, simple case)
+    const deployMoveReq: DeployMoveRequest = {
+      from,
+      moves: [{ piece: { type: TANK, color: RED }, to: 'e5' }],
+      stay: { type: INFANTRY, color: RED },
+    }
+
+    // Use helpers to create the internal deploy move
+    const validMoves = game['_moves']({
+      square: from,
+      deploy: true,
+    }) as InternalMove[]
+    const internal = createInternalDeployMove(
+      carrier,
+      deployMoveReq,
+      validMoves,
+    )
+    const deployMove = new DeployMove(game, internal)
+
+    // Check properties
+    expect(deployMove.color).toBe(RED)
+    expect(deployMove.from).toBe(from)
+    expect(deployMove.to.has('e5')).toBe(true)
+    expect(deployMove.to.get('e5')).toMatchObject({ type: TANK, color: RED })
+    expect(deployMove.stay).toMatchObject({ type: INFANTRY, color: RED })
+    expect(deployMove.captured?.length).toBe(0)
+    expect(typeof deployMove.before).toBe('string')
+    expect(typeof deployMove.after).toBe('string')
+    expect(typeof deployMove.san).toBe('string')
+    expect(typeof deployMove.lan).toBe('string')
+    expect(deployMove.san).toBe('I<T>e5')
+    expect(deployMove.lan).toBe('e4:I<T>e5')
+  })
+
+  it('should correctly construct DeployMove with a capture', () => {
+    // Place a stack on e4
+    const carrier = makePiece(TANK, RED, false, [makePiece(INFANTRY, RED)])
+    const from: Square = 'e4'
+    game.put(carrier, from)
+
+    // Place an enemy piece on e5 (to be captured)
+    const enemyInfantry = makePiece(INFANTRY, BLUE)
+    game.put(enemyInfantry, 'e5')
+    const enemyAirForce = makePiece(AIR_FORCE, BLUE, false, [
+      makePiece(MILITIA, BLUE),
+    ])
+    game.put(enemyAirForce, 'd4')
+
+    // Deploy the TANK to e5 (capture), INFANTRY stays
+    const deployMoveReq: DeployMoveRequest = {
+      from,
+      moves: [
+        { piece: { type: TANK, color: RED }, to: 'e5' },
+        { piece: { type: INFANTRY, color: RED }, to: 'd4' },
+      ],
+    }
+
+    // Use helpers to create the internal deploy move
+    const validMoves = game['_moves']({
+      square: from,
+      deploy: true,
+    }) as InternalMove[]
+    const internal = createInternalDeployMove(
+      carrier,
+      deployMoveReq,
+      validMoves,
+    )
+    const deployMove = new DeployMove(game, internal)
+
+    // Check properties
+    expect(deployMove.color).toBe(RED)
+    expect(deployMove.from).toBe(from)
+    expect(deployMove.to.has('e5')).toBe(true)
+    expect(deployMove.to.get('e5')).toMatchObject({ type: TANK, color: RED })
+    expect(deployMove.to.has('d4')).toBe(true)
+    expect(deployMove.to.get('d4')).toMatchObject({
+      type: INFANTRY,
+      color: RED,
+    })
+    expect(deployMove.captured?.length).toBe(2)
+    expect(typeof deployMove.before).toBe('string')
+    expect(typeof deployMove.after).toBe('string')
+    expect(typeof deployMove.san).toBe('string')
+    expect(typeof deployMove.lan).toBe('string')
+    expect(deployMove.san).toBe('T>xe5,I>xd4')
+    expect(deployMove.lan).toBe('e4:T>xe5,I>xd4')
+    // Optionally check SAN/LAN for capture notation if defined
+    // expect(deployMove.san).toContain('x'); // if SAN uses 'x' for capture
+    // expect(deployMove.lan).toContain('x');
   })
 })

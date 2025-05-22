@@ -517,6 +517,13 @@ export function generateDeployMoves(
   if (!carrierPiece || carrierPiece.color !== us) {
     return []
   }
+  if (
+    (!carrierPiece.carrying || carrierPiece.carrying.length === 0) &&
+    gameInstance['_deployState'] === null &&
+    gameInstance['_deployState']!.stackSquare !== stackSquare
+  ) {
+    return []
+  }
 
   // Generate Deploy Moves for remaining carrying pieces
 
