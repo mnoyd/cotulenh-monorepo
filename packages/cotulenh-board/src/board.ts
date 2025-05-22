@@ -76,7 +76,7 @@ export function isMovable(state: HeadlessState, orig: cg.OrigMove): boolean {
 
 interface MoveResult {
   piecesPrepared: PiecesPrepared;
-  deployMove?: cg.DeployMove;
+  stackMove?: cg.StackMove;
   moveFinished: boolean;
 }
 
@@ -119,18 +119,18 @@ function baseUserMove(state: HeadlessState, orig: cg.OrigMove, dest: cg.DestMove
     }
     if (piecesPrepared.updatedPieces.deploy || state.stackPieceMoves) {
       handleStackPieceMoves(state, piecesPrepared, orig, dest);
-      const deployMove = deployStateToMove(state);
-      console.log('deployMove', deployMove);
+      const stackMove = deployStateToMove(state);
+      console.log('stackMove', stackMove);
       unselect(state);
-      if (deployMove.stay === undefined) {
+      if (stackMove.stay === undefined) {
         state.stackPieceMoves = undefined;
         state.check = undefined;
         state.movable.dests = undefined;
         state.turnColor = opposite(state.turnColor);
         state.animation.current = undefined;
-        return { piecesPrepared, deployMove, moveFinished: true };
+        return { piecesPrepared, stackMove, moveFinished: true };
       }
-      return { piecesPrepared, deployMove, moveFinished: false };
+      return { piecesPrepared, stackMove, moveFinished: false };
     }
     //Move finished
     state.lastMove = [orig.square, dest.square];
@@ -155,41 +155,49 @@ export function userMove(state: HeadlessState, origMove: cg.OrigMove, destMove: 
     if (!result.moveFinished) {
       return true;
     }
-    const holdTime = state.hold.stop();
-    unselect(state);
-    //TODO: Should implement metadata specificlly for deployMove
-    let metadata: cg.MoveMetadata;
-    if (result.deployMove) {
-      let captures: cg.Piece[] | undefined;
-      captures = result.deployMove.moves.map(move => move.capturedPiece!);
-      captures = captures.filter(capture => capture !== undefined);
-      const capturesFlatedout = captures.reduce<cg.Piece[]>(
-        (acc, piece) => [...acc, ...flatOutPiece(piece)],
-        [],
-      );
-      metadata = {
-        holdTime,
-        captured: capturesFlatedout,
-      };
+    if (result.stackMove) {
+      return endUserStackMove(state, result);
     } else {
-      metadata = {
-        ctrlKey: state.stats.ctrlKey,
-        holdTime,
-        ...(result.piecesPrepared.updatedPieces.capture && {
-          captured: flatOutPiece(result.piecesPrepared.updatedPieces.pieceAtDest!),
-        }),
-      };
+      return endUserNormalMove(state, result, origMove, destMove);
     }
-    if (result.deployMove) {
-      callUserFunction(state.movable.events.afterDeploy, result.deployMove, metadata);
-    } else {
-      callUserFunction(state.movable.events.after, origMove, destMove, metadata);
-    }
-    return true;
   }
 
   unselect(state);
   return false;
+}
+
+export function endUserNormalMove(
+  state: HeadlessState,
+  result: MoveResult,
+  origMove: cg.OrigMove,
+  destMove: cg.DestMove,
+): boolean {
+  const holdTime = state.hold.stop();
+  unselect(state);
+  const metadata: cg.MoveMetadata = {
+    ctrlKey: state.stats.ctrlKey,
+    holdTime,
+    ...(result.piecesPrepared.updatedPieces.capture && {
+      captured: flatOutPiece(result.piecesPrepared.updatedPieces.pieceAtDest!),
+    }),
+  };
+  callUserFunction(state.movable.events.after, origMove, destMove, metadata);
+  return true;
+}
+
+export function endUserStackMove(state: HeadlessState, result: MoveResult): boolean {
+  const holdTime = state.hold.stop();
+  unselect(state);
+  let captures: cg.Piece[] = result.stackMove?.moves
+    .map(move => move.capturedPiece!)
+    .filter(capture => capture !== undefined) as cg.Piece[];
+  const capturesFlatedout = captures.reduce<cg.Piece[]>((acc, piece) => [...acc, ...flatOutPiece(piece)], []);
+  const metadata: cg.MoveMetadata = {
+    holdTime,
+    captured: capturesFlatedout,
+  };
+  callUserFunction(state.movable.events.afterStackMove, result.stackMove!, metadata);
+  return true;
 }
 
 export function cancelMove(state: HeadlessState): void {
@@ -402,8 +410,10 @@ function prepareOrigPiece(
   }
   return { piece: undefined };
 }
+
 type needClarifyCaptureMoveStay = 'need_clarify';
 type captureMoveStay = boolean | undefined | needClarifyCaptureMoveStay;
+
 function isStayCaptureMove(
   requestOrig: cg.OrigMove,
   requestDest: cg.DestMove,
@@ -557,7 +567,7 @@ function handleStackPieceMoves(
   }
 }
 
-function deployStateToMove(s: HeadlessState): cg.DeployMove {
+function deployStateToMove(s: HeadlessState): cg.StackMove {
   const deployState = s.stackPieceMoves;
   if (!deployState) {
     throw new Error('No deploy state');

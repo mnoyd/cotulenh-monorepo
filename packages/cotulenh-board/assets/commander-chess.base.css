@@ -253,7 +253,7 @@ cg-board .popup-container piece:active {
 }
 
 /* End stack move button styling */
-cg-board .combined-piece-popup cg-end-stack-move {
+cg-board .popup-container cg-btn.end-stack-move {
   /* transition: transform 0.1s, background-color 0.2s; */
   flex-shrink: 0;
   pointer-events: auto;
@@ -265,7 +265,7 @@ cg-board .combined-piece-popup cg-end-stack-move {
   transform: scale(0.8);
 }
 
-cg-board .combined-piece-popup cg-end-stack-move:hover {
+cg-board .popup-container cg-btn.end-stack-move:hover {
   transform: scale(0.9);
 }
 
@@ -304,38 +304,4 @@ piece-attack {
 piece-attack piece {
   height: 100% !important;
   width: 100% !important;
-}
-
-/* Attack Action Popup */
-.attack-action-popup {
-  position: absolute;
-  background: rgba(0, 0, 0, 0.7);
-  border-radius: 8px;
-  padding: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-  display: flex;
-  gap: 12px;
-  z-index: 100;
-}
-
-.attack-action-stay {
-  padding: 8px 16px;
-  background: #4caf50;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  font-size: 14px;
-  cursor: pointer;
-  min-width: 60px;
-}
-
-.attack-action-back {
-  padding: 8px 16px;
-  background: #f44336;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  font-size: 14px;
-  cursor: pointer;
-  min-width: 60px;
 }

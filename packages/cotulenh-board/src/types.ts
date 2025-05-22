@@ -132,7 +132,7 @@ export interface SingleMove {
   dest: Key;
   capturedPiece?: Piece;
 }
-export interface DeployMove {
+export interface StackMove {
   orig: Key;
   moves: SingleMove[];
   stay: Piece;

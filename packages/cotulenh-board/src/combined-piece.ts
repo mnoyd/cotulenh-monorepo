@@ -1,12 +1,16 @@
 import * as cg from './types.js';
 import { clearPopup, createPopupFactory } from './popup/popup-factory';
 import { createSinglePieceElement } from './render';
-import { State } from './state';
+import { HeadlessState, State } from './state';
 import * as board from './board.js';
 import * as util from './util.js';
 import * as drag from './drag.js';
 
 import { formStack } from '@repo/cotulenh-combine-piece';
+import { createEl } from './util.js';
+
+const END_MOVE = 'end-move';
+type EndMove = typeof END_MOVE;
 
 /**
  * Attempts to combine two pieces into a stack
@@ -65,9 +69,16 @@ export function createCombineStackFromPieces(pieces: cg.Piece[]): {
   return { combined: piece, uncombined: uncombined.splice(1) };
 }
 
-const combinedPiecePopup = createPopupFactory<cg.Piece>({
+const combinedPiecePopup = createPopupFactory<cg.Piece | EndMove>({
   type: 'combined-piece',
-  renderItem: (s: State, item: cg.Piece, index: number) => {
+  renderItem: (s: State, item: cg.Piece | EndMove, index: number) => {
+    if (item === END_MOVE) {
+      const el = createEl('cg-btn', 'end-stack-move');
+      el.setAttribute('data-index', index.toString());
+      el.style.width = s.dom.bounds().squareSize + 'px';
+      el.style.height = s.dom.bounds().squareSize + 'px';
+      return el;
+    }
     const piece = createSinglePieceElement(s, item);
     piece.setAttribute('data-index', index.toString());
     return piece;
@@ -109,3 +120,10 @@ const combinedPiecePopup = createPopupFactory<cg.Piece>({
   },
 });
 export { combinedPiecePopup };
+
+export function prepareCombinedPopup(state: HeadlessState, pieces: cg.Piece[]): (cg.Piece | EndMove)[] {
+  if (pieces.length < 2) return [END_MOVE];
+  const stackPieceMoves = state.stackPieceMoves;
+  if (!stackPieceMoves) return pieces;
+  return [...pieces, END_MOVE];
+}

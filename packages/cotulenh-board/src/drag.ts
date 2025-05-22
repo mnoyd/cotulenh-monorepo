@@ -10,7 +10,7 @@ import {
   updateAirDefenseInfluenceZones,
 } from './air-defense.js';
 import { TEMP_KEY } from './types.js';
-import { combinedPiecePopup } from './combined-piece.js';
+import { combinedPiecePopup, prepareCombinedPopup } from './combined-piece.js';
 import { isPositionInPopup, clearPopup, getPopup } from './popup/popup-factory.js';
 
 export interface DragCurrent {
@@ -71,14 +71,14 @@ export function start(s: State, e: cg.MouchEvent): void {
   // Handle combined piece: Show popup on right-click or if no piece is currently selected on left-click
   if (
     piece &&
-    piece.carrying &&
-    piece.carrying.length > 0 &&
+    ((piece.carrying && piece.carrying.length > 0) ||
+      (s.stackPieceMoves && s.stackPieceMoves.key === keyAtPosition)) &&
     board.isMovable(s, { square: keyAtPosition } as cg.OrigMove) &&
     (isRightClick || (isTouchStart && selectedBefore))
   ) {
     if (!s.selected || !s.selected.stackMove) {
       // showCombinedPiecePopup(s, keyAtPosition, piece, position);
-      combinedPiecePopup.setPopup(s, util.flatOutPiece(piece), keyAtPosition);
+      combinedPiecePopup.setPopup(s, prepareCombinedPopup(s, util.flatOutPiece(piece)), keyAtPosition);
       return;
     }
     board.unselect(s);
