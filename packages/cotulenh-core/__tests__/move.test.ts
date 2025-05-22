@@ -195,100 +195,100 @@ describe('CoTuLenh Stay Capture Logic', () => {
   })
 })
 
-// describe('Move History and Undo', () => {
-//   let game: CoTuLenh
-//   beforeEach(() => {
-//     game = new CoTuLenh(DEFAULT_POSITION) // Start with default position
-//   })
+describe('Move History and Undo', () => {
+  let game: CoTuLenh
+  beforeEach(() => {
+    game = new CoTuLenh(DEFAULT_POSITION) // Start with default position
+  })
 
-//   test('history() should record moves correctly (simple and verbose)', () => {
-//     const move1 = game.move({ from: 'c5', to: 'c6' }) // Red Infantry forward
-//     const move2 = game.move({ from: 'g8', to: 'g7' }) // Blue Militia forward
+  test('history() should record moves correctly (simple and verbose)', () => {
+    const move1 = game.move({ from: 'c5', to: 'c6' }) // Red Infantry forward
+    const move2 = game.move({ from: 'g8', to: 'g7' }) // Blue Militia forward
 
-//     expect(move1).not.toBeNull()
-//     expect(move2).not.toBeNull()
+    expect(move1).not.toBeNull()
+    expect(move2).not.toBeNull()
 
-//     const historySimple = game.history()
-//     const historyVerbose = game.history({ verbose: true }) as Move[]
+    const historySimple = game.history()
+    const historyVerbose = game.history({ verbose: true }) as Move[]
 
-//     // Basic SAN check - exact format depends on _moveToSan implementation details
-//     expect(historySimple.length).toBe(2)
-//     expect(historySimple[0]).toMatch(/^Ic6/)
-//     expect(historySimple[1]).toMatch(/^Mg7/)
+    // Basic SAN check - exact format depends on _moveToSan implementation details
+    expect(historySimple.length).toBe(2)
+    expect(historySimple[0]).toMatch(/^Ic6/)
+    expect(historySimple[1]).toMatch(/^Mg7/)
 
-//     expect(historyVerbose.length).toBe(2)
-//     expect(historyVerbose[0].from).toBe('c5')
-//     expect(historyVerbose[0].to).toBe('c6')
-//     expect(historyVerbose[1].from).toBe('g8')
-//     expect(historyVerbose[1].to).toBe('g7')
-//   })
+    expect(historyVerbose.length).toBe(2)
+    expect(historyVerbose[0].from).toBe('c5')
+    expect(historyVerbose[0].to).toBe('c6')
+    expect(historyVerbose[1].from).toBe('g8')
+    expect(historyVerbose[1].to).toBe('g7')
+  })
 
-//   test('undo() should revert the last move', () => {
-//     const initialFen = game.fen()
-//     game.move({ from: 'd3', to: 'd4' }) // Red Tank
-//     const fenAfterMove = game.fen()
-//     expect(fenAfterMove).not.toBe(initialFen)
+  test('undo() should revert the last move', () => {
+    const initialFen = game.fen()
+    game.move({ from: 'd3', to: 'd4' }) // Red Tank
+    const fenAfterMove = game.fen()
+    expect(fenAfterMove).not.toBe(initialFen)
 
-//     game.undo()
-//     const fenAfterUndo = game.fen()
+    game.undo()
+    const fenAfterUndo = game.fen()
 
-//     expect(fenAfterUndo).toBe(initialFen)
-//     expect(game.history().length).toBe(0)
-//     expect(game.turn()).toBe(RED) // Turn should revert
-//   })
+    expect(fenAfterUndo).toBe(initialFen)
+    expect(game.history().length).toBe(0)
+    expect(game.turn()).toBe(RED) // Turn should revert
+  })
 
-//   test('undo() multiple moves', () => {
-//     const initialFen = game.fen()
-//     game.move({ from: 'd3', to: 'd4' }) // R Tank
-//     const fen1 = game.fen()
-//     game.move({ from: 'e9', to: 'e8' }) // B AntiAir
-//     const fen2 = game.fen()
-//     game.move({ from: 'f4', to: 'f6' }) // R Tank
-//     const fen3 = game.fen()
+  test('undo() multiple moves', () => {
+    const initialFen = game.fen()
+    game.move({ from: 'd3', to: 'd4' }) // R Tank
+    const fen1 = game.fen()
+    game.move({ from: 'e9', to: 'e8' }) // B AntiAir
+    const fen2 = game.fen()
+    game.move({ from: 'f4', to: 'f6' }) // R Tank
+    const fen3 = game.fen()
 
-//     expect(game.history().length).toBe(3)
+    expect(game.history().length).toBe(3)
 
-//     game.undo() // Undo f4f6
-//     expect(game.history().length).toBe(2)
-//     expect(game.turn()).toBe(RED)
-//     expect(game.fen()).toBe(fen2)
-//     expect(game.get('f6')).toBeUndefined()
-//     expect(game.get('f4')?.type).toBe(TANK)
+    game.undo() // Undo f4f6
+    expect(game.history().length).toBe(2)
+    expect(game.turn()).toBe(RED)
+    expect(game.fen()).toBe(fen2)
+    expect(game.get('f6')).toBeUndefined()
+    expect(game.get('f4')?.type).toBe(TANK)
 
-//     game.undo() // Undo e9e8
-//     expect(game.history().length).toBe(1)
-//     expect(game.turn()).toBe(BLUE)
-//     expect(game.fen()).toBe(fen1)
-//     expect(game.get('e8')).toBeUndefined()
-//     expect(game.get('e9')?.type).toBe(ANTI_AIR)
+    game.undo() // Undo e9e8
+    expect(game.history().length).toBe(1)
+    expect(game.turn()).toBe(BLUE)
+    expect(game.fen()).toBe(fen1)
+    expect(game.get('e8')).toBeUndefined()
+    expect(game.get('e9')?.type).toBe(ANTI_AIR)
 
-//     game.undo() // Undo d3d4
-//     expect(game.history().length).toBe(0)
-//     expect(game.turn()).toBe(RED)
-//     expect(game.fen()).toBe(initialFen)
-//   })
+    game.undo() // Undo d3d4
+    expect(game.history().length).toBe(0)
+    expect(game.turn()).toBe(RED)
+    expect(game.fen()).toBe(initialFen)
+  })
 
-//   test('undo() a stay capture move', () => {
-//     // Setup: Red Air Force d2, Blue Navy b2
-//     game.load('5c5/11/11/11/11/11/11/11/11/11/1n1F7/4C6 r - - 0 1')
-//     const initialFen = game.fen()
-//     const move = game.move({ from: 'd2', to: 'b2', stay: true }) // AF attacks Navy
+  test('undo() a stay capture move', () => {
+    // Setup: Red Air Force d2, Blue Navy b2
+    game.load('5c5/11/11/11/11/11/11/11/11/11/1n1F7/4C6 r - - 0 1')
+    const initialFen = game.fen()
+    const move = game.move({ from: 'd2', to: 'b2', stay: true }) // AF attacks Navy
 
-//     expect(move).not.toBeNull()
-//     expect(game.get('d2')?.type).toBe(AIR_FORCE) // AF stays
-//     expect(game.get('b2')).toBeUndefined() // Navy removed
-//     const fenAfterMove = game.fen()
+    expect(move).not.toBeNull()
+    expect(game.get('d2')?.type).toBe(AIR_FORCE) // AF stays
+    expect(game.get('b2')).toBeUndefined() // Navy removed
+    const fenAfterMove = game.fen()
 
-//     game.undo()
+    game.undo()
 
-//     expect(game.fen()).toBe(initialFen)
-//     expect(game.get('d2')?.type).toBe(AIR_FORCE)
-//     expect(game.get('b2')?.type).toBe(NAVY)
-//     expect(game.get('b2')?.color).toBe(BLUE)
-//     expect(game.history().length).toBe(0)
-//     expect(game.turn()).toBe(RED)
-//   })
-// })
+    expect(game.fen()).toBe(initialFen)
+    expect(game.get('d2')?.type).toBe(AIR_FORCE)
+    expect(game.get('b2')?.type).toBe(NAVY)
+    expect(game.get('b2')?.color).toBe(BLUE)
+    expect(game.history().length).toBe(0)
+    expect(game.turn()).toBe(RED)
+  })
+})
 
 describe('SAN Conversion', () => {
   let game: CoTuLenh

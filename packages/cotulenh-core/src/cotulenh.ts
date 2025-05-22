@@ -56,6 +56,7 @@ import {
   createInternalDeployMove,
   DeployMove,
   DeployMoveRequest,
+  deployMoveToSanLan,
   InternalDeployMove,
   isInternalDeployMove,
 } from './deploy-move.js'
@@ -1412,36 +1413,55 @@ export class CoTuLenh {
    * @param options.verbose - Whether to return detailed move objects
    * @returns An array of moves, either as strings or Move objects
    */
-  // history(): string[]
-  // history({ verbose }: { verbose: true }): Move[]
-  // history({ verbose }: { verbose: false }): string[]
-  // history({ verbose }: { verbose: boolean }): string[] | Move[]
-  // history({ verbose = false }: { verbose?: boolean } = {}) {
-  //   console.warn('history is not tested')
-  //   console.warn('history deploy move not implemented')
-  //   const reversedHistory = []
-  //   const moveHistory = []
+  /**
+   * Returns a list of all moves made in the game
+   * @param options - History options
+   * @param options.verbose - Whether to return detailed move objects
+   * @returns An array of moves, either as strings or Move objects
+   */
+  history(): string[]
+  history({ verbose }: { verbose: true }): (Move | DeployMove)[]
+  history({ verbose }: { verbose: false }): string[]
+  history({ verbose }: { verbose: boolean }): string[] | (Move | DeployMove)[]
+  history({ verbose = false }: { verbose?: boolean } = {}) {
+    const reversedHistory = []
+    const moveHistory = []
 
-  //   while (this._history.length > 0) {
-  //     reversedHistory.push(this._undoMove())
-  //   }
+    // Undo all moves to collect them in reverse order
+    while (this._history.length > 0) {
+      reversedHistory.push(this._undoMove())
+    }
 
-  //   while (true) {
-  //     const move = reversedHistory.pop()
-  //     if (!move) {
-  //       break
-  //     }
+    // Replay the moves and build the history
+    while (true) {
+      const move = reversedHistory.pop()
+      if (!move) {
+        break
+      }
 
-  //     if (verbose) {
-  //       moveHistory.push(new Move(this, move))
-  //     } else {
-  //       moveHistory.push(this._moveToSanLan(move, this._moves())[0])
-  //     }
-  //     this._makeMove(move)
-  //   }
+      if (verbose) {
+        // Check if this is a deploy move or a regular move
+        if (isInternalDeployMove(move)) {
+          moveHistory.push(new DeployMove(this, move))
+        } else {
+          moveHistory.push(new Move(this, move))
+        }
+      } else {
+        // For string representation
+        if (isInternalDeployMove(move)) {
+          const [san] = deployMoveToSanLan(this, move)
+          moveHistory.push(san)
+        } else {
+          moveHistory.push(this._moveToSanLan(move, this._moves())[0])
+        }
+      }
 
-  //   return moveHistory
-  // }
+      // Replay the move
+      this._makeMove(move)
+    }
+
+    return moveHistory
+  }
 
   /**
    * Gets the heroic status of a piece at a square
