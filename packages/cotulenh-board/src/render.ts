@@ -78,43 +78,56 @@ function createCombinedPieceElement(s: State, piece: cg.Piece): cg.PieceNode {
   return container;
 }
 
+/**
+ * Creates a stack of pieces with dynamic vertical offsets based on the number of pieces.
+ * Pieces are rendered in order from bottom (first element) to top (last element).
+ * @param s State object containing rendering context
+ * @param pieces Array of pieces to stack, ordered from bottom to top
+ * @returns A DOM element containing the stacked pieces
+ */
+function createAmbigousPiecesStackElement(s: State, pieces: cg.Piece[]): cg.KeyedNode {
+  if (!pieces.length) throw new Error('No pieces provided');
+
+  const stackElement = createEl('piece-ambigous-stack') as cg.KeyedNode;
+  stackElement.classList.add('piece-ambigous-stack'); // For potential styling via CSS
+
+  // Calculate offset based on number of pieces in the stack
+  // More pieces = smaller offset to prevent excessive height
+  const offsetFactor = Math.max(5, 20 - pieces.length * 2); // Decreases as piece count increases
+  const baseOffsetY = -offsetFactor; // Negative value moves upward
+
+  let zIndex = 1;
+
+  // Add pieces from bottom to top
+  pieces.forEach((piece, index) => {
+    // Create the piece element
+    let pieceNode: cg.PieceNode;
+    if (piece.carrying && piece.carrying.length > 0) {
+      pieceNode = createCombinedPieceElement(s, piece);
+    } else {
+      pieceNode = createSinglePieceElement(s, piece);
+    }
+
+    // Calculate vertical offset (first piece has no offset)
+    if (index > 0) {
+      // Each subsequent piece is positioned higher than the previous one
+      const offsetY = baseOffsetY * index;
+      translate(pieceNode, [0, offsetY]);
+    }
+
+    // Set z-index to ensure proper stacking order
+    pieceNode.style.zIndex = `${zIndex++}`;
+
+    // Add to the stack container
+    stackElement.appendChild(pieceNode);
+  });
+
+  return stackElement;
+}
+
 function createPieceAttackElement(s: State, attackerPiece: cg.Piece, attackedPiece: cg.Piece): cg.KeyedNode {
-  const attackElement = createEl('piece-attack') as cg.KeyedNode;
-  attackElement.classList.add('piece-attack'); // For potential styling via CSS
-
-  // Create attacked element (rendered visually below)
-  let attackedElementNode: cg.PieceNode;
-  if (attackedPiece.carrying && attackedPiece.carrying.length > 0) {
-    attackedElementNode = createCombinedPieceElement(s, attackedPiece);
-  } else {
-    attackedElementNode = createSinglePieceElement(s, attackedPiece);
-  }
-
-  // Create attacker element (rendered visually above and offset)
-  let attackerElementNode: cg.PieceNode;
-  if (attackerPiece.carrying && attackerPiece.carrying.length > 0) {
-    attackerElementNode = createCombinedPieceElement(s, attackerPiece);
-  } else {
-    attackerElementNode = createSinglePieceElement(s, attackerPiece);
-  }
-
-  // Apply a slight vertical offset to the attacker piece to position it above the attacked piece.
-  // translate uses percentages of the element's own size.
-  // A negative Y value moves it upwards.
-  translate(attackerElementNode, [0, -15]); // Offset by -25% of its height upwards
-
-  // Append attacked piece first (bottom layer), then attacker piece (top layer, offset)
-  attackElement.appendChild(attackedElementNode);
-  attackElement.appendChild(attackerElementNode);
-
-  // The caller will be responsible for positioning this 'attackElement' onto the board square.
-  // Example usage by caller:
-  // const visualAttack = createPieceAttackElement(attacker, attacked);
-  // visualAttack.cgKey = square; // Assign key for reference if needed
-  // translate(visualAttack, posToTranslate(key2pos(square), asRed));
-  // boardEl.appendChild(visualAttack);
-
-  return attackElement;
+  // Create a stack with the attacked piece at the bottom and attacker piece on top
+  return createAmbigousPiecesStackElement(s, [attackedPiece, attackerPiece]);
 }
 
 export function render(s: State): void {
@@ -205,7 +218,7 @@ export function render(s: State): void {
       const cn = el.className;
       if (squares.get(k) === cn) sameSquares.add(k);
       else appendValue(movedSquares, cn, el);
-    } else if (isAttackNode(el)) {
+    } else if (isAmbigousStackNode(el)) {
       attackedPieceNode = el;
     }
     el = el.nextSibling as cg.PieceNode | cg.SquareNode | undefined;
@@ -285,6 +298,8 @@ export function render(s: State): void {
   if (s.attackedPiece) {
     if (!attackedPieceNode) {
       const attackElement = createPieceAttackElement(s, s.attackedPiece.attacker, s.attackedPiece.attacked);
+      attackElement.style.width = s.dom.bounds().squareSize + 'px';
+      attackElement.style.height = s.dom.bounds().squareSize + 'px';
       attackElement.cgKey = s.attackedPiece.attackedSquare;
       translate(attackElement, posToTranslate(key2pos(s.attackedPiece.attackedSquare), asRed));
       boardEl.appendChild(attackElement);
@@ -365,7 +380,7 @@ function computeSquareClasses(s: State): cg.SquareClasses {
 const isPieceNode = (el: HTMLElement): el is cg.PieceNode =>
   el.tagName === 'PIECE' || el.classList.contains('combined-stack');
 const isSquareNode = (el: cg.PieceNode | cg.SquareNode): el is cg.SquareNode => el.tagName === 'SQUARE';
-const isAttackNode = (el: HTMLElement): el is cg.AttackNode => el.tagName === 'PIECE-ATTACK';
+const isAmbigousStackNode = (el: HTMLElement): el is cg.AttackNode => el.tagName === 'PIECE-AMBIGOUS-STACK';
 
 function addSquare(squares: cg.SquareClasses, key: cg.Key, klass: string): void {
   const classes = squares.get(key);
