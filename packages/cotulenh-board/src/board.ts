@@ -120,24 +120,13 @@ function baseUserMove(state: HeadlessState, orig: cg.OrigMove, dest: cg.DestMove
     if (piecesPrepared.updatedPieces.deploy || state.stackPieceMoves) {
       handleStackPieceMoves(state, piecesPrepared, orig, dest);
       const stackMove = deployStateToMove(state);
-      console.log('stackMove', stackMove);
       unselect(state);
       if (stackMove.stay === undefined) {
-        state.stackPieceMoves = undefined;
-        state.check = undefined;
-        state.movable.dests = undefined;
-        state.turnColor = opposite(state.turnColor);
-        state.animation.current = undefined;
         return { piecesPrepared, stackMove, moveFinished: true };
       }
       return { piecesPrepared, stackMove, moveFinished: false };
     }
     //Move finished
-    state.lastMove = [orig.square, dest.square];
-    state.check = undefined;
-    state.movable.dests = undefined;
-    state.turnColor = opposite(state.turnColor);
-    state.animation.current = undefined;
     return { piecesPrepared, moveFinished: true };
   }
   return false;
@@ -156,7 +145,7 @@ export function userMove(state: HeadlessState, origMove: cg.OrigMove, destMove: 
       return true;
     }
     if (result.stackMove) {
-      return endUserStackMove(state, result);
+      return endUserStackMove(state);
     } else {
       return endUserNormalMove(state, result, origMove, destMove);
     }
@@ -182,13 +171,17 @@ export function endUserNormalMove(
     }),
   };
   callUserFunction(state.movable.events.after, origMove, destMove, metadata);
+
+  state.lastMove = [origMove.square, destMove.square];
+  cleanupAfterMove(state);
   return true;
 }
 
-export function endUserStackMove(state: HeadlessState, result: MoveResult): boolean {
+export function endUserStackMove(state: HeadlessState): boolean {
   const holdTime = state.hold.stop();
   unselect(state);
-  let captures: cg.Piece[] = result.stackMove?.moves
+  const stackMove = deployStateToMove(state);
+  let captures: cg.Piece[] = stackMove.moves
     .map(move => move.capturedPiece!)
     .filter(capture => capture !== undefined) as cg.Piece[];
   const capturesFlatedout = captures.reduce<cg.Piece[]>((acc, piece) => [...acc, ...flatOutPiece(piece)], []);
@@ -196,8 +189,18 @@ export function endUserStackMove(state: HeadlessState, result: MoveResult): bool
     holdTime,
     captured: capturesFlatedout,
   };
-  callUserFunction(state.movable.events.afterStackMove, result.stackMove!, metadata);
+  callUserFunction(state.movable.events.afterStackMove, stackMove, metadata);
+
+  cleanupAfterMove(state);
   return true;
+}
+
+function cleanupAfterMove(state: HeadlessState) {
+  state.stackPieceMoves = undefined;
+  state.check = undefined;
+  state.movable.dests = undefined;
+  state.turnColor = opposite(state.turnColor);
+  state.animation.current = undefined;
 }
 
 export function cancelMove(state: HeadlessState): void {

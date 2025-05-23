@@ -129,7 +129,7 @@
             after: (orig, dest, metadata) => {
               console.log('piece moved from:', orig, 'to:', dest, 'metadata:', metadata);
             },
-            afterDeploy: (move, metadata) => {
+            afterStackMove: (move, metadata) => {
               console.log('piece deployed:', move, 'metadata:', metadata);
             },
           },

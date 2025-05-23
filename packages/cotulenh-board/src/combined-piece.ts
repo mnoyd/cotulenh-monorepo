@@ -84,34 +84,38 @@ const combinedPiecePopup = createPopupFactory<cg.Piece | EndMove>({
     return piece;
   },
   onSelect: (s: State, index: number, e?: cg.MouchEvent) => {
-    if (!e) return;
-    const position = util.eventPosition(e)!;
-
-    // Carried piece clicked - select the specific piece from the stack
     const selectedPiece = s.popup?.items[index];
-    if (!s.popup?.square || !selectedPiece) return;
-    board.selectSquare(s, s.popup.square, selectedPiece.role, true);
+    if (selectedPiece === END_MOVE) {
+      board.endUserStackMove(s);
+      board.unselect(s);
+    } else {
+      if (!e) return;
+      const position = util.eventPosition(e)!;
 
-    // Create temporary piece for dragging
-    const tempKey = cg.TEMP_KEY;
-    s.pieces.set(tempKey, selectedPiece);
+      if (!s.popup?.square || !selectedPiece) return;
+      board.selectSquare(s, s.popup.square, selectedPiece.role, true);
 
-    // Initialize drag
-    //TODO: add drag support for stack pieces on touch screens
-    if (!e.touches) {
-      s.draggable.current = {
-        orig: tempKey,
-        piece: selectedPiece,
-        origPos: position,
-        pos: position,
-        started: false,
-        element: () => drag.pieceElementByKey(s, tempKey),
-        originTarget: e.target,
-        newPiece: true,
-        keyHasChanged: false,
-        fromStack: true,
-      };
-      drag.processDrag(s);
+      // Create temporary piece for dragging
+      const tempKey = cg.TEMP_KEY;
+      s.pieces.set(tempKey, selectedPiece);
+
+      // Initialize drag
+      //TODO: add drag support for stack pieces on touch screens
+      if (!e.touches) {
+        s.draggable.current = {
+          orig: tempKey,
+          piece: selectedPiece,
+          origPos: position,
+          pos: position,
+          started: false,
+          element: () => drag.pieceElementByKey(s, tempKey),
+          originTarget: e.target,
+          newPiece: true,
+          keyHasChanged: false,
+          fromStack: true,
+        };
+        drag.processDrag(s);
+      }
     }
     // Clean up and redraw
     clearPopup(s);
