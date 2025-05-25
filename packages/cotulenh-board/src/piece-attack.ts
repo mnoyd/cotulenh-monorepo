@@ -4,7 +4,7 @@ import { State } from './state';
 import { createEl } from './util';
 
 export function returnToOriginalPieceState(s: State) {
-  const attackedPiece = s.attackedPiece;
+  const attackedPiece = s.ambigousMove?.attackedPiece;
   if (!attackedPiece) return;
   const originalPiece = attackedPiece.originalPiece ? attackedPiece.originalPiece : attackedPiece.attacker;
   s.pieces.set(attackedPiece.attackedSquare, attackedPiece.attacked);
@@ -24,27 +24,27 @@ const pieceAttackPopup = createPopupFactory<string>({
     return el;
   },
   onSelect: (s: State, index: number) => {
-    if (!s.attackedPiece) return;
+    if (!s.ambigousMove?.attackedPiece) return;
     returnToOriginalPieceState(s);
     const origMove = {
-      square: s.attackedPiece.attackerSquare,
-      type: s.attackedPiece.attacker.role,
+      square: s.ambigousMove.attackedPiece.attackerSquare,
+      type: s.ambigousMove.attackedPiece.attacker.role,
     };
     const destMove = {
-      square: s.attackedPiece.attackedSquare,
+      square: s.ambigousMove.attackedPiece.attackedSquare,
       stay: s.popup?.items[index] === 'stay',
     };
     const result = userMove(s, origMove, destMove);
     if (result) {
     }
     //Must clear attackedPiece before onClose as it will return board to original state if not cleared.
-    s.attackedPiece = undefined;
+    s.ambigousMove = undefined;
     clearPopup(s);
     s.dom.redraw();
   },
   onClose: (s: State) => {
     returnToOriginalPieceState(s);
-    s.attackedPiece = undefined;
+    s.ambigousMove = undefined;
     unselect(s);
   },
 });

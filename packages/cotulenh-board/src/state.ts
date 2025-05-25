@@ -81,12 +81,16 @@ export interface HeadlessState {
     originalPiece: cg.Piece;
     moves: StackPieceMove[];
   };
-  attackedPiece?: {
-    attackerSquare: cg.Key;
-    attackedSquare: cg.Key;
-    originalPiece: cg.Piece;
-    attacker: cg.Piece;
-    attacked: cg.Piece;
+  ambigousMove?: {
+    attackedPiece?: {
+      attackerSquare: cg.Key;
+      attackedSquare: cg.Key;
+      originalPiece: cg.Piece;
+      attacker: cg.Piece;
+      attacked: cg.Piece;
+    };
+    origKey?: cg.Key; // Origin square for ambiguous stack
+    pieces?: cg.Piece[]; // Pieces to show in the ambiguous stack
   };
   popup?: {
     square?: cg.Key; // square where it initiate this popup
