@@ -81,13 +81,7 @@ export interface HeadlessState {
     originalPiece: cg.Piece;
     moves: StackPieceMove[];
   };
-  ambigousMove?: {
-    destKey: cg.Key;
-    origKey: cg.Key;
-    pieceAtDest: cg.Piece | undefined;
-    pieceAtOrig: cg.Piece;
-    pieceThatMoves: cg.Piece;
-  };
+  ambigousMove?: AmbigousMove;
   popup?: {
     square?: cg.Key; // square where it initiate this popup
     items: any[];
@@ -99,6 +93,18 @@ interface StackPieceMove {
   piece: cg.Piece;
   newSquare: cg.Key | 'no_move';
   capturedPiece?: cg.Piece;
+}
+
+export interface AmbigousMove {
+  destKey: cg.Key;
+  origKey: cg.Key;
+  pieceAtDest: cg.Piece | undefined;
+  pieceAtOrig: cg.Piece;
+  pieceThatMoves: cg.Piece;
+  renderGuide?: {
+    atOrig: undefined | any;
+    atDest: undefined | any;
+  };
 }
 
 export interface State extends HeadlessState {

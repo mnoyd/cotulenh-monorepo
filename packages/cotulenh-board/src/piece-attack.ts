@@ -1,15 +1,9 @@
 import { unselect, userMove } from './board';
-import { clearPopup, createPopupFactory } from './popup/popup-factory';
+import { createAmbigousModeHandling } from './popup/ambigous-move';
+import { clearPopup, createPopupFactory, CTLPopup } from './popup/popup-factory';
+import { createAmbigousPiecesStackElement } from './render';
 import { State } from './state';
 import { createEl } from './util';
-
-export function returnToOriginalPieceState(s: State) {
-  if (!s.ambigousMove) return;
-  const originalPiece = s.ambigousMove.pieceAtOrig;
-  const pieceThatMoves = s.ambigousMove.pieceThatMoves;
-  s.pieces.set(s.ambigousMove.destKey, pieceThatMoves);
-  s.pieces.set(s.ambigousMove.origKey, originalPiece);
-}
 
 const pieceAttackPopup = createPopupFactory<string>({
   type: 'piece-attack',
@@ -25,7 +19,6 @@ const pieceAttackPopup = createPopupFactory<string>({
   },
   onSelect: (s: State, index: number) => {
     if (!s.ambigousMove) return;
-    returnToOriginalPieceState(s);
     const origMove = {
       square: s.ambigousMove.origKey,
       type: s.ambigousMove.pieceThatMoves.role,
@@ -37,15 +30,34 @@ const pieceAttackPopup = createPopupFactory<string>({
     const result = userMove(s, origMove, destMove);
     if (result) {
     }
-    //Must clear attackedPiece before onClose as it will return board to original state if not cleared.
     s.ambigousMove = undefined;
     clearPopup(s);
     s.dom.redraw();
   },
   onClose: (s: State) => {
-    returnToOriginalPieceState(s);
     s.ambigousMove = undefined;
     unselect(s);
   },
 });
-export { pieceAttackPopup };
+
+const pieceAttackHandling = createAmbigousModeHandling({
+  type: 'piece-attack',
+  popup: pieceAttackPopup,
+  renderAmbigousMoveElements: (s: State, popup: CTLPopup<string>) => {
+    if (!s.ambigousMove) return;
+    popup.setPopup(s, ['normal', 'stay'], s.ambigousMove.destKey);
+    const elAtDest = createAmbigousPiecesStackElement(s, [
+      s.ambigousMove.pieceAtDest!,
+      s.ambigousMove.pieceThatMoves,
+    ]);
+    elAtDest.style.width = s.dom.bounds().squareSize + 'px';
+    elAtDest.style.height = s.dom.bounds().squareSize + 'px';
+    elAtDest.cgKey = s.ambigousMove.destKey;
+    s.ambigousMove.renderGuide = {
+      atOrig: undefined,
+      atDest: elAtDest,
+    };
+    s.dom.redraw();
+  },
+});
+export { pieceAttackHandling };

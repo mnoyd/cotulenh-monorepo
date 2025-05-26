@@ -365,7 +365,7 @@ export function stop(state: HeadlessState): void {
 }
 
 function prepareDestPiece(
-  captureMoveStay: captureMoveStay,
+  captureMoveStay: CaptureMoveStay,
   pieceThatMoves: cg.Piece,
   pieceAtDest: cg.Piece | undefined,
   remainingCarried?: cg.Piece[],
@@ -379,10 +379,6 @@ function prepareDestPiece(
   //Piece at destination square exists
   if (captureMoveStay === true) {
     return { piece: undefined };
-  }
-  if (captureMoveStay === 'need_clarify') {
-    console.warn('Need clarify not fully implemented, temporarily deleting the target');
-    return { piece: undefined, capturedPiece: pieceAtDest };
   }
   if (pieceAtDest.color === pieceThatMoves.color) {
     const combinedPiece = tryCombinePieces(pieceThatMoves, pieceAtDest);
@@ -398,7 +394,7 @@ function prepareDestPiece(
 }
 
 function prepareOrigPiece(
-  captureMoveStay: captureMoveStay,
+  captureMoveStay: CaptureMoveStay,
   pieceThatMoves: cg.Piece,
   original?: cg.Piece,
   stackPieceType?: cg.StackPieceType,
@@ -424,14 +420,14 @@ function prepareOrigPiece(
   return { piece: undefined };
 }
 
-type needClarifyCaptureMoveStay = 'need_clarify';
-type captureMoveStay = boolean | undefined | needClarifyCaptureMoveStay;
+const NeedClarifyCaptureMoveStay = 'need_clarify' as const;
+type CaptureMoveStay = boolean | undefined | typeof NeedClarifyCaptureMoveStay;
 
 function isStayCaptureMove(
   requestOrig: cg.OrigMove,
   requestDest: cg.DestMove,
   availableDests: cg.Dests | undefined,
-): captureMoveStay {
+): CaptureMoveStay {
   if (availableDests) {
     const availableDestsForPiece = availableDests.get(origMoveToKey(requestOrig));
     if (availableDestsForPiece) {
@@ -455,7 +451,7 @@ interface PiecesUpdated {
   pieceAtDest: cg.Piece | undefined;
   pieceAtOrig: cg.Piece | undefined;
   capture: boolean;
-  captureMoveStay: captureMoveStay;
+  captureMoveStay: CaptureMoveStay;
   deploy: boolean;
 }
 interface OriginalPiece {
@@ -484,7 +480,7 @@ function preparePieceThatChanges(
   if (!pieceThatMoves) {
     throw new Error('No piece that moves');
   }
-  if (captureMoveStay === 'need_clarify') {
+  if (captureMoveStay === NeedClarifyCaptureMoveStay) {
     return {
       type: 'capture-stay-back-ambigous',
       originalPiece: {

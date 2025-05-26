@@ -3,7 +3,7 @@ import * as board from '../board.js';
 import * as util from '../util.js';
 import * as cg from '../types.js';
 import { combinedPiecePopup } from '../combined-piece.js';
-import { pieceAttackPopup } from '../piece-attack.js';
+import { pieceAttackHandling } from '../piece-attack.js';
 
 // Constants for popup dimensions and positioning
 // These values serve as defaults and will be scaled based on board dimensions
@@ -275,7 +275,7 @@ export function getPopup(s: State, type?: string): CTLPopup<any> | undefined {
     case 'combined-piece':
       return combinedPiecePopup;
     case 'piece-attack':
-      return pieceAttackPopup;
+      return pieceAttackHandling.popup;
     default:
       return undefined;
   }

@@ -1,7 +1,7 @@
 import { AnimCurrent, AnimFadings, AnimVector, AnimVectors } from './anim.js';
 import { redPov } from './board.js';
 import { DragCurrent } from './drag.js';
-import { pieceAttackPopup } from './piece-attack.js';
+import { pieceAttackHandling } from './piece-attack.js';
 import { HeadlessState, State } from './state.js';
 import * as cg from './types.js';
 import { TEMP_KEY } from './types.js';
@@ -85,7 +85,7 @@ function createCombinedPieceElement(s: State, piece: cg.Piece): cg.PieceNode {
  * @param pieces Array of pieces to stack, ordered from bottom to top
  * @returns A DOM element containing the stacked pieces
  */
-function createAmbigousPiecesStackElement(s: State, pieces: cg.Piece[]): cg.KeyedNode {
+export function createAmbigousPiecesStackElement(s: State, pieces: cg.Piece[]): cg.KeyedNode {
   if (!pieces.length) throw new Error('No pieces provided');
 
   const stackElement = createEl('piece-ambigous-stack') as cg.KeyedNode;
@@ -123,11 +123,6 @@ function createAmbigousPiecesStackElement(s: State, pieces: cg.Piece[]): cg.Keye
   });
 
   return stackElement;
-}
-
-function createPieceAttackElement(s: State, attackerPiece: cg.Piece, attackedPiece: cg.Piece): cg.KeyedNode {
-  // Create a stack with the attacked piece at the bottom and attacker piece on top
-  return createAmbigousPiecesStackElement(s, [attackedPiece, attackerPiece]);
 }
 
 export function render(s: State): void {
@@ -249,7 +244,7 @@ export function render(s: State): void {
   // or append new pieces
   for (const [k, p] of pieces) {
     anim = anims.get(k);
-    if (!samePieces.has(k) && s.ambigousMove?.destKey !== k) {
+    if (!samePieces.has(k) && (s.ambigousMove?.destKey !== k || s.ambigousMove?.origKey !== k)) {
       pMvdset = movedPieces.get(pieceNameOf(p));
       pMvd = pMvdset && pMvdset.pop();
       // a same piece was moved
@@ -297,17 +292,18 @@ export function render(s: State): void {
   //render attack element
   if (s.ambigousMove) {
     if (!attackedPieceNode) {
-      const attackElement = createPieceAttackElement(
-        s,
-        s.ambigousMove.pieceThatMoves,
-        s.ambigousMove.pieceAtDest!,
-      );
-      attackElement.style.width = s.dom.bounds().squareSize + 'px';
-      attackElement.style.height = s.dom.bounds().squareSize + 'px';
-      attackElement.cgKey = s.ambigousMove.destKey;
-      translate(attackElement, posToTranslate(key2pos(s.ambigousMove.destKey), asRed));
-      boardEl.appendChild(attackElement);
-      pieceAttackPopup.setPopup(s, ['normal', 'stay'], s.ambigousMove.destKey);
+      pieceAttackHandling.start(s);
+      if (s.ambigousMove.renderGuide) {
+        const { atOrig, atDest } = s.ambigousMove.renderGuide;
+        if (atOrig) {
+          translate(atOrig, posToTranslate(key2pos(s.ambigousMove.origKey), redPov(s)));
+          boardEl.appendChild(atOrig);
+        }
+        if (atDest) {
+          translate(atDest, posToTranslate(key2pos(s.ambigousMove.destKey), redPov(s)));
+          boardEl.appendChild(atDest);
+        }
+      }
       s.dom.redraw();
     }
   } else {
