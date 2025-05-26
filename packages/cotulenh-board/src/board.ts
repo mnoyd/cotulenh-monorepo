@@ -112,16 +112,15 @@ function baseUserMove(state: HeadlessState, orig: cg.OrigMove, dest: cg.DestMove
     //Move not finished
     if ('type' in piecesPrepared) {
       //Ambiguous move
-      if (piecesPrepared.type === 'capture-stay-back-ambigous') {
-        state.ambigousMove = {
-          destKey: dest.square,
-          origKey: orig.square,
-          pieceAtDest: piecesPrepared.originalPiece.originalDestPiece,
-          pieceAtOrig: piecesPrepared.originalPiece.originalOrigPiece,
-          pieceThatMoves: piecesPrepared.originalPiece.pieceThatMoves,
-        };
-        return { moveFinished: false };
-      }
+      state.ambigousMove = {
+        type: piecesPrepared.type,
+        destKey: dest.square,
+        origKey: orig.square,
+        pieceAtDest: piecesPrepared.originalPiece.originalDestPiece,
+        pieceAtOrig: piecesPrepared.originalPiece.originalOrigPiece,
+        pieceThatMoves: piecesPrepared.originalPiece.pieceThatMoves,
+      };
+      return { moveFinished: false };
     } else {
       if (piecesPrepared.updatedPieces.deploy || state.stackPieceMoves) {
         handleStackPieceMoves(state, piecesPrepared, orig, dest);
@@ -482,7 +481,7 @@ function preparePieceThatChanges(
   }
   if (captureMoveStay === NeedClarifyCaptureMoveStay) {
     return {
-      type: 'capture-stay-back-ambigous',
+      type: 'ambigous-capture-stay-back',
       originalPiece: {
         pieceThatMoves: pieceThatMoves,
         originalOrigPiece: state.pieces.get(orig.square)!,
@@ -497,6 +496,17 @@ function preparePieceThatChanges(
     original,
     stackPieceType,
   );
+  if (remainingCarried?.length) {
+    return {
+      type: 'ambigous-stack-move-stay-pieces-cant-combine',
+      originalPiece: {
+        pieceThatMoves: pieceThatMoves,
+        originalOrigPiece: state.pieces.get(orig.square)!,
+        originalDestPiece: pieceAtDestBeforeMove,
+      },
+    };
+  }
+
   const { piece: preparedDestPiece, capturedPiece } = prepareDestPiece(
     captureMoveStay,
     pieceThatMoves,

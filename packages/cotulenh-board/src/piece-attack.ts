@@ -40,8 +40,8 @@ const pieceAttackPopup = createPopupFactory<string>({
   },
 });
 
-const pieceAttackHandling = createAmbigousModeHandling({
-  type: 'piece-attack',
+const ambigousCaptureStayBackHandling = createAmbigousModeHandling({
+  type: 'capture-stay-back-ambigous',
   popup: pieceAttackPopup,
   renderAmbigousMoveElements: (s: State, popup: CTLPopup<string>) => {
     if (!s.ambigousMove) return;
@@ -60,4 +60,4 @@ const pieceAttackHandling = createAmbigousModeHandling({
     s.dom.redraw();
   },
 });
-export { pieceAttackHandling };
+export { ambigousCaptureStayBackHandling };

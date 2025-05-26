@@ -2,8 +2,7 @@ import { State } from '../state.js';
 import * as board from '../board.js';
 import * as util from '../util.js';
 import * as cg from '../types.js';
-import { combinedPiecePopup } from '../combined-piece.js';
-import { pieceAttackHandling } from '../piece-attack.js';
+import { getPopup } from '../cotulenh.js';
 
 // Constants for popup dimensions and positioning
 // These values serve as defaults and will be scaled based on board dimensions
@@ -264,19 +263,4 @@ function createHandlePopupClick<T>(
     if (itemIndex === undefined) return;
     options.onSelect(s, itemIndex, e);
   };
-}
-
-export function getPopup(s: State, type?: string): CTLPopup<any> | undefined {
-  if (!s.popup || (type && s.popup.type !== type)) {
-    return undefined;
-  }
-  const filter = type ? type : s.popup.type;
-  switch (filter) {
-    case 'combined-piece':
-      return combinedPiecePopup;
-    case 'piece-attack':
-      return pieceAttackHandling.popup;
-    default:
-      return undefined;
-  }
 }

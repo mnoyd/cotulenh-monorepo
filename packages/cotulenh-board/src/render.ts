@@ -1,7 +1,7 @@
 import { AnimCurrent, AnimFadings, AnimVector, AnimVectors } from './anim.js';
 import { redPov } from './board.js';
 import { DragCurrent } from './drag.js';
-import { pieceAttackHandling } from './piece-attack.js';
+import { getAmbigousMoveHandling } from './cotulenh.js';
 import { HeadlessState, State } from './state.js';
 import * as cg from './types.js';
 import { TEMP_KEY } from './types.js';
@@ -296,7 +296,7 @@ export function render(s: State): void {
   //render attack element
   if (s.ambigousMove) {
     if (!attackedPieceNode) {
-      pieceAttackHandling.start(s);
+      getAmbigousMoveHandling(s)?.start(s);
       if (s.ambigousMove.renderGuide) {
         const { atOrig, atDest } = s.ambigousMove.renderGuide;
         if (atOrig) {

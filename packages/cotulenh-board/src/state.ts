@@ -96,6 +96,7 @@ interface StackPieceMove {
 }
 
 export interface AmbigousMove {
+  type: string;
   destKey: cg.Key;
   origKey: cg.Key;
   pieceAtDest: cg.Piece | undefined;

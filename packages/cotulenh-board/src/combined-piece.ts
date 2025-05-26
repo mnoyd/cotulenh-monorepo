@@ -1,6 +1,6 @@
 import * as cg from './types.js';
-import { clearPopup, createPopupFactory } from './popup/popup-factory';
-import { createSinglePieceElement } from './render';
+import { clearPopup, createPopupFactory, CTLPopup } from './popup/popup-factory';
+import { createAmbigousPiecesStackElement, createSinglePieceElement } from './render';
 import { HeadlessState, State } from './state';
 import * as board from './board.js';
 import * as util from './util.js';
@@ -8,6 +8,7 @@ import * as drag from './drag.js';
 
 import { formStack } from '@repo/cotulenh-combine-piece';
 import { createEl } from './util.js';
+import { createAmbigousModeHandling } from './popup/ambigous-move.js';
 
 const END_MOVE = 'end-move';
 type EndMove = typeof END_MOVE;
@@ -131,3 +132,45 @@ export function prepareCombinedPopup(state: HeadlessState, pieces: cg.Piece[]): 
   if (!stackPieceMoves) return pieces;
   return [...pieces, END_MOVE];
 }
+
+const moveWithCarrierPopup = createPopupFactory<cg.Piece>({
+  type: 'move-with-carrier',
+  renderItem: (s: State, item: cg.Piece, index: number) => {
+    const piece = createSinglePieceElement(s, item);
+    piece.setAttribute('data-index', index.toString());
+    return piece;
+  },
+  onSelect: (s: State, index: number) => {
+    const selectedPiece = s.popup?.items[index];
+    if (!selectedPiece) return;
+    console.log('selectedPiece', selectedPiece);
+    // board.selectSquare(s, s.popup.square, selectedPiece.role, true);
+    s.ambigousMove = undefined;
+    clearPopup(s);
+    s.dom.redraw();
+  },
+  onClose: (s: State) => {
+    s.ambigousMove = undefined;
+    board.unselect(s);
+  },
+});
+const ambigousStackMoveStayPiecesCantCombineHandling = createAmbigousModeHandling<cg.Piece>({
+  type: 'ambigous-stack-move-stay-pieces-cant-combine',
+  popup: moveWithCarrierPopup,
+  renderAmbigousMoveElements: (s: State, popup: CTLPopup<cg.Piece>) => {
+    if (!s.ambigousMove) return;
+    const carrying = s.ambigousMove.pieceAtOrig!.carrying;
+    if (!carrying) return;
+    popup.setPopup(s, carrying, s.ambigousMove.destKey);
+    const ambigousStackEl = createAmbigousPiecesStackElement(s, carrying);
+    ambigousStackEl.style.width = s.dom.bounds().squareSize + 'px';
+    ambigousStackEl.style.height = s.dom.bounds().squareSize + 'px';
+    ambigousStackEl.cgKey = s.ambigousMove.destKey;
+    s.ambigousMove.renderGuide = {
+      atOrig: ambigousStackEl,
+      atDest: createSinglePieceElement(s, s.ambigousMove.pieceThatMoves),
+    };
+    s.dom.redraw();
+  },
+});
+export { ambigousStackMoveStayPiecesCantCombineHandling };

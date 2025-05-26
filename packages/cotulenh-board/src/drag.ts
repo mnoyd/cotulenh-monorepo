@@ -11,7 +11,8 @@ import {
 } from './air-defense.js';
 import { TEMP_KEY } from './types.js';
 import { combinedPiecePopup, prepareCombinedPopup } from './combined-piece.js';
-import { isPositionInPopup, clearPopup, getPopup } from './popup/popup-factory.js';
+import { isPositionInPopup, clearPopup } from './popup/popup-factory.js';
+import { getPopup } from './cotulenh.js';
 
 export interface DragCurrent {
   orig: cg.Key; // orig key of dragging piece
