@@ -191,6 +191,10 @@ export function render(s: State): void {
           translate(el, posToTranslate(key2pos(k), asRed));
           if (s.addPieceZIndex) el.style.zIndex = posZIndex(key2pos(k), asRed);
         }
+        //With ambigous move presents, rendering at orig and dest square will be handle by ambigous handling
+        if (s.ambigousMove?.destKey === k || s.ambigousMove?.origKey === k) {
+          appendValue(movedPieces, elPieceName, el);
+        }
         // same piece: flag as same
         if (elPieceName === pieceNameOf(pieceAtKey) && (!fading || !el.cgFading)) {
           samePieces.add(k);
