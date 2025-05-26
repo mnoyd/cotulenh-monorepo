@@ -249,7 +249,7 @@ export function render(s: State): void {
   // or append new pieces
   for (const [k, p] of pieces) {
     anim = anims.get(k);
-    if (!samePieces.has(k) && s.ambigousMove?.attackedPiece?.attackedSquare !== k) {
+    if (!samePieces.has(k) && s.ambigousMove?.destKey !== k) {
       pMvdset = movedPieces.get(pieceNameOf(p));
       pMvd = pMvdset && pMvdset.pop();
       // a same piece was moved
@@ -295,19 +295,19 @@ export function render(s: State): void {
   }
 
   //render attack element
-  if (s.ambigousMove?.attackedPiece) {
+  if (s.ambigousMove) {
     if (!attackedPieceNode) {
       const attackElement = createPieceAttackElement(
         s,
-        s.ambigousMove.attackedPiece.attacker,
-        s.ambigousMove.attackedPiece.attacked,
+        s.ambigousMove.pieceThatMoves,
+        s.ambigousMove.pieceAtDest!,
       );
       attackElement.style.width = s.dom.bounds().squareSize + 'px';
       attackElement.style.height = s.dom.bounds().squareSize + 'px';
-      attackElement.cgKey = s.ambigousMove.attackedPiece.attackedSquare;
-      translate(attackElement, posToTranslate(key2pos(s.ambigousMove.attackedPiece.attackedSquare), asRed));
+      attackElement.cgKey = s.ambigousMove.destKey;
+      translate(attackElement, posToTranslate(key2pos(s.ambigousMove.destKey), asRed));
       boardEl.appendChild(attackElement);
-      pieceAttackPopup.setPopup(s, ['normal', 'stay'], s.ambigousMove.attackedPiece.attackedSquare);
+      pieceAttackPopup.setPopup(s, ['normal', 'stay'], s.ambigousMove.destKey);
       s.dom.redraw();
     }
   } else {

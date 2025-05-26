@@ -114,13 +114,11 @@ function baseUserMove(state: HeadlessState, orig: cg.OrigMove, dest: cg.DestMove
       //Ambiguous move
       if (piecesPrepared.type === 'capture-stay-back-ambigous') {
         state.ambigousMove = {
-          attackedPiece: {
-            attackerSquare: orig.square,
-            attackedSquare: dest.square,
-            originalPiece: piecesPrepared.originalPiece.originalOrigPiece,
-            attacker: piecesPrepared.originalPiece.pieceThatMoves,
-            attacked: piecesPrepared.originalPiece.originalDestPiece!,
-          },
+          destKey: dest.square,
+          origKey: orig.square,
+          pieceAtDest: piecesPrepared.originalPiece.originalDestPiece,
+          pieceAtOrig: piecesPrepared.originalPiece.originalOrigPiece,
+          pieceThatMoves: piecesPrepared.originalPiece.pieceThatMoves,
         };
         return { moveFinished: false };
       }

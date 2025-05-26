@@ -4,11 +4,11 @@ import { State } from './state';
 import { createEl } from './util';
 
 export function returnToOriginalPieceState(s: State) {
-  const attackedPiece = s.ambigousMove?.attackedPiece;
-  if (!attackedPiece) return;
-  const originalPiece = attackedPiece.originalPiece ? attackedPiece.originalPiece : attackedPiece.attacker;
-  s.pieces.set(attackedPiece.attackedSquare, attackedPiece.attacked);
-  s.pieces.set(attackedPiece.attackerSquare, originalPiece);
+  if (!s.ambigousMove) return;
+  const originalPiece = s.ambigousMove.pieceAtOrig;
+  const pieceThatMoves = s.ambigousMove.pieceThatMoves;
+  s.pieces.set(s.ambigousMove.destKey, pieceThatMoves);
+  s.pieces.set(s.ambigousMove.origKey, originalPiece);
 }
 
 const pieceAttackPopup = createPopupFactory<string>({
@@ -24,14 +24,14 @@ const pieceAttackPopup = createPopupFactory<string>({
     return el;
   },
   onSelect: (s: State, index: number) => {
-    if (!s.ambigousMove?.attackedPiece) return;
+    if (!s.ambigousMove) return;
     returnToOriginalPieceState(s);
     const origMove = {
-      square: s.ambigousMove.attackedPiece.attackerSquare,
-      type: s.ambigousMove.attackedPiece.attacker.role,
+      square: s.ambigousMove.origKey,
+      type: s.ambigousMove.pieceThatMoves.role,
     };
     const destMove = {
-      square: s.ambigousMove.attackedPiece.attackedSquare,
+      square: s.ambigousMove.destKey,
       stay: s.popup?.items[index] === 'stay',
     };
     const result = userMove(s, origMove, destMove);

@@ -42,7 +42,6 @@ function createStartHandler<T>(
   return (s: State, items?: T[], key?: cg.Key) => {
     // Initialize ambiguousMove state if needed
     if (!s.ambigousMove) {
-      s.ambigousMove = {};
     }
 
     // Update the board to show the ambiguous stack
