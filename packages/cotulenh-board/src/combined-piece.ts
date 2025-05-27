@@ -9,6 +9,7 @@ import * as drag from './drag.js';
 import { formStack } from '@repo/cotulenh-combine-piece';
 import { createEl } from './util.js';
 import { createAmbigousModeHandling } from './popup/ambigous-move.js';
+import { userMove } from './board.js';
 
 const END_MOVE = 'end-move';
 type EndMove = typeof END_MOVE;
@@ -142,8 +143,17 @@ const moveWithCarrierPopup = createPopupFactory<cg.Piece>({
   },
   onSelect: (s: State, index: number) => {
     const selectedPiece = s.popup?.items[index];
-    if (!selectedPiece) return;
-    console.log('selectedPiece', selectedPiece);
+    if (!selectedPiece || !s.ambigousMove) return;
+    const origMove = {
+      square: s.ambigousMove.origKey,
+      type: s.ambigousMove.pieceThatMoves.role,
+      stackMove: true,
+      carrying: [selectedPiece.role],
+    };
+    const destMove = {
+      square: s.ambigousMove.destKey,
+    };
+    userMove(s, origMove, destMove);
     // board.selectSquare(s, s.popup.square, selectedPiece.role, true);
     s.ambigousMove = undefined;
     clearPopup(s);

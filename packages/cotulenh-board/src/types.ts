@@ -95,7 +95,7 @@ export type Redraw = () => void;
 export type Unbind = () => void;
 export type KHz = number;
 
-export type OrigMove = { square: Key; type: Role; stackMove?: boolean };
+export type OrigMove = { square: Key; type: Role; stackMove?: boolean; carrying?: Role[] };
 export type DestMove = { square: Key; stay?: boolean };
 export type OrigMoveKey = `${Key}.${Role}`;
 export type Dests = Map<OrigMoveKey, DestMove[]>;

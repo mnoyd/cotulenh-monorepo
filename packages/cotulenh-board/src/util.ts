@@ -1,3 +1,4 @@
+import { createCombineStackFromPieces } from './combined-piece.js';
 import { HeadlessState } from './state.js';
 import * as cg from './types.js';
 
@@ -101,33 +102,57 @@ export const pieceNameOf = (piece: cg.Piece): string => {
 
 interface PieceFound {
   piece: cg.Piece | undefined;
-  original?: cg.Piece;
-  type?: cg.StackPieceType;
+  stackMove?: {
+    stayPiece?: cg.Piece | cg.Piece[] | undefined;
+    original: cg.Piece;
+  };
 }
 
 export function getPieceFromOrigMove(state: HeadlessState, origMove: cg.OrigMove): PieceFound {
   const pieceAtSquare = state.pieces.get(origMove.square);
   if (!pieceAtSquare) return { piece: undefined };
-  //If type is not specified, return the piece at the square
   if (!origMove.type) return { piece: pieceAtSquare };
-  if (pieceAtSquare.role === origMove.type) {
-    if (origMove.stackMove) {
-      return { piece: { ...pieceAtSquare, carrying: [] }, original: pieceAtSquare, type: 'carrier' };
-    }
+  if (!origMove.stackMove && origMove.type === pieceAtSquare.role) {
     return { piece: pieceAtSquare };
   }
-  if (pieceAtSquare.carrying?.length && pieceAtSquare.carrying.some(p => p.role === origMove.type))
-    return {
-      piece: pieceAtSquare.carrying?.find(p => p.role === origMove.type),
-      original: pieceAtSquare,
-      type: 'carried',
-    };
-  return { piece: undefined };
+  //Handle stack move
+  const flattenPieces = flatOutPiece(pieceAtSquare);
+  let carrierPiece: cg.Piece | undefined = undefined;
+  const movingCarryingPieces: cg.Piece[] = [];
+  const stayingPieces: cg.Piece[] = [];
+  for (const piece of flattenPieces) {
+    if (piece.role === origMove.type) {
+      carrierPiece = piece;
+    } else {
+      if (origMove.carrying?.includes(piece.role)) {
+        movingCarryingPieces.push(piece);
+      } else {
+        stayingPieces.push(piece);
+      }
+    }
+  }
+  if (!carrierPiece) {
+    return { piece: undefined };
+  }
+  const { combined: moving, uncombined: movingUncombined } = createCombineStackFromPieces([
+    ...movingCarryingPieces,
+    carrierPiece,
+  ]);
+  if (movingUncombined && movingUncombined.length > 0) {
+    //this should not happened
+    throw new Error('The moving piece is not suitable to stay in one square');
+  }
+  const { combined: stay, uncombined: stayUncombined } = createCombineStackFromPieces(stayingPieces);
+  if (stayUncombined && stayUncombined.length > 0) {
+    //this is expected bahvior and will trigger ambigous moving with carrier popup.
+    return { piece: moving, stackMove: { stayPiece: stayingPieces, original: pieceAtSquare } };
+  }
+  return { piece: moving, stackMove: { stayPiece: stay, original: pieceAtSquare } };
 }
 
 export function isPieceFromStack(state: HeadlessState, origMove: cg.OrigMove): boolean {
-  const { piece, original } = getPieceFromOrigMove(state, origMove);
-  return piece !== undefined && original !== undefined;
+  const { piece, stackMove } = getPieceFromOrigMove(state, origMove);
+  return piece !== undefined && stackMove !== undefined;
 }
 export const origMoveToKey = (origMove: cg.OrigMove): cg.OrigMoveKey => `${origMove.square}.${origMove.type}`;
 

@@ -122,7 +122,7 @@ function baseUserMove(state: HeadlessState, orig: cg.OrigMove, dest: cg.DestMove
       };
       return { moveFinished: false };
     } else {
-      if (piecesPrepared.updatedPieces.deploy || state.stackPieceMoves) {
+      if (piecesPrepared.updatedPieces.isStackMove || state.stackPieceMoves) {
         handleStackPieceMoves(state, piecesPrepared, orig, dest);
         const stackMove = deployStateToMove(state);
         unselect(state);
@@ -363,15 +363,26 @@ export function stop(state: HeadlessState): void {
   cancelMove(state);
 }
 
+function prepareOrigPiece(
+  captureMoveStay: CaptureMoveStay,
+  pieceThatMoves: cg.Piece,
+  stayPiece?: cg.Piece,
+): cg.Piece | undefined {
+  if (captureMoveStay === true) {
+    //If stay capture original square remain unchanged
+    return pieceThatMoves;
+  }
+  if (stayPiece) {
+    return stayPiece;
+  }
+  return undefined;
+}
+
 function prepareDestPiece(
   captureMoveStay: CaptureMoveStay,
   pieceThatMoves: cg.Piece,
   pieceAtDest: cg.Piece | undefined,
-  remainingCarried?: cg.Piece[],
 ): { piece: cg.Piece | undefined; capturedPiece?: cg.Piece } {
-  if (remainingCarried) {
-    pieceThatMoves.carrying = remainingCarried;
-  }
   if (!pieceAtDest) {
     return { piece: pieceThatMoves };
   }
@@ -388,33 +399,6 @@ function prepareDestPiece(
   }
   if (pieceAtDest.color !== pieceThatMoves.color) {
     return { piece: pieceThatMoves, capturedPiece: pieceAtDest };
-  }
-  return { piece: undefined };
-}
-
-function prepareOrigPiece(
-  captureMoveStay: CaptureMoveStay,
-  pieceThatMoves: cg.Piece,
-  original?: cg.Piece,
-  stackPieceType?: cg.StackPieceType,
-): { piece: cg.Piece | undefined; uncombined?: cg.Piece[] } {
-  if (captureMoveStay === true) {
-    //If stay capture original square remain unchanged
-    return { piece: original ? original : pieceThatMoves };
-  }
-  if (original) {
-    if (stackPieceType === 'carrier') {
-      const { combined, uncombined } = createCombineStackFromPieces([...original.carrying!]);
-      return { piece: combined, uncombined };
-    } else if (stackPieceType === 'carried') {
-      const newCarrying = [...original.carrying!];
-      newCarrying.splice(newCarrying.indexOf(pieceThatMoves), 1);
-      const updatedCarrier = {
-        ...original,
-        carrying: newCarrying.length > 0 ? newCarrying : undefined,
-      };
-      return { piece: updatedCarrier };
-    }
   }
   return { piece: undefined };
 }
@@ -451,7 +435,7 @@ interface PiecesUpdated {
   pieceAtOrig: cg.Piece | undefined;
   capture: boolean;
   captureMoveStay: CaptureMoveStay;
-  deploy: boolean;
+  isStackMove: boolean;
 }
 interface OriginalPiece {
   pieceThatMoves: cg.Piece;
@@ -475,43 +459,34 @@ function preparePieceThatChanges(
   const dests = state.movable.dests;
   const pieceAtDestBeforeMove = state.pieces.get(dest.square);
   const captureMoveStay = pieceAtDestBeforeMove ? isStayCaptureMove(orig, dest, dests) : false;
-  const { piece: pieceThatMoves, original, type: stackPieceType } = getPieceFromOrigMove(state, orig);
+  const { piece: pieceThatMoves, stackMove } = getPieceFromOrigMove(state, orig);
   if (!pieceThatMoves) {
     throw new Error('No piece that moves');
   }
+  const originalOrigPiece = state.pieces.get(orig.square);
+  const originalPiece = {
+    pieceThatMoves: pieceThatMoves,
+    originalOrigPiece: originalOrigPiece!,
+    originalDestPiece: pieceAtDestBeforeMove,
+  };
   if (captureMoveStay === NeedClarifyCaptureMoveStay) {
     return {
       type: 'ambigous-capture-stay-back',
-      originalPiece: {
-        pieceThatMoves: pieceThatMoves,
-        originalOrigPiece: state.pieces.get(orig.square)!,
-        originalDestPiece: pieceAtDestBeforeMove,
-      },
+      originalPiece,
     };
   }
-
-  const { piece: preparedOrigPiece, uncombined: remainingCarried } = prepareOrigPiece(
-    captureMoveStay,
-    pieceThatMoves,
-    original,
-    stackPieceType,
-  );
-  if (remainingCarried?.length) {
+  if (Array.isArray(stackMove?.stayPiece)) {
     return {
       type: 'ambigous-stack-move-stay-pieces-cant-combine',
-      originalPiece: {
-        pieceThatMoves: pieceThatMoves,
-        originalOrigPiece: state.pieces.get(orig.square)!,
-        originalDestPiece: pieceAtDestBeforeMove,
-      },
+      originalPiece,
     };
   }
+  const preparedOrigPiece = prepareOrigPiece(captureMoveStay, pieceThatMoves, stackMove?.stayPiece);
 
   const { piece: preparedDestPiece, capturedPiece } = prepareDestPiece(
     captureMoveStay,
     pieceThatMoves,
     pieceAtDestBeforeMove,
-    remainingCarried,
   );
   return {
     updatedPieces: {
@@ -519,13 +494,9 @@ function preparePieceThatChanges(
       pieceAtOrig: preparedOrigPiece,
       capture: !!capturedPiece,
       captureMoveStay,
-      deploy: !!original,
+      isStackMove: !!stackMove,
     },
-    originalPiece: {
-      pieceThatMoves: pieceThatMoves,
-      originalOrigPiece: original || pieceThatMoves,
-      originalDestPiece: pieceAtDestBeforeMove,
-    },
+    originalPiece,
   };
 }
 

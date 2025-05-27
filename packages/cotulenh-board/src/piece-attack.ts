@@ -27,9 +27,7 @@ const pieceAttackPopup = createPopupFactory<string>({
       square: s.ambigousMove.destKey,
       stay: s.popup?.items[index] === 'stay',
     };
-    const result = userMove(s, origMove, destMove);
-    if (result) {
-    }
+    userMove(s, origMove, destMove);
     s.ambigousMove = undefined;
     clearPopup(s);
     s.dom.redraw();
