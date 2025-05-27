@@ -224,7 +224,7 @@ cg-board square.move-dest.oc::before {
 }
 
 /* --- Ambiguous Stack Styles --- */
-cg-board ambigous-stack {
+cg-board piece-ambigous-stack {
   position: absolute;
   z-index: 10;
   pointer-events: none;
@@ -233,14 +233,14 @@ cg-board ambigous-stack {
   align-items: center;
 }
 
-cg-board ambigous-stack piece {
+cg-board piece-ambigous-stack piece {
   position: relative;
   pointer-events: none;
   opacity: 0.8;
   transition: transform 0.2s;
 }
 
-cg-board ambigous-stack::before {
+cg-board piece-ambigous-stack::before {
   content: '';
   position: absolute;
   width: 100%;
@@ -297,7 +297,9 @@ cg-board .popup-container piece:active {
 
 /* End stack move button styling */
 cg-board .popup-container cg-btn.end-stack-move {
-  /* transition: transform 0.1s, background-color 0.2s; */
+  transition:
+    transform 0.1s,
+    background-color 0.2s;
   flex-shrink: 0;
   pointer-events: auto;
   user-select: none;
@@ -328,17 +330,4 @@ cg-board .popup-container piece.selected {
 
 .cg-wrap piece.ghost {
   opacity: 0.3;
-}
-
-piece-ambigous-stack {
-  display: block;
-  position: absolute;
-  left: 0;
-  top: 0;
-  will-change: transform;
-  pointer-events: none;
-  z-index: 30;
-  /* Center the attack marker visually if needed */
-  /* transform: translate(-50%, -50%); */
-  transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1);
 }
