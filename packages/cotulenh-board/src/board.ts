@@ -11,7 +11,13 @@ import {
   pos2key,
 } from './util.js';
 import * as cg from './types.js';
-import { createCombineStackFromPieces, tryCombinePieces } from './combined-piece.js';
+import {
+  AMBIGOUS_STACK_MOVE_STAY_PIECES_CANT_COMBINE,
+  createCombineStackFromPieces,
+  tryCombinePieces,
+} from './combined-piece.js';
+import { AMBIGOUS_CAPTURE_STAY_BACK } from './piece-attack';
+import { PopUpType } from './popup/popup-factory';
 
 export function toggleOrientation(state: HeadlessState): void {
   state.orientation = opposite(state.orientation);
@@ -447,7 +453,7 @@ interface PreparedPiece {
   originalPiece: OriginalPiece;
 }
 interface AmbigousMove {
-  type: string;
+  type: PopUpType;
   originalPiece: OriginalPiece;
 }
 
@@ -471,13 +477,13 @@ function preparePieceThatChanges(
   };
   if (captureMoveStay === NeedClarifyCaptureMoveStay) {
     return {
-      type: 'ambigous-capture-stay-back',
+      type: AMBIGOUS_CAPTURE_STAY_BACK,
       originalPiece,
     };
   }
   if (Array.isArray(stackMove?.stayPiece)) {
     return {
-      type: 'ambigous-stack-move-stay-pieces-cant-combine',
+      type: AMBIGOUS_STACK_MOVE_STAY_PIECES_CANT_COMBINE,
       originalPiece,
     };
   }

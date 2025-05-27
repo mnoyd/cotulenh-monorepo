@@ -11,8 +11,7 @@ import {
 } from './air-defense.js';
 import { TEMP_KEY } from './types.js';
 import { combinedPiecePopup, prepareCombinedPopup } from './combined-piece.js';
-import { isPositionInPopup, clearPopup } from './popup/popup-factory.js';
-import { getPopup } from './cotulenh.js';
+import { isPositionInPopup, clearPopup, getPopup } from './popup/popup-factory.js';
 
 export interface DragCurrent {
   orig: cg.Key; // orig key of dragging piece
@@ -157,7 +156,7 @@ function handlePopupInteraction(s: State, e: cg.MouchEvent, position: cg.NumberP
   }
 
   if (!s.popup) return false;
-  const popup = getPopup(s, s.popup.type);
+  const popup = getPopup(s);
   if (!popup) return false;
   if (itemIndex === undefined) return false;
   popup.handlePopupClick(s, itemIndex, e);

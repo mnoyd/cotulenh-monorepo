@@ -6,10 +6,6 @@ import { render, renderResized, updateBounds } from './render.js';
 import * as events from './events.js';
 import { Config, configure } from './config.js';
 import { Bounds } from './types.js';
-import { ambigousStackMoveStayPiecesCantCombineHandling, combinedPiecePopup } from './combined-piece.js';
-import { ambigousCaptureStayBackHandling } from './piece-attack.js';
-import { CTLPopup } from './popup/popup-factory.js';
-import { AmbigousMoveHandling } from './popup/ambigous-move.js';
 
 export function initModule({ el, config }: { el: HTMLElement; config?: Config }): Api {
   return CotulenhBoard(el, config);
@@ -60,34 +56,4 @@ function debounceRedraw(redrawNow: () => void): () => void {
       redrawing = false;
     });
   };
-}
-export function getPopup(s: State, type?: string): CTLPopup<any> | undefined {
-  if (!s.popup || (type && s.popup.type !== type)) {
-    return undefined;
-  }
-  const filter = type ? type : s.popup.type;
-  switch (filter) {
-    case 'combined-piece':
-      return combinedPiecePopup;
-    case 'piece-attack':
-      return ambigousCaptureStayBackHandling.popup;
-    case 'move-with-carrier':
-      return ambigousStackMoveStayPiecesCantCombineHandling.popup;
-    default:
-      return undefined;
-  }
-}
-
-export function getAmbigousMoveHandling(state: State): AmbigousMoveHandling<any> | undefined {
-  if (!state.ambigousMove) {
-    return undefined;
-  }
-  switch (state.ambigousMove.type) {
-    case 'ambigous-capture-stay-back':
-      return ambigousCaptureStayBackHandling;
-    case 'ambigous-stack-move-stay-pieces-cant-combine':
-      return ambigousStackMoveStayPiecesCantCombineHandling;
-    default:
-      return undefined;
-  }
 }

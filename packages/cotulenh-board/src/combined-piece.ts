@@ -71,8 +71,9 @@ export function createCombineStackFromPieces(pieces: cg.Piece[]): {
   return { combined: piece, uncombined: uncombined.splice(1) };
 }
 
+export const COMBINED_PIECE_POPUP_TYPE = 'combined-piece';
 const combinedPiecePopup = createPopupFactory<cg.Piece | EndMove>({
-  type: 'combined-piece',
+  type: COMBINED_PIECE_POPUP_TYPE,
   renderItem: (s: State, item: cg.Piece | EndMove, index: number) => {
     if (item === END_MOVE) {
       const el = createEl('cg-btn', 'end-stack-move');
@@ -134,8 +135,9 @@ export function prepareCombinedPopup(state: HeadlessState, pieces: cg.Piece[]): 
   return [...pieces, END_MOVE];
 }
 
+export const MOVE_WITH_CARRIER_POPUP_TYPE = 'move-with-carrier';
 const moveWithCarrierPopup = createPopupFactory<cg.Piece>({
-  type: 'move-with-carrier',
+  type: MOVE_WITH_CARRIER_POPUP_TYPE,
   renderItem: (s: State, item: cg.Piece, index: number) => {
     const piece = createSinglePieceElement(s, item);
     piece.setAttribute('data-index', index.toString());
@@ -164,8 +166,9 @@ const moveWithCarrierPopup = createPopupFactory<cg.Piece>({
     board.unselect(s);
   },
 });
+const AMBIGOUS_STACK_MOVE_STAY_PIECES_CANT_COMBINE = 'ambigous-stack-move-stay-pieces-cant-combine';
 const ambigousStackMoveStayPiecesCantCombineHandling = createAmbigousModeHandling<cg.Piece>({
-  type: 'ambigous-stack-move-stay-pieces-cant-combine',
+  type: AMBIGOUS_STACK_MOVE_STAY_PIECES_CANT_COMBINE,
   popup: moveWithCarrierPopup,
   renderAmbigousMoveElements: (s: State, popup: CTLPopup<cg.Piece>) => {
     if (!s.ambigousMove) return;
@@ -183,4 +186,4 @@ const ambigousStackMoveStayPiecesCantCombineHandling = createAmbigousModeHandlin
     s.dom.redraw();
   },
 });
-export { ambigousStackMoveStayPiecesCantCombineHandling };
+export { ambigousStackMoveStayPiecesCantCombineHandling, AMBIGOUS_STACK_MOVE_STAY_PIECES_CANT_COMBINE };

@@ -1,12 +1,14 @@
 import { unselect, userMove } from './board';
-import { createAmbigousModeHandling } from './popup/ambigous-move';
+import { AmbigousMoveType, createAmbigousModeHandling } from './popup/ambigous-move';
 import { clearPopup, createPopupFactory, CTLPopup } from './popup/popup-factory';
 import { createAmbigousPiecesStackElement } from './render';
 import { State } from './state';
 import { createEl } from './util';
+import { PopUpType } from './popup/popup-factory';
 
+export const PIECE_ATTACK_POPUP_TYPE: PopUpType = 'piece-attack';
 const pieceAttackPopup = createPopupFactory<string>({
-  type: 'piece-attack',
+  type: PIECE_ATTACK_POPUP_TYPE,
   renderItem: (s: State, item: string, index: number) => {
     let className = '';
     if (index === 0) className = 'piece-attack ' + item;
@@ -37,9 +39,9 @@ const pieceAttackPopup = createPopupFactory<string>({
     unselect(s);
   },
 });
-
+const AMBIGOUS_CAPTURE_STAY_BACK: AmbigousMoveType = 'capture-stay-back-ambigous';
 const ambigousCaptureStayBackHandling = createAmbigousModeHandling({
-  type: 'capture-stay-back-ambigous',
+  type: AMBIGOUS_CAPTURE_STAY_BACK,
   popup: pieceAttackPopup,
   renderAmbigousMoveElements: (s: State, popup: CTLPopup<string>) => {
     if (!s.ambigousMove) return;
@@ -58,4 +60,4 @@ const ambigousCaptureStayBackHandling = createAmbigousModeHandling({
     s.dom.redraw();
   },
 });
-export { ambigousCaptureStayBackHandling };
+export { ambigousCaptureStayBackHandling, AMBIGOUS_CAPTURE_STAY_BACK };

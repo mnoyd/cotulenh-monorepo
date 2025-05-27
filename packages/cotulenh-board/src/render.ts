@@ -1,7 +1,7 @@
 import { AnimCurrent, AnimFadings, AnimVector, AnimVectors } from './anim.js';
 import { redPov } from './board.js';
 import { DragCurrent } from './drag.js';
-import { getAmbigousMoveHandling } from './cotulenh.js';
+import { getAmbigousMoveHandling } from './popup/ambigous-move.js';
 import { HeadlessState, State } from './state.js';
 import * as cg from './types.js';
 import { TEMP_KEY } from './types.js';

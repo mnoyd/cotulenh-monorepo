@@ -3,6 +3,7 @@ import * as fen from './fen.js';
 import { AnimCurrent } from './anim.js';
 import { Drawable } from './draw.js';
 import { DragCurrent } from './drag.js';
+import { PopUpType } from './popup/popup-factory.js';
 
 export interface HeadlessState {
   orientation: cg.Color;
@@ -79,32 +80,29 @@ export interface HeadlessState {
   stackPieceMoves?: {
     key: cg.Key;
     originalPiece: cg.Piece;
-    moves: StackPieceMove[];
+    moves: {
+      piece: cg.Piece;
+      newSquare: cg.Key | 'no_move';
+      capturedPiece?: cg.Piece;
+    }[];
   };
-  ambigousMove?: AmbigousMove;
+  ambigousMove?: {
+    type: PopUpType;
+    destKey: cg.Key;
+    origKey: cg.Key;
+    pieceAtDest: cg.Piece | undefined;
+    pieceAtOrig: cg.Piece;
+    pieceThatMoves: cg.Piece;
+    renderGuide?: {
+      atOrig: undefined | any;
+      atDest: undefined | any;
+    };
+  };
   popup?: {
     square?: cg.Key; // square where it initiate this popup
     items: any[];
-    type: string;
+    type: PopUpType;
     containerEl: HTMLElement;
-  };
-}
-interface StackPieceMove {
-  piece: cg.Piece;
-  newSquare: cg.Key | 'no_move';
-  capturedPiece?: cg.Piece;
-}
-
-export interface AmbigousMove {
-  type: string;
-  destKey: cg.Key;
-  origKey: cg.Key;
-  pieceAtDest: cg.Piece | undefined;
-  pieceAtOrig: cg.Piece;
-  pieceThatMoves: cg.Piece;
-  renderGuide?: {
-    atOrig: undefined | any;
-    atDest: undefined | any;
   };
 }
 
