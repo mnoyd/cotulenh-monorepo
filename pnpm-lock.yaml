@@ -32,9 +32,6 @@ importers:
       '@repo/cotulenh-core':
         specifier: workspace:^
         version: link:../../packages/cotulenh-core
-      '@repo/cotulenh-notation':
-        specifier: workspace:^
-        version: link:../../packages/cotulenh-notation
       immer:
         specifier: ^10.1.1
         version: 10.1.1
