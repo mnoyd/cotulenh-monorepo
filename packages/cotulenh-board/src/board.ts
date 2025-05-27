@@ -3,7 +3,7 @@ import {
   allPos,
   computeSquareCenter,
   findDestInDests,
-  flatOutPiece,
+  flattenPiece,
   getPieceFromOrigMove,
   isPieceFromStack,
   opposite,
@@ -182,7 +182,7 @@ export function endUserNormalMove(
     ctrlKey: state.stats.ctrlKey,
     holdTime,
     ...(result.piecesPrepared.updatedPieces.capture && {
-      captured: flatOutPiece(result.piecesPrepared.updatedPieces.pieceAtDest!),
+      captured: flattenPiece(result.piecesPrepared.updatedPieces.pieceAtDest!),
     }),
   };
   callUserFunction(state.movable.events.after, origMove, destMove, metadata);
@@ -199,7 +199,7 @@ export function endUserStackMove(state: HeadlessState): boolean {
   let captures: cg.Piece[] = stackMove.moves
     .map(move => move.capturedPiece!)
     .filter(capture => capture !== undefined) as cg.Piece[];
-  const capturesFlatedout = captures.reduce<cg.Piece[]>((acc, piece) => [...acc, ...flatOutPiece(piece)], []);
+  const capturesFlatedout = captures.reduce<cg.Piece[]>((acc, piece) => [...acc, ...flattenPiece(piece)], []);
   const metadata: cg.MoveMetadata = {
     holdTime,
     captured: capturesFlatedout,
@@ -512,7 +512,7 @@ function handleStackPieceMoves(
   origMove: cg.OrigMove,
   destMove: cg.DestMove,
 ): void {
-  const movedPieces = flatOutPiece(piecesPrepared.originalPiece.pieceThatMoves!);
+  const movedPieces = flattenPiece(piecesPrepared.originalPiece.pieceThatMoves!);
   if (!state.stackPieceMoves) {
     state.stackPieceMoves = {
       key: origMove.square,
@@ -537,7 +537,7 @@ function handleStackPieceMoves(
     );
   }
   const originalPiece = state.stackPieceMoves.originalPiece;
-  const allPieces = flatOutPiece(originalPiece);
+  const allPieces = flattenPiece(originalPiece);
   const remainingPieces = allPieces.filter(
     p => !state.stackPieceMoves?.moves.some(m => m.piece.role === p.role),
   );
@@ -589,7 +589,7 @@ function deployStateToMove(s: HeadlessState): cg.StackMove {
     throw new Error('No deploy state');
   }
   const originalPiece = deployState.originalPiece;
-  let remainingPieces = flatOutPiece(originalPiece);
+  let remainingPieces = flattenPiece(originalPiece);
   const destsMap = new Map<cg.Key, { piece: cg.Piece[]; capturedPiece?: cg.Piece }>();
   deployState.moves.forEach(m => {
     const piece = m.piece;

@@ -116,7 +116,7 @@ export function getPieceFromOrigMove(state: HeadlessState, origMove: cg.OrigMove
     return { piece: pieceAtSquare };
   }
   //Handle stack move
-  const flattenPieces = flatOutPiece(pieceAtSquare);
+  const flattenPieces = flattenPiece(pieceAtSquare);
   let carrierPiece: cg.Piece | undefined = undefined;
   const movingCarryingPieces: cg.Piece[] = [];
   const stayingPieces: cg.Piece[] = [];
@@ -168,7 +168,7 @@ export function findDestInDests(
   return state.movable.dests?.get(origMoveToKey(orig))?.find(d => d.square === dest.square);
 }
 
-export const flatOutPiece = (p: cg.Piece): cg.Piece[] => {
+export const flattenPiece = (p: cg.Piece): cg.Piece[] => {
   if (!p.carrying) return [p];
-  return [{ ...p, carrying: [] }, ...p.carrying];
+  return [{ ...p, carrying: undefined }, ...p.carrying];
 };

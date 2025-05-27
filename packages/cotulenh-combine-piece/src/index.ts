@@ -246,3 +246,40 @@ export function formStack<P extends GenericPiece>(
     return null; // Some pieces couldn't be assigned
   }
 }
+
+/**
+ * Creates a combined stack from an array of pieces by iteratively combining them
+ * @param pieces Array of pieces to combine
+ * @param getRoleFunc Function to extract role/type from a piece
+ * @param mapRoleFunc Function to map role/type to blueprint key
+ * @return Object containing the combined piece (if successful) and array of pieces that couldn't be combined
+ */
+export function createCombineStackFromPieces<P extends GenericPiece>(
+  pieces: P[],
+  getRoleFunc: (piece: P) => string,
+  mapRoleFunc: (role: string) => string = (r) => r
+): {
+  combined: P | undefined;
+  uncombined: P[] | undefined;
+} {
+  if (!pieces || pieces.length === 0) return { combined: undefined, uncombined: undefined };
+  if (pieces.length === 1) return { combined: pieces[0], uncombined: undefined };
+
+  const uncombined: P[] = [];
+  const piece = pieces.reduce((acc, p) => {
+    if (!acc) return p;
+
+    // Try to combine the accumulated piece with the current piece
+    const combined = formStack(acc, p, getRoleFunc, mapRoleFunc);
+    if (!combined) {
+      uncombined.push(p);
+      return acc;
+    }
+    return combined;
+  }, pieces[0]);
+
+  return {
+    combined: piece,
+    uncombined: uncombined.length > 0 ? uncombined.splice(1) : undefined
+  };
+}

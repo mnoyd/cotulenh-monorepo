@@ -28,7 +28,10 @@ import {
   isSquareOnBoard,
 } from './type.js'
 
-import { formStack } from '@repo/cotulenh-combine-piece'
+import {
+  formStack,
+  createCombineStackFromPieces as genericCreateCombineStackFromPieces,
+} from '@repo/cotulenh-combine-piece'
 
 const symbolToRoleMap: Record<PieceSymbol, string> = {
   [COMMANDER]: 'commander',
@@ -82,19 +85,7 @@ export function createCombineStackFromPieces(pieces: Piece[]): {
   combined: Piece | undefined
   uncombined: Piece[] | undefined
 } {
-  if (!pieces || pieces.length === 0)
-    return { combined: undefined, uncombined: undefined }
-  const uncombined: Piece[] = []
-  const piece = pieces.reduce((acc, p) => {
-    if (!acc) return p
-    const combined = createCombinedPiece(acc, p)
-    if (!combined) {
-      uncombined.push(p)
-      return acc
-    }
-    return combined
-  }, pieces[0])
-  return { combined: piece, uncombined: uncombined.splice(1) }
+  return genericCreateCombineStackFromPieces(pieces, getRoleFromCoreType)
 }
 
 export function getDisambiguator(

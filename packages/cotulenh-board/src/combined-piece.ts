@@ -6,7 +6,10 @@ import * as board from './board.js';
 import * as util from './util.js';
 import * as drag from './drag.js';
 
-import { formStack } from '@repo/cotulenh-combine-piece';
+import {
+  formStack,
+  createCombineStackFromPieces as genericCreateCombineStackFromPieces,
+} from '@repo/cotulenh-combine-piece';
 import { createEl } from './util.js';
 import { createAmbigousModeHandling } from './popup/ambigous-move.js';
 import { userMove } from './board.js';
@@ -57,18 +60,12 @@ export function createCombineStackFromPieces(pieces: cg.Piece[]): {
   combined: cg.Piece | undefined;
   uncombined: cg.Piece[] | undefined;
 } {
-  if (!pieces || pieces.length === 0) return { combined: undefined, uncombined: undefined };
-  const uncombined: cg.Piece[] = [];
-  const piece = pieces.reduce((acc, p) => {
-    if (!acc) return p;
-    const combined = tryCombinePieces(acc, p);
-    if (!combined) {
-      uncombined.push(p);
-      return acc;
-    }
-    return combined;
-  }, pieces[0]);
-  return { combined: piece, uncombined: uncombined.splice(1) };
+  // Use the generic function from cotulenh-combine-piece package
+  return genericCreateCombineStackFromPieces(
+    pieces,
+    p => p.role,
+    r => r,
+  );
 }
 
 export const COMBINED_PIECE_POPUP_TYPE = 'combined-piece';
