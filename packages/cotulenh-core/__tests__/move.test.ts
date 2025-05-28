@@ -559,3 +559,48 @@ describe('Terrain blocking movement logic', () => {
     expect(combineE2B2).toBeUndefined()
   })
 })
+describe('move sequesce', () => {
+  let game: CoTuLenh
+  beforeEach(() => {
+    game = setupGameBasic()
+  })
+  test('sequence of moves from initial position', () => {
+    const game = new CoTuLenh()
+
+    // Verify initial position
+    expect(game.fen()).toBe(DEFAULT_POSITION)
+
+    // First move: Red Air Force to b2 combined
+    const move1 = game.move('F&b2')
+    expect(move1).toBeInstanceOf(Move)
+    expect(game['_turn']).toBe(BLUE)
+
+    // Second move: Blue commander to e12
+    const move2 = game.move('Ce12')
+    expect(move2).toBeInstanceOf(Move)
+    expect(game['_turn']).toBe(RED)
+
+    // Third move: Red navy move forward to b6
+    const move3 = game.move('Nb6')
+    expect(move3).toBeInstanceOf(Move)
+    expect(game['_turn']).toBe(BLUE)
+
+    // Fourth move: Blue Commander return
+    const move4 = game.move('Cg12')
+    expect(move4).toBeInstanceOf(Move)
+    expect(game['_turn']).toBe(RED)
+
+    game.moves()
+
+    // // Verify move history
+    // const history = game.history({ verbose: true })
+    // expect(history).toHaveLength(2)
+    // expect(history[0].san).toBe('i9i8')
+    // expect(history[1].san).toBe('t2t3')
+
+    // // Verify alternate notation formats
+    // expect(history[0].lan).toBe('i9-i8')
+    // expect(game.history()[0]).toBe('i9i8')
+  })
+})
+//write me a test to test a sequence of moves from initial position

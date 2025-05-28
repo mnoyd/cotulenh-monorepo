@@ -511,23 +511,31 @@ export function generateDeployMoves(
   filterPiece?: PieceSymbol,
 ): InternalMove[] {
   const moves: InternalMove[] = []
-  const carrierPiece = gameInstance.getPieceAt(stackSquare)
   const us = gameInstance.turn()
-
+  const deployState = gameInstance.getDeployState()
+  const carrierPiece =
+    deployState !== null
+      ? deployState.originalPiece
+      : gameInstance.getPieceAt(stackSquare)
   if (!carrierPiece || carrierPiece.color !== us) {
     return []
   }
   if (
     (!carrierPiece.carrying || carrierPiece.carrying.length === 0) &&
-    gameInstance['_deployState'] === null &&
-    gameInstance['_deployState']!.stackSquare !== stackSquare
+    (deployState === null || deployState.stackSquare !== stackSquare)
   ) {
     return []
   }
 
   // Generate Deploy Moves for remaining carrying pieces
 
-  const deployMoveCandidates = flattenPiece(carrierPiece)
+  const flattenedCarrierPiece = flattenPiece(carrierPiece)
+  const deployMoveCandidates = flattenedCarrierPiece.filter(
+    (p) =>
+      !deployState?.movedPieces.some(
+        (mp) => mp.type === p.type && mp.color === p.color,
+      ),
+  )
   for (const deployMoveCandidate of deployMoveCandidates) {
     if (filterPiece && deployMoveCandidate.type !== filterPiece) continue
 

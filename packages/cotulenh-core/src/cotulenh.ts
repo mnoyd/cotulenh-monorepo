@@ -917,6 +917,14 @@ export class CoTuLenh {
     this._board[square] = piece
   }
 
+  public getDeployState(): DeployState | null {
+    return this._deployState
+  }
+
+  public setDeployState(deployState: DeployState | null): void {
+    this._deployState = deployState
+  }
+
   /**
    * Updates the position of a commander
    * @param sq - The new square in 0xf0 format

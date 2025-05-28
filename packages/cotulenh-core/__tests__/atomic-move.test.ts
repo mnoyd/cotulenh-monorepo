@@ -147,7 +147,7 @@ describe('Move Commands', () => {
     //TODO: Add stay capture move for air_force. When piece is air_force, in game._moves() always add stay capture and capture for same square
     //meaning if the square can be captured push both capture AND stay capture for same square to possible moves array.
 
-    it('should not allow stay capture for deploy move', () => {
+    it('should allow stay capture for deploy move', () => {
       game.load('5c5/11/11/11/11/11/11/11/1(NF)3t5/11/11/5C5', {
         skipValidation: true,
       })
@@ -159,7 +159,10 @@ describe('Move Commands', () => {
         flags: BITS.DEPLOY | BITS.STAY_CAPTURE,
       }
 
-      expect(() => createMoveCommand(game, move)).toThrow()
+      const deployAirForceStayCaptureMove = createMoveCommand(game, move)
+      expect(deployAirForceStayCaptureMove).toBeInstanceOf(
+        SingleDeployMoveCommand,
+      )
     })
   })
 

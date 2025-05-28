@@ -363,7 +363,7 @@ describe('Stack Movement and Deployment', () => {
     // Cannot move air force at c4 because turn is blue
     expect(game.moves({ square: 'c4' }).length).toEqual(0)
 
-    expect(game['_deployState']).toBeDefined()
+    expect(game.getDeployState()).toBeDefined()
   })
 
   // TODO: Add tests for deploy captures (normal and stay)
@@ -463,8 +463,8 @@ describe('Use deploy move', () => {
     expect(game.get('c4')?.type).toBe(INFANTRY)
     expect(game.get('d3')?.type).toBe(TANK)
     expect(game.get('d3')?.carrying).toBeUndefined()
-    expect(game['_deployState']).toBeNull()
-    expect(game['_turn']).toBe(BLUE)
+    expect(game.getDeployState()).toBeNull()
+    expect(game.turn()).toBe(BLUE)
   })
   it('should deploy all 3 pieces', () => {
     game.put(
@@ -502,8 +502,8 @@ describe('Use deploy move', () => {
     expect(game.get('a3')?.carrying).toBeFalsy()
     expect(game.get('d3')?.type).toBe(TANK)
     expect(game.get('d3')?.carrying).toBeFalsy()
-    expect(game['_deployState']).toBeNull()
-    expect(game['_turn']).toBe(BLUE)
+    expect(game.getDeployState()).toBeNull()
+    expect(game.turn()).toBe(BLUE)
   })
 
   it('should deploy nested piece', () => {
@@ -541,8 +541,8 @@ describe('Use deploy move', () => {
     expect(game.get('c4')?.carrying?.[0].type).toBe(TANK)
     expect(game.get('a3')?.type).toBe(NAVY)
     expect(game.get('a3')?.carrying).toBeUndefined()
-    expect(game['_deployState']).toBeNull()
-    expect(game['_turn']).toBe(BLUE)
+    expect(game.getDeployState()).toBeNull()
+    expect(game.turn()).toBe(BLUE)
   })
 
   it('stay piece should stay', () => {
@@ -574,8 +574,8 @@ describe('Use deploy move', () => {
     expect(game.get('c3')?.carrying?.[0].type).toBe(TANK)
     expect(game.get('a3')?.type).toBe(NAVY)
     expect(game.get('a3')?.carrying).toBeFalsy()
-    expect(game['_deployState']).toBeNull()
-    expect(game['_turn']).toBe(BLUE)
+    expect(game.getDeployState()).toBeNull()
+    expect(game.turn()).toBe(BLUE)
   })
 })
 
@@ -775,5 +775,36 @@ describe('DeployMove', () => {
     // Optionally check SAN/LAN for capture notation if defined
     // expect(deployMove.san).toContain('x'); // if SAN uses 'x' for capture
     // expect(deployMove.lan).toContain('x');
+  })
+
+  it('should generate deploy move for piece that not moved in the stack', () => {
+    // 1. Place navy (carrier) carrying air force and tank at d4
+    const navy = makePiece(NAVY, RED)
+    const airForce = makePiece(AIR_FORCE, RED)
+    const tank = makePiece(TANK, RED)
+    navy.carrying = [airForce, tank]
+    game.put(navy, 'b4')
+
+    // 2. Generate deploy moves for the stack at d4
+    const deployMoves = game.moves({ square: 'b4', verbose: true }) as Move[]
+    const beforeMoveMap = deployMoves.map((m: any) => m.piece.type)
+    expect(beforeMoveMap).toContain(NAVY)
+    expect(beforeMoveMap).toContain(AIR_FORCE)
+    expect(beforeMoveMap).toContain(TANK)
+    // Find the deploy move for the tank (by type)
+    const tankDeployMove = deployMoves.find((m: any) => m.piece.type === TANK)
+    expect(tankDeployMove).toBeDefined()
+
+    // 3. Apply the tank deploy move
+    game.move(tankDeployMove!.san!)
+
+    // 4. Now moves() for d4 should only generate deploy moves for navy and air force
+    const afterMoves = game.moves({ verbose: true }) as Move[]
+    const afterMoveMap = afterMoves.map((m: any) => m.piece.type)
+    expect(afterMoveMap).toContain(NAVY)
+    expect(afterMoveMap).toContain(AIR_FORCE)
+    expect(afterMoveMap).not.toContain(TANK)
+
+    expect(beforeMoveMap.length).toBeGreaterThan(afterMoveMap.length)
   })
 })

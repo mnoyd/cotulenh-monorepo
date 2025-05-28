@@ -177,9 +177,9 @@ class SetDeployStateAction implements AtomicMoveAction {
 
   execute(game: CoTuLenh): void {
     // Capture the current deploy state at execution time, not construction time
-    this.oldDeployState = game['_deployState']
+    this.oldDeployState = game.getDeployState()
     if (this.newDeployState === null) {
-      game['_deployState'] = null
+      game.setDeployState(null)
       return
     }
     if (this.oldDeployState) {
@@ -192,25 +192,25 @@ class SetDeployStateAction implements AtomicMoveAction {
         updatedMovedPiece.length + (this.oldDeployState.stay?.length ?? 0) ===
         originalLen
       ) {
-        game['_deployState'] = null
+        game.setDeployState(null)
         game['_turn'] = swapColor(this.oldDeployState.turn)
         return
       }
 
-      game['_deployState'] = {
+      game.setDeployState({
         stackSquare: this.oldDeployState.stackSquare,
         turn: this.oldDeployState.turn,
         originalPiece: this.oldDeployState.originalPiece,
         movedPieces: updatedMovedPiece,
         stay: this.oldDeployState.stay,
-      }
+      })
     } else {
-      game['_deployState'] = this.newDeployState as DeployState
+      game.setDeployState(this.newDeployState as DeployState)
     }
   }
 
   undo(game: CoTuLenh): void {
-    game['_deployState'] = this.oldDeployState
+    game.setDeployState(this.oldDeployState)
     if (this.oldDeployState) {
       game['_turn'] = this.oldDeployState.turn
     }
@@ -337,7 +337,19 @@ export class SingleDeployMoveCommand extends MoveCommand {
     const flattendMovingPieces = flattenPiece(this.move.piece)
     // Handle stay capture
     if (this.move.flags & BITS.STAY_CAPTURE) {
-      throw new Error('Stay capture not allowed')
+      const destSq = this.move.to
+      const capturedPieceData = this.game.getPieceAt(destSq)
+
+      if (!capturedPieceData || capturedPieceData.color !== them) {
+        throw new Error(
+          `Build Deploy Error: Capture destination invalid ${algebraic(
+            destSq,
+          )}`,
+        )
+      }
+
+      this.move.captured = capturedPieceData
+      this.actions.push(new RemovePieceAction(destSq))
     }
     // Handle normal deploy (with or without capture)
     else {
