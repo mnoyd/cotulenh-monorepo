@@ -6,13 +6,13 @@ import {
   Piece,
   Square,
   SQUARE_MAP,
-} from './type'
+} from './type.js'
 import {
   createCombineStackFromPieces,
   flattenPiece,
   getStepsBetweenSquares,
   makeSanPiece,
-} from './utils'
+} from './utils.js'
 
 export interface DeployMoveRequest {
   from: Square
