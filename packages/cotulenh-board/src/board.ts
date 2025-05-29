@@ -421,15 +421,21 @@ function isStayCaptureMove(
     const availableDestsForPiece = availableDests.get(origMoveToKey(requestOrig));
     if (availableDestsForPiece) {
       const dests = availableDestsForPiece.filter(dest => dest.square === requestDest.square);
+      const removeDuplicateDest = dests.reduce((acc: cg.DestMove[], dest) => {
+        if (!acc.some(d => d.square === dest.square && d.stay === dest.stay)) {
+          acc.push(dest);
+        }
+        return acc;
+      }, [] as cg.DestMove[]);
       //dests should contain at least one as have been checked by isMovable
-      if (dests.length > 1) {
+      if (removeDuplicateDest.length > 1) {
         if (requestDest.stay === undefined) {
           return 'need_clarify';
         } else {
           return requestDest.stay;
         }
       } else {
-        return !!dests[0].stay;
+        return !!removeDuplicateDest[0].stay;
       }
     }
   }
