@@ -10,6 +10,7 @@ import {
   ANTI_AIR,
   DEFAULT_POSITION,
   Piece,
+  InternalMove,
 } from '../src/type'
 import { setupGameBasic } from './test-helpers'
 
@@ -592,15 +593,33 @@ describe('move sequesce', () => {
 
     game.moves()
 
-    // // Verify move history
-    // const history = game.history({ verbose: true })
-    // expect(history).toHaveLength(2)
-    // expect(history[0].san).toBe('i9i8')
-    // expect(history[1].san).toBe('t2t3')
-
-    // // Verify alternate notation formats
-    // expect(history[0].lan).toBe('i9-i8')
-    // expect(game.history()[0]).toBe('i9i8')
+    // Verify move history
+    const history = game.history({ verbose: true })
+    expect(history).toHaveLength(4)
+    expect(history[0].san).toContain('F&b2')
+    expect(history[1].san).toBe('Ce12')
+    expect(history[2].san).toBe('Nb6')
+    expect(history[3].san).toBe('Cg12')
   })
 })
-//write me a test to test a sequence of moves from initial position
+
+// describe('Re run random fail move', () => {
+//   //TODO: DeployMove: modify InternalMove generation to include instruction for what piece can move with the moving piece
+//   // test('should fail move if move is invalid', () => {
+//   //   const game = new CoTuLenh("10c/1n2fh2f2/9a1/4(eag)t1sg2/6m4/11/11/3EG1MA2I/4ATT1G2/6S4/5H1HF2/1N5C3 b - - 10 14")
+//   //   const move = {
+//   //     color: "b",
+//   //     from: 52,
+//   //     to: 36,
+//   //     piece: {
+//   //       type: "e",
+//   //       color: "b",
+//   //       heroic: false,
+//   //       carrying: undefined,
+//   //     },
+//   //     flags: 9,
+//   //   } as InternalMove
+//   //   const result = game['_makeMove'](move)
+//   //   expect(result).toBeInstanceOf(Move)
+//   // })
+// })
