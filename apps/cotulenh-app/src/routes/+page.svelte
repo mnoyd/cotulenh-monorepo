@@ -1,9 +1,9 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { CotulenhBoard, origMoveToKey } from '@repo/cotulenh-board';
-  import type { Api, Role as BoardRole, DestMove, OrigMove, OrigMoveKey, Role } from '@repo/cotulenh-board';
+  import type { Api, Role as BoardRole, DestMove, OrigMove, OrigMoveKey, Role, StackMove, MoveMetadata } from '@repo/cotulenh-board';
   import { CoTuLenh, getCoreTypeFromRole, getRoleFromCoreType } from '@repo/cotulenh-core';
-  import type { Square, Color, Move } from '@repo/cotulenh-core';
+  import type { Square, Color, Move, DeployMoveRequest } from '@repo/cotulenh-core';
   import type { Key, Dests } from '@repo/cotulenh-board';
   import GameInfo from '$lib/components/GameInfo.svelte';
   // import DeployPanel from '$lib/components/DeployPanel.svelte';
@@ -15,7 +15,7 @@
   import '@repo/cotulenh-board/assets/commander-chess.base.css';
   import '@repo/cotulenh-board/assets/commander-chess.pieces.css';
   import '@repo/cotulenh-board/assets/commander-chess.clasic.css';
-    import { makeCoreMove } from '$lib/utils';
+    import { convertBoardPieceToCorePiece, makeCoreMove } from '$lib/utils';
 
   let boardContainerElement: HTMLElement | null = null;
   let boardApi: Api | null = null;
@@ -40,7 +40,7 @@
             free: false,
             color: coreToBoardColor($gameStore.turn),
             dests: mapPossibleMovesToDests($gameStore.possibleMoves),
-            events: { after: handleMove }
+            events: { after: handleMove, afterStackMove: handleStackMove }
           }
         });
       }
@@ -68,7 +68,7 @@
   }
 
   function mapLastMoveToBoardFormat(
-    lastMove: [Square, Square] | undefined
+    lastMove: Square[] | undefined
   ): [Key, Key] | undefined {
     if (!lastMove) return undefined;
     const fromKey = lastMove[0];
@@ -83,6 +83,7 @@
 
     try {
       const moveResult = makeCoreMove(game, orig, dest);
+      console.log('Move result:', moveResult); // Log the result for diagnostic
 
       if (moveResult) {
         console.log('Game move successful:', moveResult);
@@ -91,8 +92,43 @@
         console.warn('Illegal move attempted on board:', orig, '->', dest);
       }
     } catch (error) {
-      // reSetupBoard();
+      reSetupBoard();
       console.error('Error making move in game engine:', error);
+    }
+  }
+
+  function handleStackMove(stackMove: StackMove, metadata: MoveMetadata) {
+    if (!game) return;
+
+    console.log('Board stack move attempt:', stackMove, metadata);
+
+    // Construct DeployMoveRequest from stackMove
+    // This assumes stackMove.orig.square is the 'from' square
+    // and stackMove.dest.square is the 'to' square for the deployed piece.
+    // You might need to adjust this based on your exact StackMove structure
+    // and how it maps to DeployMoveRequest.
+    const deployMoveRequest: DeployMoveRequest = {
+      from: stackMove.orig,
+      moves: stackMove.moves.map(move => ({ piece: convertBoardPieceToCorePiece(move.piece), to: move.dest })),
+      stay: stackMove.stay ? convertBoardPieceToCorePiece(stackMove.stay) : undefined,
+    };
+
+    try {
+      const deployMoveResult = game.deployMove(deployMoveRequest);
+      console.log('Deploy move result:', deployMoveResult);
+
+      if (deployMoveResult) {
+        console.log('Game deploy move successful:', deployMoveResult);
+        // Assuming you have a method in gameStore to handle deploy moves
+        // Similar to applyMove, you might need applyDeployMove or similar
+        gameStore.applyDeployMove(game, deployMoveResult); // You'll need to implement this in gameStore
+      } else {
+        // This case might not be reachable if deployMove throws on failure
+        console.warn('Illegal deploy move attempted on board:', stackMove);
+      }
+    } catch (error) {
+      reSetupBoard(); // Reset board to a consistent state on error
+      console.error('Error making deploy move in game engine:', error);
     }
   }
 
@@ -115,7 +151,7 @@
           free: false,
           color: coreToBoardColor($gameStore.turn),
           dests: mapPossibleMovesToDests($gameStore.possibleMoves),
-          events: { after: handleMove }
+          events: { after: handleMove, afterStackMove: handleStackMove }
         }
       });
 
@@ -136,7 +172,7 @@
       movable: {
         color: coreToBoardColor($gameStore.turn),
         dests: mapPossibleMovesToDests($gameStore.possibleMoves),
-        events: { after: handleMove }
+        events: { after: handleMove, afterStackMove: handleStackMove }
       }
     });
   }

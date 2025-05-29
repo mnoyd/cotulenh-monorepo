@@ -1,6 +1,6 @@
 import { writable } from 'svelte/store';
 import type { GameState, GameStatus } from '$lib/types/game';
-import { CoTuLenh } from '@repo/cotulenh-core';
+import { CoTuLenh, DeployMove } from '@repo/cotulenh-core';
 import { type Square, Move } from '@repo/cotulenh-core';
 import { getPossibleMoves } from '$lib/utils';
 
@@ -61,6 +61,19 @@ function createGameStore() {
         history: [...state.history, move], // Append the new move
         possibleMoves: getPossibleMoves(game),
         lastMove: [move.from, move.to],
+        check: game.isCheck(),
+        status: calculateGameStatus(game),
+        deployState: game['_deployState']
+      }));
+    },
+    applyDeployMove(game: CoTuLenh, move: DeployMove) {
+      update((state) => ({
+        ...state,
+        fen: game.fen(),
+        turn: game.turn(),
+        history: [...state.history, move], // Append the new move
+        possibleMoves: getPossibleMoves(game),
+        lastMove: [move.from, ...Array.from(move.to.keys())],
         check: game.isCheck(),
         status: calculateGameStatus(game),
         deployState: game['_deployState']

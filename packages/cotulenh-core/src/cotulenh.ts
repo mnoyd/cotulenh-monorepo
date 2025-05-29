@@ -1577,6 +1577,7 @@ export class CoTuLenh {
 }
 
 export * from './type.js'
+export { DeployMoveRequest, DeployMove } from './deploy-move.js'
 export { getCoreTypeFromRole, getRoleFromCoreType } from './utils.js'
 
 /**

@@ -5,14 +5,16 @@ import {
   type DestMove,
   type OrigMove,
   type OrigMoveKey,
-  type Role
+  type Role,
+  type Piece as BoardPiece
 } from '@repo/cotulenh-board';
 import {
   type CoTuLenh,
   type Move,
   type Color,
   getRoleFromCoreType,
-  getCoreTypeFromRole
+  getCoreTypeFromRole,
+  type Piece as CorePiece
 } from '@repo/cotulenh-core';
 
 /**
@@ -39,10 +41,24 @@ export function makeCoreMove(game: CoTuLenh, orig: OrigMove, dest: DestMove): Mo
       from: orig.square,
       to: dest.square,
       ...(orig.type && { piece: getCoreTypeFromRole(orig.type) }),
-      ...(dest.stay && { stay: true })
+      ...(dest.stay && { stay: true }),
+      deploy: false
     });
     return moveResult;
   } catch (error) {
     throw error;
   }
+}
+
+export function convertBoardPieceToCorePiece(piece: BoardPiece): CorePiece {
+  const type = getCoreTypeFromRole(piece.role);
+  if (!type) {
+    throw new Error(`Invalid piece type: ${piece.role}`);
+  }
+  const color = piece.color === 'red' ? 'r' : 'b';
+  return {
+    type,
+    color,
+    heroic: piece.promoted
+  };
 }

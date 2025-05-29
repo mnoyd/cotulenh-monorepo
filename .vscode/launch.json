@@ -2,10 +2,12 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "command": "pnpm run dev",
-      "name": "Run development server",
+      "type": "chrome",
       "request": "launch",
-      "type": "node-terminal"
+      "name": "Launch Chrome against localhost",
+      "url": "http://localhost:5173", // Change port if needed
+      "webRoot": "${workspaceFolder}/apps/cotulenh-app",
+      "sourceMaps": true
     }
   ]
 }
