@@ -41,7 +41,7 @@ export function makeCoreMove(game: CoTuLenh, orig: OrigMove, dest: DestMove): Mo
       from: orig.square,
       to: dest.square,
       ...(orig.type && { piece: getCoreTypeFromRole(orig.type) }),
-      ...(dest.stay && { stay: true }),
+      ...(dest.stay !== undefined && { stay: dest.stay }),
       deploy: false
     });
     return moveResult;
@@ -59,6 +59,7 @@ export function convertBoardPieceToCorePiece(piece: BoardPiece): CorePiece {
   return {
     type,
     color,
-    heroic: piece.promoted
+    heroic: piece.promoted,
+    carrying: piece.carrying?.map((p) => convertBoardPieceToCorePiece(p))
   };
 }

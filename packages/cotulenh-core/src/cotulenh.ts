@@ -1292,8 +1292,6 @@ export class CoTuLenh {
     } else if (typeof move === 'object') {
       const fromSq = SQUARE_MAP[move.from as Square]
       const toSq = SQUARE_MAP[move.to as Square]
-      const requestedStay = move.stay === true
-      const requestedDeploy = move.deploy
 
       if (fromSq === undefined || toSq === undefined) {
         throw new Error(
@@ -1318,10 +1316,8 @@ export class CoTuLenh {
           m.from === fromSq &&
           targetSquareInternal === toSq &&
           (move.piece === undefined || m.piece.type === move.piece) &&
-          (requestedStay ? requestedStay === isStayMove : true) &&
-          (requestedDeploy !== undefined
-            ? requestedDeploy === isDeployMove
-            : true)
+          (move.stay !== undefined ? move.stay === isStayMove : true) &&
+          (move.deploy !== undefined ? move.deploy === isDeployMove : true)
         ) {
           foundMoves.push(m)
         }

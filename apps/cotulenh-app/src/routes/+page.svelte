@@ -69,11 +69,9 @@
 
   function mapLastMoveToBoardFormat(
     lastMove: Square[] | undefined
-  ): [Key, Key] | undefined {
+  ): Key[] | undefined {
     if (!lastMove) return undefined;
-    const fromKey = lastMove[0];
-    const toKey = lastMove[1];
-    return fromKey && toKey ? [fromKey, toKey] : undefined;
+    return lastMove.map((square) => square);
   }
 
   function handleMove(orig: OrigMove, dest: DestMove) {
