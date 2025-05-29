@@ -125,11 +125,16 @@ const combinedPiecePopup = createPopupFactory<cg.Piece | EndMove>({
 });
 export { combinedPiecePopup };
 
-export function prepareCombinedPopup(state: HeadlessState, pieces: cg.Piece[]): (cg.Piece | EndMove)[] {
-  if (pieces.length < 2) return [END_MOVE];
+export function prepareCombinedPopup(
+  state: HeadlessState,
+  pieces: cg.Piece[],
+  key: cg.Key,
+): (cg.Piece | EndMove)[] {
+  const movablePieces = pieces.filter(p => board.canSelectStackPiece(state, { square: key, type: p.role }));
+  if (state.stackPieceMoves && movablePieces.length < 2) return [END_MOVE];
   const stackPieceMoves = state.stackPieceMoves;
-  if (!stackPieceMoves) return pieces;
-  return [...pieces, END_MOVE];
+  if (!stackPieceMoves) return movablePieces;
+  return [...movablePieces, END_MOVE];
 }
 
 export const MOVE_WITH_CARRIER_POPUP_TYPE = 'move-with-carrier';

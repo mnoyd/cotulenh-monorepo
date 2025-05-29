@@ -57,6 +57,14 @@ export const canMove = (state: HeadlessState, orig: cg.OrigMove, dest: cg.DestMo
     (state.movable.free || !!findDestInDests(state, orig, dest))
   );
 };
+export const canSelectStackPiece = (state: HeadlessState, orig: cg.OrigMove): boolean => {
+  return (
+    isMovable(state, orig) &&
+    (state.movable.free ||
+      (state.movable.dests && state.movable.dests.has(origMoveToKey(orig))) ||
+      state.movable.dests === undefined)
+  );
+};
 
 export function isMovable(state: HeadlessState, orig: cg.OrigMove): boolean {
   const piece = state.pieces.get(orig.square);
@@ -132,7 +140,12 @@ function baseUserMove(state: HeadlessState, orig: cg.OrigMove, dest: cg.DestMove
         handleStackPieceMoves(state, piecesPrepared, orig, dest);
         const stackMove = deployStateToMove(state);
         unselect(state);
-        if (stackMove.stay === undefined) {
+        if (
+          stackMove.stay === undefined ||
+          !flattenPiece(stackMove.stay).some(piece =>
+            canSelectStackPiece(state, { square: stackMove.orig, type: piece.role }),
+          )
+        ) {
           return { piecesPrepared, stackMove, moveFinished: true } as MoveResult;
         }
         return { piecesPrepared, stackMove, moveFinished: false } as MoveResult;
@@ -583,7 +596,6 @@ function handleStackPieceMoves(
         }
       });
     });
-    console.log(newDest);
     state.movable.dests = newDest;
     state.lastMove = [state.stackPieceMoves!.key, ...state.stackPieceMoves.moves.map(m => m.newSquare)];
   }

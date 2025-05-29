@@ -142,10 +142,15 @@
         { square: 'i5', stay: false },
         { square: 'i3', stay: false },
       ]);
+      dests.set('f1.commander', [
+        { square: 'f2', stay: false },
+        { square: 'e1', stay: false },
+        { square: 'g1', stay: false },
+      ]);
 
       const board = CotulenhBoard(document.getElementById('board-1'), {
         // fen: '1n8g/11/5s5/11/11/5g5/11/11/5F5/11/2N8/11',
-        fen: 'c4(FTI)5/11/11/11/2(ea)2(NFI)i4/5(fti)5/6E4/6i4/7(FIM)3/11/1n4F1T4/10(NTI)',
+        fen: 'c4(FTI)5/11/11/11/2(ea)2(NFI)i4/5(fti)5/6E4/6i4/7(FIM)3/11/1n4F1T4/5(HC)4(NTI)',
         //   movable: {
         //   color: "red",
         //   free: true,
