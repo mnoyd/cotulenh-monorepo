@@ -231,6 +231,30 @@ function runFormStackTests<T extends TestablePiece>(
       );
     });
 
+    it('should fail to add both commander and infantry to airforce', () => {
+      const airforce = createPiece('air_force', 'f');
+      const commander = createPiece('commander', 'c');
+      const infantry = createPiece('infantry', 'i');
+      // Try to stack commander first, then infantry
+      const withCommander = formStack(airforce, commander, getRoleFn);
+      const result = withCommander ? formStack(withCommander, infantry, getRoleFn) : null;
+      expect(result).toBeNull();
+      // Try to stack infantry first, then commander
+      const withInfantry = formStack(airforce, infantry, getRoleFn);
+      const result2 = withInfantry ? formStack(withInfantry, commander, getRoleFn) : null;
+      expect(result2).toBeNull();
+    });
+
+    it('should fail to add artillery to an engineer already carrying anti_air', () => {
+      const engineerWithAntiAir = {
+        ...createPiece('engineer', 'ea_aa'),
+        carrying: [createPiece('anti_air', 'ea_aa')]
+      };
+      const artillery = createPiece('artillery', 'ea_aa');
+      const result = formStack(engineerWithAntiAir, artillery, getRoleFn);
+      expect(result).toBeNull();
+    });
+
     it('should return null if a piece cannot fit (engineer carrying commander)', () => {
       const result = formStack(engineer1, commander1, getRoleFn);
       expect(result).toBeNull();

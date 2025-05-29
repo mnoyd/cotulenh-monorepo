@@ -198,19 +198,10 @@ export function formStack<P extends GenericPiece>(
 
         // Check if this piece's role is allowed in this slot
         if (allowedRoles.includes(pieceRole)) {
-          // Initialize slot array if needed
+          // Check if this slot is already filled
           if (!slotAssignments[slotIndex]) {
-            slotAssignments[slotIndex] = [];
-          }
-
-          // Check if this role is already in this slot
-          const roleAlreadyInSlot = slotAssignments[slotIndex].some(
-            (slotPiece) => mapRoleFunc(getRoleFunc(slotPiece)) === pieceRole
-          );
-
-          if (!roleAlreadyInSlot) {
-            // Assign piece to this slot
-            slotAssignments[slotIndex].push(piece);
+            // Assign piece to this slot (only one allowed)
+            slotAssignments[slotIndex] = [piece];
 
             // Remove piece from remaining pieces
             const pieceIndex = remainingPieces.indexOf(piece);
