@@ -306,7 +306,10 @@ export class NormalMoveCommand extends MoveCommand {
     this.actions.push(new PlacePieceAction(this.move.to, pieceThatMoved))
 
     // Update king position if needed
-    if (pieceThatMoved.type === COMMANDER) {
+    if (
+      pieceThatMoved.type === COMMANDER ||
+      (pieceThatMoved.carrying?.some((p) => p.type === COMMANDER) ?? false)
+    ) {
       this.actions.push(
         new UpdateKingPositionAction(us, this.move.to, this.game),
       )
@@ -442,7 +445,10 @@ class CombinationMoveCommand extends MoveCommand {
     this.actions.push(new PlacePieceAction(this.move.to, combinedPiece))
 
     // Handle commander position update if the *moving* piece was a commander
-    if (movingPieceData.type === COMMANDER) {
+    if (
+      movingPieceData.type === COMMANDER ||
+      (movingPieceData.carrying?.some((p) => p.type === COMMANDER) ?? false)
+    ) {
       this.actions.push(
         new UpdateKingPositionAction(this.move.color, this.move.to, this.game),
       )
@@ -461,6 +467,12 @@ export class StayCaptureMoveCommand extends MoveCommand {
     const us = this.move.color
     const them = swapColor(us)
     const targetSq = this.move.to
+    const pieceAtFrom = this.game.get(this.move.from)
+    if (!pieceAtFrom) {
+      throw new Error(
+        `Build StayCapture Error: No piece to move at ${algebraic(this.move.from)}`,
+      )
+    }
 
     const capturedPiece = this.game.getPieceAt(targetSq)
     if (!capturedPiece || capturedPiece.color !== them) {
