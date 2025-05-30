@@ -870,7 +870,10 @@ export class CoTuLenh {
     for (const move of opponentMoves) {
       // Check if any move targets the king square
       // For stay capture, the target is move.to; for normal capture, it's also move.to
-      if (move.flags & BITS.CAPTURE && move.to === kingSq) {
+      if (
+        move.flags & (BITS.CAPTURE | BITS.STAY_CAPTURE) &&
+        move.to === kingSq
+      ) {
         return true // Commander is attacked
       }
     }

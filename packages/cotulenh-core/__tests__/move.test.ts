@@ -11,6 +11,7 @@ import {
   DEFAULT_POSITION,
   Piece,
   InternalMove,
+  COMMANDER,
 } from '../src/type'
 import { setupGameBasic } from './test-helpers'
 
@@ -657,5 +658,13 @@ describe('Re run random fail move', () => {
     } as DeployMoveRequest
     const move = game.deployMove(deployMoveRequest)
     expect(move).toBeInstanceOf(DeployMove)
+  })
+  it('should filter illegal move commander to check', () => {
+    const game = new CoTuLenh(
+      '2c8/1n2fh1hf2/1N1a2s2a1/2n1gt1tg2/2ie2m3i/11/11/2IE2M3I/2N1GT1TG2/3A2S2A1/4FH1HF2/6C4 b - - 3 2',
+    )
+    const moves = game.moves({ pieceType: COMMANDER, verbose: true }) as Move[]
+    expect(moves.find((m) => m.to === 'd12')).toBeUndefined()
+    expect(moves).toHaveLength(7)
   })
 })
