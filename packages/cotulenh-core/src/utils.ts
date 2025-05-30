@@ -386,11 +386,11 @@ export function makeSanSinglePiece(piece: Piece): string {
   return heroic + symbol
 }
 
-export function makeSanPiece(combinedPiece: Piece): string {
+export function makeSanPiece(combinedPiece: Piece, derimiter = true): string {
   const carrier = makeSanSinglePiece(combinedPiece)
   if (!combinedPiece.carrying?.length) return carrier
   const stack = combinedPiece.carrying?.map(makeSanSinglePiece).join('') || ''
-  return `(${carrier}|${stack})`
+  return `(${carrier}${derimiter ? '|' : ''}${stack})`
 }
 
 export function strippedSan(move: string): string {

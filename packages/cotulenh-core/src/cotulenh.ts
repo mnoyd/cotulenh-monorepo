@@ -23,12 +23,12 @@ import {
   isDigit,
   swapColor,
   InternalMove,
-  VALID_PIECE_TYPES,
   NAVY,
   NAVY_MASK,
   LAND_MASK,
   isSquareOnBoard,
   DeployState,
+  file,
 } from './type.js'
 import {
   getDisambiguator,
@@ -284,59 +284,33 @@ export class CoTuLenh {
   fen(): string {
     let empty = 0
     let fen = ''
-    for (let r = 0; r < 12; r++) {
-      empty = 0
-      for (let f = 0; f < 11; f++) {
-        const sq = r * 16 + f
-        const piece = this._board[sq]
-        if (piece) {
+    for (let i = SQUARE_MAP.a12; i <= SQUARE_MAP.k1 + 1; i++) {
+      if (isSquareOnBoard(i)) {
+        if (this._board[i]) {
           if (empty > 0) {
             fen += empty
             empty = 0
           }
+          const piece = this._board[i]!
 
-          // Check if it's a stack
-          if (piece.carrying && piece.carrying.length > 0) {
-            // Format stack: (CP1P2...) or +(CP1P2...)
-            let stackStr =
-              piece.color === RED
-                ? piece.type.toUpperCase()
-                : piece.type.toLowerCase()
-            // Sort carrying pieces alphabetically for consistent FEN? Or keep original order? Let's sort.
-            const carriedSorted = [...piece.carrying].sort((a, b) =>
-              a.type.localeCompare(b.type),
-            )
-            stackStr += carriedSorted
-              .map((p) =>
-                p.color === RED ? p.type.toUpperCase() : p.type.toLowerCase(),
-              )
-              .join('')
-            stackStr = `(${stackStr})`
-            if (piece.heroic) {
-              stackStr = '+' + stackStr
-            }
-            fen += stackStr
-          } else {
-            // Single piece
-            let char =
-              piece.color === RED
-                ? piece.type.toUpperCase()
-                : piece.type.toLowerCase()
-            // Add heroic marker with '+' prefix
-            if (piece.heroic) {
-              char = '+' + char
-            }
-            fen += char
-          }
+          const san = makeSanPiece(piece, false)
+          const toCorrectCase = piece.color === RED ? san : san.toLowerCase()
+          fen += toCorrectCase
         } else {
           empty++
         }
-      }
-      if (empty > 0) {
-        fen += empty
-      }
-      if (r < 11) {
-        fen += '/'
+      } else {
+        if (file(i) === 11) {
+          if (empty > 0) {
+            fen += empty
+          }
+          empty = 0
+          if (i !== SQUARE_MAP.k1 + 1) {
+            fen += '/'
+          }
+        } else {
+          continue
+        }
       }
     }
 

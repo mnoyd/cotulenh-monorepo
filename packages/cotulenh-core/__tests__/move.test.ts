@@ -1,4 +1,4 @@
-import { CoTuLenh, Move } from '../src/cotulenh'
+import { CoTuLenh, DeployMove, Move, DeployMoveRequest } from '../src/cotulenh'
 import {
   RED,
   BLUE,
@@ -603,23 +603,57 @@ describe('move sequesce', () => {
   })
 })
 
-// describe('Re run random fail move', () => {
-//   //TODO: DeployMove: modify InternalMove generation to include instruction for what piece can move with the moving piece
-//   // test('should fail move if move is invalid', () => {
-//   //   const game = new CoTuLenh("10c/1n2fh2f2/9a1/4(eag)t1sg2/6m4/11/11/3EG1MA2I/4ATT1G2/6S4/5H1HF2/1N5C3 b - - 10 14")
-//   //   const move = {
-//   //     color: "b",
-//   //     from: 52,
-//   //     to: 36,
-//   //     piece: {
-//   //       type: "e",
-//   //       color: "b",
-//   //       heroic: false,
-//   //       carrying: undefined,
-//   //     },
-//   //     flags: 9,
-//   //   } as InternalMove
-//   //   const result = game['_makeMove'](move)
-//   //   expect(result).toBeInstanceOf(Move)
-//   // })
-// })
+describe('Re run random fail move', () => {
+  //   //TODO: DeployMove: modify InternalMove generation to include instruction for what piece can move with the moving piece
+  //   // test('should fail move if move is invalid', () => {
+  //   //   const game = new CoTuLenh("10c/1n2fh2f2/9a1/4(eag)t1sg2/6m4/11/11/3EG1MA2I/4ATT1G2/6S4/5H1HF2/1N5C3 b - - 10 14")
+  //   //   const move = {
+  //   //     color: "b",
+  //   //     from: 52,
+  //   //     to: 36,
+  //   //     piece: {
+  //   //       type: "e",
+  //   //       color: "b",
+  //   //       heroic: false,
+  //   //       carrying: undefined,
+  //   //     },
+  //   //     flags: 9,
+  //   //   } as InternalMove
+  //   //   const result = game['_makeMove'](move)
+  //   //   expect(result).toBeInstanceOf(Move)
+  //   // })
+  it('fen printed wrong on combined piece got heroic promoted', () => {
+    const game = new CoTuLenh()
+    game.load(
+      '11/1n2fh1h3/3a2s2a1/2n1gt1tg2/2ie2m3i/8(fc)2/NN1E7/2I3M3I/4GT1TG2/6S2A1/2A1FH1HF2/6C4 b - - 7 4',
+    )
+    const move = game.move('Fxk5^')
+    expect(move).toBeInstanceOf(Move)
+    expect(game.fen()).toBe(
+      '11/1n2fh1h3/3a2s2a1/2n1gt1tg2/2ie2m3i/11/NN1E7/2I3M3(+fc)/4GT1TG2/6S2A1/2A1FH1HF2/6C4 r - - 0 5',
+    )
+  })
+  // it('should deploy move', () => {
+  //   const game = new CoTuLenh('11/1n2fh1h3/3a2s2a(+fc)/2n1gt1tg2/2ie2m3i/11/NN1E7/2I3M4/4GT1TG2/6S2A1/2A1FH1HF2/6C4 b - - 3 6')
+  //   const deployMoveRequest = {
+  //     "from": "k10",
+  //     "moves": [
+  //         {
+  //             "piece": {
+  //                 "type": "f",
+  //                 "color": "b",
+  //                 "heroic": true
+  //             },
+  //             "to": "f5"
+  //         }
+  //     ],
+  //     "stay": {
+  //         "type": "c",
+  //         "color": "b",
+  //         "heroic": false
+  //     }
+  // }as DeployMoveRequest
+  //   const move = game.deployMove(deployMoveRequest)
+  //   expect(move).toBeInstanceOf(DeployMove)
+  // })
+})
