@@ -154,7 +154,8 @@ export class CoTuLenh {
   }
 
   /**
-   * Clears the board and resets the game state
+   * Clears the board by removing all pieces and resetting the game state to initial conditions.
+   * This includes resetting the turn, move counters, position counts, and command history.
    * @param options - Clear options
    * @param options.preserveHeaders - Whether to preserve existing headers
    */
@@ -174,8 +175,9 @@ export class CoTuLenh {
   }
 
   /**
-   * Loads a game position from a FEN string
-   * @param fen - The FEN string to load
+   * Loads a chess position from a FEN (Forsyth-Edwards Notation) string.
+   * Parses and validates the FEN string, then sets up the board state accordingly.
+   * @param fen - The FEN string representing the position to load
    * @param options - Loading options
    * @param options.skipValidation - Whether to skip FEN validation
    * @param options.preserveHeaders - Whether to preserve existing headers
@@ -278,8 +280,9 @@ export class CoTuLenh {
   }
 
   /**
-   * Generates a FEN string representing the current position
-   * @returns The FEN string
+   * Generates the FEN (Forsyth-Edwards Notation) string representing the current board position.
+   * The FEN includes piece placement, active color, and move counters in a standardized format.
+   * @returns The FEN string for the current position
    */
   fen(): string {
     let empty = 0
@@ -328,10 +331,11 @@ export class CoTuLenh {
   }
 
   /**
-   * Gets a piece at a square, optionally specifying a piece type to find in a stack
-   * @param square - The square to check
-   * @param pieceType - Optional piece type to find in a stack
-   * @returns The piece at the square, or undefined if no piece is found
+   * Retrieves a piece from the specified square on the board.
+   * Can optionally search for a specific piece type within a stack of pieces.
+   * @param square - The square to examine, either as algebraic notation (e.g., 'e4') or internal coordinate
+   * @param pieceType - Optional piece type to search for specifically within a stack
+   * @returns The piece at the square, or undefined if no piece is found or the specified type is not present
    */
   get(square: Square | number, pieceType?: PieceSymbol): Piece | undefined {
     const sq = typeof square === 'number' ? square : SQUARE_MAP[square]
@@ -354,13 +358,15 @@ export class CoTuLenh {
   }
 
   /**
-   * Places a piece on the board
+   * Places a piece on the specified square of the board.
+   * Validates the piece and square before placement, ensuring the operation is legal.
    * @param piece - The piece to place
    * @param piece.type - The type of piece
    * @param piece.color - The color of the piece
    * @param piece.heroic - Whether the piece is heroic
    * @param piece.carrying - Optional pieces being carried by this piece
    * @param square - The square to place the piece on
+   * @param allowCombine - Whether to allow combining with existing pieces
    * @returns True if the piece was successfully placed, false otherwise
    */
   put(
@@ -438,9 +444,10 @@ export class CoTuLenh {
   }
 
   /**
-   * Removes a piece from the board
-   * @param square - The square to remove the piece from
-   * @returns The removed piece, or undefined if no piece was at the square
+   * Removes a piece from the specified square on the board.
+   * Can optionally target a specific piece type within a stack of pieces.
+   * @param square - The square to remove the piece from, in algebraic notation (e.g., 'e4')
+   * @returns The removed piece object, or undefined if no piece was found or the specified type was not present
    */
   remove(square: Square): Piece | undefined {
     this._movesCache.clear()
@@ -586,7 +593,15 @@ export class CoTuLenh {
     return legalMoves
   }
 
-  // Public moves method (formats output)
+  /**
+   * Generates all legal moves available in the current position.
+   * Can be filtered by square, piece type, or return format (verbose vs. algebraic notation).
+   * @param options - Configuration options for move generation
+   * @param options.square - Generate moves only for pieces on this specific square
+   * @param options.pieceType - Generate moves only for this specific piece type
+   * @param options.verbose - If true, returns Move objects; if false, returns SAN strings
+   * @returns An array of legal moves, either as Move objects or algebraic notation strings
+   */
   moves({
     verbose = false,
     square = undefined,
@@ -710,30 +725,34 @@ export class CoTuLenh {
   }
 
   /**
-   * Undoes the last move
+   * Undoes the last move made on the board, restoring the previous position.
+   * Reverts all changes including piece positions, game state, and move counters.
    */
   public undo(): void {
     this._undoMove()
   }
   /**
-   * Gets a piece at a square using internal 0xf0 coordinates
-   * @param square - The square in 0xf0 format
-   * @returns The piece at the square, or undefined if no piece is found
+   * Retrieves a piece at the specified square using internal board coordinates.
+   * This is a low-level method primarily used internally for board operations.
+   * @param square - The square in internal 0xf0 coordinate format
+   * @returns The piece at the square, or undefined if no piece is present
    */
   public getPieceAt(square: number): Piece | undefined {
     return this._board[square]
   }
   /**
-   * Deletes a piece at a square using internal 0xf0 coordinates
-   * @param square - The square in 0xf0 format
+   * Removes a piece from the specified square using internal board coordinates.
+   * This is a low-level method that directly modifies the board state.
+   * @param square - The square in internal 0xf0 coordinate format
    */
   public deletePieceAt(square: number): void {
     delete this._board[square]
   }
   /**
-   * Sets a piece at a square using internal 0xf0 coordinates
-   * @param square - The square in 0xf0 format
-   * @param piece - The piece to place
+   * Places a piece at the specified square using internal board coordinates.
+   * This is a low-level method that directly modifies the board state without validation.
+   * @param square - The square in internal 0xf0 coordinate format
+   * @param piece - The piece object to place at the specified square
    */
   public setPieceAt(square: number, piece: Piece): void {
     this._board[square] = piece
@@ -748,9 +767,10 @@ export class CoTuLenh {
   }
 
   /**
-   * Updates the position of a commander
-   * @param sq - The new square in 0xf0 format
-   * @param color - The color of the commander
+   * Updates the recorded position of a commander (king) piece for the specified color.
+   * This method maintains the internal tracking of commander locations for check detection.
+   * @param sq - The new square position in internal 0xf0 coordinate format
+   * @param color - The color of the commander whose position is being updated
    */
   public updateKingsPosition(sq: number, color: Color): void {
     if (this._commanders[color] === -1) return // Commander captured = loss = no need to update
@@ -759,19 +779,21 @@ export class CoTuLenh {
   }
 
   /**
-   * Gets the square index of the commander for a given color
-   * @param color - The color of the commander
-   * @returns The square index of the commander, or -1 if not on board
+   * Retrieves the current square position of the commander (king) for the specified color.
+   * Used for check detection and game state evaluation.
+   * @param color - The color of the commander to locate
+   * @returns The square index in internal coordinates, or -1 if the commander has been captured
    */
   getCommanderSquare(color: Color): number {
     return this._commanders[color]
   }
 
   /**
-   * Gets all pieces of a specific color that are attacking a given square
-   * @param square - The square to check for attackers
-   * @param attackerColor - The color of the potential attackers
-   * @returns An array of objects containing the square and type of pieces that attack the given square
+   * Identifies all pieces of a specific color that can attack a given square.
+   * Considers piece movement patterns, ranges, and special attack mechanisms including stacked pieces.
+   * @param square - The target square to check for attackers, in internal coordinate format
+   * @param attackerColor - The color of pieces to check for attacking capability
+   * @returns An array of objects containing the square and type of pieces that can attack the target square
    */
   getAttackers(
     square: number,
@@ -881,7 +903,8 @@ export class CoTuLenh {
   }
 
   /**
-   * Determines if the current player is in check
+   * Determines whether the current player's commander (king) is under attack.
+   * Checks if any opponent piece can capture the commander in the current position.
    * @returns True if the current player is in check, false otherwise
    */
   isCheck(): boolean {
@@ -889,7 +912,8 @@ export class CoTuLenh {
   }
 
   /**
-   * Determines if the current player is in checkmate
+   * Determines whether the current player is in checkmate.
+   * Checkmate occurs when the commander is in check and no legal moves can escape the threat.
    * @returns True if the current player is in checkmate, false otherwise
    */
   isCheckmate(): boolean {
@@ -899,7 +923,8 @@ export class CoTuLenh {
 
   // TODO: Implement isInsufficientMaterial, isThreefoldRepetition, isDrawByFiftyMoves based on variant rules
   /**
-   * Determines if the game is a draw by the fifty-move rule
+   * Determines whether the game is a draw due to the fifty-move rule.
+   * The fifty-move rule declares a draw if 50 moves pass without a capture or pawn move.
    * @returns True if the game is a draw by the fifty-move rule, false otherwise
    */
   isDrawByFiftyMoves(): boolean {
@@ -907,7 +932,8 @@ export class CoTuLenh {
   }
 
   /**
-   * Determines if the game is a draw by threefold repetition
+   * Determines whether the game is a draw due to threefold repetition.
+   * A draw is declared when the same position occurs three times with the same player to move.
    * @returns True if the game is a draw by threefold repetition, false otherwise
    */
   isThreefoldRepetition(): boolean {
@@ -915,16 +941,18 @@ export class CoTuLenh {
   }
 
   /**
-   * Determines if the game is a draw
-   * @returns True if the game is a draw, false otherwise
+   * Determines whether the current game state constitutes a draw.
+   * Checks for all possible draw conditions including fifty-move rule and threefold repetition.
+   * @returns True if the game is a draw by any applicable rule, false otherwise
    */
   isDraw(): boolean {
     return this.isDrawByFiftyMoves() || this.isThreefoldRepetition() // Add other draw conditions later (insufficient material)
   }
 
   /**
-   * Determines if the game is over
-   * @returns True if the game is over, false otherwise
+   * Determines whether the game has ended due to any terminal condition.
+   * Checks for checkmate, draw conditions, or commander capture.
+   * @returns True if the game is over by any condition, false if the game can continue
    */
   isGameOver(): boolean {
     // Game over if checkmate, stalemate, draw, or commander captured
@@ -1088,12 +1116,13 @@ export class CoTuLenh {
   }
 
   /**
-   * Makes a move on the board
-   * @param move - The move to make, either in SAN format or as an object
-   * @param options - Move options
-   * @param options.strict - Whether to use strict parsing for SAN moves
-   * @returns The move that was made, or null if the move was invalid
-   * @throws Error if the move is invalid or illegal
+   * Executes a move on the board, accepting either algebraic notation or move object format.
+   * Validates the move legality before execution and updates the game state accordingly.
+   * @param move - The move to execute, either as SAN string (e.g., 'Nf3') or move object with from/to squares
+   * @param options - Configuration options for move execution
+   * @param options.strict - Whether to use strict parsing rules for algebraic notation moves
+   * @returns The executed Move object, or null if the move was invalid
+   * @throws Error if the move is invalid, illegal, or ambiguous
    */
   move(
     move:
@@ -1190,8 +1219,8 @@ export class CoTuLenh {
   }
 
   /**
-   * Gets the color of the player whose turn it is
-   * @returns The color of the player whose turn it is
+   * Retrieves the color of the player who has the current turn to move.
+   * @returns The color (RED or BLUE) of the player whose turn it is to move
    */
   turn(): Color {
     return this._turn
@@ -1199,8 +1228,9 @@ export class CoTuLenh {
 
   // ... (board, squareColor, history, comments, moveNumber need review/adaptation) ...
   /**
-   * Gets a representation of the board
-   * @returns A 2D array representing the board, with each element being a piece or null
+   * Generates a 2D array representation of the current board state.
+   * Each element contains piece information or null for empty squares.
+   * @returns A 2D array representing the board, with each element containing piece data or null for empty squares
    */
   board(): ({
     square: Square
@@ -1235,16 +1265,11 @@ export class CoTuLenh {
   }
 
   /**
-   * Gets the move history
-   * @param options - History options
-   * @param options.verbose - Whether to return detailed move objects
-   * @returns An array of moves, either as strings or Move objects
-   */
-  /**
-   * Returns a list of all moves made in the game
-   * @param options - History options
-   * @param options.verbose - Whether to return detailed move objects
-   * @returns An array of moves, either as strings or Move objects
+   * Retrieves the complete move history of the current game.
+   * Can return moves either as algebraic notation strings or detailed Move objects.
+   * @param options - Configuration options for history format
+   * @param options.verbose - If true, returns Move/DeployMove objects; if false, returns SAN strings
+   * @returns An array containing all moves made in the game, in chronological order
    */
   history(): string[]
   history({ verbose }: { verbose: true }): (Move | DeployMove)[]
@@ -1291,10 +1316,11 @@ export class CoTuLenh {
   }
 
   /**
-   * Gets the heroic status of a piece at a square
-   * @param square - The square to check
-   * @param pieceType - Optional piece type to find in a stack
-   * @returns True if the piece is heroic, false otherwise
+   * Retrieves the heroic status of a piece at the specified square.
+   * Can optionally target a specific piece type within a stack of pieces.
+   * @param square - The square to examine, either in algebraic notation or internal coordinates
+   * @param pieceType - Optional piece type to check specifically within a stack
+   * @returns True if the piece (or specified piece type) has heroic status, false otherwise
    */
   getHeroicStatus(square: Square | number, pieceType?: PieceSymbol): boolean {
     const piece = this.get(square, pieceType)
@@ -1302,11 +1328,12 @@ export class CoTuLenh {
   }
 
   /**
-   * Set the heroic status of a piece at a square
-   * @param square - The square to check
-   * @param pieceType - Optional piece type to find in a stack
-   * @param heroic - The heroic status to set
-   * @returns True if the heroic status was successfully set, false otherwise
+   * Sets the heroic status of a piece at the specified square.
+   * Can target a specific piece type within a stack or the main piece on the square.
+   * @param square - The square containing the piece, either in algebraic notation or internal coordinates
+   * @param pieceType - Optional piece type to modify specifically within a stack
+   * @param heroic - The heroic status to assign to the piece
+   * @returns True if the heroic status was successfully updated, false if the piece was not found
    */
   setHeroicStatus(
     square: Square | number,
@@ -1353,30 +1380,33 @@ export class CoTuLenh {
   }
 
   /**
-   * Gets the current move number
-   * @returns The current move number
+   * Retrieves the current full move number in the game.
+   * The move number increments after both players have moved (after Blue's turn).
+   * @returns The current move number of the game
    */
   moveNumber(): number {
     return this._moveNumber
   }
 
   /**
-   * Gets the comment for the current position
-   * @returns The comment for the current position, or undefined if no comment exists
+   * Retrieves any comment associated with the current board position.
+   * Comments are stored per unique position and can provide annotations or analysis.
+   * @returns The comment string for the current position, or undefined if no comment exists
    */
   getComment(): string | undefined {
     return this._comments[this.fen()]
   }
   /**
-   * Sets a comment for the current position
-   * @param comment - The comment to set
+   * Associates a comment with the current board position.
+   * Comments are stored per unique position and can be used for annotations or analysis.
+   * @param comment - The comment text to associate with the current position
    */
   setComment(comment: string) {
     this._comments[this.fen()] = comment
   }
   /**
-   * Removes the comment for the current position
-   * @returns The removed comment, or undefined if no comment existed
+   * Removes any comment associated with the current board position.
+   * @returns The removed comment text, or undefined if no comment was previously set
    */
   removeComment(): string | undefined {
     const comment = this._comments[this.fen()]
@@ -1386,7 +1416,8 @@ export class CoTuLenh {
   // Removed printTerrainZones
 
   /**
-   * Prints a text representation of the board to the console
+   * Outputs a visual text representation of the current board state to the console.
+   * Useful for debugging and development purposes to visualize the board layout.
    */
   printBoard(): void {
     printBoard(this._board)
@@ -1400,9 +1431,10 @@ export { DeployMoveRequest, DeployMove } from './deploy-move.js'
 export { getCoreTypeFromRole, getRoleFromCoreType } from './utils.js'
 
 /**
- * Validates a FEN string
- * @param fen - The FEN string to validate
- * @returns true if the FEN is valid, false otherwise
+ * Validates whether a FEN (Forsyth-Edwards Notation) string is properly formatted and legal.
+ * Performs comprehensive validation of all FEN components including piece placement and game state.
+ * @param fen - The FEN string to validate for correctness
+ * @returns true if the FEN string is valid and can be loaded, false otherwise
  */
 export function validateFenString(fen: string): boolean {
   try {
