@@ -464,12 +464,12 @@ export function generateMovesForPiece(
   gameInstance: CoTuLenh,
   from: number,
   pieceData: Piece,
-  isHero: boolean,
   isDeployMove = false,
 ): InternalMove[] {
   const moves: InternalMove[] = []
   const us = pieceData.color
   const them = swapColor(us)
+  const isHero = pieceData.heroic ?? false
 
   // Get movement configuration
   const config = getPieceMovementConfig(pieceData.type, isHero)
@@ -543,7 +543,6 @@ export function generateDeployMoves(
       gameInstance,
       stackSquare,
       deployMoveCandidate,
-      false,
       true,
     )
     deployMoves.forEach((m) => {
@@ -604,7 +603,6 @@ export function generateNormalMoves(
           gameInstance,
           from,
           deployMoveCandidate,
-          false,
           true,
         )
         deployMoves.forEach((m) => {
@@ -620,7 +618,7 @@ export function generateNormalMoves(
         gameInstance,
         from,
         pieceData,
-        pieceData.heroic ?? false,
+        false,
       )
       moves.push(...singleMoves)
     }

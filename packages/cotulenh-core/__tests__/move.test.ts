@@ -633,27 +633,29 @@ describe('Re run random fail move', () => {
       '11/1n2fh1h3/3a2s2a1/2n1gt1tg2/2ie2m3i/11/NN1E7/2I3M3(+fc)/4GT1TG2/6S2A1/2A1FH1HF2/6C4 r - - 0 5',
     )
   })
-  // it('should deploy move', () => {
-  //   const game = new CoTuLenh('11/1n2fh1h3/3a2s2a(+fc)/2n1gt1tg2/2ie2m3i/11/NN1E7/2I3M4/4GT1TG2/6S2A1/2A1FH1HF2/6C4 b - - 3 6')
-  //   const deployMoveRequest = {
-  //     "from": "k10",
-  //     "moves": [
-  //         {
-  //             "piece": {
-  //                 "type": "f",
-  //                 "color": "b",
-  //                 "heroic": true
-  //             },
-  //             "to": "f5"
-  //         }
-  //     ],
-  //     "stay": {
-  //         "type": "c",
-  //         "color": "b",
-  //         "heroic": false
-  //     }
-  // }as DeployMoveRequest
-  //   const move = game.deployMove(deployMoveRequest)
-  //   expect(move).toBeInstanceOf(DeployMove)
-  // })
+  it('should deploy move', () => {
+    const game = new CoTuLenh(
+      '11/1n2fh1h3/3a2s2a(+fc)/2n1gt1tg2/2ie2m3i/11/NN1E7/2I3M4/4GT1TG2/6S2A1/2A1FH1HF2/6C4 b - - 3 6',
+    )
+    const deployMoveRequest = {
+      from: 'k10',
+      moves: [
+        {
+          piece: {
+            type: 'f',
+            color: 'b',
+            heroic: true,
+          },
+          to: 'f5',
+        },
+      ],
+      stay: {
+        type: 'c',
+        color: 'b',
+        heroic: false,
+      },
+    } as DeployMoveRequest
+    const move = game.deployMove(deployMoveRequest)
+    expect(move).toBeInstanceOf(DeployMove)
+  })
 })
