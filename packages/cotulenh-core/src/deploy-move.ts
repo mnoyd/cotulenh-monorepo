@@ -167,7 +167,7 @@ export function deployMoveToSanLan(
 ): [string, string] {
   const legalMoves = game['_moves']({ legal: true })
   const allMoveSan = move.moves.map((m: InternalMove) => {
-    return game['_moveToSanLan'](m, legalMoves, true)[0]
+    return game['_moveToSanLan'](m, legalMoves)[0]
   })
   const movesSan = allMoveSan.join(',')
   const stay = move.stay ? `${makeSanPiece(move.stay)}<` : ''

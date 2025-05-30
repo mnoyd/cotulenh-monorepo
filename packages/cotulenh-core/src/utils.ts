@@ -386,7 +386,7 @@ export function makeSanSinglePiece(piece: Piece): string {
   return heroic + symbol
 }
 
-export function makeSanPiece(combinedPiece: Piece, derimiter = true): string {
+export function makeSanPiece(combinedPiece: Piece, derimiter = false): string {
   const carrier = makeSanSinglePiece(combinedPiece)
   if (!combinedPiece.carrying?.length) return carrier
   const stack = combinedPiece.carrying?.map(makeSanSinglePiece).join('') || ''

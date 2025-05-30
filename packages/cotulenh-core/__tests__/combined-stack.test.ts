@@ -625,8 +625,8 @@ describe('deployMoveToSanLan', () => {
       legalMoveAtc3,
     )
     const [san, lan] = deployMoveToSanLan(game, internalDeployMove)
-    expect(san).toBe('(N|T)>a3,F>c4')
-    expect(lan).toBe('c3:(N|T)>a3,F>c4')
+    expect(san).toBe('(NT)>a3,F>c4')
+    expect(lan).toBe('c3:(NT)>a3,F>c4')
   })
   it('should return SAN and LAN for deploy move with stay', () => {
     const game = setupGameBasic()
@@ -670,8 +670,8 @@ describe('deployMoveToSanLan', () => {
       legalMoveAtc3,
     )
     const [san, lan] = deployMoveToSanLan(game, internalDeployMove)
-    expect(san).toBe('(F|T)<N>a3')
-    expect(lan).toBe('c3:(F|T)<N>a3')
+    expect(san).toBe('(FT)<N>a3')
+    expect(lan).toBe('c3:(FT)<N>a3')
   })
 })
 describe('DeployMove', () => {

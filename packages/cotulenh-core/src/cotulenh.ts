@@ -937,16 +937,14 @@ export class CoTuLenh {
   private _moveToSanLan(
     move: InternalMove,
     moves: InternalMove[],
-    encodeCarrying: boolean = false,
   ): [string, string] {
-    const pieceChar = move.piece.type.toUpperCase()
-    const pieceEncoded = encodeCarrying ? makeSanPiece(move.piece) : pieceChar
+    const pieceEncoded = makeSanPiece(move.piece)
     const disambiguator = getDisambiguator(move, moves)
     const toAlg = algebraic(move.to) // Target square
     const fromAlg = algebraic(move.from) // Origin square
     let combinationSuffix = '' // Initialize combination suffix
-    const heroicPrefix =
-      (this.getHeroicStatus(move.from, move.piece.type) ?? false) ? '+' : '' // Simplified: Assume Move class handles this better
+    // const heroicPrefix =
+    //   (this.getHeroicStatus(move.from, move.piece.type) ?? false) ? '+' : '' // Simplified: Assume Move class handles this better
     let separator = ''
     if (move.flags & BITS.DEPLOY) {
       separator += '>'
@@ -968,7 +966,7 @@ export class CoTuLenh {
           'Should have successfully combined pieces in combine move',
         )
       }
-      combinationSuffix = makeSanPiece(combined)
+      combinationSuffix = makeSanPiece(combined, true)
     }
     let checkingSuffix = '' // Simplified: Assume Move class handles this better
 
@@ -982,8 +980,8 @@ export class CoTuLenh {
     }
     this._undoMove()
 
-    const san = `${heroicPrefix}${pieceEncoded}${disambiguator}${separator}${toAlg}${combinationSuffix}${checkingSuffix}`
-    const lan = `${heroicPrefix}${pieceEncoded}${fromAlg}${separator}${toAlg}${combinationSuffix}${checkingSuffix}`
+    const san = `${pieceEncoded}${disambiguator}${separator}${toAlg}${combinationSuffix}${checkingSuffix}`
+    const lan = `${pieceEncoded}${fromAlg}${separator}${toAlg}${combinationSuffix}${checkingSuffix}`
 
     return [san, lan] // Return both SAN and LAN strings
   }

@@ -582,7 +582,7 @@ describe('move sequesce', () => {
     expect(game['_turn']).toBe(RED)
 
     // Third move: Red navy move forward to b6
-    const move3 = game.move('Nb6')
+    const move3 = game.move('(NF)b6')
     expect(move3).toBeInstanceOf(Move)
     expect(game['_turn']).toBe(BLUE)
 
@@ -598,7 +598,7 @@ describe('move sequesce', () => {
     expect(history).toHaveLength(4)
     expect(history[0].san).toContain('F&b2')
     expect(history[1].san).toBe('Ce12')
-    expect(history[2].san).toBe('Nb6')
+    expect(history[2].san).toBe('(NF)b6')
     expect(history[3].san).toBe('Cg12')
   })
 })
@@ -627,7 +627,7 @@ describe('Re run random fail move', () => {
     game.load(
       '11/1n2fh1h3/3a2s2a1/2n1gt1tg2/2ie2m3i/8(fc)2/NN1E7/2I3M3I/4GT1TG2/6S2A1/2A1FH1HF2/6C4 b - - 7 4',
     )
-    const move = game.move('Fxk5^')
+    const move = game.move('(FC)xk5^')
     expect(move).toBeInstanceOf(Move)
     expect(game.fen()).toBe(
       '11/1n2fh1h3/3a2s2a1/2n1gt1tg2/2ie2m3i/11/NN1E7/2I3M3(+fc)/4GT1TG2/6S2A1/2A1FH1HF2/6C4 r - - 0 5',

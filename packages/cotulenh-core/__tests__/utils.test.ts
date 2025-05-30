@@ -37,7 +37,7 @@ describe('utils', () => {
         color: RED,
         carrying: [carriedPiece],
       }
-      expect(makeSanPiece(carrierPiece)).toBe('(T|I)')
+      expect(makeSanPiece(carrierPiece, true)).toBe('(T|I)')
     })
 
     it('should return the carrier and multiple carried pieces joined together', () => {
@@ -48,7 +48,7 @@ describe('utils', () => {
         color: RED,
         carrying: [carried1, carried2],
       }
-      expect(makeSanPiece(carrierPiece)).toBe('(T|IC)')
+      expect(makeSanPiece(carrierPiece, true)).toBe('(T|IC)')
     })
 
     it('should handle heroic pieces in the carrier and stack', () => {
@@ -60,7 +60,7 @@ describe('utils', () => {
         heroic: true,
         carrying: [carried1, carried2],
       }
-      expect(makeSanPiece(carrierPiece)).toBe('(+T|+IC)')
+      expect(makeSanPiece(carrierPiece, true)).toBe('(+T|+IC)')
     })
 
     it('should handle mixed heroic status in the stack', () => {
@@ -71,7 +71,7 @@ describe('utils', () => {
         color: RED,
         carrying: [carried1, carried2],
       }
-      expect(makeSanPiece(carrierPiece)).toBe('(T|I+C)')
+      expect(makeSanPiece(carrierPiece, true)).toBe('(T|I+C)')
     })
   })
 })
