@@ -39,6 +39,8 @@ import {
   createCombinedPiece,
   strippedSan,
   inferPieceType,
+  createCombineStackFromPieces,
+  flattenPiece,
 } from './utils.js'
 import {
   generateDeployMoves,
@@ -209,125 +211,54 @@ export class CoTuLenh {
     if (ranks.length !== 12) {
       throw new Error(`Invalid FEN: expected 12 ranks, got ${ranks.length}`)
     }
-
+    let parsingStack = false
+    let nextHeroic = false
     for (let r = 0; r < 12; r++) {
-      this._parseRank(ranks[r], r)
+      let col = 0
+      for (let i = 0; i < ranks[r].length; i++) {
+        const char = ranks[r].charAt(i)
+        if (isDigit(char)) {
+          col += parseInt(char)
+          if (col > 11) {
+            throw new Error(
+              `Invalid FEN: rank ${12 - r} has too many squares (${ranks[r]})`,
+            )
+          }
+        } else if (char === '+') {
+          nextHeroic = true
+        } else if (char === '(') {
+          parsingStack = true
+        } else if (char === ')') {
+          if (parsingStack === false) {
+            throw new Error(
+              `Invalid FEN: ) without matching ( in rank ${12 - r}`,
+            )
+          }
+          parsingStack = false
+          col++
+        } else {
+          const color = char < 'a' ? RED : BLUE
+          const piece = {
+            type: char.toLowerCase() as PieceSymbol,
+            color,
+            heroic: nextHeroic,
+          } as Piece
+          this.put(piece, algebraic(r * 16 + col), true)
+          if (!parsingStack) {
+            col++
+          }
+          nextHeroic = false
+        }
+      }
+      if (parsingStack) {
+        throw new Error(`Invalid FEN: ) without matching ( in rank ${12 - r}`)
+      }
+      if (nextHeroic) {
+        throw new Error(`Invalid FEN: + without matching ( in rank ${12 - r}`)
+      }
     }
   }
 
-  private _parseRank(rankStr: string, r: number): void {
-    let fileIndex = 0
-    let currentRankSquares = 0
-
-    for (let i = 0; i < rankStr.length; i++) {
-      const char = rankStr.charAt(i)
-
-      if (isDigit(char)) {
-        // Handle multi-digit numbers for empty squares
-        const { newIndex, emptySquares } = handleEmptySquares(
-          rankStr,
-          i,
-          r,
-          fileIndex,
-        )
-        i = newIndex
-        fileIndex += emptySquares
-        currentRankSquares += emptySquares
-      } else if (char === '(') {
-        // Parse stack notation
-        const { newIndex } = this._parseStack(rankStr, i, r, fileIndex)
-        i = newIndex
-        fileIndex++
-        currentRankSquares++
-      } else {
-        // Parse single piece
-        const { newIndex } = this._parseSinglePiece(rankStr, i, r, fileIndex)
-        i = newIndex
-        fileIndex++
-        currentRankSquares++
-      }
-    }
-
-    if (currentRankSquares !== 11) {
-      throw new Error(
-        `Invalid FEN: rank ${12 - r} does not have 11 squares (${rankStr}, counted ${currentRankSquares})`,
-      )
-    }
-  }
-
-  private _parseStack(
-    rankStr: string,
-    i: number,
-    r: number,
-    fileIndex: number,
-  ): { newIndex: number } {
-    const endParen = rankStr.indexOf(')', i)
-    if (endParen === -1) {
-      throw new Error(`Invalid FEN: Unmatched parenthesis in rank ${12 - r}`)
-    }
-
-    const stackContent = rankStr.substring(i + 1, endParen)
-    if (stackContent.length === 0) {
-      throw new Error(`Invalid FEN: Empty stack '()' in rank ${12 - r}`)
-    }
-
-    let carrierHeroic = false
-    let carrierIndex = 0
-    if (stackContent[0] === '+') {
-      carrierHeroic = true
-      carrierIndex = 1
-      if (stackContent.length < 2) {
-        throw new Error(
-          `Invalid FEN: Stack '(+)' missing carrier in rank ${12 - r}`,
-        )
-      }
-    }
-
-    const carrierChar = stackContent[carrierIndex]
-    const carrierColor = carrierChar < 'a' ? RED : BLUE
-    const carrierType = carrierChar.toLowerCase() as PieceSymbol
-
-    // Validate carrier type
-    if (!(carrierType in VALID_PIECE_TYPES)) {
-      throw new Error(
-        `Invalid FEN: Unknown carrier type '${carrierType}' in stack at rank ${12 - r}`,
-      )
-    }
-
-    // Determine the starting index for carried pieces, skipping optional '|'
-    let carriedStartIndex = carrierIndex + 1
-    if (stackContent[carriedStartIndex] === '|') {
-      carriedStartIndex++ // Skip the '|' separator
-    }
-
-    // Parse carried pieces with validation
-    const carriedPieces = this._parseCarriedPieces(
-      stackContent,
-      carriedStartIndex, // Use the adjusted start index
-      carrierColor,
-      r,
-    )
-
-    const sq0xf0 = r * 16 + fileIndex
-    this._board[sq0xf0] = {
-      type: carrierType,
-      color: carrierColor,
-      carrying: carriedPieces.length > 0 ? carriedPieces : undefined,
-      heroic: carrierHeroic, // Add heroic status
-    }
-
-    if (carrierType === COMMANDER) {
-      if (this._commanders[carrierColor] === -1) {
-        this._commanders[carrierColor] = sq0xf0
-      } else {
-        throw new Error(
-          `Invalid FEN: Multiple commanders found for color ${carrierColor}`,
-        )
-      }
-    }
-
-    return { newIndex: endParen } // Move parser past the closing parenthesis
-  }
   /**
    * Updates position counts and setup flags
    * @private
@@ -344,109 +275,6 @@ export class CoTuLenh {
     // Update setup flags
     this._header['SetUp'] = '1'
     this._header['FEN'] = fen
-  }
-
-  private _parseCarriedPieces(
-    stackContent: string,
-    startIndex: number,
-    carrierColor: Color,
-    r: number,
-  ): Piece[] {
-    const carriedPieces: Piece[] = []
-
-    for (let j = startIndex; j < stackContent.length; j++) {
-      let isHeroic = false
-      let currentPieceIndex = j
-
-      // Check for heroic marker '+'
-      if (stackContent[currentPieceIndex] === '+') {
-        isHeroic = true
-        currentPieceIndex++ // Move to the actual piece symbol
-
-        // Check if '+' is the last character in the stack content
-        if (currentPieceIndex >= stackContent.length) {
-          throw new Error(
-            `Invalid FEN: '+' at the end of stack content in rank ${12 - r}`,
-          )
-        }
-        j = currentPieceIndex // Update the main loop index
-      }
-
-      const carriedChar = stackContent[currentPieceIndex]
-      const carriedColor = carriedChar < 'a' ? RED : BLUE
-      const carriedType = carriedChar.toLowerCase() as PieceSymbol
-
-      // Validate carried piece type
-      if (!(carriedType in VALID_PIECE_TYPES)) {
-        throw new Error(
-          `Invalid FEN: Unknown carried piece type '${carriedType}' in stack at rank ${12 - r}`,
-        )
-      }
-
-      // Validate color match
-      if (carriedColor !== carrierColor) {
-        throw new Error(
-          `Invalid FEN: Carried piece color mismatch in stack at rank ${12 - r}`,
-        )
-      }
-
-      // Add the piece with its heroic status
-      carriedPieces.push({
-        type: carriedType,
-        color: carriedColor,
-        heroic: isHeroic,
-      })
-    }
-
-    return carriedPieces
-  }
-
-  private _parseSinglePiece(
-    rankStr: string,
-    i: number,
-    r: number,
-    fileIndex: number,
-  ): { newIndex: number } {
-    let isHeroic = false
-    let currentIndex = i
-
-    if (rankStr.charAt(currentIndex) === '+') {
-      isHeroic = true
-      currentIndex++
-
-      if (currentIndex >= rankStr.length) {
-        throw new Error(
-          `Invalid FEN: '+' at the end of rank ${12 - r} without a piece`,
-        )
-      }
-    }
-
-    const pieceChar = rankStr.charAt(currentIndex)
-    const color = pieceChar < 'a' ? RED : BLUE
-    const type = pieceChar.toLowerCase() as PieceSymbol
-
-    // Validate piece type
-    if (!(type in VALID_PIECE_TYPES) && type !== HEADQUARTER) {
-      throw new Error(
-        `Invalid FEN: Unknown piece type '${type}' in rank ${12 - r}`,
-      )
-    }
-
-    const sq0xf0 = r * 16 + fileIndex
-    this._board[sq0xf0] = { type, color, heroic: isHeroic }
-
-    if (type === COMMANDER) {
-      // Track Commander position
-      if (this._commanders[color] === -1) {
-        this._commanders[color] = sq0xf0
-      } else {
-        throw new Error(
-          `Invalid FEN: Multiple commanders found for color ${color}`,
-        )
-      }
-    }
-
-    return { newIndex: currentIndex }
   }
 
   /**
@@ -574,13 +402,38 @@ export class CoTuLenh {
       carrying?: Piece[]
     },
     square: Square,
+    allowCombine = false,
   ): boolean {
     this._movesCache.clear()
     if (!(square in SQUARE_MAP)) return false
     const sq = SQUARE_MAP[square]
 
+    let newPiece = {
+      type,
+      color,
+      heroic: heroic ?? false, // Default to false if undefined
+      carrying,
+    } as Piece
+    if (allowCombine) {
+      const existingPiece = this._board[sq] as Piece
+      if (existingPiece) {
+        const allPieces = [
+          ...flattenPiece(existingPiece),
+          ...flattenPiece(newPiece),
+        ]
+        const { combined: combinedPiece, uncombined } =
+          createCombineStackFromPieces(allPieces)
+        if (!combinedPiece || (uncombined?.length ?? 0) > 0) {
+          throw new Error(
+            `Failed to remove piece from stack at ${algebraic(sq)}`,
+          )
+        }
+        newPiece = combinedPiece
+      }
+    }
+
     //Piece should be put on correct relative terrain.
-    if (type === NAVY) {
+    if (newPiece.type === NAVY) {
       if (!NAVY_MASK[sq]) return false
     } else if (!LAND_MASK[sq]) return false
 
@@ -603,12 +456,7 @@ export class CoTuLenh {
     }
 
     // Place the piece or stack
-    this._board[sq] = {
-      type,
-      color,
-      carrying: carrying?.length ? carrying : undefined,
-      heroic: heroic ?? false, // Default to false if undefined
-    }
+    this._board[sq] = newPiece
     if (type === COMMANDER) this._commanders[color] = sq
 
     // TODO: Update setup, etc.

@@ -2,12 +2,11 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "type": "chrome",
+      "type": "firefox",
       "request": "launch",
-      "name": "Launch Chrome against localhost",
+      "name": "Launch Firefox against localhost",
       "url": "http://localhost:5173", // Change port if needed
-      "webRoot": "${workspaceFolder}/apps/cotulenh-app",
-      "sourceMaps": true
+      "webRoot": "${workspaceFolder}/apps/cotulenh-app"
     }
   ]
 }

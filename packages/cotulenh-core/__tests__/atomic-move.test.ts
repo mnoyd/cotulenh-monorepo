@@ -201,7 +201,7 @@ describe('Move Commands', () => {
         createMoveCommand(game, {
           color: RED,
           from: 0x84,
-          to: 0xa4,
+          to: 0x86,
           piece: makePiece(ARTILLERY, RED),
           flags: BITS.NORMAL,
         }),
