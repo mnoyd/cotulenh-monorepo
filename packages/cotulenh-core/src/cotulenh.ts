@@ -34,7 +34,6 @@ import {
   getDisambiguator,
   printBoard,
   validateFen,
-  handleEmptySquares,
   makeSanPiece,
   createCombinedPiece,
   strippedSan,

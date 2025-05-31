@@ -199,3 +199,7 @@ export type DeployState = {
   movedPieces: Piece[]
   stay?: Piece[]
 }
+export type AirDefense = {
+  [RED]: Map<number, Set<number>>
+  [BLUE]: Map<number, Set<number>>
+}
