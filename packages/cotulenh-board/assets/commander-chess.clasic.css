@@ -59,11 +59,11 @@ cg-board square.check {
   );
 }
 /* Base styles for all influence markers */
-cg-board .air-defense-influence {
+cg-board square.air-defense-influence {
   /* position: relative; */
   z-index: 3;
 }
-cg-board .air-defense-influence::before {
+cg-board square.air-defense-influence::before {
   content: '';
   position: absolute;
   top: 50%;
@@ -76,12 +76,12 @@ cg-board .air-defense-influence::before {
 }
 
 /* Friendly color */
-cg-board .air-defense-influence.friendly::before {
+cg-board square.air-defense-influence.friendly::before {
   background-color: rgba(23, 82, 190, 0.6);
 }
 
 /* Opponent color */
-cg-board .air-defense-influence.opponent::before {
+cg-board square.air-defense-influence.opponent::before {
   background-color: rgba(255, 0, 0, 0.6);
 }
 
