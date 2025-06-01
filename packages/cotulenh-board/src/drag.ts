@@ -4,11 +4,6 @@ import * as util from './util.js';
 import { clear as drawClear } from './draw.js';
 import * as cg from './types.js';
 import { anim } from './anim.js';
-import {
-  isAirDefenseInfluenceZonePiece,
-  isAirDefensePieceOrCarryingAirDefensePiece,
-  updateAirDefenseInfluenceZones,
-} from './air-defense.js';
 import { TEMP_KEY } from './types.js';
 import { combinedPiecePopup, prepareCombinedPopup } from './combined-piece.js';
 import { isPositionInPopup, clearPopup, getPopup } from './popup/popup-factory.js';
@@ -117,12 +112,6 @@ export function start(s: State, e: cg.MouchEvent): void {
       util.translate(ghost, util.posToTranslate(bounds)(util.key2pos(keyAtPosition), board.redPov(s)));
       util.setVisible(ghost, true);
     }
-    const defenseInfluenceZoneType = isAirDefenseInfluenceZonePiece(piece);
-    if (s.showAirDefenseInfluence && defenseInfluenceZoneType !== undefined) {
-      updateAirDefenseInfluenceZones(s, piece, defenseInfluenceZoneType);
-    } else {
-      s.highlight.custom.clear();
-    }
     processDrag(s);
   }
   s.dom.redraw();
@@ -209,18 +198,6 @@ export function processDrag(s: State): void {
         ]);
         const keyAtCurrentPosition = board.getKeyAtDomPos(cur.pos, board.redPov(s), bounds);
         cur.keyHasChanged ||= cur.orig !== keyAtCurrentPosition;
-
-        if (
-          s.showAirDefenseInfluence &&
-          cur.temporaryPos !== keyAtCurrentPosition &&
-          isAirDefensePieceOrCarryingAirDefensePiece(cur.piece) &&
-          keyAtCurrentPosition
-        ) {
-          // Store the current position to avoid calling updateAirDefenseInfluenceZones multiple times
-          cur.temporaryPos = keyAtCurrentPosition;
-          updateAirDefenseInfluenceZones(s, cur.piece, 'friendly', keyAtCurrentPosition); // Pass keyAtCurrentPosition
-          s.dom.redraw();
-        }
       }
     }
     processDrag(s);
@@ -342,14 +319,6 @@ function handlePieceReturn(s: State, cur: DragCurrent): void {
  */
 function finalizeDrag(s: State): void {
   removeDragElements(s);
-
-  if (
-    s.draggable.current &&
-    s.showAirDefenseInfluence &&
-    isAirDefenseInfluenceZonePiece(s.draggable.current.piece)
-  ) {
-    s.highlight.custom.clear();
-  }
 
   s.draggable.current = undefined;
   s.dom.redraw();

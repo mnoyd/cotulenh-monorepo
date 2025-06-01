@@ -366,6 +366,20 @@ function computeSquareClasses(s: State): cg.SquareClasses {
           addSquare(squares, k.square, 'move-dest' + (s.pieces.has(k.square) ? ' oc' : ''));
         }
     }
+    if (s.airDefense?.showInfluceZone) {
+      const side = s.airDefense?.showInfluceZone;
+      if (s.airDefense?.influenceZone) {
+        const zone = s.airDefense.influenceZone[side];
+        if (zone) {
+          zone.forEach((influenceSquares: cg.Key[], original: cg.Key) => {
+            console.log(original);
+            influenceSquares.forEach(k => {
+              addSquare(squares, k, 'air-defense-influence opponent');
+            });
+          });
+        }
+      }
+    }
   }
 
   const o = s.exploding;

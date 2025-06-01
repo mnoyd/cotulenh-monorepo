@@ -47,7 +47,13 @@ export interface Config {
     brushes?: DrawBrushes;
     onChange?: (shapes: DrawShape[]) => void; // called after drawable shapes change
   };
-  showAirDefenseInfluence?: boolean;
+  airDefense?: {
+    showInfluceZone?: boolean;
+    influenceZone?: {
+      red: Map<cg.Key, cg.Key[]>;
+      blue: Map<cg.Key, cg.Key[]>;
+    };
+  };
 }
 export function applyAnimation(state: HeadlessState, config: Config): void {
   if (config.animation) {

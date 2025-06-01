@@ -38,7 +38,13 @@ export interface HeadlessState {
     // disable to enforce dragging over click-click move
     enabled: boolean;
   };
-  showAirDefenseInfluence: boolean; // show air defense influence zones when air_force is selected
+  airDefense?: {
+    showInfluceZone?: cg.Color | undefined;
+    influenceZone?: {
+      red: Map<cg.Key, cg.Key[]>;
+      blue: Map<cg.Key, cg.Key[]>;
+    };
+  };
   viewOnly: boolean; // don't bind events: the user will never be able to move pieces around
   draggable: {
     enabled: boolean; // allow moves & premoves to use drag'n drop
@@ -125,7 +131,6 @@ export function defaults(): HeadlessState {
     numericCoordinates: false, // Default to true as per user's request for number-based coordinates initially
     coordinates: true,
     disableContextMenu: true,
-    showAirDefenseInfluence: true,
     dropmode: {
       active: false,
     },
