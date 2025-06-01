@@ -2,7 +2,7 @@
   import { onMount } from 'svelte';
   import { CotulenhBoard, origMoveToKey } from '@repo/cotulenh-board';
   import type { Api, Role as BoardRole, DestMove, OrigMove, OrigMoveKey, Role, StackMove, MoveMetadata } from '@repo/cotulenh-board';
-  import { CoTuLenh, getCoreTypeFromRole, getRoleFromCoreType } from '@repo/cotulenh-core';
+  import { CoTuLenh, getCoreTypeFromRole, getRoleFromCoreType, BLUE, RED } from '@repo/cotulenh-core';
   import type { Square, Color, Move, DeployMoveRequest } from '@repo/cotulenh-core';
   import type { Key, Dests } from '@repo/cotulenh-board';
   import GameInfo from '$lib/components/GameInfo.svelte';
@@ -15,7 +15,7 @@
   import '@repo/cotulenh-board/assets/commander-chess.base.css';
   import '@repo/cotulenh-board/assets/commander-chess.pieces.css';
   import '@repo/cotulenh-board/assets/commander-chess.clasic.css';
-    import { convertBoardPieceToCorePiece, makeCoreMove } from '$lib/utils';
+    import { convertBoardPieceToCorePiece, convertSetMapToArrayMap, makeCoreMove } from '$lib/utils';
 
   let boardContainerElement: HTMLElement | null = null;
   let boardApi: Api | null = null;
@@ -28,14 +28,29 @@
   function coreToBoardCheck(check: boolean, coreColor: Color | null): 'red' | 'blue' | undefined {
     return check ? coreToBoardColor(coreColor) : undefined;
   }
+  function coreToBoardAirDefense(): {
+    red: Map<Key, Key[]>;
+    blue: Map<Key, Key[]>;
+  } {
+    if (!game) return {
+      red: new Map(),
+      blue: new Map()
+    };
+    const airDefense = game.getAirDefenseInfluence();
+    return {
+      red: convertSetMapToArrayMap(airDefense[RED]),
+      blue: convertSetMapToArrayMap(airDefense[BLUE])
+    };
+  }
 
-  function reSetupBoard() {
+  function reSetupBoard():Api|null {
     if (boardApi) {
         boardApi.set({
           fen: $gameStore.fen,
           turnColor: coreToBoardColor($gameStore.turn),
           lastMove: mapLastMoveToBoardFormat($gameStore.lastMove),
           check: coreToBoardCheck($gameStore.check, $gameStore.turn),
+          airDefense: {influenceZone: coreToBoardAirDefense()},
           movable: {
             free: false,
             color: coreToBoardColor($gameStore.turn),
@@ -44,6 +59,7 @@
           }
         });
       }
+    return boardApi;
   }
 
   function mapPossibleMovesToDests(possibleMoves: Move[]): Dests {
@@ -145,6 +161,7 @@
         turnColor: coreToBoardColor($gameStore.turn),
         lastMove: mapLastMoveToBoardFormat($gameStore.lastMove),
         check: coreToBoardCheck($gameStore.check, $gameStore.turn),
+        airDefense: {influenceZone: coreToBoardAirDefense()},
         movable: {
           free: false,
           color: coreToBoardColor($gameStore.turn),
@@ -162,17 +179,7 @@
   });
 
   $: if (boardApi && $gameStore.fen) {
-    boardApi.set({
-      fen: $gameStore.fen,
-      turnColor: coreToBoardColor($gameStore.turn),
-      lastMove: mapLastMoveToBoardFormat($gameStore.lastMove),
-      check: coreToBoardCheck($gameStore.check, $gameStore.turn),
-      movable: {
-        color: coreToBoardColor($gameStore.turn),
-        dests: mapPossibleMovesToDests($gameStore.possibleMoves),
-        events: { after: handleMove, afterStackMove: handleStackMove }
-      }
-    });
+   reSetupBoard();
   }
 </script>
 

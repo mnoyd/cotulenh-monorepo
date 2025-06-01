@@ -63,3 +63,6 @@ export function convertBoardPieceToCorePiece(piece: BoardPiece): CorePiece {
     carrying: piece.carrying?.map((p) => convertBoardPieceToCorePiece(p))
   };
 }
+export function convertSetMapToArrayMap(map: Map<string, Set<string>>): Map<string, string[]> {
+  return new Map(Array.from(map.entries()).map(([k, v]) => [k, Array.from(v)]));
+}
