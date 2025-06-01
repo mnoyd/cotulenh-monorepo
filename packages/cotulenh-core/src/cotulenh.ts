@@ -27,7 +27,7 @@ import {
   isSquareOnBoard,
   DeployState,
   file,
-  AirDefense,
+  AirDefenseInfluence,
 } from './type.js'
 import {
   getDisambiguator,
@@ -47,8 +47,6 @@ import {
   ORTHOGONAL_OFFSETS,
   ALL_OFFSETS,
   getPieceMovementConfig,
-  calculateAirDefense,
-  BASE_AIRDEFENSE_CONFIG,
 } from './move-generation.js'
 import {
   createMoveCommand,
@@ -63,6 +61,12 @@ import {
   InternalDeployMove,
   isInternalDeployMove,
 } from './deploy-move.js'
+import {
+  AirDefensePiecesPosition,
+  BASE_AIRDEFENSE_CONFIG,
+  getAirDefenseInfluence,
+  updateAirDefensePiecesPosition,
+} from './air-defense.js'
 
 // Structure for storing history states
 interface History {
@@ -149,9 +153,9 @@ export class CoTuLenh {
   private _comments: Record<string, string> = {}
   private _positionCount: Record<string, number> = {}
   private _deployState: DeployState | null = null // Tracks active deploy phase
-  private _airDefense: AirDefense = {
-    [RED]: new Map<number, Set<number>>(),
-    [BLUE]: new Map<number, Set<number>>(),
+  private _airDefense: AirDefensePiecesPosition = {
+    [RED]: [],
+    [BLUE]: [],
   }
 
   constructor(fen = DEFAULT_POSITION) {
@@ -175,6 +179,10 @@ export class CoTuLenh {
     this._comments = {}
     this._header = preserveHeaders ? this._header : {}
     this._positionCount = {}
+    this._airDefense = {
+      [RED]: [],
+      [BLUE]: [],
+    }
     delete this._header['SetUp']
     delete this._header['FEN']
   }
@@ -196,10 +204,10 @@ export class CoTuLenh {
 
     this.clear({ preserveHeaders })
 
-    // // Validate FEN format if not skipping validation
-    // if (!skipValidation) {
-    //   validateFen(fen)
-    // }
+    // Validate FEN format if not skipping validation
+    if (!skipValidation) {
+      // validateFen(fen)
+    }
 
     // Parse board position
     const ranks = position.split('/')
@@ -260,7 +268,7 @@ export class CoTuLenh {
 
     // Update position counts and setup flags
     this._updatePositionCounts()
-    this._airDefense = calculateAirDefense(this)
+    this._airDefense = updateAirDefensePiecesPosition(this)
   }
 
   /**
@@ -443,7 +451,7 @@ export class CoTuLenh {
     if (haveCommander(newPiece)) this._commanders[color] = sq
 
     if (BASE_AIRDEFENSE_CONFIG[newPiece.type]) {
-      this._airDefense = calculateAirDefense(this)
+      this._airDefense = updateAirDefensePiecesPosition(this)
     }
 
     // TODO: Update setup, etc.
@@ -471,7 +479,7 @@ export class CoTuLenh {
       this._commanders[piece.color] = -1
     }
     if (BASE_AIRDEFENSE_CONFIG[piece.type]) {
-      this._airDefense = calculateAirDefense(this)
+      this._airDefense = updateAirDefensePiecesPosition(this)
     }
 
     // TODO: Update setup, etc.
@@ -1361,6 +1369,22 @@ export class CoTuLenh {
     }
 
     return false
+  }
+
+  /**
+   * Retrieves the current air defense pieces position.
+   * @returns The air defense pieces position
+   */
+  getAirDefensePiecesPosition(): AirDefensePiecesPosition {
+    return this._airDefense
+  }
+
+  /**
+   * Retrieves the current air defense influence.
+   * @returns The air defense influence
+   */
+  getAirDefenseInfluence(): AirDefenseInfluence {
+    return getAirDefenseInfluence(this)
   }
 
   /**
