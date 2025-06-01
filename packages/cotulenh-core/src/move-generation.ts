@@ -225,7 +225,7 @@ export function generateMovesInDirection(
     )
       break
 
-    const targetPiece = gameInstance.getPieceAt(to)
+    const targetPiece = gameInstance.get(to)
 
     // Terrain blocking check (remains unchanged)
     if (!terrainBlockedMovement) {
@@ -315,7 +315,7 @@ export function generateMovesInDirection(
           let lookAheadSq = to + offset
           let enemyCommanderFound = false
           while (isSquareOnBoard(lookAheadSq)) {
-            const lookAheadPiece = gameInstance.getPieceAt(lookAheadSq)
+            const lookAheadPiece = gameInstance.get(lookAheadSq)
             if (lookAheadPiece) {
               if (
                 lookAheadPiece.type === COMMANDER &&
@@ -519,7 +519,7 @@ export function generateDeployMoves(
   const carrierPiece =
     deployState !== null
       ? deployState.originalPiece
-      : gameInstance.getPieceAt(stackSquare)
+      : gameInstance.get(stackSquare)
   if (!carrierPiece || carrierPiece.color !== us) {
     return []
   }
@@ -533,12 +533,18 @@ export function generateDeployMoves(
   // Generate Deploy Moves for remaining carrying pieces
 
   const flattenedCarrierPiece = flattenPiece(carrierPiece)
-  const deployMoveCandidates = flattenedCarrierPiece.filter(
+  let deployMoveCandidates = flattenedCarrierPiece.filter(
     (p) =>
       !deployState?.movedPieces.some(
         (mp) => mp.type === p.type && mp.color === p.color,
       ),
   )
+  if (carrierPiece.type === NAVY && !LAND_MASK[stackSquare]) {
+    //remove carrier from the deployMoveCandidates
+    deployMoveCandidates = deployMoveCandidates.filter(
+      (p) => p.type !== carrierPiece.type,
+    )
+  }
   for (const deployMoveCandidate of deployMoveCandidates) {
     if (filterPiece && deployMoveCandidate.type !== filterPiece) continue
 
@@ -585,8 +591,8 @@ export function generateNormalMoves(
     const sq = SQUARE_MAP[filterSquare]
     if (
       sq === undefined ||
-      !gameInstance.getPieceAt(sq) ||
-      gameInstance.getPieceAt(sq)?.color !== us
+      !gameInstance.get(sq) ||
+      gameInstance.get(sq)?.color !== us
     )
       return []
     startSq = endSq = sq
@@ -595,11 +601,17 @@ export function generateNormalMoves(
   for (let from = startSq; from <= endSq; from++) {
     if (!isSquareOnBoard(from)) continue
 
-    const pieceData = gameInstance.getPieceAt(from)
+    const pieceData = gameInstance.get(from)
     if (!pieceData || pieceData.color !== us) continue
 
     if (pieceData.carrying && pieceData.carrying.length > 0) {
-      const deployMoveCandidates = flattenPiece(pieceData)
+      let deployMoveCandidates = flattenPiece(pieceData)
+      if (pieceData.type === NAVY && !LAND_MASK[from]) {
+        //remove carrier from the deployMoveCandidates
+        deployMoveCandidates = deployMoveCandidates.filter(
+          (p) => p.type !== pieceData.type,
+        )
+      }
       for (const deployMoveCandidate of deployMoveCandidates) {
         if (filterPiece && deployMoveCandidate.type !== filterPiece) continue
         const deployMoves = generateMovesForPiece(
@@ -637,7 +649,7 @@ function canLandOnSquare(square: number, pieceType: PieceSymbol): boolean {
   return pieceType === NAVY ? !!NAVY_MASK[square] : !!LAND_MASK[square]
 }
 
-const BASE_AIRDEFENSE_CONFIG: Partial<Record<PieceSymbol, number>> = {
+export const BASE_AIRDEFENSE_CONFIG: Partial<Record<PieceSymbol, number>> = {
   [MISSILE]: 2,
   [NAVY]: 1,
   [ANTI_AIR]: 1,

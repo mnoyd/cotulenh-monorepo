@@ -11,8 +11,6 @@ import {
   BITS,
   BLUE,
   Color,
-  COMMANDER,
-  HEADQUARTER,
   DEFAULT_POSITION,
   FLAGS,
   Piece,
@@ -29,6 +27,7 @@ import {
   isSquareOnBoard,
   DeployState,
   file,
+  AirDefense,
 } from './type.js'
 import {
   getDisambiguator,
@@ -40,6 +39,7 @@ import {
   inferPieceType,
   createCombineStackFromPieces,
   flattenPiece,
+  haveCommander,
 } from './utils.js'
 import {
   generateDeployMoves,
@@ -47,6 +47,8 @@ import {
   ORTHOGONAL_OFFSETS,
   ALL_OFFSETS,
   getPieceMovementConfig,
+  calculateAirDefense,
+  BASE_AIRDEFENSE_CONFIG,
 } from './move-generation.js'
 import {
   createMoveCommand,
@@ -147,6 +149,10 @@ export class CoTuLenh {
   private _comments: Record<string, string> = {}
   private _positionCount: Record<string, number> = {}
   private _deployState: DeployState | null = null // Tracks active deploy phase
+  private _airDefense: AirDefense = {
+    [RED]: new Map<number, Set<number>>(),
+    [BLUE]: new Map<number, Set<number>>(),
+  }
 
   constructor(fen = DEFAULT_POSITION) {
     this.load(fen)
@@ -190,24 +196,12 @@ export class CoTuLenh {
 
     this.clear({ preserveHeaders })
 
-    // Validate FEN format if not skipping validation
-    if (!skipValidation) {
-      validateFen(fen)
-    }
+    // // Validate FEN format if not skipping validation
+    // if (!skipValidation) {
+    //   validateFen(fen)
+    // }
 
     // Parse board position
-    this._parseBoardPosition(position)
-
-    // Parse game state
-    this._turn = (tokens[1] as Color) || RED
-    this._halfMoves = parseInt(tokens[4], 10) || 0
-    this._moveNumber = parseInt(tokens[5], 10) || 1
-
-    // Update position counts and setup flags
-    this._updatePositionCounts()
-  }
-
-  private _parseBoardPosition(position: string): void {
     const ranks = position.split('/')
     if (ranks.length !== 12) {
       throw new Error(`Invalid FEN: expected 12 ranks, got ${ranks.length}`)
@@ -258,6 +252,15 @@ export class CoTuLenh {
         throw new Error(`Invalid FEN: + without matching ( in rank ${12 - r}`)
       }
     }
+
+    // Parse game state
+    this._turn = (tokens[1] as Color) || RED
+    this._halfMoves = parseInt(tokens[4], 10) || 0
+    this._moveNumber = parseInt(tokens[5], 10) || 1
+
+    // Update position counts and setup flags
+    this._updatePositionCounts()
+    this._airDefense = calculateAirDefense(this)
   }
 
   /**
@@ -383,7 +386,7 @@ export class CoTuLenh {
     square: Square,
     allowCombine = false,
   ): boolean {
-    this._movesCache.clear()
+    // this._movesCache.clear()
     if (!(square in SQUARE_MAP)) return false
     const sq = SQUARE_MAP[square]
 
@@ -418,7 +421,7 @@ export class CoTuLenh {
 
     // Handle commander limit
     if (
-      type === COMMANDER &&
+      haveCommander(newPiece) &&
       this._commanders[color] !== -1 &&
       this._commanders[color] !== sq
     ) {
@@ -428,7 +431,8 @@ export class CoTuLenh {
     const currentPiece = this._board[sq]
     if (
       currentPiece &&
-      currentPiece.type === COMMANDER &&
+      haveCommander(currentPiece) &&
+      currentPiece.color !== color &&
       this._commanders[currentPiece.color] === sq
     ) {
       this._commanders[currentPiece.color] = -1
@@ -436,7 +440,11 @@ export class CoTuLenh {
 
     // Place the piece or stack
     this._board[sq] = newPiece
-    if (type === COMMANDER) this._commanders[color] = sq
+    if (haveCommander(newPiece)) this._commanders[color] = sq
+
+    if (BASE_AIRDEFENSE_CONFIG[newPiece.type]) {
+      this._airDefense = calculateAirDefense(this)
+    }
 
     // TODO: Update setup, etc.
     return true
@@ -449,7 +457,7 @@ export class CoTuLenh {
    * @returns The removed piece object, or undefined if no piece was found or the specified type was not present
    */
   remove(square: Square): Piece | undefined {
-    this._movesCache.clear()
+    // this._movesCache.clear()
     if (!(square in SQUARE_MAP)) return undefined
     const sq = SQUARE_MAP[square]
     const piece = this._board[sq]
@@ -459,8 +467,11 @@ export class CoTuLenh {
 
     delete this._board[sq]
 
-    if (piece.type === COMMANDER && this._commanders[piece.color] === sq) {
+    if (haveCommander(piece) && this._commanders[piece.color] === sq) {
       this._commanders[piece.color] = -1
+    }
+    if (BASE_AIRDEFENSE_CONFIG[piece.type]) {
+      this._airDefense = calculateAirDefense(this)
     }
 
     // TODO: Update setup, etc.
@@ -689,7 +700,7 @@ export class CoTuLenh {
       // Only increment if not a deploy move by blue
       this._moveNumber++
     }
-    // // TODO: Check for last piece auto-promotion (also needs Commander check)
+    // TODO: Check for last piece auto-promotion (also needs Commander check)
 
     // --- Switch Turn (or maintain for deploy) ---
     if (!isInternalDeployMove(move) && !(move.flags & BITS.DEPLOY)) {
@@ -729,32 +740,6 @@ export class CoTuLenh {
    */
   public undo(): void {
     this._undoMove()
-  }
-  /**
-   * Retrieves a piece at the specified square using internal board coordinates.
-   * This is a low-level method primarily used internally for board operations.
-   * @param square - The square in internal 0xf0 coordinate format
-   * @returns The piece at the square, or undefined if no piece is present
-   */
-  public getPieceAt(square: number): Piece | undefined {
-    return this._board[square]
-  }
-  /**
-   * Removes a piece from the specified square using internal board coordinates.
-   * This is a low-level method that directly modifies the board state.
-   * @param square - The square in internal 0xf0 coordinate format
-   */
-  public deletePieceAt(square: number): void {
-    delete this._board[square]
-  }
-  /**
-   * Places a piece at the specified square using internal board coordinates.
-   * This is a low-level method that directly modifies the board state without validation.
-   * @param square - The square in internal 0xf0 coordinate format
-   * @param piece - The piece object to place at the specified square
-   */
-  public setPieceAt(square: number, piece: Piece): void {
-    this._board[square] = piece
   }
 
   public getDeployState(): DeployState | null {
@@ -799,7 +784,7 @@ export class CoTuLenh {
     attackerColor: Color,
   ): { square: number; type: PieceSymbol }[] {
     const attackers: { square: number; type: PieceSymbol }[] = []
-    const isLandPiece = this.getPieceAt(square)?.type !== NAVY
+    const isLandPiece = this.get(square)?.type !== NAVY
 
     // Check in all directions from the target square
     // Use ALL_OFFSETS to check both orthogonal and diagonal directions

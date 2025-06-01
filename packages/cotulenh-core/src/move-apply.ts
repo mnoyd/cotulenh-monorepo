@@ -34,16 +34,23 @@ class RemovePieceAction implements AtomicMoveAction {
   constructor(private square: number) {}
 
   execute(game: CoTuLenh): void {
-    const piece = game.getPieceAt(this.square)
+    const piece = game.get(this.square)
     if (piece) {
       this.removedPiece = { ...piece }
-      game.deletePieceAt(this.square)
+      game.remove(algebraic(this.square))
     }
   }
 
   undo(game: CoTuLenh): void {
     if (this.removedPiece) {
-      game.setPieceAt(this.square, this.removedPiece)
+      const result = game.put(this.removedPiece, algebraic(this.square))
+      if (!result) {
+        throw new Error(
+          'Place piece fail:' +
+            JSON.stringify(this.removedPiece) +
+            algebraic(this.square),
+        )
+      }
     }
   }
 }
@@ -60,18 +67,32 @@ class PlacePieceAction implements AtomicMoveAction {
   ) {}
 
   execute(game: CoTuLenh): void {
-    const piece = game.getPieceAt(this.square)
+    const piece = game.get(this.square)
     if (piece) {
       this.existingPiece = { ...piece }
     }
-    game.setPieceAt(this.square, this.piece)
+    const result = game.put(this.piece, algebraic(this.square))
+    if (!result) {
+      throw new Error(
+        'Place piece fail:' +
+          JSON.stringify(this.piece) +
+          algebraic(this.square),
+      )
+    }
   }
 
   undo(game: CoTuLenh): void {
     if (this.existingPiece) {
-      game.setPieceAt(this.square, this.existingPiece)
+      const result = game.put(this.existingPiece, algebraic(this.square))
+      if (!result) {
+        throw new Error(
+          'Place piece fail:' +
+            JSON.stringify(this.piece) +
+            algebraic(this.square),
+        )
+      }
     } else {
-      game.deletePieceAt(this.square)
+      game.remove(algebraic(this.square))
     }
   }
 }
@@ -88,13 +109,14 @@ class RemoveFromStackAction implements AtomicMoveAction {
   ) {}
 
   execute(game: CoTuLenh): void {
-    const carrier = game.getPieceAt(this.carrierSquare)
+    const carrier = game.get(this.carrierSquare)
     if (!carrier) {
       throw new Error(
         `No carrier or carrying pieces at ${algebraic(this.carrierSquare)}`,
       )
     }
     const movingPiece = flattenPiece(this.piece)
+
     this.removedPiece = [...movingPiece] //set the value of moving piece here.
     const allPieces = flattenPiece(carrier)
     const remainingPiece = allPieces.filter(
@@ -107,7 +129,7 @@ class RemoveFromStackAction implements AtomicMoveAction {
       )
     }
     if (remainingPiece.length === 0) {
-      game.deletePieceAt(this.carrierSquare)
+      game.remove(algebraic(this.carrierSquare))
       return
     }
     const { combined: combinedPiece, uncombined } =
@@ -118,13 +140,23 @@ class RemoveFromStackAction implements AtomicMoveAction {
       )
     }
 
-    game.setPieceAt(this.carrierSquare, combinedPiece)
+    const result = game.put(combinedPiece, algebraic(this.carrierSquare))
+    if (!result) {
+      throw new Error(
+        'Place piece fail:' +
+          JSON.stringify(combinedPiece) +
+          algebraic(this.carrierSquare),
+      )
+    }
+    if (movingPiece.some((p) => p.type === COMMANDER)) {
+      game['_commanders'][this.piece.color] = -1
+    }
   }
 
   undo(game: CoTuLenh): void {
     if (!this.removedPiece) return
 
-    const carrier = game.getPieceAt(this.carrierSquare)
+    const carrier = game.get(this.carrierSquare)
 
     const allPieces = carrier ? flattenPiece(carrier) : []
     const { combined: combinedPiece, uncombined } =
@@ -134,7 +166,14 @@ class RemoveFromStackAction implements AtomicMoveAction {
         `Failed to remove piece from stack at ${algebraic(this.carrierSquare)}`,
       )
     }
-    game.setPieceAt(this.carrierSquare, combinedPiece)
+    const result = game.put(combinedPiece, algebraic(this.carrierSquare))
+    if (!result) {
+      throw new Error(
+        'Place piece fail:' +
+          JSON.stringify(combinedPiece) +
+          algebraic(this.carrierSquare),
+      )
+    }
   }
 }
 
@@ -274,7 +313,7 @@ export class NormalMoveCommand extends MoveCommand {
   protected buildActions(): void {
     const us = this.move.color
     const them = swapColor(us)
-    const pieceThatMoved = this.game.getPieceAt(this.move.from)
+    const pieceThatMoved = this.game.get(this.move.from)
 
     if (!pieceThatMoved) {
       throw new Error(
@@ -286,7 +325,7 @@ export class NormalMoveCommand extends MoveCommand {
 
     // Handle capture if needed
     if (this.move.flags & BITS.CAPTURE) {
-      const capturedPieceData = this.game.getPieceAt(this.move.to)
+      const capturedPieceData = this.game.get(this.move.to)
       if (!capturedPieceData || capturedPieceData.color !== them) {
         throw new Error(
           `Build NormalMove Error: Capture target invalid ${algebraic(
@@ -327,7 +366,7 @@ export class SingleDeployMoveCommand extends MoveCommand {
   protected buildActions(): void {
     const us = this.move.color
     const them = swapColor(us)
-    const carrierPiece = this.game.getPieceAt(this.move.from)
+    const carrierPiece = this.game.get(this.move.from)
 
     if (!carrierPiece) {
       throw new Error(
@@ -341,7 +380,7 @@ export class SingleDeployMoveCommand extends MoveCommand {
     // Handle stay capture
     if (this.move.flags & BITS.STAY_CAPTURE) {
       const destSq = this.move.to
-      const capturedPieceData = this.game.getPieceAt(destSq)
+      const capturedPieceData = this.game.get(destSq)
 
       if (!capturedPieceData || capturedPieceData.color !== them) {
         throw new Error(
@@ -364,7 +403,7 @@ export class SingleDeployMoveCommand extends MoveCommand {
 
       // Handle capture if needed
       if (this.move.flags & BITS.CAPTURE) {
-        const capturedPieceData = this.game.getPieceAt(destSq)
+        const capturedPieceData = this.game.get(destSq)
 
         if (!capturedPieceData || capturedPieceData.color !== them) {
           throw new Error(
@@ -411,8 +450,8 @@ export class SingleDeployMoveCommand extends MoveCommand {
  */
 class CombinationMoveCommand extends MoveCommand {
   protected buildActions(): void {
-    const movingPieceData = this.game.getPieceAt(this.move.from)
-    const targetPieceData = this.game.getPieceAt(this.move.to)
+    const movingPieceData = this.game.get(this.move.from)
+    const targetPieceData = this.game.get(this.move.to)
 
     if (
       !movingPieceData ||
@@ -474,7 +513,7 @@ export class StayCaptureMoveCommand extends MoveCommand {
       )
     }
 
-    const capturedPiece = this.game.getPieceAt(targetSq)
+    const capturedPiece = this.game.get(targetSq)
     if (!capturedPiece || capturedPiece.color !== them) {
       throw new Error(
         `Build StayCapture Error: Target invalid ${algebraic(targetSq)}`,
@@ -689,7 +728,7 @@ export class DeployMoveCommand extends SequenceMoveCommand {
       new SetDeployStateAction({
         stackSquare: this.moveData.from,
         turn: this.game['_turn'],
-        originalPiece: this.game.getPieceAt(this.moveData.from) || undefined,
+        originalPiece: this.game.get(this.moveData.from) || undefined,
         movedPieces: [],
         stay: this.moveData.stay ? flattenPiece(this.moveData.stay) : [],
       }),

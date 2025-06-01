@@ -23,7 +23,6 @@ import {
   AIR_FORCE,
   NAVY,
   HEADQUARTER,
-  isDigit,
   VALID_PIECE_TYPES,
   isSquareOnBoard,
 } from './type.js'
@@ -305,3 +304,6 @@ export function getStepsBetweenSquares(
 
   return -1 //nor diagonal or horizontal
 }
+
+export const haveCommander = (p: Piece) =>
+  flattenPiece(p).some((fp) => fp.type === COMMANDER)
