@@ -407,22 +407,8 @@ function addSquare(squares: cg.SquareClasses, key: cg.Key, klass: string): void 
  * 2. Overlapping zones - special highlight color
  */
 function renderInfluenceZones(squares: cg.SquareClasses, zone: Map<cg.Key, cg.Key[]>): void {
-  // Create a map to track which squares are influenced and by how many origins
-  const influencedSquares = new Map<cg.Key, string[]>();
-
-  // Process each origin and its influence squares
-  zone.forEach((influenceSquares, original) => {
-    // For each influenced square, add the original square to its list of origins
-    influenceSquares.forEach(square => {
-      if (!influencedSquares.has(square)) {
-        influencedSquares.set(square, []);
-      }
-      influencedSquares.get(square)?.push(original);
-    });
-  });
-
   // Apply appropriate classes based on the number of origins
-  influencedSquares.forEach((origins, square) => {
+  zone.forEach((origins, square) => {
     if (origins.length === 1) {
       // Single origin - standard opponent color
       addSquare(squares, square, 'air-defense-influence opponent');

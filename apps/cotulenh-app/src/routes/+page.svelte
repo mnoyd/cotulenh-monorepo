@@ -38,8 +38,8 @@
     };
     const airDefense = game.getAirDefenseInfluence();
     return {
-      red: convertSetMapToArrayMap(airDefense[RED]),
-      blue: convertSetMapToArrayMap(airDefense[BLUE])
+      red: airDefense[RED],
+      blue: airDefense[BLUE]
     };
   }
 
