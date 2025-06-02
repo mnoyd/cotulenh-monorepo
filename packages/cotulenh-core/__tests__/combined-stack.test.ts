@@ -808,4 +808,19 @@ describe('DeployMove', () => {
 
   //   expect(beforeMoveMap.length).toBeGreaterThan(afterMoveMap.length)
   // })
+
+  it('should suicide capture from a stack', () => {
+    const air_force = makePiece(AIR_FORCE, RED)
+    const carrier = makePiece(NAVY, RED)
+    const enemyNavy = makePiece(NAVY, BLUE)
+    carrier.carrying = [air_force]
+    game.put(carrier, 'b4')
+    game.put(enemyNavy, 'b7')
+    const moves = game.moves({ square: 'b4' }) as string[]
+    expect(moves).toContain('F>@b7')
+    const move = game.move('F>@b7')
+    expect(move).toBeInstanceOf(Move)
+    expect(game.get('b7')).toBeUndefined()
+    expect(game.get('b4')?.type).toBe(NAVY)
+  })
 })

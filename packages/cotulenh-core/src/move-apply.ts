@@ -567,10 +567,10 @@ export function createMoveCommand(
   move: InternalMove,
 ): MoveCommand {
   // Check flags in order of precedence (if applicable)
-  if (move.flags & BITS.SUICIDE_CAPTURE) {
-    return new SuicideCaptureMoveCommand(game, move)
-  } else if (move.flags & BITS.DEPLOY) {
+  if (move.flags & BITS.DEPLOY) {
     return new SingleDeployMoveCommand(game, move)
+  } else if (move.flags & BITS.SUICIDE_CAPTURE) {
+    return new SuicideCaptureMoveCommand(game, move)
   } else if (move.flags & BITS.STAY_CAPTURE) {
     return new StayCaptureMoveCommand(game, move)
   } else if (move.flags & BITS.COMBINATION) {
