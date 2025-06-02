@@ -1,5 +1,4 @@
-import { CoTuLenh } from './cotulenh'
-import { DIAGONAL_OFFSETS, ORTHOGONAL_OFFSETS } from './move-generation'
+import { CoTuLenh } from './cotulenh.js'
 import {
   AirDefenseForSide,
   ANTI_AIR,
@@ -15,7 +14,7 @@ import {
   Square,
   algebraic,
   AirDefense,
-} from './type'
+} from './type.js'
 
 export const BASE_AIRDEFENSE_CONFIG: Partial<Record<PieceSymbol, number>> = {
   [MISSILE]: 2,

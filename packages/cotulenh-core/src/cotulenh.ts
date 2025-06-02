@@ -29,6 +29,7 @@ import {
   file,
   AirDefenseInfluence,
   AirDefense,
+  CAPTURE_MASK,
 } from './type.js'
 import {
   getDisambiguator,
@@ -138,6 +139,10 @@ export class Move {
 
   isCombination(): boolean {
     return this.flags.indexOf(FLAGS.COMBINATION) > -1
+  }
+
+  isSuicideCapture(): boolean {
+    return this.flags.indexOf(FLAGS.SUICIDE_CAPTURE) > -1
   }
 }
 
@@ -885,10 +890,7 @@ export class CoTuLenh {
     for (const move of opponentMoves) {
       // Check if any move targets the king square
       // For stay capture, the target is move.to; for normal capture, it's also move.to
-      if (
-        move.flags & (BITS.CAPTURE | BITS.STAY_CAPTURE) &&
-        move.to === kingSq
-      ) {
+      if (move.flags & CAPTURE_MASK && move.to === kingSq) {
         return true // Commander is attacked
       }
     }
@@ -978,6 +980,9 @@ export class CoTuLenh {
     }
     if (move.flags & BITS.CAPTURE) {
       separator += 'x'
+    }
+    if (move.flags & BITS.SUICIDE_CAPTURE) {
+      separator += '@'
     }
     if (move.flags & BITS.COMBINATION) {
       separator += '&'

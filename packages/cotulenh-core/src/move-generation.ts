@@ -183,6 +183,7 @@ export function generateMovesInDirection(
   let pieceBlockedMovement = false
   let terrainBlockedMovement = false
   const isOrthogonal = ORTHOGONAL_OFFSETS.includes(offset) // Check if moving orthogonally
+  let firstAirInflunceZone: number | undefined
 
   while (true) {
     to += offset
@@ -190,6 +191,36 @@ export function generateMovesInDirection(
 
     // Check if square is on board
     if (!isSquareOnBoard(to)) break
+
+    // Special handling for AIR_FORCE movement through enemy air defense zones
+    if (pieceData.type === AIR_FORCE) {
+      const airDefense = gameInstance.getAirDefense()
+      const influenceZoneOfPieces = airDefense[them].get(to)
+      if (influenceZoneOfPieces && influenceZoneOfPieces.length > 0) {
+        // Case 1: Multiple air defense pieces influence this square
+        if (influenceZoneOfPieces.length > 1) {
+          break
+        }
+        // Case 2: Single air defense piece influences this square
+        else if (influenceZoneOfPieces.length === 1) {
+          // If this is the first air defense zone encountered during this move
+          if (firstAirInflunceZone === undefined) {
+            // Record the ID of the first air defense piece encountered
+            firstAirInflunceZone = influenceZoneOfPieces[0]
+          } else {
+            // the air force must stop (can only pass through one continuous zone)
+            if (firstAirInflunceZone !== influenceZoneOfPieces[0]) {
+              break
+            }
+          }
+        }
+      } else {
+        // the air force must stop (can only pass through one continuous zone)
+        if (firstAirInflunceZone !== undefined) {
+          break
+        }
+      }
+    }
 
     // Special case for Missile diagonal movement (remains unchanged)
     if (
@@ -249,6 +280,7 @@ export function generateMovesInDirection(
             currentRange,
             config,
             isDeployMove,
+            !!firstAirInflunceZone,
           )
         }
       } else if (targetPiece.color === us) {
@@ -291,7 +323,8 @@ export function generateMovesInDirection(
         currentRange <= config.moveRange &&
         !terrainBlockedMovement &&
         !pieceBlockedMovement &&
-        canLandOnSquare(to, pieceData.type)
+        canLandOnSquare(to, pieceData.type) &&
+        (pieceData.type === AIR_FORCE ? !firstAirInflunceZone : true)
       ) {
         // Commander cannot slide past where an enemy commander *would* be captured
         if (pieceData.type === COMMANDER && isOrthogonal) {
@@ -391,8 +424,14 @@ function handleCaptureLogic(
   currentRange: number,
   config: PieceMovementConfig,
   isDeployMove: boolean,
+  isSuicideMove: boolean,
 ): void {
   const us = pieceData.color
+
+  if (isSuicideMove) {
+    addMove(moves, us, from, to, pieceData, targetPiece, BITS.SUICIDE_CAPTURE)
+    return
+  }
 
   let captureAllowed = true
   let addNormalCapture = true

@@ -25,6 +25,7 @@ import {
   HEADQUARTER,
   VALID_PIECE_TYPES,
   isSquareOnBoard,
+  CAPTURE_MASK,
 } from './type.js'
 
 import {
@@ -222,7 +223,7 @@ export function addMove(
     from,
     to,
     piece,
-    ...(flags & (BITS.CAPTURE | BITS.STAY_CAPTURE) && { captured: otherPiece }),
+    ...(flags & CAPTURE_MASK && { captured: otherPiece }),
     ...(flags & BITS.COMBINATION && { combined: otherPiece }),
     flags,
   }

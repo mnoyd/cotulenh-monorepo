@@ -170,6 +170,7 @@ export const FLAGS: Record<string, string> = {
   NORMAL: 'n',
   CAPTURE: 'c',
   STAY_CAPTURE: 's', // General flag for capturing without moving
+  SUICIDE_CAPTURE: 'k', //For Air force kamikaze
   DEPLOY: 'd', // Flag for deploy move
   COMBINATION: 'b', // Flag for combination move
 }
@@ -178,9 +179,12 @@ export const BITS: Record<string, number> = {
   NORMAL: 1,
   CAPTURE: 2,
   STAY_CAPTURE: 4, // General flag bit
-  DEPLOY: 8, // Added deploy bit
-  COMBINATION: 16, // Added combination bit
+  SUICIDE_CAPTURE: 8, //For Air force kamikaze
+  DEPLOY: 16, // Added deploy bit
+  COMBINATION: 32, // Added combination bit
 }
+export const CAPTURE_MASK =
+  BITS.CAPTURE | BITS.STAY_CAPTURE | BITS.SUICIDE_CAPTURE
 // --- Move/History Types ---
 // Internal representation of a move
 export type InternalMove = {

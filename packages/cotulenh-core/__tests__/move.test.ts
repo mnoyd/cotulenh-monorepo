@@ -152,14 +152,14 @@ describe('CoTuLenh Stay Capture Logic', () => {
     expect(captureMove?.captured?.type).toBe(TANK)
   })
 
-  test('Air Force capturing Navy on pure Water should STAY', () => {
+  test('Air Force capturing Navy kamikaze', () => {
     // AF d2, Navy b2
     game.put({ type: AIR_FORCE, color: RED }, 'd2')
     game.put({ type: NAVY, color: BLUE }, 'b2')
     game['_turn'] = RED
 
     const moves = game.moves({ verbose: true }) as Move[]
-    const captureMove = moves.find((m) => {
+    const suicideCaptureMove = moves.find((m) => {
       return (
         m.from === 'd2' &&
         m.to === 'b2' &&
@@ -168,11 +168,11 @@ describe('CoTuLenh Stay Capture Logic', () => {
       )
     })
 
-    expect(captureMove).toBeDefined()
-    expect(captureMove?.isStayCapture()).toBe(true)
-    expect(captureMove?.from).toBe('d2')
-    expect(captureMove?.to).toBe('b2') // AF stays
-    expect(captureMove?.captured?.type).toBe(NAVY)
+    expect(suicideCaptureMove).toBeDefined()
+    expect(suicideCaptureMove?.isSuicideCapture()).toBe(true)
+    expect(suicideCaptureMove?.from).toBe('d2')
+    expect(suicideCaptureMove?.to).toBe('b2') // AF stays
+    expect(suicideCaptureMove?.captured?.type).toBe(NAVY)
   })
 
   test('Air Force capturing Land piece on Land should REPLACE', () => {
@@ -270,14 +270,14 @@ describe('Move History and Undo', () => {
     expect(game.fen()).toBe(initialFen)
   })
 
-  test('undo() a stay capture move', () => {
+  test('undo() a suicide capture move', () => {
     // Setup: Red Air Force d2, Blue Navy b2
     game.load('5c5/11/11/11/11/11/11/11/11/11/1n1F7/4C6 r - - 0 1')
     const initialFen = game.fen()
-    const move = game.move({ from: 'd2', to: 'b2', stay: true }) // AF attacks Navy
+    const move = game.move({ from: 'd2', to: 'b2' }) // AF attacks Navy
 
     expect(move).not.toBeNull()
-    expect(game.get('d2')?.type).toBe(AIR_FORCE) // AF stays
+    expect(game.get('d2')?.type).toBeUndefined() // AF stays
     expect(game.get('b2')).toBeUndefined() // Navy removed
     const fenAfterMove = game.fen()
 
@@ -328,15 +328,15 @@ describe('SAN Conversion', () => {
     // Setup: Red AF d2, Blue Navy b2
     game.load('5c5/11/11/11/11/11/11/11/11/11/1n1F7/4C6 r - - 0 1')
     //TODO update ambiguous moves SAN
-    const move = game.move('Fd2_b2') // Stay capture SAN
+    const move = game.move('Fd2@b2') // Stay capture SAN
 
     expect(move).not.toBeNull()
-    expect(move?.isStayCapture()).toBe(true)
-    expect(move?.san).toBe('F_b2')
+    expect(move?.isSuicideCapture()).toBe(true)
+    expect(move?.san).toBe('F@b2')
     expect(move?.from).toBe('d2')
     expect(move?.to).toBe('b2') // Piece ends up at origin
     expect(move?.captured?.type).toBe(NAVY)
-    expect(game.get('d2')?.type).toBe(AIR_FORCE)
+    expect(game.get('d2')?.type).toBeUndefined()
     expect(game.get('b2')).toBeUndefined()
   })
 
@@ -628,7 +628,7 @@ describe('Re run random fail move', () => {
     game.load(
       '11/1n2fh1h3/3a2s2a1/2n1gt1tg2/2ie2m3i/8(fc)2/NN1E7/2I3M3I/4GT1TG2/6S2A1/2A1FH1HF2/6C4 b - - 7 4',
     )
-    const move = game.move('(FC)xk5^')
+    const move = game.move('(FC)xk5')
     expect(move).toBeInstanceOf(Move)
     expect(game.fen()).toBe(
       '11/1n2fh1h3/3a2s2a1/2n1gt1tg2/2ie2m3i/11/NN1E7/2I3M3(+fc)/4GT1TG2/6S2A1/2A1FH1HF2/6C4 r - - 0 5',

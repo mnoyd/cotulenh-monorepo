@@ -15,6 +15,7 @@ import {
   createCombinedPiece,
   createCombineStackFromPieces,
   flattenPiece,
+  haveCommander,
 } from './utils.js'
 
 /**
@@ -354,9 +355,6 @@ export class NormalMoveCommand extends MoveCommand {
       )
     }
 
-    // Clear deploy state
-    this.actions.push(new SetDeployStateAction(null))
-
     // Add check and promote action
     this.actions.push(new CheckAndPromoteAttackersAction(this.move))
   }
@@ -402,7 +400,7 @@ export class SingleDeployMoveCommand extends MoveCommand {
       const destSq = this.move.to
 
       // Handle capture if needed
-      if (this.move.flags & BITS.CAPTURE) {
+      if (this.move.flags & (BITS.CAPTURE | BITS.SUICIDE_CAPTURE)) {
         const capturedPieceData = this.game.get(destSq)
 
         if (!capturedPieceData || capturedPieceData.color !== them) {
@@ -418,7 +416,9 @@ export class SingleDeployMoveCommand extends MoveCommand {
       }
 
       // Add action to place the deployed piece
-      this.actions.push(new PlacePieceAction(destSq, this.move.piece))
+      if ((this.move.flags & BITS.SUICIDE_CAPTURE) === 0) {
+        this.actions.push(new PlacePieceAction(destSq, this.move.piece))
+      }
 
       const haveCommander = flattendMovingPieces.some(
         (p) => p.type === COMMANDER,
@@ -493,9 +493,6 @@ class CombinationMoveCommand extends MoveCommand {
       )
     }
 
-    // Clear deploy state (combination breaks deploy sequence)
-    this.actions.push(new SetDeployStateAction(null))
-
     // Add check and promote action
     this.actions.push(new CheckAndPromoteAttackersAction(this.move))
   }
@@ -525,8 +522,39 @@ export class StayCaptureMoveCommand extends MoveCommand {
     // Only action is to remove the captured piece
     this.actions.push(new RemovePieceAction(targetSq))
 
-    // Clear deploy state
-    this.actions.push(new SetDeployStateAction(null))
+    // Add check and promote action
+    this.actions.push(new CheckAndPromoteAttackersAction(this.move))
+  }
+}
+
+/**
+ * Command for suicide capture moves where both the attacking piece and target are destroyed.
+ * For deploy moves, only the deployed air force piece (and its carrying pieces) are destroyed,
+ * while the remainder stays on the original square.
+ */
+export class SuicideCaptureMoveCommand extends MoveCommand {
+  protected buildActions(): void {
+    const us = this.move.color
+    const them = swapColor(us)
+    const targetSq = this.move.to
+    const pieceAtFrom = this.game.get(this.move.from)
+    if (!pieceAtFrom) {
+      throw new Error(
+        `Build StayCapture Error: No piece to move at ${algebraic(this.move.from)}`,
+      )
+    }
+
+    const capturedPiece = this.game.get(targetSq)
+    if (!capturedPiece || capturedPiece.color !== them) {
+      throw new Error(
+        `Build StayCapture Error: Target invalid ${algebraic(targetSq)}`,
+      )
+    }
+
+    this.move.captured = capturedPiece
+
+    this.actions.push(new RemovePieceAction(targetSq))
+    this.actions.push(new RemovePieceAction(this.move.from))
 
     // Add check and promote action
     this.actions.push(new CheckAndPromoteAttackersAction(this.move))
@@ -539,7 +567,9 @@ export function createMoveCommand(
   move: InternalMove,
 ): MoveCommand {
   // Check flags in order of precedence (if applicable)
-  if (move.flags & BITS.DEPLOY) {
+  if (move.flags & BITS.SUICIDE_CAPTURE) {
+    return new SuicideCaptureMoveCommand(game, move)
+  } else if (move.flags & BITS.DEPLOY) {
     return new SingleDeployMoveCommand(game, move)
   } else if (move.flags & BITS.STAY_CAPTURE) {
     return new StayCaptureMoveCommand(game, move)
