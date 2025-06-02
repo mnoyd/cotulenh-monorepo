@@ -371,12 +371,7 @@ function computeSquareClasses(s: State): cg.SquareClasses {
       if (s.airDefense?.influenceZone) {
         const zone = s.airDefense.influenceZone[side];
         if (zone) {
-          zone.forEach((influenceSquares: cg.Key[], original: cg.Key) => {
-            console.log(original);
-            influenceSquares.forEach(k => {
-              addSquare(squares, k, 'air-defense-influence opponent');
-            });
-          });
+          renderInfluenceZones(squares, zone);
         }
       }
     }
@@ -404,6 +399,50 @@ function addSquare(squares: cg.SquareClasses, key: cg.Key, klass: string): void 
   const classes = squares.get(key);
   if (classes) squares.set(key, `${classes} ${klass}`);
   else squares.set(key, klass);
+}
+
+/**
+ * Renders influence zones with two distinct styles:
+ * 1. Single influence - standard opponent color
+ * 2. Overlapping zones - special highlight color
+ */
+function renderInfluenceZones(squares: cg.SquareClasses, zone: Map<cg.Key, cg.Key[]>): void {
+  // Create a map to track which squares are influenced and by how many origins
+  const influencedSquares = new Map<cg.Key, string[]>();
+
+  // Process each origin and its influence squares
+  zone.forEach((influenceSquares, original) => {
+    // For each influenced square, add the original square to its list of origins
+    influenceSquares.forEach(square => {
+      if (!influencedSquares.has(square)) {
+        influencedSquares.set(square, []);
+      }
+      influencedSquares.get(square)?.push(original);
+    });
+  });
+
+  // Apply appropriate classes based on the number of origins
+  influencedSquares.forEach((origins, square) => {
+    if (origins.length === 1) {
+      // Single origin - standard opponent color
+      addSquare(squares, square, 'air-defense-influence opponent');
+    } else {
+      // Multiple origins - special overlap class
+      addSquare(squares, square, 'air-defense-influence opponent overlap');
+
+      // Add data attribute with origins and set overlap intensity
+      setTimeout(() => {
+        const squareEl = document.querySelector(`cg-board square[data-key="${square}"]`) as HTMLElement;
+        if (squareEl) {
+          // Store origins as a data attribute
+          squareEl.setAttribute('data-origins', origins.join(','));
+
+          // Set the intensity based on number of overlaps
+          squareEl.style.setProperty('--overlap-intensity', origins.length.toString());
+        }
+      }, 0);
+    }
+  });
 }
 
 function posZIndex(pos: cg.Pos, asRed: boolean): string {

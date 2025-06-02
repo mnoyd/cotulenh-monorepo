@@ -40,22 +40,6 @@ export function tryCombinePieces(origPiece: cg.Piece, destPiece: cg.Piece): cg.P
   }
 }
 
-/**
- * Finds a carried piece in a stack that matches the given predicate
- * @param piece The carrier piece to search in
- * @param predicate Function to test each carried piece
- * @returns The first carried piece that satisfies the predicate, or undefined
- */
-export function findCarriedPieceMatching(
-  piece: cg.Piece,
-  predicate: (p: cg.Piece) => boolean,
-): cg.Piece | undefined {
-  if (!piece || !piece.carrying || piece.carrying.length === 0) {
-    return undefined;
-  }
-  return piece.carrying.find(predicate);
-}
-
 export function createCombineStackFromPieces(pieces: cg.Piece[]): {
   combined: cg.Piece | undefined;
   uncombined: cg.Piece[] | undefined;

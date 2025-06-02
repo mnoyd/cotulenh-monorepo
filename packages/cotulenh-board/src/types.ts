@@ -22,8 +22,6 @@ export const roles = [
   'navy',
   'headquarter',
 ] as const;
-export const airDefenseRoles: Role[] = ['anti_air', 'navy', 'missile'];
-export const isAirDefense = (role: Role): boolean => airDefenseRoles.includes(role);
 
 export const files: readonly string[] = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k'];
 export const ranks: readonly string[] = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'];
@@ -140,3 +138,21 @@ export interface StackMove {
   moves: SingleMove[];
   stay: Piece;
 }
+
+export type AirDefenseInfluenceZoneType = 'friendly' | 'opponent';
+export type AirDefenseColorFriendly = [
+  '0044aaff',
+  '0055d4ff',
+  '0066ffff',
+  '2a7fffff',
+  '5599ffff',
+  '5599ffff',
+];
+export type AirDefenseColorOpponent = [
+  '800000ff',
+  'aa0000ff',
+  'd40000ff',
+  'ff0000ff',
+  'ff2a2aff',
+  'ff5555ff',
+];
