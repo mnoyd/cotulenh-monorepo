@@ -41,7 +41,6 @@ export const ALL_OFFSETS = [...ORTHOGONAL_OFFSETS, ...DIAGONAL_OFFSETS]
 export interface PieceMovementConfig {
   moveRange: number
   captureRange: number
-  isSliding: boolean
   canMoveDiagonal: boolean
   captureIgnoresPieceBlocking: boolean
   moveIgnoresBlocking: boolean
@@ -58,7 +57,6 @@ export const BASE_MOVEMENT_CONFIG: Record<PieceSymbol, PieceMovementConfig> = {
   [COMMANDER]: {
     moveRange: Infinity,
     captureRange: 1,
-    isSliding: true,
     canMoveDiagonal: false,
     captureIgnoresPieceBlocking: false,
     moveIgnoresBlocking: false,
@@ -67,7 +65,6 @@ export const BASE_MOVEMENT_CONFIG: Record<PieceSymbol, PieceMovementConfig> = {
   [INFANTRY]: {
     moveRange: 1,
     captureRange: 1,
-    isSliding: false,
     canMoveDiagonal: false,
     captureIgnoresPieceBlocking: false,
     moveIgnoresBlocking: false,
@@ -75,7 +72,6 @@ export const BASE_MOVEMENT_CONFIG: Record<PieceSymbol, PieceMovementConfig> = {
   [ENGINEER]: {
     moveRange: 1,
     captureRange: 1,
-    isSliding: false,
     canMoveDiagonal: false,
     captureIgnoresPieceBlocking: false,
     moveIgnoresBlocking: false,
@@ -83,7 +79,6 @@ export const BASE_MOVEMENT_CONFIG: Record<PieceSymbol, PieceMovementConfig> = {
   [TANK]: {
     moveRange: 2,
     captureRange: 2,
-    isSliding: true,
     canMoveDiagonal: false,
     captureIgnoresPieceBlocking: false,
     moveIgnoresBlocking: false,
@@ -92,7 +87,6 @@ export const BASE_MOVEMENT_CONFIG: Record<PieceSymbol, PieceMovementConfig> = {
   [MILITIA]: {
     moveRange: 1,
     captureRange: 1,
-    isSliding: false,
     canMoveDiagonal: true,
     captureIgnoresPieceBlocking: false,
     moveIgnoresBlocking: false,
@@ -100,7 +94,6 @@ export const BASE_MOVEMENT_CONFIG: Record<PieceSymbol, PieceMovementConfig> = {
   [ARTILLERY]: {
     moveRange: 3,
     captureRange: 3,
-    isSliding: true,
     canMoveDiagonal: true,
     captureIgnoresPieceBlocking: true,
     moveIgnoresBlocking: false,
@@ -108,7 +101,6 @@ export const BASE_MOVEMENT_CONFIG: Record<PieceSymbol, PieceMovementConfig> = {
   [ANTI_AIR]: {
     moveRange: 1,
     captureRange: 1,
-    isSliding: false,
     canMoveDiagonal: false,
     captureIgnoresPieceBlocking: false,
     moveIgnoresBlocking: false,
@@ -116,7 +108,6 @@ export const BASE_MOVEMENT_CONFIG: Record<PieceSymbol, PieceMovementConfig> = {
   [MISSILE]: {
     moveRange: 2,
     captureRange: 2,
-    isSliding: true,
     canMoveDiagonal: true,
     captureIgnoresPieceBlocking: true,
     moveIgnoresBlocking: false,
@@ -125,7 +116,6 @@ export const BASE_MOVEMENT_CONFIG: Record<PieceSymbol, PieceMovementConfig> = {
   [AIR_FORCE]: {
     moveRange: 4,
     captureRange: 4,
-    isSliding: true,
     canMoveDiagonal: true,
     captureIgnoresPieceBlocking: true,
     moveIgnoresBlocking: true,
@@ -133,7 +123,6 @@ export const BASE_MOVEMENT_CONFIG: Record<PieceSymbol, PieceMovementConfig> = {
   [NAVY]: {
     moveRange: 4,
     captureRange: 4,
-    isSliding: true,
     canMoveDiagonal: true,
     captureIgnoresPieceBlocking: true,
     moveIgnoresBlocking: false,
@@ -142,7 +131,6 @@ export const BASE_MOVEMENT_CONFIG: Record<PieceSymbol, PieceMovementConfig> = {
   [HEADQUARTER]: {
     moveRange: 0,
     captureRange: 0,
-    isSliding: false,
     canMoveDiagonal: false,
     captureIgnoresPieceBlocking: false,
     moveIgnoresBlocking: false,
@@ -170,7 +158,6 @@ export function getPieceMovementConfig(
     if (pieceType === HEADQUARTER) {
       baseConfig.moveRange = 1
       baseConfig.captureRange = 1
-      baseConfig.isSliding = false
     }
   }
 
@@ -333,9 +320,6 @@ export function generateMovesInDirection(
         }
       }
     }
-
-    // Loop termination logic (remains mostly unchanged)
-    if (!config.isSliding) break
 
     // Stop if blocked, unless it's a commander seeing another commander orthogonally
     if (
