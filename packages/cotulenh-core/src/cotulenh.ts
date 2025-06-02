@@ -28,6 +28,7 @@ import {
   DeployState,
   file,
   AirDefenseInfluence,
+  AirDefense,
 } from './type.js'
 import {
   getDisambiguator,
@@ -153,9 +154,9 @@ export class CoTuLenh {
   private _comments: Record<string, string> = {}
   private _positionCount: Record<string, number> = {}
   private _deployState: DeployState | null = null // Tracks active deploy phase
-  private _airDefense: AirDefensePiecesPosition = {
-    [RED]: [],
-    [BLUE]: [],
+  private _airDefense: AirDefense = {
+    [RED]: new Map<number, number[]>(),
+    [BLUE]: new Map<number, number[]>(),
   }
 
   constructor(fen = DEFAULT_POSITION) {
@@ -180,8 +181,8 @@ export class CoTuLenh {
     this._header = preserveHeaders ? this._header : {}
     this._positionCount = {}
     this._airDefense = {
-      [RED]: [],
-      [BLUE]: [],
+      [RED]: new Map<number, number[]>(),
+      [BLUE]: new Map<number, number[]>(),
     }
     delete this._header['SetUp']
     delete this._header['FEN']
@@ -1372,10 +1373,10 @@ export class CoTuLenh {
   }
 
   /**
-   * Retrieves the current air defense pieces position.
-   * @returns The air defense pieces position
+   * Retrieves the current air defense.
+   * @returns The air defense
    */
-  getAirDefensePiecesPosition(): AirDefensePiecesPosition {
+  getAirDefense(): AirDefense {
     return this._airDefense
   }
 

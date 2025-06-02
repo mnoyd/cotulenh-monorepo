@@ -10,10 +10,11 @@ import {
   PieceSymbol,
   RED,
   SQUARE_MAP,
-  AirDefenseInfluence,
   Color,
+  AirDefenseInfluence,
   Square,
   algebraic,
+  AirDefense,
 } from './type'
 
 export const BASE_AIRDEFENSE_CONFIG: Partial<Record<PieceSymbol, number>> = {
@@ -33,38 +34,44 @@ function getAirDefenseLevel(piece: PieceSymbol, isHero: boolean): number {
 export function calculateAirDefense(
   game: CoTuLenh,
   color: Color,
+  airDefensePiecesPosition: AirDefensePiecesPosition,
 ): AirDefenseForSide {
-  const airDefenseForSide: AirDefenseForSide = new Map<number, Set<number>>()
-  const airDefensePiecesPosition = game.getAirDefensePiecesPosition()
+  const airDefenseForSide: AirDefenseForSide = new Map<number, number[]>()
   for (const sqNum of airDefensePiecesPosition[color]) {
     const piece = game.get(sqNum)
     if (!piece)
       throw new Error(`Air defense piece not found at square ${sqNum}`)
     const level = getAirDefenseLevel(piece.type, piece.heroic ?? false)
     if (level > 0) {
-      for (const orthogonalOffset of ORTHOGONAL_OFFSETS) {
-        for (let step = 0; step <= level; step++) {
-          const to = sqNum + step * orthogonalOffset
-          if (!isSquareOnBoard(to)) break
-          airDefenseForSide.set(
-            to,
-            new Set([...(airDefenseForSide.get(to) || []), sqNum]),
-          )
+      const influnceSq = calculateAirDefenseForSquare(sqNum, level)
+      for (const sq of influnceSq) {
+        if (!airDefenseForSide.has(sq)) {
+          airDefenseForSide.set(sq, [])
         }
-      }
-      for (const diagonalOffset of DIAGONAL_OFFSETS) {
-        for (let step = 0; step <= level - 1; step++) {
-          const to = sqNum + step * diagonalOffset
-          if (!isSquareOnBoard(to)) break
-          airDefenseForSide.set(
-            to,
-            new Set([...(airDefenseForSide.get(to) || []), sqNum]),
-          )
-        }
+        airDefenseForSide.get(sq)!.push(sqNum)
       }
     }
   }
   return airDefenseForSide
+}
+
+export function calculateAirDefenseForSquare(
+  curSq: number,
+  level: number,
+): number[] {
+  const allInflunceSq: number[] = []
+  if (level === 0) {
+    return allInflunceSq
+  }
+  for (let i = -level; i <= level; i++) {
+    for (let j = -level; j <= level; j++) {
+      if (!isSquareOnBoard(curSq + i + j * 16)) continue
+      if (i * i + j * j <= level * level) {
+        allInflunceSq.push(curSq + i + j * 16)
+      }
+    }
+  }
+  return allInflunceSq
 }
 
 export type AirDefensePiecesPosition = {
@@ -72,9 +79,7 @@ export type AirDefensePiecesPosition = {
   [BLUE]: number[]
 }
 
-export function updateAirDefensePiecesPosition(
-  game: CoTuLenh,
-): AirDefensePiecesPosition {
+export function updateAirDefensePiecesPosition(game: CoTuLenh): AirDefense {
   const airDefensePieces: AirDefensePiecesPosition = {
     [RED]: [],
     [BLUE]: [],
@@ -90,62 +95,32 @@ export function updateAirDefensePiecesPosition(
       airDefensePieces[piece.color].push(sq)
     }
   }
-  return airDefensePieces
+  const airDefense: AirDefense = {
+    [RED]: new Map<number, number[]>(),
+    [BLUE]: new Map<number, number[]>(),
+  }
+  for (const color of [RED, BLUE]) {
+    airDefense[color as Color] = calculateAirDefense(
+      game,
+      color as Color,
+      airDefensePieces,
+    )
+  }
+  return airDefense
 }
 
 export function getAirDefenseInfluence(game: CoTuLenh): AirDefenseInfluence {
-  const airDefensePiecesPosition = game.getAirDefensePiecesPosition()
-  const AirDefenseInfluence: AirDefenseInfluence = {
-    [RED]: new Map<Square, Set<Square>>(),
-    [BLUE]: new Map<Square, Set<Square>>(),
+  const airDefenseInfluence: AirDefenseInfluence = {
+    [RED]: new Map<Square, Square[]>(),
+    [BLUE]: new Map<Square, Square[]>(),
   }
-  Object.entries(airDefensePiecesPosition).forEach(([color, squares]) => {
-    for (const sqNum of squares) {
-      const piece = game.get(sqNum)
-      if (!piece)
-        throw new Error(`Air defense piece not found at square ${sqNum}`)
-      const level = getAirDefenseLevel(piece.type, piece.heroic ?? false)
-      if (level > 0) {
-        for (const orthogonalOffset of ORTHOGONAL_OFFSETS) {
-          for (let step = 0; step <= level; step++) {
-            const to = sqNum + step * orthogonalOffset
-            if (!isSquareOnBoard(to)) break
-            const toAlg = algebraic(to)
-            const airDefenseSquareAlg = algebraic(sqNum)
-            if (!airDefenseSquareAlg) throw new Error('Square not found')
-            if (!toAlg) throw new Error('Square not found')
-            AirDefenseInfluence[color as Color].set(
-              airDefenseSquareAlg,
-              new Set([
-                ...(AirDefenseInfluence[color as Color].get(
-                  airDefenseSquareAlg,
-                ) || []),
-                toAlg, // use algebraic(to)
-              ]),
-            )
-          }
-        }
-        for (const diagonalOffset of DIAGONAL_OFFSETS) {
-          for (let step = 0; step <= level - 1; step++) {
-            const to = sqNum + step * diagonalOffset
-            if (!isSquareOnBoard(to)) break
-            const toAlg = algebraic(to)
-            const airDefenseSquareAlg = algebraic(sqNum)
-            if (!airDefenseSquareAlg) throw new Error('Square not found')
-            if (!toAlg) throw new Error('Square not found')
-            AirDefenseInfluence[color as Color].set(
-              airDefenseSquareAlg,
-              new Set([
-                ...(AirDefenseInfluence[color as Color].get(
-                  airDefenseSquareAlg,
-                ) || []),
-                toAlg,
-              ]),
-            )
-          }
-        }
-      }
+  const airDefense = game.getAirDefense()
+  for (const color of Object.keys(airDefense) as Color[]) {
+    for (const [sqNum, influencedSquares] of airDefense[color]) {
+      const square = algebraic(sqNum)
+      if (!square) throw new Error('Square not found')
+      airDefenseInfluence[color].set(square, influencedSquares.map(algebraic))
     }
-  })
-  return AirDefenseInfluence
+  }
+  return airDefenseInfluence
 }

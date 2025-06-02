@@ -199,7 +199,7 @@ export type DeployState = {
   movedPieces: Piece[]
   stay?: Piece[]
 }
-export type AirDefenseForSide = Map<number, Set<number>>
+export type AirDefenseForSide = Map<number, number[]>
 //For generating moves for air_force
 export type AirDefense = {
   [RED]: AirDefenseForSide
@@ -207,6 +207,6 @@ export type AirDefense = {
 }
 //For exporting board display
 export type AirDefenseInfluence = {
-  [RED]: Map<Square, Set<Square>>
-  [BLUE]: Map<Square, Set<Square>>
+  [RED]: Map<Square, Square[]>
+  [BLUE]: Map<Square, Square[]>
 }
