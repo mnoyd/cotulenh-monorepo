@@ -2,6 +2,7 @@ import { AnimCurrent, AnimFadings, AnimVector, AnimVectors } from './anim.js';
 import { redPov } from './board.js';
 import { DragCurrent } from './drag.js';
 import { getAmbigousMoveHandling } from './popup/ambigous-move.js';
+import { clearPopup } from './popup/popup-factory.js';
 import { HeadlessState, State } from './state.js';
 import * as cg from './types.js';
 import { TEMP_KEY } from './types.js';
@@ -19,14 +20,14 @@ import {
 type PieceName = string; // `$color $role`
 const COMBINED_PIECE_OFFSET_BASE = 50; // Determines the how much the combined pieces are offset from each other
 
-function createPiecesStackElement(s: State, stackContainer: HTMLElement, pieces: cg.Piece[]): HTMLElement {
+function createPiecesStackElement(stackContainer: HTMLElement, pieces: cg.Piece[]): HTMLElement {
   if (!pieces.length) throw new Error('No pieces provided');
 
   // pieces = [{color:'blue', role: 'artillery', carrying: [{color: 'blue', role: 'engineer'}]}, {color: 'red', role: 'air_force'}]
 
   // Create base piece using createSinglePieceElement
   const basePiece = pieces[0];
-  const basePieceNode = createSinglePieceElement(s, basePiece);
+  const basePieceNode = createSinglePieceElement(basePiece);
 
   // translate(basePieceNode, [0, 0]);
   // basePieceNode.style.zIndex = posZIndex(pos, asRed); // Use original pos for base zIndex
@@ -39,7 +40,7 @@ function createPiecesStackElement(s: State, stackContainer: HTMLElement, pieces:
   // Create carried pieces using createSinglePieceElement
   for (let i = 1; i < pieces.length; i++) {
     const carriedPiece = pieces[i];
-    const carriedPieceNode = createSinglePieceElement(s, carriedPiece);
+    const carriedPieceNode = createSinglePieceElement(carriedPiece);
 
     const offsetX = offsetStepX * i; // Offset relative to the base piece
     const offsetY = offsetStepY * i; // Offset relative to the base piece
@@ -52,12 +53,10 @@ function createPiecesStackElement(s: State, stackContainer: HTMLElement, pieces:
   return stackContainer;
 }
 
-export function createSinglePieceElement(s: State, piece: cg.Piece): cg.PieceNode {
+export function createSinglePieceElement(piece: cg.Piece): cg.PieceNode {
   const pieceName = pieceNameOf(piece);
   const pieceNode = createEl('piece', pieceName) as cg.PieceNode;
 
-  pieceNode.style.width = `${s.dom.bounds().squareSize}px`;
-  pieceNode.style.height = `${s.dom.bounds().squareSize}px`;
   if (piece.promoted) {
     const pieceStar = createEl('cg-piece-star') as HTMLElement;
     pieceNode.appendChild(pieceStar);
@@ -67,12 +66,12 @@ export function createSinglePieceElement(s: State, piece: cg.Piece): cg.PieceNod
   return pieceNode;
 }
 
-function createCombinedPieceElement(s: State, piece: cg.Piece): cg.PieceNode {
+function createCombinedPieceElement(piece: cg.Piece): cg.PieceNode {
   const container = createEl('piece', 'combined-stack') as cg.PieceNode;
   container.classList.add('piece');
   // Create the stack of pieces
   const allPiecesInStack: cg.Piece[] = flattenPiece(piece);
-  createPiecesStackElement(s, container, allPiecesInStack);
+  createPiecesStackElement(container, allPiecesInStack);
 
   container.cgPiece = pieceNameOf(piece); // The cgPiece of the container refers to the base piece
   return container;
@@ -81,11 +80,10 @@ function createCombinedPieceElement(s: State, piece: cg.Piece): cg.PieceNode {
 /**
  * Creates a stack of pieces with dynamic vertical offsets based on the number of pieces.
  * Pieces are rendered in order from bottom (first element) to top (last element).
- * @param s State object containing rendering context
  * @param pieces Array of pieces to stack, ordered from bottom to top
  * @returns A DOM element containing the stacked pieces
  */
-export function createAmbigousPiecesStackElement(s: State, pieces: cg.Piece[]): cg.KeyedNode {
+export function createAmbigousPiecesStackElement(pieces: cg.Piece[]): cg.KeyedNode {
   if (!pieces.length) throw new Error('No pieces provided');
 
   const stackElement = createEl('piece-ambigous-stack') as cg.KeyedNode;
@@ -103,9 +101,9 @@ export function createAmbigousPiecesStackElement(s: State, pieces: cg.Piece[]): 
     // Create the piece element
     let pieceNode: cg.PieceNode;
     if (piece.carrying && piece.carrying.length > 0) {
-      pieceNode = createCombinedPieceElement(s, piece);
+      pieceNode = createCombinedPieceElement(piece);
     } else {
-      pieceNode = createSinglePieceElement(s, piece);
+      pieceNode = createSinglePieceElement(piece);
     }
 
     // Calculate vertical offset (first piece has no offset)
@@ -235,8 +233,6 @@ export function render(s: State): void {
         translate(sMvd, translation);
       } else {
         const squareNode = createEl('square', className) as cg.SquareNode;
-        squareNode.style.height = `${s.dom.bounds().squareSize}px`;
-        squareNode.style.width = `${s.dom.bounds().squareSize}px`;
         squareNode.cgKey = sk;
         translate(squareNode, translation);
         boardEl.insertBefore(squareNode, boardEl.firstChild);
@@ -275,9 +271,9 @@ export function render(s: State): void {
         const pos = key2pos(k);
         let pieceNode: cg.PieceNode;
         if (p.carrying && p.carrying.length > 0) {
-          pieceNode = createCombinedPieceElement(s, p);
+          pieceNode = createCombinedPieceElement(p);
         } else {
-          pieceNode = createSinglePieceElement(s, p);
+          pieceNode = createSinglePieceElement(p);
         }
         if (anim) {
           pieceNode.classList.add('anim'); // Fix: Use classList.add
@@ -340,6 +336,9 @@ export function renderResized(s: State): void {
   const asRed: boolean = redPov(s),
     posToTranslate = posToTranslateFromBounds(s.dom.bounds());
   let el = s.dom.elements.board.firstChild as cg.PieceNode | cg.SquareNode | undefined;
+  if (s.popup) {
+    clearPopup(s);
+  }
   while (el) {
     if ((isPieceNode(el) && !el.cgAnimating) || isSquareNode(el)) {
       translate(el, posToTranslate(key2pos(el.cgKey), asRed));

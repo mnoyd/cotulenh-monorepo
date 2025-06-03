@@ -72,12 +72,9 @@ export interface Elements {
   autoPieces?: HTMLElement;
 }
 
-export interface Bounds extends DOMRectReadOnly {
-  squareSize: number;
-}
 export interface Dom {
   elements: Elements;
-  bounds: Memo<Bounds>;
+  bounds: Memo<DOMRectReadOnly>;
   redraw: () => void;
   redrawNow: (skipSvg?: boolean) => void;
   unbind?: Unbind;

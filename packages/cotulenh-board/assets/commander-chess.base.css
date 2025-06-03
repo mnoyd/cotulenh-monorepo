@@ -51,6 +51,9 @@ cg-piece-star {
 cg-board square {
   position: absolute;
   pointer-events: none;
+  width: 8.33%;
+  height: 7.69%;
+  pointer-events: none;
 }
 
 /* Pieces */
@@ -63,6 +66,8 @@ cg-board square {
   justify-content: center;
   background-repeat: no-repeat;
   background-size: contain;
+  width: 8.33%;
+  height: 7.69%;
 }
 
 .cg-wrap piece svg {
@@ -237,6 +242,8 @@ cg-board piece-ambigous-stack piece {
   position: relative;
   pointer-events: none;
   opacity: 0.8;
+  width: 100% !important;
+  height: 100% !important;
   transition: transform 0.2s;
 }
 
@@ -288,6 +295,8 @@ cg-board .popup-container piece {
   position: relative;
   pointer-events: auto;
   user-select: none;
+  width: 100%;
+  height: 100%;
 }
 
 /* Popup piece states */

@@ -56,15 +56,18 @@ export const COMBINED_PIECE_POPUP_TYPE = 'combined-piece';
 const combinedPiecePopup = createPopupFactory<cg.Piece | EndMove>({
   type: COMBINED_PIECE_POPUP_TYPE,
   renderItem: (s: State, item: cg.Piece | EndMove, index: number) => {
+    const squareSize = s.dom.bounds().width / 12;
     if (item === END_MOVE) {
       const el = createEl('cg-btn', 'end-stack-move');
       el.setAttribute('data-index', index.toString());
-      el.style.width = s.dom.bounds().squareSize + 'px';
-      el.style.height = s.dom.bounds().squareSize + 'px';
+      el.style.width = squareSize + 'px';
+      el.style.height = squareSize + 'px';
       return el;
     }
-    const piece = createSinglePieceElement(s, item);
+    const piece = createSinglePieceElement(item);
     piece.setAttribute('data-index', index.toString());
+    piece.style.width = squareSize + 'px';
+    piece.style.height = squareSize + 'px';
     return piece;
   },
   onSelect: (s: State, index: number, e?: cg.MouchEvent) => {
@@ -125,8 +128,11 @@ export const MOVE_WITH_CARRIER_POPUP_TYPE = 'move-with-carrier';
 const moveWithCarrierPopup = createPopupFactory<cg.Piece>({
   type: MOVE_WITH_CARRIER_POPUP_TYPE,
   renderItem: (s: State, item: cg.Piece, index: number) => {
-    const piece = createSinglePieceElement(s, item);
+    const piece = createSinglePieceElement(item);
+    const squareSize = s.dom.bounds().width / 12;
     piece.setAttribute('data-index', index.toString());
+    piece.style.width = squareSize + 'px';
+    piece.style.height = squareSize + 'px';
     return piece;
   },
   onSelect: (s: State, index: number) => {
@@ -161,13 +167,14 @@ const ambigousStackMoveStayPiecesCantCombineHandling = createAmbigousModeHandlin
     const carrying = s.ambigousMove.pieceAtOrig!.carrying;
     if (!carrying) return;
     popup.setPopup(s, carrying, s.ambigousMove.destKey);
-    const ambigousStackEl = createAmbigousPiecesStackElement(s, carrying);
-    ambigousStackEl.style.width = s.dom.bounds().squareSize + 'px';
-    ambigousStackEl.style.height = s.dom.bounds().squareSize + 'px';
+    const ambigousStackEl = createAmbigousPiecesStackElement(carrying);
+    const squareSize = s.dom.bounds().width / 12;
     ambigousStackEl.cgKey = s.ambigousMove.destKey;
+    ambigousStackEl.style.width = squareSize + 'px';
+    ambigousStackEl.style.height = squareSize + 'px';
     s.ambigousMove.renderGuide = {
       atOrig: ambigousStackEl,
-      atDest: createSinglePieceElement(s, s.ambigousMove.pieceThatMoves),
+      atDest: createSinglePieceElement(s.ambigousMove.pieceThatMoves),
     };
     s.dom.redraw();
   },

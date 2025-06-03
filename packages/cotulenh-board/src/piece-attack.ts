@@ -9,14 +9,15 @@ import { PopUpType } from './popup/popup-factory';
 export const PIECE_ATTACK_POPUP_TYPE: PopUpType = 'piece-attack';
 const pieceAttackPopup = createPopupFactory<string>({
   type: PIECE_ATTACK_POPUP_TYPE,
-  renderItem: (s: State, item: string, index: number) => {
+  renderItem: (_s: State, item: string, index: number) => {
     let className = '';
     if (index === 0) className = 'piece-attack ' + item;
     if (index === 1) className = 'piece-attack ' + item;
     const el = createEl('cg-btn', className);
-    const squareSize = s.dom.bounds().squareSize;
-    el.style.width = `${squareSize}px`;
-    el.style.height = `${squareSize}px`;
+    const squareSize = _s.dom.bounds().width / 12;
+    el.style.width = squareSize + 'px';
+    el.style.height = squareSize + 'px';
+    el.setAttribute('data-index', index.toString());
     return el;
   },
   onSelect: (s: State, index: number) => {
@@ -46,13 +47,14 @@ const ambigousCaptureStayBackHandling = createAmbigousModeHandling({
   renderAmbigousMoveElements: (s: State, popup: CTLPopup<string>) => {
     if (!s.ambigousMove) return;
     popup.setPopup(s, ['normal', 'stay'], s.ambigousMove.destKey);
-    const elAtDest = createAmbigousPiecesStackElement(s, [
+    const elAtDest = createAmbigousPiecesStackElement([
       s.ambigousMove.pieceAtDest!,
       s.ambigousMove.pieceThatMoves,
     ]);
-    elAtDest.style.width = s.dom.bounds().squareSize + 'px';
-    elAtDest.style.height = s.dom.bounds().squareSize + 'px';
+    const squareSize = s.dom.bounds().width / 12;
     elAtDest.cgKey = s.ambigousMove.destKey;
+    elAtDest.style.width = squareSize + 'px';
+    elAtDest.style.height = squareSize + 'px';
     s.ambigousMove.renderGuide = {
       atOrig: undefined,
       atDest: elAtDest,
