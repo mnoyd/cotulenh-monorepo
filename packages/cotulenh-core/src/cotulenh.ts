@@ -798,103 +798,44 @@ export class CoTuLenh {
     attackerColor: Color,
   ): { square: number; type: PieceSymbol }[] {
     const attackers: { square: number; type: PieceSymbol }[] = []
-    const isLandPiece = this.get(square)?.type !== NAVY
 
-    // Check in all directions from the target square
-    // Use ALL_OFFSETS to check both orthogonal and diagonal directions
-    for (const offset of ALL_OFFSETS) {
-      let currentSquare = square
-      let pieceBlocking = false
-      let distance = 0
+    // Save original turn
+    const originalTurn = this._turn
 
-      // Check up to 5 squares in each direction (maximum range of heroic air_force)
-      while (distance < 5) {
-        currentSquare += offset
-        distance++
+    // Temporarily switch turn to the attacker's color to generate their moves
+    this._turn = attackerColor
 
-        // Stop if we're off the board
-        if (!isSquareOnBoard(currentSquare)) break
+    // Generate all pseudo-legal moves for the attacker
+    const moves = this._moves({ legal: false })
 
-        const piece = this._board[currentSquare]
+    // Restore original turn
+    this._turn = originalTurn
 
-        // If no piece at this square, continue to next square in this direction
-        if (!piece) continue
-
-        // Check if the main piece at this square can attack the target
-        if (piece.color === attackerColor) {
-          // Get movement configuration for this piece
-          const config = getPieceMovementConfig(
-            piece.type,
-            piece.heroic ?? false,
-          )
-          if (isLandPiece && config.specialRules?.navyAttackMechanisms) {
-            config.captureRange = 3
-          }
-
-          // Check if the piece's range allows it to reach the target
-          if (distance <= config.captureRange) {
-            // Check if the piece can attack through blocking pieces
-            if (!pieceBlocking || config.captureIgnoresPieceBlocking) {
-              attackers.push({ square: currentSquare, type: piece.type })
-            }
-          }
-
-          // Check carried pieces in stacks
-          if (piece.carrying && piece.carrying.length > 0) {
-            for (const carriedPiece of piece.carrying) {
-              if (carriedPiece.color === attackerColor) {
-                // Get movement configuration for the carried piece
-                const carriedConfig = getPieceMovementConfig(
-                  carriedPiece.type,
-                  carriedPiece.heroic ?? false,
-                )
-
-                // Check if the carried piece's range allows it to reach the target
-                if (distance <= carriedConfig.captureRange) {
-                  // Check if the carried piece can attack through blocking pieces
-                  if (
-                    !pieceBlocking ||
-                    carriedConfig.captureIgnoresPieceBlocking
-                  ) {
-                    attackers.push({
-                      square: currentSquare,
-                      type: carriedPiece.type,
-                    })
-                  }
-                }
-              }
-            }
-          }
-        }
-
-        // Mark that we've encountered a piece in this direction
-        pieceBlocking = true
+    // Check each move to see if it targets the specified square with a capture
+    for (const move of moves) {
+      // If the move is a capture and targets the specified square
+      if (move.flags & CAPTURE_MASK && move.to === square) {
+        // Add the attacking piece to the list
+        attackers.push({
+          square: move.from,
+          type: move.piece.type,
+        })
       }
     }
 
     return attackers
   }
 
-  // --- Check/Game Over Detection (Updated for Stay Capture) ---
   private _isCommanderAttacked(color: Color): boolean {
     const kingSq = this._commanders[color]
     if (kingSq === -1) return true // Commander captured = loss = considered 'attacked' for game over
 
-    // Generate all opponent's pseudo-legal moves
+    // Use getAttackers to check if any opponent pieces can attack the commander
     const opponent = swapColor(color)
-    const originalTurn = this._turn
-    this._turn = opponent // Temporarily switch turn
-    const opponentMoves = this._moves({ legal: false }) // Generate for opponent
-    this._turn = originalTurn // Switch back
+    const attackers = this.getAttackers(kingSq, opponent)
 
-    for (const move of opponentMoves) {
-      // Check if any move targets the king square
-      // For stay capture, the target is move.to; for normal capture, it's also move.to
-      if (move.flags & CAPTURE_MASK && move.to === kingSq) {
-        return true // Commander is attacked
-      }
-    }
-    return false
+    // If there are any attackers, the commander is under attack
+    return attackers.length > 0
   }
 
   /**
