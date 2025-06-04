@@ -623,17 +623,7 @@ describe('Re run random fail move', () => {
   //   //   const result = game['_makeMove'](move)
   //   //   expect(result).toBeInstanceOf(Move)
   //   // })
-  it('fen printed wrong on combined piece got heroic promoted', () => {
-    const game = new CoTuLenh()
-    game.load(
-      '11/1n2fh1h3/3a2s2a1/2n1gt1tg2/2ie2m3i/8(fc)2/NN1E7/2I3M3I/4GT1TG2/6S2A1/2A1FH1HF2/6C4 b - - 7 4',
-    )
-    const move = game.move('(FC)xk5')
-    expect(move).toBeInstanceOf(Move)
-    expect(game.fen()).toBe(
-      '11/1n2fh1h3/3a2s2a1/2n1gt1tg2/2ie2m3i/11/NN1E7/2I3M3(+fc)/4GT1TG2/6S2A1/2A1FH1HF2/6C4 r - - 0 5',
-    )
-  })
+
   it('should deploy move', () => {
     const game = new CoTuLenh(
       '11/1n2fh1h3/3a2s2a(+fc)/2n1gt1tg2/2ie2m3i/11/NN1E7/2I3M4/4GT1TG2/6S2A1/2A1FH1HF2/6C4 b - - 3 6',

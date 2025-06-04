@@ -604,8 +604,8 @@ export function generateNormalMoves(
   filterSquare?: Square,
 ): InternalMove[] {
   const moves: InternalMove[] = []
-  let startSq = 0
-  let endSq = 255
+  let startSq = SQUARE_MAP.a12
+  let endSq = SQUARE_MAP.k1
 
   if (filterSquare) {
     const sq = SQUARE_MAP[filterSquare]
