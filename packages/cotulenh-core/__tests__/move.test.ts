@@ -477,6 +477,12 @@ describe('Generate Moves', () => {
   beforeEach(() => {
     game = setupGameBasic()
   })
+  test('should generate all possible moves from initial position', () => {
+    game.clear()
+    game = new CoTuLenh()
+    const moves = game.moves({ verbose: true }) as Move[]
+    expect(moves.length).toBe(116)
+  })
   test('should correctly filter moves by piece type', () => {
     const carried: Piece = { type: INFANTRY, color: RED }
     game.put({ type: TANK, color: RED, carrying: [carried] }, 'c2')

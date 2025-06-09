@@ -62,7 +62,7 @@ export type Square = SquareTuple
 // Corrected FEN based on user input and standard additions, updated turn to RED
 // NOTE: Engineer 'e' is not in this FEN. Needs clarification if it should be.
 export const DEFAULT_POSITION =
-  '6c4/1n2fh1hf2/3a2s2a1/2n1gt1tg2/2ie2m3i/11/11/2IE2M3I/2N1GT1TG2/3A2S2A1/1N2FH1HF2/6C4 r - - 0 1'
+  '6c4/1n2fh1hf2/3a2s2a1/2n1gt1tg2/2ie2m2ei/11/11/2IE2M2EI/2N1GT1TG2/3A2S2A1/1N2FH1HF2/6C4 r - - 0 1'
 
 export type Piece = {
   color: Color

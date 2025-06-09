@@ -476,15 +476,15 @@ describe('CoTuLenh.FEN', () => {
       const game = new CoTuLenh()
       game.move('Ik6')
       expect(game.fen()).toBe(
-        '6c4/1n2fh1hf2/3a2s2a1/2n1gt1tg2/2ie2m3i/11/10I/2IE2M4/2N1GT1TG2/3A2S2A1/1N2FH1HF2/6C4 b - - 1 1',
+        '6c4/1n2fh1hf2/3a2s2a1/2n1gt1tg2/2ie2m2ei/11/10I/2IE2M2E1/2N1GT1TG2/3A2S2A1/1N2FH1HF2/6C4 b - - 1 1',
       )
       game.move('Ik7')
       expect(game.fen()).toBe(
-        '6c4/1n2fh1hf2/3a2s2a1/2n1gt1tg2/2ie2m4/10i/10I/2IE2M4/2N1GT1TG2/3A2S2A1/1N2FH1HF2/6C4 r - - 2 2',
+        '6c4/1n2fh1hf2/3a2s2a1/2n1gt1tg2/2ie2m2e1/10i/10I/2IE2M2E1/2N1GT1TG2/3A2S2A1/1N2FH1HF2/6C4 r - - 2 2',
       )
       game.move('Ixk7')
       expect(game.fen()).toBe(
-        '6c4/1n2fh1hf2/3a2s2a1/2n1gt1tg2/2ie2m4/10I/11/2IE2M4/2N1GT1TG2/3A2S2A1/1N2FH1HF2/6C4 b - - 0 2',
+        '6c4/1n2fh1hf2/3a2s2a1/2n1gt1tg2/2ie2m2e1/10I/11/2IE2M2E1/2N1GT1TG2/3A2S2A1/1N2FH1HF2/6C4 b - - 0 2',
       )
     })
     it('should load a fen and return the same fen', () => {
