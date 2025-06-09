@@ -183,9 +183,11 @@ export function printBoard(board: Record<number, Piece | undefined>) {
       if (isBridge) {
         bgCode = piece ? '\x1b[43m' : '\x1b[47m' // Yellow if piece, White if empty
       } else if (isMixedZone) {
-        bgCode = '\x1b[48;5;231m' // Cyan
+        bgCode = '\x1b[48;5;194m' // Cyan
       } else if (isNavyZone) {
         bgCode = '\x1b[48;5;159m' // Blue
+      } else {
+        bgCode = '\x1b[48;5;255m' // Light Gray
       }
       // Pure Land zones have no bgCode
 
@@ -200,7 +202,7 @@ export function printBoard(board: Record<number, Piece | undefined>) {
     console.log(line)
     // Add a separator line between rank 7 (dr=7) and rank 6 (dr=6)
     if (dr === 7) {
-      console.log('   --------------------------------') // Adjust length as needed
+      console.log('   ---------------------------------') // Adjust length as needed
     }
   }
   // Update the file labels to align with the 2-character piece display
