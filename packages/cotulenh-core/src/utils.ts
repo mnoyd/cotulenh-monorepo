@@ -287,6 +287,59 @@ export function flattenPiece(piece: Piece): Piece[] {
   return [{ ...piece, carrying: undefined }, ...piece.carrying]
 }
 
+/**
+ * Creates all possible subsets of a piece stack.
+ * @param piece - The piece stack to create subsets from
+ * @returns An array of all possible subset pieces
+ */
+export function createAllPieceSubsets(piece: Piece): Piece[] {
+  // Flatten the piece stack into individual pieces
+  const flattenedPieces = flattenPiece(piece)
+
+  // If there's only one piece (no carrying pieces), return just that piece
+  if (flattenedPieces.length <= 1) return [piece]
+
+  // Generate all possible combinations of the flattened pieces
+  // Start with the original piece itself
+  const result: Piece[] = [piece]
+
+  // Generate all possible combinations using bit manipulation
+  const n = flattenedPieces.length
+  const totalCombinations = 1 << n // 2^n combinations
+
+  // Start from 1 to skip the empty set
+  // We're using a different approach to ensure we don't duplicate the original piece
+  for (let i = 1; i < totalCombinations; i++) {
+    // Skip the combination that would recreate the original piece
+    // The original piece is when all bits are set (all pieces included)
+    if (i === totalCombinations - 1) continue
+
+    const currentCombination: Piece[] = []
+
+    // Check each bit position
+    for (let j = 0; j < n; j++) {
+      // If jth bit is set, include the jth piece
+      if ((i & (1 << j)) !== 0) {
+        currentCombination.push(flattenedPieces[j])
+      }
+    }
+
+    // Create a stack from the current combination
+    if (currentCombination.length > 0) {
+      const { combined, uncombined } = createCombineStackFromPieces([
+        ...currentCombination,
+      ])
+      // Only add to result if combined exists and there are no uncombined pieces
+      // This ensures all pieces in the combination were successfully combined
+      if (combined && (!uncombined || uncombined.length === 0)) {
+        result.push(combined)
+      }
+    }
+  }
+
+  return result
+}
+
 export function getStepsBetweenSquares(
   square1: number,
   square2: number,
