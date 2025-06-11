@@ -28,10 +28,7 @@ import {
   CAPTURE_MASK,
 } from './type.js'
 
-import {
-  formStack,
-  createCombineStackFromPieces as genericCreateCombineStackFromPieces,
-} from '@repo/cotulenh-combine-piece'
+import { CombinePieceFactory } from '@repo/cotulenh-combine-piece'
 
 const symbolToRoleMap: Record<PieceSymbol, string> = {
   [COMMANDER]: 'commander',
@@ -70,22 +67,20 @@ export function getCoreTypeFromRole(role: string): PieceSymbol | undefined {
 export const getRoleFromCoreType = (piece: Piece): string =>
   symbolToRoleMap[piece.type]
 
+const combinePiece = new CombinePieceFactory(getRoleFromCoreType)
+
 export function createCombinedPiece(
   pieceFrom: Piece,
   pieceTo: Piece,
 ): Piece | null {
-  const combinedPiece = formStack<Piece>(
-    pieceFrom,
-    pieceTo,
-    getRoleFromCoreType,
-  )
+  const combinedPiece = combinePiece.formStack(pieceFrom, pieceTo)
   return combinedPiece
 }
 export function createCombineStackFromPieces(pieces: Piece[]): {
   combined: Piece | undefined
   uncombined: Piece[] | undefined
 } {
-  return genericCreateCombineStackFromPieces(pieces, getRoleFromCoreType)
+  return combinePiece.createCombineStackFromPieces(pieces)
 }
 
 export function getDisambiguator(

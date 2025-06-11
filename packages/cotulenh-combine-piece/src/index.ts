@@ -39,10 +39,6 @@ export const ROLE_TO_FLAG: Record<string, RoleBitFlag> = {
 export const HUMANLIKE_ROLES = ROLE_FLAGS.COMMANDER | ROLE_FLAGS.INFANTRY | ROLE_FLAGS.MILITIA;
 export const HEAVY_EQUIPMENT = ROLE_FLAGS.ARTILLERY | ROLE_FLAGS.ANTI_AIR | ROLE_FLAGS.MISSILE;
 
-// For backward compatibility
-export const humanlikeRoles: Role[] = ['commander', 'infantry', 'militia'];
-export const heavyEquipment: Role[] = ['artillery', 'anti_air', 'missile'];
-
 // New blueprint interface using bitwise flags
 export interface BitCarrierBlueprint {
   canCarryRoles: RoleBitFlag[]; // Each slot is represented by a bit flag
@@ -73,66 +69,6 @@ export const BLUEPRINTS: Record<string, BitCarrierBlueprint> = {
   }
 };
 
-// Keep the old interface for backward compatibility
-export interface CarrierBlueprint {
-  canCarryRoles: Role[][]; // 2D array: outer array = slots, inner array = allowed roles for that slot
-}
-
-// Define all carrier blueprints (legacy format)
-export const navyBlueprint: CarrierBlueprint = {
-  canCarryRoles: [
-    ['air_force'], // Slot 0: air_force
-    [...humanlikeRoles, 'tank'] // Slot 1: humanlike or tank
-  ]
-};
-
-export const tankBlueprint: CarrierBlueprint = {
-  canCarryRoles: [humanlikeRoles] // Slot 0: can carry humanlike role
-};
-
-export const engineerBlueprint: CarrierBlueprint = {
-  canCarryRoles: [heavyEquipment] // Slot 0: can carry heavy equipment
-};
-
-export const airForceBlueprint: CarrierBlueprint = {
-  canCarryRoles: [
-    ['tank'], // Slot 0: can carry tank
-    humanlikeRoles // Slot 1: can carry humanlike roles
-  ]
-};
-
-export const headquarterBlueprint: CarrierBlueprint = {
-  canCarryRoles: [['commander']] // Slot 0: can carry commander
-};
-
-// Export a mapping of roles to their blueprints (legacy format)
-export const carrierBlueprints: { [key: string]: CarrierBlueprint } = {
-  navy: navyBlueprint,
-  tank: tankBlueprint,
-  engineer: engineerBlueprint,
-  air_force: airForceBlueprint,
-  headquarter: headquarterBlueprint
-};
-
-// Helper function to check if a role can be carried in a slot
-export function canCarryRole(carrierRole: string, slotIndex: number, roleToCarry: string): boolean {
-  // Get the blueprint for this carrier
-  const blueprint = BLUEPRINTS[carrierRole];
-  if (!blueprint || slotIndex >= blueprint.canCarryRoles.length) {
-    return false;
-  }
-
-  // Get the bit flag for the role to carry
-  const roleFlag = ROLE_TO_FLAG[roleToCarry];
-  if (!roleFlag) {
-    return false;
-  }
-
-  // Check if the slot can carry this role using bitwise AND
-  // If the result is non-zero, the role is allowed
-  return (blueprint.canCarryRoles[slotIndex] & roleFlag) !== 0;
-}
-
 // Generic piece interface to work with both UI and Core
 export interface GenericPiece {
   color: string;
@@ -141,50 +77,127 @@ export interface GenericPiece {
 }
 
 /**
- * Forms a stack from two pieces according to blueprints
- * @param piece1 First piece or stack
- * @param piece2 Second piece or stack
- * @param getRoleFunc Function to extract role/type from a piece
- * @param mapRoleFunc Function to map role/type to blueprint key
- * @return The resulting stack if valid, null otherwise
+ * Utility functions for working with role flags
  */
-export function formStack<P extends GenericPiece>(
-  piece1: P,
-  piece2: P,
-  getRoleFunc: (piece: P) => string,
-  mapRoleFunc: (role: string) => string = (r) => r
-): P | null {
-  // Check if pieces have the same color
-  if (piece1.color !== piece2.color) {
-    return null; // Cannot combine pieces of different colors
+
+// Check if a role flag is part of a role group
+export function hasRole(roleGroup: RoleBitFlag, roleToCheck: RoleBitFlag): boolean {
+  return (roleGroup & roleToCheck) !== 0;
+}
+
+// Add a role to a role group
+export function addRole(roleGroup: RoleBitFlag, roleToAdd: RoleBitFlag): RoleBitFlag {
+  return roleGroup | roleToAdd;
+}
+
+// Remove a role from a role group
+export function removeRole(roleGroup: RoleBitFlag, roleToRemove: RoleBitFlag): RoleBitFlag {
+  return roleGroup & ~roleToRemove;
+}
+
+/**
+ * Factory class for creating and combining pieces
+ */
+export class CombinePieceFactory<P extends GenericPiece> {
+  private readonly getRoleFunc: (piece: P) => string;
+  private readonly mapRoleFunc: (role: string) => string;
+
+  /**
+   * Creates a new CombinePieceFactory with the specified role functions
+   * @param getRoleFunc Function to extract role/type from a piece
+   * @param mapRoleFunc Function to map role/type to blueprint key
+   */
+  constructor(getRoleFunc: (piece: P) => string, mapRoleFunc: (role: string) => string = (r) => r) {
+    this.getRoleFunc = getRoleFunc;
+    this.mapRoleFunc = mapRoleFunc;
   }
 
-  // First, flatten both stacks to get individual pieces
-  const flattenedPieces1 = flattenStack(piece1);
-  const flattenedPieces2 = flattenStack(piece2);
+  /**
+   * Forms a stack from two pieces according to blueprints
+   * @param piece1 First piece or stack
+   * @param piece2 Second piece or stack
+   * @return The resulting stack if valid, null otherwise
+   */
+  formStack(piece1: P, piece2: P): P | null {
+    // Check if pieces have the same color
+    if (piece1.color !== piece2.color) {
+      return null; // Cannot combine pieces of different colors
+    }
 
-  // Combine all pieces
-  const allPieces = [...flattenedPieces1, ...flattenedPieces2];
+    // First, flatten both stacks to get individual pieces
+    const flattenedPieces1 = this.flattenStack(piece1);
+    const flattenedPieces2 = this.flattenStack(piece2);
 
-  // Find carrier
-  const carrier = determineCarrier(allPieces, getRoleFunc, mapRoleFunc);
-  if (!carrier) {
-    return null; // No valid carrier found among the pieces
+    // Combine all pieces
+    const allPieces = [...flattenedPieces1, ...flattenedPieces2];
+
+    // Determine the carrier
+    const carrier = this.determineCarrier(allPieces);
+    if (!carrier) {
+      return null; // No valid carrier found among the pieces
+    }
+
+    // Check if remaining pieces can be carried by the carrier
+    const piecesToCarry = allPieces.filter((p) => p !== carrier);
+
+    // Try to assign pieces to carrier's slots
+    return this.assignPiecesToCarrier(carrier, piecesToCarry);
   }
 
-  // Check if remaining pieces can be carrying by the carrier
-  const piecesToCarry = allPieces.filter((p) => p !== carrier);
+  /**
+   * Creates a combined stack from an array of pieces by iteratively combining them
+   * @param pieces Array of pieces to combine
+   * @return Object containing combined stack and uncombined pieces
+   */
+  createCombineStackFromPieces(pieces: P[]): {
+    combined: P | undefined;
+    uncombined: P[] | undefined;
+  } {
+    if (!pieces || pieces.length === 0) return { combined: undefined, uncombined: undefined };
+    if (pieces.length === 1) return { combined: pieces[0], uncombined: undefined };
 
-  // Try to assign pieces to carrier's slots
-  const result = assignPiecesToCarrier(carrier, piecesToCarry, getRoleFunc, mapRoleFunc);
-  return result;
+    // Use a bit mask to track which pieces have been combined
+    let uncombinedMask = 0;
 
-  // Helper functions within closure for cleaner interface
+    // Start with the first piece as our accumulator
+    let combinedPiece = pieces[0];
+
+    // Try to combine each subsequent piece
+    for (let i = 1; i < pieces.length; i++) {
+      const currentPiece = pieces[i];
+      const newCombined = this.formStack(combinedPiece, currentPiece);
+
+      if (newCombined) {
+        // Successfully combined
+        combinedPiece = newCombined;
+      } else {
+        // Mark this piece as uncombined using addRole utility
+        uncombinedMask = addRole(uncombinedMask, 1 << i);
+      }
+    }
+
+    // Extract uncombined pieces using the bit mask
+    const uncombined: P[] = [];
+    if (uncombinedMask !== 0) {
+      for (let i = 1; i < pieces.length; i++) {
+        // Check if this piece is uncombined using hasRole utility
+        if (hasRole(uncombinedMask, 1 << i)) {
+          uncombined.push(pieces[i]);
+        }
+      }
+    }
+
+    return {
+      combined: combinedPiece,
+      uncombined: uncombined.length > 0 ? uncombined : undefined
+    };
+  }
 
   /**
    * Flattens a stack into individual pieces
+   * @private
    */
-  function flattenStack(piece: P): P[] {
+  private flattenStack(piece: P): P[] {
     // Create a new piece without carrying pieces
     const clonedPiece = { ...piece } as P;
     delete (clonedPiece as any).carrying;
@@ -195,7 +208,7 @@ export function formStack<P extends GenericPiece>(
     // Add all carrying pieces
     if (piece.carrying && piece.carrying.length > 0) {
       for (const carryingPiece of piece.carrying as P[]) {
-        result.push(...flattenStack(carryingPiece));
+        result.push(...this.flattenStack(carryingPiece));
       }
     }
 
@@ -204,18 +217,27 @@ export function formStack<P extends GenericPiece>(
 
   /**
    * Determines which piece should be the carrier from a collection of pieces
+   * @private
    */
-  function determineCarrier(
-    pieces: P[],
-    getRoleFunc: (piece: P) => string,
-    mapRoleFunc: (role: string) => string
-  ): P | null {
-    // First, identify all potential carriers
-    const potentialCarriers = pieces.filter((piece) => {
-      const role = getRoleFunc(piece);
-      const mappedRole = mapRoleFunc(role);
-      return carrierBlueprints[mappedRole] !== undefined;
-    });
+  private determineCarrier(pieces: P[]): P | null {
+    // First, identify all potential carriers with their role flags
+    const potentialCarriers: Array<{ piece: P; roleFlag: number; roleName: string }> = [];
+
+    // Build a list of potential carriers with their role information
+    for (const piece of pieces) {
+      const role = this.getRoleFunc(piece);
+      const mappedRole = this.mapRoleFunc(role);
+      const roleFlag = ROLE_TO_FLAG[mappedRole];
+
+      // Check if this role can be a carrier
+      if (BLUEPRINTS[mappedRole]) {
+        potentialCarriers.push({
+          piece,
+          roleFlag,
+          roleName: mappedRole
+        });
+      }
+    }
 
     if (potentialCarriers.length === 0) {
       return null; // No carrier found
@@ -223,27 +245,57 @@ export function formStack<P extends GenericPiece>(
 
     // If only one potential carrier, it's the carrier
     if (potentialCarriers.length === 1) {
-      return potentialCarriers[0];
+      return potentialCarriers[0].piece;
     }
 
-    // Multiple potential carriers - determine hierarchy
-    for (let i = 0; i < potentialCarriers.length; i++) {
-      const candidateCarrier = potentialCarriers[i];
-      const candidateRole = mapRoleFunc(getRoleFunc(candidateCarrier));
-      const blueprint = carrierBlueprints[candidateRole];
+    // Create a bit mask of all potential carrier roles for quick lookups
+    let allCarrierRolesMask = 0;
+    for (const carrier of potentialCarriers) {
+      // Use addRole utility to build the mask
+      allCarrierRolesMask = addRole(allCarrierRolesMask, carrier.roleFlag);
+    }
+
+    // Multiple potential carriers - determine hierarchy using bitwise operations
+    for (const candidateCarrier of potentialCarriers) {
+      const blueprint = BLUEPRINTS[candidateCarrier.roleName];
+
+      // Check if this candidate can carry all other potential carriers
+      let canCarryAllRolesMask = 0;
+
+      // Combine all roles this carrier can carry across all slots
+      for (const slotRoles of blueprint.canCarryRoles) {
+        canCarryAllRolesMask = addRole(canCarryAllRolesMask, slotRoles);
+      }
+
+      // Check if this carrier can carry all other carriers
+      // by comparing with the mask of all other carrier roles
+      // We need to remove this carrier's own role from the check
+      const otherCarriersMask = removeRole(allCarrierRolesMask, candidateCarrier.roleFlag);
+
+      // If all bits in otherCarriersMask are also set in canCarryAllRolesMask,
+      // then this carrier can carry all other carriers
+      if ((otherCarriersMask & canCarryAllRolesMask) === otherCarriersMask) {
+        return candidateCarrier.piece;
+      }
+    }
+
+    // If we need more precise slot assignment checking:
+    for (const candidateCarrier of potentialCarriers) {
+      const blueprint = BLUEPRINTS[candidateCarrier.roleName];
 
       // Check if this candidate can be the carrier for all other potential carriers
-      const canCarryAll = potentialCarriers.every((potentialCarrying, j) => {
-        if (i === j) return true; // Skip self
-
-        const carryingRole = mapRoleFunc(getRoleFunc(potentialCarrying));
+      const canCarryAll = potentialCarriers.every((potentialCarrying) => {
+        // Skip self comparison
+        if (potentialCarrying === candidateCarrier) return true;
 
         // Check if candidateCarrier can carry potentialCarrying in any slot
-        return blueprint.canCarryRoles.some((slotRoles) => slotRoles.includes(carryingRole));
+        return blueprint.canCarryRoles.some((slotRoles) =>
+          hasRole(slotRoles, potentialCarrying.roleFlag)
+        );
       });
 
       if (canCarryAll) {
-        return candidateCarrier;
+        return candidateCarrier.piece;
       }
     }
 
@@ -252,14 +304,10 @@ export function formStack<P extends GenericPiece>(
 
   /**
    * Attempts to assign pieces to a carrier's slots according to blueprint
+   * @private
    */
-  function assignPiecesToCarrier(
-    carrier: P,
-    piecesToCarry: P[],
-    getRoleFunc: (piece: P) => string,
-    mapRoleFunc: (role: string) => string
-  ): P | null {
-    const carrierRole = mapRoleFunc(getRoleFunc(carrier));
+  private assignPiecesToCarrier(carrier: P, piecesToCarry: P[]): P | null {
+    const carrierRole = this.mapRoleFunc(this.getRoleFunc(carrier));
     const blueprint = BLUEPRINTS[carrierRole];
 
     if (!blueprint) {
@@ -272,34 +320,41 @@ export function formStack<P extends GenericPiece>(
     // Track filled slots and which pieces are in which slots
     const slotAssignments: { [slotIndex: number]: P[] } = {};
 
+    // Track which slots are already filled using a bit mask
+    let filledSlotsMask = 0;
+
     // For each piece we need to carry, find a valid slot
     for (const piece of piecesToCarry) {
-      let assigned = false;
-      const pieceRole = mapRoleFunc(getRoleFunc(piece));
+      const pieceRole = this.mapRoleFunc(this.getRoleFunc(piece));
       const pieceRoleFlag = ROLE_TO_FLAG[pieceRole];
 
       if (!pieceRoleFlag) continue; // Skip if role has no bit flag
 
+      let assigned = false;
+
       // Check each slot in the blueprint
       for (let slotIndex = 0; slotIndex < blueprint.canCarryRoles.length; slotIndex++) {
+        // Skip already filled slots using hasRole utility
+        if (hasRole(filledSlotsMask, 1 << slotIndex)) continue;
+
         const slotRoleFlags = blueprint.canCarryRoles[slotIndex];
 
-        // Check if this piece's role is allowed in this slot using bitwise AND
-        if ((slotRoleFlags & pieceRoleFlag) !== 0) {
-          // Check if this slot is already filled
-          if (!slotAssignments[slotIndex]) {
-            // Assign piece to this slot (only one allowed)
-            slotAssignments[slotIndex] = [piece];
+        // Check if this piece's role is allowed in this slot using hasRole utility
+        if (hasRole(slotRoleFlags, pieceRoleFlag)) {
+          // Assign piece to this slot
+          slotAssignments[slotIndex] = [piece];
 
-            // Remove piece from remaining pieces
-            const pieceIndex = remainingPieces.indexOf(piece);
-            if (pieceIndex > -1) {
-              remainingPieces.splice(pieceIndex, 1);
-            }
+          // Mark this slot as filled using addRole utility
+          filledSlotsMask = addRole(filledSlotsMask, 1 << slotIndex);
 
-            assigned = true;
-            break;
+          // Remove piece from remaining pieces
+          const pieceIndex = remainingPieces.indexOf(piece);
+          if (pieceIndex > -1) {
+            remainingPieces.splice(pieceIndex, 1);
           }
+
+          assigned = true;
+          break;
         }
       }
 
@@ -313,8 +368,12 @@ export function formStack<P extends GenericPiece>(
     if (remainingPieces.length === 0) {
       // Flatten slot assignments into a single carrying array
       const carryingPieces: P[] = [];
-      for (const slotIndex in slotAssignments) {
-        carryingPieces.push(...slotAssignments[slotIndex]);
+
+      // Use hasRole utility to iterate through filled slots
+      for (let slotIndex = 0; slotIndex < blueprint.canCarryRoles.length; slotIndex++) {
+        if (hasRole(filledSlotsMask, 1 << slotIndex) && slotAssignments[slotIndex]) {
+          carryingPieces.push(...slotAssignments[slotIndex]);
+        }
       }
 
       // Return carrier with carrying pieces
@@ -324,41 +383,4 @@ export function formStack<P extends GenericPiece>(
 
     return null; // Some pieces couldn't be assigned
   }
-}
-
-/**
- * Creates a combined stack from an array of pieces by iteratively combining them
- * @param pieces Array of pieces to combine
- * @param getRoleFunc Function to extract role/type from a piece
- * @param mapRoleFunc Function to map role/type to blueprint key
- * @return Object containing the combined piece (if successful) and array of pieces that couldn't be combined
- */
-export function createCombineStackFromPieces<P extends GenericPiece>(
-  pieces: P[],
-  getRoleFunc: (piece: P) => string,
-  mapRoleFunc: (role: string) => string = (r) => r
-): {
-  combined: P | undefined;
-  uncombined: P[] | undefined;
-} {
-  if (!pieces || pieces.length === 0) return { combined: undefined, uncombined: undefined };
-  if (pieces.length === 1) return { combined: pieces[0], uncombined: undefined };
-
-  const uncombined: P[] = [];
-  const piece = pieces.reduce((acc, p) => {
-    if (!acc) return p;
-
-    // Try to combine the accumulated piece with the current piece
-    const combined = formStack(acc, p, getRoleFunc, mapRoleFunc);
-    if (!combined) {
-      uncombined.push(p);
-      return acc;
-    }
-    return combined;
-  }, pieces[0]);
-
-  return {
-    combined: piece,
-    uncombined: uncombined.length > 0 ? uncombined.splice(1) : undefined
-  };
 }

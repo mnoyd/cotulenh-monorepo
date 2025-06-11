@@ -6,10 +6,7 @@ import * as board from './board.js';
 import * as util from './util.js';
 import * as drag from './drag.js';
 
-import {
-  formStack,
-  createCombineStackFromPieces as genericCreateCombineStackFromPieces,
-} from '@repo/cotulenh-combine-piece';
+import { CombinePieceFactory } from '@repo/cotulenh-combine-piece';
 import { createEl } from './util.js';
 import { createAmbigousModeHandling } from './popup/ambigous-move.js';
 import { userMove } from './board.js';
@@ -17,6 +14,10 @@ import { userMove } from './board.js';
 const END_MOVE = 'end-move';
 type EndMove = typeof END_MOVE;
 
+const combinePieceFactory = new CombinePieceFactory(
+  p => p.role,
+  r => r,
+);
 /**
  * Attempts to combine two pieces into a stack
  * @param origPiece The piece being moved/dragged
@@ -27,13 +28,8 @@ export function tryCombinePieces(origPiece: cg.Piece, destPiece: cg.Piece): cg.P
   if (!origPiece || !destPiece) return undefined;
 
   try {
-    const combined = formStack(
-      origPiece,
-      destPiece,
-      p => p.role,
-      r => r,
-    );
-    return combined ?? undefined;
+    const combined = combinePieceFactory.formStack(origPiece, destPiece);
+    return (combined as cg.Piece) ?? undefined;
   } catch (error) {
     console.error('Error combining pieces:', error);
     return undefined;
@@ -45,11 +41,11 @@ export function createCombineStackFromPieces(pieces: cg.Piece[]): {
   uncombined: cg.Piece[] | undefined;
 } {
   // Use the generic function from cotulenh-combine-piece package
-  return genericCreateCombineStackFromPieces(
-    pieces,
-    p => p.role,
-    r => r,
-  );
+  const result = combinePieceFactory.createCombineStackFromPieces(pieces);
+  return {
+    combined: result.combined as cg.Piece | undefined,
+    uncombined: result.uncombined as cg.Piece[] | undefined,
+  };
 }
 
 export const COMBINED_PIECE_POPUP_TYPE = 'combined-piece';

@@ -1,4 +1,4 @@
-import { formStack, GenericPiece } from '../src/index.js'; // Adjust path if needed
+import { CombinePieceFactory, GenericPiece } from '../src/index.js'; // Adjust path if needed
 
 // --- Generic Piece Requirement (Assuming formStack needs at least an ID) ---
 // If GenericPiece from '../src/index.js' has more requirements, adjust accordingly.
@@ -119,6 +119,9 @@ function runFormStackTests<T extends TestablePiece>(
   createPiece: (roleName: string, idSuffix: string, color?: any) => T
 ) {
   describe(description, () => {
+    // Create a factory instance for all tests
+    const factory = new CombinePieceFactory<T>(getRoleFn);
+
     // Create test pieces using the appropriate helper
     const tank1 = createPiece('tank', '1');
     const infantry1 = createPiece('infantry', '1');
@@ -138,10 +141,10 @@ function runFormStackTests<T extends TestablePiece>(
       carrying: [createPiece('artillery', 'ea')]
     };
 
-    // --- Test Cases (using getRoleFn and pieces of type T) ---
+    // --- Test Cases (using factory and pieces of type T) ---
 
     it('should stack infantry onto a tank', () => {
-      const result = formStack(tank1, infantry1, getRoleFn);
+      const result = factory.formStack(tank1, infantry1);
       // Use expect.objectContaining to avoid matching irrelevant properties like color, type/role
       expect(result).toEqual(
         expect.objectContaining({
@@ -152,7 +155,7 @@ function runFormStackTests<T extends TestablePiece>(
     });
 
     it('should stack commander onto a headquarter', () => {
-      const result = formStack(headquarter1, commander1, getRoleFn);
+      const result = factory.formStack(headquarter1, commander1);
       expect(result).toEqual(
         expect.objectContaining({
           ...headquarter1,
@@ -162,7 +165,7 @@ function runFormStackTests<T extends TestablePiece>(
     });
 
     it('should stack artillery onto an engineer', () => {
-      const result = formStack(engineer1, artillery1, getRoleFn);
+      const result = factory.formStack(engineer1, artillery1);
       expect(result).toEqual(
         expect.objectContaining({
           ...engineer1,
@@ -177,7 +180,7 @@ function runFormStackTests<T extends TestablePiece>(
         ...createPiece('tank', 'ti_af'), // Use unique ID suffix
         carrying: [createPiece('infantry', 'ti_af')]
       };
-      const result = formStack(airforce1, localTankWithInfantry, getRoleFn);
+      const result = factory.formStack(airforce1, localTankWithInfantry);
       // Note: flattenStack extracts infantry1, so it's carrying directly by airforce1
       expect(result).toEqual(
         expect.objectContaining({
@@ -198,7 +201,7 @@ function runFormStackTests<T extends TestablePiece>(
         ...createPiece('air_force', 'at_nv'), // Use unique ID suffix
         carrying: [createPiece('tank', 'at_nv')]
       };
-      const result = formStack(navy1, localAirforceWithTank, getRoleFn);
+      const result = factory.formStack(navy1, localAirforceWithTank);
       expect(result).toEqual(
         expect.objectContaining({
           ...navy1,
@@ -213,7 +216,7 @@ function runFormStackTests<T extends TestablePiece>(
 
     it('should correctly identify carrier and stack (infantry and tank)', () => {
       // Test stacking infantry onto tank
-      const result1 = formStack(infantry1, tank1, getRoleFn);
+      const result1 = factory.formStack(infantry1, tank1);
       expect(result1).toEqual(
         expect.objectContaining({
           ...tank1, // Tank should be the carrier
@@ -222,7 +225,7 @@ function runFormStackTests<T extends TestablePiece>(
       );
 
       // Test stacking tank onto infantry (should still result in tank carrying infantry)
-      const result2 = formStack(tank1, infantry1, getRoleFn);
+      const result2 = factory.formStack(tank1, infantry1);
       expect(result2).toEqual(
         expect.objectContaining({
           ...tank1, // Tank should be the carrier
@@ -236,12 +239,12 @@ function runFormStackTests<T extends TestablePiece>(
       const commander = createPiece('commander', 'c');
       const infantry = createPiece('infantry', 'i');
       // Try to stack commander first, then infantry
-      const withCommander = formStack(airforce, commander, getRoleFn);
-      const result = withCommander ? formStack(withCommander, infantry, getRoleFn) : null;
+      const withCommander = factory.formStack(airforce, commander);
+      const result = withCommander ? factory.formStack(withCommander, infantry) : null;
       expect(result).toBeNull();
       // Try to stack infantry first, then commander
-      const withInfantry = formStack(airforce, infantry, getRoleFn);
-      const result2 = withInfantry ? formStack(withInfantry, commander, getRoleFn) : null;
+      const withInfantry = factory.formStack(airforce, infantry);
+      const result2 = withInfantry ? factory.formStack(withInfantry, commander) : null;
       expect(result2).toBeNull();
     });
 
@@ -251,25 +254,25 @@ function runFormStackTests<T extends TestablePiece>(
         carrying: [createPiece('anti_air', 'ea_aa')]
       };
       const artillery = createPiece('artillery', 'ea_aa');
-      const result = formStack(engineerWithAntiAir, artillery, getRoleFn);
+      const result = factory.formStack(engineerWithAntiAir, artillery);
       expect(result).toBeNull();
     });
 
     it('should return null if a piece cannot fit (engineer carrying commander)', () => {
-      const result = formStack(engineer1, commander1, getRoleFn);
+      const result = factory.formStack(engineer1, commander1);
       expect(result).toBeNull();
     });
 
     it('should return null if a slot is already filled with the same role (airforce carrying two tanks)', () => {
       // Create airforce already carrying one tank
       const airforceWithTank1 = { ...airforce1, carrying: [tank1] };
-      const result = formStack(airforceWithTank1, tank2, getRoleFn);
+      const result = factory.formStack(airforceWithTank1, tank2);
       expect(result).toBeNull(); // Cannot carry two tanks
     });
 
     it('should correctly determine carrier when stacking two potential carriers (navy and airforce)', () => {
       // Navy can carry airforce
-      const result = formStack(navy1, airforce1, getRoleFn);
+      const result = factory.formStack(navy1, airforce1);
       expect(result).toEqual(
         expect.objectContaining({
           ...navy1,
@@ -280,7 +283,7 @@ function runFormStackTests<T extends TestablePiece>(
 
     it('should correctly determine carrier when stacking two potential carriers (airforce and tank)', () => {
       // Airforce can carry tank
-      const result = formStack(airforce1, tank1, getRoleFn);
+      const result = factory.formStack(airforce1, tank1);
       expect(result).toEqual(
         expect.objectContaining({
           ...airforce1,
@@ -290,7 +293,7 @@ function runFormStackTests<T extends TestablePiece>(
     });
 
     it('should return null when stacking two carriers where neither can carry the other (tank and engineer)', () => {
-      const result = formStack(tank1, engineer1, getRoleFn);
+      const result = factory.formStack(tank1, engineer1);
       expect(result).toBeNull();
     });
 
@@ -306,12 +309,12 @@ function runFormStackTests<T extends TestablePiece>(
       };
 
       // Try stacking engineer+artillery onto tank+infantry -> should fail (tank cannot carry engineer/artillery)
-      const result1 = formStack(localTankWithInfantry, localEngineerWithArtillery, getRoleFn);
+      const result1 = factory.formStack(localTankWithInfantry, localEngineerWithArtillery);
       expect(result1).toBeNull();
 
       // Try stacking tank+infantry onto airforce
       const airforceBase = createPiece('air_force', 'af_base');
-      const result2 = formStack(airforceBase, localTankWithInfantry, getRoleFn);
+      const result2 = factory.formStack(airforceBase, localTankWithInfantry);
       expect(result2).toEqual(
         expect.objectContaining({
           ...airforceBase,
@@ -336,11 +339,11 @@ function runFormStackTests<T extends TestablePiece>(
       const engineerWithArtillery: T = { ...engineerComplex, carrying: [artilleryComplex] };
 
       // Stack engineer+artillery onto navy first -> should fail
-      const navyWithEngineer = formStack(navyComplex, engineerWithArtillery, getRoleFn);
+      const navyWithEngineer = factory.formStack(navyComplex, engineerWithArtillery);
       expect(navyWithEngineer).toBeNull(); // Navy cannot carry engineer or artillery
 
       // Stack airforce+tank onto navy
-      const navyWithAirforceAndTank = formStack(navyComplex, airforceWithTank, getRoleFn);
+      const navyWithAirforceAndTank = factory.formStack(navyComplex, airforceWithTank);
       expect(navyWithAirforceAndTank).toEqual(
         expect.objectContaining({
           ...navyComplex,
@@ -355,11 +358,7 @@ function runFormStackTests<T extends TestablePiece>(
       // Now try to stack the engineer+artillery onto the navy+airforce+tank stack
       // This involves flattening everything: navy, airforce, tank, engineer, artillery
       // Navy should be carrier. Can carry airforce (slot 0), tank (slot 1). Cannot carry engineer or artillery.
-      const finalStackAttempt = formStack(
-        navyWithAirforceAndTank!,
-        engineerWithArtillery,
-        getRoleFn
-      );
+      const finalStackAttempt = factory.formStack(navyWithAirforceAndTank!, engineerWithArtillery);
       expect(finalStackAttempt).toBeNull(); // Should fail because engineer/artillery cannot be carrying by navy
     });
   });
