@@ -1,18 +1,84 @@
 // File: packages/create-combine/src/blueprints.ts
 // This file contains the blueprint definitions
 
-// Let's assume we're using string literals for roles to work across both repos
-export type Role = string;
+// Define roles as bit flags instead of strings
+export type Role = string; // Keep for backward compatibility
+export type RoleBitFlag = number; // New type for bitwise operations
 
+// Define role bit flags
+export const ROLE_FLAGS = {
+  COMMANDER: 1 << 0, // 0000001 (1)
+  INFANTRY: 1 << 1, // 0000010 (2)
+  MILITIA: 1 << 2, // 0000100 (4)
+  ARTILLERY: 1 << 3, // 0001000 (8)
+  ANTI_AIR: 1 << 4, // 0010000 (16)
+  MISSILE: 1 << 5, // 0100000 (32)
+  TANK: 1 << 6, // 1000000 (64)
+  AIR_FORCE: 1 << 7, // 10000000 (128)
+  ENGINEER: 1 << 8, // 100000000 (256)
+  NAVY: 1 << 9, // 1000000000 (512)
+  HEADQUARTER: 1 << 10 // 10000000000 (1024)
+};
+
+// Role mapping from string to bit flag
+export const ROLE_TO_FLAG: Record<string, RoleBitFlag> = {
+  commander: ROLE_FLAGS.COMMANDER,
+  infantry: ROLE_FLAGS.INFANTRY,
+  militia: ROLE_FLAGS.MILITIA,
+  artillery: ROLE_FLAGS.ARTILLERY,
+  anti_air: ROLE_FLAGS.ANTI_AIR,
+  missile: ROLE_FLAGS.MISSILE,
+  tank: ROLE_FLAGS.TANK,
+  air_force: ROLE_FLAGS.AIR_FORCE,
+  engineer: ROLE_FLAGS.ENGINEER,
+  navy: ROLE_FLAGS.NAVY,
+  headquarter: ROLE_FLAGS.HEADQUARTER
+};
+
+// Role groups using bitwise OR
+export const HUMANLIKE_ROLES = ROLE_FLAGS.COMMANDER | ROLE_FLAGS.INFANTRY | ROLE_FLAGS.MILITIA;
+export const HEAVY_EQUIPMENT = ROLE_FLAGS.ARTILLERY | ROLE_FLAGS.ANTI_AIR | ROLE_FLAGS.MISSILE;
+
+// For backward compatibility
+export const humanlikeRoles: Role[] = ['commander', 'infantry', 'militia'];
+export const heavyEquipment: Role[] = ['artillery', 'anti_air', 'missile'];
+
+// New blueprint interface using bitwise flags
+export interface BitCarrierBlueprint {
+  canCarryRoles: RoleBitFlag[]; // Each slot is represented by a bit flag
+}
+
+// Define all carrier blueprints using bit flags
+export const BLUEPRINTS: Record<string, BitCarrierBlueprint> = {
+  navy: {
+    canCarryRoles: [
+      ROLE_FLAGS.AIR_FORCE, // Slot 0: air_force only
+      HUMANLIKE_ROLES | ROLE_FLAGS.TANK // Slot 1: humanlike or tank
+    ]
+  },
+  tank: {
+    canCarryRoles: [HUMANLIKE_ROLES] // Slot 0: humanlike roles only
+  },
+  engineer: {
+    canCarryRoles: [HEAVY_EQUIPMENT] // Slot 0: heavy equipment only
+  },
+  air_force: {
+    canCarryRoles: [
+      ROLE_FLAGS.TANK, // Slot 0: tank only
+      HUMANLIKE_ROLES // Slot 1: humanlike roles
+    ]
+  },
+  headquarter: {
+    canCarryRoles: [ROLE_FLAGS.COMMANDER] // Slot 0: commander only
+  }
+};
+
+// Keep the old interface for backward compatibility
 export interface CarrierBlueprint {
   canCarryRoles: Role[][]; // 2D array: outer array = slots, inner array = allowed roles for that slot
 }
 
-// Define roles used in blueprints
-export const humanlikeRoles: Role[] = ['commander', 'infantry', 'militia'];
-export const heavyEquipment: Role[] = ['artillery', 'anti_air', 'missile'];
-
-// Define all carrier blueprints
+// Define all carrier blueprints (legacy format)
 export const navyBlueprint: CarrierBlueprint = {
   canCarryRoles: [
     ['air_force'], // Slot 0: air_force
@@ -39,7 +105,7 @@ export const headquarterBlueprint: CarrierBlueprint = {
   canCarryRoles: [['commander']] // Slot 0: can carry commander
 };
 
-// Export a mapping of roles to their blueprints
+// Export a mapping of roles to their blueprints (legacy format)
 export const carrierBlueprints: { [key: string]: CarrierBlueprint } = {
   navy: navyBlueprint,
   tank: tankBlueprint,
@@ -47,6 +113,25 @@ export const carrierBlueprints: { [key: string]: CarrierBlueprint } = {
   air_force: airForceBlueprint,
   headquarter: headquarterBlueprint
 };
+
+// Helper function to check if a role can be carried in a slot
+export function canCarryRole(carrierRole: string, slotIndex: number, roleToCarry: string): boolean {
+  // Get the blueprint for this carrier
+  const blueprint = BLUEPRINTS[carrierRole];
+  if (!blueprint || slotIndex >= blueprint.canCarryRoles.length) {
+    return false;
+  }
+
+  // Get the bit flag for the role to carry
+  const roleFlag = ROLE_TO_FLAG[roleToCarry];
+  if (!roleFlag) {
+    return false;
+  }
+
+  // Check if the slot can carry this role using bitwise AND
+  // If the result is non-zero, the role is allowed
+  return (blueprint.canCarryRoles[slotIndex] & roleFlag) !== 0;
+}
 
 // Generic piece interface to work with both UI and Core
 export interface GenericPiece {
@@ -175,7 +260,7 @@ export function formStack<P extends GenericPiece>(
     mapRoleFunc: (role: string) => string
   ): P | null {
     const carrierRole = mapRoleFunc(getRoleFunc(carrier));
-    const blueprint = carrierBlueprints[carrierRole];
+    const blueprint = BLUEPRINTS[carrierRole];
 
     if (!blueprint) {
       return null; // No blueprint for this carrier
@@ -191,13 +276,16 @@ export function formStack<P extends GenericPiece>(
     for (const piece of piecesToCarry) {
       let assigned = false;
       const pieceRole = mapRoleFunc(getRoleFunc(piece));
+      const pieceRoleFlag = ROLE_TO_FLAG[pieceRole];
+
+      if (!pieceRoleFlag) continue; // Skip if role has no bit flag
 
       // Check each slot in the blueprint
       for (let slotIndex = 0; slotIndex < blueprint.canCarryRoles.length; slotIndex++) {
-        const allowedRoles = blueprint.canCarryRoles[slotIndex];
+        const slotRoleFlags = blueprint.canCarryRoles[slotIndex];
 
-        // Check if this piece's role is allowed in this slot
-        if (allowedRoles.includes(pieceRole)) {
+        // Check if this piece's role is allowed in this slot using bitwise AND
+        if ((slotRoleFlags & pieceRoleFlag) !== 0) {
           // Check if this slot is already filled
           if (!slotAssignments[slotIndex]) {
             // Assign piece to this slot (only one allowed)
