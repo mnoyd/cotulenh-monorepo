@@ -294,7 +294,7 @@ export function generateMovesInDirection(
           currentRange <= config.moveRange &&
           !terrainBlockedMovement &&
           !pieceBlockedMovement &&
-          canLandOnSquare(to, combinedPiece.type)
+          canStayOnSquare(to, combinedPiece.type)
         ) {
           addMove(moves, us, from, to, pieceData, targetPiece, BITS.COMBINATION)
         }
@@ -323,7 +323,7 @@ export function generateMovesInDirection(
         currentRange <= config.moveRange &&
         !terrainBlockedMovement &&
         !pieceBlockedMovement &&
-        canLandOnSquare(to, pieceData.type) &&
+        canStayOnSquare(to, pieceData.type) &&
         (pieceData.type === AIR_FORCE ? !firstAirInflunceZone : true)
       ) {
         // Commander cannot slide past where an enemy commander *would* be captured
@@ -457,7 +457,7 @@ function handleCaptureLogic(
     }
   }
 
-  const canLand = canLandOnSquare(to, pieceData.type)
+  const canLand = canStayOnSquare(to, pieceData.type)
   if (!canLand) {
     addStayCapture = true
     addNormalCapture = false
@@ -523,6 +523,67 @@ function isHeavyZone(sq: number): 0 | 1 | 2 {
   if (f < 2) return 0 // Not in heavy zone
 
   return r <= 5 ? 1 : 2 // 1 = upper half, 2 = lower half
+}
+
+/**
+ * Generate move candidates for each individual piece in a stack
+ *
+ * @param gameInstance - The current game instance
+ * @param stackSquare - The square where the stack is located (in internal 0xf0 format)
+ * @returns A map where keys are piece types and values are arrays of valid moves
+ */
+export function generateMoveCandidateForSinglePieceInStack(
+  gameInstance: CoTuLenh,
+  stackSquare: number,
+): Map<PieceSymbol, InternalMove[]> {
+  const moveMap = new Map<PieceSymbol, InternalMove[]>()
+  const us = gameInstance.turn()
+
+  // Get the piece stack at the specified square
+  const pieceStack = gameInstance.get(stackSquare)
+  if (!pieceStack || pieceStack.color !== us) {
+    return moveMap
+  }
+
+  // Flatten the piece stack into individual pieces
+  const flattenedPieces = flattenPiece(pieceStack)
+
+  // Generate moves for each individual piece in the stack
+  for (const piece of flattenedPieces) {
+    // Save the current deploy state
+    const originalDeployState = gameInstance.getDeployState()
+
+    // Set a temporary deploy state to generate moves for this piece
+    gameInstance.setDeployState({
+      stackSquare,
+      originalPiece: pieceStack,
+      turn: us,
+      movedPieces: [],
+    })
+
+    // Generate moves for this piece
+    const pieceMoves = generateMovesForPiece(
+      gameInstance,
+      stackSquare,
+      piece,
+      true, // isDeployMove = true
+    )
+
+    // Add the DEPLOY flag to each move
+    pieceMoves.forEach((move) => {
+      move.flags |= BITS.DEPLOY
+    })
+
+    // Add the moves to our map, keyed by piece type
+    if (pieceMoves.length > 0) {
+      moveMap.set(piece.type, pieceMoves)
+    }
+
+    // Restore the original deploy state
+    gameInstance.setDeployState(originalDeployState)
+  }
+
+  return moveMap
 }
 
 /**
@@ -665,6 +726,9 @@ function isHorizontalOffset(offset: number): boolean {
   return offset === 16 || offset === -16
 }
 
-function canLandOnSquare(square: number, pieceType: PieceSymbol): boolean {
+export function canStayOnSquare(
+  square: number,
+  pieceType: PieceSymbol,
+): boolean {
   return pieceType === NAVY ? !!NAVY_MASK[square] : !!LAND_MASK[square]
 }

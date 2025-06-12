@@ -1,5 +1,5 @@
 import { createAllPieceSplits, makeSanPiece } from '../src/utils'
-import { makePiece } from './test-helpers'
+import { makePiece, setupGameBasic } from './test-helpers'
 import {
   INFANTRY,
   TANK,
@@ -8,7 +8,12 @@ import {
   Piece,
   AIR_FORCE,
   MILITIA,
+  BITS,
+  SQUARE_MAP,
+  algebraic,
 } from '../src/type'
+import { generateStackSplitMoves, InternalDeployMove } from '../src/deploy-move'
+import { CoTuLenh } from '../src/cotulenh'
 
 // Helper function to extract all unique subsets from the splits
 const extractSubsetsFromSplits = (splits: Piece[][]): Piece[] => {
@@ -268,5 +273,147 @@ describe('createAllPieceSplits', () => {
 
     // Verify we have exactly the expected number of splits
     expect(splits).toHaveLength(expectations.length)
+  })
+})
+
+describe('generateStackSplitMoves', () => {
+  let game: CoTuLenh
+
+  beforeEach(() => {
+    game = new CoTuLenh()
+    game.clear()
+  })
+
+  it('should return empty array for empty square', () => {
+    const moves = generateStackSplitMoves(game, SQUARE_MAP.e5)
+
+    expect(moves).toEqual([])
+  })
+
+  // it('should generate moves for a single piece', () => {
+  //   const infantry = makePiece(INFANTRY, RED)
+  //   game.put(infantry, 'e5')
+
+  //   const moves = generateStackSplitMoves(game, SQUARE_MAP.e5)
+
+  //   // Verify we have moves
+  //   expect(moves.length).toBeGreaterThan(0)
+
+  //   // Check that all moves have the correct from square
+  //   moves.forEach((move) => {
+  //     expect(move.from).toBe(square)
+  //   })
+  // })
+
+  it('should generate moves for a stack with two pieces', () => {
+    const infantry = makePiece(INFANTRY, RED)
+    const tank = makePiece(TANK, RED, false, [infantry])
+    game.put(tank, 'e5')
+
+    const moves = generateStackSplitMoves(game, SQUARE_MAP.e5)
+
+    moves.forEach((move) => {
+      console.log(
+        move.moves.reduce(
+          (acc, m) => acc + ',' + makeSanPiece(m.piece) + ':' + algebraic(m.to),
+          'e5-',
+        ) +
+          '---' +
+          (move.stay === undefined ? 'none' : move.stay.type),
+      )
+    })
+
+    // Verify we have moves
+    expect(moves.length).toBe(48)
+
+    // Check that we have moves where pieces stay
+    const movesWithStay = moves.filter((move) => move.stay !== undefined)
+    expect(movesWithStay.length).toBe(12)
+
+    const setFen = new Set<string>()
+    moves.forEach((move) => {
+      game['_makeMove'](move)
+      setFen.add(game.fen())
+      game.undo()
+    })
+    expect(setFen.size === moves.length).toBe(true)
+  })
+
+  it('should generate moves for a complex stack with three pieces', () => {
+    // game = setupGameBasic()
+    const infantry = makePiece(INFANTRY, RED)
+    const militia = makePiece(TANK, RED)
+    const airForce = makePiece(AIR_FORCE, RED, false, [infantry, militia])
+    game.put(airForce, 'g6')
+
+    const moves = generateStackSplitMoves(game, SQUARE_MAP.g6)
+
+    const cacheKey = (dm: InternalDeployMove): string => {
+      return (
+        dm.moves.reduce(
+          (acc, m) => acc + makeSanPiece(m.piece) + ':' + algebraic(m.to) + ',',
+          '',
+        ) + (dm.stay ? '---' + makeSanPiece(dm.stay) : '')
+      )
+    }
+    const setKey = new Set<string>()
+    moves.forEach((move) => {
+      setKey.add(cacheKey(move))
+    })
+    expect(setKey.size === moves.length).toBe(true)
+
+    const setFen = new Set<string>()
+    moves.forEach((move) => {
+      game['_makeMove'](move)
+      setFen.add(game.fen())
+      game.undo()
+    })
+    expect(setFen.size === moves.length).toBe(true)
+
+    // Verify we have moves
+    expect(moves.length).toBeGreaterThan(0)
+
+    // Check that we have different types of moves
+    const movesWithOneStay = moves.filter(
+      (move) => move.stay !== undefined && move.moves.length > 0,
+    )
+    expect(movesWithOneStay.length).toBeGreaterThan(0)
+
+    // Check that all moves have the DEPLOY flag set
+    moves.forEach((move) => {
+      move.moves.forEach((internalMove) => {
+        expect(internalMove.flags & BITS.DEPLOY).toBeTruthy()
+      })
+    })
+  })
+
+  it('should handle navy pieces correctly based on terrain', () => {
+    // Navy can only stay on water squares
+    const infantry = makePiece(INFANTRY, RED)
+    const navy = makePiece(NAVY, RED, false, [infantry])
+
+    // Place on water square (assuming 'k5' is a water square in your game)
+    game.put(navy, 'b3')
+
+    const moves = generateStackSplitMoves(game, SQUARE_MAP.b3)
+
+    // Check that navy can stay on water
+    const movesWithNavyStaying = moves.filter(
+      (move) => move.stay !== undefined && move.stay.type === NAVY,
+    )
+    expect(movesWithNavyStaying.length).toBeGreaterThan(0)
+
+    // Now place on land square
+    const landGame = setupGameBasic()
+    const landSquare = SQUARE_MAP['e5']
+    landGame.put(navy, 'e5')
+
+    const landMoves = generateStackSplitMoves(landGame, landSquare)
+
+    // Check that navy cannot stay on land
+    const landMovesWithNavyStaying = landMoves.filter(
+      (move) => move.stay !== undefined && move.stay.type === NAVY,
+    )
+    expect(landMovesWithNavyStaying.length).toBe(0)
   })
 })

@@ -1,13 +1,20 @@
-import { CoTuLenh } from './cotulenh'
+import { CoTuLenh, Move } from './cotulenh'
+import {
+  canStayOnSquare,
+  generateMoveCandidateForSinglePieceInStack,
+} from './move-generation'
 import {
   algebraic,
   Color,
   InternalMove,
   Piece,
+  PieceSymbol,
   Square,
   SQUARE_MAP,
 } from './type.js'
 import {
+  cloneInternalDeployMove,
+  createAllPieceSplits,
   createCombineStackFromPieces,
   flattenPiece,
   getStepsBetweenSquares,
@@ -174,4 +181,123 @@ export function deployMoveToSanLan(
   const san = `${stay}${movesSan}`
   const lan = `${algebraic(move.from)}:${san}`
   return [san, lan]
+}
+
+/**
+ * Generates all possible deploy moves for each piece in all possible stack splits.
+ * For a stack like (F|TI), it calculates all ways to split the stack and
+ * determines valid moves for each piece in each split, including options for pieces to stay.
+ *
+ * @param gameInstance - The current game instance
+ * @param stackSquare - The square where the stack is located (in internal 0xf0 format)
+ * @returns A map where keys are piece combinations and values are arrays of InternalDeployMove objects
+ */
+export function generateStackSplitMoves(
+  gameInstance: CoTuLenh,
+  stackSquare: number,
+): InternalDeployMove[] {
+  const pieceAtSquare = gameInstance.get(stackSquare)
+  if (!pieceAtSquare) {
+    return []
+  }
+  const splittedPieces = createAllPieceSplits(pieceAtSquare)
+  const moveCandidates = generateMoveCandidateForSinglePieceInStack(
+    gameInstance,
+    stackSquare,
+  )
+  const allInternalStackMoves: InternalDeployMove[] = []
+  for (const splittedPiece of splittedPieces) {
+    const internalStackMove = makeStackMoveFromCombination(
+      stackSquare,
+      [],
+      splittedPiece,
+      moveCandidates,
+    )
+    allInternalStackMoves.push(...internalStackMove)
+  }
+  const totalStackPiece = flattenPiece(pieceAtSquare).length
+  const cleanedInternalStackMoves = allInternalStackMoves.filter((move) => {
+    const haveMove = move.moves.length > 0
+    const totalPiece =
+      move.moves.reduce((acc, m) => acc + flattenPiece(m.piece).length, 0) +
+      (move.stay ? flattenPiece(move.stay).length : 0)
+    const deployCountedForAllPiece = totalPiece === totalStackPiece
+    return haveMove && deployCountedForAllPiece
+  })
+  return cleanedInternalStackMoves
+}
+
+const makeStackMoveFromCombination = (
+  fromSquare: number,
+  stackMoves: InternalDeployMove[],
+  remaining: Piece[],
+  moveCandidates: Map<PieceSymbol, InternalMove[]>,
+): InternalDeployMove[] => {
+  const currentStackPiece = remaining.pop()
+  if (!currentStackPiece) return stackMoves
+  const moveCandiateForCurrentPiece = moveCandidates.get(currentStackPiece.type)
+  if (!moveCandiateForCurrentPiece || moveCandiateForCurrentPiece.length === 0)
+    return makeStackMoveFromCombination(
+      fromSquare,
+      stackMoves,
+      remaining,
+      moveCandidates,
+    )
+  const newStackMoves: InternalDeployMove[] = []
+  if (stackMoves.length === 0) {
+    for (const move of moveCandiateForCurrentPiece) {
+      newStackMoves.push({
+        from: fromSquare,
+        moves: [
+          {
+            from: fromSquare,
+            to: move.to,
+            piece: currentStackPiece,
+            color: move.color,
+            flags: move.flags,
+          },
+        ],
+      })
+    }
+    if (canStayOnSquare(fromSquare, currentStackPiece.type)) {
+      newStackMoves.push({
+        from: fromSquare,
+        moves: [],
+        stay: currentStackPiece,
+      })
+    }
+    stackMoves.push(...newStackMoves)
+  } else {
+    for (const stackMove of stackMoves) {
+      for (const move of moveCandiateForCurrentPiece) {
+        const newSquares = stackMove.moves.map((m) => m.to)
+        if (newSquares.includes(move.to)) continue
+        const newStackMove = cloneInternalDeployMove(stackMove)
+        newStackMove.moves.push({
+          from: fromSquare,
+          to: move.to,
+          piece: currentStackPiece,
+          color: move.color,
+          flags: move.flags,
+        })
+        newStackMoves.push(newStackMove)
+      }
+      if (
+        !stackMove.stay &&
+        canStayOnSquare(fromSquare, currentStackPiece.type)
+      ) {
+        const newStackMove = cloneInternalDeployMove(stackMove)
+        newStackMove.stay = currentStackPiece
+        newStackMoves.push(newStackMove)
+      }
+    }
+    stackMoves.push(...newStackMoves)
+  }
+
+  return makeStackMoveFromCombination(
+    fromSquare,
+    stackMoves,
+    remaining,
+    moveCandidates,
+  )
 }

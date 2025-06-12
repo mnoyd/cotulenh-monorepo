@@ -1,3 +1,4 @@
+import { InternalDeployMove } from './deploy-move.js'
 import {
   algebraic,
   file,
@@ -425,4 +426,75 @@ export function getStepsBetweenSquares(
   else if (rankDiff === fileDiff) return rankDiff
 
   return -1 //nor diagonal or horizontal
+}
+/**
+ * Creates a deep clone of a Piece object
+ * @param piece - The piece to clone
+ * @returns A new Piece object with the same properties
+ */
+export function clonePiece(piece: Piece | undefined): Piece | undefined {
+  if (!piece) return undefined
+
+  const clonedPiece: Piece = {
+    color: piece.color,
+    type: piece.type,
+    heroic: piece.heroic,
+  }
+
+  if (piece.carrying && piece.carrying.length > 0) {
+    clonedPiece.carrying = piece.carrying.map((p) => clonePiece(p) as Piece)
+  }
+
+  return clonedPiece
+}
+
+/**
+ * Creates a deep clone of an InternalMove object
+ * @param move - The move to clone
+ * @returns A new InternalMove object with the same properties
+ */
+export function cloneInternalMove(move: InternalMove): InternalMove {
+  const clonedMove: InternalMove = {
+    color: move.color,
+    from: move.from,
+    to: move.to,
+    piece: clonePiece(move.piece) as Piece,
+    flags: move.flags,
+  }
+
+  if (move.captured) {
+    clonedMove.captured = clonePiece(move.captured)
+  }
+
+  if (move.combined) {
+    clonedMove.combined = clonePiece(move.combined)
+  }
+
+  return clonedMove
+}
+
+/**
+ * Creates a deep clone of an InternalDeployMove object
+ * @param deployMove - The deploy move to clone
+ * @returns A new InternalDeployMove object with the same properties
+ */
+export function cloneInternalDeployMove(
+  deployMove: InternalDeployMove,
+): InternalDeployMove {
+  const clonedDeployMove: InternalDeployMove = {
+    from: deployMove.from,
+    moves: deployMove.moves.map((move) => cloneInternalMove(move)),
+  }
+
+  if (deployMove.stay) {
+    clonedDeployMove.stay = clonePiece(deployMove.stay)
+  }
+
+  if (deployMove.captured && deployMove.captured.length > 0) {
+    clonedDeployMove.captured = deployMove.captured.map(
+      (p) => clonePiece(p) as Piece,
+    )
+  }
+
+  return clonedDeployMove
 }
