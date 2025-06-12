@@ -288,27 +288,32 @@ export function flattenPiece(piece: Piece): Piece[] {
 }
 
 /**
- * Creates all possible subsets of a piece stack.
- * @param piece - The piece stack to create subsets from
- * @returns An array of all possible subset pieces
+ * Creates all possible ways to split a piece stack into combinations of subsets.
+ * For example, given (A|BC), it returns [(A|BC)], [(A|B),C], [(A|C),B], [A,(B|C)], [A,B,C]
+ * @param piece - The piece stack to split
+ * @returns An array of arrays, each containing a valid combination of subsets
  */
-export function createAllPieceSubsets(piece: Piece): Piece[] {
+export function createAllPieceSplits(piece: Piece): Piece[][] {
   // Flatten the piece stack into individual pieces
   const flattenedPieces = flattenPiece(piece)
 
   // If there's only one piece (no carrying pieces), return just that piece
-  if (flattenedPieces.length <= 1) return [piece]
+  if (flattenedPieces.length <= 1) return [[piece]]
 
-  // Generate all possible combinations of the flattened pieces
-  // Start with the original piece itself
-  const result: Piece[] = [piece]
+  // The original piece itself is always a valid split (as a single piece)
+  const result: Piece[][] = [[piece]]
+
+  // Get all flattened pieces to check if combinations are valid
+  const originalPieceTypes = new Set(flattenedPieces.map((p) => p.type))
+
+  // Generate all possible subsets first (excluding the original piece and empty set)
+  const subsets: Piece[] = []
 
   // Generate all possible combinations using bit manipulation
   const n = flattenedPieces.length
   const totalCombinations = 1 << n // 2^n combinations
 
   // Start from 1 to skip the empty set
-  // We're using a different approach to ensure we don't duplicate the original piece
   for (let i = 1; i < totalCombinations; i++) {
     // Skip the combination that would recreate the original piece
     // The original piece is when all bits are set (all pieces included)
@@ -332,13 +337,79 @@ export function createAllPieceSubsets(piece: Piece): Piece[] {
       // Only add to result if combined exists and there are no uncombined pieces
       // This ensures all pieces in the combination were successfully combined
       if (combined && (!uncombined || uncombined.length === 0)) {
-        result.push(combined)
+        subsets.push(combined)
       }
     }
   }
 
+  // Generate all possible partitions of the subsets
+  const generatePartitions = (
+    remaining: Piece[],
+    current: Piece[] = [],
+    usedPieces: Set<string> = new Set(),
+    start: number = 0,
+  ) => {
+    // Check if we've used all pieces from the original stack
+    const allPiecesUsed =
+      Array.from(usedPieces).length === originalPieceTypes.size
+
+    // If we've used all pieces, add the current partition to the result
+    if (allPiecesUsed && current.length > 0) {
+      // Verify that the combination of pieces in 'current' can form the original piece
+      // by checking that all original piece types are represented
+      const currentTypes = new Set<string>()
+      current.forEach((p) => {
+        flattenPiece(p).forEach((fp) => currentTypes.add(fp.type))
+      })
+
+      // Only add if all original piece types are represented
+      if (currentTypes.size === originalPieceTypes.size) {
+        result.push([...current])
+      }
+      return
+    }
+
+    // Try adding each remaining subset to the current partition
+    for (let i = start; i < remaining.length; i++) {
+      const subset = remaining[i]
+
+      // Get the types in this subset
+      const subsetTypes = new Set<string>()
+      flattenPiece(subset).forEach((p) => subsetTypes.add(p.type))
+
+      // Check if adding this subset would cause duplicate piece types
+      let canAdd = true
+      subsetTypes.forEach((type) => {
+        if (usedPieces.has(type)) canAdd = false
+      })
+
+      if (canAdd) {
+        // Add the subset to the current partition
+        current.push(subset)
+
+        // Mark the piece types as used
+        subsetTypes.forEach((type) => usedPieces.add(type))
+
+        // Recursively generate partitions with the remaining subsets
+        generatePartitions(remaining, current, usedPieces, i + 1)
+
+        // Backtrack: remove the subset from the current partition
+        current.pop()
+
+        // Unmark the piece types
+        subsetTypes.forEach((type) => usedPieces.delete(type))
+      }
+    }
+  }
+
+  // Start generating partitions with all subsets
+  generatePartitions(subsets)
+
   return result
 }
+
+export const haveCommander = (p: Piece) =>
+  flattenPiece(p).some((fp) => fp.type === COMMANDER)
 
 export function getStepsBetweenSquares(
   square1: number,
@@ -355,6 +426,3 @@ export function getStepsBetweenSquares(
 
   return -1 //nor diagonal or horizontal
 }
-
-export const haveCommander = (p: Piece) =>
-  flattenPiece(p).some((fp) => fp.type === COMMANDER)
