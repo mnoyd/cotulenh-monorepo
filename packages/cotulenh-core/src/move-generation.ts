@@ -32,12 +32,16 @@ import { addMove, createCombinedPiece, flattenPiece } from './utils.js'
 import { BITS } from './type.js'
 import { CoTuLenh } from './cotulenh.js'
 import { generateStackSplitMoves } from './deploy-move.js'
-import { AirDefenseResult, checkAirDefenseZone } from './air-defense.js'
+import { AirDefenseResult, getCheckAirDefenseZone } from './air-defense.js'
 
 // Movement direction offsets
 export const ORTHOGONAL_OFFSETS = [-16, 1, 16, -1] // N, E, S, W
 export const DIAGONAL_OFFSETS = [-17, -15, 17, 15] // NE, NW, SE, SW
 export const ALL_OFFSETS = [...ORTHOGONAL_OFFSETS, ...DIAGONAL_OFFSETS]
+
+export function getOppositeOffset(offset: number): number {
+  return offset * -1
+}
 
 // Movement configuration interface
 export interface PieceMovementConfig {
@@ -186,7 +190,7 @@ export function generateMovesInDirection(
   let terrainBlockedMovement = false
   const isOrthogonal = ORTHOGONAL_OFFSETS.includes(offset) // Check if moving orthogonally
   const shouldCheckAirDefense = pieceData.type === AIR_FORCE
-  const checkAirforceState = checkAirDefenseZone(
+  const checkAirforceState = getCheckAirDefenseZone(
     gameInstance,
     from,
     them,
@@ -204,6 +208,9 @@ export function generateMovesInDirection(
     let airDefenseResult: number = -1
     if (shouldCheckAirDefense) {
       airDefenseResult = checkAirforceState()
+    }
+    if (airDefenseResult === AirDefenseResult.DESTROYED) {
+      break
     }
 
     // Special case for Missile diagonal movement (remains unchanged)

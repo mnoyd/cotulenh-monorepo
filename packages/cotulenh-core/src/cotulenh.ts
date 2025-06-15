@@ -30,6 +30,7 @@ import {
   AirDefenseInfluence,
   AirDefense,
   CAPTURE_MASK,
+  AIR_FORCE,
 } from './type.js'
 import {
   getDisambiguator,
@@ -49,6 +50,7 @@ import {
   ORTHOGONAL_OFFSETS,
   ALL_OFFSETS,
   getPieceMovementConfig,
+  getOppositeOffset,
 } from './move-generation.js'
 import {
   createMoveCommand,
@@ -67,6 +69,7 @@ import {
   AirDefensePiecesPosition,
   BASE_AIRDEFENSE_CONFIG,
   getAirDefenseInfluence,
+  getCheckAirDefenseZone,
   updateAirDefensePiecesPosition,
 } from './air-defense.js'
 
@@ -823,47 +826,51 @@ export class CoTuLenh {
         // If no piece at this square, continue to next square in this direction
         if (!piece) continue
 
-        // Check if the main piece at this square can attack the target
+        // Check if any piece in the stack can attack the target
         if (piece.color === attackerColor) {
-          // Get movement configuration for this piece
-          const config = getPieceMovementConfig(
-            piece.type,
-            piece.heroic ?? false,
-          )
-          if (isLandPiece && config.specialRules?.navyAttackMechanisms) {
-            config.captureRange = 3
-          }
+          // Use flattenPiece to process both the main piece and carried pieces with the same logic
+          const allPieces = flattenPiece(piece)
 
-          // Check if the piece's range allows it to reach the target
-          if (distance <= config.captureRange) {
-            // Check if the piece can attack through blocking pieces
-            if (!pieceBlocking || config.captureIgnoresPieceBlocking) {
-              attackers.push({ square: currentSquare, type: piece.type })
-            }
-          }
+          for (const singlePiece of allPieces) {
+            if (singlePiece.color === attackerColor) {
+              // Get movement configuration for this piece
+              const config = getPieceMovementConfig(
+                singlePiece.type,
+                singlePiece.heroic ?? false,
+              )
 
-          // Check carried pieces in stacks
-          if (piece.carrying && piece.carrying.length > 0) {
-            for (const carriedPiece of piece.carrying) {
-              if (carriedPiece.color === attackerColor) {
-                // Get movement configuration for the carried piece
-                const carriedConfig = getPieceMovementConfig(
-                  carriedPiece.type,
-                  carriedPiece.heroic ?? false,
+              let captureRange = config.captureRange
+              if (isLandPiece && config.specialRules?.navyAttackMechanisms) {
+                captureRange--
+              }
+              let airForceCanCapture = true
+              if (singlePiece.type === AIR_FORCE) {
+                const checkAirDefenseZone = getCheckAirDefenseZone(
+                  this,
+                  currentSquare,
+                  swapColor(attackerColor),
+                  getOppositeOffset(offset)!,
                 )
+                let res = -1
+                let i = 0
+                while (res < 2 && i < distance) {
+                  res = checkAirDefenseZone()
+                  i++
+                }
+                airForceCanCapture = res < 2
+              }
 
-                // Check if the carried piece's range allows it to reach the target
-                if (distance <= carriedConfig.captureRange) {
-                  // Check if the carried piece can attack through blocking pieces
-                  if (
-                    !pieceBlocking ||
-                    carriedConfig.captureIgnoresPieceBlocking
-                  ) {
-                    attackers.push({
-                      square: currentSquare,
-                      type: carriedPiece.type,
-                    })
-                  }
+              // Check if the piece's range allows it to reach the target
+              if (distance <= captureRange) {
+                // Check if the piece can attack through blocking pieces
+                if (
+                  (!pieceBlocking || config.captureIgnoresPieceBlocking) &&
+                  (singlePiece.type === AIR_FORCE ? airForceCanCapture : true)
+                ) {
+                  attackers.push({
+                    square: currentSquare,
+                    type: singlePiece.type,
+                  })
                 }
               }
             }

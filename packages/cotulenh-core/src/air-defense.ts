@@ -135,7 +135,7 @@ export const AirDefenseResult = {
   DESTROYED: 2, // Cannot pass, movement stops
 } as const
 
-export function checkAirDefenseZone(
+export function getCheckAirDefenseZone(
   gameInstance: CoTuLenh,
   fromSquare: number,
   defenseColor: Color,
