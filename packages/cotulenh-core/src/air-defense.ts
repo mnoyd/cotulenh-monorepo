@@ -141,23 +141,34 @@ export function checkAirDefenseZone(
   defenseColor: Color,
   offset: number,
 ): () => (typeof AirDefenseResult)[keyof typeof AirDefenseResult] {
+  let airDefenseResult: (typeof AirDefenseResult)[keyof typeof AirDefenseResult]
   const airDefense = gameInstance.getAirDefense()
   let to = fromSquare
   let airDefenseZoneEncountered = new Set<number>()
+  let movedOutOfTheFirstADZone = false
   return () => {
+    if (airDefenseResult === AirDefenseResult.DESTROYED) return airDefenseResult
     to += offset
     const influenceZoneOfSquare = airDefense[defenseColor].get(to) as number[]
     if (influenceZoneOfSquare && influenceZoneOfSquare.length > 0) {
       influenceZoneOfSquare.forEach((value) =>
         airDefenseZoneEncountered.add(value),
       )
+    } else {
+      if (airDefenseZoneEncountered.size > 0) {
+        movedOutOfTheFirstADZone = true
+      }
     }
     if (airDefenseZoneEncountered.size === 0) {
-      return AirDefenseResult.SAFE_PASS
-    } else if (airDefenseZoneEncountered.size === 1) {
-      return AirDefenseResult.KAMIKAZE
+      airDefenseResult = AirDefenseResult.SAFE_PASS
+    } else if (
+      airDefenseZoneEncountered.size === 1 &&
+      !movedOutOfTheFirstADZone
+    ) {
+      airDefenseResult = AirDefenseResult.KAMIKAZE
     } else {
-      return AirDefenseResult.DESTROYED
+      airDefenseResult = AirDefenseResult.DESTROYED
     }
+    return airDefenseResult
   }
 }
