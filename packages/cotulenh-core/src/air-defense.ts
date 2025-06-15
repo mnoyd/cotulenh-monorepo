@@ -2,6 +2,7 @@ import { CoTuLenh } from './cotulenh.js'
 import {
   AirDefenseForSide,
   ANTI_AIR,
+  AIR_FORCE,
   BLUE,
   isSquareOnBoard,
   MISSILE,
@@ -14,6 +15,7 @@ import {
   Square,
   algebraic,
   AirDefense,
+  Piece,
 } from './type.js'
 
 export const BASE_AIRDEFENSE_CONFIG: Partial<Record<PieceSymbol, number>> = {
@@ -122,4 +124,40 @@ export function getAirDefenseInfluence(game: CoTuLenh): AirDefenseInfluence {
     }
   }
   return airDefenseInfluence
+}
+
+/**
+ * Enum-like constants for air defense movement results
+ */
+export const AirDefenseResult = {
+  SAFE_PASS: 0, // Can safely pass through this square
+  KAMIKAZE: 1, // Can pass but will be destroyed (suicide move)
+  DESTROYED: 2, // Cannot pass, movement stops
+} as const
+
+export function checkAirDefenseZone(
+  gameInstance: CoTuLenh,
+  fromSquare: number,
+  defenseColor: Color,
+  offset: number,
+): () => (typeof AirDefenseResult)[keyof typeof AirDefenseResult] {
+  const airDefense = gameInstance.getAirDefense()
+  let to = fromSquare
+  let airDefenseZoneEncountered = new Set<number>()
+  return () => {
+    to += offset
+    const influenceZoneOfSquare = airDefense[defenseColor].get(to) as number[]
+    if (influenceZoneOfSquare && influenceZoneOfSquare.length > 0) {
+      influenceZoneOfSquare.forEach((value) =>
+        airDefenseZoneEncountered.add(value),
+      )
+    }
+    if (airDefenseZoneEncountered.size === 0) {
+      return AirDefenseResult.SAFE_PASS
+    } else if (airDefenseZoneEncountered.size === 1) {
+      return AirDefenseResult.KAMIKAZE
+    } else {
+      return AirDefenseResult.DESTROYED
+    }
+  }
 }

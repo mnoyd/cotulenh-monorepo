@@ -31,6 +31,8 @@ import {
 import { addMove, createCombinedPiece, flattenPiece } from './utils.js'
 import { BITS } from './type.js'
 import { CoTuLenh } from './cotulenh.js'
+import { generateStackSplitMoves } from './deploy-move.js'
+import { AirDefenseResult, checkAirDefenseZone } from './air-defense.js'
 
 // Movement direction offsets
 export const ORTHOGONAL_OFFSETS = [-16, 1, 16, -1] // N, E, S, W
@@ -183,7 +185,13 @@ export function generateMovesInDirection(
   let pieceBlockedMovement = false
   let terrainBlockedMovement = false
   const isOrthogonal = ORTHOGONAL_OFFSETS.includes(offset) // Check if moving orthogonally
-  let firstAirInflunceZone: number | undefined
+  const shouldCheckAirDefense = pieceData.type === AIR_FORCE
+  const checkAirforceState = checkAirDefenseZone(
+    gameInstance,
+    from,
+    them,
+    offset,
+  )
 
   while (true) {
     to += offset
@@ -193,33 +201,9 @@ export function generateMovesInDirection(
     if (!isSquareOnBoard(to)) break
 
     // Special handling for AIR_FORCE movement through enemy air defense zones
-    if (pieceData.type === AIR_FORCE) {
-      const airDefense = gameInstance.getAirDefense()
-      const influenceZoneOfPieces = airDefense[them].get(to)
-      if (influenceZoneOfPieces && influenceZoneOfPieces.length > 0) {
-        // Case 1: Multiple air defense pieces influence this square
-        if (influenceZoneOfPieces.length > 1) {
-          break
-        }
-        // Case 2: Single air defense piece influences this square
-        else if (influenceZoneOfPieces.length === 1) {
-          // If this is the first air defense zone encountered during this move
-          if (firstAirInflunceZone === undefined) {
-            // Record the ID of the first air defense piece encountered
-            firstAirInflunceZone = influenceZoneOfPieces[0]
-          } else {
-            // the air force must stop (can only pass through one continuous zone)
-            if (firstAirInflunceZone !== influenceZoneOfPieces[0]) {
-              break
-            }
-          }
-        }
-      } else {
-        // the air force must stop (can only pass through one continuous zone)
-        if (firstAirInflunceZone !== undefined) {
-          break
-        }
-      }
+    let airDefenseResult: number = -1
+    if (shouldCheckAirDefense) {
+      airDefenseResult = checkAirforceState()
     }
 
     // Special case for Missile diagonal movement (remains unchanged)
@@ -280,7 +264,7 @@ export function generateMovesInDirection(
             currentRange,
             config,
             isDeployMove,
-            !!firstAirInflunceZone,
+            airDefenseResult === AirDefenseResult.KAMIKAZE,
           )
         }
       } else if (targetPiece.color === us) {
@@ -324,7 +308,9 @@ export function generateMovesInDirection(
         !terrainBlockedMovement &&
         !pieceBlockedMovement &&
         canStayOnSquare(to, pieceData.type) &&
-        (pieceData.type === AIR_FORCE ? !firstAirInflunceZone : true)
+        (shouldCheckAirDefense
+          ? airDefenseResult === AirDefenseResult.SAFE_PASS
+          : true)
       ) {
         // Commander cannot slide past where an enemy commander *would* be captured
         if (pieceData.type === COMMANDER && isOrthogonal) {
@@ -706,6 +692,8 @@ export function generateNormalMoves(
           moves.push(m)
         })
       }
+      // const moves = generateStackSplitMoves(gameInstance, from)
+      // moves.push(...moves)
     }
 
     // Always generate moves for the piece itself (carrier or not)
