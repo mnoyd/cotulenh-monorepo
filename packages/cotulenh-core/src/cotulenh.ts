@@ -557,7 +557,7 @@ export class CoTuLenh {
     // Filter illegal moves (leaving commander in check)
     let result: InternalMove[]
     if (legal) {
-      result = this._filterLegalMoves(allMoves, us)
+      result = this._filterLegalMoves(allMoves, us) as InternalMove[]
     } else {
       result = allMoves
     }
@@ -604,8 +604,11 @@ export class CoTuLenh {
   }
 
   // Helper method to filter legal moves
-  private _filterLegalMoves(moves: InternalMove[], us: Color): InternalMove[] {
-    const legalMoves: InternalMove[] = []
+  private _filterLegalMoves(
+    moves: (InternalMove | InternalDeployMove)[],
+    us: Color,
+  ): (InternalMove | InternalDeployMove)[] {
+    const legalMoves: (InternalMove | InternalDeployMove)[] = []
     for (const move of moves) {
       this._makeMove(move)
       // A move is legal if it doesn't leave the commander attacked AND doesn't expose the commander
@@ -770,7 +773,7 @@ export class CoTuLenh {
    * @param sq - The new square position in internal 0xf0 coordinate format
    * @param color - The color of the commander whose position is being updated
    */
-  public updateKingsPosition(sq: number, color: Color): void {
+  public updateCommandersPosition(sq: number, color: Color): void {
     if (this._commanders[color] === -1) return // Commander captured = loss = no need to update
     // Update the king's position
     this._commanders[color] = sq
@@ -880,21 +883,12 @@ export class CoTuLenh {
     const kingSq = this._commanders[color]
     if (kingSq === -1) return true // Commander captured = loss = considered 'attacked' for game over
 
-    // Generate all opponent's pseudo-legal moves
+    // Use getAttackers to check if any opponent pieces can attack the commander
     const opponent = swapColor(color)
-    const originalTurn = this._turn
-    this._turn = opponent // Temporarily switch turn
-    const opponentMoves = this._moves({ legal: false }) // Generate for opponent
-    this._turn = originalTurn // Switch back
+    const attackers = this.getAttackers(kingSq, opponent)
 
-    for (const move of opponentMoves) {
-      // Check if any move targets the king square
-      // For stay capture, the target is move.to; for normal capture, it's also move.to
-      if (move.flags & CAPTURE_MASK && move.to === kingSq) {
-        return true // Commander is attacked
-      }
-    }
-    return false
+    // If there are any attackers, the commander is under attack
+    return attackers.length > 0
   }
 
   /**

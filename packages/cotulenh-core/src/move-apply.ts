@@ -181,7 +181,7 @@ class RemoveFromStackAction implements AtomicMoveAction {
 /**
  * Updates the king position
  */
-class UpdateKingPositionAction implements AtomicMoveAction {
+class UpdateCommanderPositionAction implements AtomicMoveAction {
   private oldPosition: number
 
   constructor(
@@ -197,11 +197,11 @@ class UpdateKingPositionAction implements AtomicMoveAction {
   }
 
   execute(game: CoTuLenh): void {
-    game.updateKingsPosition(this.newPosition, this.color)
+    game.updateCommandersPosition(this.newPosition, this.color)
   }
 
   undo(game: CoTuLenh): void {
-    game.updateKingsPosition(this.oldPosition, this.color)
+    game.updateCommandersPosition(this.oldPosition, this.color)
   }
 }
 
@@ -351,7 +351,7 @@ export class NormalMoveCommand extends MoveCommand {
       (pieceThatMoved.carrying?.some((p) => p.type === COMMANDER) ?? false)
     ) {
       this.actions.push(
-        new UpdateKingPositionAction(us, this.move.to, this.game),
+        new UpdateCommanderPositionAction(us, this.move.to, this.game),
       )
     }
 
@@ -426,7 +426,9 @@ export class SingleDeployMoveCommand extends MoveCommand {
 
       // Update king position if needed
       if (haveCommander) {
-        this.actions.push(new UpdateKingPositionAction(us, destSq, this.game))
+        this.actions.push(
+          new UpdateCommanderPositionAction(us, destSq, this.game),
+        )
       }
     }
 
@@ -489,7 +491,11 @@ class CombinationMoveCommand extends MoveCommand {
       (movingPieceData.carrying?.some((p) => p.type === COMMANDER) ?? false)
     ) {
       this.actions.push(
-        new UpdateKingPositionAction(this.move.color, this.move.to, this.game),
+        new UpdateCommanderPositionAction(
+          this.move.color,
+          this.move.to,
+          this.game,
+        ),
       )
     }
 

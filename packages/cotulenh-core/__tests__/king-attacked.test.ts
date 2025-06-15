@@ -162,7 +162,7 @@ describe('_isCommanderAttacked Function Tests', () => {
     game.put({ type: COMMANDER, color: RED }, 'e7')
 
     // Test if commander is attacked (should be true as commander can capture beyond range 1)
-    expect(game['_isCommanderAttacked'](BLUE)).toBe(true)
+    expect(game['_isCommanderExposed'](BLUE)).toBe(true)
   })
 
   test('Commander is attacked during stay capture scenario', () => {

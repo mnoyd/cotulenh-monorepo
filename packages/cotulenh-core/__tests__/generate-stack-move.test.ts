@@ -11,6 +11,8 @@ import {
   BITS,
   SQUARE_MAP,
   algebraic,
+  COMMANDER,
+  BLUE,
 } from '../src/type'
 import { generateStackSplitMoves, InternalDeployMove } from '../src/deploy-move'
 import { CoTuLenh } from '../src/cotulenh'
@@ -341,6 +343,8 @@ describe('generateStackSplitMoves', () => {
 
   it('should generate moves for a complex stack with three pieces', () => {
     // game = setupGameBasic()
+    game.put(makePiece(COMMANDER, RED), 'g12')
+    game.put(makePiece(COMMANDER, BLUE), 'g1')
     const infantry = makePiece(INFANTRY, RED)
     const militia = makePiece(TANK, RED)
     const airForce = makePiece(AIR_FORCE, RED, false, [infantry, militia])
@@ -385,6 +389,10 @@ describe('generateStackSplitMoves', () => {
         expect(internalMove.flags & BITS.DEPLOY).toBeTruthy()
       })
     })
+    console.time('filterLegalMoves')
+    const legal = game['_filterLegalMoves'](moves, RED)
+    console.timeEnd('filterLegalMoves')
+    expect(legal.length).toBeGreaterThan(0)
   })
 
   it('should handle navy pieces correctly based on terrain', () => {

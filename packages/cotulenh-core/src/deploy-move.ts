@@ -2,7 +2,7 @@ import { CoTuLenh, Move } from './cotulenh'
 import {
   canStayOnSquare,
   generateMoveCandidateForSinglePieceInStack,
-} from './move-generation'
+} from './move-generation.js'
 import {
   algebraic,
   Color,
