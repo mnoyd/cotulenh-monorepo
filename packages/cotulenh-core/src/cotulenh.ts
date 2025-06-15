@@ -543,6 +543,7 @@ export class CoTuLenh {
     }
     const us = this.turn()
     let allMoves: InternalMove[] = []
+    let allStackMoves: InternalDeployMove[] = []
 
     // Generate moves based on game state
     if ((this._deployState && this._deployState.turn === us) || deploy) {
@@ -554,7 +555,14 @@ export class CoTuLenh {
       }
       allMoves = generateDeployMoves(this, deployFilterSquare, filterPiece)
     } else {
-      allMoves = generateNormalMoves(this, us, filterPiece, filterSquare)
+      const { moves, stackMoves } = generateNormalMoves(
+        this,
+        us,
+        filterPiece,
+        filterSquare,
+      )
+      allMoves = moves
+      allStackMoves = stackMoves
     }
 
     // Filter illegal moves (leaving commander in check)
@@ -564,6 +572,8 @@ export class CoTuLenh {
     } else {
       result = allMoves
     }
+    const legalStackMoves = this._filterLegalMoves(allStackMoves, us)
+    // console.log('legalStackMoves', legalStackMoves.length, allStackMoves.length)
     this._movesCache.set(cacheKey, result)
     return result
   }

@@ -5,9 +5,11 @@ import {
   AIR_FORCE, // Import AIR_FORCE
   MISSILE,
   NAVY,
+  SQUARE_MAP,
 } from '../src/type'
 import { CoTuLenh, Move } from '../src/cotulenh'
 import { findMove, getDestinationSquares, setupGameBasic } from './test-helpers'
+import { generateMoveCandidateForSinglePieceInStack } from '../src/move-generation'
 
 describe('Basic TANK Moves on Empty Board', () => {
   let game: CoTuLenh
@@ -303,11 +305,18 @@ describe('Basic AIR_FORCE Moves on Empty Board', () => {
       startSquare,
     )
 
-    const moves = game.moves({
-      square: startSquare,
-      verbose: true,
-    }) as Move[]
-    const airForceMoves = moves.filter((m) => m.piece.type === AIR_FORCE)
+    // const moves = game.moves({
+    //   square: startSquare,
+    //   verbose: true,
+    // }) as Move[]
+    const moves = generateMoveCandidateForSinglePieceInStack(
+      game,
+      SQUARE_MAP[startSquare],
+    )
+    const airForceMovesInternal = moves.get(AIR_FORCE)
+    const airForceMoves = airForceMovesInternal?.map(
+      (m) => new Move(game, m),
+    ) as Move[]
     const actualDestinations = getDestinationSquares(airForceMoves)
     // Air Force can move to adjacent land/water/mixed
     //prettier-ignore

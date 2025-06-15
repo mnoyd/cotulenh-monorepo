@@ -664,3 +664,20 @@ describe('Re run random fail move', () => {
     expect(moves).toHaveLength(7)
   })
 })
+
+describe('Move generate test', () => {
+  it('should generate move', () => {
+    const game = new CoTuLenh(
+      '3c7/1(nf)3h1h3/6s4/4gt1(tm)g2/2(ni)(ea)4(ea)1(fi)/11/7(FTC)2I/1NIE2M1GE1/2(NFT)1G6/3A2S2A1/5H1H3/11 r - - 22 12',
+    )
+    const moves = game.moves({ verbose: true }) as Move[]
+    expect(moves.length).toBeGreaterThan(0)
+  })
+  it('should generate move', () => {
+    const game = new CoTuLenh(
+      '6c4/11/11/11/11/11/6(FTI)4/1(NFT)9/11/11/11/5C5 r - - 0 1',
+    )
+    const moves = game.moves({ verbose: true }) as Move[]
+    expect(moves.length).toBeGreaterThan(0)
+  })
+})

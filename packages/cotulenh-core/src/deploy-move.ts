@@ -111,13 +111,6 @@ export function createInternalDeployMove(
   if (foundMove.length !== toSquareNumDests.length) {
     throw new Error('Deploy move error: move not found')
   }
-  foundMove.sort((a, b) => {
-    const aSteps = getStepsBetweenSquares(a.from, a.to)
-    const bSteps = getStepsBetweenSquares(b.from, b.to)
-    if (aSteps === -1 || bSteps === -1)
-      throw new Error('Deploy move error: invalid move')
-    return aSteps > bSteps ? -1 : 1
-  })
   const captured: Piece[] = []
   foundMove.forEach((move) => {
     if (move.captured) {

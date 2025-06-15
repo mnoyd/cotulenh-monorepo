@@ -31,7 +31,7 @@ import {
 import { addMove, createCombinedPiece, flattenPiece } from './utils.js'
 import { BITS } from './type.js'
 import { CoTuLenh } from './cotulenh.js'
-import { generateStackSplitMoves } from './deploy-move.js'
+import { generateStackSplitMoves, InternalDeployMove } from './deploy-move.js'
 import { AirDefenseResult, getCheckAirDefenseZone } from './air-defense.js'
 
 // Movement direction offsets
@@ -648,6 +648,11 @@ export function generateDeployMoves(
   return moves
 }
 
+type GenerateMovesResult = {
+  moves: InternalMove[]
+  stackMoves: InternalDeployMove[]
+}
+
 /**
  * Generate all moves for a side in normal (non-deploy) state
  */
@@ -656,8 +661,9 @@ export function generateNormalMoves(
   us: Color,
   filterPiece?: PieceSymbol,
   filterSquare?: Square,
-): InternalMove[] {
+): GenerateMovesResult {
   const moves: InternalMove[] = []
+  const stackMoves: InternalDeployMove[] = []
   let startSq = SQUARE_MAP.a12
   let endSq = SQUARE_MAP.k1
 
@@ -668,7 +674,7 @@ export function generateNormalMoves(
       !gameInstance.get(sq) ||
       gameInstance.get(sq)?.color !== us
     )
-      return []
+      return { moves: [], stackMoves: [] }
     startSq = endSq = sq
   }
 
@@ -679,31 +685,10 @@ export function generateNormalMoves(
     if (!pieceData || pieceData.color !== us) continue
 
     if (pieceData.carrying && pieceData.carrying.length > 0) {
-      let deployMoveCandidates = flattenPiece(pieceData)
-      if (pieceData.type === NAVY && !LAND_MASK[from]) {
-        //remove carrier from the deployMoveCandidates
-        deployMoveCandidates = deployMoveCandidates.filter(
-          (p) => p.type !== pieceData.type,
-        )
-      }
-      for (const deployMoveCandidate of deployMoveCandidates) {
-        if (filterPiece && deployMoveCandidate.type !== filterPiece) continue
-        const deployMoves = generateMovesForPiece(
-          gameInstance,
-          from,
-          deployMoveCandidate,
-          true,
-        )
-        deployMoves.forEach((m) => {
-          m.flags |= BITS.DEPLOY
-          moves.push(m)
-        })
-      }
-      // const moves = generateStackSplitMoves(gameInstance, from)
-      // moves.push(...moves)
+      const stackMovesForSquare = generateStackSplitMoves(gameInstance, from)
+      stackMoves.push(...stackMovesForSquare)
     }
 
-    // Always generate moves for the piece itself (carrier or not)
     if (!filterPiece || pieceData.type === filterPiece) {
       const singleMoves = generateMovesForPiece(
         gameInstance,
@@ -714,7 +699,7 @@ export function generateNormalMoves(
       moves.push(...singleMoves)
     }
   }
-  return moves
+  return { moves, stackMoves }
 }
 
 function isHorizontalOffset(offset: number): boolean {

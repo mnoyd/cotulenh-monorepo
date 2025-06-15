@@ -10,11 +10,13 @@ import {
   BITS,
   Piece,
   DeployState,
+  NAVY,
 } from './type.js'
 import {
   createCombinedPiece,
   createCombineStackFromPieces,
   flattenPiece,
+  getStepsBetweenSquares,
   haveCommander,
 } from './utils.js'
 
@@ -772,8 +774,32 @@ export class DeployMoveCommand extends SequenceMoveCommand {
   }
 
   protected createMoveSequence(): MoveCommand[] {
+    const cleanUpDeployMoveSequence = (
+      moves: InternalMove[],
+    ): InternalMove[] => {
+      moves.sort((a, b) => {
+        const aSteps = getStepsBetweenSquares(a.from, a.to)
+        const bSteps = getStepsBetweenSquares(b.from, b.to)
+        if (aSteps === -1 || bSteps === -1)
+          throw new Error('Deploy move error: invalid move')
+        return aSteps > bSteps ? -1 : 1
+      })
+      //Navy as the carrier must move last in the stack as the carried piece cannot stay on water
+      const navyMoveIndex = moves.findIndex((move) => move.piece.type === NAVY)
+      const cleanMoves =
+        navyMoveIndex === -1
+          ? moves
+          : [
+              ...moves.slice(0, navyMoveIndex),
+              ...moves.slice(navyMoveIndex + 1),
+              moves[navyMoveIndex],
+            ]
+      return cleanMoves
+    }
+    const moves = cleanUpDeployMoveSequence(this.moveData.moves)
+
     // Create individual MoveCommand for each move in the sequence
-    return this.moveData.moves.map((move) => createMoveCommand(this.game, move))
+    return moves.map((move) => createMoveCommand(this.game, move))
   }
 }
 
