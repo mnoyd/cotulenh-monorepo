@@ -12,6 +12,7 @@ import {
   Piece,
   InternalMove,
   COMMANDER,
+  MoveVerbose,
 } from '../src/type'
 import { setupGameBasic } from './test-helpers'
 
@@ -27,7 +28,7 @@ describe('CoTuLenh Stay Capture Logic', () => {
     game.put({ type: INFANTRY, color: BLUE }, 'd5')
     game['_turn'] = RED // Access private for test setup
 
-    const moves = game.moves({ verbose: true }) as Move[]
+    const moves = game.moves({ verbose: true }).singleMoves as Move[]
     const captureMove = moves.find((m) => {
       return (
         m.from === 'd4' &&
@@ -48,7 +49,7 @@ describe('CoTuLenh Stay Capture Logic', () => {
     game.put({ type: INFANTRY, color: BLUE }, 'i8')
     game['_turn'] = RED
 
-    const moves = game.moves({ verbose: true }) as Move[]
+    const moves = game.moves({ verbose: true }).singleMoves as Move[]
     const captureMove = moves.find((m) => {
       return (
         m.from === 'i5' &&
@@ -69,7 +70,7 @@ describe('CoTuLenh Stay Capture Logic', () => {
     game.put({ type: NAVY, color: BLUE }, 'b5')
     game['_turn'] = RED
 
-    const moves = game.moves({ verbose: true }) as Move[]
+    const moves = game.moves({ verbose: true }).singleMoves as Move[]
     const captureMove = moves.find((m) => {
       return (
         m.from === 'b3' &&
@@ -90,7 +91,7 @@ describe('CoTuLenh Stay Capture Logic', () => {
     game.put({ type: TANK, color: BLUE }, 'c5')
     game['_turn'] = RED
 
-    const moves = game.moves({ verbose: true }) as Move[]
+    const moves = game.moves({ verbose: true }).singleMoves as Move[]
     const captureMove = moves.find((m) => {
       return (
         m.from === 'c4' &&
@@ -112,7 +113,7 @@ describe('CoTuLenh Stay Capture Logic', () => {
     game.put({ type: NAVY, color: BLUE }, 'b3')
     game['_turn'] = RED
 
-    const moves = game.moves({ verbose: true }) as Move[]
+    const moves = game.moves({ verbose: true }).singleMoves as Move[]
     const captureMove = moves.find((m) => {
       return (
         m.from === 'd3' &&
@@ -135,7 +136,7 @@ describe('CoTuLenh Stay Capture Logic', () => {
     game.put({ type: TANK, color: BLUE }, 'f3')
     game['_turn'] = RED
 
-    const moves = game.moves({ verbose: true }) as Move[]
+    const moves = game.moves({ verbose: true }).singleMoves as Move[]
     const captureMove = moves.find((m) => {
       return (
         m.from === 'c3' &&
@@ -158,7 +159,7 @@ describe('CoTuLenh Stay Capture Logic', () => {
     game.put({ type: NAVY, color: BLUE }, 'b2')
     game['_turn'] = RED
 
-    const moves = game.moves({ verbose: true }) as Move[]
+    const moves = game.moves({ verbose: true }).singleMoves as Move[]
     const suicideCaptureMove = moves.find((m) => {
       return (
         m.from === 'd2' &&
@@ -180,7 +181,7 @@ describe('CoTuLenh Stay Capture Logic', () => {
     game.put({ type: INFANTRY, color: BLUE }, 'd5')
     game['_turn'] = RED
 
-    const moves = game.moves({ verbose: true }) as Move[]
+    const moves = game.moves({ verbose: true }).singleMoves as Move[]
     const captureMove = moves.find((m) => {
       return (
         m.from === 'd4' &&
@@ -211,7 +212,7 @@ describe('Move History and Undo', () => {
     expect(move2).not.toBeNull()
 
     const historySimple = game.history()
-    const historyVerbose = game.history({ verbose: true }) as Move[]
+    const historyVerbose = game.history({ verbose: true })
 
     // Basic SAN check - exact format depends on _moveToSan implementation details
     expect(historySimple.length).toBe(2)
@@ -359,7 +360,7 @@ describe('Piece Blocking Movement Logic', () => {
     game.put({ type: INFANTRY, color: RED }, 'd4')
     game['_turn'] = RED
 
-    const moves = game.moves({ verbose: true }) as Move[]
+    const moves = game.moves({ verbose: true }).singleMoves as Move[]
 
     // Tank should not be able to move to d5 (beyond the blocking Infantry)
     const moveToD5 = moves.find((m) => m.from === 'd3' && m.to === 'd5')
@@ -376,7 +377,7 @@ describe('Piece Blocking Movement Logic', () => {
     game.put({ type: TANK, color: RED }, 'd5')
     game['_turn'] = RED
 
-    const moves = game.moves({ verbose: true }) as Move[]
+    const moves = game.moves({ verbose: true }).singleMoves as Move[]
 
     // Infantry should not be able to move to d5 (occupied by friendly Tank)
     const moveToD5 = moves.find((m) => m.from === 'd5' && m.to === 'd3')
@@ -394,7 +395,7 @@ describe('Piece Blocking Movement Logic', () => {
     game.put({ type: TANK, color: BLUE }, 'd6')
     game['_turn'] = RED
 
-    const moves = game.moves({ verbose: true }) as Move[]
+    const moves = game.moves({ verbose: true }).singleMoves as Move[]
 
     // Air Force should be able to move beyond friendly Infantry
     const moveToD7 = moves.find((m) => m.from === 'd4' && m.to === 'd7')
@@ -414,7 +415,7 @@ describe('Piece Blocking Movement Logic', () => {
     game.put({ type: TANK, color: BLUE }, 'd5')
     game['_turn'] = RED
 
-    const moves = game.moves({ verbose: true }) as Move[]
+    const moves = game.moves({ verbose: true }).singleMoves as Move[]
 
     // Artillery should not be able to move to d5 or d6 (blocked by friendly Infantry)
     const moveToD5 = moves.find(
@@ -438,7 +439,7 @@ describe('Piece Blocking Movement Logic', () => {
     game.put({ type: NAVY, color: BLUE }, 'b6')
     game['_turn'] = RED
 
-    const moves = game.moves({ verbose: true }) as Move[]
+    const moves = game.moves({ verbose: true }).singleMoves as Move[]
 
     // Navy should be able to move beyond friendly Navy
     const moveToB6 = moves.find((m) => m.from === 'b3' && m.to === 'b6')
@@ -458,7 +459,7 @@ describe('Piece Blocking Movement Logic', () => {
     game.put({ type: INFANTRY, color: BLUE }, 'd5')
     game['_turn'] = RED
 
-    const moves = game.moves({ verbose: true }) as Move[]
+    const moves = game.moves({ verbose: true }).singleMoves as Move[]
 
     // Tank should not be able to move to d5 (blocked by friendly Infantry)
     const moveToD5 = moves.find(
@@ -480,7 +481,7 @@ describe('Generate Moves', () => {
   test('should generate all possible moves from initial position', () => {
     game.clear()
     game = new CoTuLenh()
-    const moves = game.moves({ verbose: true }) as Move[]
+    const moves = game.moves({ verbose: true }).singleMoves as Move[]
     expect(moves.length).toBe(116)
   })
   test('should correctly filter moves by piece type', () => {
@@ -489,11 +490,11 @@ describe('Generate Moves', () => {
     game.load(game.fen())
     game['_turn'] = RED
 
-    const allMoves = game.moves({ verbose: true }) as Move[]
+    const allMoves = game.moves({ verbose: true }).singleMoves as Move[]
     const filteredMoves = game.moves({
       verbose: true,
       pieceType: INFANTRY,
-    }) as Move[]
+    }).singleMoves as Move[]
     const infantryMovesFromAll = allMoves.filter(
       (m) => m.piece.type === INFANTRY,
     )
@@ -511,7 +512,7 @@ describe('Terrain blocking movement logic', () => {
     game.put({ type: ARTILLERY, color: RED }, 'd5')
     game['_turn'] = RED
 
-    const moves = game.moves({ verbose: true }) as Move[]
+    const moves = game.moves({ verbose: true }).singleMoves as Move[]
     const moveD5D8 = moves.find((m) => m.from === 'd5' && m.to === 'd8')
     expect(moveD5D8).toBeUndefined()
   })
@@ -520,7 +521,7 @@ describe('Terrain blocking movement logic', () => {
     game.put({ type: TANK, color: RED }, 'd5')
     game['_turn'] = RED
 
-    const moves = game.moves({ verbose: true }) as Move[]
+    const moves = game.moves({ verbose: true }).singleMoves as Move[]
     const moveD5D7 = moves.find((m) => m.from === 'd5' && m.to === 'd7')
     expect(moveD5D7).toBeDefined()
   })
@@ -530,7 +531,7 @@ describe('Terrain blocking movement logic', () => {
     game.put({ type: INFANTRY, color: BLUE }, 'd8')
     game['_turn'] = RED
 
-    const moves = game.moves({ verbose: true }) as Move[]
+    const moves = game.moves({ verbose: true }).singleMoves as Move[]
     const captureD5D8 = moves.find((m) => m.from === 'd5' && m.to === 'd8')
     expect(captureD5D8).toBeDefined()
   })
@@ -540,7 +541,7 @@ describe('Terrain blocking movement logic', () => {
     game.put({ type: NAVY, color: BLUE }, 'b5')
     game['_turn'] = RED
 
-    const moves = game.moves({ verbose: true }) as Move[]
+    const moves = game.moves({ verbose: true }).singleMoves as Move[]
     const captureD5B5 = moves.find(
       (m) => m.from === 'd5' && m.to === 'b5' && m.captured?.type === NAVY,
     )
@@ -552,7 +553,7 @@ describe('Terrain blocking movement logic', () => {
     game.put({ type: NAVY, color: RED }, 'a2')
     game['_turn'] = RED
 
-    const moves = game.moves({ verbose: true }) as Move[]
+    const moves = game.moves({ verbose: true }).singleMoves as Move[]
     const combineE2A2 = moves.find((m) => m.from === 'e2' && m.to === 'a2')
     expect(combineE2A2).toBeDefined()
   })
@@ -562,7 +563,7 @@ describe('Terrain blocking movement logic', () => {
     game.put({ type: NAVY, color: RED }, 'b2')
     game['_turn'] = RED
 
-    const moves = game.moves({ verbose: true }) as Move[]
+    const moves = game.moves({ verbose: true }).singleMoves as Move[]
     const combineE2B2 = moves.find((m) => m.from === 'b2' && m.to === 'e2')
     expect(combineE2B2).toBeUndefined()
   })
@@ -598,7 +599,7 @@ describe('move sequesce', () => {
     expect(move4).toBeInstanceOf(Move)
     expect(game['_turn']).toBe(RED)
 
-    game.moves()
+    game.moves().singleMoves
 
     // Verify move history
     const history = game.history({ verbose: true })
@@ -652,14 +653,17 @@ describe('Re run random fail move', () => {
         heroic: false,
       },
     } as DeployMoveRequest
+    console.time('deployMove')
     const move = game.deployMove(deployMoveRequest)
+    console.timeEnd('deployMove')
     expect(move).toBeInstanceOf(DeployMove)
   })
   it('should filter illegal move commander to check', () => {
     const game = new CoTuLenh(
       '2c8/1n2fh1hf2/1N1a2s2a1/2n1gt1tg2/2ie2m3i/11/11/2IE2M3I/2N1GT1TG2/3A2S2A1/4FH1HF2/6C4 b - - 3 2',
     )
-    const moves = game.moves({ pieceType: COMMANDER, verbose: true }) as Move[]
+    const moves = game.moves({ pieceType: COMMANDER, verbose: true })
+      .singleMoves as Move[]
     expect(moves.find((m) => m.to === 'd12')).toBeUndefined()
     expect(moves).toHaveLength(7)
   })
@@ -670,14 +674,14 @@ describe('Move generate test', () => {
     const game = new CoTuLenh(
       '3c7/1(nf)3h1h3/6s4/4gt1(tm)g2/2(ni)(ea)4(ea)1(fi)/11/7(FTC)2I/1NIE2M1GE1/2(NFT)1G6/3A2S2A1/5H1H3/11 r - - 22 12',
     )
-    const moves = game.moves({ verbose: true }) as Move[]
+    const moves = game.moves({ verbose: true }).singleMoves as Move[]
     expect(moves.length).toBeGreaterThan(0)
   })
   it('should generate move', () => {
     const game = new CoTuLenh(
       '6c4/11/11/11/11/11/6(FTI)4/1(NFT)9/11/11/11/5C5 r - - 0 1',
     )
-    const moves = game.moves({ verbose: true }) as Move[]
+    const moves = game.moves({ verbose: true }).singleMoves as Move[]
     expect(moves.length).toBeGreaterThan(0)
   })
 })

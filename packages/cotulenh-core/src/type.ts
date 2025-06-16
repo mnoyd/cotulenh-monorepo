@@ -1,3 +1,6 @@
+import { Move } from './cotulenh'
+import { DeployMove, InternalDeployMove } from './deploy-move'
+
 // --- Constants ---
 export const RED = 'r'
 export const BLUE = 'b'
@@ -214,3 +217,17 @@ export type AirDefenseInfluence = {
   [RED]: Map<Square, Square[]>
   [BLUE]: Map<Square, Square[]>
 }
+export type GenerateMovesResult = {
+  singleMoves: InternalMove[]
+  stackMoves: InternalDeployMove[]
+}
+
+export type MoveVerbose = {
+  singleMoves: Move[]
+  stackMoves: DeployMove[]
+}
+export type MoveSan = {
+  singleMoves: string[]
+  stackMoves: string[]
+}
+export type StackMovesForSquare = Map<PieceSymbol, InternalMove[]>

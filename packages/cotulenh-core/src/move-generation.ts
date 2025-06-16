@@ -27,6 +27,8 @@ import {
   swapColor,
   Square,
   HEAVY_PIECES,
+  GenerateMovesResult,
+  StackMovesForSquare,
 } from './type.js'
 import { addMove, createCombinedPiece, flattenPiece } from './utils.js'
 import { BITS } from './type.js'
@@ -525,10 +527,10 @@ function isHeavyZone(sq: number): 0 | 1 | 2 {
  * @param stackSquare - The square where the stack is located (in internal 0xf0 format)
  * @returns A map where keys are piece types and values are arrays of valid moves
  */
-export function generateMoveCandidateForSinglePieceInStack(
+export function generateMoveCandidateForPiecesInStack(
   gameInstance: CoTuLenh,
   stackSquare: number,
-): Map<PieceSymbol, InternalMove[]> {
+): StackMovesForSquare {
   const moveMap = new Map<PieceSymbol, InternalMove[]>()
   const us = gameInstance.turn()
 
@@ -648,11 +650,6 @@ export function generateDeployMoves(
   return moves
 }
 
-type GenerateMovesResult = {
-  moves: InternalMove[]
-  stackMoves: InternalDeployMove[]
-}
-
 /**
  * Generate all moves for a side in normal (non-deploy) state
  */
@@ -662,7 +659,7 @@ export function generateNormalMoves(
   filterPiece?: PieceSymbol,
   filterSquare?: Square,
 ): GenerateMovesResult {
-  const moves: InternalMove[] = []
+  const singleMoves: InternalMove[] = []
   const stackMoves: InternalDeployMove[] = []
   let startSq = SQUARE_MAP.a12
   let endSq = SQUARE_MAP.k1
@@ -674,7 +671,7 @@ export function generateNormalMoves(
       !gameInstance.get(sq) ||
       gameInstance.get(sq)?.color !== us
     )
-      return { moves: [], stackMoves: [] }
+      return { singleMoves: [], stackMoves: [] }
     startSq = endSq = sq
   }
 
@@ -686,20 +683,21 @@ export function generateNormalMoves(
 
     if (pieceData.carrying && pieceData.carrying.length > 0) {
       const stackMovesForSquare = generateStackSplitMoves(gameInstance, from)
+      //TODO: add filterPiece check here for ambiguous move check.
       stackMoves.push(...stackMovesForSquare)
     }
 
     if (!filterPiece || pieceData.type === filterPiece) {
-      const singleMoves = generateMovesForPiece(
+      const singleMovesForSquare = generateMovesForPiece(
         gameInstance,
         from,
         pieceData,
         false,
       )
-      moves.push(...singleMoves)
+      singleMoves.push(...singleMovesForSquare)
     }
   }
-  return { moves, stackMoves }
+  return { singleMoves, stackMoves }
 }
 
 function isHorizontalOffset(offset: number): boolean {

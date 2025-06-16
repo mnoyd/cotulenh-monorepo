@@ -277,7 +277,7 @@ describe('CoTuLenh Commander Rules', () => {
       const moves = blockingGame.moves({
         square: 'g10',
         verbose: true,
-      }) as Move[] // Move Infantry OFF the file
+      }).singleMoves as Move[] // Move Infantry OFF the file
       expect(findMove(moves, 'g10', 'f10')).toBeUndefined() // Should be illegal as it exposes Red Commander
     })
 
@@ -289,7 +289,7 @@ describe('CoTuLenh Commander Rules', () => {
       const moves = blockingGame.moves({
         square: 'e7',
         verbose: true,
-      }) as Move[] // Move Infantry OFF the rank
+      }).singleMoves as Move[] // Move Infantry OFF the rank
       expect(findMove(moves, 'e7', 'e8')).toBeUndefined() // Should be illegal as it exposes Red Commander
     })
 
@@ -301,7 +301,7 @@ describe('CoTuLenh Commander Rules', () => {
       const commanderMove = game.moves({
         square: 'g7',
         verbose: true,
-      }) as Move[] // Move commander one step off the file
+      }).singleMoves as Move[] // Move commander one step off the file
       expect(findMove(commanderMove, 'g7', 'g1')).toBeDefined() // Should be legal as path is blocked
     })
 
@@ -313,7 +313,7 @@ describe('CoTuLenh Commander Rules', () => {
       const commanderMove = game.moves({
         square: 'j7',
         verbose: true,
-      }) as Move[] // Move commander one step off the rank
+      }).singleMoves as Move[] // Move commander one step off the rank
       expect(findMove(commanderMove, 'j7', 'g7')).toBeDefined() // Should be legal as path is blocked
     })
 
@@ -324,7 +324,7 @@ describe('CoTuLenh Commander Rules', () => {
       const commanderMove = game.moves({
         square: 'h7',
         verbose: true,
-      }) as Move[]
+      }).singleMoves as Move[]
       expect(findMove(commanderMove, 'h7', 'd7')).toBeUndefined() // Should be illegal as it exposes Red Commander
       expect(findMove(commanderMove, 'h7', 'h12')).toBeDefined() // Should be legal as path is blocked by blue Infantry
     })
@@ -335,7 +335,8 @@ describe('CoTuLenh Commander Rules', () => {
       // c on e12, C on e6, Red to move. Path is clear.
       const fen = '6c4/11/11/11/11/6C4/11/11/11/11/11/11 r - - 0 1' // Corrected: k->c, K->C
       const game = new CoTuLenh(fen)
-      const moves = game.moves({ square: 'g7', verbose: true }) as Move[]
+      const moves = game.moves({ square: 'g7', verbose: true })
+        .singleMoves as Move[]
       const captureMove = moves.find((m) => m.to === 'g12' && m.isCapture())
       expect(captureMove).toBeDefined()
       // Check piece type and color
@@ -352,7 +353,8 @@ describe('CoTuLenh Commander Rules', () => {
       // c on a6, C on k6, Red to move. Path is clear.
       const fen = '11/11/11/11/11/3c5C1/11/11/11/11/11/11 r - - 0 1' // Corrected: k->c, K->C
       const game = new CoTuLenh(fen)
-      const moves = game.moves({ square: 'j7', verbose: true }) as Move[] // Red Commander at k6
+      const moves = game.moves({ square: 'j7', verbose: true })
+        .singleMoves as Move[] // Red Commander at k6
       const captureMove = moves.find((m) => m.to === 'd7' && m.isCapture())
       expect(captureMove).toBeDefined()
       expect(captureMove?.piece.type).toBe(COMMANDER)
@@ -367,7 +369,8 @@ describe('CoTuLenh Commander Rules', () => {
       // c on e12, C on e6, Infantry on e9 blocks. Red to move.
       const fen = '6c4/11/11/6I4/11/6C4/11/11/11/11/11/11 r - - 0 1' // Corrected: k->c, K->C
       const game = new CoTuLenh(fen)
-      const moves = game.moves({ square: 'g7', verbose: true }) as Move[]
+      const moves = game.moves({ square: 'g7', verbose: true })
+        .singleMoves as Move[]
       const captureMove = moves.find((m) => m.to === 'g12' && m.isCapture())
       expect(captureMove).toBeUndefined() // Capture should not be possible
     })
@@ -376,7 +379,8 @@ describe('CoTuLenh Commander Rules', () => {
       // c on a6, C on k6, Infantry on e6 blocks. Red to move.
       const fen = '11/11/11/11/11/2c1I4C1/11/11/11/11/11/11 r - - 0 1' // Corrected: k->c, K->C
       const game = new CoTuLenh(fen)
-      const moves = game.moves({ square: 'j7', verbose: true }) as Move[]
+      const moves = game.moves({ square: 'j7', verbose: true })
+        .singleMoves as Move[]
       const captureMove = moves.find((m) => m.to === 'c7' && m.isCapture())
       expect(captureMove).toBeUndefined() // Capture should not be possible
     })

@@ -7,9 +7,9 @@ import {
   NAVY,
   SQUARE_MAP,
 } from '../src/type'
-import { CoTuLenh, Move } from '../src/cotulenh'
+import { CoTuLenh, Move, MoveVerbose } from '../src/cotulenh'
 import { findMove, getDestinationSquares, setupGameBasic } from './test-helpers'
-import { generateMoveCandidateForSinglePieceInStack } from '../src/move-generation'
+import { generateMoveCandidateForPiecesInStack } from '../src/move-generation'
 
 describe('Basic TANK Moves on Empty Board', () => {
   let game: CoTuLenh
@@ -23,10 +23,11 @@ describe('Basic TANK Moves on Empty Board', () => {
     game.put({ type: TANK, color: RED }, startSquare)
 
     // Get verbose moves for the tank at e4
-    const moves = game.moves({
+    const allMoves = game.moves({
       square: startSquare,
       verbose: true,
-    }) as Move[]
+    }) as MoveVerbose
+    const moves = allMoves.singleMoves
 
     //prettier-ignore
     const expectedDestinations: Square[] = [
@@ -53,10 +54,11 @@ describe('Basic TANK Moves on Empty Board', () => {
     const startSquare: Square = 'a1'
     game.put({ type: TANK, color: RED }, startSquare)
 
-    const moves = game.moves({
+    const allMoves = game.moves({
       square: startSquare,
       verbose: true,
-    }) as Move[]
+    }) as MoveVerbose
+    const moves = allMoves.singleMoves
     const actualDestinations = getDestinationSquares(moves)
 
     expect(actualDestinations).toEqual([])
@@ -67,10 +69,11 @@ describe('Basic TANK Moves on Empty Board', () => {
     const startSquare: Square = 'c6'
     game.put({ type: TANK, color: RED }, startSquare)
 
-    const moves = game.moves({
+    const allMoves = game.moves({
       square: startSquare,
       verbose: true,
-    }) as Move[]
+    }) as MoveVerbose
+    const moves = allMoves.singleMoves
 
     //prettier-ignore
     const expectedDestinations: Square[] = [
@@ -110,10 +113,11 @@ describe('Basic MISSILE Moves on Empty Board', () => {
     game.put({ type: MISSILE, color: RED }, startSquare)
 
     // Use verbose moves as required by findMove helper
-    const moves = game.moves({
+    const allMoves = game.moves({
       square: startSquare,
       verbose: true,
-    }) as Move[]
+    }) as MoveVerbose
+    const moves = allMoves.singleMoves
     const actualDestinations = getDestinationSquares(moves)
 
     // Missile moves in a circular pattern with radius 2
@@ -160,10 +164,11 @@ describe('Basic MISSILE Moves on Empty Board', () => {
     game.put({ type: TANK, color: RED }, 'g4') // Friendly piece blocks N direction
 
     // Use verbose moves
-    const moves = game.moves({
+    const allMoves = game.moves({
       square: startSquare,
       verbose: true,
-    }) as Move[]
+    }) as MoveVerbose
+    const moves = allMoves.singleMoves
 
     //prettier-ignore
     const expectedDestinations: Square[] = [
@@ -203,10 +208,11 @@ describe('Basic MISSILE Moves on Empty Board', () => {
     const startSquare: Square = 'c1'
     game.put({ type: MISSILE, color: RED }, startSquare)
 
-    const moves = game.moves({
+    const allMoves = game.moves({
       square: startSquare,
       verbose: true,
-    }) as Move[]
+    }) as MoveVerbose
+    const moves = allMoves.singleMoves
 
     //prettier-ignore
     const expectedDestinations: Square[] = [
@@ -239,10 +245,11 @@ describe('Basic AIR_FORCE Moves on Empty Board', () => {
     game.put({ type: AIR_FORCE, color: RED }, startSquare)
 
     // Use verbose moves as required by findMove helper
-    const moves = game.moves({
+    const allMoves = game.moves({
       square: startSquare,
       verbose: true,
-    }) as Move[]
+    }) as MoveVerbose
+    const moves = allMoves.singleMoves
     const actualDestinations = getDestinationSquares(moves)
 
     // Air Force moves one square in any direction to land/mixed/air
@@ -273,10 +280,11 @@ describe('Basic AIR_FORCE Moves on Empty Board', () => {
     const startSquare: Square = 'c5'
     game.put({ type: AIR_FORCE, color: RED }, startSquare)
 
-    const moves = game.moves({
+    const allMoves = game.moves({
       square: startSquare,
       verbose: true,
-    }) as Move[]
+    }) as MoveVerbose
+    const moves = allMoves.singleMoves
     const actualDestinations = getDestinationSquares(moves)
     //prettier-ignore
     const expectedDestinations: Square[] = [
@@ -309,7 +317,7 @@ describe('Basic AIR_FORCE Moves on Empty Board', () => {
     //   square: startSquare,
     //   verbose: true,
     // }) as Move[]
-    const moves = generateMoveCandidateForSinglePieceInStack(
+    const moves = generateMoveCandidateForPiecesInStack(
       game,
       SQUARE_MAP[startSquare],
     )

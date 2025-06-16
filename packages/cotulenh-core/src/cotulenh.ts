@@ -31,6 +31,9 @@ import {
   AirDefense,
   CAPTURE_MASK,
   AIR_FORCE,
+  GenerateMovesResult,
+  MoveSan,
+  MoveVerbose,
 } from './type.js'
 import {
   getDisambiguator,
@@ -58,10 +61,10 @@ import {
   MoveCommandInteface,
 } from './move-apply.js'
 import {
-  createInternalDeployMove,
   DeployMove,
   DeployMoveRequest,
   deployMoveToSanLan,
+  findInternalDeployMove,
   InternalDeployMove,
   isInternalDeployMove,
 } from './deploy-move.js'
@@ -121,7 +124,7 @@ export class Move {
 
     const [san, lan] = game['_moveToSanLan'](
       internal,
-      game['_moves']({ legal: true }),
+      game['_moves']({ legal: true }).singleMoves,
     )
     this.san = san
     this.lan = lan
@@ -151,7 +154,9 @@ export class Move {
 
 // --- CoTuLenh Class (Additions) ---
 export class CoTuLenh {
-  private _movesCache = new QuickLRU<string, InternalMove[]>({ maxSize: 1000 })
+  private _movesCache = new QuickLRU<string, GenerateMovesResult>({
+    maxSize: 5000,
+  })
   private _board = new Array<Piece | undefined>(256)
   private _turn: Color = RED // Default to Red
   private _header: Record<string, string> = {}
@@ -527,7 +532,7 @@ export class CoTuLenh {
     pieceType?: PieceSymbol
     square?: Square
     deploy?: boolean
-  } = {}): InternalMove[] {
+  } = {}): GenerateMovesResult {
     if (deploy) {
       if (!filterSquare)
         throw new Error('Deploy move error: square is required')
@@ -555,25 +560,29 @@ export class CoTuLenh {
       }
       allMoves = generateDeployMoves(this, deployFilterSquare, filterPiece)
     } else {
-      const { moves, stackMoves } = generateNormalMoves(
+      const { singleMoves, stackMoves } = generateNormalMoves(
         this,
         us,
         filterPiece,
         filterSquare,
       )
-      allMoves = moves
+      allMoves = singleMoves
       allStackMoves = stackMoves
     }
 
     // Filter illegal moves (leaving commander in check)
-    let result: InternalMove[]
+    let result: GenerateMovesResult = { singleMoves: [], stackMoves: [] }
     if (legal) {
-      result = this._filterLegalMoves(allMoves, us) as InternalMove[]
-    } else {
-      result = allMoves
+      const legalSingleMoves = this._filterLegalMoves(
+        allMoves,
+        us,
+      ) as InternalMove[]
+      const legalStackMoves = this._filterLegalMoves(
+        allStackMoves,
+        us,
+      ) as InternalDeployMove[]
+      result = { singleMoves: legalSingleMoves, stackMoves: legalStackMoves }
     }
-    const legalStackMoves = this._filterLegalMoves(allStackMoves, us)
-    // console.log('legalStackMoves', legalStackMoves.length, allStackMoves.length)
     this._movesCache.set(cacheKey, result)
     return result
   }
@@ -650,8 +659,8 @@ export class CoTuLenh {
     verbose?: boolean
     square?: Square
     pieceType?: PieceSymbol
-  } = {}): string[] | Move[] {
-    const internalMoves = this._moves({
+  } = {}): MoveSan | MoveVerbose {
+    const moveGenResult = this._moves({
       square,
       pieceType,
       legal: true,
@@ -659,14 +668,26 @@ export class CoTuLenh {
 
     if (verbose) {
       // Map to Move objects, passing current heroic status
-      return internalMoves.map((move) => new Move(this, move))
+      return {
+        singleMoves: moveGenResult.singleMoves.map(
+          (move) => new Move(this, move),
+        ),
+        stackMoves: moveGenResult.stackMoves.map(
+          (move) => new DeployMove(this, move),
+        ),
+      }
     } else {
       // Generate SAN strings (needs proper implementation)
       // Pass all legal moves for ambiguity resolution
       const allLegalMoves = this._moves({ legal: true })
-      return internalMoves.map(
-        (move) => this._moveToSanLan(move, allLegalMoves)[0],
-      )
+      return {
+        singleMoves: moveGenResult.singleMoves.map(
+          (move) => this._moveToSanLan(move, allLegalMoves.singleMoves)[0],
+        ),
+        stackMoves: moveGenResult.stackMoves.map(
+          (move) => deployMoveToSanLan(move)[0],
+        ),
+      }
     }
   }
 
@@ -924,7 +945,12 @@ export class CoTuLenh {
    */
   isCheckmate(): boolean {
     // Checkmate = Commander is attacked AND no legal moves exist
-    return this.isCheck() && this._moves({ legal: true }).length === 0
+    const moves = this._moves({ legal: true })
+    return (
+      this.isCheck() &&
+      moves.singleMoves.length === 0 &&
+      moves.stackMoves.length === 0
+    )
   }
 
   // TODO: Implement isInsufficientMaterial, isThreefoldRepetition, isDrawByFiftyMoves based on variant rules
@@ -1041,7 +1067,7 @@ export class CoTuLenh {
   private _moveFromSan(move: string, strict = false): InternalMove | null {
     const cleanMove = strippedSan(move)
     let pieceType = inferPieceType(cleanMove)
-    let moves = this._moves({ legal: true, pieceType: pieceType })
+    let moves = this._moves({ legal: true, pieceType: pieceType }).singleMoves
 
     // strict parser
     for (let i = 0, len = moves.length; i < len; i++) {
@@ -1083,7 +1109,7 @@ export class CoTuLenh {
     moves = this._moves({
       legal: true,
       ...(pieceType && { pieceType: pieceType }),
-    })
+    }).singleMoves
     if (!to) {
       return null
     }
@@ -1165,7 +1191,7 @@ export class CoTuLenh {
         legal: true,
         square: move.from as Square,
         ...(move.piece && { pieceType: move.piece }),
-      })
+      }).singleMoves
       const foundMoves: InternalMove[] = []
       for (const m of legalMoves) {
         const isStayMove = (m.flags & BITS.STAY_CAPTURE) !== 0
@@ -1209,20 +1235,37 @@ export class CoTuLenh {
     return prettyMove
   }
 
-  deployMove(deployMove: DeployMoveRequest): DeployMove {
-    const sqFrom = SQUARE_MAP[deployMove.from]
-    const deployMoves = this._moves({ square: deployMove.from, deploy: true })
-    const originalPiece = this._board[sqFrom]
-
-    if (!originalPiece)
-      throw new Error('Deploy move error: original piece not found')
-    const internalDeployMove = createInternalDeployMove(
-      originalPiece,
-      deployMove,
-      deployMoves,
+  deployMove(deployMoveRequest: DeployMoveRequest): DeployMove {
+    console.time('allMoves time')
+    const legalStackMoves = this._moves({
+      legal: true,
+      square: deployMoveRequest.from,
+    }).stackMoves
+    console.timeEnd('allMoves time')
+    console.time('findMove time')
+    const foundDeployMove = findInternalDeployMove(
+      legalStackMoves,
+      deployMoveRequest,
     )
+    console.timeEnd('findMove time')
+    if (foundDeployMove.length === 0) {
+      throw new Error(
+        `No matching legal move found: ${JSON.stringify(deployMoveRequest)}`,
+      )
+    }
+    if (foundDeployMove.length > 1) {
+      throw new Error(
+        `Multiple matching legal moves found: ${JSON.stringify(deployMoveRequest)}`,
+      )
+    }
+    const internalDeployMove = foundDeployMove[0]
+    console.time('deployMove time')
     const prettyMove = new DeployMove(this, internalDeployMove)
+    console.timeEnd('deployMove time')
+
+    console.time('makeMove time')
     this._makeMove(internalDeployMove)
+    console.timeEnd('makeMove time')
 
     return prettyMove
   }
@@ -1310,10 +1353,12 @@ export class CoTuLenh {
       } else {
         // For string representation
         if (isInternalDeployMove(move)) {
-          const [san] = deployMoveToSanLan(this, move)
+          const [san] = deployMoveToSanLan(move)
           moveHistory.push(san)
         } else {
-          moveHistory.push(this._moveToSanLan(move, this._moves())[0])
+          moveHistory.push(
+            this._moveToSanLan(move, this._moves().singleMoves)[0],
+          )
         }
       }
 

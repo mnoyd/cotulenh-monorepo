@@ -1,7 +1,7 @@
 import { CoTuLenh, Move } from './cotulenh'
 import {
   canStayOnSquare,
-  generateMoveCandidateForSinglePieceInStack,
+  generateMoveCandidateForPiecesInStack,
 } from './move-generation.js'
 import {
   algebraic,
@@ -15,9 +15,7 @@ import {
 import {
   cloneInternalDeployMove,
   createAllPieceSplits,
-  createCombineStackFromPieces,
   flattenPiece,
-  getStepsBetweenSquares,
   makeSanPiece,
 } from './utils.js'
 
@@ -34,96 +32,96 @@ export interface InternalDeployMove {
   captured?: Piece[]
 }
 
-export function createInternalDeployMove(
-  originalPiece: Piece,
-  deployMove: DeployMoveRequest,
-  validMoves: InternalMove[],
-): InternalDeployMove {
-  if (!originalPiece) throw new Error('Original piece not found')
-  if (deployMove.stay) {
-    const { combined, uncombined } = createCombineStackFromPieces(
-      flattenPiece(deployMove.stay),
-    )
-    if (!combined || (uncombined?.length ?? 0) > 0) {
-      throw new Error('Deploy move error: stay piece not valid')
-    }
-  }
-  const dests = new Map<Square, Piece[]>()
-  for (const move of deployMove.moves) {
-    if (dests.has(move.to)) {
-      dests.get(move.to)?.push(move.piece)
-    } else {
-      dests.set(move.to, [move.piece])
-    }
-  }
-  const cleanedDupDests: { from: Square; to: Square; pieces: Piece[] }[] =
-    Array.from(dests, ([to, pieces]) => {
-      return { from: deployMove.from, to, pieces }
-    })
+// export function createInternalDeployMove(
+//   originalPiece: Piece,
+//   deployMove: DeployMoveRequest,
+//   validMoves: StackMovesForSquare,
+// ): InternalDeployMove {
+//   if (!originalPiece) throw new Error('Original piece not found')
+//   if (deployMove.stay) {
+//     const { combined, uncombined } = createCombineStackFromPieces(
+//       flattenPiece(deployMove.stay),
+//     )
+//     if (!combined || (uncombined?.length ?? 0) > 0) {
+//       throw new Error('Deploy move error: stay piece not valid')
+//     }
+//   }
+//   const dests = new Map<Square, Piece[]>()
+//   for (const move of deployMove.moves) {
+//     if (dests.has(move.to)) {
+//       dests.get(move.to)?.push(move.piece)
+//     } else {
+//       dests.set(move.to, [move.piece])
+//     }
+//   }
+//   const cleanedDupDests: { from: Square; to: Square; pieces: Piece[] }[] =
+//     Array.from(dests, ([to, pieces]) => {
+//       return { from: deployMove.from, to, pieces }
+//     })
 
-  const combinedDests: { from: Square; to: Square; piece: Piece }[] =
-    cleanedDupDests
-      .map((dest) => {
-        const { combined, uncombined } = createCombineStackFromPieces(
-          dest.pieces,
-        )
-        if (!combined || (uncombined?.length ?? 0) > 0) return null
-        // Only include the properties required by the type
-        return { from: dest.from, to: dest.to, piece: combined }
-      })
-      .filter(
-        (dest): dest is { from: Square; to: Square; piece: Piece } =>
-          dest !== null,
-      )
-  const cleanedAllMovingPiece = combinedDests.reduce<Piece[]>((acc, dest) => {
-    acc.push(...flattenPiece(dest.piece))
-    return acc
-  }, [])
-  const allPieces = [
-    ...cleanedAllMovingPiece,
-    ...(deployMove.stay ? flattenPiece(deployMove.stay) : []),
-  ]
-  if (allPieces.length !== flattenPiece(originalPiece).length) {
-    throw new Error(
-      'Deploy move error: ambiguous deploy move. some pieces are not clear whether moved or stay',
-    )
-  }
-  const toSquareNumDests = combinedDests.map((dest) => {
-    return {
-      from: SQUARE_MAP[dest.from],
-      to: SQUARE_MAP[dest.to],
-      piece: dest.piece,
-    }
-  })
+//   const combinedDests: { from: Square; to: Square; piece: Piece }[] =
+//     cleanedDupDests
+//       .map((dest) => {
+//         const { combined, uncombined } = createCombineStackFromPieces(
+//           dest.pieces,
+//         )
+//         if (!combined || (uncombined?.length ?? 0) > 0) return null
+//         // Only include the properties required by the type
+//         return { from: dest.from, to: dest.to, piece: combined }
+//       })
+//       .filter(
+//         (dest): dest is { from: Square; to: Square; piece: Piece } =>
+//           dest !== null,
+//       )
+//   const cleanedAllMovingPiece = combinedDests.reduce<Piece[]>((acc, dest) => {
+//     acc.push(...flattenPiece(dest.piece))
+//     return acc
+//   }, [])
+//   const allPieces = [
+//     ...cleanedAllMovingPiece,
+//     ...(deployMove.stay ? flattenPiece(deployMove.stay) : []),
+//   ]
+//   if (allPieces.length !== flattenPiece(originalPiece).length) {
+//     throw new Error(
+//       'Deploy move error: ambiguous deploy move. some pieces are not clear whether moved or stay',
+//     )
+//   }
+//   const toSquareNumDests = combinedDests.map((dest) => {
+//     return {
+//       from: SQUARE_MAP[dest.from],
+//       to: SQUARE_MAP[dest.to],
+//       piece: dest.piece,
+//     }
+//   })
 
-  const foundMove: InternalMove[] = []
-  for (const move of validMoves) {
-    const destIndex = toSquareNumDests.findIndex(
-      (dest) =>
-        dest.from === move.from &&
-        dest.to === move.to &&
-        dest.piece.type === move.piece.type,
-    )
-    if (destIndex !== -1) {
-      foundMove.push({ ...move, piece: toSquareNumDests[destIndex].piece })
-    }
-  }
-  if (foundMove.length !== toSquareNumDests.length) {
-    throw new Error('Deploy move error: move not found')
-  }
-  const captured: Piece[] = []
-  foundMove.forEach((move) => {
-    if (move.captured) {
-      captured.push(move.captured)
-    }
-  })
-  return {
-    from: SQUARE_MAP[deployMove.from],
-    moves: foundMove,
-    stay: deployMove.stay,
-    captured,
-  }
-}
+//   const foundMove: InternalMove[] = []
+//   for (const move of validMoves.get(dest.piece.type)) {
+//     const destIndex = toSquareNumDests.findIndex(
+//       (dest) =>
+//         dest.from === move.from &&
+//         dest.to === move.to &&
+//         dest.piece.type === move.piece.type,
+//     )
+//     if (destIndex !== -1) {
+//       foundMove.push({ ...move, piece: toSquareNumDests[destIndex].piece })
+//     }
+//   }
+//   if (foundMove.length !== toSquareNumDests.length) {
+//     throw new Error('Deploy move error: move not found')
+//   }
+//   const captured: Piece[] = []
+//   foundMove.forEach((move) => {
+//     if (move.captured) {
+//       captured.push(move.captured)
+//     }
+//   })
+//   return {
+//     from: SQUARE_MAP[deployMove.from],
+//     moves: foundMove,
+//     stay: deployMove.stay,
+//     captured,
+//   }
+// }
 export function isInternalDeployMove(
   move: InternalMove | InternalDeployMove,
 ): move is InternalDeployMove {
@@ -155,19 +153,19 @@ export class DeployMove {
     this.after = game.fen()
     game['_undoMove']()
 
-    const [san, lan] = deployMoveToSanLan(game, internal)
+    const [san, lan] = deployMoveToSanLan(internal)
     this.san = san
     this.lan = lan
   }
 }
 
-export function deployMoveToSanLan(
-  game: CoTuLenh,
-  move: InternalDeployMove,
-): [string, string] {
-  const legalMoves = game['_moves']({ legal: true })
+export function deployMoveToSanLan(move: InternalDeployMove): [string, string] {
+  // const legalMoves = game['_moves']({ legal: true })
+  // const allMoveSan = move.moves.map((m: InternalMove) => {
+  //   return game['_moveToSanLan'](m, legalMoves.singleMoves)[0]
+  // })
   const allMoveSan = move.moves.map((m: InternalMove) => {
-    return game['_moveToSanLan'](m, legalMoves)[0]
+    return `${makeSanPiece(m.piece)}>${algebraic(m.to)}`
   })
   const movesSan = allMoveSan.join(',')
   const stay = move.stay ? `${makeSanPiece(move.stay)}<` : ''
@@ -194,7 +192,7 @@ export function generateStackSplitMoves(
     return []
   }
   const splittedPieces = createAllPieceSplits(pieceAtSquare)
-  const moveCandidates = generateMoveCandidateForSinglePieceInStack(
+  const moveCandidates = generateMoveCandidateForPiecesInStack(
     gameInstance,
     stackSquare,
   )
@@ -293,4 +291,52 @@ const makeStackMoveFromCombination = (
     remaining,
     moveCandidates,
   )
+}
+
+export function findInternalDeployMove(
+  legalStackMoves: InternalDeployMove[],
+  deployMoveRequest: DeployMoveRequest,
+): InternalDeployMove[] {
+  const sqFrom = SQUARE_MAP[deployMoveRequest.from]
+  const deployMoveString = deployMoveRequestMovesToString(
+    deployMoveRequest.moves,
+  )
+  const stayString = deployMoveRequest.stay
+    ? makeSanPiece(deployMoveRequest.stay)
+    : ''
+  const foundDeployMove: InternalDeployMove[] = []
+  for (const move of legalStackMoves) {
+    if (
+      move.from === sqFrom &&
+      stayString === deployMoveStayPieceToString(move) &&
+      move.moves.length === deployMoveRequest.moves.length &&
+      deployMoveString === internalMovesToString(move.moves)
+    ) {
+      foundDeployMove.push(move)
+    }
+  }
+  return foundDeployMove
+}
+
+const deployMoveStayPieceToString = (move: InternalDeployMove) => {
+  return move.stay ? makeSanPiece(move.stay) : ''
+}
+
+const internalMovesToString = (moves: InternalMove[]) => {
+  return moves
+    .sort((a, b) => a.to - b.to)
+    .map((move) => `${makeSanPiece(move.piece)}:${algebraic(move.to)}`)
+    .join(',')
+}
+const deployMoveRequestMovesToString = (
+  moves: { piece: Piece; to: Square }[],
+) => {
+  return moves
+    .map((move) => ({
+      piece: move.piece,
+      to: SQUARE_MAP[move.to],
+    }))
+    .sort((a, b) => a.to - b.to)
+    .map((move) => `${makeSanPiece(move.piece)}:${algebraic(move.to)}`)
+    .join(',')
 }
