@@ -278,6 +278,10 @@ export abstract class MoveCommand implements MoveCommandInteface {
     // Store a mutable copy for potential updates (like setting 'captured' flag)
     this.move = { ...moveData }
     this.buildActions()
+    const defaultPostMoveActions = [
+      new CheckAndPromoteAttackersAction(this.move),
+    ]
+    this.actions.push(...defaultPostMoveActions)
   }
 
   /**
@@ -354,9 +358,6 @@ export class NormalMoveCommand extends MoveCommand {
         new UpdateCommanderPositionAction(us, this.move.to, this.game),
       )
     }
-
-    // Add check and promote action
-    this.actions.push(new CheckAndPromoteAttackersAction(this.move))
   }
 }
 
@@ -441,9 +442,6 @@ export class SingleDeployMoveCommand extends MoveCommand {
         movedPieces: flattendMovingPieces,
       }),
     )
-
-    // Add check and promote action
-    this.actions.push(new CheckAndPromoteAttackersAction(this.move))
   }
 }
 
@@ -498,9 +496,6 @@ class CombinationMoveCommand extends MoveCommand {
         ),
       )
     }
-
-    // Add check and promote action
-    this.actions.push(new CheckAndPromoteAttackersAction(this.move))
   }
 }
 
@@ -527,9 +522,6 @@ export class StayCaptureMoveCommand extends MoveCommand {
 
     // Only action is to remove the captured piece
     this.actions.push(new RemovePieceAction(targetSq))
-
-    // Add check and promote action
-    this.actions.push(new CheckAndPromoteAttackersAction(this.move))
   }
 }
 
@@ -561,9 +553,6 @@ export class SuicideCaptureMoveCommand extends MoveCommand {
 
     this.actions.push(new RemovePieceAction(targetSq))
     this.actions.push(new RemovePieceAction(this.move.from))
-
-    // Add check and promote action
-    this.actions.push(new CheckAndPromoteAttackersAction(this.move))
   }
 }
 
