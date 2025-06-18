@@ -15,7 +15,6 @@ import {
   createCombinedPiece,
   createCombineStackFromPieces,
   flattenPiece,
-  haveCommander,
 } from './utils.js'
 
 /**
@@ -179,33 +178,6 @@ class RemoveFromStackAction implements AtomicMoveAction {
 }
 
 /**
- * Updates the king position
- */
-class UpdateCommanderPositionAction implements AtomicMoveAction {
-  private oldPosition: number
-
-  constructor(
-    private color: Color,
-    private newPosition: number,
-    game: CoTuLenh,
-  ) {
-    // _kings square should be either -1 indicating king captured, or a square index
-    if (game['_commanders'][color] === -1) {
-      throw new Error(`No king found for color ${color}`)
-    }
-    this.oldPosition = game['_commanders'][color]
-  }
-
-  execute(game: CoTuLenh): void {
-    game.updateCommandersPosition(this.newPosition, this.color)
-  }
-
-  undo(game: CoTuLenh): void {
-    game.updateCommandersPosition(this.oldPosition, this.color)
-  }
-}
-
-/**
  * Sets the deploy state
  */
 class SetDeployStateAction implements AtomicMoveAction {
@@ -330,16 +302,6 @@ export class NormalMoveCommand extends MoveCommand {
     // Add actions for the normal move
     this.actions.push(new RemovePieceAction(this.move.from))
     this.actions.push(new PlacePieceAction(this.move.to, pieceThatMoved))
-
-    // Update king position if needed
-    if (
-      pieceThatMoved.type === COMMANDER ||
-      (pieceThatMoved.carrying?.some((p) => p.type === COMMANDER) ?? false)
-    ) {
-      this.actions.push(
-        new UpdateCommanderPositionAction(us, this.move.to, this.game),
-      )
-    }
   }
 }
 
@@ -370,16 +332,6 @@ export class CaptureMoveCommand extends MoveCommand {
     this.actions.push(new RemovePieceAction(this.move.from))
     this.actions.push(new RemovePieceAction(this.move.to))
     this.actions.push(new PlacePieceAction(this.move.to, pieceThatMoved))
-
-    // Update king position if needed
-    if (
-      pieceThatMoved.type === COMMANDER ||
-      (pieceThatMoved.carrying?.some((p) => p.type === COMMANDER) ?? false)
-    ) {
-      this.actions.push(
-        new UpdateCommanderPositionAction(us, this.move.to, this.game),
-      )
-    }
   }
 }
 
@@ -442,17 +394,6 @@ export class SingleDeployMoveCommand extends MoveCommand {
       if ((this.move.flags & BITS.SUICIDE_CAPTURE) === 0) {
         this.actions.push(new PlacePieceAction(destSq, this.move.piece))
       }
-
-      const haveCommander = flattendMovingPieces.some(
-        (p) => p.type === COMMANDER,
-      )
-
-      // Update king position if needed
-      if (haveCommander) {
-        this.actions.push(
-          new UpdateCommanderPositionAction(us, destSq, this.game),
-        )
-      }
     }
 
     // Set deploy state for next move
@@ -504,20 +445,6 @@ class CombinationMoveCommand extends MoveCommand {
 
     // 3. Place the new combined piece on the 'to' square
     this.actions.push(new PlacePieceAction(this.move.to, combinedPiece))
-
-    // Handle commander position update if the *moving* piece was a commander
-    if (
-      movingPieceData.type === COMMANDER ||
-      (movingPieceData.carrying?.some((p) => p.type === COMMANDER) ?? false)
-    ) {
-      this.actions.push(
-        new UpdateCommanderPositionAction(
-          this.move.color,
-          this.move.to,
-          this.game,
-        ),
-      )
-    }
   }
 }
 
