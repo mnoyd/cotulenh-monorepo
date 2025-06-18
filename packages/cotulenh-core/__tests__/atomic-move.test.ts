@@ -1,5 +1,6 @@
 import { CoTuLenh } from '../src/cotulenh.js'
 import {
+  CaptureMoveCommand,
   NormalMoveCommand,
   SingleDeployMoveCommand,
   StayCaptureMoveCommand,
@@ -61,11 +62,11 @@ describe('Move Commands', () => {
         flags: BITS.CAPTURE,
       }
 
-      const command = new NormalMoveCommand(game, move)
+      const command = new CaptureMoveCommand(game, move)
       command.execute()
       expect(game.get('d2')).toBeUndefined()
       expect(game.get('d4')?.color).toBe(RED)
-      expect(command.move.captured?.type).toBe(INFANTRY)
+      expect(game.get('d4')?.type).toBe(TANK)
 
       command.undo()
       expect(game.get('d2')?.color).toBe(RED)

@@ -317,7 +317,6 @@ export abstract class MoveCommand implements MoveCommandInteface {
 export class NormalMoveCommand extends MoveCommand {
   protected buildActions(): void {
     const us = this.move.color
-    const them = swapColor(us)
     const pieceThatMoved = this.game.get(this.move.from)
 
     if (!pieceThatMoved) {
@@ -328,25 +327,48 @@ export class NormalMoveCommand extends MoveCommand {
       )
     }
 
-    // Handle capture if needed
-    if (this.move.flags & BITS.CAPTURE) {
-      const capturedPieceData = this.game.get(this.move.to)
-      if (!capturedPieceData || capturedPieceData.color !== them) {
-        throw new Error(
-          `Build NormalMove Error: Capture target invalid ${algebraic(
-            this.move.to,
-          )}`,
-        )
-      }
-      // Ensure the captured type is stored on the move object
-      this.move.captured = capturedPieceData
-
-      // Add action to remove the captured piece
-      this.actions.push(new RemovePieceAction(this.move.to))
-    }
-
     // Add actions for the normal move
     this.actions.push(new RemovePieceAction(this.move.from))
+    this.actions.push(new PlacePieceAction(this.move.to, pieceThatMoved))
+
+    // Update king position if needed
+    if (
+      pieceThatMoved.type === COMMANDER ||
+      (pieceThatMoved.carrying?.some((p) => p.type === COMMANDER) ?? false)
+    ) {
+      this.actions.push(
+        new UpdateCommanderPositionAction(us, this.move.to, this.game),
+      )
+    }
+  }
+}
+
+export class CaptureMoveCommand extends MoveCommand {
+  protected buildActions(): void {
+    const us = this.move.color
+    const them = swapColor(us)
+    const pieceThatMoved = this.game.get(this.move.from)
+
+    if (!pieceThatMoved) {
+      throw new Error(
+        `Build CaptureMove Error: Piece missing from source ${algebraic(
+          this.move.from,
+        )}`,
+      )
+    }
+
+    const capturedPieceData = this.game.get(this.move.to)
+    if (!capturedPieceData || capturedPieceData.color !== them) {
+      throw new Error(
+        `Build CaptureMove Error: Capture target invalid ${algebraic(
+          this.move.to,
+        )}`,
+      )
+    }
+
+    // Add actions for the capture move
+    this.actions.push(new RemovePieceAction(this.move.from))
+    this.actions.push(new RemovePieceAction(this.move.to))
     this.actions.push(new PlacePieceAction(this.move.to, pieceThatMoved))
 
     // Update king position if needed
@@ -571,6 +593,8 @@ export function createMoveCommand(
   } else if (move.flags & BITS.COMBINATION) {
     // Add combination check
     return new CombinationMoveCommand(game, move)
+  } else if (move.flags & BITS.CAPTURE) {
+    return new CaptureMoveCommand(game, move)
   } else {
     // Default to NormalMove if no other specific flags are set
     return new NormalMoveCommand(game, move)
