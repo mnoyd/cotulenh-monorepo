@@ -288,16 +288,7 @@ export abstract class MoveCommand implements MoveCommandInteface {
 
 export class NormalMoveCommand extends MoveCommand {
   protected buildActions(): void {
-    const us = this.move.color
-    const pieceThatMoved = this.game.get(this.move.from)
-
-    if (!pieceThatMoved) {
-      throw new Error(
-        `Build NormalMove Error: Piece missing from source ${algebraic(
-          this.move.from,
-        )}`,
-      )
-    }
+    const pieceThatMoved = getMovingPieceFromInternalMove(this.game, this.move)
 
     // Add actions for the normal move
     this.actions.push(new RemovePieceAction(this.move.from))
@@ -309,15 +300,7 @@ export class CaptureMoveCommand extends MoveCommand {
   protected buildActions(): void {
     const us = this.move.color
     const them = swapColor(us)
-    const pieceThatMoved = this.game.get(this.move.from)
-
-    if (!pieceThatMoved) {
-      throw new Error(
-        `Build CaptureMove Error: Piece missing from source ${algebraic(
-          this.move.from,
-        )}`,
-      )
-    }
+    const pieceThatMoved = getMovingPieceFromInternalMove(this.game, this.move)
 
     const capturedPieceData = this.game.get(this.move.to)
     if (!capturedPieceData || capturedPieceData.color !== them) {
@@ -413,7 +396,7 @@ export class SingleDeployMoveCommand extends MoveCommand {
  */
 class CombinationMoveCommand extends MoveCommand {
   protected buildActions(): void {
-    const movingPieceData = this.game.get(this.move.from)
+    const movingPieceData = getMovingPieceFromInternalMove(this.game, this.move)
     const targetPieceData = this.game.get(this.move.to)
 
     if (
@@ -467,8 +450,6 @@ export class StayCaptureMoveCommand extends MoveCommand {
       )
     }
 
-    this.move.captured = capturedPiece
-
     // Only action is to remove the captured piece
     this.actions.push(new RemovePieceAction(targetSq))
   }
@@ -484,7 +465,7 @@ export class SuicideCaptureMoveCommand extends MoveCommand {
     const us = this.move.color
     const them = swapColor(us)
     const targetSq = this.move.to
-    const pieceAtFrom = this.game.get(this.move.from)
+    const pieceAtFrom = getMovingPieceFromInternalMove(this.game, this.move)
     if (!pieceAtFrom) {
       throw new Error(
         `Build StayCapture Error: No piece to move at ${algebraic(this.move.from)}`,
@@ -725,4 +706,31 @@ export function createDeployMoveCommand(
   move: InternalDeployMove,
 ): DeployMoveCommand {
   return new DeployMoveCommand(game, move)
+}
+
+const getMovingPieceFromInternalMove = (
+  game: CoTuLenh,
+  move: InternalMove,
+): Piece => {
+  const pieceAtFrom = game.get(move.from)
+  if (!pieceAtFrom) {
+    throw new Error(`No piece to move at ${algebraic(move.from)}`)
+  }
+  const requestMovingPieces = flattenPiece(move.piece)
+  const movingPiece: Piece[] = []
+  for (const piece of flattenPiece(pieceAtFrom)) {
+    const idx = requestMovingPieces.findIndex((p) => p.type === piece.type)
+    if (idx !== -1) {
+      movingPiece.push({ ...piece })
+      requestMovingPieces.splice(idx, 1)
+    }
+  }
+  if (requestMovingPieces.length > 0) {
+    throw new Error(`Not enough pieces to move at ${algebraic(move.from)}`)
+  }
+  const { combined, uncombined } = createCombineStackFromPieces(movingPiece)
+  if (!combined || (uncombined && uncombined.length > 0)) {
+    throw new Error(`Not enough pieces to move at ${algebraic(move.from)}`)
+  }
+  return combined
 }
