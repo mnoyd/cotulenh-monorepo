@@ -291,7 +291,9 @@ export class NormalMoveCommand extends MoveCommand {
     const pieceThatMoved = getMovingPieceFromInternalMove(this.game, this.move)
 
     // Add actions for the normal move
-    this.actions.push(new RemovePieceAction(this.move.from))
+    if (!isStackMove(this.move)) {
+      this.actions.push(new RemovePieceAction(this.move.from))
+    }
     this.actions.push(new PlacePieceAction(this.move.to, pieceThatMoved))
   }
 }
@@ -312,8 +314,9 @@ export class CaptureMoveCommand extends MoveCommand {
     }
 
     // Add actions for the capture move
-    this.actions.push(new RemovePieceAction(this.move.from))
-    this.actions.push(new RemovePieceAction(this.move.to))
+    if (!isStackMove(this.move)) {
+      this.actions.push(new RemovePieceAction(this.move.from))
+    }
     this.actions.push(new PlacePieceAction(this.move.to, pieceThatMoved))
   }
 }
@@ -419,7 +422,9 @@ class CombinationMoveCommand extends MoveCommand {
     }
 
     // 1. Remove the moving piece from the 'from' square
-    this.actions.push(new RemovePieceAction(this.move.from))
+    if (!isStackMove(this.move)) {
+      this.actions.push(new RemovePieceAction(this.move.from))
+    }
 
     // 2. Remove the existing piece from the 'to' square (before placing the combined one)
     //    Using PlacePieceAction with the combined piece handles both removal and placement
@@ -481,8 +486,10 @@ export class SuicideCaptureMoveCommand extends MoveCommand {
 
     this.move.captured = capturedPiece
 
+    if (!isStackMove(this.move)) {
+      this.actions.push(new RemovePieceAction(this.move.from))
+    }
     this.actions.push(new RemovePieceAction(targetSq))
-    this.actions.push(new RemovePieceAction(this.move.from))
   }
 }
 
@@ -733,4 +740,8 @@ const getMovingPieceFromInternalMove = (
     throw new Error(`Not enough pieces to move at ${algebraic(move.from)}`)
   }
   return combined
+}
+
+const isStackMove = (move: InternalMove): boolean => {
+  return !!(move.flags & BITS.DEPLOY)
 }
