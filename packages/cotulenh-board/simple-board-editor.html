@@ -1,0 +1,239 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Co Tu lenh Demo</title>
+
+    <link rel="stylesheet" type="text/css" href="assets/commander-chess.pieces.css" />
+    <link rel="stylesheet" type="text/css" href="assets/commander-chess.base.css" />
+    <link rel="stylesheet" type="text/css" href="assets/commander-chess.clasic.css" />
+    <style>
+      body {
+        display: flex;
+        flex-wrap: wrap;
+      }
+
+      body > div {
+        margin: 10px;
+      }
+
+      .board {
+        width: 600px;
+        height: 650px;
+      }
+    </style>
+
+    <script type="module">
+      import { CotulenhBoard } from './dist/index.es.js';
+
+      // Array of predefined FEN strings for showcase
+      const fenShowcases = [
+        { name: 'Empty Board', fen: '11/11/11/11/11/11/11/11/11/11/11' },
+        {
+          name: 'Starting Position',
+          fen: 'c4(FTI)5/11/11/11/2(ea)2(NFI)i4/5(fti)5/6E4/6i4/7(FIM)3/11/1n4F1T4/5(HC)4(NTI)',
+        },
+        {
+          name: 'Mid-Game Example 1',
+          fen: 'c4(FT)6/11/11/11/2(ea)2(NF)i5/5(ft)6/6E4/6i4/7(FM)4/11/1n4F1T4/5(HC)4(NI)',
+        },
+        {
+          name: 'Mid-Game Example 2',
+          fen: 'c4(F)7/11/11/11/2(e)2(N)i6/5(f)7/6E4/6i4/7(F)5/11/1n4F1T4/5(H)4(N)',
+        },
+        { name: 'End-Game Example', fen: 'c10/11/11/11/2(e)8/11/11/11/11/11/1n9/5(H)5' },
+        { name: 'Red Advantage', fen: 'c4(FTI)5/11/11/11/2(ea)2(NFI)i4/5(f)7/11/11/11/11/1n9/5(H)5' },
+        { name: 'Blue Advantage', fen: 'c10/11/11/11/11/11/11/6i4/7(FIM)3/11/1n4F1T4/5(HC)4(NTI)' },
+        { name: 'Heroic Pieces Example', fen: 'c10/11/11/11/11/11/11/11/11/11/1n9/5(H*)5' },
+      ];
+
+      const board = CotulenhBoard(document.getElementById('board-1'), {});
+
+      // Function to print the current FEN to the console and update the input field
+      function printFen() {
+        const fen = board.getFen();
+        console.log('Current FEN:', fen);
+        document.getElementById('fen-input').value = fen;
+      }
+
+      // Function to apply a new FEN to the board
+      function applyFen() {
+        const fenInput = document.getElementById('fen-input').value;
+        board.set({
+          fen: fenInput,
+          lastMove: null,
+        });
+      }
+
+      // Function to apply a FEN from the showcase dropdown
+      function applyShowcaseFen() {
+        const selectElement = document.getElementById('fen-showcase');
+        const selectedFen = selectElement.value;
+        document.getElementById('fen-input').value = selectedFen;
+        board.set({
+          fen: selectedFen,
+          lastMove: null,
+        });
+      }
+
+      // Function to add a piece at position a12
+      function addPiece(role) {
+        const color = document.getElementById('piece-color').checked ? 'blue' : 'red';
+        const piece = { role: role, color: color };
+        board.setPieces(new Map([['a12', piece]]));
+        printFen(); // Update the FEN input after adding the piece
+      }
+
+      // Function to clear the board completely
+      function clearBoard() {
+        board.set({
+          fen: '11/11/11/11/11/11/11/11/11/11/11',
+          lastMove: null,
+        });
+        printFen(); // Update the FEN input after clearing the board
+      }
+
+      // Function to make the selected piece heroic (promoted)
+      function makeHeroic() {
+        // Get all pieces from the board
+        const pieces = board.state.pieces;
+        // Find the selected piece if any
+        const selected = board.state.selected;
+
+        if (selected) {
+          const key = selected.square;
+          const piece = pieces.get(key);
+          if (piece) {
+            // Toggle the promoted property
+            piece.promoted = !piece.promoted;
+            // Update the board with the modified piece
+            board.setPieces(new Map([[key, piece]]));
+            printFen(); // Update the FEN input
+          }
+        } else {
+          alert('Please select a piece first');
+        }
+      }
+
+      // Function to rotate the board (toggle orientation)
+      function rotateBoard() {
+        board.toggleOrientation();
+        printFen(); // Update the FEN input after rotating
+      }
+
+      // Function to populate the showcase dropdown
+      function populateShowcaseDropdown() {
+        const selectElement = document.getElementById('fen-showcase');
+        // Clear existing options except the first one
+        while (selectElement.options.length > 1) {
+          selectElement.remove(1);
+        }
+
+        // Add options from the fenShowcases array
+        fenShowcases.forEach(showcase => {
+          const option = document.createElement('option');
+          option.value = showcase.fen;
+          option.textContent = showcase.name;
+          selectElement.appendChild(option);
+        });
+      }
+
+      // Attach the functions to the window object
+      window.printFen = printFen;
+      window.applyFen = applyFen;
+      window.addPiece = addPiece;
+      window.clearBoard = clearBoard;
+      window.makeHeroic = makeHeroic;
+      window.rotateBoard = rotateBoard;
+      window.applyShowcaseFen = applyShowcaseFen;
+
+      // Initialize the FEN input and populate the showcase dropdown when the board is loaded
+      setTimeout(() => {
+        printFen();
+        populateShowcaseDropdown();
+      }, 500); // Small delay to ensure the board is fully initialized
+    </script>
+  </head>
+  <body>
+    <div>
+      basic board, default config
+      <div class="board" id="board-1">
+        <!-- <cg-container>
+          <cg-board></cg-board>
+        </cg-container> -->
+      </div>
+      <div style="margin-top: 10px">
+        <div style="margin-bottom: 10px">
+          <label for="fen-showcase">Showcase Positions:</label>
+          <select id="fen-showcase" style="width: 200px; margin-right: 10px">
+            <option value="">-- Select a position --</option>
+          </select>
+          <button
+            onclick="applyShowcaseFen()"
+            style="background-color: #55aa55; color: white; padding: 5px 10px"
+          >
+            Apply Selected Position
+          </button>
+        </div>
+        <label for="fen-input">FEN:</label>
+        <input
+          type="text"
+          id="fen-input"
+          style="width: 400px; margin-right: 10px"
+          placeholder="Enter FEN string"
+        />
+        <button onclick="printFen()">Get Current FEN</button>
+        <button onclick="applyFen()">Apply FEN</button>
+      </div>
+
+      <div style="margin-top: 10px">
+        <div>
+          <label>Piece Color:</label>
+          <label style="margin-right: 10px">
+            <input type="radio" name="color" id="piece-color-red" checked /> Red
+          </label>
+          <label> <input type="radio" name="color" id="piece-color" /> Blue </label>
+        </div>
+        <div style="margin-top: 5px">
+          <label>Add piece at a12:</label>
+          <div>
+            <button onclick="addPiece('commander')" style="margin: 2px">Add Commander</button>
+            <button onclick="addPiece('infantry')" style="margin: 2px">Add Infantry</button>
+            <button onclick="addPiece('tank')" style="margin: 2px">Add Tank</button>
+            <button onclick="addPiece('militia')" style="margin: 2px">Add Militia</button>
+            <button onclick="addPiece('engineer')" style="margin: 2px">Add Engineer</button>
+            <button onclick="addPiece('artillery')" style="margin: 2px">Add Artillery</button>
+          </div>
+          <div>
+            <button onclick="addPiece('anti_air')" style="margin: 2px">Add Anti-Air</button>
+            <button onclick="addPiece('missile')" style="margin: 2px">Add Missile</button>
+            <button onclick="addPiece('air_force')" style="margin: 2px">Add Air Force</button>
+            <button onclick="addPiece('navy')" style="margin: 2px">Add Navy</button>
+            <button onclick="addPiece('headquarter')" style="margin: 2px">Add Headquarter</button>
+          </div>
+          <div style="margin-top: 10px">
+            <button
+              onclick="clearBoard()"
+              style="margin: 2px; background-color: #ff5555; color: white; padding: 5px 10px"
+            >
+              Clear Board
+            </button>
+            <button
+              onclick="makeHeroic()"
+              style="margin: 2px; background-color: #ffaa00; color: white; padding: 5px 10px"
+            >
+              Make Selected Piece Heroic
+            </button>
+            <button
+              onclick="rotateBoard()"
+              style="margin: 2px; background-color: #5555ff; color: white; padding: 5px 10px"
+            >
+              Rotate Board
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
