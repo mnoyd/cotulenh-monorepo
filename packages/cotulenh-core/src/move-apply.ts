@@ -20,7 +20,7 @@ import {
 /**
  * Represents an atomic board action that can be executed and undone
  */
-interface AtomicMoveAction {
+interface CTLAtomicMoveAction {
   execute(): void
   undo(): void
 }
@@ -28,7 +28,7 @@ interface AtomicMoveAction {
 /**
  * Removes a piece from a square
  */
-class RemovePieceAction implements AtomicMoveAction {
+class RemovePieceAction implements CTLAtomicMoveAction {
   private removedPiece?: Piece
   constructor(
     protected game: CoTuLenh,
@@ -60,7 +60,7 @@ class RemovePieceAction implements AtomicMoveAction {
 /**
  * Places a piece on a square
  */
-class PlacePieceAction implements AtomicMoveAction {
+class PlacePieceAction implements CTLAtomicMoveAction {
   private existingPiece?: Piece
   constructor(
     protected game: CoTuLenh,
@@ -102,7 +102,7 @@ class PlacePieceAction implements AtomicMoveAction {
 /**
  * Removes a piece from a carrier's stack
  */
-class RemoveFromStackAction implements AtomicMoveAction {
+class RemoveFromStackAction implements CTLAtomicMoveAction {
   private removedPiece: Piece[] | null = null
   constructor(
     protected game: CoTuLenh,
@@ -177,7 +177,7 @@ class RemoveFromStackAction implements AtomicMoveAction {
 /**
  * Sets the deploy state
  */
-class SetDeployStateAction implements AtomicMoveAction {
+class SetDeployStateAction implements CTLAtomicMoveAction {
   private oldDeployState: DeployState | null = null
   constructor(
     protected game: CoTuLenh,
@@ -227,19 +227,17 @@ class SetDeployStateAction implements AtomicMoveAction {
   }
 }
 
-export interface MoveCommandInteface {
+export interface CTLMoveCommandInteface extends CTLAtomicMoveAction {
   move: InternalMove | InternalDeployMove
-  execute(): void
-  undo(): void
 }
 
 /**
  * Abstract base class for all move commands.
  * Each command knows how to execute and undo itself.
  */
-export abstract class MoveCommand implements MoveCommandInteface {
+export abstract class CTLMoveCommand implements CTLMoveCommandInteface {
   public readonly move: InternalMove
-  protected actions: AtomicMoveAction[] = []
+  protected actions: CTLAtomicMoveAction[] = []
 
   constructor(
     protected game: CoTuLenh,
@@ -270,7 +268,7 @@ export abstract class MoveCommand implements MoveCommandInteface {
 
 // --- Concrete Command Implementations ---
 
-export class NormalMoveCommand extends MoveCommand {
+export class NormalMoveCommand extends CTLMoveCommand {
   protected buildActions(): void {
     const pieceThatMoved = getMovingPieceFromInternalMove(this.game, this.move)
 
@@ -284,7 +282,7 @@ export class NormalMoveCommand extends MoveCommand {
   }
 }
 
-export class CaptureMoveCommand extends MoveCommand {
+export class CaptureMoveCommand extends CTLMoveCommand {
   protected buildActions(): void {
     const us = this.move.color
     const them = swapColor(us)
@@ -309,7 +307,7 @@ export class CaptureMoveCommand extends MoveCommand {
   }
 }
 
-export class SingleDeployMoveCommand extends MoveCommand {
+export class SingleDeployMoveCommand extends CTLMoveCommand {
   protected buildActions(): void {
     const us = this.move.color
     const them = swapColor(us)
@@ -387,7 +385,7 @@ export class SingleDeployMoveCommand extends MoveCommand {
 /**
  * Command for combining two friendly pieces.
  */
-class CombinationMoveCommand extends MoveCommand {
+class CombinationMoveCommand extends CTLMoveCommand {
   protected buildActions(): void {
     const movingPieceData = getMovingPieceFromInternalMove(this.game, this.move)
     const targetPieceData = this.game.get(this.move.to)
@@ -428,7 +426,7 @@ class CombinationMoveCommand extends MoveCommand {
   }
 }
 
-export class StayCaptureMoveCommand extends MoveCommand {
+export class StayCaptureMoveCommand extends CTLMoveCommand {
   protected buildActions(): void {
     const us = this.move.color
     const them = swapColor(us)
@@ -457,7 +455,7 @@ export class StayCaptureMoveCommand extends MoveCommand {
  * For deploy moves, only the deployed air force piece (and its carrying pieces) are destroyed,
  * while the remainder stays on the original square.
  */
-export class SuicideCaptureMoveCommand extends MoveCommand {
+export class SuicideCaptureMoveCommand extends CTLMoveCommand {
   protected buildActions(): void {
     const us = this.move.color
     const them = swapColor(us)
@@ -489,7 +487,7 @@ export class SuicideCaptureMoveCommand extends MoveCommand {
 export function createMoveCommand(
   game: CoTuLenh,
   move: InternalMove,
-): MoveCommand {
+): CTLMoveCommand {
   // Check flags in order of precedence (if applicable)
   if (move.flags & BITS.DEPLOY) {
     return new SingleDeployMoveCommand(game, move)
@@ -511,7 +509,7 @@ export function createMoveCommand(
 /**
  * Sets or unsets the heroic status of a piece
  */
-class SetHeroicAction implements AtomicMoveAction {
+class SetHeroicAction implements CTLAtomicMoveAction {
   private wasHeroic?: boolean
   constructor(
     protected game: CoTuLenh,
@@ -541,7 +539,7 @@ class SetHeroicAction implements AtomicMoveAction {
  * Checks if the opponent's commander is attacked after a move
  * and promotes the attacking pieces to heroic.
  */
-class CheckAndPromoteAttackersAction implements AtomicMoveAction {
+class CheckAndPromoteAttackersAction implements CTLAtomicMoveAction {
   private heroicActions: SetHeroicAction[] = []
   private moveColor: Color
   constructor(
@@ -584,10 +582,9 @@ class CheckAndPromoteAttackersAction implements AtomicMoveAction {
  * Abstract base class for commands that handle sequences of moves.
  * Provides common functionality for executing and undoing sequences.
  */
-export abstract class SequenceMoveCommand implements MoveCommandInteface {
+export abstract class SequenceMoveCommand implements CTLMoveCommandInteface {
   public readonly move: InternalDeployMove
-  protected moveCommands: MoveCommand[] = []
-  protected atomicActions: AtomicMoveAction[] = []
+  protected commands: (CTLMoveCommand | CTLAtomicMoveAction)[] = []
 
   constructor(
     protected game: CoTuLenh,
@@ -597,50 +594,19 @@ export abstract class SequenceMoveCommand implements MoveCommandInteface {
     this.buildActions()
   }
 
-  /**
-   * Creates the sequence of move commands to be executed
-   */
-  protected abstract createMoveSequence(): MoveCommand[]
-
-  /**
-   * Creates atomic actions to be executed before the move sequence
-   * Override this method to add custom atomic actions
-   */
-  protected createAtomicActions(): AtomicMoveAction[] {
-    return []
-  }
-
-  protected buildActions(): void {
-    // Create atomic actions to be executed before the move sequence
-    this.atomicActions = this.createAtomicActions()
-
-    // Create the sequence of move commands
-    this.moveCommands = this.createMoveSequence()
-    // We don't add the commands directly to the actions array
-    // Instead, we'll handle them in execute() and undo()
-  }
+  protected buildActions(): void {}
 
   execute(): void {
-    // First execute any atomic actions
-    for (const action of this.atomicActions) {
-      action.execute()
-    }
-
     // Then execute each move command in sequence
-    for (const command of this.moveCommands) {
+    for (const command of this.commands) {
       command.execute()
     }
   }
 
   undo(): void {
     // First undo moves in reverse order
-    for (let i = this.moveCommands.length - 1; i >= 0; i--) {
-      this.moveCommands[i].undo()
-    }
-
-    // Then undo atomic actions in reverse order
-    for (let i = this.atomicActions.length - 1; i >= 0; i--) {
-      this.atomicActions[i].undo()
+    for (let i = this.commands.length - 1; i >= 0; i--) {
+      this.commands[i].undo()
     }
   }
 }
@@ -656,9 +622,8 @@ export class DeployMoveCommand extends SequenceMoveCommand {
     super(game, moveData)
   }
 
-  protected createAtomicActions(): AtomicMoveAction[] {
-    // Add a SetDeployStateAction to be executed before the move sequence
-    return [
+  protected buildActions(): void {
+    this.commands = [
       new SetDeployStateAction(this.game, {
         stackSquare: this.moveData.from,
         turn: this.game['_turn'],
@@ -667,11 +632,9 @@ export class DeployMoveCommand extends SequenceMoveCommand {
         stay: this.moveData.stay ? flattenPiece(this.moveData.stay) : [],
       }),
     ]
-  }
-
-  protected createMoveSequence(): MoveCommand[] {
-    // Create individual MoveCommand for each move in the sequence
-    return this.moveData.moves.map((move) => createMoveCommand(this.game, move))
+    this.commands.push(
+      ...this.moveData.moves.map((move) => createMoveCommand(this.game, move)),
+    )
   }
 }
 
