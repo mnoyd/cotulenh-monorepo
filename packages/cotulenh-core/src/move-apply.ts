@@ -21,8 +21,8 @@ import {
  * Represents an atomic board action that can be executed and undone
  */
 interface AtomicMoveAction {
-  execute(game: CoTuLenh): void
-  undo(game: CoTuLenh): void
+  execute(): void
+  undo(): void
 }
 
 /**
@@ -30,20 +30,22 @@ interface AtomicMoveAction {
  */
 class RemovePieceAction implements AtomicMoveAction {
   private removedPiece?: Piece
+  constructor(
+    protected game: CoTuLenh,
+    private square: number,
+  ) {}
 
-  constructor(private square: number) {}
-
-  execute(game: CoTuLenh): void {
-    const piece = game.get(this.square)
+  execute(): void {
+    const piece = this.game.get(this.square)
     if (piece) {
       this.removedPiece = { ...piece }
-      game.remove(algebraic(this.square))
+      this.game.remove(algebraic(this.square))
     }
   }
 
-  undo(game: CoTuLenh): void {
+  undo(): void {
     if (this.removedPiece) {
-      const result = game.put(this.removedPiece, algebraic(this.square))
+      const result = this.game.put(this.removedPiece, algebraic(this.square))
       if (!result) {
         throw new Error(
           'Place piece fail:' +
@@ -60,18 +62,18 @@ class RemovePieceAction implements AtomicMoveAction {
  */
 class PlacePieceAction implements AtomicMoveAction {
   private existingPiece?: Piece
-
   constructor(
+    protected game: CoTuLenh,
     private square: number,
     private piece: Piece,
   ) {}
 
-  execute(game: CoTuLenh): void {
-    const piece = game.get(this.square)
+  execute(): void {
+    const piece = this.game.get(this.square)
     if (piece) {
       this.existingPiece = { ...piece }
     }
-    const result = game.put(this.piece, algebraic(this.square))
+    const result = this.game.put(this.piece, algebraic(this.square))
     if (!result) {
       throw new Error(
         'Place piece fail:' +
@@ -81,9 +83,9 @@ class PlacePieceAction implements AtomicMoveAction {
     }
   }
 
-  undo(game: CoTuLenh): void {
+  undo(): void {
     if (this.existingPiece) {
-      const result = game.put(this.existingPiece, algebraic(this.square))
+      const result = this.game.put(this.existingPiece, algebraic(this.square))
       if (!result) {
         throw new Error(
           'Place piece fail:' +
@@ -92,7 +94,7 @@ class PlacePieceAction implements AtomicMoveAction {
         )
       }
     } else {
-      game.remove(algebraic(this.square))
+      this.game.remove(algebraic(this.square))
     }
   }
 }
@@ -102,34 +104,32 @@ class PlacePieceAction implements AtomicMoveAction {
  */
 class RemoveFromStackAction implements AtomicMoveAction {
   private removedPiece: Piece[] | null = null
-
   constructor(
+    protected game: CoTuLenh,
     private carrierSquare: number,
     private piece: Piece,
   ) {}
 
-  execute(game: CoTuLenh): void {
-    const carrier = game.get(this.carrierSquare)
+  execute(): void {
+    const carrier = this.game.get(this.carrierSquare)
     if (!carrier) {
       throw new Error(
         `No carrier or carrying pieces at ${algebraic(this.carrierSquare)}`,
       )
     }
     const movingPiece = flattenPiece(this.piece)
-
-    this.removedPiece = [...movingPiece] //set the value of moving piece here.
+    this.removedPiece = [...movingPiece]
     const allPieces = flattenPiece(carrier)
     const remainingPiece = allPieces.filter(
       (p) => !movingPiece.some((p2) => p2.type === p.type),
     )
-
     if (remainingPiece.length + movingPiece.length !== allPieces.length) {
       throw new Error(
         `Request moving piece ${algebraic(this.carrierSquare)} not found in the stack`,
       )
     }
     if (remainingPiece.length === 0) {
-      game.remove(algebraic(this.carrierSquare))
+      this.game.remove(algebraic(this.carrierSquare))
       return
     }
     const { combined: combinedPiece, uncombined } =
@@ -139,8 +139,7 @@ class RemoveFromStackAction implements AtomicMoveAction {
         `Failed to remove piece from stack at ${algebraic(this.carrierSquare)}`,
       )
     }
-
-    const result = game.put(combinedPiece, algebraic(this.carrierSquare))
+    const result = this.game.put(combinedPiece, algebraic(this.carrierSquare))
     if (!result) {
       throw new Error(
         'Place piece fail:' +
@@ -149,15 +148,13 @@ class RemoveFromStackAction implements AtomicMoveAction {
       )
     }
     if (movingPiece.some((p) => p.type === COMMANDER)) {
-      game['_commanders'][this.piece.color] = -1
+      this.game['_commanders'][this.piece.color] = -1
     }
   }
 
-  undo(game: CoTuLenh): void {
+  undo(): void {
     if (!this.removedPiece) return
-
-    const carrier = game.get(this.carrierSquare)
-
+    const carrier = this.game.get(this.carrierSquare)
     const allPieces = carrier ? flattenPiece(carrier) : []
     const { combined: combinedPiece, uncombined } =
       createCombineStackFromPieces([...allPieces, ...this.removedPiece])
@@ -166,7 +163,7 @@ class RemoveFromStackAction implements AtomicMoveAction {
         `Failed to remove piece from stack at ${algebraic(this.carrierSquare)}`,
       )
     }
-    const result = game.put(combinedPiece, algebraic(this.carrierSquare))
+    const result = this.game.put(combinedPiece, algebraic(this.carrierSquare))
     if (!result) {
       throw new Error(
         'Place piece fail:' +
@@ -182,16 +179,18 @@ class RemoveFromStackAction implements AtomicMoveAction {
  */
 class SetDeployStateAction implements AtomicMoveAction {
   private oldDeployState: DeployState | null = null
-
-  constructor(private newDeployState: Partial<DeployState> | null) {
+  constructor(
+    protected game: CoTuLenh,
+    private newDeployState: Partial<DeployState> | null,
+  ) {
     // Don't capture oldDeployState here, we'll do it in execute()
   }
 
-  execute(game: CoTuLenh): void {
+  execute(): void {
     // Capture the current deploy state at execution time, not construction time
-    this.oldDeployState = game.getDeployState()
+    this.oldDeployState = this.game.getDeployState()
     if (this.newDeployState === null) {
-      game.setDeployState(null)
+      this.game.setDeployState(null)
       return
     }
     if (this.oldDeployState) {
@@ -204,12 +203,11 @@ class SetDeployStateAction implements AtomicMoveAction {
         updatedMovedPiece.length + (this.oldDeployState.stay?.length ?? 0) ===
         originalLen
       ) {
-        game.setDeployState(null)
-        game['_turn'] = swapColor(this.oldDeployState.turn)
+        this.game.setDeployState(null)
+        this.game['_turn'] = swapColor(this.oldDeployState.turn)
         return
       }
-
-      game.setDeployState({
+      this.game.setDeployState({
         stackSquare: this.oldDeployState.stackSquare,
         turn: this.oldDeployState.turn,
         originalPiece: this.oldDeployState.originalPiece,
@@ -217,14 +215,14 @@ class SetDeployStateAction implements AtomicMoveAction {
         stay: this.oldDeployState.stay,
       })
     } else {
-      game.setDeployState(this.newDeployState as DeployState)
+      this.game.setDeployState(this.newDeployState as DeployState)
     }
   }
 
-  undo(game: CoTuLenh): void {
-    game.setDeployState(this.oldDeployState)
+  undo(): void {
+    this.game.setDeployState(this.oldDeployState)
     if (this.oldDeployState) {
-      game['_turn'] = this.oldDeployState.turn
+      this.game['_turn'] = this.oldDeployState.turn
     }
   }
 }
@@ -247,39 +245,25 @@ export abstract class MoveCommand implements MoveCommandInteface {
     protected game: CoTuLenh,
     moveData: InternalMove,
   ) {
-    // Store a mutable copy for potential updates (like setting 'captured' flag)
     this.move = { ...moveData }
     this.buildActions()
     const defaultPostMoveActions = [
-      new CheckAndPromoteAttackersAction(this.move),
+      new CheckAndPromoteAttackersAction(this.game, this.move),
     ]
     this.actions.push(...defaultPostMoveActions)
   }
 
-  /**
-   * Builds the list of atomic actions for this move
-   */
   protected abstract buildActions(): void
 
-  /**
-   * Executes the move, modifying the board state.
-   * Focuses *only* on board piece placement/removal and captures.
-   * General state updates (turn, clocks, deploy state) are handled by _makeMove.
-   */
   execute(): void {
-    // Execute all atomic actions in sequence
     for (const action of this.actions) {
-      action.execute(this.game)
+      action.execute()
     }
   }
 
-  /**
-   * Reverts the board changes made by this command.
-   */
   undo(): void {
-    // Undo actions in reverse order
     for (let i = this.actions.length - 1; i >= 0; i--) {
-      this.actions[i].undo(this.game)
+      this.actions[i].undo()
     }
   }
 }
@@ -292,9 +276,11 @@ export class NormalMoveCommand extends MoveCommand {
 
     // Add actions for the normal move
     if (!isStackMove(this.move)) {
-      this.actions.push(new RemovePieceAction(this.move.from))
+      this.actions.push(new RemovePieceAction(this.game, this.move.from))
     }
-    this.actions.push(new PlacePieceAction(this.move.to, pieceThatMoved))
+    this.actions.push(
+      new PlacePieceAction(this.game, this.move.to, pieceThatMoved),
+    )
   }
 }
 
@@ -315,9 +301,11 @@ export class CaptureMoveCommand extends MoveCommand {
 
     // Add actions for the capture move
     if (!isStackMove(this.move)) {
-      this.actions.push(new RemovePieceAction(this.move.from))
+      this.actions.push(new RemovePieceAction(this.game, this.move.from))
     }
-    this.actions.push(new PlacePieceAction(this.move.to, pieceThatMoved))
+    this.actions.push(
+      new PlacePieceAction(this.game, this.move.to, pieceThatMoved),
+    )
   }
 }
 
@@ -350,13 +338,13 @@ export class SingleDeployMoveCommand extends MoveCommand {
       }
 
       this.move.captured = capturedPieceData
-      this.actions.push(new RemovePieceAction(destSq))
+      this.actions.push(new RemovePieceAction(this.game, destSq))
     }
     // Handle normal deploy (with or without capture)
     else {
       // Add action to remove the piece from the carrier's stack
       this.actions.push(
-        new RemoveFromStackAction(this.move.from, this.move.piece),
+        new RemoveFromStackAction(this.game, this.move.from, this.move.piece),
       )
       const destSq = this.move.to
 
@@ -373,18 +361,20 @@ export class SingleDeployMoveCommand extends MoveCommand {
         }
 
         this.move.captured = capturedPieceData
-        this.actions.push(new RemovePieceAction(destSq))
+        this.actions.push(new RemovePieceAction(this.game, destSq))
       }
 
       // Add action to place the deployed piece
       if ((this.move.flags & BITS.SUICIDE_CAPTURE) === 0) {
-        this.actions.push(new PlacePieceAction(destSq, this.move.piece))
+        this.actions.push(
+          new PlacePieceAction(this.game, destSq, this.move.piece),
+        )
       }
     }
 
     // Set deploy state for next move
     this.actions.push(
-      new SetDeployStateAction({
+      new SetDeployStateAction(this.game, {
         stackSquare: this.move.from,
         turn: us,
         originalPiece: carrierPiece,
@@ -423,16 +413,18 @@ class CombinationMoveCommand extends MoveCommand {
 
     // 1. Remove the moving piece from the 'from' square
     if (!isStackMove(this.move)) {
-      this.actions.push(new RemovePieceAction(this.move.from))
+      this.actions.push(new RemovePieceAction(this.game, this.move.from))
     }
 
     // 2. Remove the existing piece from the 'to' square (before placing the combined one)
     //    Using PlacePieceAction with the combined piece handles both removal and placement
     //    and ensures correct undo behavior (restoring the original target piece).
-    // this.actions.push(new RemovePieceAction(this.move.to)) // Redundant if PlacePiece handles existing
+    // this.actions.push(new RemovePieceAction(this.game, this.move.to)) // Redundant if PlacePiece handles existing
 
     // 3. Place the new combined piece on the 'to' square
-    this.actions.push(new PlacePieceAction(this.move.to, combinedPiece))
+    this.actions.push(
+      new PlacePieceAction(this.game, this.move.to, combinedPiece),
+    )
   }
 }
 
@@ -456,7 +448,7 @@ export class StayCaptureMoveCommand extends MoveCommand {
     }
 
     // Only action is to remove the captured piece
-    this.actions.push(new RemovePieceAction(targetSq))
+    this.actions.push(new RemovePieceAction(this.game, targetSq))
   }
 }
 
@@ -487,9 +479,9 @@ export class SuicideCaptureMoveCommand extends MoveCommand {
     this.move.captured = capturedPiece
 
     if (!isStackMove(this.move)) {
-      this.actions.push(new RemovePieceAction(this.move.from))
+      this.actions.push(new RemovePieceAction(this.game, this.move.from))
     }
-    this.actions.push(new RemovePieceAction(targetSq))
+    this.actions.push(new RemovePieceAction(this.game, targetSq))
   }
 }
 
@@ -521,29 +513,27 @@ export function createMoveCommand(
  */
 class SetHeroicAction implements AtomicMoveAction {
   private wasHeroic?: boolean
-
   constructor(
+    protected game: CoTuLenh,
     private square: number,
     private type: PieceSymbol,
     private setHeroic: boolean = true,
   ) {}
 
-  execute(game: CoTuLenh): void {
+  execute(): void {
     // Get the piece we want to modify (could be direct or nested)
-    const piece = game.get(this.square, this.type)
+    const piece = this.game.get(this.square, this.type)
     if (!piece) return
-
     // Store original heroic state for undo
     this.wasHeroic = piece.heroic
-
     // Use the setHeroicStatus method to update the heroic status
-    game.setHeroicStatus(this.square, this.type, this.setHeroic)
+    this.game.setHeroicStatus(this.square, this.type, this.setHeroic)
   }
 
-  undo(game: CoTuLenh): void {
+  undo(): void {
     // Only undo if we have a valid previous state
     // Use the setHeroicStatus method to restore the original heroic status
-    game.setHeroicStatus(this.square, this.type, this.wasHeroic ?? false)
+    this.game.setHeroicStatus(this.square, this.type, this.wasHeroic ?? false)
   }
 }
 
@@ -554,60 +544,40 @@ class SetHeroicAction implements AtomicMoveAction {
 class CheckAndPromoteAttackersAction implements AtomicMoveAction {
   private heroicActions: SetHeroicAction[] = []
   private moveColor: Color
-
-  constructor(move: InternalMove) {
+  constructor(
+    private game: CoTuLenh,
+    move: InternalMove,
+  ) {
     this.moveColor = move.color
   }
 
-  execute(game: CoTuLenh): void {
-    this.heroicActions = [] // Clear previous actions if re-executed
+  execute(): void {
+    this.heroicActions = []
     const us = this.moveColor
     const them = swapColor(us)
-    const themCommanderSq = game.getCommanderSquare(them)
-
-    if (themCommanderSq === -1) return // No commander to check
-
-    // Check if the commander is attacked by 'us' AFTER the move's primary actions
-    const attackers = game.getAttackers(themCommanderSq, us)
-
-    // Skip if no attackers found
+    const themCommanderSq = this.game.getCommanderSquare(them)
+    if (themCommanderSq === -1) return
+    const attackers = this.game.getAttackers(themCommanderSq, us)
     if (attackers.length === 0) return
-
-    // Track which squares we've already processed to avoid duplicate promotions
-    // This is useful when multiple pieces of different types at the same square attack
     const processedAttackers = new Set<string>()
-
     for (const { square, type } of attackers) {
-      // Create a unique key for this attacker to avoid duplicates
       const attackerKey = `${square}:${type}`
-
-      // Skip if we've already processed this exact attacker
       if (processedAttackers.has(attackerKey)) continue
-
-      // Mark this attacker as processed
       processedAttackers.add(attackerKey)
-
-      // Check if the piece is already heroic
-      const isHeroic = game.getHeroicStatus(square, type)
-
-      // Promote only if the attacker exists and is not already heroic
+      const isHeroic = this.game.getHeroicStatus(square, type)
       if (!isHeroic) {
-        // Create a SetHeroicAction with the new constructor signature that includes setHeroic parameter
-        const promoteAction = new SetHeroicAction(square, type, true)
-        // Store it so we can undo it later
+        const promoteAction = new SetHeroicAction(this.game, square, type, true)
         this.heroicActions.push(promoteAction)
-        // Execute the promotion after storing
-        promoteAction.execute(game)
+        promoteAction.execute()
       }
     }
   }
 
-  undo(game: CoTuLenh): void {
-    // Undo the promotions in reverse order
+  undo(): void {
     for (let i = this.heroicActions.length - 1; i >= 0; i--) {
-      this.heroicActions[i].undo(game)
+      this.heroicActions[i].undo()
     }
-    this.heroicActions = [] // Clear actions after undoing
+    this.heroicActions = []
   }
 }
 /**
@@ -653,7 +623,7 @@ export abstract class SequenceMoveCommand implements MoveCommandInteface {
   execute(): void {
     // First execute any atomic actions
     for (const action of this.atomicActions) {
-      action.execute(this.game)
+      action.execute()
     }
 
     // Then execute each move command in sequence
@@ -670,7 +640,7 @@ export abstract class SequenceMoveCommand implements MoveCommandInteface {
 
     // Then undo atomic actions in reverse order
     for (let i = this.atomicActions.length - 1; i >= 0; i--) {
-      this.atomicActions[i].undo(this.game)
+      this.atomicActions[i].undo()
     }
   }
 }
@@ -689,7 +659,7 @@ export class DeployMoveCommand extends SequenceMoveCommand {
   protected createAtomicActions(): AtomicMoveAction[] {
     // Add a SetDeployStateAction to be executed before the move sequence
     return [
-      new SetDeployStateAction({
+      new SetDeployStateAction(this.game, {
         stackSquare: this.moveData.from,
         turn: this.game['_turn'],
         originalPiece: this.game.get(this.moveData.from) || undefined,
