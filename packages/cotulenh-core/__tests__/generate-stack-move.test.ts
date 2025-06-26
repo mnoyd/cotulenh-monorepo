@@ -60,11 +60,11 @@ const hasSubsetWithTypes = (
     return carryingTypes.every((type) => carrying.some((p) => p.type === type))
   })
 
-  if (!found) {
-    console.log(
-      `Missing subset: ${mainType} with carrying [${carryingTypes.join(', ')}]`,
-    )
-  }
+  // if (!found) {
+  //   console.log(
+  //     `Missing subset: ${mainType} with carrying [${carryingTypes.join(', ')}]`,
+  //   )
+  // }
 
   return found
 }
@@ -188,16 +188,16 @@ const hasSplitWithTypes = (
     })
   })
 
-  if (!found) {
-    console.log(
-      `Missing split: [${expectedSplit
-        .map(
-          (p) =>
-            `${p.main}${p.carrying.length > 0 ? `|${p.carrying.join('')}` : ''}`,
-        )
-        .join(', ')}]`,
-    )
-  }
+  // if (!found) {
+  //   console.log(
+  //     `Missing split: [${expectedSplit
+  //       .map(
+  //         (p) =>
+  //           `${p.main}${p.carrying.length > 0 ? `|${p.carrying.join('')}` : ''}`,
+  //       )
+  //       .join(', ')}]`,
+  //   )
+  // }
 
   return found
 }
@@ -314,16 +314,16 @@ describe('generateStackSplitMoves', () => {
 
     const moves = generateStackSplitMoves(game, SQUARE_MAP.e5)
 
-    moves.forEach((move) => {
-      console.log(
-        move.moves.reduce(
-          (acc, m) => acc + ',' + makeSanPiece(m.piece) + ':' + algebraic(m.to),
-          'e5-',
-        ) +
-          '---' +
-          (move.stay === undefined ? 'none' : move.stay.type),
-      )
-    })
+    // moves.forEach((move) => {
+    //   console.log(
+    //     move.moves.reduce(
+    //       (acc, m) => acc + ',' + makeSanPiece(m.piece) + ':' + algebraic(m.to),
+    //       'e5-',
+    //     ) +
+    //       '---' +
+    //       (move.stay === undefined ? 'none' : move.stay.type),
+    //   )
+    // })
 
     // Verify we have moves
     expect(moves.length).toBe(48)
