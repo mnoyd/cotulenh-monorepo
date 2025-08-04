@@ -7,7 +7,7 @@ import { routing } from '@/i18n/routing';
 import { getTranslations } from 'next-intl/server';
 import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { cookies } from 'next/headers';
-import { AppSidebar } from '@/components/AppSidebar';
+import { AppSidebar } from '@/components/nav/AppSidebar';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
