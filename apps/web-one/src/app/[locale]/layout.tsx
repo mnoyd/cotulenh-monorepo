@@ -5,6 +5,9 @@ import { Locale, NextIntlClientProvider, hasLocale } from 'next-intl';
 import { notFound } from 'next/navigation';
 import { routing } from '@/i18n/routing';
 import { getTranslations } from 'next-intl/server';
+import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
+import { cookies } from 'next/headers';
+import { AppSidebar } from '@/components/AppSidebar';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -40,6 +43,9 @@ export default async function RootLayout({
     notFound();
   }
 
+  const cookieStore = await cookies();
+  const defaultOpen = cookieStore.get('sidebar_state')?.value === 'true';
+
   return (
     <html lang={locale} suppressHydrationWarning>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
@@ -49,7 +55,15 @@ export default async function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <NextIntlClientProvider>{children}</NextIntlClientProvider>
+          <NextIntlClientProvider>
+            <SidebarProvider defaultOpen={defaultOpen}>
+              <AppSidebar />
+              <SidebarInset>
+                <SidebarTrigger />
+                {children}
+              </SidebarInset>
+            </SidebarProvider>
+          </NextIntlClientProvider>
         </ThemeProvider>
       </body>
     </html>
