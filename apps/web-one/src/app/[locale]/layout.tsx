@@ -5,7 +5,7 @@ import { Locale, NextIntlClientProvider, hasLocale } from 'next-intl';
 import { notFound } from 'next/navigation';
 import { routing } from '@/i18n/routing';
 import { getTranslations } from 'next-intl/server';
-import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
+import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 import { cookies } from 'next/headers';
 import { AppSidebar } from '@/components/nav/AppSidebar';
 
@@ -58,10 +58,7 @@ export default async function RootLayout({
           <NextIntlClientProvider>
             <SidebarProvider defaultOpen={defaultOpen}>
               <AppSidebar />
-              <SidebarInset>
-                <SidebarTrigger />
-                {children}
-              </SidebarInset>
+              <SidebarInset className="px-3 py-4 md:px-6 md:py-6">{children}</SidebarInset>
             </SidebarProvider>
           </NextIntlClientProvider>
         </ThemeProvider>
