@@ -1,5 +1,9 @@
 {
   "main": {
     "title": "Cờ Tư Lệnh"
+  },
+  "locale": {
+    "en": "English",
+    "vi": "Tiếng Việt"
   }
 }
