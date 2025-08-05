@@ -1,7 +1,5 @@
-'use client';
-
 import * as React from 'react';
-import { BookOpen, Bot, Command, LifeBuoy, Send, Settings2, SquareTerminal } from 'lucide-react';
+import { BookOpen, Command, LifeBuoy, Send, SquareTerminal, Users } from 'lucide-react';
 
 import {
   Sidebar,
@@ -18,108 +16,111 @@ import { NavUser } from '@/components/nav/NavUser';
 import LanguageSelector from '@/components/LanguageSelector';
 import ThemeToggle from '@/components/ThemeToggle';
 import Link from 'next/link';
-import { useTranslations } from 'next-intl';
+import { Messages, useTranslations } from 'next-intl';
 
-const data = {
+import type { LucideIcon } from 'lucide-react';
+
+export type NavData = {
+  user: {
+    name: string;
+    email: string;
+  };
+  navMain: {
+    title: keyof Messages['nav'];
+    url: string;
+    icon: LucideIcon;
+    isActive?: boolean;
+    items: {
+      title: keyof Messages['nav'];
+      url: string;
+    }[];
+  }[];
+  navSecondary: {
+    title: keyof Messages['nav'];
+    url: string;
+    icon: LucideIcon;
+  }[];
+};
+
+const navData: NavData = {
   user: {
     name: 'shadcn',
     email: 'm@example.com'
   },
   navMain: [
     {
-      title: 'Playground',
-      url: 'play',
+      title: 'play',
+      url: '/play',
       icon: SquareTerminal,
-      isActive: true,
+
       items: [
         {
-          title: 'History',
-          url: '#'
+          title: 'findMatch',
+          url: '/find'
         },
         {
-          title: 'Starred',
-          url: '#'
+          title: 'playWithBot',
+          url: '/bot'
         },
         {
-          title: 'Settings',
-          url: '#'
+          title: 'history',
+          url: '/history'
         }
       ]
     },
     {
-      title: 'Models',
-      url: '#',
-      icon: Bot,
-      items: [
-        {
-          title: 'Genesis',
-          url: '#'
-        },
-        {
-          title: 'Explorer',
-          url: '#'
-        },
-        {
-          title: 'Quantum',
-          url: '#'
-        }
-      ]
-    },
-    {
-      title: 'Documentation',
-      url: '#',
+      title: 'learn',
+      url: '/learn',
       icon: BookOpen,
+
       items: [
         {
-          title: 'Introduction',
-          url: '#'
+          title: 'rules',
+          url: '/rules'
         },
         {
-          title: 'Get Started',
-          url: '#'
+          title: 'coach',
+          url: '/coach'
         },
         {
-          title: 'Tutorials',
-          url: '#'
-        },
-        {
-          title: 'Changelog',
-          url: '#'
+          title: 'tutorials',
+          url: '/tutorials'
         }
       ]
     },
     {
-      title: 'Settings',
-      url: '#',
-      icon: Settings2,
+      title: 'community',
+      url: '/community',
+      icon: Users,
+
       items: [
         {
-          title: 'General',
-          url: '#'
+          title: 'clubs',
+          url: '/clubs'
         },
         {
-          title: 'Team',
-          url: '#'
+          title: 'forums',
+          url: '/forums'
         },
         {
-          title: 'Billing',
-          url: '#'
+          title: 'members',
+          url: '/members'
         },
         {
-          title: 'Limits',
-          url: '#'
+          title: 'blogs',
+          url: '/blogs'
         }
       ]
     }
   ],
   navSecondary: [
     {
-      title: 'Support',
+      title: 'support',
       url: '#',
       icon: LifeBuoy
     },
     {
-      title: 'Feedback',
+      title: 'feedback',
       url: '#',
       icon: Send
     }
@@ -149,15 +150,15 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
-        <NavSecondary items={data.navSecondary} className="mt-auto" />
+        <NavMain items={navData.navMain} />
+        <NavSecondary items={navData.navSecondary} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>
         <div className="flex justify-between items-center">
           <LanguageSelector />
           <ThemeToggle />
         </div>
-        <NavUser user={data.user} />
+        <NavUser user={navData.user} />
       </SidebarFooter>
     </Sidebar>
   );

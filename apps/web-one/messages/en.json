@@ -5,5 +5,22 @@
   "locale": {
     "en": "English",
     "vi": "Tiếng Việt"
+  },
+  "nav": {
+    "play": "Play",
+    "findMatch": "Find match",
+    "playWithBot": "Play with bot",
+    "history": "History",
+    "learn": "Learn",
+    "rules": "Rules",
+    "coach": "Coach",
+    "tutorials": "Tutorials",
+    "community": "Community",
+    "clubs": "Clubs",
+    "forums": "Forums",
+    "members": "Members",
+    "blogs": "Blogs",
+    "support": "Support",
+    "feedback": "Feedback"
   }
 }

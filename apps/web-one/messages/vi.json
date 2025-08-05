@@ -5,5 +5,22 @@
   "locale": {
     "en": "English",
     "vi": "Tiếng Việt"
+  },
+  "nav": {
+    "play": "Chơi",
+    "findMatch": "Tìm trận",
+    "playWithBot": "Chơi với máy",
+    "history": "Lịch sử",
+    "learn": "Học",
+    "rules": "Luật",
+    "coach": "Huấn luyện viên",
+    "tutorials": "Hướng dẫn",
+    "community": "Cộng đồng",
+    "clubs": "Câu lạc bộ",
+    "forums": "Diễn đàn",
+    "members": "Thành viên",
+    "blogs": "Blogs",
+    "support": "Hỗ trợ",
+    "feedback": "Ý kiến"
   }
 }

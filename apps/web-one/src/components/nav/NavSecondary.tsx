@@ -1,5 +1,4 @@
 import * as React from 'react';
-import { type LucideIcon } from 'lucide-react';
 
 import {
   SidebarGroup,
@@ -8,17 +7,17 @@ import {
   SidebarMenuButton,
   SidebarMenuItem
 } from '@/components/ui/sidebar';
+import { NavData } from '@/components/nav/AppSidebar';
+import { useTranslations } from 'next-intl';
 
 export function NavSecondary({
   items,
   ...props
 }: {
-  items: {
-    title: string;
-    url: string;
-    icon: LucideIcon;
-  }[];
+  items: NavData['navSecondary'];
 } & React.ComponentPropsWithoutRef<typeof SidebarGroup>) {
+  const t = useTranslations('nav');
+
   return (
     <SidebarGroup {...props}>
       <SidebarGroupContent>
@@ -28,7 +27,7 @@ export function NavSecondary({
               <SidebarMenuButton asChild size="sm">
                 <a href={item.url}>
                   <item.icon />
-                  <span>{item.title}</span>
+                  <span>{t(item.title)}</span>
                 </a>
               </SidebarMenuButton>
             </SidebarMenuItem>
