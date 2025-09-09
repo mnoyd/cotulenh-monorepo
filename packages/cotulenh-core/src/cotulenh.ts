@@ -55,7 +55,7 @@ import {
 import {
   createMoveCommand,
   DeployMoveCommand,
-  MoveCommandInteface,
+  CTLMoveCommandInteface,
 } from './move-apply.js'
 import {
   createInternalDeployMove,
@@ -75,7 +75,7 @@ import {
 
 // Structure for storing history states
 interface History {
-  move: MoveCommandInteface
+  move: CTLMoveCommandInteface
   commanders: Record<Color, number> // Position of commander before the move
   turn: Color
   halfMoves: number // Half move clock before the move
@@ -666,7 +666,7 @@ export class CoTuLenh {
     const them = swapColor(us)
 
     // 1. Create the command object for this move
-    let moveCommand: MoveCommandInteface
+    let moveCommand: CTLMoveCommandInteface
     if (isInternalDeployMove(move)) {
       moveCommand = new DeployMoveCommand(this, move)
     } else {

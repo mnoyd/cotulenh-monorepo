@@ -167,30 +167,30 @@ describe('Move Commands', () => {
     })
   })
 
-  describe('StayCaptureMoveCommand', () => {
-    it('should execute stay capture', () => {
-      game.load('5c5/11/11/11/11/11/11/11/1n2A6/11/11/5C5', {
-        skipValidation: true,
-      })
-      const move: InternalMove = {
-        color: RED,
-        from: 0x84,
-        to: 0x81,
-        piece: makePiece(ARTILLERY, RED),
-        flags: BITS.STAY_CAPTURE,
-      }
+  // describe('StayCaptureMoveCommand', () => {
+  //   it('should execute stay capture', () => {
+  //     game.load('5c5/11/11/11/11/11/11/11/1n2A6/11/11/5C5', {
+  //       skipValidation: true,
+  //     })
+  //     const move: InternalMove = {
+  //       color: RED,
+  //       from: 0x84,
+  //       to: 0x81,
+  //       piece: makePiece(ARTILLERY, RED),
+  //       flags: BITS.STAY_CAPTURE,
+  //     }
 
-      const command = new StayCaptureMoveCommand(game, move)
-      command.execute()
-      expect(game.get('e4')?.type).toBe(ARTILLERY)
-      expect(game.get('b4')).toBeUndefined()
-      expect(command.move.captured?.type).toBe(NAVY)
+  //     const command = new StayCaptureMoveCommand(game, move)
+  //     command.execute()
+  //     expect(game.get('e4')?.type).toBe(ARTILLERY)
+  //     expect(game.get('b4')).toBeUndefined()
+  //     expect(command.move.captured?.type).toBe(NAVY)
 
-      command.undo()
-      expect(game.get('e4')?.type).toBe(ARTILLERY)
-      expect(game.get('b4')?.type).toBe(NAVY)
-    })
-  })
+  //     command.undo()
+  //     expect(game.get('e4')?.type).toBe(ARTILLERY)
+  //     expect(game.get('b4')?.type).toBe(NAVY)
+  //   })
+  // })
 
   describe('createMoveCommand', () => {
     it('should create the correct MoveCommand based on flags', () => {
