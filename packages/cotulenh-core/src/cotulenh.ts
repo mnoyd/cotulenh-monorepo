@@ -65,6 +65,7 @@ import {
   InternalDeployMove,
   isInternalDeployMove,
 } from './deploy-move.js'
+import { DeploySession } from './deploy-session.js'
 import {
   AirDefensePiecesPosition,
   BASE_AIRDEFENSE_CONFIG,
@@ -80,7 +81,8 @@ interface History {
   turn: Color
   halfMoves: number // Half move clock before the move
   moveNumber: number // Move number before the move
-  deployState: DeployState | null // Snapshot of deploy state before move
+  deployState: DeployState | null // Snapshot of deploy state before move (legacy)
+  deploySession: DeploySession | null // Snapshot of deploy session before move
 }
 
 // Public Move class (similar to chess.js) - can be fleshed out later
@@ -153,15 +155,16 @@ export class Move {
 export class CoTuLenh {
   private _movesCache = new QuickLRU<string, InternalMove[]>({ maxSize: 1000 })
   private _board = new Array<Piece | undefined>(256)
-  private _turn: Color = RED // Default to Red
+  protected _turn: Color = RED // Default to Red
   private _header: Record<string, string> = {}
   private _commanders: Record<Color, number> = { r: -1, b: -1 } // Commander positions
   private _halfMoves = 0
-  private _moveNumber = 1
+  protected _moveNumber = 1
   private _history: History[] = []
   private _comments: Record<string, string> = {}
   private _positionCount: Record<string, number> = {}
-  private _deployState: DeployState | null = null // Tracks active deploy phase
+  private _deployState: DeployState | null = null // Tracks active deploy phase (legacy)
+  private _deploySession: DeploySession | null = null // New incremental deploy system
   private _airDefense: AirDefense = {
     [RED]: new Map<number, number[]>(),
     [BLUE]: new Map<number, number[]>(),
@@ -188,6 +191,7 @@ export class CoTuLenh {
     this._comments = {}
     this._header = preserveHeaders ? this._header : {}
     this._positionCount = {}
+    this._deploySession = null // Clear deploy session
     this._airDefense = {
       [RED]: new Map<number, number[]>(),
       [BLUE]: new Map<number, number[]>(),
@@ -284,7 +288,7 @@ export class CoTuLenh {
    * Updates position counts and setup flags
    * @private
    */
-  private _updatePositionCounts(): void {
+  protected _updatePositionCounts(): void {
     const fen = this.fen()
 
     // Update position count for threefold repetition detection
@@ -517,7 +521,7 @@ export class CoTuLenh {
     return `${fen}|deploy:${deployState}|legal:${legal}|pieceType:${pieceType ?? ''}|square:${square ?? ''}`
   }
 
-  private _moves({
+  protected _moves({
     legal = true,
     pieceType: filterPiece = undefined,
     square: filterSquare = undefined,
@@ -607,7 +611,7 @@ export class CoTuLenh {
   }
 
   // Helper method to filter legal moves
-  private _filterLegalMoves(
+  protected _filterLegalMoves(
     moves: (InternalMove | InternalDeployMove)[],
     us: Color,
   ): (InternalMove | InternalDeployMove)[] {
@@ -641,11 +645,28 @@ export class CoTuLenh {
     square?: Square
     pieceType?: PieceSymbol
   } = {}): string[] | Move[] {
-    const internalMoves = this._moves({
-      square,
-      pieceType,
-      legal: true,
-    }) // Generate legal moves
+    let internalMoves: InternalMove[]
+
+    if (this._deploySession?.isActive) {
+      // In deploy mode - only show moves for remaining pieces
+      if (square && SQUARE_MAP[square] !== this._deploySession.stackSquare) {
+        return [] // No moves from other squares during deploy
+      }
+
+      internalMoves = this._getDeployMoves()
+
+      // Filter by piece type if specified
+      if (pieceType) {
+        internalMoves = internalMoves.filter((m) => m.piece.type === pieceType)
+      }
+    } else {
+      // Normal mode
+      internalMoves = this._moves({
+        square,
+        pieceType,
+        legal: true,
+      })
+    }
 
     if (verbose) {
       // Map to Move objects, passing current heroic status
@@ -653,7 +674,10 @@ export class CoTuLenh {
     } else {
       // Generate SAN strings (needs proper implementation)
       // Pass all legal moves for ambiguity resolution
-      const allLegalMoves = this._moves({ legal: true })
+      const allLegalMoves = this._deploySession?.isActive
+        ? this._getDeployMoves()
+        : this._moves({ legal: true })
+
       return internalMoves.map(
         (move) => this._moveToSanLan(move, allLegalMoves)[0],
       )
@@ -661,7 +685,7 @@ export class CoTuLenh {
   }
 
   // --- Move Execution/Undo (Updated for Stay Capture & Deploy) ---
-  private _makeMove(move: InternalMove | InternalDeployMove) {
+  protected _makeMove(move: InternalMove | InternalDeployMove) {
     const us = this.turn()
     const them = swapColor(us)
 
@@ -679,6 +703,7 @@ export class CoTuLenh {
     const preHalfMoves = this._halfMoves
     const preMoveNumber = this._moveNumber
     const preDeployState = this._deployState
+    const preDeploySession = this._deploySession
 
     // 2. Execute the command
     try {
@@ -695,6 +720,7 @@ export class CoTuLenh {
       halfMoves: preHalfMoves,
       moveNumber: preMoveNumber,
       deployState: preDeployState,
+      deploySession: preDeploySession,
     }
     this._history.push(historyEntry)
 
@@ -745,6 +771,7 @@ export class CoTuLenh {
     this._halfMoves = old.halfMoves
     this._moveNumber = old.moveNumber
     this._deployState = old.deployState
+    this._deploySession = old.deploySession
 
     // Ask the command to revert its specific board changes
     command.undo()
@@ -961,7 +988,7 @@ export class CoTuLenh {
   }
 
   // --- SAN Parsing/Generation (Updated for Stay Capture & Deploy) ---
-  private _moveToSanLan(
+  protected _moveToSanLan(
     move: InternalMove,
     moves: InternalMove[],
   ): [string, string] {
@@ -1028,7 +1055,7 @@ export class CoTuLenh {
    * @returns The matching InternalMove object, or null if the move is illegal, ambiguous, or unparseable.
    * @private
    */
-  private _moveFromSan(move: string, strict = false): InternalMove | null {
+  protected _moveFromSan(move: string, strict = false): InternalMove | null {
     const cleanMove = strippedSan(move)
     let pieceType = inferPieceType(cleanMove)
     let moves = this._moves({ legal: true, pieceType: pieceType })
@@ -1218,6 +1245,223 @@ export class CoTuLenh {
   }
 
   /**
+   * Start an incremental deploy session from a stack square
+   * This allows pieces to be moved one at a time instead of all at once
+   */
+  startDeploy(square: Square): DeploySession {
+    const sq = SQUARE_MAP[square]
+    const stackPiece = this.get(sq)
+
+    if (!stackPiece) {
+      throw new Error(`No stack found at ${square}`)
+    }
+
+    if (this._deploySession?.isActive) {
+      throw new Error('Another deploy session is already active')
+    }
+
+    // Check if it's a stack (has carrying pieces or multiple piece types)
+    const flatPieces = flattenPiece(stackPiece)
+    if (flatPieces.length <= 1) {
+      throw new Error(`Square ${square} does not contain a deployable stack`)
+    }
+
+    this._deploySession = new DeploySession(sq, this._turn, stackPiece)
+    return this._deploySession
+  }
+
+  /**
+   * Execute a single step within an active deploy session
+   */
+  deployStep(
+    move: string | { from: string; to: string; piece?: PieceSymbol },
+  ): Move | null {
+    if (!this._deploySession?.isActive) {
+      throw new Error('No active deploy session. Use startDeploy() first.')
+    }
+
+    // Parse the move
+    let internalMove: InternalMove | null = null
+
+    if (typeof move === 'string') {
+      // Handle special deploy notation
+      if (move.includes('<')) {
+        // Stay move: "I<" means infantry stays
+        return this._handleStayMove(move)
+      }
+
+      // Regular move notation: "Te6", "Ixf5"
+      internalMove = this._moveFromSan(move, false)
+    } else {
+      // Object format: { from: "e4", to: "e6", piece: "t" }
+      internalMove = this._findDeployMoveFromObject(move)
+    }
+
+    if (!internalMove) {
+      throw new Error(`Invalid deploy move: ${JSON.stringify(move)}`)
+    }
+
+    // Validate move is from the deploy stack
+    if (internalMove.from !== this._deploySession.stackSquare) {
+      throw new Error('Deploy move must originate from the active deploy stack')
+    }
+
+    // Validate piece is available for deploy
+    if (!this._deploySession.canMovePieceType(internalMove.piece.type)) {
+      throw new Error(
+        `Piece ${internalMove.piece.type} not available for deploy`,
+      )
+    }
+
+    // Execute the move
+    const prettyMove = new Move(this, internalMove)
+    this._makeMove(internalMove)
+
+    // Record the move in deploy session
+    this._deploySession.recordPieceMove(internalMove.piece, internalMove)
+
+    // Check if deploy is complete
+    if (this._deploySession.isComplete()) {
+      this._completeDeploy()
+    }
+
+    return prettyMove
+  }
+
+  /**
+   * Handle a "stay" move where a piece remains on the stack
+   */
+  private _handleStayMove(stayNotation: string): Move | null {
+    if (!this._deploySession?.isActive) {
+      throw new Error('No active deploy session')
+    }
+
+    // Parse stay notation: "I<", "T<", etc.
+    const pieceType = stayNotation.charAt(0).toLowerCase() as PieceSymbol
+
+    if (!this._deploySession.canMovePieceType(pieceType)) {
+      throw new Error(`Piece ${pieceType} not available to stay`)
+    }
+
+    // Find the piece in remaining pieces
+    const remainingPieces = this._deploySession.remainingPieces
+    const stayPiece = remainingPieces.find((p) => p.type === pieceType)
+
+    if (!stayPiece) {
+      throw new Error(`Piece ${pieceType} not found in remaining pieces`)
+    }
+
+    // Record the stay
+    this._deploySession.recordPieceStay(stayPiece)
+
+    // Check if deploy is complete
+    if (this._deploySession.isComplete()) {
+      this._completeDeploy()
+    }
+
+    // Return a special "stay" move object
+    return this._createStayMove(stayPiece)
+  }
+
+  /**
+   * Find a deploy move from object notation
+   */
+  private _findDeployMoveFromObject(moveObj: {
+    from: string
+    to: string
+    piece?: PieceSymbol
+  }): InternalMove | null {
+    if (!this._deploySession?.isActive) return null
+
+    const fromSq = SQUARE_MAP[moveObj.from as Square]
+    const toSq = SQUARE_MAP[moveObj.to as Square]
+
+    if (fromSq !== this._deploySession.stackSquare) {
+      throw new Error('Deploy move must be from the active deploy stack')
+    }
+
+    // Generate legal moves for the deploy session
+    const legalMoves = this._getDeployMoves()
+
+    // Find matching move
+    const foundMoves = legalMoves.filter(
+      (m) =>
+        m.from === fromSq &&
+        m.to === toSq &&
+        (!moveObj.piece || m.piece.type === moveObj.piece),
+    )
+
+    if (foundMoves.length === 0) {
+      throw new Error('No matching deploy move found')
+    }
+
+    if (foundMoves.length > 1) {
+      throw new Error('Ambiguous deploy move - specify piece type')
+    }
+
+    return foundMoves[0]
+  }
+
+  /**
+   * Get legal moves for the current deploy session
+   */
+  private _getDeployMoves(): InternalMove[] {
+    if (!this._deploySession?.isActive) return []
+
+    const availableTypes = this._deploySession.availablePieceTypes
+    const allMoves: InternalMove[] = []
+
+    // Generate moves for each available piece type
+    for (const pieceType of availableTypes) {
+      const moves = generateDeployMoves(
+        this,
+        this._deploySession.stackSquare,
+        pieceType,
+      )
+      allMoves.push(...moves)
+    }
+
+    return this._filterLegalMoves(allMoves, this._turn) as InternalMove[]
+  }
+
+  /**
+   * Complete the current deploy session
+   */
+  private _completeDeploy(): void {
+    if (!this._deploySession) return
+
+    // Switch turn
+    this._turn = swapColor(this._turn)
+
+    // Update move counters
+    if (this._turn === RED) {
+      this._moveNumber++
+    }
+
+    // Clear deploy session
+    this._deploySession = null
+
+    // Update position counts
+    this._updatePositionCounts()
+  }
+
+  /**
+   * Create a special Move object for stay moves
+   */
+  private _createStayMove(piece: Piece): Move {
+    // Create a pseudo internal move for the stay action
+    const stayMove: InternalMove = {
+      color: piece.color,
+      from: this._deploySession!.stackSquare,
+      to: this._deploySession!.stackSquare, // Same square
+      piece: piece,
+      flags: BITS.STAY_CAPTURE, // Use stay flag
+    }
+
+    return new Move(this, stayMove)
+  }
+
+  /**
    * Retrieves the color of the player who has the current turn to move.
    * @returns The color (RED or BLUE) of the player whose turn it is to move
    */
@@ -1376,6 +1620,37 @@ export class CoTuLenh {
     }
 
     return false
+  }
+
+  /**
+   * Get the current deploy session
+   */
+  getDeploySession(): DeploySession | null {
+    return this._deploySession
+  }
+
+  /**
+   * Check if a deploy session is active
+   */
+  isDeployActive(): boolean {
+    return this._deploySession?.isActive ?? false
+  }
+
+  /**
+   * Get remaining pieces that can be deployed
+   */
+  getRemainingDeployPieces(): Piece[] {
+    return this._deploySession?.remainingPieces ?? []
+  }
+
+  /**
+   * Force complete the current deploy session
+   */
+  completeDeploy(): void {
+    if (this._deploySession?.isActive) {
+      this._deploySession.complete()
+      this._completeDeploy()
+    }
   }
 
   /**
