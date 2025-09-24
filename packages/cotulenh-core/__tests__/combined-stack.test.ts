@@ -298,10 +298,11 @@ describe('Stack Movement and Deployment', () => {
     )
     game['_turn'] = RED
 
+    // Use V1 for this test to maintain old deploy behavior
     // Deploy AF
-    game.move({ from: 'c3', to: 'c4', piece: AIR_FORCE })
+    game.move({ from: 'c3', to: 'c4', piece: AIR_FORCE }, { version: 'v1' })
     // Deploy T
-    game.move({ from: 'c3', to: 'd3', piece: TANK })
+    game.move({ from: 'c3', to: 'd3', piece: TANK }, { version: 'v1' })
 
     expect(game.turn()).toBe(RED) // Still Red's turn
     expect(game.get('c3')?.carrying).toBeUndefined() // Stack empty
@@ -314,12 +315,14 @@ describe('Stack Movement and Deployment', () => {
       { piece: NAVY, isDeploy: true },
     )
     expect(carrierMove).toBeDefined()
-    const moveResult = game.move({
-      from: 'c3',
-      to: 'c2',
-      piece: NAVY,
-      deploy: true,
-    }) // Normal move object for carrier
+    const moveResult = game.move(
+      {
+        from: 'c3',
+        to: 'c2',
+        piece: NAVY,
+      },
+      { version: 'v1' },
+    ) // Use V1 for carrier move too
 
     expect(moveResult).not.toBeNull()
     expect(game.turn()).toBe(BLUE) // Turn SHOULD change now
@@ -347,12 +350,16 @@ describe('Stack Movement and Deployment', () => {
     )
     game['_turn'] = RED
 
+    // Use V1 for this test to maintain old deploy behavior
     // Deploy carrier
-    game.move({ from: 'c3', to: 'c2', piece: NAVY, deploy: true }) // Normal move object for carrier
+    game.move(
+      { from: 'c3', to: 'c2', piece: NAVY, deploy: true },
+      { version: 'v1' },
+    ) // Normal move object for carrier
     // Deploy AF
-    game.move({ from: 'c3', to: 'c4', piece: AIR_FORCE, deploy: true })
+    game.move({ from: 'c3', to: 'c4', piece: AIR_FORCE }, { version: 'v1' })
     // Deploy T
-    game.move({ from: 'c3', to: 'd3', piece: TANK, deploy: true })
+    game.move({ from: 'c3', to: 'd3', piece: TANK }, { version: 'v1' })
 
     expect(game.turn()).toBe(BLUE) // Turn SHOULD change now
     expect(game.get('c3')).toBeUndefined() // Carrier moved

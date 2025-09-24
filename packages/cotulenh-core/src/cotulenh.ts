@@ -1150,7 +1150,10 @@ export class CoTuLenh {
    * @returns The executed Move object, or null if the move was invalid
    * @throws Error if the move is invalid, illegal, or ambiguous
    */
-  move(
+  /**
+   * @deprecated Use moveV2 instead. This method will be removed in a future version.
+   */
+  moveV1(
     move:
       | string
       | {
@@ -1224,6 +1227,122 @@ export class CoTuLenh {
     this._makeMove(internalMove)
 
     return prettyMove
+  }
+
+  /**
+   * Executes a move on the board using the new V2 logic.
+   * This is the preferred method for making moves.
+   * @param move - The move to execute, either as SAN string or move object
+   * @param options - Configuration options for move execution
+   * @param options.strict - Whether to use strict parsing rules for algebraic notation moves
+   * @returns The executed Move object, or null if the move was invalid
+   * @throws Error if the move is invalid, illegal, or ambiguous
+   */
+  moveV2(
+    move:
+      | string
+      | {
+          from: string
+          to: string
+          piece?: PieceSymbol
+          stay?: boolean
+          deploy?: boolean
+        },
+    { strict = false }: { strict?: boolean } = {},
+  ): Move | null {
+    // V2 Logic: Handle deploy moves with new deploy session system
+    // Normal moves still use V1 legacy logic
+
+    let internalMove: InternalMove | null = null
+    let isDeployMove = false
+
+    // 1. Parse move and detect if it's a deploy move
+    if (typeof move === 'string') {
+      internalMove = this._moveFromSan(move, strict)
+      // Check if parsed move has deploy flag
+      isDeployMove = internalMove
+        ? (internalMove.flags & BITS.DEPLOY) !== 0
+        : false
+    } else if (typeof move === 'object') {
+      // Check if explicitly marked as deploy move
+      isDeployMove = move.deploy === true
+
+      if (isDeployMove) {
+        // Handle as deploy move - start deploy session if not active
+        const fromSq = SQUARE_MAP[move.from as Square]
+        if (fromSq === undefined) {
+          throw new Error(`Invalid from square: ${move.from}`)
+        }
+
+        // Start deploy session if not already active
+        if (!this._deploySession?.isActive) {
+          this.startDeploy(move.from as Square)
+        }
+
+        // Use deploy session logic
+        return this.deployStep(move)
+      } else {
+        // Handle as normal move using V1 logic
+        return this.moveV1(move, { strict })
+      }
+    }
+
+    // 2. Handle based on move type
+    if (isDeployMove && internalMove) {
+      // Deploy move detected - use new deploy session system
+      const fromSquare = algebraic(internalMove.from) as Square
+
+      // Start deploy session if not already active
+      if (!this._deploySession?.isActive) {
+        this.startDeploy(fromSquare)
+      }
+
+      // Convert to deploy step format and execute
+      const deployStepMove = {
+        from: fromSquare,
+        to: algebraic(internalMove.to) as Square,
+        piece: internalMove.piece.type,
+      }
+
+      return this.deployStep(deployStepMove)
+    } else {
+      // Normal move - use V1 legacy logic
+      if (typeof move === 'string') {
+        return this.moveV1(move, { strict })
+      } else {
+        return this.moveV1(move, { strict })
+      }
+    }
+  }
+
+  /**
+   * Executes a move on the board with version selection support.
+   * @param move - The move to execute, either as SAN string or move object
+   * @param options - Configuration options including version selection
+   * @param options.strict - Whether to use strict parsing rules for algebraic notation moves
+   * @param options.version - Which version of the move logic to use ('v1' or 'v2', defaults to 'v2')
+   * @returns The executed Move object, or null if the move was invalid
+   * @throws Error if the move is invalid, illegal, or ambiguous
+   */
+  move(
+    move:
+      | string
+      | {
+          from: string
+          to: string
+          piece?: PieceSymbol
+          stay?: boolean
+          deploy?: boolean
+        },
+    {
+      strict = false,
+      version = 'v2',
+    }: { strict?: boolean; version?: 'v1' | 'v2' } = {},
+  ): Move | null {
+    if (version === 'v1') {
+      return this.moveV1(move, { strict })
+    }
+    return this.moveV2(move, { strict })
   }
 
   deployMove(deployMove: DeployMoveRequest): DeployMove {
