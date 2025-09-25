@@ -114,9 +114,9 @@ export function prepareCombinedPopup(
   key: cg.Key,
 ): (cg.Piece | EndMove)[] {
   const movablePieces = pieces.filter(p => board.canSelectStackPiece(state, { square: key, type: p.role }));
-  if (state.stackPieceMoves && movablePieces.length < 2) return [END_MOVE];
-  const stackPieceMoves = state.stackPieceMoves;
-  if (!stackPieceMoves) return movablePieces;
+  if (state.deploySession?.isActive && movablePieces.length < 2) return [END_MOVE];
+  const deploySession = state.deploySession;
+  if (!deploySession?.isActive) return movablePieces;
   return [...movablePieces, END_MOVE];
 }
 

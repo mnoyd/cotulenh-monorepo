@@ -11,6 +11,7 @@ export interface Config {
   fen?: cg.FEN;
   check?: cg.Color | boolean; // true for current color, false to unset
   lastMove?: cg.Key[]; // squares part of the last move
+  core?: any; // CoTuLenh instance for deploy session management
   animation?: {
     enabled?: boolean;
     duration?: number;
@@ -22,7 +23,9 @@ export interface Config {
     showDests?: boolean; // whether to add the move-dest class on squares
     events?: {
       after?: (orig: cg.OrigMove, dest: cg.DestMove, metadata: cg.MoveMetadata) => void; // called after the move has been played
-      afterStackMove?: (stackMove: cg.StackMove, metadata: cg.MoveMetadata) => void; // called after the deploy has been played
+      afterStackMove?: (stackMove: cg.StackMove, metadata: cg.MoveMetadata) => void; // called after the deploy has been played (legacy)
+      afterDeployStep?: (deployMove: cg.DeployMove, metadata: cg.MoveMetadata) => void; // called after each deploy step
+      afterDeployComplete?: (deploySession: cg.DeploySession, metadata: cg.MoveMetadata) => void; // called when deploy session completes
       afterNewPiece?: (role: cg.Role, key: cg.Key, metadata: cg.MoveMetadata) => void; // called after a new piece is dropped on the board
     };
   };
@@ -103,6 +106,9 @@ export function configure(state: HeadlessState, config: Config): void {
   // if the previous last move had two squares,
   // the merge algorithm will incorrectly keep the second square.
   else if (config.lastMove) state.lastMove = config.lastMove;
+
+  // set core instance for deploy session management
+  if (config.core !== undefined) state.core = config.core;
 
   // fix move/premove dests
   if (state.selected) setSelected(state, state.selected);

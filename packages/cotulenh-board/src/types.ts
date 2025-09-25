@@ -136,6 +136,28 @@ export interface StackMove {
   stay: Piece;
 }
 
+// New deploy session types to match cotulenh-core
+export interface DeploySession {
+  isActive: boolean;
+  stackSquare: Key;
+  turn: Color;
+  remainingPieces: Piece[];
+  availablePieceTypes: Role[];
+}
+
+export interface DeployMove {
+  from: Key;
+  to: Key;
+  piece: Role;
+  stay?: boolean;
+}
+
+export interface DeployStepResult {
+  success: boolean;
+  isComplete: boolean;
+  remainingPieces: Piece[];
+}
+
 export type AirDefenseInfluenceZoneType = 'friendly' | 'opponent';
 export type AirDefenseColorFriendly = [
   '0044aaff',

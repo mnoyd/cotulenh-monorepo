@@ -29,7 +29,9 @@ export interface HeadlessState {
     showDests: boolean; // whether to add the move-dest class on squares
     events: {
       after?: (orig: cg.OrigMove, dest: cg.DestMove, metadata: cg.MoveMetadata) => void; // called after the move has been played
-      afterStackMove?: (stackMove: cg.StackMove, metadata: cg.MoveMetadata) => void; // called after the deploy has been played
+      afterStackMove?: (stackMove: cg.StackMove, metadata: cg.MoveMetadata) => void; // called after the deploy has been played (legacy)
+      afterDeployStep?: (deployMove: cg.DeployMove, metadata: cg.MoveMetadata) => void; // called after each deploy step
+      afterDeployComplete?: (deploySession: cg.DeploySession, metadata: cg.MoveMetadata) => void; // called when deploy session completes
       afterNewPiece?: (role: cg.Role, key: cg.Key, metadata: cg.MoveMetadata) => void; // called after a new piece is dropped on the board
     };
   };
@@ -83,15 +85,11 @@ export interface HeadlessState {
   exploding?: cg.Exploding;
   addPieceZIndex: boolean; // adds z-index values to pieces (for 3D)
   selected?: cg.OrigMove;
-  stackPieceMoves?: {
-    key: cg.Key;
-    originalPiece: cg.Piece;
-    moves: {
-      piece: cg.Piece;
-      newSquare: cg.Key | 'no_move';
-      capturedPiece?: cg.Piece;
-    }[];
-  };
+  // Core game instance for deploy session management
+  core?: any; // Will be typed as CoTuLenh from cotulenh-core
+
+  // New deploy session state (replaces stackPieceMoves)
+  deploySession?: cg.DeploySession;
   ambigousMove?: {
     type: PopUpType;
     destKey: cg.Key;

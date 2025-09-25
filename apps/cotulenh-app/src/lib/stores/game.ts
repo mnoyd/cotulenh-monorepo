@@ -76,7 +76,23 @@ function createGameStore() {
         lastMove: [move.from, ...Array.from(move.to.keys())],
         check: game.isCheck(),
         status: calculateGameStatus(game),
-        deployState: game['_deployState']
+        deployState: game.isDeployActive() ? game.getRemainingDeployPieces() : null // Use new deploy session
+      }));
+    },
+
+    /**
+     * Updates the store from the current game state (for deploy steps)
+     * @param game The CoTuLenh game instance
+     */
+    updateFromGame(game: CoTuLenh) {
+      update((state) => ({
+        ...state,
+        fen: game.fen(),
+        turn: game.turn(),
+        possibleMoves: getPossibleMoves(game),
+        check: game.isCheck(),
+        status: calculateGameStatus(game),
+        deployState: game.isDeployActive() ? game.getRemainingDeployPieces() : null // Use new deploy session
       }));
     },
 

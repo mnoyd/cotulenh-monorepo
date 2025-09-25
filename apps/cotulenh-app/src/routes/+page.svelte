@@ -1,12 +1,12 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { CotulenhBoard, origMoveToKey } from '@repo/cotulenh-board';
-  import type { Api, Role as BoardRole, DestMove, OrigMove, OrigMoveKey, Role, StackMove, MoveMetadata } from '@repo/cotulenh-board';
+  import type { Api, Role as BoardRole, DestMove, OrigMove, OrigMoveKey, Role, StackMove, MoveMetadata, DeployMove, DeploySession, DeployStepResult } from '@repo/cotulenh-board';
   import { CoTuLenh, getCoreTypeFromRole, getRoleFromCoreType, BLUE, RED } from '@repo/cotulenh-core';
-  import type { Square, Color, Move, DeployMoveRequest } from '@repo/cotulenh-core';
+  import type { Square, Color, Move } from '@repo/cotulenh-core';
   import type { Key, Dests } from '@repo/cotulenh-board';
   import GameInfo from '$lib/components/GameInfo.svelte';
-  // import DeployPanel from '$lib/components/DeployPanel.svelte';
+  import DeployPanel from '$lib/components/DeployPanel.svelte';
   import CombinationPanel from '$lib/components/CombinationPanel.svelte';
   import HeroicStatusPanel from '$lib/components/HeroicStatusPanel.svelte';
   import GameControls from '$lib/components/GameControls.svelte';
@@ -51,11 +51,17 @@
           lastMove: mapLastMoveToBoardFormat($gameStore.lastMove),
           check: coreToBoardCheck($gameStore.check, $gameStore.turn),
           airDefense: {influenceZone: coreToBoardAirDefense()},
+          core: game, // Pass core instance for deploy sessions
           movable: {
             free: false,
             color: coreToBoardColor($gameStore.turn),
             dests: mapPossibleMovesToDests($gameStore.possibleMoves),
-            events: { after: handleMove, afterStackMove: handleStackMove }
+            events: { 
+              after: handleMove, 
+              afterStackMove: handleStackMove, // Keep for backward compatibility
+              afterDeployStep: handleDeployStep,
+              afterDeployComplete: handleDeployComplete
+            }
           }
         });
       }
@@ -114,36 +120,27 @@
   function handleStackMove(stackMove: StackMove, metadata: MoveMetadata) {
     if (!game) return;
 
-    console.log('Board stack move attempt:', stackMove, metadata);
+    console.log('Legacy stack move (deprecated):', stackMove, metadata);
+    // This is kept for backward compatibility but should not be used with new deploy system
+    reSetupBoard();
+  }
 
-    // Construct DeployMoveRequest from stackMove
-    // This assumes stackMove.orig.square is the 'from' square
-    // and stackMove.dest.square is the 'to' square for the deployed piece.
-    // You might need to adjust this based on your exact StackMove structure
-    // and how it maps to DeployMoveRequest.
-    const deployMoveRequest: DeployMoveRequest = {
-      from: stackMove.orig,
-      moves: stackMove.moves.map(move => ({ piece: convertBoardPieceToCorePiece(move.piece), to: move.dest })),
-      stay: stackMove.stay ? convertBoardPieceToCorePiece(stackMove.stay) : undefined,
-    };
+  function handleDeployStep(deployMove: DeployMove, metadata: MoveMetadata) {
+    if (!game) return;
 
-    try {
-      const deployMoveResult = game.deployMove(deployMoveRequest);
-      console.log('Deploy move result:', deployMoveResult);
+    console.log('Deploy step completed:', deployMove, metadata);
+    
+    // Update game store after deploy step
+    gameStore.updateFromGame(game);
+  }
 
-      if (deployMoveResult) {
-        console.log('Game deploy move successful:', deployMoveResult);
-        // Assuming you have a method in gameStore to handle deploy moves
-        // Similar to applyMove, you might need applyDeployMove or similar
-        gameStore.applyDeployMove(game, deployMoveResult); // You'll need to implement this in gameStore
-      } else {
-        // This case might not be reachable if deployMove throws on failure
-        console.warn('Illegal deploy move attempted on board:', stackMove);
-      }
-    } catch (error) {
-      reSetupBoard(); // Reset board to a consistent state on error
-      console.error('Error making deploy move in game engine:', error);
-    }
+  function handleDeployComplete(deploySession: DeploySession, metadata: MoveMetadata) {
+    if (!game) return;
+
+    console.log('Deploy session completed:', deploySession, metadata);
+    
+    // Update game store after deploy completion
+    gameStore.updateFromGame(game);
   }
 
   onMount(() => {
@@ -162,11 +159,17 @@
         lastMove: mapLastMoveToBoardFormat($gameStore.lastMove),
         check: coreToBoardCheck($gameStore.check, $gameStore.turn),
         airDefense: {influenceZone: coreToBoardAirDefense()},
+        core: game, // Pass core instance for deploy sessions
         movable: {
           free: false,
           color: coreToBoardColor($gameStore.turn),
           dests: mapPossibleMovesToDests($gameStore.possibleMoves),
-          events: { after: handleMove, afterStackMove: handleStackMove }
+          events: { 
+            after: handleMove, 
+            afterStackMove: handleStackMove, // Keep for backward compatibility
+            afterDeployStep: handleDeployStep,
+            afterDeployComplete: handleDeployComplete
+          }
         }
       });
 
@@ -194,7 +197,7 @@
       <div class="game-info-container">
         <GameInfo />
         <GameControls {game} />
-        <!-- <DeployPanel {game} /> -->
+        <DeployPanel {game} boardApi={boardApi} />
         <CombinationPanel {game} />
         <HeroicStatusPanel {game} />
       </div>
