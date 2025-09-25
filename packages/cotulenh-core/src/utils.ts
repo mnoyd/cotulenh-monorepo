@@ -27,6 +27,7 @@ import {
   VALID_PIECE_TYPES,
   isSquareOnBoard,
   CAPTURE_MASK,
+  swapColor,
 } from './type.js'
 
 import { CombinePieceFactory } from '@repo/cotulenh-combine-piece'
@@ -64,6 +65,9 @@ const roleToSymbolMap: Record<string, PieceSymbol> = Object.entries(
 export function getCoreTypeFromRole(role: string): PieceSymbol | undefined {
   return roleToSymbolMap[role]
 }
+
+// Re-export utilities from type.js
+export { algebraic, swapColor }
 
 export const getRoleFromCoreType = (piece: Piece): string =>
   symbolToRoleMap[piece.type]

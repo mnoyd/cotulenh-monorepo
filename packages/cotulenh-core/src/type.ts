@@ -71,7 +71,7 @@ export type Piece = {
   heroic?: boolean // Indicates if the piece has heroic status
 }
 
-// --- 0x88 Style Board Representation (Adapted for 16x16) ---
+// --- Style Board Representation (Adapted for 16x16) ---
 // We use a 16x16 board (256 squares) to fit 11x12
 // Square 0 = a12, Square 1 = b12, ..., Square 10 = k12
 // Square 16 = a11, ..., Square 26 = k11
@@ -135,12 +135,10 @@ export function isSquareOnBoard(sq: number): boolean {
   return r >= 0 && r < 12 && f >= 0 && f < 11
 }
 
-// Extracts the zero-based rank (0-11) from a 0x88 square index.
 export function rank(square: number): number {
   return square >> 4
 }
 
-// Extracts the zero-based file (0-10) from a 0x88 square index.
 export function file(square: number): number {
   return square & 0xf
 }
@@ -189,8 +187,8 @@ export const CAPTURE_MASK =
 // Internal representation of a move
 export type InternalMove = {
   color: Color
-  from: number // 0x88 index
-  to: number // 0x88 index (destination OR target square for stay capture)
+  from: number //
+  to: number // (destination OR target square for stay capture)
   piece: Piece // The piece being moved (or deployed)
   captured?: Piece
   combined?: Piece
