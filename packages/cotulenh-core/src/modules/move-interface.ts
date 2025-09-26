@@ -531,9 +531,9 @@ export class MoveInterface implements IMoveInterface {
 
   private algebraic(square: number): Square {
     // Convert internal square number to algebraic notation
-    const file = square & 0x0f
-    const rank = (square >> 4) + 1
-    return `${'abcdefghijk'[file]}${rank}` as Square
+    const file = square & 0xf
+    const rank = square >> 4
+    return `${'abcdefghijk'[file]}${12 - rank}` as Square
   }
 
   // Cache statistics and management
