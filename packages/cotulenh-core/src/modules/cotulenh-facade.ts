@@ -74,6 +74,10 @@ export class CoTuLenhFacade {
       this.boardOperations,
       this.moveValidator,
     )
+
+    // Resolve circular dependency: MoveValidator needs MoveExecutor for proper move simulation
+    this.moveValidator.setMoveExecutor(this.moveExecutor)
+
     this.moveInterface = new MoveInterface(
       this.gameState,
       this.boardOperations,
@@ -551,6 +555,13 @@ export class CoTuLenhFacade {
    */
   getMoveExecutorModule(): IMoveExecutor {
     return this.moveExecutor
+  }
+
+  /**
+   * Gets the move validator module (for advanced usage)
+   */
+  getMoveValidatorModule(): IMoveValidator {
+    return this.moveValidator
   }
 
   // === Validation and Debug ===

@@ -204,6 +204,9 @@ export interface IMoveExecutor {
 
 // Move Validation Module Interface
 export interface IMoveValidator {
+  // Dependency injection for circular reference resolution
+  setMoveExecutor(moveExecutor: IMoveExecutor): void
+
   // Legal move validation
   filterLegalMoves(
     moves: (InternalMove | InternalDeployMove)[],

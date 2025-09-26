@@ -7,6 +7,7 @@ import { CoTuLenhFacade as CoTuLenh } from './cotulenh-facade.js'
 import { GameState } from './game-state.js'
 import { BoardOperations } from './board-operations.js'
 import { MoveExecutor } from './move-executor.js'
+import { MoveValidator } from './move-validator.js'
 
 // Example 1: Using the facade (backward compatible)
 console.log('=== Example 1: Facade Usage (Backward Compatible) ===')
@@ -31,7 +32,12 @@ console.log('\n=== Example 2: Direct Module Usage ===')
 
 const gameState = new GameState()
 const boardOperations = new BoardOperations(gameState)
-const moveExecutor = new MoveExecutor(gameState, boardOperations)
+const moveValidator = new MoveValidator(gameState, boardOperations)
+const moveExecutor = new MoveExecutor(gameState, boardOperations, moveValidator)
+
+// Set up the circular reference so MoveValidator can use MoveExecutor for proper move simulation
+// This ensures we use the full command pattern like the original CoTuLenh
+moveValidator.setMoveExecutor(moveExecutor)
 
 console.log('Initial turn from GameState:', gameState.getTurn())
 
@@ -124,4 +130,4 @@ console.log('The CoTuLenh class has been successfully refactored from a')
 console.log('monolithic 1462-line class into 7 focused, maintainable modules')
 console.log('while maintaining 100% backward compatibility.')
 
-export { CoTuLenh, GameState, BoardOperations, MoveExecutor }
+export { CoTuLenh, GameState, BoardOperations, MoveExecutor, MoveValidator }

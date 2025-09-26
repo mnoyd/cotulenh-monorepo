@@ -11,6 +11,7 @@ import type {
   IGameState,
   IBoardOperations,
   IMoveValidator,
+  IMoveExecutor,
 } from './interfaces.js'
 import { flattenPiece } from '../utils.js'
 import {
@@ -25,7 +26,13 @@ export class MoveValidator implements IMoveValidator {
   constructor(
     private gameState: IGameState,
     private boardOperations: IBoardOperations,
+    private moveExecutor?: IMoveExecutor, // Optional to avoid circular dependency
   ) {}
+
+  // Method to set the move executor after construction to resolve circular dependency
+  setMoveExecutor(moveExecutor: IMoveExecutor): void {
+    this.moveExecutor = moveExecutor
+  }
 
   // Legal move validation
   filterLegalMoves(
@@ -51,24 +58,44 @@ export class MoveValidator implements IMoveValidator {
     move: InternalMove | InternalDeployMove,
     color: Color,
   ): boolean {
-    // Create a temporary game state to test the move
-    const snapshot = this.gameState.createSnapshot()
+    // If we have access to move executor, use the same approach as original CoTuLenh
+    if (this.moveExecutor) {
+      try {
+        // Execute the full move using the command pattern (like original _makeMove)
+        this.moveExecutor.executeMove(move)
 
-    try {
-      // Simulate the move execution
-      this.simulateMove(move)
+        // A move is legal if it doesn't leave the commander attacked AND doesn't expose the commander
+        const isLegal =
+          !this.isCommanderAttacked(color) && !this.isCommanderExposed(color)
 
-      // A move is legal if it doesn't leave the commander attacked AND doesn't expose the commander
-      const isLegal =
-        !this.isCommanderAttacked(color) && !this.isCommanderExposed(color)
+        // Undo the move (like original _undoMove)
+        this.moveExecutor.undoLastMove()
 
-      return isLegal
-    } catch (error) {
-      // If move execution fails, it's not legal
-      return false
-    } finally {
-      // Always restore the original state
-      this.gameState.restoreSnapshot(snapshot)
+        return isLegal
+      } catch (error) {
+        // If move execution fails, it's not legal
+        // Try to undo in case of partial execution
+        try {
+          this.moveExecutor.undoLastMove()
+        } catch {
+          // Ignore undo errors
+        }
+        return false
+      }
+    } else {
+      // Fallback: Use simplified simulation (with known limitations)
+      const snapshot = this.gameState.createSnapshot()
+
+      try {
+        this.simulateMove(move)
+        const isLegal =
+          !this.isCommanderAttacked(color) && !this.isCommanderExposed(color)
+        return isLegal
+      } catch (error) {
+        return false
+      } finally {
+        this.gameState.restoreSnapshot(snapshot)
+      }
     }
   }
 
@@ -271,13 +298,21 @@ export class MoveValidator implements IMoveValidator {
 
   // Private helper methods
   private simulateMove(move: InternalMove | InternalDeployMove): void {
-    // This is a simplified simulation - in a full implementation,
-    // this would use the move executor to actually execute the move
-    // For now, we'll implement basic piece movement simulation
+    // WARNING: This is a simplified simulation that does NOT handle:
+    // - Combination moves (multiple pieces moving together)
+    // - Suicide moves (pieces destroying themselves)
+    // - Complex deploy logic with stack splitting
+    // - Air defense interactions
+    // - Heroic status changes
+    // - All the atomic actions that the command pattern handles
+    //
+    // This fallback should only be used when MoveExecutor is not available.
+    // The preferred approach is to use the full command execution like the original CoTuLenh.
 
     if (isInternalDeployMove(move)) {
-      // Deploy move simulation would be more complex
-      // For now, just validate basic constraints
+      // Deploy move simulation would be extremely complex to replicate here
+      // The original uses DeployMoveCommand with multiple atomic actions
+      // For now, just validate basic constraints and skip simulation
       return
     }
 
@@ -296,15 +331,14 @@ export class MoveValidator implements IMoveValidator {
       throw new Error('No valid piece at source square')
     }
 
-    // Simulate the move by temporarily updating board state
-    // This is a simplified version - full implementation would use command pattern
+    // Simulate basic piece movement (INCOMPLETE - missing many CoTuLenh mechanics)
     if (!(internalMove.flags & BITS.STAY_CAPTURE)) {
       // Remove piece from source (unless it's a stay capture)
       const board = this.gameState.getBoardReference()
       delete board[internalMove.from]
     }
 
-    // Place piece at destination
+    // Place piece at destination (INCOMPLETE - doesn't handle combinations, etc.)
     this.boardOperations.putPiece(internalMove.piece, internalMove.to as any)
   }
 
@@ -386,9 +420,7 @@ export class MoveValidator implements IMoveValidator {
   }
 
   // Get all pieces that are currently under attack
-  getAttackedPieces(
-    color: Color,
-  ): Array<{
+  getAttackedPieces(color: Color): Array<{
     square: number
     piece: any
     attackers: { square: number; type: PieceSymbol }[]

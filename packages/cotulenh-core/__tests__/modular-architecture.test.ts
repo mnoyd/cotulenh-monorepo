@@ -118,6 +118,9 @@ describe('Modular Architecture', () => {
       boardOps = new BoardOperations(gameState)
       moveValidator = new MoveValidator(gameState, boardOps)
       moveExecutor = new MoveExecutor(gameState, boardOps, moveValidator)
+
+      // Resolve circular dependency for proper move validation
+      moveValidator.setMoveExecutor(moveExecutor)
     })
 
     it('should integrate modules correctly', () => {
@@ -229,6 +232,9 @@ describe('Modular Architecture', () => {
       const boardOps = new BoardOperations(gameState)
       const moveValidator = new MoveValidator(gameState, boardOps)
       const moveExecutor = new MoveExecutor(gameState, boardOps, moveValidator)
+
+      // Resolve circular dependency
+      moveValidator.setMoveExecutor(moveExecutor)
 
       // Test IGameState interface compliance
       expect(typeof gameState.isSquareOnBoard).toBe('function')
