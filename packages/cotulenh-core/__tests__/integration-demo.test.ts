@@ -69,55 +69,38 @@ describe('Integration Demo', () => {
     const removed = game.remove('e6')
     expect(removed?.type).toBe(INFANTRY)
     expect(game.get('e6')).toBeUndefined()
-
     // 9. Test that commander positions are still tracked after other operations
     expect(gameStateModule.getCommanderPosition(RED)).toBe(0x65) // f6 still
     expect(gameStateModule.getCommanderPosition(BLUE)).toBe(0x45) // f8 still
   })
 
-  it('should demonstrate state snapshots working across modules', () => {
-    // Set up initial state
-    const redCommander = { type: COMMANDER as any, color: RED as any }
-    const blueInfantry = { type: INFANTRY as any, color: BLUE as any }
+  it('should demonstrate move execution and undo working across modules', () => {
+    const game = new CoTuLenhFacade()
+    const moveExecutor = game.getMoveExecutorModule()
 
-    game.put(redCommander, 'f6')
-    game.put(blueInfantry, 'e5')
-
-    // Get modules for direct access
-    const gameState = game.getGameStateModule()
-    const boardOps = game.getBoardOperationsModule()
-
-    // Modify game state
-    gameState.setTurn('b')
-    gameState.setMoveNumber(5)
-
-    // Create snapshot
-    const snapshot = gameState.createSnapshot()
-
-    // Verify snapshot captured current state
-    expect(snapshot.turn).toBe('b')
-    expect(snapshot.moveNumber).toBe(5)
-    expect(snapshot.board[0x65]).toBeDefined() // f6 has commander
-    expect(snapshot.board[0x74]).toBeDefined() // e5 has infantry
-
-    // Make more changes
-    game.remove('e5')
-    gameState.setTurn('r')
-    gameState.setMoveNumber(1)
-
-    // Verify changes took effect
+    // Use default starting position
     expect(game.turn()).toBe('r')
     expect(game.moveNumber()).toBe(1)
-    expect(game.get('e5')).toBeUndefined()
+    expect(moveExecutor.getHistoryLength()).toBe(0)
 
-    // Restore snapshot
-    gameState.restoreSnapshot(snapshot)
+    // Make a move using the modular architecture
+    const move = game.move('Ik6') // Move infantry forward
 
-    // Verify restoration worked
+    // Verify move was executed
+    expect(game.turn()).toBe('b') // Turn switched to blue
+    expect(moveExecutor.getHistoryLength()).toBe(1) // Move recorded in history
+
+    // Undo the move
+    game.undo()
+
+    // Verify undo worked - should be back to original state
+    expect(game.turn()).toBe('r') // Turn restored to red
+    expect(moveExecutor.getHistoryLength()).toBe(0) // History cleared
+
+    // Verify we can make the move again (state fully restored)
+    const move2 = game.move('Ik6')
     expect(game.turn()).toBe('b')
-    expect(game.moveNumber()).toBe(5)
-    expect(game.get('f6')).toBeDefined() // Commander still there
-    expect(game.get('e5')).toBeDefined() // Infantry restored
+    expect(moveExecutor.getHistoryLength()).toBe(1)
   })
 
   it('should demonstrate interface compliance', () => {

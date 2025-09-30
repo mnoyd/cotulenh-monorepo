@@ -118,10 +118,7 @@ export class BoardOperations implements IBoardOperations {
     if (BASE_AIRDEFENSE_CONFIG[newPiece.type]) {
       const updatedAirDefense = updateAirDefensePiecesPosition({
         get: (square: Square | number) => this.getPiece(square),
-        getBoardReference: () => board,
-        getCommanderSquare: (color: Color) =>
-          this.gameState.getCommanderPosition(color),
-      } as any) // Type assertion for compatibility
+      })
       this.gameState.setAirDefense(updatedAirDefense)
     }
 
@@ -152,10 +149,8 @@ export class BoardOperations implements IBoardOperations {
     // Update air defense if removing an air defense piece
     if (BASE_AIRDEFENSE_CONFIG[piece.type]) {
       const updatedAirDefense = updateAirDefensePiecesPosition({
-        getBoardReference: () => board,
-        getCommanderSquare: (color: Color) =>
-          this.gameState.getCommanderPosition(color),
-      } as any) // Type assertion for compatibility
+        get: (square: Square | number) => this.getPiece(square),
+      })
       this.gameState.setAirDefense(updatedAirDefense)
     }
 

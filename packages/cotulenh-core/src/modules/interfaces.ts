@@ -152,6 +152,10 @@ export interface IGameState {
 
   // Clear state
   clear(options?: { preserveHeaders?: boolean }): void
+
+  // FEN generation and debugging
+  generateFen(): string
+  toDebugString(): string
 }
 
 // Board Operations Module Interface

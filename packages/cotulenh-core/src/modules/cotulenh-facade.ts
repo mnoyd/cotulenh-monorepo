@@ -13,17 +13,7 @@ import type {
   InternalMove,
   BITS,
 } from '../type.js'
-import {
-  DEFAULT_POSITION,
-  RED,
-  BLUE,
-  SQUARE_MAP,
-  isSquareOnBoard,
-  file,
-  algebraic,
-  isDigit,
-} from '../type.js'
-import { makeSanPiece } from '../utils.js'
+import { DEFAULT_POSITION, RED, BLUE, algebraic, isDigit } from '../type.js'
 import type { DeployMoveRequest } from '../deploy-move.js'
 
 // Import the modular components
@@ -183,50 +173,7 @@ export class CoTuLenhFacade {
    * Generates FEN string for current position
    */
   fen(): string {
-    const board = this.gameState.getBoardReference()
-    let empty = 0
-    let fen = ''
-
-    for (let i = SQUARE_MAP.a12; i <= SQUARE_MAP.k1 + 1; i++) {
-      if (isSquareOnBoard(i)) {
-        if (board[i]) {
-          if (empty > 0) {
-            fen += empty
-            empty = 0
-          }
-          const piece = board[i]!
-          const san = makeSanPiece(piece, false)
-          const toCorrectCase = piece.color === RED ? san : san.toLowerCase()
-          fen += toCorrectCase
-        } else {
-          empty++
-        }
-      } else {
-        if (file(i) === 11) {
-          if (empty > 0) {
-            fen += empty
-          }
-          empty = 0
-          if (i !== SQUARE_MAP.k1 + 1) {
-            fen += '/'
-          }
-        } else {
-          continue
-        }
-      }
-    }
-
-    const castling = '-' // No castling
-    const epSquare = '-' // No en passant
-
-    return [
-      fen,
-      this.gameState.getTurn(),
-      castling,
-      epSquare,
-      this.gameState.getHalfMoves(),
-      this.gameState.getMoveNumber(),
-    ].join(' ')
+    return this.gameState.generateFen()
   }
 
   // === Piece Operations ===
@@ -583,7 +530,7 @@ export class CoTuLenhFacade {
    */
   getDebugInfo(): any {
     return {
-      gameState: this.gameState.toString(),
+      gameState: this.gameState.toDebugString(),
       historyLength: this.moveExecutor.getHistoryLength(),
       cacheSize: this._movesCache.size,
       validation: this.validateState(),

@@ -1,4 +1,4 @@
-import { CoTuLenh } from './cotulenh.js'
+import type { CoTuLenh } from './cotulenh.js'
 import {
   AirDefenseForSide,
   ANTI_AIR,
@@ -18,6 +18,12 @@ import {
   Piece,
 } from './type.js'
 
+// Generic interface for game instances that can be used by air defense functions
+interface GameInterface {
+  get: (square: Square | number) => Piece | undefined
+  getAirDefense?: () => AirDefense
+}
+
 export const BASE_AIRDEFENSE_CONFIG: Partial<Record<PieceSymbol, number>> = {
   [MISSILE]: 2,
   [NAVY]: 1,
@@ -33,7 +39,7 @@ function getAirDefenseLevel(piece: PieceSymbol, isHero: boolean): number {
 }
 
 export function calculateAirDefense(
-  game: CoTuLenh,
+  game: GameInterface,
   color: Color,
   airDefensePiecesPosition: AirDefensePiecesPosition,
 ): AirDefenseForSide {
@@ -80,7 +86,9 @@ export type AirDefensePiecesPosition = {
   [BLUE]: number[]
 }
 
-export function updateAirDefensePiecesPosition(game: CoTuLenh): AirDefense {
+export function updateAirDefensePiecesPosition(
+  game: GameInterface,
+): AirDefense {
   const airDefensePieces: AirDefensePiecesPosition = {
     [RED]: [],
     [BLUE]: [],
@@ -110,11 +118,20 @@ export function updateAirDefensePiecesPosition(game: CoTuLenh): AirDefense {
   return airDefense
 }
 
-export function getAirDefenseInfluence(game: CoTuLenh): AirDefenseInfluence {
+export function getAirDefenseInfluence(
+  game: GameInterface,
+): AirDefenseInfluence {
   const airDefenseInfluence: AirDefenseInfluence = {
     [RED]: new Map<Square, Square[]>(),
     [BLUE]: new Map<Square, Square[]>(),
   }
+
+  if (!game.getAirDefense) {
+    throw new Error(
+      'Game instance must provide getAirDefense method for air defense influence calculation',
+    )
+  }
+
   const airDefense = game.getAirDefense()
   for (const color of Object.keys(airDefense) as Color[]) {
     for (const [sqNum, influencedSquares] of airDefense[color]) {

@@ -472,6 +472,7 @@ describe('CoTuLenh.FEN', () => {
     })
     it('should return the correct FEN string after each move', () => {
       const game = new CoTuLenh()
+      expect(game.fen()).toBe(DEFAULT_POSITION)
       game.move('Ik6')
       expect(game.fen()).toBe(
         '6c4/1n2fh1hf2/3a2s2a1/2n1gt1tg2/2ie2m2ei/11/10I/2IE2M2E1/2N1GT1TG2/3A2S2A1/1N2FH1HF2/6C4 b - - 1 1',

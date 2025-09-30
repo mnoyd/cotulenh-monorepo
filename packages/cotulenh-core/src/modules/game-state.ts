@@ -14,14 +14,17 @@ import type { IGameState, GameStateSnapshot } from './interfaces.js'
 import {
   RED,
   BLUE,
+  SQUARE_MAP,
   isSquareOnBoard,
+  file,
   type Piece,
   type Color,
   type DeployState,
   type AirDefense,
+  type AirDefenseInfluence,
 } from '../type.js'
+import { makeSanPiece } from '../utils.js'
 
-// Load options type
 type LoadOptions = {
   preserveHeaders?: boolean
 }
@@ -291,19 +294,68 @@ export class GameState implements IGameState {
     this._positionCount = { ...snapshot.positionCount }
   }
 
+  // FEN generation for serialization and debugging
+  generateFen(): string {
+    const board = this._board
+    let empty = 0
+    let fen = ''
+
+    for (let i = SQUARE_MAP.a12; i <= SQUARE_MAP.k1 + 1; i++) {
+      if (isSquareOnBoard(i)) {
+        if (board[i]) {
+          if (empty > 0) {
+            fen += empty
+            empty = 0
+          }
+          const piece = board[i]!
+          const san = makeSanPiece(piece, false)
+          const toCorrectCase = piece.color === RED ? san : san.toLowerCase()
+          fen += toCorrectCase
+        } else {
+          empty++
+        }
+      } else {
+        if (file(i) === 11) {
+          if (empty > 0) {
+            fen += empty
+          }
+          empty = 0
+          if (i !== SQUARE_MAP.k1 + 1) {
+            fen += '/'
+          }
+        } else {
+          continue
+        }
+      }
+    }
+
+    const castling = '-' // No castling
+    const epSquare = '-' // No en passant
+
+    return [
+      fen,
+      this._turn,
+      castling,
+      epSquare,
+      this._halfMoves,
+      this._moveNumber,
+    ].join(' ')
+  }
+
   // Debug helpers
   toString(): string {
-    return JSON.stringify(
-      {
-        turn: this._turn,
-        moveNumber: this._moveNumber,
-        halfMoves: this._halfMoves,
-        commanders: this._commanders,
-        deployState: this._deployState,
-        boardPieces: this._board.filter((p) => p !== undefined).length,
-      },
-      null,
-      2,
-    )
+    return `GameState(turn=${this._turn}, move=${this._moveNumber}, half=${this._halfMoves})`
+  }
+
+  // Enhanced debug method with FEN
+  toDebugString(): string {
+    return `GameState {
+  turn: ${this._turn}
+  moveNumber: ${this._moveNumber}
+  halfMoves: ${this._halfMoves}
+  commanders: ${JSON.stringify(this._commanders)}
+  deployState: ${JSON.stringify(this._deployState)}
+  fen: ${this.generateFen()}
+}`
   }
 }

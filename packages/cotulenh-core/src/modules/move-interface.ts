@@ -76,8 +76,10 @@ export class Move {
     this.san = san
     this.lan = lan
 
-    // For after FEN, we'd need to simulate the move, but for now use current state
+    // Generate the FEN for the 'after' key by simulating the move
+    this.gameInterface._makeMove(this.internalMove)
     this.after = this.gameInterface.fen()
+    this.gameInterface._undoMove()
   }
 
   isCapture(): boolean {
@@ -316,19 +318,15 @@ export class MoveInterface implements IMoveInterface {
 
     // Check for check/checkmate
     let checkingSuffix = ''
-    const snapshot = this.gameState.createSnapshot()
-    try {
-      this.moveExecutor.executeMove(move)
-      if (this.moveValidator.isCheck()) {
-        if (this.moveValidator.isCheckmate()) {
-          checkingSuffix = '#'
-        } else {
-          checkingSuffix = '^'
-        }
+    this.moveExecutor.executeMove(move)
+    if (this.moveValidator.isCheck()) {
+      if (this.moveValidator.isCheckmate()) {
+        checkingSuffix = '#'
+      } else {
+        checkingSuffix = '^'
       }
-    } finally {
-      this.gameState.restoreSnapshot(snapshot)
     }
+    this.moveExecutor.undoLastMove()
 
     const san = `${pieceEncoded}${disambiguator}${separator}${toAlg}${combinationSuffix}${checkingSuffix}`
     const lan = `${pieceEncoded}${fromAlg}${separator}${toAlg}${combinationSuffix}${checkingSuffix}`
@@ -524,9 +522,8 @@ export class MoveInterface implements IMoveInterface {
   }
 
   private generateFenForCache(): string {
-    // Simplified FEN generation for caching purposes
-    // In a full implementation, this would delegate to the serialization module
-    return `${this.gameState.getTurn()}-${this.gameState.getMoveNumber()}-${this.gameState.getHalfMoves()}`
+    // Delegate to GameState for proper FEN generation
+    return this.gameState.generateFen()
   }
 
   private algebraic(square: number): Square {
