@@ -26,7 +26,6 @@
   "author": "Hoang Manh",
   "devDependencies": {
     "@repo/vitest-config": "*",
-    "@types/jest": "^29.5.14",
     "@types/node": "^22.13.11",
     "@vitest/coverage-v8": "^1.6.1",
     "prettier": "^3.5.3",

@@ -61,7 +61,7 @@ describe.skip('Stress Play random game', () => {
       } catch (error) {
         console.error(`Error in run ${run + 1}:`, error)
         console.error(`Final FEN: ${game.fen()}`)
-        // Optionally, rethrow to make the Jest test fail immediately
+        // Optionally, rethrow to make the test fail immediately
         // throw error;
         expect(error).toBeNull() // This will make the test fail and show the error
       }
