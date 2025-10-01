@@ -3,7 +3,7 @@
   "compilerOptions": {
     // Test-specific options can go here if needed
     // Ensure types needed for tests are available
-    "types": ["node", "jest"]
+    "types": ["node"]
   },
   "include": [
     "src/**/*", // Include source files for type checking against tests

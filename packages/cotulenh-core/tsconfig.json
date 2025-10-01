@@ -9,7 +9,7 @@
     "target": "ESNext",
     "composite": true,
     "declarationMap": true,
-    "types": ["node", "jest"]
+    "types": ["node"]
   },
   "include": ["src/**/*"],
   "exclude": ["sample/**", "demo/**"],
