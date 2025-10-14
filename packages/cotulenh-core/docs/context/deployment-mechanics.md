@@ -1,0 +1,425 @@
+# Deployment Mechanics
+
+## Overview
+
+CoTuLenh's deployment system allows stacked pieces to be separated and deployed
+to different squares in a multi-phase process. This creates strategic depth by
+enabling complex piece positioning and tactical flexibility.
+
+## Deploy State Management
+
+### Deploy State Structure
+
+```typescript
+type DeployState = {
+  stackSquare: number // Original stack location (0x88 format)
+  turn: Color // Player whose turn it is during deployment
+  originalPiece: Piece // Complete original stack before deployment
+  movedPieces: Piece[] // Pieces that have been deployed so far
+  stay?: Piece[] // Pieces that will remain at original square
+}
+```
+
+### Deploy State Lifecycle
+
+1. **Initiation**: Deploy state created when first piece is deployed from stack
+2. **Active Phase**: Multiple deploy moves can be made from same stack
+3. **Termination**: Deploy state cleared when all pieces are accounted for
+4. **Turn Switch**: Turn changes only when deployment phase ends
+
+## Deploy Phase Initiation
+
+### Triggering Deployment
+
+```typescript
+// Deploy move triggers deploy state creation
+const deployMove = { from: 'c3', to: 'c4', piece: AIR_FORCE, deploy: true }
+game.move(deployMove)
+```
+
+### Initial Deploy State Creation
+
+```typescript
+new SetDeployStateAction(game, {
+  stackSquare: move.from, // c3 in 0x88 format
+  turn: currentPlayer, // RED or BLUE
+  originalPiece: stackAtC3, // Complete (N|FT) stack
+  movedPieces: [deployedPiece], // [AIR_FORCE]
+  stay: undefined, // No pieces staying yet
+})
+```
+
+### Deploy State Conditions
+
+- **Stack Required**: Only pieces with `carrying` array can initiate deployment
+- **Turn Preservation**: Turn does not change during deployment phase
+- **Move Restriction**: Only moves from stack square are legal during deployment
+
+## Piece Deployment Types
+
+### Individual Piece Deployment
+
+```typescript
+// Deploy single piece from stack
+game.move({ from: 'c3', to: 'c4', piece: AIR_FORCE, deploy: true })
+
+// Result:
+// - Air Force moves to c4
+// - Navy + Tank remain at c3 as (N|T)
+// - Deploy state tracks Air Force as moved
+```
+
+### Combined Piece Deployment
+
+```typescript
+// Deploy multiple pieces as combined unit
+const deployMove: DeployMoveRequest = {
+  from: 'c3',
+  moves: [
+    { piece: { type: AIR_FORCE, color: RED, carrying: [tank] }, to: 'c4' },
+  ],
+}
+
+// Result:
+// - Air Force + Tank move to c4 as (F|T)
+// - Navy remains at c3 as (N)
+```
+
+### Carrier Deployment
+
+```typescript
+// Deploy the carrier piece (moves entire remaining stack)
+game.move({ from: 'c3', to: 'a3', piece: NAVY, deploy: true })
+
+// Result:
+// - Navy + remaining pieces move to a3
+// - Original square c3 becomes empty
+// - Deploy state terminates, turn switches
+```
+
+## Deploy Move Generation and Validation
+
+### Move Generation During Deployment
+
+```typescript
+function generateDeployMoves(
+  gameInstance: CoTuLenh,
+  stackSquare: number,
+  filterPiece?: PieceSymbol,
+): InternalMove[] {
+  const deployState = gameInstance.getDeployState()
+  const carrierPiece =
+    deployState?.originalPiece || gameInstance.get(stackSquare)
+
+  // Generate moves for remaining pieces in stack
+  // Exclude already moved pieces
+  // Include carrier move options
+}
+```
+
+### Legal Move Filtering
+
+```typescript
+// During deploy phase, only moves from stack square are legal
+if (deployState && deployState.turn === us) {
+  allMoves = generateDeployMoves(this, deployState.stackSquare, filterPiece)
+} else {
+  allMoves = generateNormalMoves(this, us, filterPiece, filterSquare)
+}
+```
+
+### Validation Rules
+
+1. **Stack Square Only**: Moves must originate from deploy state stack square
+2. **Remaining Pieces**: Only pieces not yet moved can be deployed
+3. **Terrain Compatibility**: Deployed pieces must satisfy terrain requirements
+4. **Capture Validation**: Deploy moves can capture enemy pieces
+
+## Deploy State Transitions
+
+### State Update Logic
+
+```typescript
+class SetDeployStateAction {
+  execute(): void {
+    if (this.oldDeployState) {
+      const updatedMovedPiece = [
+        ...this.oldDeployState.movedPieces,
+        ...(this.newDeployState.movedPieces ?? []),
+      ]
+
+      const originalLen = flattenPiece(this.oldDeployState.originalPiece).length
+
+      // Check if all pieces are accounted for
+      if (
+        updatedMovedPiece.length + (this.oldDeployState.stay?.length ?? 0) ===
+        originalLen
+      ) {
+        this.game.setDeployState(null) // Terminate deployment
+        this.game['_turn'] = swapColor(this.oldDeployState.turn) // Switch turn
+        return
+      }
+
+      // Update deploy state with new moved pieces
+      this.game.setDeployState({
+        stackSquare: this.oldDeployState.stackSquare,
+        turn: this.oldDeployState.turn,
+        originalPiece: this.oldDeployState.originalPiece,
+        movedPieces: updatedMovedPiece,
+        stay: this.oldDeployState.stay,
+      })
+    }
+  }
+}
+```
+
+### Termination Conditions
+
+1. **All Pieces Moved**: Sum of moved pieces + staying pieces equals original
+   stack size
+2. **Carrier Moved**: When carrier piece is deployed, deployment ends
+   immediately
+3. **Manual Termination**: Complete deploy move specifies all piece destinations
+
+## Turn Management During Deployment
+
+### Turn Preservation
+
+- **No Turn Change**: Turn remains with deploying player during active
+  deployment
+- **Move Restriction**: Only deploying player can make moves during deployment
+- **Opponent Waiting**: Opponent cannot move until deployment phase ends
+
+### Turn Switch Triggers
+
+```typescript
+// Turn switches when deployment terminates
+if (allPiecesAccountedFor) {
+  this.game.setDeployState(null)
+  this.game['_turn'] = swapColor(deployState.turn)
+}
+```
+
+### Turn Switch Examples
+
+```typescript
+// Example 1: All pieces deployed individually
+game.move({ from: 'c3', to: 'c4', piece: AIR_FORCE, deploy: true }) // Turn: RED
+game.move({ from: 'c3', to: 'd3', piece: TANK, deploy: true }) // Turn: RED
+game.move({ from: 'c3', to: 'a3', piece: NAVY, deploy: true }) // Turn: BLUE (switched)
+
+// Example 2: Carrier move ends deployment immediately
+game.move({ from: 'c3', to: 'c4', piece: AIR_FORCE, deploy: true }) // Turn: RED
+game.move({ from: 'c3', to: 'a3', piece: NAVY, deploy: true }) // Turn: BLUE (switched)
+```
+
+## Deploy Move Types and Mechanics
+
+### Normal Deploy Move
+
+```typescript
+// Single piece deployment with movement
+{ from: 'c3', to: 'c4', piece: AIR_FORCE, deploy: true }
+
+// Mechanics:
+// 1. Remove Air Force from stack at c3
+// 2. Place Air Force at c4
+// 3. Update deploy state with moved piece
+// 4. Generate moves for remaining pieces
+```
+
+### Deploy Capture Move
+
+```typescript
+// Deploy move that captures enemy piece
+{ from: 'c3', to: 'c4', piece: TANK, deploy: true }  // Enemy at c4
+
+// Mechanics:
+// 1. Remove Tank from stack at c3
+// 2. Capture enemy piece at c4
+// 3. Place Tank at c4
+// 4. Update deploy state and captured pieces
+```
+
+### Deploy Stay Capture
+
+```typescript
+// Deploy piece captures without moving (stay capture)
+{ from: 'c3', to: 'c3', piece: ARTILLERY, deploy: true, stayCapture: true }
+
+// Mechanics:
+// 1. Artillery captures target without moving
+// 2. Target piece destroyed
+// 3. Artillery remains in stack at c3
+// 4. Deploy state updated
+```
+
+### Deploy Suicide Capture
+
+```typescript
+// Air Force performs kamikaze attack during deployment
+{ from: 'c3', to: 'b7', piece: AIR_FORCE, deploy: true, suicide: true }
+
+// Mechanics:
+// 1. Remove Air Force from stack at c3
+// 2. Both Air Force and target destroyed
+// 3. No piece placed at b7
+// 4. Deploy state updated
+```
+
+## Complex Deployment Scenarios
+
+### Multi-Piece Deploy Move
+
+```typescript
+const deployMove: DeployMoveRequest = {
+  from: 'c3',
+  moves: [
+    { piece: { type: TANK, color: RED }, to: 'd3' },
+    { piece: { type: AIR_FORCE, color: RED }, to: 'c6' },
+    { piece: { type: NAVY, color: RED }, to: 'a3' },
+  ],
+}
+
+// Executes all deployments atomically
+// Turn switches after complete deployment
+```
+
+### Partial Deployment with Stay
+
+```typescript
+const deployMove: DeployMoveRequest = {
+  from: 'c3',
+  moves: [{ piece: { type: NAVY, color: RED }, to: 'a3' }],
+  stay: { type: AIR_FORCE, color: RED, carrying: [{ type: TANK, color: RED }] },
+}
+
+// Navy moves to a3
+// Air Force + Tank remain at c3 as (F|T)
+// Turn switches after deployment
+```
+
+### Nested Stack Deployment
+
+```typescript
+// Deploy combined pieces maintaining internal structure
+const deployMove: DeployMoveRequest = {
+  from: 'c3',
+  moves: [
+    {
+      piece: {
+        type: AIR_FORCE,
+        color: RED,
+        carrying: [{ type: TANK, color: RED }],
+      },
+      to: 'c4',
+    },
+    { piece: { type: NAVY, color: RED }, to: 'a3' },
+  ],
+}
+
+// Air Force + Tank move to c4 as (F|T)
+// Navy moves to a3 as (N)
+```
+
+## Deploy State Validation and Error Handling
+
+### Validation Checks
+
+```typescript
+// Ensure all pieces are accounted for
+if (allPieces.length !== flattenPiece(originalPiece).length) {
+  throw new Error(
+    'Deploy move error: ambiguous deploy move. some pieces are not clear whether moved or stay',
+  )
+}
+
+// Validate piece combinations
+const { combined, uncombined } = createCombineStackFromPieces(pieces)
+if (!combined || (uncombined?.length ?? 0) > 0) {
+  throw new Error('Deploy move error: stay piece not valid')
+}
+
+// Validate moves against legal moves
+if (foundMove.length !== toSquareNumDests.length) {
+  throw new Error('Deploy move error: move not found')
+}
+```
+
+### Error Conditions
+
+1. **Ambiguous Deployment**: Not all pieces specified as moved or staying
+2. **Invalid Combinations**: Pieces cannot form valid stacks
+3. **Illegal Moves**: Requested moves not in legal move list
+4. **Terrain Violations**: Pieces cannot exist on target terrain
+
+### Recovery and Undo
+
+```typescript
+// Deploy state is fully reversible
+class SetDeployStateAction {
+  undo(): void {
+    this.game.setDeployState(this.oldDeployState)
+    if (this.oldDeployState) {
+      this.game['_turn'] = this.oldDeployState.turn
+    }
+  }
+}
+```
+
+## Integration with Game Systems
+
+### Move History
+
+```typescript
+// Deploy moves recorded in history
+const historyEntry: History = {
+  move: deployMove,
+  turn: preState.turn,
+  commanders: preState.commanders,
+  halfMoves: preState.halfMoves,
+  moveNumber: preState.moveNumber,
+  deployState: preState.deployState, // Previous deploy state preserved
+}
+```
+
+### FEN Representation
+
+```typescript
+// Deploy state not directly encoded in FEN
+// Reconstructed from game context during play
+// FEN shows current board position during deployment
+```
+
+### SAN Notation
+
+```typescript
+// Individual deploy moves
+'F>c4' // Air Force deploys to c4
+'T>xd3' // Tank deploys and captures at d3
+'F>@b7' // Air Force suicide capture at b7
+
+// Complex deploy moves
+'T>d3,F>c6,N>a3' // Multi-piece deployment
+'(FT)<N>a3' // Navy moves, Air Force+Tank stay
+```
+
+## Performance and Optimization
+
+### Deploy State Efficiency
+
+- **Minimal State**: Only essential information stored
+- **Lazy Evaluation**: Move generation on demand
+- **State Caching**: Deploy state preserved across moves
+
+### Move Generation Optimization
+
+- **Filtered Generation**: Only generate moves for remaining pieces
+- **Early Termination**: Stop when deployment complete
+- **Cache Invalidation**: Clear caches when deploy state changes
+
+### Memory Management
+
+- **State Cloning**: Deep copy for undo operations
+- **Garbage Collection**: Clean up completed deploy states
+- **Reference Management**: Avoid circular references in piece structures
