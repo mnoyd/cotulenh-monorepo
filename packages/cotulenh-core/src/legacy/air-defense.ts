@@ -16,7 +16,7 @@ import {
   algebraic,
   AirDefense,
   Piece,
-} from './type.js'
+} from '../type.js'
 
 export const BASE_AIRDEFENSE_CONFIG: Partial<Record<PieceSymbol, number>> = {
   [MISSILE]: 2,

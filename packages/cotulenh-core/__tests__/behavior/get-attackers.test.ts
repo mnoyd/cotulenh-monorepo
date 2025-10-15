@@ -1,4 +1,4 @@
-import { CoTuLenh } from '../src/cotulenh'
+import { CoTuLenh } from '../../src/cotulenh'
 import {
   INFANTRY,
   TANK,
@@ -11,7 +11,7 @@ import {
   BLUE,
   PieceSymbol,
   SQUARE_MAP,
-} from '../src/type'
+} from '../../src/type'
 
 describe('CoTuLenh.getAttackers', () => {
   let game: CoTuLenh

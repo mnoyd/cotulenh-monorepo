@@ -5,9 +5,13 @@ import {
   AIR_FORCE, // Import AIR_FORCE
   MISSILE,
   NAVY,
-} from '../src/type'
-import { CoTuLenh, Move } from '../src/cotulenh'
-import { findMove, getDestinationSquares, setupGameBasic } from './test-helpers'
+} from '../../src/type'
+import { CoTuLenh, Move } from '../../src/cotulenh'
+import {
+  findMove,
+  getDestinationSquares,
+  setupGameBasic,
+} from '../test-helpers'
 
 describe('Basic TANK Moves on Empty Board', () => {
   let game: CoTuLenh

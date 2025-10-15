@@ -1,4 +1,9 @@
-import { CoTuLenh, DeployMove, Move, DeployMoveRequest } from '../src/cotulenh'
+import {
+  CoTuLenh,
+  DeployMove,
+  Move,
+  DeployMoveRequest,
+} from '../../src/cotulenh'
 import {
   RED,
   BLUE,
@@ -12,8 +17,8 @@ import {
   Piece,
   InternalMove,
   COMMANDER,
-} from '../src/type'
-import { setupGameBasic } from './test-helpers'
+} from '../../src/type'
+import { setupGameBasic } from '../test-helpers'
 
 describe('CoTuLenh Stay Capture Logic', () => {
   let game: CoTuLenh

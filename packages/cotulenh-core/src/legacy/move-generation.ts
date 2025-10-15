@@ -27,9 +27,9 @@ import {
   swapColor,
   Square,
   HEAVY_PIECES,
-} from './type.js'
-import { addMove, createCombinedPiece, flattenPiece } from './utils.js'
-import { BITS } from './type.js'
+} from '../type.js'
+import { addMove, createCombinedPiece, flattenPiece } from '../utils.js'
+import { BITS } from '../type.js'
 import { CoTuLenh } from './cotulenh.js'
 import { generateStackSplitMoves } from './deploy-move.js'
 import { AirDefenseResult, getCheckAirDefenseZone } from './air-defense.js'

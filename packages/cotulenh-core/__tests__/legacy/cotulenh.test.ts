@@ -1,4 +1,4 @@
-import { CoTuLenh, Move } from '../src/cotulenh'
+import { CoTuLenh, Move } from '../../src/cotulenh'
 import {
   AIR_FORCE,
   BLUE,
@@ -11,8 +11,8 @@ import {
   PieceSymbol,
   RED,
   TANK,
-} from '../src/type'
-import { findMove } from './test-helpers'
+} from '../../src/type'
+import { findMove } from '../test-helpers'
 
 describe('CoTuLenh.getHeroicStatus', () => {
   let game: CoTuLenh

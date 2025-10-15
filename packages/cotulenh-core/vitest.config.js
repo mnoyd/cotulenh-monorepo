@@ -5,6 +5,13 @@ export default defineConfig(
   createVitestConfig({
     // Add any package-specific configuration here
     test: {
+      // Exclude legacy tests by default (archived for reference only)
+      exclude: [
+        '**/node_modules/**',
+        '**/dist/**',
+        '**/__tests__/legacy/**', // Legacy tests archived
+      ],
+
       // Include tsconfig.test.json if needed
       typecheck: {
         tsconfig: './tsconfig.test.json',

@@ -1,5 +1,5 @@
-import { createAllPieceSplits, makeSanPiece } from '../src/utils'
-import { makePiece, setupGameBasic } from './test-helpers'
+import { createAllPieceSplits, makeSanPiece } from '../../src/utils'
+import { makePiece, setupGameBasic } from '../test-helpers'
 import {
   INFANTRY,
   TANK,
@@ -13,9 +13,12 @@ import {
   algebraic,
   COMMANDER,
   BLUE,
-} from '../src/type'
-import { generateStackSplitMoves, InternalDeployMove } from '../src/deploy-move'
-import { CoTuLenh } from '../src/cotulenh'
+} from '../../src/type'
+import {
+  generateStackSplitMoves,
+  InternalDeployMove,
+} from '../../src/deploy-move'
+import { CoTuLenh } from '../../src/cotulenh'
 
 // Helper function to extract all unique subsets from the splits
 const extractSubsetsFromSplits = (splits: Piece[][]): Piece[] => {

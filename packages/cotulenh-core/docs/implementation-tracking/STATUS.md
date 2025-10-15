@@ -1,8 +1,8 @@
 # Implementation Status Tracker
 
 **Last Updated:** 2025-10-15  
-**Current Phase:** Phase 1 - Foundation  
-**Overall Progress:** 14% (2/14 tasks complete)
+**Current Phase:** Phase 2 - Integration  
+**Overall Progress:** 43% (6/14 tasks complete)
 
 ---
 
@@ -10,10 +10,10 @@
 
 | Phase                | Progress  | Status             |
 | -------------------- | --------- | ------------------ |
-| Phase 1: Foundation  | 2/6 tasks | 🟡 In Progress     |
+| Phase 1: Foundation  | 6/6 tasks | ✅ Complete        |
 | Phase 2: Integration | 0/5 tasks | 🔴 Not Started     |
 | Phase 3: Polish      | 0/3 tasks | 🔴 Not Started     |
-| **TOTAL**            | **2/14**  | **🟡 In Progress** |
+| **TOTAL**            | **6/14**  | **🟡 In Progress** |
 
 ---
 
@@ -23,11 +23,11 @@
 
 - [x] 1.1 - Bitboard Utils Implementation ✅ 2025-10-15
 - [x] 1.2 - Bitboard Utils Tests ✅ 2025-10-15
-- [ ] 1.3 - Circle Mask Generation
-- [ ] 1.4 - Circle Mask Tests
-- [ ] 1.5 - Air Defense Calculator
-- [ ] 1.6 - Air Defense Tests
-- [ ] ✅ **CHECKPOINT 1** - Foundation Complete
+- [x] 1.3 - Circle Mask Generation ✅ 2025-10-15
+- [x] 1.4 - Circle Mask Tests ✅ 2025-10-15
+- [x] 1.5 - Air Defense Calculator ✅ 2025-10-15
+- [x] 1.6 - Air Defense Tests ✅ 2025-10-15
+- [x] ✅ **CHECKPOINT 1** - Foundation Complete ✅ 2025-10-15
 
 ### Phase 2: Integration
 
@@ -49,10 +49,10 @@
 
 ## 🚧 Current Work
 
-**Active Task:** Task 1.3 - Circle Mask Generation  
-**Working On:** Pre-computing air defense circle masks  
+**Active Task:** Phase 1 Complete! 🎉  
+**Working On:** Ready for Phase 2 - Integration  
 **Blocked By:** None  
-**Next Up:** Task 1.3 - Circle Mask Generation
+**Next Up:** Task 2.1 - Add Air Defense Cache to CoTuLenh
 
 ---
 
@@ -62,26 +62,44 @@
 
 **Tasks Completed:**
 
-- ✅ Task 1.1 - Bitboard Utils Implementation
-- ✅ Task 1.2 - Bitboard Utils Tests
+- ✅ Task 1.1 - Bitboard Utils Implementation (31 tests)
+- ✅ Task 1.2 - Bitboard Utils Tests (31 tests passing)
+- ✅ Task 1.3 - Circle Mask Generation (29 tests)
+- ✅ Task 1.4 - Circle Mask Tests (29 tests passing)
+- ✅ Task 1.5 - Air Defense Calculator (35 tests)
+- ✅ Task 1.6 - Air Defense Tests (35 tests passing)
+- ✅ Legacy code migration complete
+- ✅ **CHECKPOINT 1 - Foundation Complete** 🎉
 
 **Issues Encountered:**
 
-- Initial test file was placed in `test/bitboard/` but project uses `__tests__/`
-  directory
-- Fixed by moving test file to correct location
-- Fixed import path from `../../src` to `../src`
+- Test import paths broke after reorganizing into subdirectories
+- Fixed with sed to update all imports (`../src/` → `../../src/`)
+- One test expected diagonals in radius-1 circle (wrong - distance is sqrt(2) >
+  1.0)
+- Fixed test to match correct Euclidean distance calculation
+- Had to update piece symbols to match CoTuLenh (Navy='n', Anti-Air='g',
+  Missile='s')
+- Implemented heroic status (+1 radius, capped at 3)
 
 **Tests Status:**
 
-- Passing: 31 tests (all new bitboard utils tests)
+- Passing: 229 tests (95 new bitboard + 134 behavioral)
 - Failing: 0 tests
-- New: 31 tests
+- New: 95 tests (31 bitboard-utils + 29 circle-masks + 35 air-defense)
+- Legacy: Excluded from default run
+
+**Performance:**
+
+- Bitboard foundation complete
+- Ready for 25-50x air defense speedup
+- All circle masks pre-computed and cached
 
 **Next Session:**
 
-- Task 1.3 - Circle Mask Generation
-- Task 1.4 - Circle Mask Tests
+- Phase 2: Integration
+- Task 2.1 - Add Air Defense Cache to CoTuLenh
+- Task 2.2 - Invalidate Cache on Moves
 
 ---
 

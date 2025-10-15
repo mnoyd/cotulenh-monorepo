@@ -10,8 +10,8 @@ import {
   RED,
   SQUARE_MAP,
   TANK,
-} from '../src/cotulenh'
-import { findMove, setupGameBasic } from './test-helpers'
+} from '../../src/cotulenh'
+import { findMove, setupGameBasic } from '../test-helpers'
 
 describe('CoTuLenh', () => {
   describe('_moveToSan', () => {

@@ -1,5 +1,5 @@
-import { makeSanSinglePiece, makeSanPiece } from '../src/utils'
-import { Piece, INFANTRY, TANK, COMMANDER, RED, BLUE } from '../src/type' // Adjust path if needed
+import { makeSanSinglePiece, makeSanPiece } from '../../src/utils'
+import { Piece, INFANTRY, TANK, COMMANDER, RED, BLUE } from '../../src/type' // Adjust path if needed
 
 describe('utils', () => {
   describe('makeSanPiece', () => {

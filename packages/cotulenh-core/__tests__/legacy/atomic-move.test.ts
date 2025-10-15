@@ -1,11 +1,11 @@
-import { CoTuLenh } from '../src/cotulenh.js'
+import { CoTuLenh } from '../../src/cotulenh.js'
 import {
   CaptureMoveCommand,
   NormalMoveCommand,
   SingleDeployMoveCommand,
   StayCaptureMoveCommand,
   createMoveCommand,
-} from '../src/move-apply.js'
+} from '../../src/move-apply.js'
 import {
   BITS,
   RED,
@@ -17,7 +17,7 @@ import {
   INFANTRY,
   NAVY,
   COMMANDER,
-} from '../src/type.js'
+} from '../../src/type.js'
 import { makePiece } from './test-helpers.js'
 
 describe('Move Commands', () => {

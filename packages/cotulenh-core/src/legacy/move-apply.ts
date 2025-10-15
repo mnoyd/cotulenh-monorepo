@@ -1,6 +1,6 @@
 // src/move.ts
 
-import type { Color, CoTuLenh, PieceSymbol } from './cotulenh.js'
+import type { Color, CoTuLenh, PieceSymbol } from '../cotulenh.js'
 import { InternalDeployMove } from './deploy-move.js'
 import {
   swapColor,
@@ -10,12 +10,12 @@ import {
   BITS,
   Piece,
   DeployState,
-} from './type.js'
+} from '../type.js'
 import {
   createCombinedPiece,
   createCombineStackFromPieces,
   flattenPiece,
-} from './utils.js'
+} from '../utils.js'
 
 /**
  * Represents an atomic board action that can be executed and undone

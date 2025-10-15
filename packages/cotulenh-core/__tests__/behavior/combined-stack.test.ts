@@ -1,10 +1,10 @@
-import { CoTuLenh, Move } from '../src/cotulenh'
+import { CoTuLenh, Move } from '../../src/cotulenh'
 import {
   createInternalDeployMove,
   DeployMove,
   DeployMoveRequest,
   deployMoveToSanLan,
-} from '../src/deploy-move'
+} from '../../src/deploy-move'
 import {
   RED,
   BLUE,
@@ -19,9 +19,9 @@ import {
   Piece,
   MILITIA,
   InternalMove,
-} from '../src/type'
-import { createCombinedPiece } from '../src/utils'
-import { findVerboseMove, makePiece, setupGameBasic } from './test-helpers'
+} from '../../src/type'
+import { createCombinedPiece } from '../../src/utils'
+import { findVerboseMove, makePiece, setupGameBasic } from '../test-helpers'
 
 describe('Stack Movement and Deployment', () => {
   let game: CoTuLenh

@@ -1,4 +1,4 @@
-import { CoTuLenh, Move } from '../src/cotulenh'
+import { CoTuLenh, Move } from '../../src/cotulenh'
 import {
   BLUE,
   RED,
@@ -10,8 +10,8 @@ import {
   algebraic,
   NAVY,
   AIR_FORCE,
-} from '../src/type'
-import { setupGameBasic } from './test-helpers'
+} from '../../src/type'
+import { setupGameBasic } from '../test-helpers'
 
 describe('Heroic Piece Functionality', () => {
   let game: CoTuLenh

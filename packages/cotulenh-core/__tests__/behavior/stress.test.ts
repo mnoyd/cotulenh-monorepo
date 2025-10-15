@@ -1,4 +1,4 @@
-import { CoTuLenh } from '../src/cotulenh'
+import { CoTuLenh } from '../../src/cotulenh'
 
 /**
  * Play random moves from the starting position up to a given depth, favoring moves with longer string length.

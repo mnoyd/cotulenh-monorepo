@@ -1,4 +1,4 @@
-import { CoTuLenh } from '../src/cotulenh'
+import { CoTuLenh } from '../../src/cotulenh'
 import {
   BLUE,
   RED,
@@ -9,7 +9,7 @@ import {
   AIR_FORCE,
   NAVY,
   MILITIA,
-} from '../src/type'
+} from '../../src/type'
 
 describe('_isCommanderAttacked Function Tests', () => {
   let game: CoTuLenh
