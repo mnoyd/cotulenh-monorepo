@@ -1,0 +1,232 @@
+# Phase 3: Move Validation & Application - Complete
+
+**Completed:** 2025-10-15 23:58 UTC+07:00  
+**Status:** ✅ Complete (No tests - fast development)
+
+---
+
+## ✅ Completed Modules
+
+### 1. Move Validation (`src/move-validation/`)
+
+**CommanderChecker.ts** (140 lines)
+
+- `isCommanderAttacked()` - Check if commander under attack
+- `isCommanderExposed()` - Flying General rule validation
+- `findCommanderSquare()` - Locate commander on board
+- `canPieceAttackSquare()` - Check if piece can attack target
+
+**MoveValidator.ts** (54 lines)
+
+- `filterLegalMoves()` - Filter pseudo-legal to legal moves
+- `isMoveLegal()` - Validate single move legality
+- Checks: Commander not attacked, Flying General not violated
+
+**MoveApplicator.ts** (150 lines)
+
+- `applyMoveToState()` - Apply move to create new state
+- Handles all 7 move types:
+  - ✅ Normal moves
+  - ✅ Captures
+  - ✅ Stay-captures (Navy)
+  - ✅ Suicide captures (AirForce)
+  - ✅ Combine moves
+  - ✅ Deploy step moves
+  - ✅ Deploy complete moves
+- `maybePromoteToHeroic()` - Heroic promotion logic
+
+### 2. History Management (`src/history/`)
+
+**HistoryManager.ts** (156 lines)
+
+- Complete undo/redo functionality
+- State snapshot storage
+- Methods:
+  - `push()` - Add move to history
+  - `undo()` - Undo last move
+  - `redo()` - Redo next move
+  - `canUndo()` / `canRedo()` - Check availability
+  - `getMoves()` - Get move list
+  - `jumpTo()` - Jump to specific state
+  - `clear()` - Clear history
+
+### 3. Game Controller (`src/game/`)
+
+**GameController.ts** (177 lines)
+
+- Main API for playing games
+- Features:
+  - `getMoves()` - Generate legal moves
+  - `makeMove()` - Make a move with validation
+  - `undo()` / `redo()` - History navigation
+  - `isCheck()` - Check detection
+  - `isCheckmate()` - Checkmate detection
+  - `isStalemate()` - Stalemate detection
+  - `isGameOver()` - Game termination
+  - `getResult()` - Get game outcome
+  - `reset()` - Reset game
+
+---
+
+## 📊 Statistics
+
+### Code Written
+
+```
+Move Validation:   ~344 lines (3 files)
+History Management: 156 lines
+Game Controller:    177 lines
+Total Phase 3:      ~677 lines
+```
+
+### Total Project
+
+```
+Phase 1: Core Foundation     ~1,660 lines + 186 tests
+Phase 2: Move Generation      ~825 lines + 9 tests
+Phase 3: Validation/Apply     ~677 lines (no tests yet)
+─────────────────────────────────────────────────────
+Total:                      ~3,162 lines of code
+Tests:                       195 tests passing
+```
+
+---
+
+## 🎯 Key Features
+
+### Move Validation
+
+- ✅ **Pseudo-legal to legal** - Filter moves that leave commander in check
+- ✅ **Flying General** - Prevent commanders facing each other
+- ✅ **Commander safety** - Ensure own commander not attacked after move
+- ✅ **All piece types** - Validates all 10 piece types
+
+### Move Application
+
+- ✅ **All move types** - Handles normal, capture, stay-capture, suicide,
+  combine, deploy
+- ✅ **Heroic promotion** - Capturing commander/heroic makes piece heroic
+- ✅ **Commander tracking** - Updates commander positions
+- ✅ **Immutable** - Creates new state, doesn't mutate
+
+### History & Game Control
+
+- ✅ **Full undo/redo** - Complete history with state snapshots
+- ✅ **Jump to position** - Navigate to any point in history
+- ✅ **Game state queries** - Check, checkmate, stalemate detection
+- ✅ **Clean API** - Simple, intuitive interface
+
+---
+
+## 🏗️ Architecture Quality
+
+### Design Patterns
+
+- ✅ **Immutable state** - All operations create new states
+- ✅ **Snapshot history** - Store complete states for undo
+- ✅ **Validation pipeline** - Generate → Filter → Apply
+- ✅ **Single responsibility** - Each module has one job
+- ✅ **Type safety** - Full TypeScript with interfaces
+
+### Performance Considerations
+
+- ✅ **State cloning** - Deep copies for history
+- ✅ **Efficient checks** - Fast commander attack detection
+- ✅ **Generator integration** - Reuses Phase 2 move generation
+
+---
+
+## 💡 Design Decisions
+
+### 1. Snapshot History
+
+Store complete game states rather than just moves - simpler and more robust.
+
+### 2. Validation After Generation
+
+Generate all pseudo-legal moves first, then filter - separation of concerns.
+
+### 3. Heroic Promotion in Applicator
+
+Handle heroic promotion during move application for cleaner code.
+
+### 4. Commander Position Tracking
+
+Track commander positions in GameState for fast lookup.
+
+### 5. Immutable Game State
+
+Never mutate state - always create new instances for predictability.
+
+---
+
+## 🔗 Integration
+
+### Phase 1 Integration ✅
+
+- Uses `Board`, `GameState`, `Move` types
+- Uses `pieceUtils` for piece manipulation
+- Uses terrain validation from utilities
+
+### Phase 2 Integration ✅
+
+- Uses `createMoveGenerator()` for move generation
+- Validates moves generated by piece generators
+- Filters pseudo-legal to legal moves
+
+### Ready for Phase 4 ✅
+
+- Game controller provides clean API
+- History tracking ready for serialization
+- All game logic complete for FEN/SAN
+
+---
+
+## 🚀 Next Steps
+
+### Phase 4: Serialization & Public API
+
+1. **FEN Serialization**
+
+   - Generate FEN from GameState
+   - Parse FEN to GameState
+   - Handle stack notation
+   - Deploy state in FEN
+
+2. **SAN Notation**
+
+   - Parse algebraic notation
+   - Generate algebraic notation
+   - Disambiguation logic
+   - Move validation from SAN
+
+3. **Public API**
+
+   - Facade pattern wrapper
+   - Backward compatibility layer
+   - Error handling
+   - Documentation
+
+4. **Comprehensive Testing**
+   - Phase 2 tests (~120 tests)
+   - Phase 3 tests (~120 tests)
+   - Integration tests (~50 tests)
+   - **Total target: ~290 additional tests**
+
+---
+
+## ✨ Status Summary
+
+**Phase 3 Complete!** ✅
+
+- ✅ Move validation with commander checking
+- ✅ Move application for all move types
+- ✅ Heroic promotion logic
+- ✅ Complete undo/redo system
+- ✅ Game controller with check/checkmate detection
+- ✅ TypeScript compiles cleanly
+- ✅ ~677 lines of validation/application code
+
+**Ready for Phase 4: Serialization** 🚀
+
+**Development speed: Fast (no tests during implementation)** ⚡

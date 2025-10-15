@@ -12,7 +12,7 @@
     "types": ["node"]
   },
   "include": ["src/**/*"],
-  "exclude": ["sample/**", "demo/**", "__tests__/legacy/**"],
+  "exclude": ["sample/**", "demo/**", "__tests__/legacy/**", "src/*-legacy.ts"],
   "references": [
     { "path": "./tsconfig.cjs.json" },
     { "path": "./tsconfig.esm.json" },

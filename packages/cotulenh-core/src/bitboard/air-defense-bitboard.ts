@@ -7,7 +7,8 @@
 
 import { Bitboard, BitboardUtils } from './bitboard-utils'
 import { CircleMasks } from './circle-masks'
-import { Color, Piece, PieceSymbol } from '../type'
+import { Color, PieceSymbol } from '../types/Constants'
+import { Piece } from '../types/Piece'
 
 /**
  * Maps piece types to their BASE air defense radius
