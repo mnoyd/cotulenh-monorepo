@@ -301,23 +301,21 @@ export function selectSquare(
   callUserFunction(state.events.select, origMove);
 
   if (state.selected) {
-    // If a piece from a stack is selected and we're clicking on a destination
-    if (isPieceFromStack(state, state.selected)) {
-      if (userMove(state, state.selected, { square: selectedSquare } as cg.DestMove)) {
-        state.stats.dragged = false;
-        return;
-      }
-    }
     // If the same square is selected and it's not a draggable piece
-    else if (state.selected.square === selectedSquare && !state.draggable.enabled) {
+    if (state.selected.square === selectedSquare && !state.draggable.enabled) {
       unselect(state);
       state.hold.cancel();
       return;
-    } else if ((state.selectable.enabled || force) && state.selected.square !== selectedSquare) {
-      if (userMove(state, state.selected, { square: selectedSquare } as cg.DestMove)) {
-        state.stats.dragged = false;
-        return;
-      }
+    }
+
+    // Try to move if it's a piece from stack or a valid selection
+    const shouldAttemptMove =
+      isPieceFromStack(state, state.selected) ||
+      ((state.selectable.enabled || force) && state.selected.square !== selectedSquare);
+
+    if (shouldAttemptMove && userMove(state, state.selected, { square: selectedSquare } as cg.DestMove)) {
+      state.stats.dragged = false;
+      return;
     }
   }
 

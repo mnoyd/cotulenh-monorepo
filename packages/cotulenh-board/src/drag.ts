@@ -71,8 +71,7 @@ export function start(s: State, e: cg.MouchEvent): void {
     board.isMovable(s, { square: keyAtPosition } as cg.OrigMove) &&
     (isRightClick || (isTouchStart && selectedBefore))
   ) {
-    if (!s.selected || !s.selected.stackMove) {
-      // showCombinedPiecePopup(s, keyAtPosition, piece, position);
+    if (!s.selected?.stackMove) {
       combinedPiecePopup.setPopup(
         s,
         prepareCombinedPopup(s, util.flattenPiece(piece), keyAtPosition),
@@ -211,16 +210,6 @@ export function move(s: State, e: cg.MouchEvent): void {
   }
 }
 
-// /**
-//  * Cleans up popup-related state
-//  * @param s Game state
-//  */
-// function cleanupPopupState(s: State): void {
-//   s.draggable.current = undefined;
-//   s.pieces.delete(TEMP_KEY);
-//   s.dom.redraw();
-// }
-
 export function end(s: State, e: cg.MouchEvent): void {
   const cur = s.draggable.current;
   if (!cur) return;
@@ -268,11 +257,12 @@ export function end(s: State, e: cg.MouchEvent): void {
 
   // Handle selection state
   if (
-    (cur.orig === cur.previouslySelected || cur.keyHasChanged) &&
-    (cur.orig === keyAtCurrentPosition || !keyAtCurrentPosition)
-  )
+    ((cur.orig === cur.previouslySelected || cur.keyHasChanged) &&
+      (cur.orig === keyAtCurrentPosition || !keyAtCurrentPosition)) ||
+    !s.selectable.enabled
+  ) {
     board.unselect(s);
-  else if (!s.selectable.enabled) board.unselect(s);
+  }
 
   // Clean up drag elements and state
   finalizeDrag(s);

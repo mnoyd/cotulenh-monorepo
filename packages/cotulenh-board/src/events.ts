@@ -10,7 +10,7 @@ type StateMouchBind = (d: State, e: cg.MouchEvent) => void;
 export function bindBoard(s: State, onResize: () => void): void {
   const boardEl = s.dom.elements.board;
 
-  if ('ResizeObserver' in window) new ResizeObserver(onResize).observe(s.dom.elements.wrap);
+  if ('ResizeObserver' in globalThis) new ResizeObserver(onResize).observe(s.dom.elements.wrap);
 
   if (s.disableContextMenu || s.drawable.enabled) {
     boardEl.addEventListener('contextmenu', e => e.preventDefault());
@@ -35,22 +35,26 @@ export function bindDocument(s: State, onResize: () => void): cg.Unbind {
 
   // Old versions of Edge and Safari do not support ResizeObserver. Send
   // chessground.resize if a user action has changed the bounds of the board.
-  if (!('ResizeObserver' in window)) unbinds.push(unbindable(document.body, 'chessground.resize', onResize));
+  if (!('ResizeObserver' in globalThis))
+    unbinds.push(unbindable(document.body, 'chessground.resize', onResize));
 
   if (!s.viewOnly) {
     const onmove = dragOrDraw(s, drag.move, draw.move);
     const onend = dragOrDraw(s, drag.end, draw.end);
 
-    for (const ev of ['touchmove', 'mousemove'])
-      unbinds.push(unbindable(document, ev, onmove as EventListener));
-    for (const ev of ['touchend', 'mouseup']) unbinds.push(unbindable(document, ev, onend as EventListener));
-
     const onScroll = () => s.dom.bounds.clear();
-    unbinds.push(unbindable(document, 'scroll', onScroll, { capture: true, passive: true }));
-    unbinds.push(unbindable(window, 'resize', onScroll, { passive: true }));
+
+    unbinds.push(
+      ...['touchmove', 'mousemove'].map(ev => unbindable(document, ev, onmove as EventListener)),
+      ...['touchend', 'mouseup'].map(ev => unbindable(document, ev, onend as EventListener)),
+      unbindable(document, 'scroll', onScroll, { capture: true, passive: true }),
+      unbindable(globalThis, 'resize', onScroll, { passive: true }),
+    );
   }
 
-  return () => unbinds.forEach(f => f());
+  return () => {
+    for (const f of unbinds) f();
+  };
 }
 
 function unbindable(

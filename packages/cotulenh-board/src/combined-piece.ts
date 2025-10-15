@@ -55,13 +55,13 @@ const combinedPiecePopup = createPopupFactory<cg.Piece | EndMove>({
     const squareSize = s.dom.bounds().width / 12;
     if (item === END_MOVE) {
       const el = createEl('cg-btn', 'end-stack-move');
-      el.setAttribute('data-index', index.toString());
+      el.dataset.index = index.toString();
       el.style.width = squareSize + 'px';
       el.style.height = squareSize + 'px';
       return el;
     }
     const piece = createSinglePieceElement(item);
-    piece.setAttribute('data-index', index.toString());
+    piece.dataset.index = index.toString();
     piece.style.width = squareSize + 'px';
     piece.style.height = squareSize + 'px';
     return piece;
@@ -126,7 +126,7 @@ const moveWithCarrierPopup = createPopupFactory<cg.Piece>({
   renderItem: (s: State, item: cg.Piece, index: number) => {
     const piece = createSinglePieceElement(item);
     const squareSize = s.dom.bounds().width / 12;
-    piece.setAttribute('data-index', index.toString());
+    piece.dataset.index = index.toString();
     piece.style.width = squareSize + 'px';
     piece.style.height = squareSize + 'px';
     return piece;
@@ -144,7 +144,6 @@ const moveWithCarrierPopup = createPopupFactory<cg.Piece>({
       square: s.ambigousMove.destKey,
     };
     userMove(s, origMove, destMove);
-    // board.selectSquare(s, s.popup.square, selectedPiece.role, true);
     s.ambigousMove = undefined;
     clearPopup(s);
     s.dom.redraw();
@@ -160,7 +159,7 @@ const ambigousStackMoveStayPiecesCantCombineHandling = createAmbigousModeHandlin
   popup: moveWithCarrierPopup,
   renderAmbigousMoveElements: (s: State, popup: CTLPopup<cg.Piece>) => {
     if (!s.ambigousMove) return;
-    const carrying = s.ambigousMove.pieceAtOrig!.carrying;
+    const carrying = s.ambigousMove.pieceAtOrig.carrying;
     if (!carrying) return;
     popup.setPopup(s, carrying, s.ambigousMove.destKey);
     const ambigousStackEl = createAmbigousPiecesStackElement(carrying);

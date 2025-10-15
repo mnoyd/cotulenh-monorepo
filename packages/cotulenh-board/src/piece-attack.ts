@@ -1,10 +1,9 @@
 import { unselect, userMove } from './board';
 import { AmbigousMoveType, createAmbigousModeHandling } from './popup/ambigous-move';
-import { clearPopup, createPopupFactory, CTLPopup } from './popup/popup-factory';
+import { clearPopup, createPopupFactory, CTLPopup, PopUpType } from './popup/popup-factory';
 import { createAmbigousPiecesStackElement } from './render';
 import { State } from './state';
 import { createEl } from './util';
-import { PopUpType } from './popup/popup-factory';
 
 export const PIECE_ATTACK_POPUP_TYPE: PopUpType = 'piece-attack';
 const pieceAttackPopup = createPopupFactory<string>({
@@ -17,7 +16,7 @@ const pieceAttackPopup = createPopupFactory<string>({
     const squareSize = _s.dom.bounds().width / 12;
     el.style.width = squareSize + 'px';
     el.style.height = squareSize + 'px';
-    el.setAttribute('data-index', index.toString());
+    el.dataset.index = index.toString();
     return el;
   },
   onSelect: (s: State, index: number) => {
