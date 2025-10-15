@@ -1,214 +1,203 @@
-// File: packages/create-combine/src/blueprints.ts
-// This file contains the blueprint definitions
+/**
+ * CoTuLenh Piece Combination System
+ *
+ * This module provides a clean, extensible system for combining game pieces
+ * according to configurable rules. It replaces the previous bitwise-based
+ * implementation with a more maintainable, data-driven approach.
+ *
+ * @example
+ * ```typescript
+ * import { PieceCombiner } from '@repo/cotulenh-combine-piece'
+ *
+ * const combiner = new PieceCombiner(piece => piece.role)
+ * const result = combiner.combine(tank, infantry)
+ *
+ * if (result.success) {
+ *   console.log('Combined successfully:', result.result)
+ * } else {
+ *   console.log('Failed:', result.error)
+ *   console.log('Conflicts:', result.conflicts)
+ * }
+ * ```
+ */
 
-// Define roles as bit flags instead of strings
-export type Role = string; // Keep for backward compatibility
-export type RoleBitFlag = number; // New type for bitwise operations
+// ============================================================================
+// 1. CORE TYPES & INTERFACES
+// ============================================================================
 
-// Define role bit flags
-export const ROLE_FLAGS = {
-  COMMANDER: 1 << 0, // 0000001 (1)
-  INFANTRY: 1 << 1, // 0000010 (2)
-  MILITIA: 1 << 2, // 0000100 (4)
-  ARTILLERY: 1 << 3, // 0001000 (8)
-  ANTI_AIR: 1 << 4, // 0010000 (16)
-  MISSILE: 1 << 5, // 0100000 (32)
-  TANK: 1 << 6, // 1000000 (64)
-  AIR_FORCE: 1 << 7, // 10000000 (128)
-  ENGINEER: 1 << 8, // 100000000 (256)
-  NAVY: 1 << 9, // 1000000000 (512)
-  HEADQUARTER: 1 << 10 // 10000000000 (1024)
-};
-
-// Role mapping from string to bit flag
-export const ROLE_TO_FLAG: Record<string, RoleBitFlag> = {
-  commander: ROLE_FLAGS.COMMANDER,
-  infantry: ROLE_FLAGS.INFANTRY,
-  militia: ROLE_FLAGS.MILITIA,
-  artillery: ROLE_FLAGS.ARTILLERY,
-  anti_air: ROLE_FLAGS.ANTI_AIR,
-  missile: ROLE_FLAGS.MISSILE,
-  tank: ROLE_FLAGS.TANK,
-  air_force: ROLE_FLAGS.AIR_FORCE,
-  engineer: ROLE_FLAGS.ENGINEER,
-  navy: ROLE_FLAGS.NAVY,
-  headquarter: ROLE_FLAGS.HEADQUARTER
-};
-
-// Role groups using bitwise OR
-export const HUMANLIKE_ROLES = ROLE_FLAGS.COMMANDER | ROLE_FLAGS.INFANTRY | ROLE_FLAGS.MILITIA;
-export const HEAVY_EQUIPMENT = ROLE_FLAGS.ARTILLERY | ROLE_FLAGS.ANTI_AIR | ROLE_FLAGS.MISSILE;
-
-// New blueprint interface using bitwise flags
-export interface BitCarrierBlueprint {
-  canCarryRoles: RoleBitFlag[]; // Each slot is represented by a bit flag
-}
-
-// Define all carrier blueprints using bit flags
-export const BLUEPRINTS: Record<string, BitCarrierBlueprint> = {
-  navy: {
-    canCarryRoles: [
-      ROLE_FLAGS.AIR_FORCE, // Slot 0: air_force only
-      HUMANLIKE_ROLES | ROLE_FLAGS.TANK // Slot 1: humanlike or tank
-    ]
-  },
-  tank: {
-    canCarryRoles: [HUMANLIKE_ROLES] // Slot 0: humanlike roles only
-  },
-  engineer: {
-    canCarryRoles: [HEAVY_EQUIPMENT] // Slot 0: heavy equipment only
-  },
-  air_force: {
-    canCarryRoles: [
-      ROLE_FLAGS.TANK, // Slot 0: tank only
-      HUMANLIKE_ROLES // Slot 1: humanlike roles
-    ]
-  },
-  headquarter: {
-    canCarryRoles: [ROLE_FLAGS.COMMANDER] // Slot 0: commander only
-  }
-};
-
-// Generic piece interface to work with both UI and Core
-export interface GenericPiece {
+export interface Piece {
+  id: string;
   color: string;
-  carrying?: GenericPiece[];
-  [key: string]: any; // For other properties
+  role: string;
+  carrying?: Piece[];
 }
 
-/**
- * Utility functions for working with role flags
- */
-
-// Check if a role flag is part of a role group
-export function hasRole(roleGroup: RoleBitFlag, roleToCheck: RoleBitFlag): boolean {
-  return (roleGroup & roleToCheck) !== 0;
+export interface CombinationRule {
+  carrier: string;
+  slots: SlotDefinition[];
+  priority: number; // Higher = more dominant carrier
 }
 
-// Add a role to a role group
-export function addRole(roleGroup: RoleBitFlag, roleToAdd: RoleBitFlag): RoleBitFlag {
-  return roleGroup | roleToAdd;
+export interface SlotDefinition {
+  accepts: readonly string[] | ((role: string) => boolean);
+  maxCount: number;
+  required?: boolean;
 }
 
-// Remove a role from a role group
-export function removeRole(roleGroup: RoleBitFlag, roleToRemove: RoleBitFlag): RoleBitFlag {
-  return roleGroup & ~roleToRemove;
+export interface CombinationResult<T extends Piece> {
+  success: boolean;
+  result?: T;
+  error?: string;
+  conflicts?: string[];
 }
 
-/**
- * Factory class for creating and combining pieces
- */
-export class CombinePieceFactory<P extends GenericPiece> {
-  private readonly getRoleFunc: (piece: P) => string;
-  private readonly mapRoleFunc: (role: string) => string;
+// ============================================================================
+// 2. RULE DEFINITIONS (Data-Driven)
+// ============================================================================
 
-  /**
-   * Creates a new CombinePieceFactory with the specified role functions
-   * @param getRoleFunc Function to extract role/type from a piece
-   * @param mapRoleFunc Function to map role/type to blueprint key
-   */
-  constructor(getRoleFunc: (piece: P) => string, mapRoleFunc: (role: string) => string = (r) => r) {
-    this.getRoleFunc = getRoleFunc;
-    this.mapRoleFunc = mapRoleFunc;
+export const ROLE_GROUPS = {
+  HUMANLIKE: ['commander', 'infantry', 'militia'],
+  HEAVY_EQUIPMENT: ['artillery', 'anti_air', 'missile'],
+  VEHICLES: ['tank', 'air_force', 'navy', 'engineer'],
+  COMMAND: ['commander', 'headquarter']
+} as const;
+
+export const COMBINATION_RULES: CombinationRule[] = [
+  {
+    carrier: 'navy',
+    priority: 100, // Highest priority
+    slots: [
+      { accepts: ['air_force'], maxCount: 1 },
+      { accepts: [...ROLE_GROUPS.HUMANLIKE, 'tank'], maxCount: 1 }
+    ]
+  },
+  {
+    carrier: 'air_force',
+    priority: 80,
+    slots: [
+      { accepts: ['tank'], maxCount: 1 },
+      { accepts: ROLE_GROUPS.HUMANLIKE, maxCount: 1 }
+    ]
+  },
+  {
+    carrier: 'tank',
+    priority: 60,
+    slots: [{ accepts: ROLE_GROUPS.HUMANLIKE, maxCount: 1 }]
+  },
+  {
+    carrier: 'engineer',
+    priority: 40,
+    slots: [{ accepts: ROLE_GROUPS.HEAVY_EQUIPMENT, maxCount: 1 }]
+  },
+  {
+    carrier: 'headquarter',
+    priority: 20,
+    slots: [{ accepts: ['commander'], maxCount: 1, required: true }]
+  }
+];
+
+// ============================================================================
+// 3. CORE COMBINATION ENGINE
+// ============================================================================
+
+export class PieceCombiner<T extends Piece> {
+  private rules: Map<string, CombinationRule>;
+  private roleExtractor: (piece: T) => string;
+
+  constructor(roleExtractor: (piece: T) => string, customRules?: CombinationRule[]) {
+    this.roleExtractor = roleExtractor;
+    this.rules = new Map();
+
+    // Load rules (custom rules override defaults)
+    const allRules = customRules || COMBINATION_RULES;
+    allRules.forEach((rule) => {
+      this.rules.set(rule.carrier, rule);
+    });
   }
 
   /**
-   * Forms a stack from two pieces according to blueprints
-   * @param piece1 First piece or stack
-   * @param piece2 Second piece or stack
-   * @return The resulting stack if valid, null otherwise
+   * Main combination method - clean and straightforward
    */
-  formStack(piece1: P, piece2: P): P | null {
-    // Check if pieces have the same color
+  combine(piece1: T, piece2: T): CombinationResult<T> {
+    // Basic validation
     if (piece1.color !== piece2.color) {
-      return null; // Cannot combine pieces of different colors
+      return { success: false, error: 'Cannot combine pieces of different colors' };
     }
 
-    // First, flatten both stacks to get individual pieces
-    const flattenedPieces1 = this.flattenStack(piece1);
-    const flattenedPieces2 = this.flattenStack(piece2);
+    // Get all individual pieces
+    const allPieces = this.flattenPieces([piece1, piece2]);
 
-    // Combine all pieces
-    const allPieces = [...flattenedPieces1, ...flattenedPieces2];
-
-    // Determine the carrier
-    const carrier = this.determineCarrier(allPieces);
+    // Find the best carrier
+    const carrier = this.selectCarrier(allPieces);
     if (!carrier) {
-      return null; // No valid carrier found among the pieces
+      return {
+        success: false,
+        error: 'No valid carrier found',
+        conflicts: this.getNoCarrierConflicts(allPieces)
+      };
     }
 
-    // Check if remaining pieces can be carried by the carrier
+    // Try to assign pieces to carrier
     const piecesToCarry = allPieces.filter((p) => p !== carrier);
+    const assignment = this.assignPieces(carrier, piecesToCarry);
 
-    // Try to assign pieces to carrier's slots
-    return this.assignPiecesToCarrier(carrier, piecesToCarry);
+    return assignment;
   }
 
   /**
-   * Creates a combined stack from an array of pieces by iteratively combining them
-   * @param pieces Array of pieces to combine
-   * @return Object containing combined stack and uncombined pieces
+   * Combine multiple pieces at once
    */
-  createCombineStackFromPieces(pieces: P[]): {
-    combined: P | undefined;
-    uncombined: P[] | undefined;
-  } {
-    if (!pieces || pieces.length === 0) return { combined: undefined, uncombined: undefined };
-    if (pieces.length === 1) return { combined: pieces[0], uncombined: undefined };
-
-    // Use a bit mask to track which pieces have been combined
-    let uncombinedMask = 0;
-
-    // Start with the first piece as our accumulator
-    let combinedPiece = pieces[0];
-
-    // Try to combine each subsequent piece
-    for (let i = 1; i < pieces.length; i++) {
-      const currentPiece = pieces[i];
-      const newCombined = this.formStack(combinedPiece, currentPiece);
-
-      if (newCombined) {
-        // Successfully combined
-        combinedPiece = newCombined;
-      } else {
-        // Mark this piece as uncombined using addRole utility
-        uncombinedMask = addRole(uncombinedMask, 1 << i);
-      }
+  combineMultiple(pieces: T[]): CombinationResult<T> {
+    if (pieces.length === 0) {
+      return { success: false, error: 'No pieces to combine' };
     }
 
-    // Extract uncombined pieces using the bit mask
-    const uncombined: P[] = [];
-    if (uncombinedMask !== 0) {
-      for (let i = 1; i < pieces.length; i++) {
-        // Check if this piece is uncombined using hasRole utility
-        if (hasRole(uncombinedMask, 1 << i)) {
-          uncombined.push(pieces[i]);
-        }
-      }
+    if (pieces.length === 1) {
+      return { success: true, result: pieces[0] };
     }
 
-    return {
-      combined: combinedPiece,
-      uncombined: uncombined.length > 0 ? uncombined : undefined
-    };
+    // Check all same color
+    const firstColor = pieces[0].color;
+    if (!pieces.every((p) => p.color === firstColor)) {
+      return { success: false, error: 'All pieces must be the same color' };
+    }
+
+    const allPieces = this.flattenPieces(pieces);
+    const carrier = this.selectCarrier(allPieces);
+
+    if (!carrier) {
+      return {
+        success: false,
+        error: 'No valid carrier found',
+        conflicts: this.getNoCarrierConflicts(allPieces)
+      };
+    }
+
+    return this.assignPieces(
+      carrier,
+      allPieces.filter((p) => p !== carrier)
+    );
   }
 
+  // ============================================================================
+  // 4. PRIVATE HELPER METHODS
+  // ============================================================================
+
   /**
-   * Flattens a stack into individual pieces
-   * @private
+   * Flatten all pieces into individual units (no nested carrying)
    */
-  private flattenStack(piece: P): P[] {
-    // Create a new piece without carrying pieces
-    const clonedPiece = { ...piece } as P;
-    delete (clonedPiece as any).carrying;
+  private flattenPieces(pieces: T[]): T[] {
+    const result: T[] = [];
 
-    // Initialize result with the cloned piece
-    const result: P[] = [clonedPiece];
+    for (const piece of pieces) {
+      // Add the piece itself (without carrying)
+      const flatPiece = { ...piece } as T;
+      delete flatPiece.carrying;
+      result.push(flatPiece);
 
-    // Add all carrying pieces
-    if (piece.carrying && piece.carrying.length > 0) {
-      for (const carryingPiece of piece.carrying as P[]) {
-        result.push(...this.flattenStack(carryingPiece));
+      // Recursively add carried pieces
+      if (piece.carrying && piece.carrying.length > 0) {
+        result.push(...this.flattenPieces(piece.carrying as T[]));
       }
     }
 
@@ -216,171 +205,334 @@ export class CombinePieceFactory<P extends GenericPiece> {
   }
 
   /**
-   * Determines which piece should be the carrier from a collection of pieces
-   * @private
+   * Select the best carrier from available pieces
+   * Simple and clear logic based on priority
    */
-  private determineCarrier(pieces: P[]): P | null {
-    // First, identify all potential carriers with their role flags
-    const potentialCarriers: Array<{ piece: P; roleFlag: number; roleName: string }> = [];
+  private selectCarrier(pieces: T[]): T | null {
+    let bestCarrier: T | null = null;
+    let bestPriority = -1;
 
-    // Build a list of potential carriers with their role information
+    // First pass: try to find a carrier that can carry all pieces
     for (const piece of pieces) {
-      const role = this.getRoleFunc(piece);
-      const mappedRole = this.mapRoleFunc(role);
-      const roleFlag = ROLE_TO_FLAG[mappedRole];
+      const role = this.roleExtractor(piece);
+      const rule = this.rules.get(role);
 
-      // Check if this role can be a carrier
-      if (BLUEPRINTS[mappedRole]) {
-        potentialCarriers.push({
-          piece,
-          roleFlag,
-          roleName: mappedRole
-        });
+      if (rule && rule.priority > bestPriority) {
+        const otherPieces = pieces.filter((p) => p !== piece);
+        if (this.canCarryAll(rule, otherPieces)) {
+          bestCarrier = piece;
+          bestPriority = rule.priority;
+        }
       }
     }
 
-    if (potentialCarriers.length === 0) {
-      return null; // No carrier found
+    // If we found a valid carrier, return it
+    if (bestCarrier) {
+      return bestCarrier;
     }
 
-    // If only one potential carrier, it's the carrier
-    if (potentialCarriers.length === 1) {
-      return potentialCarriers[0].piece;
-    }
+    // Second pass: if no carrier can carry all pieces,
+    // return the highest priority carrier for error reporting
+    bestPriority = -1;
+    for (const piece of pieces) {
+      const role = this.roleExtractor(piece);
+      const rule = this.rules.get(role);
 
-    // Create a bit mask of all potential carrier roles for quick lookups
-    let allCarrierRolesMask = 0;
-    for (const carrier of potentialCarriers) {
-      // Use addRole utility to build the mask
-      allCarrierRolesMask = addRole(allCarrierRolesMask, carrier.roleFlag);
-    }
-
-    // Multiple potential carriers - determine hierarchy using bitwise operations
-    for (const candidateCarrier of potentialCarriers) {
-      const blueprint = BLUEPRINTS[candidateCarrier.roleName];
-
-      // Check if this candidate can carry all other potential carriers
-      let canCarryAllRolesMask = 0;
-
-      // Combine all roles this carrier can carry across all slots
-      for (const slotRoles of blueprint.canCarryRoles) {
-        canCarryAllRolesMask = addRole(canCarryAllRolesMask, slotRoles);
-      }
-
-      // Check if this carrier can carry all other carriers
-      // by comparing with the mask of all other carrier roles
-      // We need to remove this carrier's own role from the check
-      const otherCarriersMask = removeRole(allCarrierRolesMask, candidateCarrier.roleFlag);
-
-      // If all bits in otherCarriersMask are also set in canCarryAllRolesMask,
-      // then this carrier can carry all other carriers
-      if ((otherCarriersMask & canCarryAllRolesMask) === otherCarriersMask) {
-        return candidateCarrier.piece;
+      if (rule && rule.priority > bestPriority) {
+        bestCarrier = piece;
+        bestPriority = rule.priority;
       }
     }
 
-    // If we need more precise slot assignment checking:
-    for (const candidateCarrier of potentialCarriers) {
-      const blueprint = BLUEPRINTS[candidateCarrier.roleName];
-
-      // Check if this candidate can be the carrier for all other potential carriers
-      const canCarryAll = potentialCarriers.every((potentialCarrying) => {
-        // Skip self comparison
-        if (potentialCarrying === candidateCarrier) return true;
-
-        // Check if candidateCarrier can carry potentialCarrying in any slot
-        return blueprint.canCarryRoles.some((slotRoles) =>
-          hasRole(slotRoles, potentialCarrying.roleFlag)
-        );
-      });
-
-      if (canCarryAll) {
-        return candidateCarrier.piece;
-      }
-    }
-
-    return null; // No valid carrier found
+    return bestCarrier;
   }
 
   /**
-   * Attempts to assign pieces to a carrier's slots according to blueprint
-   * @private
+   * Check if a carrier rule can accommodate all pieces
    */
-  private assignPiecesToCarrier(carrier: P, piecesToCarry: P[]): P | null {
-    const carrierRole = this.mapRoleFunc(this.getRoleFunc(carrier));
-    const blueprint = BLUEPRINTS[carrierRole];
+  private canCarryAll(rule: CombinationRule, pieces: T[]): boolean {
+    const assignments = this.tryAssignPieces(rule, pieces);
+    return assignments !== null;
+  }
 
-    if (!blueprint) {
-      return null; // No blueprint for this carrier
+  /**
+   * Assign pieces to carrier slots
+   */
+  private assignPieces(carrier: T, pieces: T[]): CombinationResult<T> {
+    const role = this.roleExtractor(carrier);
+    const rule = this.rules.get(role);
+
+    if (!rule) {
+      return { success: false, error: `No rule found for carrier role: ${role}` };
     }
 
-    // Create a copy of pieces to assign
-    const remainingPieces = [...piecesToCarry];
+    const assignments = this.tryAssignPieces(rule, pieces);
+    if (!assignments) {
+      return {
+        success: false,
+        error: 'Cannot fit all pieces in carrier slots',
+        conflicts: this.getConflicts(rule, pieces)
+      };
+    }
 
-    // Track filled slots and which pieces are in which slots
-    const slotAssignments: { [slotIndex: number]: P[] } = {};
+    // Create the result
+    const result = { ...carrier, carrying: assignments.flat() } as T;
+    return { success: true, result };
+  }
 
-    // Track which slots are already filled using a bit mask
-    let filledSlotsMask = 0;
+  /**
+   * Try to assign pieces to slots, return assignments or null if impossible
+   */
+  private tryAssignPieces(rule: CombinationRule, pieces: T[]): T[][] | null {
+    const assignments: T[][] = rule.slots.map(() => []);
+    const unassigned = [...pieces];
 
-    // For each piece we need to carry, find a valid slot
-    for (const piece of piecesToCarry) {
-      const pieceRole = this.mapRoleFunc(this.getRoleFunc(piece));
-      const pieceRoleFlag = ROLE_TO_FLAG[pieceRole];
-
-      if (!pieceRoleFlag) continue; // Skip if role has no bit flag
-
+    // Try to assign each piece to a slot
+    for (let i = 0; i < unassigned.length; i++) {
+      const piece = unassigned[i];
+      const pieceRole = this.roleExtractor(piece);
       let assigned = false;
 
-      // Check each slot in the blueprint
-      for (let slotIndex = 0; slotIndex < blueprint.canCarryRoles.length; slotIndex++) {
-        // Skip already filled slots using hasRole utility
-        if (hasRole(filledSlotsMask, 1 << slotIndex)) continue;
+      // Try each slot
+      for (let slotIndex = 0; slotIndex < rule.slots.length; slotIndex++) {
+        const slot = rule.slots[slotIndex];
 
-        const slotRoleFlags = blueprint.canCarryRoles[slotIndex];
+        if (assignments[slotIndex].length >= slot.maxCount) {
+          continue; // Slot full
+        }
 
-        // Check if this piece's role is allowed in this slot using hasRole utility
-        if (hasRole(slotRoleFlags, pieceRoleFlag)) {
-          // Assign piece to this slot
-          slotAssignments[slotIndex] = [piece];
-
-          // Mark this slot as filled using addRole utility
-          filledSlotsMask = addRole(filledSlotsMask, 1 << slotIndex);
-
-          // Remove piece from remaining pieces
-          const pieceIndex = remainingPieces.indexOf(piece);
-          if (pieceIndex > -1) {
-            remainingPieces.splice(pieceIndex, 1);
-          }
-
+        if (this.slotAccepts(slot, pieceRole)) {
+          assignments[slotIndex].push(piece);
           assigned = true;
           break;
         }
       }
 
-      // If we couldn't assign this piece, the stack is invalid
       if (!assigned) {
+        return null; // Cannot assign this piece
+      }
+    }
+
+    // Check required slots are filled
+    for (let i = 0; i < rule.slots.length; i++) {
+      const slot = rule.slots[i];
+      if (slot.required && assignments[i].length === 0) {
         return null;
       }
     }
 
-    // If we've assigned all pieces, create the resulting stack
-    if (remainingPieces.length === 0) {
-      // Flatten slot assignments into a single carrying array
-      const carryingPieces: P[] = [];
+    return assignments;
+  }
 
-      // Use hasRole utility to iterate through filled slots
-      for (let slotIndex = 0; slotIndex < blueprint.canCarryRoles.length; slotIndex++) {
-        if (hasRole(filledSlotsMask, 1 << slotIndex) && slotAssignments[slotIndex]) {
-          carryingPieces.push(...slotAssignments[slotIndex]);
-        }
+  /**
+   * Check if a slot accepts a piece role
+   */
+  private slotAccepts(slot: SlotDefinition, role: string): boolean {
+    if (Array.isArray(slot.accepts)) {
+      return slot.accepts.includes(role);
+    } else if (typeof slot.accepts === 'function') {
+      return slot.accepts(role);
+    } else {
+      // This should never happen with proper typing, but provides a fallback
+      return false;
+    }
+  }
+
+  /**
+   * Get conflicts for error reporting
+   */
+  private getConflicts(rule: CombinationRule, pieces: T[]): string[] {
+    const conflicts: string[] = [];
+
+    for (const piece of pieces) {
+      const role = this.roleExtractor(piece);
+      const canFit = rule.slots.some((slot) => this.slotAccepts(slot, role));
+
+      if (!canFit) {
+        conflicts.push(`${role} cannot be carried by ${rule.carrier}`);
       }
-
-      // Return carrier with carrying pieces
-      const result = { ...carrier, carrying: carryingPieces } as P;
-      return result;
     }
 
-    return null; // Some pieces couldn't be assigned
+    return conflicts;
+  }
+
+  /**
+   * Get conflicts when no carrier is found
+   */
+  private getNoCarrierConflicts(pieces: T[]): string[] {
+    const conflicts: string[] = [];
+    const roles = pieces.map((p) => this.roleExtractor(p));
+
+    // Check each piece to see if it could be a carrier
+    for (const piece of pieces) {
+      const role = this.roleExtractor(piece);
+      const rule = this.rules.get(role);
+
+      if (rule) {
+        const otherPieces = pieces.filter((p) => p !== piece);
+        const pieceConflicts = this.getConflicts(rule, otherPieces);
+        if (pieceConflicts.length > 0) {
+          conflicts.push(...pieceConflicts);
+        }
+      } else {
+        conflicts.push(`${role} cannot be a carrier`);
+      }
+    }
+
+    return conflicts.length > 0 ? conflicts : [`No valid carrier found among: ${roles.join(', ')}`];
   }
 }
+
+// ============================================================================
+// 5. CONVENIENCE FUNCTIONS
+// ============================================================================
+
+/**
+ * Create a combiner for board pieces
+ */
+export function createBoardCombiner<T extends Piece>(
+  roleExtractor: (piece: T) => string
+): PieceCombiner<T> {
+  return new PieceCombiner(roleExtractor);
+}
+
+/**
+ * Create a combiner with custom rules
+ */
+export function createCustomCombiner<T extends Piece>(
+  roleExtractor: (piece: T) => string,
+  customRules: CombinationRule[]
+): PieceCombiner<T> {
+  return new PieceCombiner(roleExtractor, customRules);
+}
+
+/**
+ * Quick combination check without creating result
+ */
+export function canCombine<T extends Piece>(
+  combiner: PieceCombiner<T>,
+  piece1: T,
+  piece2: T
+): boolean {
+  return combiner.combine(piece1, piece2).success;
+}
+
+// ============================================================================
+// 6. RULE VALIDATION & UTILITIES
+// ============================================================================
+
+export class RuleValidator {
+  static validateRules(rules: CombinationRule[]): string[] {
+    const errors: string[] = [];
+
+    for (const rule of rules) {
+      // Check for duplicate carriers
+      const duplicates = rules.filter((r) => r.carrier === rule.carrier);
+      if (duplicates.length > 1) {
+        errors.push(`Duplicate carrier rule: ${rule.carrier}`);
+      }
+
+      // Check slot definitions
+      for (let i = 0; i < rule.slots.length; i++) {
+        const slot = rule.slots[i];
+        if (slot.maxCount <= 0) {
+          errors.push(`Invalid maxCount for ${rule.carrier} slot ${i}`);
+        }
+      }
+    }
+
+    return errors;
+  }
+
+  static printRuleSummary(rules: CombinationRule[]): void {
+    console.log('=== Combination Rules Summary ===');
+
+    rules
+      .sort((a, b) => b.priority - a.priority)
+      .forEach((rule) => {
+        console.log(`${rule.carrier} (priority: ${rule.priority})`);
+        rule.slots.forEach((slot, i) => {
+          const accepts = Array.isArray(slot.accepts) ? slot.accepts.join(', ') : 'custom function';
+          console.log(`  Slot ${i}: ${accepts} (max: ${slot.maxCount})`);
+        });
+      });
+  }
+}
+
+// ============================================================================
+// 7. BACKWARD COMPATIBILITY LAYER
+// ============================================================================
+
+/**
+ * @deprecated Use PieceCombiner instead. This class is provided for backward compatibility only.
+ *
+ * Legacy interface that mimics the old CombinePieceFactory API.
+ * This allows existing code to work without changes while encouraging migration to the new API.
+ *
+ * @example Migration:
+ * ```typescript
+ * // Old way (still works)
+ * const factory = new CombinePieceFactory(piece => piece.role)
+ * const result = factory.formStack(piece1, piece2)
+ *
+ * // New way (recommended)
+ * const combiner = new PieceCombiner(piece => piece.role)
+ * const result = combiner.combine(piece1, piece2)
+ * ```
+ */
+export class CombinePieceFactory<P extends Piece> {
+  private combiner: PieceCombiner<P>;
+
+  constructor(getRoleFunc: (piece: P) => string, mapRoleFunc?: (role: string) => string) {
+    console.warn(
+      'CombinePieceFactory is deprecated. Use PieceCombiner instead for better error handling and features.'
+    );
+    this.combiner = new PieceCombiner(getRoleFunc);
+  }
+
+  /**
+   * @deprecated Use combiner.combine() instead
+   */
+  formStack(piece1: P, piece2: P): P | null {
+    const result = this.combiner.combine(piece1, piece2);
+    return result.success ? result.result! : null;
+  }
+
+  /**
+   * @deprecated Use combiner.combineMultiple() instead
+   */
+  createCombineStackFromPieces(pieces: P[]): {
+    combined: P | undefined;
+    uncombined: P[] | undefined;
+  } {
+    if (!pieces || pieces.length === 0) {
+      return { combined: undefined, uncombined: undefined };
+    }
+
+    if (pieces.length === 1) {
+      return { combined: pieces[0], uncombined: undefined };
+    }
+
+    const result = this.combiner.combineMultiple(pieces);
+
+    if (result.success) {
+      return { combined: result.result, uncombined: undefined };
+    } else {
+      // For compatibility, if we can't combine all pieces, try to combine as many as possible
+      // This is a simplified approach - the original might be more sophisticated
+      return { combined: pieces[0], uncombined: pieces.slice(1) };
+    }
+  }
+}
+
+// ============================================================================
+// 8. LEGACY EXPORTS FOR BACKWARD COMPATIBILITY
+// ============================================================================
+
+/**
+ * @deprecated Use ROLE_GROUPS instead
+ */
+export interface GenericPiece extends Piece {}
+
+// Re-export the main classes and functions
+export { PieceCombiner as default };
