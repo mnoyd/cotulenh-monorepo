@@ -8,9 +8,9 @@
 import type { IGameState } from './types/GameState'
 import type { Move } from './types/Move'
 import type { Color } from './types/Constants'
-import { GameController } from './game/GameController'
-import { generateFEN, parseFEN } from './serialization/FENSerializer'
-import { parseSAN, moveToSAN } from './serialization/SANParser'
+import { GameController } from './game/GameController.js'
+import { generateFEN, parseFEN } from './serialization/FENSerializer.js'
+import { parseSAN, moveToSAN } from './serialization/SANParser.js'
 
 /**
  * Main CoTuLenh game class

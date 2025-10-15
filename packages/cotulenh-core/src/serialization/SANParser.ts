@@ -9,18 +9,150 @@
  * - "N<" - Navy stay-capture
  */
 
-import type { Move } from '../types/Move'
-import type { IGameState } from '../types/GameState'
-import type { PieceSymbol } from '../types/Constants'
-import { algebraicToSquare, squareToAlgebraic } from '../utils/square'
-import { filterLegalMoves } from '../move-validation'
-import { createMoveGenerator } from '../move-generation'
+import type { Move } from '../types/Move.js'
+import type { IGameState, IDeploySession } from '../types/GameState.js'
+import type { PieceSymbol } from '../types/Constants.js'
+import type { Piece } from '../types/Piece.js'
+import { algebraicToSquare, squareToAlgebraic } from '../utils/square.js'
+import { filterLegalMoves } from '../move-validation/index.js'
+import { createMoveGenerator } from '../move-generation/index.js'
+
+/**
+ * Encode deploy session for SAN notation
+ * Format: originalSquare:movedPieces,remainingPieces
+ * Example: d5:N@e8,TI (stack from d5, Navy moved to e8, Tank+Infantry remaining)
+ */
+function encodeDeploySession(deploySession: IDeploySession): string {
+  const originalSquare = squareToAlgebraic(deploySession.originalSquare)
+
+  // Get moved pieces with their destinations
+  const movedParts: string[] = []
+  for (const [square, piece] of deploySession.getVirtualChanges().entries()) {
+    if (piece !== null) {
+      const pieceStr = pieceToSAN(piece)
+      const squareStr = squareToAlgebraic(square)
+      movedParts.push(`${pieceStr}@${squareStr}`)
+    }
+  }
+
+  // Get remaining pieces that still need to be deployed
+  const remainingPieces = deploySession.getRemainingPieces()
+  const remainingStr = remainingPieces.map((p) => pieceToSAN(p)).join('')
+
+  // Format: originalSquare:moved,remaining
+  const movedStr = movedParts.join('')
+  return `${originalSquare}:${movedStr},${remainingStr}`
+}
+
+/**
+ * Convert piece to SAN character
+ */
+function pieceToSAN(piece: Piece): string {
+  let char =
+    Object.entries(PIECE_LETTERS).find(([_, v]) => v === piece.type)?.[0] ||
+    piece.type.toUpperCase()
+
+  // Add * for heroic
+  if (piece.heroic) {
+    char += '*'
+  }
+
+  return char
+}
+
+/**
+ * Parse deploy session from SAN notation
+ * Format: originalSquare:movedPieces,remainingPieces
+ * Example: d5:N@e8,TI
+ */
+function parseDeploySession(deployStr: string): {
+  originalSquare: number
+  movedPieces: Array<{ piece: string; destination: string }>
+  remainingPieces: string[]
+} {
+  const [originalPart, movesPart] = deployStr.split(':')
+  if (!movesPart) {
+    throw new Error('Invalid deploy session format')
+  }
+
+  const [movedPart, remainingPart] = movesPart.split(',')
+
+  return {
+    originalSquare: algebraicToSquare(originalPart),
+    movedPieces: parseMovedPieces(movedPart || ''),
+    remainingPieces: parseRemainingPieces(remainingPart || ''),
+  }
+}
+
+/**
+ * Parse moved pieces from SAN (e.g., "N@e8T@d5")
+ */
+function parseMovedPieces(
+  movedStr: string,
+): Array<{ piece: string; destination: string }> {
+  const moves: Array<{ piece: string; destination: string }> = []
+  let i = 0
+
+  while (i < movedStr.length) {
+    // Parse piece (with optional heroic marker)
+    let piece = movedStr[i]
+    i++
+
+    if (i < movedStr.length && movedStr[i] === '*') {
+      piece += '*'
+      i++
+    }
+
+    // Expect @
+    if (i >= movedStr.length || movedStr[i] !== '@') {
+      throw new Error('Invalid moved piece format')
+    }
+    i++
+
+    // Parse destination square (2 characters)
+    if (i + 1 >= movedStr.length) {
+      throw new Error('Invalid destination square')
+    }
+
+    const square = movedStr.substring(i, i + 2)
+    i += 2
+
+    moves.push({
+      piece,
+      destination: square,
+    })
+  }
+
+  return moves
+}
+
+/**
+ * Parse remaining pieces from SAN (e.g., "TI")
+ */
+function parseRemainingPieces(remainingStr: string): string[] {
+  const pieces: string[] = []
+  let i = 0
+
+  while (i < remainingStr.length) {
+    let piece = remainingStr[i]
+    i++
+
+    if (i < remainingStr.length && remainingStr[i] === '*') {
+      piece += '*'
+      i++
+    }
+
+    pieces.push(piece)
+  }
+
+  return pieces
+}
 
 /**
  * Piece letter mapping for SAN
  */
 const PIECE_LETTERS: Record<string, PieceSymbol> = {
-  K: 'c', // Commander (King)
+  C: 'c', // Commander
   I: 'i', // Infantry
   E: 'e', // Engineer
   T: 't', // Tank
@@ -184,4 +316,52 @@ export function moveToSAN(move: Move, gameState: IGameState): string {
   // Add check/checkmate indicator (would need to analyze resulting position)
 
   return san
+}
+
+/**
+ * Parse deploy move from SAN notation
+ * Can handle both complete and incomplete deploy sessions
+ *
+ * Examples:
+ * - "d5:N@e8,TI" - Navy moved to e8, Tank+Infantry remaining
+ * - "f6:A@f8T@e6,IM" - Artillery to f8, Tank to e6, Infantry+Militia remaining
+ * - "c4:N*@b4T*@d5" - Complete deploy (no remaining pieces)
+ */
+export function parseDeployMove(
+  deployStr: string,
+  gameState: IGameState,
+): {
+  type: 'deploy-move'
+  originalSquare: number
+  movedPieces: Array<{ piece: string; destination: string }>
+  remainingPieces: string[]
+  isComplete: boolean
+} | null {
+  try {
+    const deployInfo = parseDeploySession(deployStr)
+
+    return {
+      type: 'deploy-move',
+      originalSquare: deployInfo.originalSquare,
+      movedPieces: deployInfo.movedPieces,
+      remainingPieces: deployInfo.remainingPieces,
+      isComplete: deployInfo.remainingPieces.length === 0,
+    }
+  } catch (error) {
+    return null
+  }
+}
+
+/**
+ * Convert deploy session to SAN notation
+ * Works with both complete and incomplete deploy sessions
+ */
+export function deploySessionToSAN(
+  deploySession: IDeploySession | null | undefined,
+): string {
+  if (!deploySession) {
+    return '-'
+  }
+
+  return encodeDeploySession(deploySession)
 }

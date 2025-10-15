@@ -3,4 +3,9 @@
  */
 
 export { generateFEN, parseFEN } from './FENSerializer'
-export { parseSAN, moveToSAN } from './SANParser'
+export {
+  parseSAN,
+  moveToSAN,
+  parseDeployMove,
+  deploySessionToSAN,
+} from './SANParser'

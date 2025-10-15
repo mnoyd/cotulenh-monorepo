@@ -78,6 +78,13 @@ export class DeploySession implements IDeploySession {
   }
 
   /**
+   * Get virtual changes (for FEN encoding)
+   */
+  getVirtualChanges(): ReadonlyMap<number, Piece | null> {
+    return this.virtualChanges
+  }
+
+  /**
    * Clone deploy session
    */
   clone(): DeploySession {

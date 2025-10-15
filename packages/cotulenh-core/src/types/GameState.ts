@@ -27,6 +27,11 @@ export interface IDeploySession {
   getRemainingPieces(): readonly Piece[]
 
   /**
+   * Get virtual changes (for FEN encoding)
+   */
+  getVirtualChanges(): ReadonlyMap<number, Piece | null>
+
+  /**
    * Check if deploy session is complete
    */
   isComplete(): boolean

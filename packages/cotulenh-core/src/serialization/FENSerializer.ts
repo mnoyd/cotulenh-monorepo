@@ -5,24 +5,25 @@
  * Example: "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR r e1,e12 1 0"
  */
 
-import type { IGameState } from '../types/GameState'
-import type { Piece } from '../types/Piece'
-import type { Color, PieceSymbol } from '../types/Constants'
-import { GameState } from '../core/GameState'
-import { Board } from '../core/Board'
-import { pieceUtils } from '../core/Piece'
+import type { IGameState, IDeploySession } from '../types/GameState.js'
+import type { Piece } from '../types/Piece.js'
+import type { Color, PieceSymbol } from '../types/Constants.js'
+import { GameState } from '../core/GameState.js'
+import { Board } from '../core/Board.js'
+import { pieceUtils } from '../core/Piece.js'
 import {
   algebraicToSquare,
   squareToAlgebraic,
   getFile,
   getRank,
-} from '../utils/square'
+} from '../utils/square.js'
+import { deploySessionToSAN } from './SANParser.js'
 
 /**
  * Piece symbol mapping for FEN
  */
 const PIECE_SYMBOLS: Record<PieceSymbol, string> = {
-  c: 'K', // Commander (King)
+  c: 'C', // Commander
   i: 'I', // Infantry
   e: 'E', // Engineer
   t: 'T', // Tank
@@ -87,7 +88,11 @@ export function generateFEN(gameState: IGameState): string {
 
     for (let file = 0; file < 11; file++) {
       const square = rank * 16 + file
-      const piece = gameState.board.get(square)
+
+      // Use effective piece (considers deploy session virtual state)
+      const piece = gameState.deploySession
+        ? gameState.deploySession.getEffectivePiece(gameState.board, square)
+        : gameState.board.get(square)
 
       if (piece === null) {
         emptyCount++
@@ -121,6 +126,10 @@ export function generateFEN(gameState: IGameState): string {
 
   // 5. Half-move clock
   parts.push(gameState.halfMoves.toString())
+
+  // 6. Deploy session (if active)
+  const deployInfo = deploySessionToSAN(gameState.deploySession)
+  parts.push(deployInfo)
 
   return parts.join(' ')
 }
