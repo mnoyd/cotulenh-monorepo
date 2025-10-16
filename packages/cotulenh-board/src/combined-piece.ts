@@ -6,7 +6,7 @@ import * as board from './board.js';
 import * as util from './util.js';
 import * as drag from './drag.js';
 
-import { CombinePieceFactory } from '@repo/cotulenh-combine-piece';
+import { CombinePieceFactory, Piece as CombinePiece } from '@repo/cotulenh-combine-piece';
 import { createEl } from './util.js';
 import { createAmbigousModeHandling } from './popup/ambigous-move.js';
 import { userMove } from './board.js';
@@ -18,6 +18,29 @@ const combinePieceFactory = new CombinePieceFactory(
   p => p.role,
   r => r,
 );
+
+/**
+ * Convert a board piece to combine-piece format (add id property)
+ */
+function toBoardCombinePiece(piece: cg.Piece): CombinePiece {
+  return {
+    ...piece,
+    id: `${piece.color}-${piece.role}`, // Generate a temporary id
+    carrying: piece.carrying?.map(toBoardCombinePiece),
+  };
+}
+
+/**
+ * Convert a combine-piece back to board piece format (remove id property)
+ */
+function fromBoardCombinePiece(piece: CombinePiece): cg.Piece {
+  const { id, ...rest } = piece;
+  return {
+    ...rest,
+    carrying: piece.carrying?.map(fromBoardCombinePiece),
+  } as cg.Piece;
+}
+
 /**
  * Attempts to combine two pieces into a stack
  * @param origPiece The piece being moved/dragged
@@ -28,8 +51,10 @@ export function tryCombinePieces(origPiece: cg.Piece, destPiece: cg.Piece): cg.P
   if (!origPiece || !destPiece) return undefined;
 
   try {
-    const combined = combinePieceFactory.formStack(origPiece, destPiece);
-    return (combined as cg.Piece) ?? undefined;
+    const origWithId = toBoardCombinePiece(origPiece);
+    const destWithId = toBoardCombinePiece(destPiece);
+    const combined = combinePieceFactory.formStack(origWithId, destWithId);
+    return combined ? fromBoardCombinePiece(combined) : undefined;
   } catch (error) {
     console.error('Error combining pieces:', error);
     return undefined;
@@ -40,11 +65,16 @@ export function createCombineStackFromPieces(pieces: cg.Piece[]): {
   combined: cg.Piece | undefined;
   uncombined: cg.Piece[] | undefined;
 } {
+  // Convert board pieces to combine-piece format
+  const piecesWithId = pieces.map(toBoardCombinePiece);
+
   // Use the generic function from cotulenh-combine-piece package
-  const result = combinePieceFactory.createCombineStackFromPieces(pieces);
+  const result = combinePieceFactory.createCombineStackFromPieces(piecesWithId);
+
+  // Convert back to board piece format
   return {
-    combined: result.combined as cg.Piece | undefined,
-    uncombined: result.uncombined as cg.Piece[] | undefined,
+    combined: result.combined ? fromBoardCombinePiece(result.combined) : undefined,
+    uncombined: result.uncombined ? result.uncombined.map(fromBoardCombinePiece) : undefined,
   };
 }
 
