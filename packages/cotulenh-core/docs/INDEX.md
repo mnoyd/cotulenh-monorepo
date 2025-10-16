@@ -63,10 +63,12 @@ Welcome to the comprehensive CoTuLenh documentation!
 - [context/piece-mechanics-headquarter.md](context/piece-mechanics-headquarter.md) -
   Headquarter (H)
 
-### Terrain System (3 files)
+### Terrain System (4 files)
 
+- [context/board-coordinate-system.md](context/board-coordinate-system.md) -
+  **Complete coordinate system reference** ⭐
 - [context/terrain-board-layout.md](context/terrain-board-layout.md) - Board
-  structure
+  structure (⚠️ deprecated, see above)
 - [context/terrain-zones-masks.md](context/terrain-zones-masks.md) -
   Water/land/mixed zones
 - [context/heavy-piece-river-crossing.md](context/heavy-piece-river-crossing.md) -
@@ -212,7 +214,10 @@ interest 4.
 
 ### Board & Coordinates
 
-- [context/terrain-board-layout.md](context/terrain-board-layout.md)
+- [context/board-coordinate-system.md](context/board-coordinate-system.md) -
+  **Complete coordinate system reference** ⭐
+- [context/terrain-board-layout.md](context/terrain-board-layout.md) - (⚠️
+  deprecated)
 - [context/internal-game-state-representation.md](context/internal-game-state-representation.md)
 - [implementation/board-representation-analysis.md](implementation/board-representation-analysis.md)
 

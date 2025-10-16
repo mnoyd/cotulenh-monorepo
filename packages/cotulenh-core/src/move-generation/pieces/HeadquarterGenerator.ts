@@ -2,12 +2,12 @@
  * Headquarter move generator
  *
  * Headquarter is immobile by default.
- * If heroic, can move one square orthogonally.
+ * If heroic, can move one square in all directions (orthogonal and diagonal).
  */
 
 import type { Move } from '../../types/Move'
 import type { GeneratorContext } from '../types'
-import { BasePieceGenerator, ORTHOGONAL } from '../BasePieceGenerator'
+import { BasePieceGenerator, ALL_DIRECTIONS } from '../BasePieceGenerator'
 import { HEADQUARTER } from '../../types/Constants'
 
 export class HeadquarterGenerator extends BasePieceGenerator {
@@ -24,7 +24,7 @@ export class HeadquarterGenerator extends BasePieceGenerator {
       return []
     }
 
-    // Heroic headquarter moves one square orthogonally
-    return this.generateSteps(square, piece, ORTHOGONAL, context)
+    // Heroic headquarter moves one square in all directions
+    return this.generateSteps(square, piece, ALL_DIRECTIONS, context)
   }
 }

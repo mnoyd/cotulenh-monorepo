@@ -3,8 +3,8 @@
  */
 
 import { describe, it, expect } from 'vitest'
+import { moveFactory, isCaptureType } from '../../src/core/Move'
 import {
-  moveFactory,
   isNormalMove,
   isCaptureMove,
   isStayCaptureMove,
@@ -12,8 +12,7 @@ import {
   isCombineMove,
   isDeployStepMove,
   isDeployCompleteMove,
-  isCaptureType,
-} from '../../src/core/Move'
+} from '../../src/types/Move'
 import { pieceUtils } from '../../src/core/Piece'
 import {
   RED,

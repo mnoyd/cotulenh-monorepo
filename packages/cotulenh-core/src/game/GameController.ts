@@ -22,6 +22,8 @@ import {
   applyMoveToState,
 } from '../move-validation'
 import { HistoryManager } from '../history'
+import { parseFEN } from '../serialization/FENSerializer'
+import { DEFAULT_POSITION } from '../utils/constants'
 
 /**
  * Game controller options
@@ -40,7 +42,14 @@ export class GameController {
   private history: HistoryManager
 
   constructor(options: GameControllerOptions = {}) {
-    this.gameState = options.initialState || GameState.createInitial()
+    // Load initial state from provided state or create empty state
+    if (options.initialState) {
+      this.gameState = options.initialState
+    } else {
+      // Create empty game state for tests
+      this.gameState = GameState.createEmpty()
+    }
+
     this.moveGenerator = createMoveGenerator()
     this.history = new HistoryManager()
   }
@@ -179,7 +188,20 @@ export class GameController {
    * Reset game to initial state
    */
   reset(initialState?: IGameState): void {
-    this.gameState = initialState || GameState.createInitial()
+    if (initialState) {
+      this.gameState = initialState
+    } else {
+      try {
+        // Load the default starting position from FEN
+        this.gameState = parseFEN(DEFAULT_POSITION)
+      } catch (error) {
+        console.error(
+          'Failed to load default position, using empty board:',
+          error,
+        )
+        this.gameState = GameState.createInitial()
+      }
+    }
     this.history.clear()
   }
 

@@ -1,14 +1,19 @@
 /**
  * Air Force move generator
  *
- * Air Force moves up to 4 squares orthogonally.
+ * Air Force moves up to 4 squares in all directions (orthogonal and diagonal).
  * Movement restricted by enemy air defense zones.
  * Can perform suicide attacks (piece destroys itself along with target).
  */
 
 import type { Move } from '../../types/Move'
 import type { GeneratorContext } from '../types'
-import { BasePieceGenerator, ORTHOGONAL } from '../BasePieceGenerator'
+import {
+  BasePieceGenerator,
+  ORTHOGONAL,
+  DIAGONAL,
+  ALL_DIRECTIONS,
+} from '../BasePieceGenerator'
 import { AIR_FORCE, COMMANDER } from '../../types/Constants'
 import { moveFactory } from '../../core/Move'
 import { getFile, getRank } from '../../utils/square'
@@ -37,7 +42,7 @@ export class AirForceGenerator extends BasePieceGenerator {
     const airDefenseZones =
       enemyColor === 'r' ? airDefenseResult.redZone : airDefenseResult.blackZone
 
-    for (const [rankDelta, fileDelta] of ORTHOGONAL) {
+    for (const [rankDelta, fileDelta] of ALL_DIRECTIONS) {
       for (let distance = 1; distance <= 4; distance++) {
         const targetSquare = square + distance * (rankDelta * 16 + fileDelta)
 

@@ -10,6 +10,7 @@ export type { Piece, IPieceUtils } from './types/Piece.js'
 export type { IBoard } from './types/Board.js'
 export type {
   Move,
+  MoveType,
   NormalMove,
   CaptureMove,
   StayCaptureMove,
@@ -17,6 +18,19 @@ export type {
   CombineMove,
   DeployStepMove,
   DeployCompleteMove,
+} from './types/Move.js'
+
+// Export type guards and utility functions
+export {
+  isNormalMove,
+  isCaptureMove,
+  isStayCaptureMove,
+  isSuicideCaptureMove,
+  isCombineMove,
+  isDeployStepMove,
+  isDeployCompleteMove,
+  moveTypeToFlags,
+  flagsToMoveType,
 } from './types/Move.js'
 export type {
   IGameState,
@@ -81,6 +95,11 @@ export {
   canHeavyPieceCrossRiver,
 } from './utils/terrain.js'
 export { DEFAULT_POSITION, PIECE_NAMES } from './utils/constants.js'
+export {
+  getRoleFromCoreType,
+  getCoreTypeFromRole,
+  type BoardRole,
+} from './utils/type-conversion.js'
 
 // Re-export bitboard utilities
 export * as BitboardUtils from './bitboard/bitboard-utils.js'

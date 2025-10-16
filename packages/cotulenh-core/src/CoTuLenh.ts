@@ -11,6 +11,7 @@ import type { Color } from './types/Constants'
 import { GameController } from './game/GameController.js'
 import { generateFEN, parseFEN } from './serialization/FENSerializer.js'
 import { parseSAN, moveToSAN } from './serialization/SANParser.js'
+import { DEFAULT_POSITION } from './utils/constants.js'
 
 /**
  * Main CoTuLenh game class
@@ -121,7 +122,7 @@ export class CoTuLenh {
   }
 
   /**
-   * Reset to initial position
+   * Reset to initial starting position
    */
   reset(): void {
     this.controller.reset()
@@ -155,6 +156,13 @@ export class CoTuLenh {
    */
   getResult(): 'red-wins' | 'blue-wins' | 'draw' | 'ongoing' {
     return this.controller.getResult()
+  }
+
+  /**
+   * Get the default starting position FEN
+   */
+  static getDefaultPosition(): string {
+    return DEFAULT_POSITION
   }
 }
 

@@ -2,8 +2,11 @@
 
 ## Executive Summary
 
-**Recommendation:** Use **0x88 array + piece lists + auxiliary structures** (NOT
-bitboards)
+**Current Implementation:** Uses **16×16 mailbox + piece lists + auxiliary
+structures** (NOT bitboards, NOT 0x88)
+
+**Status:** ✅ **IMPLEMENTED** - This analysis was used to guide the current
+implementation.
 
 **Rationale:** CoTuLenh has 19 pieces per side with highly irregular movement
 rules, stay-captures, terrain restrictions, and circular air defense zones.
@@ -158,11 +161,11 @@ bitboards!
 
 ## Recommended Architecture
 
-### Core: 0x88 Array with Auxiliary Structures
+### Core: 16×16 Mailbox Array with Auxiliary Structures
 
 ```typescript
 class Board {
-  // PRIMARY: 0x88 array (132 valid squares in 256 array)
+  // PRIMARY: 16×16 mailbox array (132 valid squares in 256 array)
   private squares: (Piece | null)[]
 
   // AUXILIARY: Fast lookups

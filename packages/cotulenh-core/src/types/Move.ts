@@ -4,123 +4,197 @@
 
 import type { Color, PieceSymbol } from './Constants.js'
 import type { Piece } from './Piece.js'
+import {
+  MOVE_FLAG_NORMAL,
+  MOVE_FLAG_CAPTURE,
+  MOVE_FLAG_STAY_CAPTURE,
+  MOVE_FLAG_SUICIDE_CAPTURE,
+  MOVE_FLAG_DEPLOY,
+  MOVE_FLAG_COMBINATION,
+} from './Constants.js'
 
 /**
- * Move types as discriminated union
- * Each move type is explicitly typed for compiler exhaustiveness checking
+ * Move type enumeration
  */
-
-export type Move =
-  | NormalMove
-  | CaptureMove
-  | StayCaptureMove
-  | SuicideCaptureMove
-  | CombineMove
-  | DeployStepMove
-  | DeployCompleteMove
+export type MoveType =
+  | 'normal'
+  | 'capture'
+  | 'stay-capture'
+  | 'suicide-capture'
+  | 'combine'
+  | 'deploy-step'
+  | 'deploy-complete'
 
 /**
- * Normal move - piece moves from A to B
+ * Unified Move interface - replaces both InternalMove and discriminated union types
+ *
+ * This single interface handles all move types with optional fields based on move type.
+ * The `type` field serves the same purpose as the old `flags` field but is more type-safe.
+ *
+ * For performance-critical internal operations, this can be made mutable.
+ * For public API, this should remain readonly.
  */
-export interface NormalMove {
-  readonly type: 'normal'
+export interface Move {
+  readonly type: MoveType
   readonly from: number
   readonly to: number
   readonly piece: Piece
   readonly color: Color
+
+  // Optional fields based on move type
+  readonly captured?: Piece
+  readonly combined?: Piece
+  readonly remaining?: readonly Piece[]
+  readonly attacker?: number // for stay captures
+  readonly target?: number // for stay captures
+  readonly stackSquare?: number // for deploy complete
+  readonly pieces?: readonly { from: number; piece: Piece }[] // for combine moves
 }
 
 /**
- * Capture move - piece moves and captures enemy piece
+ * Type guards for move types
  */
-export interface CaptureMove {
-  readonly type: 'capture'
-  readonly from: number
-  readonly to: number
-  readonly piece: Piece
-  readonly captured: Piece
-  readonly color: Color
+export function isNormalMove(move: Move): move is Move & { type: 'normal' } {
+  return move.type === 'normal'
+}
+
+export function isCaptureMove(
+  move: Move,
+): move is Move & { type: 'capture'; captured: Piece } {
+  return move.type === 'capture'
+}
+
+export function isStayCaptureMove(
+  move: Move,
+): move is Move & {
+  type: 'stay-capture'
+  attacker: number
+  target: number
+  captured: Piece
+} {
+  return move.type === 'stay-capture'
+}
+
+export function isSuicideCaptureMove(
+  move: Move,
+): move is Move & { type: 'suicide-capture'; captured: Piece } {
+  return move.type === 'suicide-capture'
+}
+
+export function isCombineMove(
+  move: Move,
+): move is Move & {
+  type: 'combine'
+  pieces: readonly { from: number; piece: Piece }[]
+  combined: Piece
+} {
+  return move.type === 'combine'
+}
+
+export function isDeployStepMove(
+  move: Move,
+): move is Move & { type: 'deploy-step'; remaining: readonly Piece[] } {
+  return move.type === 'deploy-step'
+}
+
+export function isDeployCompleteMove(
+  move: Move,
+): move is Move & { type: 'deploy-complete'; stackSquare: number } {
+  return move.type === 'deploy-complete'
 }
 
 /**
- * Stay capture - piece captures without moving (Artillery/Navy)
+ * Convert move type to flags (for backward compatibility)
  */
-export interface StayCaptureMove {
-  readonly type: 'stay-capture'
-  readonly attacker: number // Attacker stays here
-  readonly target: number // Target square
-  readonly piece: Piece // Attacking piece
-  readonly captured: Piece
-  readonly color: Color
+export function moveTypeToFlags(type: MoveType): number {
+  switch (type) {
+    case 'normal':
+      return MOVE_FLAG_NORMAL
+    case 'capture':
+      return MOVE_FLAG_CAPTURE
+    case 'stay-capture':
+      return MOVE_FLAG_STAY_CAPTURE
+    case 'suicide-capture':
+      return MOVE_FLAG_SUICIDE_CAPTURE
+    case 'deploy-step':
+      return MOVE_FLAG_DEPLOY
+    case 'deploy-complete':
+      return MOVE_FLAG_DEPLOY
+    case 'combine':
+      return MOVE_FLAG_COMBINATION
+    default:
+      return MOVE_FLAG_NORMAL
+  }
 }
 
 /**
- * Suicide capture - Air Force destroyed by air defense while capturing
+ * Convert flags to move type (for backward compatibility)
  */
-export interface SuicideCaptureMove {
-  readonly type: 'suicide-capture'
-  readonly from: number
-  readonly to: number
-  readonly piece: Piece // Air Force
-  readonly captured: Piece
-  readonly color: Color
+export function flagsToMoveType(flags: number): MoveType {
+  if (flags & MOVE_FLAG_COMBINATION) return 'combine'
+  if (flags & MOVE_FLAG_DEPLOY) return 'deploy-step'
+  if (flags & MOVE_FLAG_SUICIDE_CAPTURE) return 'suicide-capture'
+  if (flags & MOVE_FLAG_STAY_CAPTURE) return 'stay-capture'
+  if (flags & MOVE_FLAG_CAPTURE) return 'capture'
+  return 'normal'
 }
 
 /**
- * Combine move - multiple pieces move together to form stack
+ * Legacy type aliases for backward compatibility
+ * @deprecated Use Move interface instead
  */
-export interface CombineMove {
-  readonly type: 'combine'
-  readonly pieces: readonly { from: number; piece: Piece }[]
-  readonly to: number
-  readonly combined: Piece // Resulting stack
-  readonly color: Color
+export type NormalMove = Move & { type: 'normal' }
+export type CaptureMove = Move & { type: 'capture'; captured: Piece }
+export type StayCaptureMove = Move & {
+  type: 'stay-capture'
+  attacker: number
+  target: number
+  captured: Piece
+}
+export type SuicideCaptureMove = Move & {
+  type: 'suicide-capture'
+  captured: Piece
+}
+export type CombineMove = Move & {
+  type: 'combine'
+  pieces: readonly { from: number; piece: Piece }[]
+  combined: Piece
+}
+export type DeployStepMove = Move & {
+  type: 'deploy-step'
+  remaining: readonly Piece[]
+}
+export type DeployCompleteMove = Move & {
+  type: 'deploy-complete'
+  stackSquare: number
 }
 
 /**
- * Deploy step - one piece from stack moves during deploy phase
+ * @deprecated Use Move interface instead
  */
-export interface DeployStepMove {
-  readonly type: 'deploy-step'
-  readonly from: number // Stack square
-  readonly to: number // Destination
-  readonly piece: Piece // Piece being deployed
-  readonly remaining: readonly Piece[] // Pieces still on stack
-  readonly color: Color
-}
+export type InternalMove = Move
 
 /**
- * Deploy complete - marks end of deploy phase
- */
-export interface DeployCompleteMove {
-  readonly type: 'deploy-complete'
-  readonly stackSquare: number
-  readonly color: Color
-}
-
-/**
- * Internal move representation (mutable for performance)
- */
-export interface InternalMove {
-  color: Color
-  from: number
-  to: number
-  piece: Piece
-  captured?: Piece
-  combined?: Piece
-  flags: number
-}
-
-/**
- * Move creation interface
+ * Move creation interface - simplified to work with unified Move type
  */
 export interface IMoveFactory {
-  createNormalMove(
-    from: number,
-    to: number,
-    piece: Piece,
-    color: Color,
-  ): NormalMove
+  createMove(config: {
+    type: MoveType
+    from: number
+    to: number
+    piece: Piece
+    color: Color
+    captured?: Piece
+    combined?: Piece
+    remaining?: Piece[]
+    attacker?: number
+    target?: number
+    stackSquare?: number
+    pieces?: { from: number; piece: Piece }[]
+  }): Move
+
+  // Convenience methods for specific move types
+  createNormalMove(from: number, to: number, piece: Piece, color: Color): Move
 
   createCaptureMove(
     from: number,
@@ -128,7 +202,7 @@ export interface IMoveFactory {
     piece: Piece,
     captured: Piece,
     color: Color,
-  ): CaptureMove
+  ): Move
 
   createStayCaptureMove(
     attacker: number,
@@ -136,7 +210,7 @@ export interface IMoveFactory {
     piece: Piece,
     captured: Piece,
     color: Color,
-  ): StayCaptureMove
+  ): Move
 
   createSuicideCaptureMove(
     from: number,
@@ -144,14 +218,14 @@ export interface IMoveFactory {
     piece: Piece,
     captured: Piece,
     color: Color,
-  ): SuicideCaptureMove
+  ): Move
 
   createCombineMove(
     pieces: { from: number; piece: Piece }[],
     to: number,
     combined: Piece,
     color: Color,
-  ): CombineMove
+  ): Move
 
   createDeployStepMove(
     from: number,
@@ -159,10 +233,7 @@ export interface IMoveFactory {
     piece: Piece,
     remaining: Piece[],
     color: Color,
-  ): DeployStepMove
+  ): Move
 
-  createDeployCompleteMove(
-    stackSquare: number,
-    color: Color,
-  ): DeployCompleteMove
+  createDeployCompleteMove(stackSquare: number, color: Color): Move
 }

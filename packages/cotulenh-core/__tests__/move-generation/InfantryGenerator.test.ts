@@ -10,7 +10,7 @@ import { GameState } from '../../src/core/GameState'
 import { pieceUtils } from '../../src/core/Piece'
 import { RED, BLUE, INFANTRY, COMMANDER } from '../../src/types/Constants'
 import { algebraicToSquare, squareToAlgebraic } from '../../src/utils/square'
-import { isNormalMove, isCaptureMove } from '../../src/core/Move'
+import { isNormalMove, isCaptureMove } from '../../src/types/Move'
 
 describe('InfantryGenerator', () => {
   let generator: MoveGenerator

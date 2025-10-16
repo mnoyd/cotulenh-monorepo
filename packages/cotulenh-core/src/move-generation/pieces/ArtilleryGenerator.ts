@@ -70,6 +70,42 @@ export class ArtilleryGenerator extends BasePieceGenerator {
       }
     }
 
+    // Stay-capture: attack enemies within range without moving
+    for (const [rankDelta, fileDelta] of ORTHOGONAL) {
+      for (let distance = 1; distance <= 3; distance++) {
+        const targetSquare = square + distance * (rankDelta * 16 + fileDelta)
+
+        if (!board.isValid(targetSquare)) break
+
+        // Check wrapping
+        const fromFile = getFile(square)
+        const toFile = getFile(targetSquare)
+        const fromRank = getRank(square)
+        const toRank = getRank(targetSquare)
+
+        if (
+          Math.abs(toFile - fromFile) > 3 ||
+          Math.abs(toRank - fromRank) > 3
+        ) {
+          break
+        }
+
+        const targetPiece = board.get(targetSquare)
+        if (targetPiece && targetPiece.color !== color) {
+          // Stay-capture move
+          moves.push(
+            moveFactory.createStayCaptureMove(
+              square,
+              targetSquare,
+              piece,
+              targetPiece,
+              color,
+            ),
+          )
+        }
+      }
+    }
+
     return moves
   }
 }

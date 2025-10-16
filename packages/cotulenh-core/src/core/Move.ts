@@ -4,35 +4,52 @@
 
 import type { Color } from '../types/Constants.js'
 import type { Piece } from '../types/Piece.js'
-import type {
-  Move,
-  NormalMove,
-  CaptureMove,
-  StayCaptureMove,
-  SuicideCaptureMove,
-  CombineMove,
-  DeployStepMove,
-  DeployCompleteMove,
-  IMoveFactory,
-} from '../types/Move.js'
+import type { Move, MoveType, IMoveFactory } from '../types/Move.js'
 
 /**
  * Move factory implementation
  */
 export class MoveFactory implements IMoveFactory {
-  createNormalMove(
-    from: number,
-    to: number,
-    piece: Piece,
-    color: Color,
-  ): NormalMove {
+  createMove(config: {
+    type: MoveType
+    from: number
+    to: number
+    piece: Piece
+    color: Color
+    captured?: Piece
+    combined?: Piece
+    remaining?: Piece[]
+    attacker?: number
+    target?: number
+    stackSquare?: number
+    pieces?: { from: number; piece: Piece }[]
+  }): Move {
     return {
+      type: config.type,
+      from: config.from,
+      to: config.to,
+      piece: config.piece,
+      color: config.color,
+      ...(config.captured && { captured: config.captured }),
+      ...(config.combined && { combined: config.combined }),
+      ...(config.remaining && { remaining: config.remaining }),
+      ...(config.attacker !== undefined && { attacker: config.attacker }),
+      ...(config.target !== undefined && { target: config.target }),
+      ...(config.stackSquare !== undefined && {
+        stackSquare: config.stackSquare,
+      }),
+      ...(config.pieces && { pieces: config.pieces }),
+    }
+  }
+
+  createNormalMove(from: number, to: number, piece: Piece, color: Color): Move {
+    return this.createMove({
       type: 'normal',
       from,
       to,
       piece,
       color,
-    }
+    })
   }
 
   createCaptureMove(
@@ -41,15 +58,15 @@ export class MoveFactory implements IMoveFactory {
     piece: Piece,
     captured: Piece,
     color: Color,
-  ): CaptureMove {
-    return {
+  ): Move {
+    return this.createMove({
       type: 'capture',
       from,
       to,
       piece,
       captured,
       color,
-    }
+    })
   }
 
   createStayCaptureMove(
@@ -58,15 +75,17 @@ export class MoveFactory implements IMoveFactory {
     piece: Piece,
     captured: Piece,
     color: Color,
-  ): StayCaptureMove {
-    return {
+  ): Move {
+    return this.createMove({
       type: 'stay-capture',
+      from: attacker, // For compatibility
+      to: target, // For compatibility
       attacker,
       target,
       piece,
       captured,
       color,
-    }
+    })
   }
 
   createSuicideCaptureMove(
@@ -75,15 +94,15 @@ export class MoveFactory implements IMoveFactory {
     piece: Piece,
     captured: Piece,
     color: Color,
-  ): SuicideCaptureMove {
-    return {
+  ): Move {
+    return this.createMove({
       type: 'suicide-capture',
       from,
       to,
       piece,
       captured,
       color,
-    }
+    })
   }
 
   createCombineMove(
@@ -91,14 +110,16 @@ export class MoveFactory implements IMoveFactory {
     to: number,
     combined: Piece,
     color: Color,
-  ): CombineMove {
-    return {
+  ): Move {
+    return this.createMove({
       type: 'combine',
-      pieces,
+      from: pieces[0]?.from || 0, // For compatibility
       to,
+      piece: pieces[0]?.piece || combined, // For compatibility
+      pieces,
       combined,
       color,
-    }
+    })
   }
 
   createDeployStepMove(
@@ -107,26 +128,26 @@ export class MoveFactory implements IMoveFactory {
     piece: Piece,
     remaining: Piece[],
     color: Color,
-  ): DeployStepMove {
-    return {
+  ): Move {
+    return this.createMove({
       type: 'deploy-step',
       from,
       to,
       piece,
       remaining,
       color,
-    }
+    })
   }
 
-  createDeployCompleteMove(
-    stackSquare: number,
-    color: Color,
-  ): DeployCompleteMove {
-    return {
+  createDeployCompleteMove(stackSquare: number, color: Color): Move {
+    return this.createMove({
       type: 'deploy-complete',
+      from: stackSquare, // For compatibility
+      to: stackSquare, // For compatibility
+      piece: { type: 'c', color }, // Dummy piece for compatibility
       stackSquare,
       color,
-    }
+    })
   }
 }
 
@@ -135,36 +156,7 @@ export class MoveFactory implements IMoveFactory {
  */
 export const moveFactory = new MoveFactory()
 
-/**
- * Type guard utilities
- */
-export function isNormalMove(move: Move): move is NormalMove {
-  return move.type === 'normal'
-}
-
-export function isCaptureMove(move: Move): move is CaptureMove {
-  return move.type === 'capture'
-}
-
-export function isStayCaptureMove(move: Move): move is StayCaptureMove {
-  return move.type === 'stay-capture'
-}
-
-export function isSuicideCaptureMove(move: Move): move is SuicideCaptureMove {
-  return move.type === 'suicide-capture'
-}
-
-export function isCombineMove(move: Move): move is CombineMove {
-  return move.type === 'combine'
-}
-
-export function isDeployStepMove(move: Move): move is DeployStepMove {
-  return move.type === 'deploy-step'
-}
-
-export function isDeployCompleteMove(move: Move): move is DeployCompleteMove {
-  return move.type === 'deploy-complete'
-}
+// Type guard utilities are now exported from types/Move.ts
 
 /**
  * Check if move involves a capture

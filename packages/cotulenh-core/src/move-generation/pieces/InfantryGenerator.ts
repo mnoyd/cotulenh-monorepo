@@ -2,7 +2,7 @@
  * Infantry move generator
  *
  * Infantry moves one square orthogonally (N, S, E, W).
- * Simple piece with no special restrictions beyond terrain.
+ * When heroic, gains +1 range (2 squares).
  */
 
 import type { Move } from '../../types/Move'
@@ -19,7 +19,8 @@ export class InfantryGenerator extends BasePieceGenerator {
       return []
     }
 
-    // Infantry moves one square orthogonally
-    return this.generateSteps(square, piece, ORTHOGONAL, context)
+    // Infantry moves 1 square orthogonally, +1 when heroic
+    const maxDistance = piece.heroic ? 2 : 1
+    return this.generateSlides(square, piece, ORTHOGONAL, maxDistance, context)
   }
 }

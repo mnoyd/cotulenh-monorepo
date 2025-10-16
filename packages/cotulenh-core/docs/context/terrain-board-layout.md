@@ -2,9 +2,14 @@
 
 ## Overview
 
-CoTuLenh uses an 11x12 board with a sophisticated coordinate system that
-combines algebraic notation for external use with an internal 0x88
-representation for efficient computation.
+⚠️ **DEPRECATED**: This document contains outdated information about 0x88
+representation.
+
+**See the comprehensive and accurate documentation**:
+[board-coordinate-system.md](./board-coordinate-system.md)
+
+CoTuLenh uses a 12×11 board with a **16×16 mailbox representation** (NOT 0x88)
+for efficient computation.
 
 ## Board Dimensions
 

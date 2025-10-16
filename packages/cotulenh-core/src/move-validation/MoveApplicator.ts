@@ -19,7 +19,7 @@ import {
   isCombineMove,
   isDeployStepMove,
   isDeployCompleteMove,
-} from '../core/Move'
+} from '../types/Move'
 import { COMMANDER } from '../types/Constants'
 import { findCommanderSquare } from './CommanderChecker'
 

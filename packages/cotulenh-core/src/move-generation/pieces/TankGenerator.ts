@@ -22,85 +22,111 @@ export class TankGenerator extends BasePieceGenerator {
       return []
     }
 
+    // Tank must be on valid terrain to generate moves
+    if (!canPlaceOnSquare(piece.type, square)) {
+      return []
+    }
+
     const moves: Move[] = []
     const { board, color } = context
 
+    // Tank moves 2 squares, +1 when heroic (3 squares)
+    const maxDistance = piece.heroic ? 3 : 2
+
     for (const [rankDelta, fileDelta] of ORTHOGONAL) {
-      // First square
-      const square1 = square + rankDelta * 16 + fileDelta
-      if (!this.isValidMove(square, square1, board)) continue
+      // Generate moves up to maxDistance
+      for (let distance = 1; distance <= maxDistance; distance++) {
+        const targetSquare = square + (rankDelta * 16 + fileDelta) * distance
+        if (!this.isValidMove(square, targetSquare, board)) break
 
-      const piece1 = board.get(square1)
+        const targetPiece = board.get(targetSquare)
 
-      if (piece1 === null) {
-        // Empty - can move here
-        if (canPlaceOnSquare(piece.type, square1)) {
-          moves.push(
-            moveFactory.createNormalMove(square, square1, piece, color),
-          )
-        }
-
-        // Second square (no shoot-over, just sliding)
-        const square2 = square1 + rankDelta * 16 + fileDelta
-        if (!this.isValidMove(square1, square2, board)) continue
-
-        const piece2 = board.get(square2)
-        if (piece2 === null) {
-          if (canPlaceOnSquare(piece.type, square2)) {
+        if (targetPiece === null) {
+          // Empty square - can move here
+          if (canPlaceOnSquare(piece.type, targetSquare)) {
             moves.push(
-              moveFactory.createNormalMove(square, square2, piece, color),
+              moveFactory.createNormalMove(square, targetSquare, piece, color),
             )
           }
-        } else if (piece2.color !== color) {
-          // Capture at 2 squares
+        } else if (targetPiece.color !== color) {
+          // Enemy piece - can capture
           moves.push(
             moveFactory.createCaptureMove(
               square,
-              square2,
+              targetSquare,
               piece,
-              piece2,
+              targetPiece,
               color,
             ),
           )
-        }
-      } else if (piece1.color !== color) {
-        // Capture at 1 square
-        moves.push(
-          moveFactory.createCaptureMove(square, square1, piece, piece1, color),
-        )
 
-        // Shoot-over: try to capture at 2 squares (skip over enemy)
-        const square2 = square1 + rankDelta * 16 + fileDelta
-        if (!this.isValidMove(square1, square2, board)) continue
-
-        const piece2 = board.get(square2)
-        if (piece2 && piece2.color !== color) {
-          moves.push(
-            moveFactory.createCaptureMove(
-              square,
-              square2,
-              piece,
-              piece2,
-              color,
-            ),
-          )
-        }
-      } else {
-        // Friendly piece at square 1 - shoot over
-        const square2 = square1 + rankDelta * 16 + fileDelta
-        if (!this.isValidMove(square1, square2, board)) continue
-
-        const piece2 = board.get(square2)
-        if (piece2 && piece2.color !== color) {
-          moves.push(
-            moveFactory.createCaptureMove(
-              square,
-              square2,
-              piece,
-              piece2,
-              color,
-            ),
-          )
+          // Can shoot over this enemy to next square if within range
+          if (distance < maxDistance) {
+            const shootOverSquare =
+              square + (rankDelta * 16 + fileDelta) * (distance + 1)
+            if (this.isValidMove(square, shootOverSquare, board)) {
+              const shootOverPiece = board.get(shootOverSquare)
+              if (shootOverPiece === null) {
+                // Empty square - can move here (shoot over enemy)
+                if (canPlaceOnSquare(piece.type, shootOverSquare)) {
+                  moves.push(
+                    moveFactory.createNormalMove(
+                      square,
+                      shootOverSquare,
+                      piece,
+                      color,
+                    ),
+                  )
+                }
+              } else if (shootOverPiece.color !== color) {
+                // Enemy piece - can capture (shoot over enemy)
+                moves.push(
+                  moveFactory.createCaptureMove(
+                    square,
+                    shootOverSquare,
+                    piece,
+                    shootOverPiece,
+                    color,
+                  ),
+                )
+              }
+            }
+          }
+          break // Can't continue past enemy piece
+        } else {
+          // Friendly piece - can shoot over to next square if within range
+          if (distance < maxDistance) {
+            const shootOverSquare =
+              square + (rankDelta * 16 + fileDelta) * (distance + 1)
+            if (this.isValidMove(square, shootOverSquare, board)) {
+              const shootOverPiece = board.get(shootOverSquare)
+              if (shootOverPiece === null) {
+                // Empty square - can move here (shoot over friendly)
+                if (canPlaceOnSquare(piece.type, shootOverSquare)) {
+                  moves.push(
+                    moveFactory.createNormalMove(
+                      square,
+                      shootOverSquare,
+                      piece,
+                      color,
+                    ),
+                  )
+                }
+              } else if (shootOverPiece.color !== color) {
+                // Enemy piece - can capture (shoot over friendly)
+                moves.push(
+                  moveFactory.createCaptureMove(
+                    square,
+                    shootOverSquare,
+                    piece,
+                    shootOverPiece,
+                    color,
+                  ),
+                )
+              }
+            }
+          }
+          break // Can't continue past friendly piece
         }
       }
     }
@@ -116,8 +142,8 @@ export class TankGenerator extends BasePieceGenerator {
     const fromRank = getRank(from)
     const toRank = getRank(to)
 
-    // Detect wrapping
-    if (Math.abs(toFile - fromFile) > 2 || Math.abs(toRank - fromRank) > 2) {
+    // Detect wrapping (allow up to 3 squares for heroic tanks)
+    if (Math.abs(toFile - fromFile) > 3 || Math.abs(toRank - fromRank) > 3) {
       return false
     }
 

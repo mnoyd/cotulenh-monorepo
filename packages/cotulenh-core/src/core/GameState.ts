@@ -13,6 +13,7 @@ import type {
   IDeploySession,
   GameStateConfig,
 } from '../types/GameState.js'
+
 import { Board } from './Board.js'
 
 export class GameState implements IGameState {
@@ -116,7 +117,7 @@ export class GameState implements IGameState {
   }
 
   /**
-   * Create initial game state
+   * Create initial game state (empty board - will be populated by GameController)
    */
   static createInitial(): GameState {
     const board = Board.createEmpty()

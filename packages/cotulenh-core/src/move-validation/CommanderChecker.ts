@@ -5,6 +5,7 @@
  */
 
 import type { IBoard } from '../types/Board'
+import type { IGameState } from '../types/GameState'
 import type { Color } from '../types/Constants'
 import { COMMANDER } from '../types/Constants'
 import { getFile, getRank } from '../utils/square'
@@ -75,10 +76,8 @@ function canPieceAttackSquare(
     return false
   }
 
-  // For simplicity, check if the piece type can reach that square
-  // This is a simplified check - in a full implementation, we'd generate
-  // all moves for this piece and see if any target toSquare
-
+  // Check if the piece can potentially attack the target square
+  // This is a more accurate check that considers blocking and terrain
   const file1 = getFile(fromSquare)
   const rank1 = getRank(fromSquare)
   const file2 = getFile(toSquare)
@@ -89,51 +88,53 @@ function canPieceAttackSquare(
 
   switch (piece.type) {
     case 'c': // Commander
-    case 'i': // Infantry
-    case 'g': // Anti-Air
-      // One square orthogonal
-      return (
-        (fileDelta === 1 && rankDelta === 0) ||
-        (fileDelta === 0 && rankDelta === 1)
-      )
+      if (piece.heroic) {
+        // Heroic commander can move diagonally too
+        return (
+          (fileDelta <= 1 && rankDelta <= 1 && fileDelta + rankDelta > 0) ||
+          canMoveOrthogonally(board, fromSquare, toSquare, Infinity)
+        )
+      } else {
+        // Normal commander moves infinite orthogonal
+        return canMoveOrthogonally(board, fromSquare, toSquare, Infinity)
+      }
 
-    case 'm': // Militia
-      // One square in any direction
-      return fileDelta <= 1 && rankDelta <= 1 && fileDelta + rankDelta > 0
+    case 'i': // Infantry
+      if (piece.heroic) {
+        // Heroic infantry has +1 range
+        return canMoveOrthogonally(board, fromSquare, toSquare, 2)
+      } else {
+        // Normal infantry moves 1 square orthogonal
+        return canMoveOrthogonally(board, fromSquare, toSquare, 1)
+      }
 
     case 't': // Tank
-      // Up to 2 squares orthogonal (simplified - doesn't check blocking)
-      return (
-        (fileDelta <= 2 && rankDelta === 0) ||
-        (fileDelta === 0 && rankDelta <= 2)
-      )
+      // Tank moves 2 squares orthogonal with shoot-over
+      return canMoveOrthogonally(board, fromSquare, toSquare, 2, true)
 
     case 'a': // Artillery
-      // Up to 3 squares orthogonal
-      return (
-        (fileDelta <= 3 && rankDelta === 0) ||
-        (fileDelta === 0 && rankDelta <= 3)
-      )
+      // Artillery moves 3 squares with ignore-blocking
+      return canMoveOrthogonally(board, fromSquare, toSquare, 3, true)
 
     case 's': // Missile
-      // L-shaped
+      // L-shaped movement
       return (
         (fileDelta === 2 && rankDelta === 1) ||
         (fileDelta === 1 && rankDelta === 2)
       )
 
     case 'f': // Air Force
-      // Up to 4 squares orthogonal (simplified)
+      // 4 squares in all directions
       return (
-        (fileDelta <= 4 && rankDelta === 0) ||
-        (fileDelta === 0 && rankDelta <= 4)
+        canMoveOrthogonally(board, fromSquare, toSquare, 4) ||
+        canMoveDiagonally(board, fromSquare, toSquare, 4)
       )
 
     case 'n': // Navy
-      // One square orthogonal OR stay-capture (adjacent)
+      // 1 square orthogonal on water/mixed terrain, or stay-capture
       return (
-        (fileDelta === 1 && rankDelta === 0) ||
-        (fileDelta === 0 && rankDelta === 1)
+        canMoveOrthogonally(board, fromSquare, toSquare, 1) ||
+        (fileDelta <= 1 && rankDelta <= 1 && fileDelta + rankDelta > 0)
       )
 
     case 'h': // Headquarter
@@ -146,9 +147,115 @@ function canPieceAttackSquare(
       }
       return false
 
+    case 'g': // Anti-Air
+    case 'm': // Militia
+    case 'e': // Engineer
+      // 1 square orthogonal
+      return canMoveOrthogonally(board, fromSquare, toSquare, 1)
+
     default:
       return false
   }
+}
+
+/**
+ * Check if a piece can move orthogonally from one square to another
+ */
+function canMoveOrthogonally(
+  board: IBoard,
+  from: number,
+  to: number,
+  maxDistance: number,
+  ignoreBlocking = false,
+): boolean {
+  const file1 = getFile(from)
+  const rank1 = getRank(from)
+  const file2 = getFile(to)
+  const rank2 = getRank(to)
+
+  const fileDelta = Math.abs(file2 - file1)
+  const rankDelta = Math.abs(rank2 - rank1)
+
+  // Must be orthogonal
+  if (
+    !(fileDelta === 0 || rankDelta === 0) ||
+    (fileDelta === 0 && rankDelta === 0)
+  ) {
+    return false
+  }
+
+  const distance = Math.max(fileDelta, rankDelta)
+  if (distance > maxDistance) {
+    return false
+  }
+
+  // If ignoring blocking, we're done
+  if (ignoreBlocking) {
+    return true
+  }
+
+  // Check for blocking pieces
+  const fileStep = file2 > file1 ? 1 : file2 < file1 ? -1 : 0
+  const rankStep = rank2 > rank1 ? 1 : rank2 < rank1 ? -1 : 0
+
+  let currentFile = file1 + fileStep
+  let currentRank = rank1 + rankStep
+
+  while (currentFile !== file2 || currentRank !== rank2) {
+    const currentSquare = currentRank * 16 + currentFile
+    if (board.get(currentSquare) !== null) {
+      return false // Blocked
+    }
+    currentFile += fileStep
+    currentRank += rankStep
+  }
+
+  return true
+}
+
+/**
+ * Check if a piece can move diagonally from one square to another
+ */
+function canMoveDiagonally(
+  board: IBoard,
+  from: number,
+  to: number,
+  maxDistance: number,
+): boolean {
+  const file1 = getFile(from)
+  const rank1 = getRank(from)
+  const file2 = getFile(to)
+  const rank2 = getRank(to)
+
+  const fileDelta = Math.abs(file2 - file1)
+  const rankDelta = Math.abs(rank2 - rank1)
+
+  // Must be diagonal
+  if (fileDelta !== rankDelta || fileDelta === 0) {
+    return false
+  }
+
+  if (fileDelta > maxDistance) {
+    return false
+  }
+
+  // Check for blocking pieces
+  const fileStep = file2 > file1 ? 1 : -1
+  const rankStep = rank2 > rank1 ? 1 : -1
+
+  let currentFile = file1 + fileStep
+  let currentRank = rank1 + rankStep
+
+  while (currentFile !== file2 || currentRank !== rank2) {
+    const currentSquare = currentRank * 16 + currentFile
+    if (board.get(currentSquare) !== null) {
+      return false // Blocked
+    }
+    currentFile += fileStep
+    currentRank += rankStep
+  }
+
+  return true
 }
 
 /**

@@ -1,13 +1,14 @@
 /**
  * Commander move generator
  *
- * Commander moves one square orthogonally.
+ * Commander moves infinite distance orthogonally.
+ * When heroic, also gains diagonal movement.
  * Special rule: "Flying General" - cannot face enemy commander on same file.
  */
 
 import type { Move } from '../../types/Move'
 import type { GeneratorContext } from '../types'
-import { BasePieceGenerator, ORTHOGONAL } from '../BasePieceGenerator'
+import { BasePieceGenerator, ORTHOGONAL, DIAGONAL } from '../BasePieceGenerator'
 import { COMMANDER } from '../../types/Constants'
 import { getFile } from '../../utils/square'
 
@@ -20,8 +21,26 @@ export class CommanderGenerator extends BasePieceGenerator {
       return []
     }
 
-    // Generate basic orthogonal moves
-    const moves = this.generateSteps(square, piece, ORTHOGONAL, context)
+    // Generate infinite orthogonal moves
+    let moves = this.generateSlides(
+      square,
+      piece,
+      ORTHOGONAL,
+      Infinity,
+      context,
+    )
+
+    // If heroic, also add diagonal moves
+    if (piece.heroic) {
+      const diagonalMoves = this.generateSlides(
+        square,
+        piece,
+        DIAGONAL,
+        Infinity,
+        context,
+      )
+      moves = moves.concat(diagonalMoves)
+    }
 
     // Filter out moves that violate "Flying General" rule
     const { gameState, color } = context

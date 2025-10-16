@@ -4,14 +4,14 @@
   "description": "A Javascript library for managing commander chess game",
   "license": "BSD-2-Clause",
   "type": "module",
-  "main": "./dist/cjs/src/cotulenh.js",
-  "module": "./dist/esm/src/cotulenh.js",
-  "types": "./dist/types/src/cotulenh.d.ts",
+  "main": "./dist/cjs/src/index.js",
+  "module": "./dist/esm/src/index.js",
+  "types": "./dist/types/src/index.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/types/src/cotulenh.d.ts",
-      "import": "./dist/esm/src/cotulenh.js",
-      "require": "./dist/cjs/src/cotulenh.js"
+      "types": "./dist/types/src/index.d.ts",
+      "import": "./dist/esm/src/index.js",
+      "require": "./dist/cjs/src/index.js"
     }
   },
   "scripts": {
