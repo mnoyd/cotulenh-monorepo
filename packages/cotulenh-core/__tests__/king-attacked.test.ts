@@ -1,3 +1,4 @@
+import { beforeEach, describe, expect, it } from 'vitest'
 import { CoTuLenh } from '../src/cotulenh'
 import {
   BLUE,
@@ -19,7 +20,7 @@ describe('_isCommanderAttacked Function Tests', () => {
     game.clear()
   })
 
-  test('Commander is not attacked when no enemy pieces are present', () => {
+  it('Commander is not attacked when no enemy pieces are present', () => {
     // Place a commander with no enemies
     game.put({ type: COMMANDER, color: BLUE }, 'e5')
 
@@ -27,7 +28,7 @@ describe('_isCommanderAttacked Function Tests', () => {
     expect(game['_isCommanderAttacked'](BLUE)).toBe(false)
   })
 
-  test('Commander is attacked by adjacent infantry', () => {
+  it('Commander is attacked by adjacent infantry', () => {
     // Place a commander
     game.put({ type: COMMANDER, color: BLUE }, 'e5')
 
@@ -38,7 +39,7 @@ describe('_isCommanderAttacked Function Tests', () => {
     expect(game['_isCommanderAttacked'](BLUE)).toBe(true)
   })
 
-  test('Commander is attacked by tank at range 2', () => {
+  it('Commander is attacked by tank at range 2', () => {
     // Place a commander
     game.put({ type: COMMANDER, color: BLUE }, 'e5')
 
@@ -49,7 +50,7 @@ describe('_isCommanderAttacked Function Tests', () => {
     expect(game['_isCommanderAttacked'](BLUE)).toBe(true)
   })
 
-  test('Commander is not attacked by tank when blocked by friendly piece', () => {
+  it('Commander is not attacked by tank when blocked by friendly piece', () => {
     // Place a commander
     game.put({ type: COMMANDER, color: BLUE }, 'e5')
 
@@ -63,7 +64,7 @@ describe('_isCommanderAttacked Function Tests', () => {
     expect(game['_isCommanderAttacked'](BLUE)).toBe(false)
   })
 
-  test('Commander is attacked by artillery over blocking pieces', () => {
+  it('Commander is attacked by artillery over blocking pieces', () => {
     // Place a commander
     game.put({ type: COMMANDER, color: BLUE }, 'e5')
 
@@ -77,7 +78,7 @@ describe('_isCommanderAttacked Function Tests', () => {
     expect(game['_isCommanderAttacked'](BLUE)).toBe(true)
   })
 
-  test('Commander is attacked by air force over water', () => {
+  it('Commander is attacked by air force over water', () => {
     // Place a commander on land
     game.put({ type: COMMANDER, color: BLUE }, 'c5')
 
@@ -88,7 +89,7 @@ describe('_isCommanderAttacked Function Tests', () => {
     expect(game['_isCommanderAttacked'](BLUE)).toBe(true)
   })
 
-  test('Commander is attacked by navy from water', () => {
+  it('Commander is attacked by navy from water', () => {
     // Place a commander near water
     game.put({ type: COMMANDER, color: BLUE }, 'c5')
 
@@ -99,7 +100,7 @@ describe('_isCommanderAttacked Function Tests', () => {
     expect(game['_isCommanderAttacked'](BLUE)).toBe(true)
   })
 
-  test('Commander is attacked diagonally by militia', () => {
+  it('Commander is attacked diagonally by militia', () => {
     // Place a commander
     game.put({ type: COMMANDER, color: BLUE }, 'e5')
 
@@ -110,7 +111,7 @@ describe('_isCommanderAttacked Function Tests', () => {
     expect(game['_isCommanderAttacked'](BLUE)).toBe(true)
   })
 
-  test('Commander is attacked by heroic infantry with diagonal movement', () => {
+  it('Commander is attacked by heroic infantry with diagonal movement', () => {
     // Place a commander
     game.put({ type: COMMANDER, color: BLUE }, 'e5')
 
@@ -121,7 +122,7 @@ describe('_isCommanderAttacked Function Tests', () => {
     expect(game['_isCommanderAttacked'](BLUE)).toBe(true)
   })
 
-  test('Commander is not attacked when enemy pieces are out of range', () => {
+  it('Commander is not attacked when enemy pieces are out of range', () => {
     // Place a commander
     game.put({ type: COMMANDER, color: BLUE }, 'e5')
 
@@ -133,7 +134,7 @@ describe('_isCommanderAttacked Function Tests', () => {
     expect(game['_isCommanderAttacked'](BLUE)).toBe(false)
   })
 
-  test('Commander is considered attacked when captured (kings[color] === -1)', () => {
+  it('Commander is considered attacked when captured (kings[color] === -1)', () => {
     // Setup a game state where the commander has been captured
     game.clear()
     // Manually set the king position to -1 to simulate capture
@@ -143,7 +144,7 @@ describe('_isCommanderAttacked Function Tests', () => {
     expect(game['_isCommanderAttacked'](BLUE)).toBe(true)
   })
 
-  test('Commander is attacked by enemy commander', () => {
+  it('Commander is attacked by enemy commander', () => {
     // Place a commander
     game.put({ type: COMMANDER, color: BLUE }, 'e5')
 
@@ -154,7 +155,7 @@ describe('_isCommanderAttacked Function Tests', () => {
     expect(game['_isCommanderAttacked'](BLUE)).toBe(true)
   })
 
-  test('Commander is attacked by enemy commander beyond range 1', () => {
+  it('Commander is attacked by enemy commander beyond range 1', () => {
     // Place a commander
     game.put({ type: COMMANDER, color: BLUE }, 'e3')
 
@@ -165,7 +166,7 @@ describe('_isCommanderAttacked Function Tests', () => {
     expect(game['_isCommanderExposed'](BLUE)).toBe(true)
   })
 
-  test('Commander is attacked during stay capture scenario', () => {
+  it('Commander is attacked during stay capture scenario', () => {
     // Place a commander on land
     game.put({ type: COMMANDER, color: BLUE }, 'c5')
 
@@ -176,7 +177,7 @@ describe('_isCommanderAttacked Function Tests', () => {
     expect(game['_isCommanderAttacked'](BLUE)).toBe(true)
   })
 
-  test('Commander is attacked by enemy navy', () => {
+  it('Commander is attacked by enemy navy', () => {
     // Place a commander
     game.put({ type: COMMANDER, color: BLUE }, 'g12')
 

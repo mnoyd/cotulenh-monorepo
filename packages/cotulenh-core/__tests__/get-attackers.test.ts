@@ -1,3 +1,4 @@
+import { beforeEach, describe, expect, it } from 'vitest'
 import { CoTuLenh } from '../src/cotulenh'
 import {
   INFANTRY,
