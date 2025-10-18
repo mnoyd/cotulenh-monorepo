@@ -19,14 +19,6 @@ export const ROLE_FLAGS = {
 // Import pre-calculated stacks from generated file
 import { PREDEFINED_STACKS } from './predefined-stacks.js';
 
-// Piece interface
-interface Piece {
-  color: string;
-  role: string;
-  heroic: boolean;
-  carrying?: Piece[];
-}
-
 // Ultra-minimalist stack engine - ONE METHOD ONLY
 class StackEngine {
   private readonly stackMap: Map<number, bigint>;
@@ -51,22 +43,20 @@ const stackEngine = new StackEngine();
 // Export the ultra-minimalist engine for external use
 export { StackEngine };
 
-// Main API - only 2 functions
-export class PieceStacker {
+// Generic PieceStacker that works with any piece type
+export class PieceStacker<T> {
+  constructor(private readonly getRoleFlag: (piece: T) => number) {}
+
   /**
    * Combine array of pieces into one stack
-   * Returns combined piece with carrying array in slot order, or null if invalid
+   * NOTE: Assumes all pieces are same color - no color checking here
    */
-  static combine(pieces: Piece[]): Piece | null {
+  combine(pieces: T[]): T | null {
     if (!pieces.length) return null;
-
-    // Check all same color
-    const color = pieces[0].color;
-    if (!pieces.every((p) => p.color === color)) return null;
 
     // Flatten all pieces and get role numbers
     const flatPieces = this.flattenPieces(pieces);
-    const roleNumbers = flatPieces.map((p) => this.getRoleNumber(p.role));
+    const roleNumbers = flatPieces.map(this.getRoleFlag);
 
     // Call CORE ENGINE - THE ONLY METHOD
     const stackState = stackEngine.lookup(roleNumbers);
@@ -78,22 +68,21 @@ export class PieceStacker {
 
   /**
    * Remove piece with specific role from stack
-   * Returns remaining stack or null if nothing left
    */
-  static remove(stackPiece: Piece, roleToRemove: string): Piece | null {
+  remove(stackPiece: T, roleToRemove: string): T | null {
+    // Convert role string to flag using ROLE_FLAGS
+    const roleKey = roleToRemove.toUpperCase() as keyof typeof ROLE_FLAGS;
+    const roleFlag = ROLE_FLAGS[roleKey] || 0;
+
     // Flatten the stack
     const flatPieces = this.flattenPieces([stackPiece]);
 
     // Remove pieces with the target role
-    const remainingPieces = flatPieces.filter((p) => p.role !== roleToRemove);
+    const remainingPieces = flatPieces.filter((p) => this.getRoleFlag(p) !== roleFlag);
 
     if (remainingPieces.length === 0) return null;
     if (remainingPieces.length === 1) {
-      return {
-        color: remainingPieces[0].color,
-        role: remainingPieces[0].role,
-        heroic: remainingPieces[0].heroic
-      };
+      return remainingPieces[0];
     }
 
     // Try to recombine remaining pieces
@@ -101,59 +90,65 @@ export class PieceStacker {
   }
 
   /**
-   * Convert core stack to nested piece format - SIMPLIFIES THE WRAPPER
+   * Convert core stack to nested piece format
    */
-  private static makePieceFromCoreStack(stackState: bigint, flatPieces: Piece[]): Piece {
-    // Extract carrier from bigint (wrapper handles extraction)
+  private makePieceFromCoreStack(stackState: bigint, flatPieces: T[]): T {
+    // Extract carrier from bigint
     const carrierRole = Number(stackState & 0xffffn);
-    const carrier = flatPieces.find((p) => this.getRoleNumber(p.role) === carrierRole)!;
+    const carrier = flatPieces.find((p) => this.getRoleFlag(p) === carrierRole)!;
 
-    const result: Piece = {
-      color: carrier.color,
-      role: carrier.role,
-      heroic: carrier.heroic,
-      carrying: []
-    };
+    const carrying: T[] = [];
 
-    // Add pieces to carrying array in slot order (wrapper handles extraction)
+    // Add pieces to carrying array in slot order
     for (let slot = 1; slot <= 3; slot++) {
       const slotRole = Number((stackState >> BigInt(slot * 16)) & 0xffffn);
       if (slotRole) {
-        const piece = flatPieces.find((p) => this.getRoleNumber(p.role) === slotRole)!;
-        result.carrying!.push({
-          color: piece.color,
-          role: piece.role,
-          heroic: piece.heroic
-        });
+        const piece = flatPieces.find((p) => this.getRoleFlag(p) === slotRole)!;
+        carrying.push(piece);
       }
     }
 
-    return result;
+    // Return carrier with carrying array
+    return {
+      ...carrier,
+      carrying: carrying.length > 0 ? carrying : undefined
+    } as T;
   }
 
-  // Helper methods
-  private static flattenPieces(pieces: Piece[]): Piece[] {
-    const result: Piece[] = [];
+  // Helper method to flatten pieces
+  private flattenPieces(pieces: T[]): T[] {
+    const result: T[] = [];
 
     for (const piece of pieces) {
       // Add the piece itself (without carrying)
-      result.push({
-        color: piece.color,
-        role: piece.role,
-        heroic: piece.heroic
-      });
+      result.push(piece);
 
       // Add carried pieces recursively
-      if (piece.carrying?.length) {
-        result.push(...this.flattenPieces(piece.carrying));
+      const carrying = (piece as any).carrying;
+      if (carrying?.length) {
+        result.push(...this.flattenPieces(carrying));
       }
     }
 
     return result;
   }
 
-  private static getRoleNumber(roleName: string): number {
-    const roleKey = roleName.toUpperCase() as keyof typeof ROLE_FLAGS;
-    return ROLE_FLAGS[roleKey] || 0;
+  // Static methods for backward compatibility with tests
+  static combine<T>(pieces: T[]): T | null {
+    // Create a default instance for standard pieces
+    const defaultStacker = new PieceStacker<T>((piece: any) => {
+      const roleKey = piece.role.toUpperCase() as keyof typeof ROLE_FLAGS;
+      return ROLE_FLAGS[roleKey] || 0;
+    });
+    return defaultStacker.combine(pieces);
+  }
+
+  static remove<T>(stackPiece: T, roleToRemove: string): T | null {
+    // Create a default instance for standard pieces
+    const defaultStacker = new PieceStacker<T>((piece: any) => {
+      const roleKey = piece.role.toUpperCase() as keyof typeof ROLE_FLAGS;
+      return ROLE_FLAGS[roleKey] || 0;
+    });
+    return defaultStacker.remove(stackPiece, roleToRemove);
   }
 }

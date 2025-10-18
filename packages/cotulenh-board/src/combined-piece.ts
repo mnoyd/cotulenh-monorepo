@@ -6,7 +6,7 @@ import * as board from './board.js';
 import * as util from './util.js';
 import * as drag from './drag.js';
 
-import { CombinePieceFactory } from '@repo/cotulenh-combine-piece';
+import { PieceStacker, ROLE_FLAGS } from '@repo/cotulenh-combine-piece';
 import { createEl } from './util.js';
 import { createAmbigousModeHandling } from './popup/ambigous-move.js';
 import { userMove } from './board.js';
@@ -14,10 +14,15 @@ import { userMove } from './board.js';
 const END_MOVE = 'end-move';
 type EndMove = typeof END_MOVE;
 
-const combinePieceFactory = new CombinePieceFactory(
-  p => p.role,
-  r => r,
+// Board-specific PieceStacker instance
+const boardPieceStacker = new PieceStacker<cg.Piece>(
+  // getRoleFlag function
+  (piece: cg.Piece) => {
+    const roleKey = piece.role.toUpperCase() as keyof typeof ROLE_FLAGS;
+    return ROLE_FLAGS[roleKey] || 0;
+  },
 );
+
 /**
  * Attempts to combine two pieces into a stack
  * @param origPiece The piece being moved/dragged
@@ -26,26 +31,40 @@ const combinePieceFactory = new CombinePieceFactory(
  */
 export function tryCombinePieces(origPiece: cg.Piece, destPiece: cg.Piece): cg.Piece | undefined {
   if (!origPiece || !destPiece) return undefined;
-
-  try {
-    const combined = combinePieceFactory.formStack(origPiece, destPiece);
-    return (combined as cg.Piece) ?? undefined;
-  } catch (error) {
-    console.error('Error combining pieces:', error);
-    return undefined;
-  }
+  return boardPieceStacker.combine([origPiece, destPiece]) || undefined;
 }
 
 export function createCombineStackFromPieces(pieces: cg.Piece[]): {
   combined: cg.Piece | undefined;
   uncombined: cg.Piece[] | undefined;
 } {
-  // Use the generic function from cotulenh-combine-piece package
-  const result = combinePieceFactory.createCombineStackFromPieces(pieces);
-  return {
-    combined: result.combined as cg.Piece | undefined,
-    uncombined: result.uncombined as cg.Piece[] | undefined,
-  };
+  if (!pieces.length) {
+    return { combined: undefined, uncombined: undefined };
+  }
+
+  const combined = boardPieceStacker.combine(pieces);
+
+  if (combined) {
+    return {
+      combined,
+      uncombined: undefined,
+    };
+  } else {
+    return {
+      combined: undefined,
+      uncombined: pieces,
+    };
+  }
+}
+
+/**
+ * Removes a piece with the specified role from a stack
+ * @param stackPiece The stack piece to remove from
+ * @param roleToRemove The role of the piece to remove
+ * @returns The remaining stack or undefined if nothing left
+ */
+export function removePieceFromStack(stackPiece: cg.Piece, roleToRemove: cg.Role): cg.Piece | undefined {
+  return boardPieceStacker.remove(stackPiece, roleToRemove) || undefined;
 }
 
 export const COMBINED_PIECE_POPUP_TYPE = 'combined-piece';

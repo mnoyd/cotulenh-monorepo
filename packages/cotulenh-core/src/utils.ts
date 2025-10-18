@@ -29,7 +29,7 @@ import {
   CAPTURE_MASK,
 } from './type.js'
 
-import { CombinePieceFactory } from '@repo/cotulenh-combine-piece'
+import { PieceStacker, ROLE_FLAGS } from '@repo/cotulenh-combine-piece'
 
 const symbolToRoleMap: Record<PieceSymbol, string> = {
   [COMMANDER]: 'commander',
@@ -68,20 +68,45 @@ export function getCoreTypeFromRole(role: string): PieceSymbol | undefined {
 export const getRoleFromCoreType = (piece: Piece): string =>
   symbolToRoleMap[piece.type]
 
-const combinePiece = new CombinePieceFactory(getRoleFromCoreType)
+// Core-specific PieceStacker instance
+const corePieceStacker = new PieceStacker<Piece>(
+  // getRoleFlag function
+  (piece: Piece) => {
+    const roleKey = symbolToRoleMap[
+      piece.type
+    ].toUpperCase() as keyof typeof ROLE_FLAGS
+    return ROLE_FLAGS[roleKey] || 0
+  },
+)
 
 export function createCombinedPiece(
   pieceFrom: Piece,
   pieceTo: Piece,
 ): Piece | null {
-  const combinedPiece = combinePiece.formStack(pieceFrom, pieceTo)
-  return combinedPiece
+  return corePieceStacker.combine([pieceFrom, pieceTo])
 }
+
 export function createCombineStackFromPieces(pieces: Piece[]): {
   combined: Piece | undefined
   uncombined: Piece[] | undefined
 } {
-  return combinePiece.createCombineStackFromPieces(pieces)
+  if (!pieces.length) {
+    return { combined: undefined, uncombined: undefined }
+  }
+
+  const combined = corePieceStacker.combine(pieces)
+
+  if (combined) {
+    return {
+      combined,
+      uncombined: undefined,
+    }
+  } else {
+    return {
+      combined: undefined,
+      uncombined: pieces,
+    }
+  }
 }
 
 export function getDisambiguator(
