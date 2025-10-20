@@ -203,6 +203,36 @@ export type DeployState = {
   movedPieces: Piece[]
   stay?: Piece[]
 }
+
+// Enhanced DeploySession interface with virtual state tracking
+export interface DeploySession {
+  // Core session data
+  stackSquare: number
+  turn: Color
+  originalPiece: Piece
+
+  // Virtual state overlay
+  virtualChanges: Map<Square, Piece | null>
+
+  // Move tracking
+  movedPieces: Array<{
+    piece: Piece
+    from: Square
+    to: Square
+    captured?: Piece
+  }>
+
+  stayingPieces: Piece[]
+}
+
+// MoveContext interface for dual-mode move application
+export interface MoveContext {
+  isDeployMode: boolean
+  deploySession?: DeploySession
+  isCompleteDeployment?: boolean // Flag to indicate this move completes the entire deployment
+  isTesting?: boolean // Flag to indicate this is a move legality test, don't commit sessions
+}
+
 export type AirDefenseForSide = Map<number, number[]>
 //For generating moves for air_force
 export type AirDefense = {

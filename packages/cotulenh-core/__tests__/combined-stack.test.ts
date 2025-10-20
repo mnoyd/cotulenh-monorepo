@@ -22,7 +22,7 @@ import {
 import { createCombinedPiece } from '../src/utils'
 import { findVerboseMove, makePiece, setupGameBasic } from './test-helpers'
 
-describe('Stack Movement and Deployment', () => {
+describe('Stack Movement and Deployment (Legacy Deploy System)', () => {
   let game: CoTuLenh
 
   beforeEach(() => {
@@ -439,7 +439,7 @@ describe('createCombinedPiece (Integration)', () => {
   // it('should handle combining pieces of the same color', () => { ... });
 })
 
-describe('Use deploy move', () => {
+describe('Use deploy move (Legacy)', () => {
   let game: CoTuLenh
   beforeEach(() => {
     game = setupGameBasic()
@@ -825,5 +825,390 @@ describe('DeployMove', () => {
     expect(move).toBeInstanceOf(Move)
     expect(game.get('b7')).toBeUndefined()
     expect(game.get('b4')?.type).toBe(NAVY)
+  })
+})
+
+// ===================================================================
+// NEW VIRTUAL STATE DEPLOY SYSTEM TESTS
+// ===================================================================
+
+describe('Virtual State Deploy System', () => {
+  let game: CoTuLenh
+  beforeEach(() => {
+    game = new CoTuLenh()
+  })
+
+  describe('Batch Deploy Operations', () => {
+    it('should deploy all pieces atomically using batch deploy', () => {
+      // Setup: Navy carrying Air Force and Tank
+      game.put(
+        {
+          type: NAVY,
+          color: RED,
+          carrying: [
+            { type: AIR_FORCE, color: RED },
+            { type: TANK, color: RED },
+          ],
+        },
+        'c3',
+      )
+      game['_turn'] = RED
+
+      // Use batch deploy (native to new system)
+      // Deploy carrying pieces, Navy stays at original square
+      const deployMove: DeployMoveRequest = {
+        from: 'c3',
+        moves: [
+          { piece: { type: AIR_FORCE, color: RED }, to: 'c4' },
+          { piece: { type: TANK, color: RED }, to: 'd3' },
+        ],
+        stay: { type: NAVY, color: RED }, // Navy stays at c3
+      }
+
+      game.deployMove(deployMove)
+
+      // Verify atomic commit behavior
+      expect(game.turn()).toBe(BLUE) // Turn switches after completion
+      expect(game.get('c3')?.type).toBe(NAVY) // Carrier remains
+      expect(game.get('c3')?.carrying).toBeUndefined() // No carrying pieces
+      expect(game.get('c4')?.type).toBe(AIR_FORCE) // Air Force deployed
+      expect(game.get('d3')?.type).toBe(TANK) // Tank deployed
+      expect(game.getDeployState()).toBeNull() // Deploy session cleared
+    })
+
+    it('should handle partial deployment with stay pieces', () => {
+      // Setup: Navy carrying Air Force and Tank
+      game.put(
+        {
+          type: NAVY,
+          color: RED,
+          carrying: [
+            { type: AIR_FORCE, color: RED },
+            { type: TANK, color: RED },
+          ],
+        },
+        'e5',
+      )
+      game['_turn'] = RED
+
+      // Deploy only Air Force, Navy and Tank stay
+      const deployMove: DeployMoveRequest = {
+        from: 'e5',
+        moves: [{ piece: { type: AIR_FORCE, color: RED }, to: 'e6' }],
+        stay: {
+          type: NAVY,
+          color: RED,
+          carrying: [{ type: TANK, color: RED }],
+        },
+      }
+
+      game.deployMove(deployMove)
+
+      // Verify stay behavior
+      expect(game.turn()).toBe(BLUE) // Turn switches after completion
+      expect(game.get('e5')?.type).toBe(NAVY) // Carrier remains
+      expect(game.get('e5')?.carrying).toEqual([{ type: TANK, color: RED }]) // Tank stays
+      expect(game.get('e6')?.type).toBe(AIR_FORCE) // Air Force deployed
+      expect(game.getDeployState()).toBeNull() // Deploy session cleared
+    })
+
+    it('should handle complex three-piece deployment', () => {
+      // Setup: Navy carrying Air Force and Tank, with Infantry nested
+      game.put(
+        {
+          type: NAVY,
+          color: RED,
+          carrying: [
+            { type: AIR_FORCE, color: RED },
+            {
+              type: TANK,
+              color: RED,
+              carrying: [{ type: INFANTRY, color: RED }],
+            },
+          ],
+        },
+        'f4',
+      )
+      game['_turn'] = RED
+
+      // Deploy all pieces to different squares
+      const deployMove: DeployMoveRequest = {
+        from: 'f4',
+        moves: [
+          { piece: { type: AIR_FORCE, color: RED }, to: 'f5' },
+          {
+            piece: {
+              type: TANK,
+              color: RED,
+              carrying: [{ type: INFANTRY, color: RED }],
+            },
+            to: 'g4',
+          },
+        ],
+        stay: { type: NAVY, color: RED }, // Navy stays at f4
+      }
+
+      game.deployMove(deployMove)
+
+      // Verify complex deployment
+      expect(game.turn()).toBe(BLUE)
+      expect(game.get('f4')?.type).toBe(NAVY)
+      expect(game.get('f4')?.carrying).toBeUndefined()
+      expect(game.get('f5')?.type).toBe(AIR_FORCE)
+      expect(game.get('g4')?.type).toBe(TANK)
+      expect(game.get('g4')?.carrying).toEqual([{ type: INFANTRY, color: RED }])
+    })
+  })
+
+  describe('Virtual State Isolation', () => {
+    it('should not affect real board during deploy session', () => {
+      // Setup
+      game.put(
+        {
+          type: NAVY,
+          color: RED,
+          carrying: [{ type: AIR_FORCE, color: RED }],
+        },
+        'a1',
+      )
+      game['_turn'] = RED
+
+      // Deploy Air Force, Navy stays
+      const deployMove: DeployMoveRequest = {
+        from: 'a1',
+        moves: [{ piece: { type: AIR_FORCE, color: RED }, to: 'a2' }],
+        stay: { type: NAVY, color: RED },
+      }
+
+      game.deployMove(deployMove)
+
+      // Verify final state (after atomic commit)
+      expect(game.get('a1')?.type).toBe(NAVY)
+      expect(game.get('a1')?.carrying).toBeUndefined()
+      expect(game.get('a2')?.type).toBe(AIR_FORCE)
+    })
+
+    it('should handle deploy with capture atomically', () => {
+      // Setup: Red Navy with Air Force, Blue Infantry at target
+      game.put(
+        {
+          type: NAVY,
+          color: RED,
+          carrying: [{ type: AIR_FORCE, color: RED }],
+        },
+        'b2',
+      )
+      game.put({ type: INFANTRY, color: BLUE }, 'b3')
+      game['_turn'] = RED
+
+      // Deploy with capture, Navy stays
+      const deployMove: DeployMoveRequest = {
+        from: 'b2',
+        moves: [
+          { piece: { type: AIR_FORCE, color: RED }, to: 'b3' }, // Capture
+        ],
+        stay: { type: NAVY, color: RED },
+      }
+
+      game.deployMove(deployMove)
+
+      // Verify atomic capture
+      expect(game.get('b2')?.type).toBe(NAVY)
+      expect(game.get('b2')?.carrying).toBeUndefined()
+      expect(game.get('b3')?.type).toBe(AIR_FORCE) // Captured and replaced
+      expect(game.get('b3')?.color).toBe(RED)
+    })
+  })
+
+  describe('Deploy Session State Management', () => {
+    it('should track deploy session state correctly', () => {
+      // Setup
+      game.put(
+        {
+          type: NAVY,
+          color: RED,
+          carrying: [
+            { type: AIR_FORCE, color: RED },
+            { type: TANK, color: RED },
+          ],
+        },
+        'd4',
+      )
+      game['_turn'] = RED
+
+      // Initially no deploy session
+      expect(game.getDeployState()).toBeNull()
+
+      // Execute deploy, Navy stays
+      const deployMove: DeployMoveRequest = {
+        from: 'd4',
+        moves: [
+          { piece: { type: AIR_FORCE, color: RED }, to: 'd5' },
+          { piece: { type: TANK, color: RED }, to: 'e4' },
+        ],
+        stay: { type: NAVY, color: RED },
+      }
+
+      game.deployMove(deployMove)
+
+      // Deploy session should be cleared after completion
+      expect(game.getDeployState()).toBeNull()
+      expect(game.turn()).toBe(BLUE) // Turn switched
+    })
+
+    it('should generate correct FEN during and after deploy', () => {
+      // Setup
+      game.put(
+        {
+          type: NAVY,
+          color: RED,
+          carrying: [{ type: AIR_FORCE, color: RED }],
+        },
+        'h1',
+      )
+      game['_turn'] = RED
+
+      // Get initial FEN
+      const initialFen = game.fen()
+      expect(initialFen.split(' ')).toHaveLength(6) // Standard FEN format
+
+      // Execute deploy, Navy stays
+      const deployMove: DeployMoveRequest = {
+        from: 'h1',
+        moves: [{ piece: { type: AIR_FORCE, color: RED }, to: 'h2' }],
+        stay: { type: NAVY, color: RED },
+      }
+
+      game.deployMove(deployMove)
+
+      // Get final FEN
+      const finalFen = game.fen()
+      expect(finalFen.split(' ')).toHaveLength(6) // Standard FEN format
+      expect(finalFen).not.toBe(initialFen) // Should be different
+    })
+  })
+
+  describe('Error Handling and Edge Cases', () => {
+    it('should handle empty deploy moves gracefully', () => {
+      // Setup
+      game.put(
+        {
+          type: NAVY,
+          color: RED,
+          carrying: [{ type: AIR_FORCE, color: RED }],
+        },
+        'g7',
+      )
+      game['_turn'] = RED
+
+      // Deploy with stay only (all pieces stay)
+      const deployMove: DeployMoveRequest = {
+        from: 'g7',
+        moves: [],
+        stay: {
+          type: NAVY,
+          color: RED,
+          carrying: [{ type: AIR_FORCE, color: RED }],
+        },
+      }
+
+      game.deployMove(deployMove)
+
+      // Everything should stay the same except turn
+      expect(game.turn()).toBe(BLUE)
+      expect(game.get('g7')?.type).toBe(NAVY)
+      expect(game.get('g7')?.carrying).toEqual([
+        { type: AIR_FORCE, color: RED },
+      ])
+    })
+
+    it('should handle single piece deployment', () => {
+      // Setup: Tank carrying Infantry
+      game.put(
+        {
+          type: TANK,
+          color: RED,
+          carrying: [{ type: INFANTRY, color: RED }],
+        },
+        'c6',
+      )
+      game['_turn'] = RED
+
+      // Deploy Infantry, Tank stays
+      const deployMove: DeployMoveRequest = {
+        from: 'c6',
+        moves: [{ piece: { type: INFANTRY, color: RED }, to: 'c7' }],
+        stay: { type: TANK, color: RED },
+      }
+
+      game.deployMove(deployMove)
+
+      // Verify single piece deployment
+      expect(game.turn()).toBe(BLUE)
+      expect(game.get('c6')?.type).toBe(TANK)
+      expect(game.get('c6')?.carrying).toBeUndefined()
+      expect(game.get('c7')?.type).toBe(INFANTRY)
+    })
+  })
+
+  describe('Performance and Consistency', () => {
+    it('should maintain board consistency after complex deployments', () => {
+      // Setup multiple stacks
+      game.put(
+        {
+          type: NAVY,
+          color: RED,
+          carrying: [
+            { type: AIR_FORCE, color: RED },
+            { type: TANK, color: RED },
+          ],
+        },
+        'a8',
+      )
+      game.put(
+        {
+          type: NAVY,
+          color: BLUE,
+          carrying: [{ type: INFANTRY, color: BLUE }],
+        },
+        'h1',
+      )
+      game['_turn'] = RED
+
+      // Deploy Red carrying pieces, Navy stays
+      const redDeploy: DeployMoveRequest = {
+        from: 'a8',
+        moves: [
+          { piece: { type: AIR_FORCE, color: RED }, to: 'b8' },
+          { piece: { type: TANK, color: RED }, to: 'a7' },
+        ],
+        stay: { type: NAVY, color: RED },
+      }
+
+      game.deployMove(redDeploy)
+
+      // Verify Red deployment and turn switch
+      expect(game.turn()).toBe(BLUE)
+      expect(game.get('a8')?.type).toBe(NAVY)
+      expect(game.get('a8')?.color).toBe(RED)
+      expect(game.get('b8')?.type).toBe(AIR_FORCE)
+      expect(game.get('a7')?.type).toBe(TANK)
+
+      // Deploy Blue Infantry, Navy stays
+      const blueDeploy: DeployMoveRequest = {
+        from: 'h1',
+        moves: [{ piece: { type: INFANTRY, color: BLUE }, to: 'h2' }],
+        stay: { type: NAVY, color: BLUE },
+      }
+
+      game.deployMove(blueDeploy)
+
+      // Verify Blue deployment and turn switch back
+      expect(game.turn()).toBe(RED)
+      expect(game.get('h1')?.type).toBe(NAVY)
+      expect(game.get('h1')?.color).toBe(BLUE)
+      expect(game.get('h2')?.type).toBe(INFANTRY)
+      expect(game.get('h2')?.color).toBe(BLUE)
+    })
   })
 })

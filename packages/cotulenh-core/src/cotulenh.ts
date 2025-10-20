@@ -26,11 +26,14 @@ import {
   LAND_MASK,
   isSquareOnBoard,
   DeployState,
+  DeploySession,
+  MoveContext,
   file,
   AirDefenseInfluence,
   AirDefense,
   CAPTURE_MASK,
   AIR_FORCE,
+  VALID_PIECE_TYPES,
 } from './type.js'
 import {
   getDisambiguator,
@@ -72,6 +75,7 @@ import {
   getCheckAirDefenseZone,
   updateAirDefensePiecesPosition,
 } from './air-defense.js'
+import { VirtualBoard } from './virtual-board.js'
 
 // Structure for storing history states
 interface History {
@@ -80,7 +84,7 @@ interface History {
   turn: Color
   halfMoves: number // Half move clock before the move
   moveNumber: number // Move number before the move
-  deployState: DeployState | null // Snapshot of deploy state before move
+  deploySession: DeploySession | null // Snapshot of deploy session before move
 }
 
 // Public Move class (similar to chess.js) - can be fleshed out later
@@ -114,8 +118,10 @@ export class Move {
 
     this.before = game.fen()
 
-    // Generate the FEN for the 'after' key
-    game['_makeMove'](internal)
+    // Generate the FEN for the 'after' key using testing context
+    const testingContext = game['_createMoveContext'](internal)
+    testingContext.isTesting = true
+    game['_applyMoveWithContext'](internal, testingContext)
     this.after = game.fen()
     game['_undoMove']()
 
@@ -161,7 +167,7 @@ export class CoTuLenh {
   private _history: History[] = []
   private _comments: Record<string, string> = {}
   private _positionCount: Record<string, number> = {}
-  private _deployState: DeployState | null = null // Tracks active deploy phase
+  private _deploySession: DeploySession | null = null // Tracks active deploy session
   private _airDefense: AirDefense = {
     [RED]: new Map<number, number[]>(),
     [BLUE]: new Map<number, number[]>(),
@@ -169,6 +175,326 @@ export class CoTuLenh {
 
   constructor(fen = DEFAULT_POSITION) {
     this.load(fen)
+  }
+
+  /**
+   * Gets the effective board state, returning a VirtualBoard during deploy sessions
+   * or the real board during normal play.
+   * @returns Board array or VirtualBoard instance
+   * @private
+   */
+  private getEffectiveBoard(): (Piece | undefined)[] | VirtualBoard {
+    if (!this._deploySession) {
+      return this._board // Direct access for normal mode
+    }
+
+    return new VirtualBoard(this._board, this._deploySession)
+  }
+
+  /**
+   * Checks if a deploy session is complete and commits virtual changes if so
+   * @param context - The move context containing deploy session info
+   * @returns true if session was completed and committed, false otherwise
+   * @private
+   */
+  private _checkAndCommitDeploySession(context: MoveContext): boolean {
+    console.log(
+      `[DEBUG] _checkAndCommitDeploySession called: isDeployMode=${context.isDeployMode}, hasSession=${!!context.deploySession}, hasDeploySession=${!!this._deploySession}, isTesting=${!!context.isTesting}`,
+    )
+
+    if (
+      !context.isDeployMode ||
+      !context.deploySession ||
+      !this._deploySession
+    ) {
+      return false
+    }
+
+    // Check completion using the new system
+    const isComplete = this.isDeploySessionComplete(context.deploySession)
+
+    console.log(
+      `[DEBUG] Deploy completion check: complete=${isComplete}, testing=${!!context.isTesting}`,
+    )
+
+    if (isComplete && !context.isTesting) {
+      // Deploy session is complete, commit using the new system (but not during testing)
+      this.commitDeploySession(context.deploySession)
+      return true
+    }
+
+    return false
+  }
+
+  /**
+   * Checks if a deploy session is complete based on the new DeploySession tracking
+   * @param deploySession - The deploy session to check
+   * @returns true if all pieces have been deployed or are staying
+   */
+  public isDeploySessionComplete(deploySession: DeploySession): boolean {
+    const originalPieces = flattenPiece(deploySession.originalPiece)
+    const totalMoved = deploySession.movedPieces.length
+    const totalStaying = deploySession.stayingPieces.length
+
+    // Count the carrying pieces (all pieces except the base carrier)
+    // The base carrier is the first piece in the flattened array
+    const carryingPieces = originalPieces.slice(1) // Remove the first piece (carrier)
+    const carryingPiecesCount = carryingPieces.length
+
+    console.log(
+      `[DEBUG] Deploy session check: ${totalMoved} moved + ${totalStaying} staying vs ${carryingPiecesCount} carrying pieces`,
+    )
+    console.log(
+      `[DEBUG] Original pieces:`,
+      originalPieces.map((p) => p.type),
+    )
+    console.log(
+      `[DEBUG] Carrying pieces:`,
+      carryingPieces.map((p) => p.type),
+    )
+    console.log(
+      `[DEBUG] Moved pieces:`,
+      deploySession.movedPieces.map(
+        (m) => `${m.piece.type} ${m.from}->${m.to}`,
+      ),
+    )
+
+    const isComplete = totalMoved + totalStaying >= carryingPiecesCount
+    if (isComplete) {
+      console.log(
+        `[DEBUG] Deploy session is complete! ${totalMoved} moved + ${totalStaying} staying >= ${carryingPiecesCount} carrying pieces`,
+      )
+    }
+
+    return isComplete
+  }
+
+  /**
+   * Starts a new deploy session for the given stack
+   * @param stackSquare - The square containing the stack to deploy
+   * @param originalPiece - The original piece/stack at the square
+   * @returns The new deploy session
+   */
+  public startDeploySession(
+    stackSquare: Square,
+    originalPiece: Piece,
+  ): DeploySession {
+    const deploySession: DeploySession = {
+      stackSquare: SQUARE_MAP[stackSquare],
+      turn: this._turn,
+      originalPiece,
+      virtualChanges: new Map(),
+      movedPieces: [],
+      stayingPieces: [],
+    }
+
+    this._deploySession = deploySession
+
+    return deploySession
+  }
+
+  /**
+   * Commits a deploy session by applying all virtual changes to the real board
+   * @param deploySession - The deploy session to commit
+   */
+  public commitDeploySession(deploySession: DeploySession): void {
+    console.log(
+      `[DEBUG] commitDeploySession: Committing deploy session with ${deploySession.virtualChanges.size} virtual changes`,
+    )
+    try {
+      // Validate session consistency before committing
+      this._validateDeploySession(deploySession)
+
+      // Commit all virtual changes to the real board
+      this._commitVirtualChanges(deploySession)
+
+      // Clear deploy session
+      this._deploySession = null
+      this._turn = swapColor(deploySession.turn)
+
+      // Update position counts
+      this._updatePositionCounts()
+
+      console.log(
+        `[DEBUG] commitDeploySession: Deploy session committed successfully`,
+      )
+    } catch (error) {
+      // If commit fails, rollback the session
+      this.rollbackDeploySession(deploySession)
+      throw error
+    }
+  }
+
+  /**
+   * Rolls back a deploy session, discarding all virtual changes
+   * @param deploySession - The deploy session to rollback
+   */
+  public rollbackDeploySession(deploySession: DeploySession): void {
+    // Clear all virtual changes
+    deploySession.virtualChanges.clear()
+    deploySession.movedPieces = []
+    deploySession.stayingPieces = []
+
+    // Clear deploy session
+    this._deploySession = null
+
+    // Turn remains with the original player
+    this._turn = deploySession.turn
+  }
+
+  /**
+   * Validates deploy session consistency
+   * @param deploySession - The deploy session to validate
+   * @private
+   */
+  private _validateDeploySession(deploySession: DeploySession): void {
+    const originalPieces = flattenPiece(deploySession.originalPiece)
+    const totalMoved = deploySession.movedPieces.length
+    const totalStaying = deploySession.stayingPieces.length
+
+    if (totalMoved + totalStaying > originalPieces.length) {
+      throw new Error(
+        'Deploy session inconsistent: more pieces moved than available',
+      )
+    }
+
+    // Validate virtual changes are on valid squares
+    for (const [square] of deploySession.virtualChanges) {
+      if (!(square in SQUARE_MAP)) {
+        throw new Error(`Invalid square in virtual changes: ${square}`)
+      }
+    }
+  }
+
+  /**
+   * Validates deploy session state consistency for extended FEN loading
+   * @param deploySession - The deploy session to validate
+   * @throws Error if the deploy session is inconsistent
+   */
+  public validateDeploySession(deploySession: DeploySession): void {
+    // Check piece count consistency
+    const originalPieces = flattenPiece(deploySession.originalPiece)
+    const totalMoved = deploySession.movedPieces.length
+    const totalStaying = deploySession.stayingPieces.length
+
+    if (totalMoved + totalStaying > originalPieces.length) {
+      throw new Error(
+        'Deploy session validation failed: more pieces moved/staying than available in original stack',
+      )
+    }
+
+    // Validate virtual state positions are valid board squares
+    for (const [square, piece] of deploySession.virtualChanges) {
+      if (!(square in SQUARE_MAP)) {
+        throw new Error(
+          `Deploy session validation failed: invalid square ${square} in virtual changes`,
+        )
+      }
+
+      const sq = SQUARE_MAP[square]
+      if (!isSquareOnBoard(sq)) {
+        throw new Error(
+          `Deploy session validation failed: square ${square} is not on board`,
+        )
+      }
+
+      // Validate piece placement rules if piece exists
+      if (piece) {
+        if (piece.type === NAVY) {
+          if (!NAVY_MASK[sq]) {
+            throw new Error(
+              `Deploy session validation failed: Navy piece cannot be placed on land square ${square}`,
+            )
+          }
+        } else {
+          if (!LAND_MASK[sq]) {
+            throw new Error(
+              `Deploy session validation failed: Land piece cannot be placed on water square ${square}`,
+            )
+          }
+        }
+      }
+    }
+
+    // Validate that virtual changes don't conflict with real board state
+    const originalSquare = algebraic(deploySession.stackSquare)
+    for (const [square, virtualPiece] of deploySession.virtualChanges) {
+      if (square === originalSquare) {
+        // Original square should contain remaining pieces or be empty
+        continue
+      }
+
+      // Check if there's a real piece at this square that would conflict
+      const realPiece = this._board[SQUARE_MAP[square]]
+      if (realPiece && virtualPiece) {
+        // Both real and virtual pieces exist - this could be a conflict
+        // Allow it for now as the virtual board will handle the overlay
+        console.warn(
+          `Deploy session validation warning: virtual piece overlays real piece at ${square}`,
+        )
+      }
+    }
+
+    // Validate piece types and colors are consistent
+    const originalColor = deploySession.originalPiece.color
+    for (const movedPiece of deploySession.movedPieces) {
+      if (movedPiece.piece.color !== originalColor) {
+        throw new Error(
+          `Deploy session validation failed: moved piece color ${movedPiece.piece.color} doesn't match original color ${originalColor}`,
+        )
+      }
+    }
+
+    for (const stayingPiece of deploySession.stayingPieces) {
+      if (stayingPiece.color !== originalColor) {
+        throw new Error(
+          `Deploy session validation failed: staying piece color ${stayingPiece.color} doesn't match original color ${originalColor}`,
+        )
+      }
+    }
+
+    // Validate that moved pieces exist in virtual changes
+    for (const movedPiece of deploySession.movedPieces) {
+      const found = Array.from(deploySession.virtualChanges.values()).some(
+        (virtualPiece) =>
+          virtualPiece &&
+          virtualPiece.type === movedPiece.piece.type &&
+          virtualPiece.color === movedPiece.piece.color,
+      )
+
+      if (!found) {
+        throw new Error(
+          `Deploy session validation failed: moved piece ${movedPiece.piece.type} not found in virtual changes`,
+        )
+      }
+    }
+  }
+
+  /**
+   * Commits virtual changes from deploy session to the real board
+   * @param deploySession - The deploy session with virtual changes to commit
+   * @private
+   */
+  private _commitVirtualChanges(deploySession: DeploySession): void {
+    // Commit all virtual changes to the real board
+    for (const [square, piece] of deploySession.virtualChanges) {
+      const sq = SQUARE_MAP[square]
+      if (piece === null) {
+        // Remove piece from real board
+        this._board[sq] = undefined
+      } else {
+        // Place piece on real board
+        this._board[sq] = piece
+
+        // Update commander position if needed
+        if (haveCommander(piece)) {
+          this._commanders[piece.color] = sq
+        }
+      }
+    }
+
+    // Clear virtual changes after committing
+    deploySession.virtualChanges.clear()
   }
 
   /**
@@ -188,6 +514,7 @@ export class CoTuLenh {
     this._comments = {}
     this._header = preserveHeaders ? this._header : {}
     this._positionCount = {}
+    this._deploySession = null
     this._airDefense = {
       [RED]: new Map<number, number[]>(),
       [BLUE]: new Map<number, number[]>(),
@@ -212,6 +539,17 @@ export class CoTuLenh {
     const position = tokens[0]
 
     this.clear({ preserveHeaders })
+
+    // Check for extended FEN with DEPLOY marker
+    const deployMarkerIndex = tokens.indexOf('DEPLOY')
+    let hasDeploySession = false
+    let deploySession: DeploySession | null = null
+
+    if (deployMarkerIndex !== -1) {
+      // Parse deploy session from extended FEN
+      deploySession = this.parseDeploySession(tokens, deployMarkerIndex)
+      hasDeploySession = true
+    }
 
     // Validate FEN format if not skipping validation
     if (!skipValidation) {
@@ -275,6 +613,11 @@ export class CoTuLenh {
     this._halfMoves = parseInt(tokens[4], 10) || 0
     this._moveNumber = parseInt(tokens[5], 10) || 1
 
+    // Set up deploy session if present
+    if (hasDeploySession && deploySession) {
+      this._deploySession = deploySession
+    }
+
     // Update position counts and setup flags
     this._updatePositionCounts()
     this._airDefense = updateAirDefensePiecesPosition(this)
@@ -301,19 +644,29 @@ export class CoTuLenh {
   /**
    * Generates the FEN (Forsyth-Edwards Notation) string representing the current board position.
    * The FEN includes piece placement, active color, and move counters in a standardized format.
-   * @returns The FEN string for the current position
+   * For active deploy sessions, appends DEPLOY marker with session state information.
+   * @returns The FEN string for the current position, with optional deploy session data
    */
   fen(): string {
     let empty = 0
     let fen = ''
+    const effectiveBoard = this.getEffectiveBoard()
+
     for (let i = SQUARE_MAP.a12; i <= SQUARE_MAP.k1 + 1; i++) {
       if (isSquareOnBoard(i)) {
-        if (this._board[i]) {
+        // Get piece from effective board (virtual or real)
+        let piece: Piece | undefined
+        if (effectiveBoard instanceof VirtualBoard) {
+          piece = effectiveBoard.get(algebraic(i)) || undefined
+        } else {
+          piece = effectiveBoard[i]
+        }
+
+        if (piece) {
           if (empty > 0) {
             fen += empty
             empty = 0
           }
-          const piece = this._board[i]!
 
           const san = makeSanPiece(piece, false)
           const toCorrectCase = piece.color === RED ? san : san.toLowerCase()
@@ -339,7 +692,7 @@ export class CoTuLenh {
     const castling = '-' // No castling
     const epSquare = '-' // No en passant
 
-    return [
+    const baseFen = [
       fen,
       this._turn,
       castling,
@@ -347,6 +700,377 @@ export class CoTuLenh {
       this._halfMoves,
       this._moveNumber,
     ].join(' ')
+
+    // Check if there's an active deploy session and append DEPLOY marker
+    if (this._deploySession) {
+      try {
+        const deployMarker = this.serializeDeploySession()
+        return `${baseFen} ${deployMarker}`
+      } catch (error) {
+        // If serialization fails, return normal FEN
+        console.warn(
+          'Failed to serialize deploy session:',
+          error instanceof Error ? error.message : String(error),
+        )
+        return baseFen
+      }
+    }
+
+    return baseFen
+  }
+
+  /**
+   * Serializes the current deploy session into a FEN-compatible string format.
+   * Format: "DEPLOY originalSquare:remainingPieces moveCount virtualChanges"
+   * @returns The serialized deploy session string
+   * @private
+   */
+  private serializeDeploySession(): string {
+    if (!this._deploySession) {
+      throw new Error('No deploy session to serialize')
+    }
+
+    const deploySession = this._deploySession
+
+    const originalSquare = algebraic(deploySession.stackSquare)
+
+    // Get remaining pieces (pieces that haven't been moved or marked as staying)
+    const remainingPieces = this.getRemainingPieces(deploySession)
+    const remainingPiecesStr = remainingPieces
+      .map((p) => makeSanPiece(p, false))
+      .join('')
+
+    // Count total moves made in this deploy session
+    const moveCount = deploySession.movedPieces.length
+
+    // Serialize virtual changes if any exist
+    let virtualChangesStr = ''
+    if (deploySession.virtualChanges.size > 0) {
+      const changes: string[] = []
+      for (const [square, piece] of deploySession.virtualChanges) {
+        if (piece === null) {
+          changes.push(`${square}=`)
+        } else {
+          const pieceStr = makeSanPiece(piece, false)
+          const correctCase =
+            piece.color === RED ? pieceStr : pieceStr.toLowerCase()
+          changes.push(`${square}=${correctCase}`)
+        }
+      }
+      virtualChangesStr = ` ${changes.join(',')}`
+    }
+
+    return `DEPLOY ${originalSquare}:${remainingPiecesStr} ${moveCount}${virtualChangesStr}`
+  }
+
+  /**
+   * Gets the remaining pieces in a deploy session that haven't been moved or marked as staying
+   * @param deploySession - The deploy session to check
+   * @returns Array of pieces that still need to be deployed
+   * @private
+   */
+  private getRemainingPieces(deploySession: DeploySession): Piece[] {
+    const originalPieces = flattenPiece(deploySession.originalPiece)
+    const movedPieceTypes = deploySession.movedPieces.map((m) => m.piece.type)
+    const stayingPieceTypes = deploySession.stayingPieces.map((p) => p.type)
+
+    // Filter out pieces that have been moved or are staying
+    const remaining = originalPieces.filter((piece) => {
+      const movedIndex = movedPieceTypes.indexOf(piece.type)
+      const stayingIndex = stayingPieceTypes.indexOf(piece.type)
+
+      if (movedIndex !== -1) {
+        // Remove this occurrence from moved pieces list
+        movedPieceTypes.splice(movedIndex, 1)
+        return false
+      }
+
+      if (stayingIndex !== -1) {
+        // Remove this occurrence from staying pieces list
+        stayingPieceTypes.splice(stayingIndex, 1)
+        return false
+      }
+
+      return true
+    })
+
+    return remaining
+  }
+
+  /**
+   * Parses deploy session information from extended FEN tokens
+   * @param tokens - The FEN tokens array
+   * @param deployMarkerIndex - Index of the DEPLOY marker in tokens
+   * @returns Reconstructed DeploySession object
+   * @private
+   */
+  private parseDeploySession(
+    tokens: string[],
+    deployMarkerIndex: number,
+  ): DeploySession {
+    if (deployMarkerIndex + 3 >= tokens.length) {
+      throw new Error('Invalid extended FEN: incomplete DEPLOY information')
+    }
+
+    // Parse "originalSquare:remainingPieces"
+    const originalInfo = tokens[deployMarkerIndex + 1]
+    const [originalSquareStr, remainingPiecesStr] = originalInfo.split(':')
+
+    if (!originalSquareStr || remainingPiecesStr === undefined) {
+      throw new Error(
+        'Invalid extended FEN: malformed original square and remaining pieces',
+      )
+    }
+
+    const originalSquare = originalSquareStr as Square
+    if (!(originalSquare in SQUARE_MAP)) {
+      throw new Error(
+        `Invalid extended FEN: invalid original square ${originalSquare}`,
+      )
+    }
+
+    // Parse move count
+    const moveCount = parseInt(tokens[deployMarkerIndex + 2], 10)
+    if (isNaN(moveCount) || moveCount < 0) {
+      throw new Error('Invalid extended FEN: invalid move count')
+    }
+
+    // Parse virtual changes (if present)
+    const virtualChanges = new Map<Square, Piece | null>()
+    if (deployMarkerIndex + 3 < tokens.length) {
+      const virtualChangesStr = tokens[deployMarkerIndex + 3]
+      if (virtualChangesStr && virtualChangesStr !== '') {
+        const changes = virtualChangesStr.split(',')
+        for (const change of changes) {
+          const [square, pieceStr] = change.split('=')
+          if (!square || pieceStr === undefined) {
+            throw new Error(
+              `Invalid extended FEN: malformed virtual change ${change}`,
+            )
+          }
+
+          if (!(square in SQUARE_MAP)) {
+            throw new Error(
+              `Invalid extended FEN: invalid square in virtual changes ${square}`,
+            )
+          }
+
+          if (pieceStr === '') {
+            // Empty piece (removal)
+            virtualChanges.set(square as Square, null)
+          } else {
+            // Parse piece
+            const piece = this.parsePieceFromString(pieceStr)
+            virtualChanges.set(square as Square, piece)
+          }
+        }
+      }
+    }
+
+    // Reconstruct original piece from remaining pieces and virtual changes
+    const remainingPieces = this.parsePiecesFromString(remainingPiecesStr)
+    const originalPiece = this.reconstructOriginalPiece(
+      originalSquare,
+      remainingPieces,
+      virtualChanges,
+    )
+
+    // Create deploy session
+    const deploySession: DeploySession = {
+      stackSquare: SQUARE_MAP[originalSquare],
+      turn: this._turn,
+      originalPiece,
+      virtualChanges,
+      movedPieces: [], // Will be reconstructed from virtual changes
+      stayingPieces: [],
+    }
+
+    // Reconstruct moved pieces from virtual changes
+    this.reconstructMovedPieces(deploySession, originalSquare, moveCount)
+
+    // Validate deploy session consistency
+    this.validateDeploySession(deploySession)
+
+    return deploySession
+  }
+
+  /**
+   * Parses a piece from a string representation (e.g., "I", "T", "+I")
+   * @param pieceStr - String representation of the piece
+   * @returns Parsed Piece object
+   * @private
+   */
+  private parsePieceFromString(pieceStr: string): Piece {
+    let heroic = false
+    let typeStr = pieceStr
+
+    if (pieceStr.startsWith('+')) {
+      heroic = true
+      typeStr = pieceStr.substring(1)
+    }
+
+    const color = typeStr === typeStr.toUpperCase() ? RED : BLUE
+    const type = typeStr.toLowerCase() as PieceSymbol
+
+    if (!VALID_PIECE_TYPES[type]) {
+      throw new Error(`Invalid extended FEN: unknown piece type ${type}`)
+    }
+
+    return {
+      type,
+      color,
+      heroic,
+    }
+  }
+
+  /**
+   * Parses multiple pieces from a string representation (e.g., "IT", "NT")
+   * @param piecesStr - String representation of pieces
+   * @returns Array of parsed Piece objects
+   * @private
+   */
+  private parsePiecesFromString(piecesStr: string): Piece[] {
+    const pieces: Piece[] = []
+    let i = 0
+
+    while (i < piecesStr.length) {
+      let heroic = false
+
+      if (piecesStr[i] === '+') {
+        heroic = true
+        i++
+      }
+
+      if (i >= piecesStr.length) {
+        throw new Error('Invalid extended FEN: incomplete piece specification')
+      }
+
+      const char = piecesStr[i]
+      const color = char === char.toUpperCase() ? RED : BLUE
+      const type = char.toLowerCase() as PieceSymbol
+
+      if (!VALID_PIECE_TYPES[type]) {
+        throw new Error(`Invalid extended FEN: unknown piece type ${type}`)
+      }
+
+      pieces.push({
+        type,
+        color,
+        heroic,
+      })
+
+      i++
+    }
+
+    return pieces
+  }
+
+  /**
+   * Reconstructs the original piece from remaining pieces and virtual changes
+   * @param originalSquare - The original square of the stack
+   * @param remainingPieces - Pieces that haven't been moved
+   * @param virtualChanges - Virtual changes map
+   * @returns Reconstructed original piece
+   * @private
+   */
+  private reconstructOriginalPiece(
+    originalSquare: Square,
+    remainingPieces: Piece[],
+    virtualChanges: Map<Square, Piece | null>,
+  ): Piece {
+    // Get all pieces that were originally at this square
+    const allOriginalPieces: Piece[] = [...remainingPieces]
+
+    // Add pieces that were moved from the original square
+    for (const [square, piece] of virtualChanges) {
+      if (square !== originalSquare && piece) {
+        allOriginalPieces.push(piece)
+      }
+    }
+
+    if (allOriginalPieces.length === 0) {
+      throw new Error(
+        'Invalid extended FEN: no pieces found for original stack',
+      )
+    }
+
+    // If only one piece, return it directly
+    if (allOriginalPieces.length === 1) {
+      return allOriginalPieces[0]
+    }
+
+    // For multiple pieces, we need to reconstruct the stack
+    // Sort pieces to ensure consistent ordering (carrier first, then carried pieces)
+    const sortedPieces = this.sortPiecesForStack(allOriginalPieces)
+
+    // Create the main piece with carrying pieces
+    const [mainPiece, ...carryingPieces] = sortedPieces
+
+    return {
+      ...mainPiece,
+      carrying: carryingPieces.length > 0 ? carryingPieces : undefined,
+    }
+  }
+
+  /**
+   * Sorts pieces for stack reconstruction to ensure consistent ordering
+   * @param pieces - Pieces to sort
+   * @returns Sorted pieces with carrier first
+   * @private
+   */
+  private sortPiecesForStack(pieces: Piece[]): Piece[] {
+    // Define piece priority for stacking (higher priority pieces carry lower priority ones)
+    const piecePriority: Record<string, number> = {
+      n: 10, // Navy (highest priority - can carry most pieces)
+      i: 8, // Infantry (high priority - common carrier)
+      t: 6, // Tank (medium-high priority)
+      m: 4, // Militia
+      e: 3, // Engineer
+      a: 3, // Artillery
+      g: 3, // Anti-air
+      s: 3, // Missile
+      f: 2, // Air force
+      h: 2, // Headquarter
+      c: 1, // Commander (low priority - usually doesn't carry)
+    }
+
+    return pieces.sort((a, b) => {
+      const priorityA = piecePriority[a.type] || 0
+      const priorityB = piecePriority[b.type] || 0
+      return priorityB - priorityA // Higher priority first
+    })
+  }
+
+  /**
+   * Reconstructs moved pieces information from virtual changes
+   * @param deploySession - The deploy session to update
+   * @param originalSquare - The original square of the stack
+   * @param moveCount - Number of moves made
+   * @private
+   */
+  private reconstructMovedPieces(
+    deploySession: DeploySession,
+    originalSquare: Square,
+    moveCount: number,
+  ): void {
+    // Find pieces that have been moved to different squares
+    for (const [square, piece] of deploySession.virtualChanges) {
+      if (square !== originalSquare && piece) {
+        deploySession.movedPieces.push({
+          piece,
+          from: originalSquare,
+          to: square,
+          captured: undefined,
+        })
+      }
+    }
+
+    // Validate that move count matches
+    if (deploySession.movedPieces.length !== moveCount) {
+      console.warn(
+        `Extended FEN move count mismatch: expected ${moveCount}, found ${deploySession.movedPieces.length}`,
+      )
+    }
   }
 
   /**
@@ -360,7 +1084,16 @@ export class CoTuLenh {
     const sq = typeof square === 'number' ? square : SQUARE_MAP[square]
     if (sq === undefined) return undefined
 
-    const pieceAtSquare = this._board[sq]
+    const effectiveBoard = this.getEffectiveBoard()
+
+    // Get piece from effective board (virtual or real)
+    let pieceAtSquare: Piece | undefined
+    if (effectiveBoard instanceof VirtualBoard) {
+      pieceAtSquare = effectiveBoard.get(algebraic(sq)) || undefined
+    } else {
+      pieceAtSquare = effectiveBoard[sq]
+    }
+
     if (!pieceAtSquare) return undefined
 
     // If no specific piece type requested or the piece matches the requested type, return it
@@ -508,8 +1241,8 @@ export class CoTuLenh {
     let deployState = 'none'
     if (args.deploy) {
       deployState = `${args.square}:${this.turn()}`
-    } else if (this._deployState) {
-      deployState = `${this._deployState.stackSquare}:${this._deployState.turn}`
+    } else if (this._deploySession) {
+      deployState = `${this._deploySession.stackSquare}:${this._deploySession.turn}`
     } else {
       deployState = 'none'
     }
@@ -545,12 +1278,12 @@ export class CoTuLenh {
     let allMoves: InternalMove[] = []
 
     // Generate moves based on game state
-    if ((this._deployState && this._deployState.turn === us) || deploy) {
+    if ((this._deploySession && this._deploySession.turn === us) || deploy) {
       let deployFilterSquare: number
       if (deploy) {
         deployFilterSquare = SQUARE_MAP[filterSquare!]
       } else {
-        deployFilterSquare = this._deployState!.stackSquare
+        deployFilterSquare = this._deploySession!.stackSquare
       }
       allMoves = generateDeployMoves(this, deployFilterSquare, filterPiece)
     } else {
@@ -585,11 +1318,20 @@ export class CoTuLenh {
       return false
     }
 
+    const effectiveBoard = this.getEffectiveBoard()
+
     // Check only orthogonal directions
     for (const offset of ORTHOGONAL_OFFSETS) {
       let sq = usCommanderSq + offset
       while (isSquareOnBoard(sq)) {
-        const piece = this._board[sq]
+        // Get piece from effective board (virtual or real)
+        let piece: Piece | undefined
+        if (effectiveBoard instanceof VirtualBoard) {
+          piece = effectiveBoard.get(algebraic(sq)) || undefined
+        } else {
+          piece = effectiveBoard[sq]
+        }
+
         if (piece) {
           // If the first piece encountered is the enemy commander, we are exposed
           if (sq === themCommanderSq) {
@@ -613,7 +1355,11 @@ export class CoTuLenh {
   ): (InternalMove | InternalDeployMove)[] {
     const legalMoves: (InternalMove | InternalDeployMove)[] = []
     for (const move of moves) {
-      this._makeMove(move)
+      // Create testing context to prevent deploy session commits during legality testing
+      const testingContext = this._createMoveContext(move)
+      testingContext.isTesting = true
+
+      this._applyMoveWithContext(move, testingContext)
       // A move is legal if it doesn't leave the commander attacked AND doesn't expose the commander
       if (!this._isCommanderAttacked(us) && !this._isCommanderExposed(us)) {
         legalMoves.push(move)
@@ -665,12 +1411,84 @@ export class CoTuLenh {
     const us = this.turn()
     const them = swapColor(us)
 
-    // 1. Create the command object for this move
+    // Create MoveContext for dual-mode move application
+    const context: MoveContext = this._createMoveContext(move)
+
+    // Apply move using context-aware logic
+    return this._applyMoveWithContext(move, context)
+  }
+
+  /**
+   * Creates MoveContext for the current game state
+   * @returns MoveContext indicating deploy mode and session info
+   * @private
+   */
+  private _createMoveContext(
+    move?: InternalMove | InternalDeployMove,
+  ): MoveContext {
+    // Check if this is a deploy move that should start a new session
+    const isSingleDeployMove =
+      move && !isInternalDeployMove(move) && move.flags & BITS.DEPLOY
+    const isDeploySequence = move && isInternalDeployMove(move)
+
+    if (!this._deploySession && !isSingleDeployMove && !isDeploySequence) {
+      return {
+        isDeployMode: false,
+        deploySession: undefined,
+      }
+    }
+
+    // For deploy sequences (InternalDeployMove), initialize session if needed
+    if (!this._deploySession && isDeploySequence) {
+      const stackSquare = algebraic(move.from)
+      const originalPiece = this.get(move.from)
+
+      if (originalPiece) {
+        const deploySession = this.startDeploySession(
+          stackSquare,
+          originalPiece,
+        )
+
+        return {
+          isDeployMode: true,
+          deploySession: deploySession,
+        }
+      }
+    }
+
+    // For single deploy moves, we'll create the session in the command action
+    if (!this._deploySession && isSingleDeployMove) {
+      return {
+        isDeployMode: true,
+        deploySession: undefined, // Will be set by InitializeDeploySessionAction
+      }
+    }
+
+    return {
+      isDeployMode: true,
+      deploySession: this._deploySession || undefined,
+    }
+  }
+
+  /**
+   * Applies a move using context-aware execution
+   * @param move - The move to apply
+   * @param context - The move context for dual-mode execution
+   * @private
+   */
+  private _applyMoveWithContext(
+    move: InternalMove | InternalDeployMove,
+    context: MoveContext,
+  ) {
+    const us = this.turn()
+    const them = swapColor(us)
+
+    // 1. Create the command object for this move with context
     let moveCommand: CTLMoveCommandInteface
     if (isInternalDeployMove(move)) {
-      moveCommand = new DeployMoveCommand(this, move)
+      moveCommand = new DeployMoveCommand(this, move, context)
     } else {
-      moveCommand = createMoveCommand(this, move)
+      moveCommand = createMoveCommand(this, move, context)
     }
 
     // Store pre-move state
@@ -678,7 +1496,7 @@ export class CoTuLenh {
     const preTurn = us
     const preHalfMoves = this._halfMoves
     const preMoveNumber = this._moveNumber
-    const preDeployState = this._deployState
+    const preDeploySession = this._deploySession
 
     // 2. Execute the command
     try {
@@ -694,7 +1512,7 @@ export class CoTuLenh {
       turn: preTurn,
       halfMoves: preHalfMoves,
       moveNumber: preMoveNumber,
-      deployState: preDeployState,
+      deploySession: preDeploySession,
     }
     this._history.push(historyEntry)
 
@@ -722,11 +1540,25 @@ export class CoTuLenh {
     }
     // TODO: Check for last piece auto-promotion (also needs Commander check)
 
-    // --- Switch Turn (or maintain for deploy) ---
-    if (!isInternalDeployMove(move) && !(move.flags & BITS.DEPLOY)) {
-      this._turn = them // Switch turn only for non-deploy moves
+    // --- Context-aware turn switching ---
+    if (context.isDeployMode) {
+      // In deploy mode, check if session is complete and commit if so
+      const sessionCompleted = this._checkAndCommitDeploySession(context)
+
+      // Only switch turn for non-deploy moves or when session completes
+      if (
+        !sessionCompleted &&
+        !isInternalDeployMove(move) &&
+        !(move.flags & BITS.DEPLOY)
+      ) {
+        this._turn = them // Switch turn only for non-deploy moves
+      }
+    } else {
+      // In normal mode, turn switches immediately for non-deploy moves
+      if (!isInternalDeployMove(move) && !(move.flags & BITS.DEPLOY)) {
+        this._turn = them // Switch turn only for non-deploy moves
+      }
     }
-    // If it was a deploy move, turn remains `us`
 
     // Update position count for threefold repetition
     this._updatePositionCounts()
@@ -744,7 +1576,7 @@ export class CoTuLenh {
     this._turn = old.turn
     this._halfMoves = old.halfMoves
     this._moveNumber = old.moveNumber
-    this._deployState = old.deployState
+    this._deploySession = old.deploySession
 
     // Ask the command to revert its specific board changes
     command.undo()
@@ -762,12 +1594,25 @@ export class CoTuLenh {
     this._undoMove()
   }
 
-  public getDeployState(): DeployState | null {
-    return this._deployState
+  public getDeployState(): DeploySession | null {
+    return this._deploySession
   }
 
-  public setDeployState(deployState: DeployState | null): void {
-    this._deployState = deployState
+  public setDeployState(deploySession: DeploySession | null): void {
+    this._deploySession = deploySession
+  }
+
+  // Legacy compatibility method
+  public getDeployStateAsLegacy(): DeployState | null {
+    if (!this._deploySession) return null
+
+    return {
+      stackSquare: this._deploySession.stackSquare,
+      turn: this._deploySession.turn,
+      originalPiece: this._deploySession.originalPiece,
+      movedPieces: this._deploySession.movedPieces.map((m) => m.piece),
+      stay: this._deploySession.stayingPieces,
+    }
   }
 
   /**
@@ -804,6 +1649,7 @@ export class CoTuLenh {
     attackerColor: Color,
   ): { square: number; type: PieceSymbol }[] {
     const attackers: { square: number; type: PieceSymbol }[] = []
+    const effectiveBoard = this.getEffectiveBoard()
     const isLandPiece = this.get(square)?.type !== NAVY
 
     // Check in all directions from the target square
@@ -821,7 +1667,13 @@ export class CoTuLenh {
         // Stop if we're off the board
         if (!isSquareOnBoard(currentSquare)) break
 
-        const piece = this._board[currentSquare]
+        // Get piece from effective board (virtual or real)
+        let piece: Piece | undefined
+        if (effectiveBoard instanceof VirtualBoard) {
+          piece = effectiveBoard.get(algebraic(currentSquare)) || undefined
+        } else {
+          piece = effectiveBoard[currentSquare]
+        }
 
         // If no piece at this square, continue to next square in this direction
         if (!piece) continue
@@ -1202,7 +2054,7 @@ export class CoTuLenh {
   deployMove(deployMove: DeployMoveRequest): DeployMove {
     const sqFrom = SQUARE_MAP[deployMove.from]
     const deployMoves = this._moves({ square: deployMove.from, deploy: true })
-    const originalPiece = this._board[sqFrom]
+    const originalPiece = this.get(deployMove.from) // Use get() which handles virtual state
 
     if (!originalPiece)
       throw new Error('Deploy move error: original piece not found')
@@ -1210,6 +2062,14 @@ export class CoTuLenh {
       originalPiece,
       deployMove,
       deployMoves,
+    )
+    console.log(
+      '[DEBUG] deployMove created internalDeployMove:',
+      internalDeployMove,
+    )
+    console.log(
+      '[DEBUG] isInternalDeployMove check:',
+      isInternalDeployMove(internalDeployMove),
     )
     const prettyMove = new DeployMove(this, internalDeployMove)
     this._makeMove(internalDeployMove)
@@ -1239,6 +2099,7 @@ export class CoTuLenh {
   } | null)[][] {
     const output = []
     let row = []
+    const effectiveBoard = this.getEffectiveBoard()
 
     for (let r = 0; r < 12; r++) {
       // Iterate ranks 0-11
@@ -1246,7 +2107,15 @@ export class CoTuLenh {
       for (let f = 0; f < 11; f++) {
         // Iterate files 0-10
         const sq = r * 16 + f
-        const piece = this._board[sq]
+
+        // Get piece from effective board (virtual or real)
+        let piece: Piece | undefined
+        if (effectiveBoard instanceof VirtualBoard) {
+          piece = effectiveBoard.get(algebraic(sq)) || undefined
+        } else {
+          piece = effectiveBoard[sq]
+        }
+
         if (piece) {
           row.push({
             square: algebraic(sq),
@@ -1435,7 +2304,27 @@ export class CoTuLenh {
    * Useful for debugging and development purposes to visualize the board layout.
    */
   printBoard(): void {
-    printBoard(this._board)
+    const effectiveBoard = this.getEffectiveBoard()
+
+    // Convert effective board to format expected by printBoard utility
+    const boardRecord: Record<number, Piece | undefined> = {}
+
+    if (effectiveBoard instanceof VirtualBoard) {
+      // For VirtualBoard, iterate through all squares and get pieces
+      for (let i = 0; i < 256; i++) {
+        if (isSquareOnBoard(i)) {
+          const piece = effectiveBoard.get(algebraic(i))
+          boardRecord[i] = piece || undefined
+        }
+      }
+    } else {
+      // For regular board array, convert to record format
+      for (let i = 0; i < effectiveBoard.length; i++) {
+        boardRecord[i] = effectiveBoard[i]
+      }
+    }
+
+    printBoard(boardRecord)
   }
 
   // TODO: getComments, removeComments need pruning logic like chess.js if history is mutable

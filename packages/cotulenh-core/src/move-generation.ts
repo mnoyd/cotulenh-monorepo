@@ -543,15 +543,17 @@ export function generateMoveCandidateForSinglePieceInStack(
 
   // Generate moves for each individual piece in the stack
   for (const piece of flattenedPieces) {
-    // Save the current deploy state
-    const originalDeployState = gameInstance.getDeployState()
+    // Save the current deploy session
+    const originalDeploySession = gameInstance.getDeployState()
 
-    // Set a temporary deploy state to generate moves for this piece
+    // Set a temporary deploy session to generate moves for this piece
     gameInstance.setDeployState({
       stackSquare,
       originalPiece: pieceStack,
       turn: us,
+      virtualChanges: new Map(),
       movedPieces: [],
+      stayingPieces: [],
     })
 
     // Generate moves for this piece
@@ -572,8 +574,8 @@ export function generateMoveCandidateForSinglePieceInStack(
       moveMap.set(piece.type, pieceMoves)
     }
 
-    // Restore the original deploy state
-    gameInstance.setDeployState(originalDeployState)
+    // Restore the original deploy session
+    gameInstance.setDeployState(originalDeploySession)
   }
 
   return moveMap
@@ -589,17 +591,17 @@ export function generateDeployMoves(
 ): InternalMove[] {
   const moves: InternalMove[] = []
   const us = gameInstance.turn()
-  const deployState = gameInstance.getDeployState()
+  const deploySession = gameInstance.getDeployState()
   const carrierPiece =
-    deployState !== null
-      ? deployState.originalPiece
+    deploySession !== null
+      ? deploySession.originalPiece
       : gameInstance.get(stackSquare)
   if (!carrierPiece || carrierPiece.color !== us) {
     return []
   }
   if (
     (!carrierPiece.carrying || carrierPiece.carrying.length === 0) &&
-    (deployState === null || deployState.stackSquare !== stackSquare)
+    (deploySession === null || deploySession.stackSquare !== stackSquare)
   ) {
     return []
   }
@@ -609,8 +611,8 @@ export function generateDeployMoves(
   const flattenedCarrierPiece = flattenPiece(carrierPiece)
   let deployMoveCandidates = flattenedCarrierPiece.filter(
     (p) =>
-      !deployState?.movedPieces.some(
-        (mp) => mp.type === p.type && mp.color === p.color,
+      !deploySession?.movedPieces.some(
+        (mp) => mp.piece.type === p.type && mp.piece.color === p.color,
       ),
   )
   if (carrierPiece.type === NAVY && !LAND_MASK[stackSquare]) {

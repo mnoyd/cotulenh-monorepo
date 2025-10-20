@@ -157,14 +157,15 @@ export class DeployMove {
     this.captured = internal.captured
     this.before = game.fen()
 
+    // Generate SAN/LAN before making the move to avoid issues with moved pieces
+    const [san, lan] = deployMoveToSanLan(game, internal)
+    this.san = san
+    this.lan = lan
+
     // Generate the FEN for the 'after' key
     game['_makeMove'](internal)
     this.after = game.fen()
     game['_undoMove']()
-
-    const [san, lan] = deployMoveToSanLan(game, internal)
-    this.san = san
-    this.lan = lan
   }
 }
 

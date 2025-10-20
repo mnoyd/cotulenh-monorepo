@@ -13,6 +13,7 @@ import {
   Color,
   PieceSymbol,
   BITS,
+  DeploySession,
   COMMANDER,
   INFANTRY,
   TANK,
@@ -49,63 +50,58 @@ const symbolToRoleMap: Record<PieceSymbol, string> = {
 const roleToSymbolMap: Record<string, PieceSymbol> = Object.entries(
   symbolToRoleMap,
 ).reduce(
-  (acc, [symbol, role]) => {
-    acc[role] = symbol as PieceSymbol
-    return acc
-  },
+  (acc, [key, value]) => ({ ...acc, [value]: key as PieceSymbol }),
   {} as Record<string, PieceSymbol>,
 )
 
 /**
- * Converts a full string role (e.g., 'commander') to its core type (symbol, e.g., COMMANDER)
- * @param role - The role string
- * @returns The PieceSymbol or undefined if not found
+ * Gets the core PieceSymbol type from a role string
+ * @param role - The role string to convert
+ * @returns The corresponding PieceSymbol type, or undefined if not found
  */
 export function getCoreTypeFromRole(role: string): PieceSymbol | undefined {
   return roleToSymbolMap[role]
 }
 
-export const getRoleFromCoreType = (piece: Piece): string =>
-  symbolToRoleMap[piece.type]
+export const getRoleFromCoreType = (piece: any): string =>
+  symbolToRoleMap[piece.type as PieceSymbol] || 'unknown'
 
-// Core-specific PieceStacker instance
-const corePieceStacker = new PieceStacker<Piece>(
-  // getRoleFlag function
-  (piece: Piece) => {
-    const roleKey = symbolToRoleMap[
-      piece.type
-    ].toUpperCase() as keyof typeof ROLE_FLAGS
-    return ROLE_FLAGS[roleKey] || 0
-  },
-)
+// Map piece types to role flags for the new PieceStacker
+function getRoleFlag(piece: Piece): number {
+  const roleMap: Record<PieceSymbol, number> = {
+    [COMMANDER]: ROLE_FLAGS.COMMANDER,
+    [INFANTRY]: ROLE_FLAGS.INFANTRY,
+    [TANK]: ROLE_FLAGS.TANK,
+    [MILITIA]: ROLE_FLAGS.MILITIA,
+    [ENGINEER]: ROLE_FLAGS.ENGINEER,
+    [ARTILLERY]: ROLE_FLAGS.ARTILLERY,
+    [ANTI_AIR]: ROLE_FLAGS.ANTI_AIR,
+    [MISSILE]: ROLE_FLAGS.MISSILE,
+    [AIR_FORCE]: ROLE_FLAGS.AIR_FORCE,
+    [NAVY]: ROLE_FLAGS.NAVY,
+    [HEADQUARTER]: ROLE_FLAGS.HEADQUARTER,
+  }
+  return roleMap[piece.type] || 0
+}
+
+const pieceStacker = new PieceStacker<Piece>(getRoleFlag)
 
 export function createCombinedPiece(
   pieceFrom: Piece,
   pieceTo: Piece,
 ): Piece | null {
-  return corePieceStacker.combine([pieceFrom, pieceTo])
+  return pieceStacker.combine([pieceFrom, pieceTo])
 }
 
 export function createCombineStackFromPieces(pieces: Piece[]): {
   combined: Piece | undefined
   uncombined: Piece[] | undefined
 } {
-  if (!pieces.length) {
-    return { combined: undefined, uncombined: undefined }
-  }
+  const combined = pieceStacker.combine(pieces)
 
-  const combined = corePieceStacker.combine(pieces)
-
-  if (combined) {
-    return {
-      combined,
-      uncombined: undefined,
-    }
-  } else {
-    return {
-      combined: undefined,
-      uncombined: pieces,
-    }
+  return {
+    combined: combined || undefined,
+    uncombined: combined ? undefined : pieces, // If combination failed, all pieces are uncombined
   }
 }
 
@@ -522,4 +518,34 @@ export function cloneInternalDeployMove(
   }
 
   return clonedDeployMove
+}
+// Helper functions for DeploySession
+export function getEffectivePiece(
+  session: DeploySession,
+  square: Square,
+): Piece | null {
+  // Check virtual changes first
+  if (session.virtualChanges.has(square)) {
+    return session.virtualChanges.get(square) || null
+  }
+  return null // Will be enhanced when integrated with board access
+}
+
+export function getRemainingPieces(session: DeploySession): Piece[] {
+  const allOriginalPieces = flattenPiece(session.originalPiece)
+  const movedPieceTypes = session.movedPieces.map((m) => m.piece.type)
+  const stayingPieceTypes = session.stayingPieces.map((p) => p.type)
+
+  return allOriginalPieces.filter(
+    (piece) =>
+      !movedPieceTypes.includes(piece.type) &&
+      !stayingPieceTypes.includes(piece.type),
+  )
+}
+
+export function hasMoved(
+  session: DeploySession,
+  pieceType: PieceSymbol,
+): boolean {
+  return session.movedPieces.some((m) => m.piece.type === pieceType)
 }

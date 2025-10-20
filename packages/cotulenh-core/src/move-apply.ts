@@ -10,6 +10,8 @@ import {
   BITS,
   Piece,
   DeployState,
+  MoveContext,
+  Square,
 } from './type.js'
 import {
   createCombinedPiece,
@@ -33,25 +35,42 @@ class RemovePieceAction implements CTLAtomicMoveAction {
   constructor(
     protected game: CoTuLenh,
     private square: number,
+    private context?: MoveContext,
   ) {}
 
   execute(): void {
     const piece = this.game.get(this.square)
     if (piece) {
       this.removedPiece = { ...piece }
-      this.game.remove(algebraic(this.square))
+
+      if (this.context?.isDeployMode && this.context.deploySession) {
+        // In deploy mode, update virtual state
+        this.context.deploySession.virtualChanges.set(
+          algebraic(this.square),
+          null,
+        )
+      } else {
+        // In normal mode, update real board
+        this.game.remove(algebraic(this.square))
+      }
     }
   }
 
   undo(): void {
     if (this.removedPiece) {
-      const result = this.game.put(this.removedPiece, algebraic(this.square))
-      if (!result) {
-        throw new Error(
-          'Place piece fail:' +
-            JSON.stringify(this.removedPiece) +
-            algebraic(this.square),
-        )
+      if (this.context?.isDeployMode && this.context.deploySession) {
+        // In deploy mode, restore virtual state by removing the virtual change
+        this.context.deploySession.virtualChanges.delete(algebraic(this.square))
+      } else {
+        // In normal mode, restore real board
+        const result = this.game.put(this.removedPiece, algebraic(this.square))
+        if (!result) {
+          throw new Error(
+            'Place piece fail:' +
+              JSON.stringify(this.removedPiece) +
+              algebraic(this.square),
+          )
+        }
       }
     }
   }
@@ -66,6 +85,7 @@ class PlacePieceAction implements CTLAtomicMoveAction {
     protected game: CoTuLenh,
     private square: number,
     private piece: Piece,
+    private context?: MoveContext,
   ) {}
 
   execute(): void {
@@ -73,19 +93,16 @@ class PlacePieceAction implements CTLAtomicMoveAction {
     if (piece) {
       this.existingPiece = { ...piece }
     }
-    const result = this.game.put(this.piece, algebraic(this.square))
-    if (!result) {
-      throw new Error(
-        'Place piece fail:' +
-          JSON.stringify(this.piece) +
-          algebraic(this.square),
-      )
-    }
-  }
 
-  undo(): void {
-    if (this.existingPiece) {
-      const result = this.game.put(this.existingPiece, algebraic(this.square))
+    if (this.context?.isDeployMode && this.context.deploySession) {
+      // In deploy mode, update virtual state
+      this.context.deploySession.virtualChanges.set(
+        algebraic(this.square),
+        this.piece,
+      )
+    } else {
+      // In normal mode, update real board
+      const result = this.game.put(this.piece, algebraic(this.square))
       if (!result) {
         throw new Error(
           'Place piece fail:' +
@@ -93,8 +110,34 @@ class PlacePieceAction implements CTLAtomicMoveAction {
             algebraic(this.square),
         )
       }
+    }
+  }
+
+  undo(): void {
+    if (this.context?.isDeployMode && this.context.deploySession) {
+      // In deploy mode, restore virtual state
+      if (this.existingPiece) {
+        this.context.deploySession.virtualChanges.set(
+          algebraic(this.square),
+          this.existingPiece,
+        )
+      } else {
+        this.context.deploySession.virtualChanges.delete(algebraic(this.square))
+      }
     } else {
-      this.game.remove(algebraic(this.square))
+      // In normal mode, restore real board
+      if (this.existingPiece) {
+        const result = this.game.put(this.existingPiece, algebraic(this.square))
+        if (!result) {
+          throw new Error(
+            'Place piece fail:' +
+              JSON.stringify(this.piece) +
+              algebraic(this.square),
+          )
+        }
+      } else {
+        this.game.remove(algebraic(this.square))
+      }
     }
   }
 }
@@ -108,6 +151,7 @@ class RemoveFromStackAction implements CTLAtomicMoveAction {
     protected game: CoTuLenh,
     private carrierSquare: number,
     private piece: Piece,
+    private context?: MoveContext,
   ) {}
 
   execute(): void {
@@ -120,33 +164,72 @@ class RemoveFromStackAction implements CTLAtomicMoveAction {
     const movingPiece = flattenPiece(this.piece)
     this.removedPiece = [...movingPiece]
     const allPieces = flattenPiece(carrier)
-    const remainingPiece = allPieces.filter(
-      (p) => !movingPiece.some((p2) => p2.type === p.type),
-    )
-    if (remainingPiece.length + movingPiece.length !== allPieces.length) {
-      throw new Error(
-        `Request moving piece ${algebraic(this.carrierSquare)} not found in the stack`,
+
+    // Better piece matching logic that handles multiple pieces of same type
+    const remainingPiece = [...allPieces]
+    for (const pieceToRemove of movingPiece) {
+      const index = remainingPiece.findIndex(
+        (p) =>
+          p.type === pieceToRemove.type &&
+          p.color === pieceToRemove.color &&
+          p.heroic === pieceToRemove.heroic,
       )
+      if (index === -1) {
+        console.error(`[DEBUG] RemoveFromStackAction failed:`)
+        console.error(`  Square: ${algebraic(this.carrierSquare)}`)
+        console.error(`  Looking for piece:`, pieceToRemove)
+        console.error(`  Available pieces:`, allPieces)
+        console.error(`  Remaining pieces:`, remainingPiece)
+        throw new Error(
+          `Request moving piece ${pieceToRemove.type} from ${algebraic(this.carrierSquare)} not found in the stack`,
+        )
+      }
+      remainingPiece.splice(index, 1)
     }
-    if (remainingPiece.length === 0) {
-      this.game.remove(algebraic(this.carrierSquare))
-      return
-    }
-    const { combined: combinedPiece, uncombined } =
-      createCombineStackFromPieces(remainingPiece)
-    if (!combinedPiece || (uncombined?.length ?? 0) > 0) {
-      throw new Error(
-        `Failed to remove piece from stack at ${algebraic(this.carrierSquare)}`,
-      )
-    }
-    const result = this.game.put(combinedPiece, algebraic(this.carrierSquare))
-    if (!result) {
-      throw new Error(
-        'Place piece fail:' +
-          JSON.stringify(combinedPiece) +
+
+    if (this.context?.isDeployMode && this.context.deploySession) {
+      // In deploy mode, update virtual state
+      if (remainingPiece.length === 0) {
+        this.context.deploySession.virtualChanges.set(
           algebraic(this.carrierSquare),
-      )
+          null,
+        )
+      } else {
+        const { combined: combinedPiece, uncombined } =
+          createCombineStackFromPieces(remainingPiece)
+        if (!combinedPiece || (uncombined?.length ?? 0) > 0) {
+          throw new Error(
+            `Failed to remove piece from stack at ${algebraic(this.carrierSquare)}`,
+          )
+        }
+        this.context.deploySession.virtualChanges.set(
+          algebraic(this.carrierSquare),
+          combinedPiece,
+        )
+      }
+    } else {
+      // In normal mode, update real board
+      if (remainingPiece.length === 0) {
+        this.game.remove(algebraic(this.carrierSquare))
+        return
+      }
+      const { combined: combinedPiece, uncombined } =
+        createCombineStackFromPieces(remainingPiece)
+      if (!combinedPiece || (uncombined?.length ?? 0) > 0) {
+        throw new Error(
+          `Failed to remove piece from stack at ${algebraic(this.carrierSquare)}`,
+        )
+      }
+      const result = this.game.put(combinedPiece, algebraic(this.carrierSquare))
+      if (!result) {
+        throw new Error(
+          'Place piece fail:' +
+            JSON.stringify(combinedPiece) +
+            algebraic(this.carrierSquare),
+        )
+      }
     }
+
     if (movingPiece.some((p) => p.type === COMMANDER)) {
       this.game['_commanders'][this.piece.color] = -1
     }
@@ -154,75 +237,115 @@ class RemoveFromStackAction implements CTLAtomicMoveAction {
 
   undo(): void {
     if (!this.removedPiece) return
-    const carrier = this.game.get(this.carrierSquare)
-    const allPieces = carrier ? flattenPiece(carrier) : []
-    const { combined: combinedPiece, uncombined } =
-      createCombineStackFromPieces([...allPieces, ...this.removedPiece])
-    if (!combinedPiece || (uncombined?.length ?? 0) > 0) {
-      throw new Error(
-        `Failed to remove piece from stack at ${algebraic(this.carrierSquare)}`,
+
+    if (this.context?.isDeployMode && this.context.deploySession) {
+      // In deploy mode, restore virtual state by removing the virtual change
+      // This will make the effective board show the original state
+      this.context.deploySession.virtualChanges.delete(
+        algebraic(this.carrierSquare),
       )
-    }
-    const result = this.game.put(combinedPiece, algebraic(this.carrierSquare))
-    if (!result) {
-      throw new Error(
-        'Place piece fail:' +
-          JSON.stringify(combinedPiece) +
-          algebraic(this.carrierSquare),
-      )
+    } else {
+      // In normal mode, restore real board
+      const carrier = this.game.get(this.carrierSquare)
+      const allPieces = carrier ? flattenPiece(carrier) : []
+      const { combined: combinedPiece, uncombined } =
+        createCombineStackFromPieces([...allPieces, ...this.removedPiece])
+      if (!combinedPiece || (uncombined?.length ?? 0) > 0) {
+        throw new Error(
+          `Failed to remove piece from stack at ${algebraic(this.carrierSquare)}`,
+        )
+      }
+      const result = this.game.put(combinedPiece, algebraic(this.carrierSquare))
+      if (!result) {
+        throw new Error(
+          'Place piece fail:' +
+            JSON.stringify(combinedPiece) +
+            algebraic(this.carrierSquare),
+        )
+      }
     }
   }
 }
 
 /**
- * Sets the deploy state
+ * Initializes a deploy session when the first deploy move is made
  */
-class SetDeployStateAction implements CTLAtomicMoveAction {
-  private oldDeployState: DeployState | null = null
+class InitializeDeploySessionAction implements CTLAtomicMoveAction {
+  private wasSessionCreated: boolean = false
+
   constructor(
     protected game: CoTuLenh,
-    private newDeployState: Partial<DeployState> | null,
-  ) {
-    // Don't capture oldDeployState here, we'll do it in execute()
-  }
+    private stackSquare: Square,
+    private originalPiece: Piece,
+    private context?: MoveContext,
+  ) {}
 
   execute(): void {
-    // Capture the current deploy state at execution time, not construction time
-    this.oldDeployState = this.game.getDeployState()
-    if (this.newDeployState === null) {
-      this.game.setDeployState(null)
-      return
-    }
-    if (this.oldDeployState) {
-      const updatedMovedPiece = [
-        ...this.oldDeployState.movedPieces,
-        ...(this.newDeployState.movedPieces ?? []),
-      ]
-      const originalLen = flattenPiece(this.oldDeployState.originalPiece).length
-      if (
-        updatedMovedPiece.length + (this.oldDeployState.stay?.length ?? 0) ===
-        originalLen
-      ) {
-        this.game.setDeployState(null)
-        this.game['_turn'] = swapColor(this.oldDeployState.turn)
-        return
+    // Only initialize if no deploy session exists
+    if (!this.game.getDeployState()) {
+      const deploySession = this.game['startDeploySession'](
+        this.stackSquare,
+        this.originalPiece,
+      )
+      this.wasSessionCreated = true
+
+      // Update context with the new session
+      if (this.context) {
+        this.context.deploySession = deploySession
       }
-      this.game.setDeployState({
-        stackSquare: this.oldDeployState.stackSquare,
-        turn: this.oldDeployState.turn,
-        originalPiece: this.oldDeployState.originalPiece,
-        movedPieces: updatedMovedPiece,
-        stay: this.oldDeployState.stay,
-      })
-    } else {
-      this.game.setDeployState(this.newDeployState as DeployState)
     }
   }
 
   undo(): void {
-    this.game.setDeployState(this.oldDeployState)
-    if (this.oldDeployState) {
-      this.game['_turn'] = this.oldDeployState.turn
+    // Only clear if we created the session
+    if (this.wasSessionCreated) {
+      this.game.setDeployState(null)
+
+      // Clear context session
+      if (this.context) {
+        this.context.deploySession = undefined
+      }
+    }
+  }
+}
+
+/**
+ * Updates deploy session with moved piece information
+ */
+class UpdateDeploySessionAction implements CTLAtomicMoveAction {
+  private previousMoveCount: number = 0
+
+  constructor(
+    protected game: CoTuLenh,
+    private context: MoveContext,
+    private movedPiece: Piece,
+    private fromSquare: Square,
+    private toSquare: Square,
+    private captured?: Piece,
+  ) {}
+
+  execute(): void {
+    if (this.context.deploySession) {
+      this.previousMoveCount = this.context.deploySession.movedPieces.length
+
+      // Add the moved piece to the deploy session
+      this.context.deploySession.movedPieces.push({
+        piece: this.movedPiece,
+        from: this.fromSquare,
+        to: this.toSquare,
+        captured: this.captured,
+      })
+
+      console.log(
+        `[DEBUG] UpdateDeploySessionAction: Added piece ${this.movedPiece.type} from ${this.fromSquare} to ${this.toSquare}. Total moved: ${this.context.deploySession.movedPieces.length}`,
+      )
+    }
+  }
+
+  undo(): void {
+    if (this.context.deploySession) {
+      // Remove the last moved piece
+      this.context.deploySession.movedPieces.splice(this.previousMoveCount)
     }
   }
 }
@@ -242,6 +365,7 @@ export abstract class CTLMoveCommand implements CTLMoveCommandInteface {
   constructor(
     protected game: CoTuLenh,
     moveData: InternalMove,
+    protected context?: MoveContext,
   ) {
     this.move = { ...moveData }
     this.buildActions()
@@ -274,10 +398,17 @@ export class NormalMoveCommand extends CTLMoveCommand {
 
     // Add actions for the normal move
     if (!isStackMove(this.move)) {
-      this.actions.push(new RemovePieceAction(this.game, this.move.from))
+      this.actions.push(
+        new RemovePieceAction(this.game, this.move.from, this.context),
+      )
     }
     this.actions.push(
-      new PlacePieceAction(this.game, this.move.to, pieceThatMoved),
+      new PlacePieceAction(
+        this.game,
+        this.move.to,
+        pieceThatMoved,
+        this.context,
+      ),
     )
   }
 }
@@ -299,10 +430,17 @@ export class CaptureMoveCommand extends CTLMoveCommand {
 
     // Add actions for the capture move
     if (!isStackMove(this.move)) {
-      this.actions.push(new RemovePieceAction(this.game, this.move.from))
+      this.actions.push(
+        new RemovePieceAction(this.game, this.move.from, this.context),
+      )
     }
     this.actions.push(
-      new PlacePieceAction(this.game, this.move.to, pieceThatMoved),
+      new PlacePieceAction(
+        this.game,
+        this.move.to,
+        pieceThatMoved,
+        this.context,
+      ),
     )
   }
 }
@@ -311,7 +449,32 @@ export class SingleDeployMoveCommand extends CTLMoveCommand {
   protected buildActions(): void {
     const us = this.move.color
     const them = swapColor(us)
-    const carrierPiece = this.game.get(this.move.from)
+
+    // Get carrier piece using effective board (handles virtual state)
+    const effectiveBoard = this.game['getEffectiveBoard']()
+    let carrierPiece: Piece | null | undefined
+
+    if ('get' in effectiveBoard && typeof effectiveBoard.get === 'function') {
+      // VirtualBoard case
+      carrierPiece = effectiveBoard.get(algebraic(this.move.from))
+    } else {
+      // Regular board array case
+      carrierPiece = (effectiveBoard as (Piece | undefined)[])[this.move.from]
+    }
+
+    // If we're in deploy mode and no piece at the original square,
+    // check if we have a deploy session with the original piece
+    if (
+      !carrierPiece &&
+      this.context?.isDeployMode &&
+      this.context.deploySession
+    ) {
+      const deploySession = this.context.deploySession
+      if (algebraic(deploySession.stackSquare) === algebraic(this.move.from)) {
+        // Use the original piece from the deploy session
+        carrierPiece = deploySession.originalPiece
+      }
+    }
 
     if (!carrierPiece) {
       throw new Error(
@@ -322,6 +485,19 @@ export class SingleDeployMoveCommand extends CTLMoveCommand {
     }
 
     const flattendMovingPieces = flattenPiece(this.move.piece)
+
+    // Initialize deploy session if this is the first deploy move (only for standalone deploy moves)
+    if (!this.context?.deploySession) {
+      this.actions.push(
+        new InitializeDeploySessionAction(
+          this.game,
+          algebraic(this.move.from),
+          carrierPiece,
+          this.context,
+        ),
+      )
+    }
+
     // Handle stay capture
     if (this.move.flags & BITS.STAY_CAPTURE) {
       const destSq = this.move.to
@@ -336,13 +512,32 @@ export class SingleDeployMoveCommand extends CTLMoveCommand {
       }
 
       this.move.captured = capturedPieceData
-      this.actions.push(new RemovePieceAction(this.game, destSq))
+      this.actions.push(new RemovePieceAction(this.game, destSq, this.context))
+
+      // Update deploy session with stay capture info
+      if (this.context) {
+        this.actions.push(
+          new UpdateDeploySessionAction(
+            this.game,
+            this.context,
+            this.move.piece,
+            algebraic(this.move.from),
+            algebraic(destSq),
+            capturedPieceData,
+          ),
+        )
+      }
     }
     // Handle normal deploy (with or without capture)
     else {
       // Add action to remove the piece from the carrier's stack
       this.actions.push(
-        new RemoveFromStackAction(this.game, this.move.from, this.move.piece),
+        new RemoveFromStackAction(
+          this.game,
+          this.move.from,
+          this.move.piece,
+          this.context,
+        ),
       )
       const destSq = this.move.to
 
@@ -359,26 +554,41 @@ export class SingleDeployMoveCommand extends CTLMoveCommand {
         }
 
         this.move.captured = capturedPieceData
-        this.actions.push(new RemovePieceAction(this.game, destSq))
+        this.actions.push(
+          new RemovePieceAction(this.game, destSq, this.context),
+        )
       }
 
       // Add action to place the deployed piece
       if ((this.move.flags & BITS.SUICIDE_CAPTURE) === 0) {
         this.actions.push(
-          new PlacePieceAction(this.game, destSq, this.move.piece),
+          new PlacePieceAction(
+            this.game,
+            destSq,
+            this.move.piece,
+            this.context,
+          ),
+        )
+      }
+
+      // Update deploy session with move info
+      if (this.context) {
+        this.actions.push(
+          new UpdateDeploySessionAction(
+            this.game,
+            this.context,
+            this.move.piece,
+            algebraic(this.move.from),
+            algebraic(destSq),
+            this.move.captured,
+          ),
         )
       }
     }
 
-    // Set deploy state for next move
-    this.actions.push(
-      new SetDeployStateAction(this.game, {
-        stackSquare: this.move.from,
-        turn: us,
-        originalPiece: carrierPiece,
-        movedPieces: flattendMovingPieces,
-      }),
-    )
+    // Note: Deploy session management is now handled by the virtual state system
+    // The UpdateDeploySessionAction above handles tracking moved pieces
+    // Session completion and turn switching is handled in CoTuLenh._makeMove()
   }
 }
 
@@ -411,7 +621,9 @@ class CombinationMoveCommand extends CTLMoveCommand {
 
     // 1. Remove the moving piece from the 'from' square
     if (!isStackMove(this.move)) {
-      this.actions.push(new RemovePieceAction(this.game, this.move.from))
+      this.actions.push(
+        new RemovePieceAction(this.game, this.move.from, this.context),
+      )
     }
 
     // 2. Remove the existing piece from the 'to' square (before placing the combined one)
@@ -421,7 +633,12 @@ class CombinationMoveCommand extends CTLMoveCommand {
 
     // 3. Place the new combined piece on the 'to' square
     this.actions.push(
-      new PlacePieceAction(this.game, this.move.to, combinedPiece),
+      new PlacePieceAction(
+        this.game,
+        this.move.to,
+        combinedPiece,
+        this.context,
+      ),
     )
   }
 }
@@ -446,7 +663,7 @@ export class StayCaptureMoveCommand extends CTLMoveCommand {
     }
 
     // Only action is to remove the captured piece
-    this.actions.push(new RemovePieceAction(this.game, targetSq))
+    this.actions.push(new RemovePieceAction(this.game, targetSq, this.context))
   }
 }
 
@@ -477,9 +694,11 @@ export class SuicideCaptureMoveCommand extends CTLMoveCommand {
     this.move.captured = capturedPiece
 
     if (!isStackMove(this.move)) {
-      this.actions.push(new RemovePieceAction(this.game, this.move.from))
+      this.actions.push(
+        new RemovePieceAction(this.game, this.move.from, this.context),
+      )
     }
-    this.actions.push(new RemovePieceAction(this.game, targetSq))
+    this.actions.push(new RemovePieceAction(this.game, targetSq, this.context))
   }
 }
 
@@ -487,22 +706,23 @@ export class SuicideCaptureMoveCommand extends CTLMoveCommand {
 export function createMoveCommand(
   game: CoTuLenh,
   move: InternalMove,
+  context?: MoveContext,
 ): CTLMoveCommand {
   // Check flags in order of precedence (if applicable)
   if (move.flags & BITS.DEPLOY) {
-    return new SingleDeployMoveCommand(game, move)
+    return new SingleDeployMoveCommand(game, move, context)
   } else if (move.flags & BITS.SUICIDE_CAPTURE) {
-    return new SuicideCaptureMoveCommand(game, move)
+    return new SuicideCaptureMoveCommand(game, move, context)
   } else if (move.flags & BITS.STAY_CAPTURE) {
-    return new StayCaptureMoveCommand(game, move)
+    return new StayCaptureMoveCommand(game, move, context)
   } else if (move.flags & BITS.COMBINATION) {
     // Add combination check
-    return new CombinationMoveCommand(game, move)
+    return new CombinationMoveCommand(game, move, context)
   } else if (move.flags & BITS.CAPTURE) {
-    return new CaptureMoveCommand(game, move)
+    return new CaptureMoveCommand(game, move, context)
   } else {
     // Default to NormalMove if no other specific flags are set
-    return new NormalMoveCommand(game, move)
+    return new NormalMoveCommand(game, move, context)
   }
 }
 
@@ -618,23 +838,48 @@ export class DeployMoveCommand extends SequenceMoveCommand {
   constructor(
     protected game: CoTuLenh,
     protected moveData: InternalDeployMove,
+    protected context?: MoveContext,
   ) {
     super(game, moveData)
   }
 
   protected buildActions(): void {
-    this.commands = [
-      new SetDeployStateAction(this.game, {
-        stackSquare: this.moveData.from,
-        turn: this.game['_turn'],
-        originalPiece: this.game.get(this.moveData.from) || undefined,
-        movedPieces: [],
-        stay: this.moveData.stay ? flattenPiece(this.moveData.stay) : [],
-      }),
-    ]
-    this.commands.push(
-      ...this.moveData.moves.map((move) => createMoveCommand(this.game, move)),
-    )
+    // For InternalDeployMove, create individual move commands but ensure they complete the deployment
+    this.commands = this.moveData.moves.map((move, index) => {
+      // Mark the last move as completing the deployment
+      const isLastMove = index === this.moveData.moves.length - 1
+      const deployContext: MoveContext = {
+        ...this.context,
+        isDeployMode: true,
+        deploySession: this.game.getDeployState() || undefined,
+        isCompleteDeployment: isLastMove,
+      }
+      return createMoveCommand(this.game, move, deployContext)
+    })
+  }
+
+  execute(): void {
+    // Execute all the individual moves
+    super.execute()
+
+    // After executing all moves, force completion of the deploy session
+    const deploySession = this.game.getDeployState()
+    if (deploySession) {
+      // Mark all pieces as moved to complete the session
+      const originalPieces = flattenPiece(deploySession.originalPiece)
+      const totalMoved = this.moveData.moves.reduce(
+        (acc, move) => acc + flattenPiece(move.piece).length,
+        0,
+      )
+      const totalStaying = this.moveData.stay
+        ? flattenPiece(this.moveData.stay).length
+        : 0
+
+      // If all pieces are accounted for, commit the session
+      if (totalMoved + totalStaying >= originalPieces.length) {
+        this.game.commitDeploySession(deploySession)
+      }
+    }
   }
 }
 
