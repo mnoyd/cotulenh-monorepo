@@ -2,7 +2,7 @@
 // Tests the complete system with real blueprint configurations
 // NOTE: When blueprint.yaml is edited, these tests must be updated accordingly
 
-import { PieceStacker } from '../src/index.js';
+import { PieceStacker, ROLE_FLAGS } from '../src/index.js';
 
 // New Piece interface for testing
 interface TestPiece {
@@ -11,6 +11,12 @@ interface TestPiece {
   heroic: boolean;
   carrying?: TestPiece[];
 }
+
+// Create a stacker instance for tests
+const testStacker = new PieceStacker<TestPiece>((piece: TestPiece) => {
+  const roleKey = piece.role.toUpperCase() as keyof typeof ROLE_FLAGS;
+  return ROLE_FLAGS[roleKey] || 0;
+});
 
 // Helper to create test pieces
 function createPiece(role: string, color: string = 'red', heroic: boolean = false): TestPiece {
@@ -42,7 +48,7 @@ describe('PieceStacker - Integration Tests', () => {
       const tank = createPiece('TANK');
       const infantry = createPiece('INFANTRY');
 
-      const result = PieceStacker.combine([tank, infantry]);
+      const result = testStacker.combine([tank, infantry]);
 
       expect(result?.color).toBe('red');
       expect(result?.role).toBe('TANK');
@@ -55,7 +61,7 @@ describe('PieceStacker - Integration Tests', () => {
       const headquarter = createPiece('HEADQUARTER');
       const commander = createPiece('COMMANDER');
 
-      const result = PieceStacker.combine([headquarter, commander]);
+      const result = testStacker.combine([headquarter, commander]);
 
       expect(result).toEqual({
         color: 'red',
@@ -75,7 +81,7 @@ describe('PieceStacker - Integration Tests', () => {
       const engineer = createPiece('ENGINEER');
       const artillery = createPiece('ARTILLERY');
 
-      const result = PieceStacker.combine([engineer, artillery]);
+      const result = testStacker.combine([engineer, artillery]);
 
       expect(result).toEqual({
         color: 'red',
@@ -98,7 +104,7 @@ describe('PieceStacker - Integration Tests', () => {
       const tank = createPiece('TANK');
       const infantry = createPiece('INFANTRY');
 
-      const result = PieceStacker.combine([airforce, tank, infantry]);
+      const result = testStacker.combine([airforce, tank, infantry]);
 
       expect(result).toEqual({
         color: 'red',
@@ -124,7 +130,7 @@ describe('PieceStacker - Integration Tests', () => {
       const airforce = createPiece('AIR_FORCE');
       const commander = createPiece('COMMANDER');
 
-      const result = PieceStacker.combine([navy, airforce, commander]);
+      const result = testStacker.combine([navy, airforce, commander]);
 
       expect(result).toEqual({
         color: 'red',
@@ -152,8 +158,8 @@ describe('PieceStacker - Integration Tests', () => {
       const tank = createPiece('TANK');
 
       // Order shouldn't matter - tank should always be carrier
-      const result1 = PieceStacker.combine([infantry, tank]);
-      const result2 = PieceStacker.combine([tank, infantry]);
+      const result1 = testStacker.combine([infantry, tank]);
+      const result2 = testStacker.combine([tank, infantry]);
 
       expect(result1).toEqual({
         color: 'red',
@@ -175,7 +181,7 @@ describe('PieceStacker - Integration Tests', () => {
       const navy = createPiece('NAVY');
       const airforce = createPiece('AIR_FORCE');
 
-      const result = PieceStacker.combine([navy, airforce]);
+      const result = testStacker.combine([navy, airforce]);
 
       expect(result).toEqual({
         color: 'red',
@@ -195,7 +201,7 @@ describe('PieceStacker - Integration Tests', () => {
       const airforce = createPiece('AIR_FORCE');
       const tank = createPiece('TANK');
 
-      const result = PieceStacker.combine([tank, airforce]);
+      const result = testStacker.combine([tank, airforce]);
 
       expect(result).toEqual({
         color: 'red',
@@ -217,7 +223,7 @@ describe('PieceStacker - Integration Tests', () => {
       const tank = createPiece('TANK');
       const engineer = createPiece('ENGINEER');
 
-      const result = PieceStacker.combine([tank, engineer]);
+      const result = testStacker.combine([tank, engineer]);
       expect(result).toBeNull();
     });
 
@@ -225,7 +231,7 @@ describe('PieceStacker - Integration Tests', () => {
       const engineer = createPiece('ENGINEER');
       const commander = createPiece('COMMANDER');
 
-      const result = PieceStacker.combine([engineer, commander]);
+      const result = testStacker.combine([engineer, commander]);
       expect(result).toBeNull();
     });
 
@@ -234,7 +240,7 @@ describe('PieceStacker - Integration Tests', () => {
       const blueInfantry = createPiece('INFANTRY', 'blue');
 
       // No color checking - assumes outer package validated colors
-      const result = PieceStacker.combine([redTank, blueInfantry]);
+      const result = testStacker.combine([redTank, blueInfantry]);
       expect(result).not.toBeNull();
       expect(result?.role).toBe('TANK');
     });
@@ -246,7 +252,7 @@ describe('PieceStacker - Integration Tests', () => {
 
       // Air force can carry tank in slot 1, humanlike in slot 2
       // But cannot carry both commander and infantry (both humanlike)
-      const result = PieceStacker.combine([airforce, commander, infantry]);
+      const result = testStacker.combine([airforce, commander, infantry]);
       expect(result).toBeNull();
     });
   });
@@ -256,7 +262,7 @@ describe('PieceStacker - Integration Tests', () => {
       const tankWithInfantry = createPieceWithCarrying('TANK', [createPiece('INFANTRY')]);
       const airforce = createPiece('AIR_FORCE');
 
-      const result = PieceStacker.combine([airforce, tankWithInfantry]);
+      const result = testStacker.combine([airforce, tankWithInfantry]);
 
       // The engine correctly flattens: AIR_FORCE carries TANK and INFANTRY separately
       expect(result?.role).toBe('AIR_FORCE');
@@ -272,7 +278,7 @@ describe('PieceStacker - Integration Tests', () => {
       const navy = createPiece('NAVY');
       const airforceWithTank = createPieceWithCarrying('AIR_FORCE', [createPiece('TANK')]);
 
-      const result = PieceStacker.combine([navy, airforceWithTank]);
+      const result = testStacker.combine([navy, airforceWithTank]);
 
       // The engine correctly flattens: NAVY carries AIR_FORCE and TANK separately
       expect(result?.role).toBe('NAVY');
@@ -289,7 +295,7 @@ describe('PieceStacker - Integration Tests', () => {
     it('should remove piece from stack', () => {
       const tankWithInfantry = createPieceWithCarrying('TANK', [createPiece('INFANTRY')]);
 
-      const result = PieceStacker.remove(tankWithInfantry, 'INFANTRY');
+      const result = testStacker.remove(tankWithInfantry, 'INFANTRY');
 
       expect(result?.color).toBe('red');
       expect(result?.role).toBe('TANK');
@@ -300,14 +306,14 @@ describe('PieceStacker - Integration Tests', () => {
     it('should return null when removing last piece', () => {
       const singlePiece = createPiece('COMMANDER');
 
-      const result = PieceStacker.remove(singlePiece, 'COMMANDER');
+      const result = testStacker.remove(singlePiece, 'COMMANDER');
       expect(result).toBeNull();
     });
 
     it('should handle removing non-existent piece', () => {
       const tank = createPiece('TANK');
 
-      const result = PieceStacker.remove(tank, 'COMMANDER');
+      const result = testStacker.remove(tank, 'COMMANDER');
 
       expect(result).toEqual({
         color: 'red',
@@ -320,7 +326,7 @@ describe('PieceStacker - Integration Tests', () => {
       // Use a simpler test case that we know works
       const tankWithInfantry = createPieceWithCarrying('TANK', [createPiece('INFANTRY')]);
 
-      const result = PieceStacker.remove(tankWithInfantry, 'INFANTRY');
+      const result = testStacker.remove(tankWithInfantry, 'INFANTRY');
 
       expect(result?.color).toBe('red');
       expect(result?.role).toBe('TANK');
@@ -331,14 +337,14 @@ describe('PieceStacker - Integration Tests', () => {
 
   describe('Edge Cases', () => {
     it('should handle empty array', () => {
-      const result = PieceStacker.combine([]);
+      const result = testStacker.combine([]);
       expect(result).toBeNull();
     });
 
     it('should handle single piece', () => {
       const tank = createPiece('TANK');
 
-      const result = PieceStacker.combine([tank]);
+      const result = testStacker.combine([tank]);
 
       expect(result?.color).toBe('red');
       expect(result?.role).toBe('TANK');
@@ -350,7 +356,7 @@ describe('PieceStacker - Integration Tests', () => {
       const heroicTank = createPiece('TANK', 'red', true);
       const infantry = createPiece('INFANTRY');
 
-      const result = PieceStacker.combine([heroicTank, infantry]);
+      const result = testStacker.combine([heroicTank, infantry]);
 
       expect(result).toEqual({
         color: 'red',

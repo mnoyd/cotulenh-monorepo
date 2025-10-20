@@ -1,6 +1,6 @@
 // Test for wrapper functionality - simplified without complex mocking
 import { describe, it, expect } from 'vitest';
-import { PieceStacker } from '../src/index.js';
+import { PieceStacker, ROLE_FLAGS } from '../src/index.js';
 
 interface TestPiece {
   color: string;
@@ -8,6 +8,12 @@ interface TestPiece {
   heroic: boolean;
   carrying?: TestPiece[];
 }
+
+// Create a stacker instance for tests
+const testStacker = new PieceStacker<TestPiece>((piece: TestPiece) => {
+  const roleKey = piece.role.toUpperCase() as keyof typeof ROLE_FLAGS;
+  return ROLE_FLAGS[roleKey] || 0;
+});
 
 describe('PieceStacker Wrapper - Helper Methods', () => {
   it('should handle nested pieces in remove operation', () => {
@@ -26,7 +32,7 @@ describe('PieceStacker Wrapper - Helper Methods', () => {
     };
 
     // Remove the commander, should leave just the tank
-    const result = PieceStacker.remove(nestedPiece, 'COMMANDER');
+    const result = testStacker.remove(nestedPiece, 'COMMANDER');
 
     expect(result?.color).toBe('red');
     expect(result?.role).toBe('TANK');
@@ -39,7 +45,7 @@ describe('PieceStacker Wrapper - Helper Methods', () => {
     const tank: TestPiece = { color: 'red', role: 'TANK', heroic: false };
     const commander: TestPiece = { color: 'red', role: 'COMMANDER', heroic: false };
 
-    const result = PieceStacker.combine([tank, commander]);
+    const result = testStacker.combine([tank, commander]);
 
     // Should successfully combine tank + commander
     expect(result).not.toBeNull();
@@ -48,7 +54,7 @@ describe('PieceStacker Wrapper - Helper Methods', () => {
   });
 
   it('should handle empty pieces array', () => {
-    const result = PieceStacker.combine([]);
+    const result = testStacker.combine([]);
     expect(result).toBeNull();
   });
 
@@ -57,7 +63,7 @@ describe('PieceStacker Wrapper - Helper Methods', () => {
     const bluePiece: TestPiece = { color: 'blue', role: 'COMMANDER', heroic: false };
 
     // No color checking - assumes outer package validated colors
-    const result = PieceStacker.combine([redPiece, bluePiece]);
+    const result = testStacker.combine([redPiece, bluePiece]);
     expect(result).not.toBeNull();
     expect(result?.role).toBe('TANK');
   });
@@ -68,7 +74,7 @@ describe('PieceStacker Wrapper - Helper Methods', () => {
     const commander: TestPiece = { color: 'red', role: 'COMMANDER', heroic: false };
 
     // TANK can only carry 1 piece, but we're trying to give it 2 (infantry + commander)
-    const result = PieceStacker.combine([tank, infantry, commander]);
+    const result = testStacker.combine([tank, infantry, commander]);
     expect(result).toBeNull();
   });
 
@@ -85,7 +91,7 @@ describe('PieceStacker Wrapper - Helper Methods', () => {
       heroic: false
     };
 
-    const result = PieceStacker.combine([tankPiece, commanderPiece]);
+    const result = testStacker.combine([tankPiece, commanderPiece]);
 
     expect(result?.color).toBe('red');
     expect(result?.role).toBe('TANK');
@@ -108,7 +114,7 @@ describe('PieceStacker Wrapper - Helper Methods', () => {
       ]
     };
 
-    const result = PieceStacker.remove(stackPiece, 'COMMANDER');
+    const result = testStacker.remove(stackPiece, 'COMMANDER');
 
     expect(result?.color).toBe('red');
     expect(result?.role).toBe('TANK');
@@ -130,7 +136,7 @@ describe('PieceStacker Wrapper - Helper Methods', () => {
       ]
     };
 
-    const result = PieceStacker.remove(stackPiece, 'COMMANDER');
+    const result = testStacker.remove(stackPiece, 'COMMANDER');
 
     expect(result?.color).toBe('red');
     expect(result?.role).toBe('TANK');

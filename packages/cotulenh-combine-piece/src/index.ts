@@ -132,23 +132,4 @@ export class PieceStacker<T> {
 
     return result;
   }
-
-  // Static methods for backward compatibility with tests
-  static combine<T>(pieces: T[]): T | null {
-    // Create a default instance for standard pieces
-    const defaultStacker = new PieceStacker<T>((piece: any) => {
-      const roleKey = piece.role.toUpperCase() as keyof typeof ROLE_FLAGS;
-      return ROLE_FLAGS[roleKey] || 0;
-    });
-    return defaultStacker.combine(pieces);
-  }
-
-  static remove<T>(stackPiece: T, roleToRemove: string): T | null {
-    // Create a default instance for standard pieces
-    const defaultStacker = new PieceStacker<T>((piece: any) => {
-      const roleKey = piece.role.toUpperCase() as keyof typeof ROLE_FLAGS;
-      return ROLE_FLAGS[roleKey] || 0;
-    });
-    return defaultStacker.remove(stackPiece, roleToRemove);
-  }
 }
