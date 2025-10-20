@@ -173,6 +173,8 @@ export function getPieceMovementConfig(
 /**
  * Generate moves for a piece in a specific direction
  */
+let currentArrayId = 0
+
 export function generateMovesInDirection(
   gameInstance: CoTuLenh, // Will be CoTuLenh instance
   moves: InternalMove[],
@@ -183,6 +185,19 @@ export function generateMovesInDirection(
   isDeployMove: boolean,
   them: Color,
 ): void {
+  // Track which array we're adding to
+  if (!moves.hasOwnProperty('_arrayId')) {
+    ;(moves as any)._arrayId = currentArrayId++
+    if (isDeployMove) {
+      console.log(
+        `[DEBUG] generateMovesInDirection: Assigned new array ID ${(moves as any)._arrayId} to moves array`,
+      )
+    }
+  }
+  const arrayId = (moves as any)._arrayId
+  if (isDeployMove) {
+    console.log(`[DEBUG] generateMovesInDirection: Using array ID ${arrayId}`)
+  }
   const us = pieceData.color
   let currentRange = 0
   let to = from
@@ -197,12 +212,28 @@ export function generateMovesInDirection(
     offset,
   )
 
+  if (isDeployMove) {
+    console.log(
+      `[DEBUG] generateMovesInDirection START: piece=${pieceData.type}, offset=${offset}`,
+    )
+  }
+
   while (true) {
     to += offset
     currentRange++
 
+    if (isDeployMove && currentRange <= 2) {
+      console.log(
+        `[DEBUG] generateMovesInDirection: iteration ${currentRange}, to=${to}`,
+      )
+    }
+
     // Check if square is on board
-    if (!isSquareOnBoard(to)) break
+    if (!isSquareOnBoard(to)) {
+      if (isDeployMove)
+        console.log(`[DEBUG] generateMovesInDirection: break - not on board`)
+      break
+    }
 
     // Special handling for AIR_FORCE movement through enemy air defense zones
     let airDefenseResult: number = -1
@@ -228,10 +259,24 @@ export function generateMovesInDirection(
       pieceData.type !== COMMANDER &&
       currentRange > config.moveRange &&
       currentRange > config.captureRange
-    )
+    ) {
+      if (isDeployMove && currentRange <= 3) {
+        console.log(
+          `[DEBUG] generateMovesInDirection[array=${arrayId}]: BREAK - range exceeded: ${currentRange} > move:${config.moveRange} AND capture:${config.captureRange}`,
+        )
+      }
       break
+    }
 
     const targetPiece = gameInstance.get(to)
+
+    if (arrayId === 49 && currentRange <= 2) {
+      console.log(
+        `[DEBUG] generateMovesInDirection[array=49]: iteration ${currentRange}, targetPiece at ${to}:`,
+        targetPiece,
+        `isDeployMove=${isDeployMove}`,
+      )
+    }
 
     // Terrain blocking check (remains unchanged)
     if (!terrainBlockedMovement) {
@@ -310,15 +355,32 @@ export function generateMovesInDirection(
       }
     } else {
       // Move to empty square logic (remains unchanged)
-      if (
-        currentRange <= config.moveRange &&
-        !terrainBlockedMovement &&
-        !pieceBlockedMovement &&
-        canStayOnSquare(to, pieceData.type) &&
-        (shouldCheckAirDefense
-          ? airDefenseResult === AirDefenseResult.SAFE_PASS
-          : true)
-      ) {
+      const rangeOK = currentRange <= config.moveRange
+      const terrainOK = !terrainBlockedMovement
+      const blockedOK = !pieceBlockedMovement
+      const canStay = canStayOnSquare(to, pieceData.type)
+      const airDefenseOK = shouldCheckAirDefense
+        ? airDefenseResult === AirDefenseResult.SAFE_PASS
+        : true
+
+      if (isDeployMove) {
+        console.log(
+          `[DEBUG] generateMovesInDirection: Empty square check for ${pieceData.type} to ${to}:`,
+        )
+        console.log(`  range=${currentRange}/${config.moveRange} OK=${rangeOK}`)
+        console.log(`  terrain OK=${terrainOK}`)
+        console.log(`  blocked OK=${blockedOK}`)
+        console.log(`  canStay=${canStay}`)
+        console.log(`  airDefense OK=${airDefenseOK}`)
+      }
+
+      if (rangeOK && terrainOK && blockedOK && canStay && airDefenseOK) {
+        if (isDeployMove) {
+          console.log(
+            `[DEBUG] generateMovesInDirection: All checks passed! About to add move`,
+          )
+        }
+
         // Commander cannot slide past where an enemy commander *would* be captured
         if (pieceData.type === COMMANDER && isOrthogonal) {
           // Check if enemy commander is further along this line
@@ -339,10 +401,22 @@ export function generateMovesInDirection(
           }
           if (!enemyCommanderFound) {
             // Only add move if enemy commander isn't further along
+            if (isDeployMove)
+              console.log(
+                `[DEBUG] generateMovesInDirection: Calling addMove for commander`,
+              )
             addMove(moves, us, from, to, pieceData)
           }
         } else {
+          if (isDeployMove)
+            console.log(
+              `[DEBUG] generateMovesInDirection[array=${arrayId}]: Calling addMove for ${pieceData.type}`,
+            )
           addMove(moves, us, from, to, pieceData)
+          if (isDeployMove)
+            console.log(
+              `[DEBUG] generateMovesInDirection[array=${arrayId}]: After addMove, moves.length=${moves.length}`,
+            )
         }
       }
     }
@@ -476,6 +550,8 @@ function handleCaptureLogic(
 /**
  * Generate all possible moves for a piece
  */
+let moveArrayIdCounter = 0
+
 export function generateMovesForPiece(
   gameInstance: CoTuLenh,
   from: number,
@@ -483,18 +559,29 @@ export function generateMovesForPiece(
   isDeployMove = false,
 ): InternalMove[] {
   const moves: InternalMove[] = []
+  const arrayId = ++moveArrayIdCounter
   const us = pieceData.color
   const them = swapColor(us)
   const isHero = pieceData.heroic ?? false
 
+  console.log(
+    `[DEBUG] generateMovesForPiece[${arrayId}]: piece=${pieceData.type}, from=${from}, isDeployMove=${isDeployMove}`,
+  )
+
   // Get movement configuration
   const config = getPieceMovementConfig(pieceData.type, isHero)
+  console.log(`[DEBUG] generateMovesForPiece: config=`, config)
 
   // Get appropriate offsets
   const offsets = config.canMoveDiagonal ? ALL_OFFSETS : ORTHOGONAL_OFFSETS
+  console.log(`[DEBUG] generateMovesForPiece: offsets count=${offsets.length}`)
 
   // Generate moves for each direction
   for (const offset of offsets) {
+    console.log(
+      `[DEBUG] generateMovesForPiece[${arrayId}]: calling generateMovesInDirection with offset=${offset}`,
+    )
+    const beforeCount = moves.length
     generateMovesInDirection(
       gameInstance,
       moves,
@@ -505,8 +592,15 @@ export function generateMovesForPiece(
       isDeployMove,
       them,
     )
+    const afterCount = moves.length
+    console.log(
+      `[DEBUG] generateMovesForPiece[${arrayId}]: after direction ${offset}, moves: ${beforeCount} -> ${afterCount}`,
+    )
   }
 
+  console.log(
+    `[DEBUG] generateMovesForPiece[${arrayId}]: returning ${moves.length} moves`,
+  )
   return moves
 }
 
@@ -596,33 +690,75 @@ export function generateDeployMoves(
     deploySession !== null
       ? deploySession.originalPiece
       : gameInstance.get(stackSquare)
+
+  console.log(
+    `[DEBUG] generateDeployMoves: stackSquare=${stackSquare}, carrierPiece=`,
+    carrierPiece,
+  )
+  console.log(`[DEBUG] generateDeployMoves: deploySession=`, deploySession)
+
   if (!carrierPiece || carrierPiece.color !== us) {
+    console.log(
+      `[DEBUG] generateDeployMoves: Early exit - no carrier or wrong color`,
+    )
     return []
   }
   if (
     (!carrierPiece.carrying || carrierPiece.carrying.length === 0) &&
     (deploySession === null || deploySession.stackSquare !== stackSquare)
   ) {
+    console.log(`[DEBUG] generateDeployMoves: Early exit - condition failed:`)
+    console.log(`  carrierPiece.carrying:`, carrierPiece.carrying)
+    console.log(`  deploySession:`, deploySession)
     return []
   }
+
+  console.log(
+    `[DEBUG] generateDeployMoves: Passed early checks, generating moves...`,
+  )
 
   // Generate Deploy Moves for remaining carrying pieces
 
   const flattenedCarrierPiece = flattenPiece(carrierPiece)
+  console.log(
+    `[DEBUG] generateDeployMoves: flattened=${flattenedCarrierPiece.map((p) => p.type)}`,
+  )
+
   let deployMoveCandidates = flattenedCarrierPiece.filter(
     (p) =>
       !deploySession?.movedPieces.some(
         (mp) => mp.piece.type === p.type && mp.piece.color === p.color,
       ),
   )
+  console.log(
+    `[DEBUG] generateDeployMoves: after filtering moved pieces=${deployMoveCandidates.map((p) => p.type)}`,
+  )
+
   if (carrierPiece.type === NAVY && !LAND_MASK[stackSquare]) {
     //remove carrier from the deployMoveCandidates
     deployMoveCandidates = deployMoveCandidates.filter(
       (p) => p.type !== carrierPiece.type,
     )
+    console.log(
+      `[DEBUG] generateDeployMoves: Navy on water - removed carrier, candidates=${deployMoveCandidates.map((p) => p.type)}`,
+    )
   }
+
+  console.log(
+    `[DEBUG] generateDeployMoves: Final candidates=${deployMoveCandidates.map((p) => p.type)}, filterPiece=${filterPiece}`,
+  )
+
   for (const deployMoveCandidate of deployMoveCandidates) {
-    if (filterPiece && deployMoveCandidate.type !== filterPiece) continue
+    console.log(
+      `[DEBUG] generateDeployMoves: Checking candidate ${deployMoveCandidate.type}, filterPiece=${filterPiece}`,
+    )
+
+    if (filterPiece && deployMoveCandidate.type !== filterPiece) {
+      console.log(
+        `[DEBUG] generateDeployMoves: Skipped ${deployMoveCandidate.type} - doesn't match filter`,
+      )
+      continue
+    }
 
     const deployMoves = generateMovesForPiece(
       gameInstance,
@@ -630,11 +766,30 @@ export function generateDeployMoves(
       deployMoveCandidate,
       true,
     )
+    console.log(
+      `[DEBUG] generateDeployMoves: Generated ${deployMoves.length} moves for ${deployMoveCandidate.type}`,
+    )
+    console.log(
+      `[DEBUG] generateDeployMoves: deployMoves array ID=${(deployMoves as any)._arrayId}:`,
+      deployMoves.map((m) => `${m.piece.type}: ${m.from}->${m.to}`),
+    )
+
     deployMoves.forEach((m) => {
+      console.log(
+        `[DEBUG] generateDeployMoves: Adding DEPLOY flag and pushing move ${m.piece.type}: ${m.from}->${m.to}`,
+      )
       m.flags |= BITS.DEPLOY
       moves.push(m)
     })
+
+    console.log(
+      `[DEBUG] generateDeployMoves: After adding, moves.length=${moves.length}`,
+    )
   }
+
+  console.log(
+    `[DEBUG] generateDeployMoves: Total moves generated: ${moves.length}`,
+  )
 
   // // Generate Carrier Moves
   // if (!filterPiece || carrierPiece.type === filterPiece) {

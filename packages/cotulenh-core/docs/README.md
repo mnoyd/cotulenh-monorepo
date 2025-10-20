@@ -31,6 +31,13 @@ to any language.**
 - **[complete-piece-behavior-reference.md](context/complete-piece-behavior-reference.md)** -
   All 11 pieces compiled
 
+> ⚠️ **CRITICAL FOR DEPLOY SYSTEM WORK**:
+>
+> - **[DEPLOY-CRITICAL-LEARNINGS.md](context/DEPLOY-CRITICAL-LEARNINGS.md)** -
+>   **MUST READ** before modifying deploy system!  
+>   Contains critical bug fixes, undocumented behavior, and production insights
+>   from Phase 3 implementation.
+
 ### `/implementation` - Architecture & Design Decisions
 
 **Technical discussions, architecture analysis, and implementation strategies

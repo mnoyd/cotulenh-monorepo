@@ -223,14 +223,44 @@ export interface DeploySession {
   }>
 
   stayingPieces: Piece[]
+
+  /**
+   * Flag to indicate this is a batch deploy session
+   * Batch mode means all moves accumulate in virtual state,
+   * turn doesn't switch until the entire batch commits
+   */
+  isBatchMode?: boolean
 }
 
-// MoveContext interface for dual-mode move application
+/**
+ * MoveContext interface for dual-mode move application
+ * Controls how moves are applied during normal play vs deploy sessions vs testing
+ */
 export interface MoveContext {
+  /** Whether this move is part of a deploy session */
   isDeployMode: boolean
+
+  /** The active deploy session, if any */
   deploySession?: DeploySession
-  isCompleteDeployment?: boolean // Flag to indicate this move completes the entire deployment
-  isTesting?: boolean // Flag to indicate this is a move legality test, don't commit sessions
+
+  /** Flag to indicate this move completes the entire deployment sequence */
+  isCompleteDeployment?: boolean
+
+  /**
+   * Flag to indicate this is a move legality test (e.g., during _filterLegalMoves)
+   * When true:
+   * - Don't auto-start deploy sessions
+   * - Don't auto-commit deploy sessions
+   * - Use virtual state for simulation
+   * This prevents cascading deploy session commits during move generation
+   */
+  isTesting?: boolean
+
+  /**
+   * Flag to prevent committing virtual changes to real board
+   * Used for batch deploy wrapper to accumulate changes before atomic commit
+   */
+  preventCommit?: boolean
 }
 
 export type AirDefenseForSide = Map<number, number[]>

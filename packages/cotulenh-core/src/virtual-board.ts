@@ -26,16 +26,31 @@ export class VirtualBoard {
   get(square: Square): Piece | null {
     // Check virtual changes first
     if (this.deploySession.virtualChanges.has(square)) {
-      return this.deploySession.virtualChanges.get(square) || null
+      const virtualPiece = this.deploySession.virtualChanges.get(square) || null
+      console.log(
+        `[DEBUG] VirtualBoard.get(${square}): Found in virtualChanges:`,
+        virtualPiece
+          ? `${virtualPiece.type} carrying ${virtualPiece.carrying?.length || 0}`
+          : 'null',
+      )
+      return virtualPiece
     }
 
     // Fall back to real board
     const squareIndex = SQUARE_MAP[square]
     if (squareIndex === undefined) {
+      console.log(`[DEBUG] VirtualBoard.get(${square}): Invalid square index`)
       return null
     }
 
-    return this.realBoard[squareIndex] || null
+    const realPiece = this.realBoard[squareIndex] || null
+    console.log(
+      `[DEBUG] VirtualBoard.get(${square}): NOT in virtualChanges, realBoard[${squareIndex}]:`,
+      realPiece
+        ? `${realPiece.type} carrying ${realPiece.carrying?.length || 0}`
+        : 'null/undefined',
+    )
+    return realPiece
   }
 
   /**

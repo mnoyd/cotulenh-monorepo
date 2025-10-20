@@ -50,6 +50,7 @@ import {
 import {
   generateDeployMoves,
   generateNormalMoves,
+  generateMoveCandidateForSinglePieceInStack,
   ORTHOGONAL_OFFSETS,
   ALL_OFFSETS,
   getPieceMovementConfig,
@@ -339,6 +340,86 @@ export class CoTuLenh {
     this._deploySession = null
 
     // Turn remains with the original player
+    this._turn = deploySession.turn
+  }
+
+  /**
+   * Starts a batch deploy session (for legacy deployMove API)
+   * Batch mode accumulates moves in virtual state without committing
+   * @param stackSquare - The square where the stack is located
+   * @param originalPiece - The original piece/stack at the square
+   * @returns The new batch deploy session
+   */
+  private startBatchDeploySession(
+    stackSquare: Square,
+    originalPiece: Piece,
+  ): DeploySession {
+    const deploySession: DeploySession = {
+      stackSquare: SQUARE_MAP[stackSquare],
+      turn: this._turn,
+      originalPiece,
+      virtualChanges: new Map(),
+      movedPieces: [],
+      stayingPieces: [],
+      isBatchMode: true, // Mark as batch mode
+    }
+
+    this._deploySession = deploySession
+    return deploySession
+  }
+
+  /**
+   * Commits a batch deploy session atomically
+   * All virtual changes are applied to real board, then turn switches
+   * @param deploySession - The batch deploy session to commit
+   */
+  private commitBatchDeploySession(deploySession: DeploySession): void {
+    console.log(
+      `[DEBUG] commitBatchDeploySession: Committing batch with ${deploySession.virtualChanges.size} virtual changes`,
+    )
+
+    try {
+      // Validate session before committing
+      this._validateDeploySession(deploySession)
+
+      // Commit all virtual changes to real board
+      this._commitVirtualChanges(deploySession)
+
+      // Clear deploy session
+      this._deploySession = null
+
+      // Turn switches once for entire batch (batch semantics)
+      this._turn = swapColor(deploySession.turn)
+
+      // Update position counts
+      this._updatePositionCounts()
+
+      console.log(
+        `[DEBUG] commitBatchDeploySession: Batch committed successfully`,
+      )
+    } catch (error) {
+      // Rollback on error
+      this.rollbackBatchDeploySession(deploySession)
+      throw error
+    }
+  }
+
+  /**
+   * Rolls back a batch deploy session
+   * @param deploySession - The batch deploy session to rollback
+   */
+  private rollbackBatchDeploySession(deploySession: DeploySession): void {
+    console.log(`[DEBUG] rollbackBatchDeploySession: Rolling back batch`)
+
+    // Clear all virtual changes
+    deploySession.virtualChanges.clear()
+    deploySession.movedPieces = []
+    deploySession.stayingPieces = []
+
+    // Clear deploy session
+    this._deploySession = null
+
+    // Turn remains with original player
     this._turn = deploySession.turn
   }
 
@@ -1085,11 +1166,18 @@ export class CoTuLenh {
     if (sq === undefined) return undefined
 
     const effectiveBoard = this.getEffectiveBoard()
+    const isVirtual = effectiveBoard instanceof VirtualBoard
 
     // Get piece from effective board (virtual or real)
     let pieceAtSquare: Piece | undefined
-    if (effectiveBoard instanceof VirtualBoard) {
+    if (isVirtual) {
       pieceAtSquare = effectiveBoard.get(algebraic(sq)) || undefined
+      if (this._deploySession && algebraic(sq) === 'c3') {
+        // Debug logging for c3 during deploy
+        console.log(
+          `[DEBUG] get(${algebraic(sq)}): Using VirtualBoard, found ${pieceAtSquare ? `${pieceAtSquare.type} carrying ${pieceAtSquare.carrying?.length || 0}` : 'null'}`,
+        )
+      }
     } else {
       pieceAtSquare = effectiveBoard[sq]
     }
@@ -1261,6 +1349,10 @@ export class CoTuLenh {
     square?: Square
     deploy?: boolean
   } = {}): InternalMove[] {
+    console.log(
+      `[DEBUG] _moves() called with: legal=${legal}, pieceType=${filterPiece}, square=${filterSquare}, deploy=${deploy}`,
+    )
+
     if (deploy) {
       if (!filterSquare)
         throw new Error('Deploy move error: square is required')
@@ -1271,14 +1363,28 @@ export class CoTuLenh {
       square: filterSquare,
       deploy,
     })
+    console.log(
+      `[DEBUG] _moves() cacheKey="${cacheKey}", has cache=${this._movesCache.has(cacheKey)}`,
+    )
+
     if (this._movesCache.has(cacheKey)) {
+      console.log(
+        `[DEBUG] _moves() returning cached result for key="${cacheKey}"`,
+      )
       return this._movesCache.get(cacheKey)!
     }
     const us = this.turn()
     let allMoves: InternalMove[] = []
 
     // Generate moves based on game state
-    if ((this._deploySession && this._deploySession.turn === us) || deploy) {
+    const hasDeploySession =
+      this._deploySession && this._deploySession.turn === us
+    console.log(
+      `[DEBUG] _moves() hasDeploySession=${hasDeploySession}, deploy=${deploy}`,
+    )
+
+    if (hasDeploySession || deploy) {
+      console.log(`[DEBUG] _moves() Using generateDeployMoves()`)
       let deployFilterSquare: number
       if (deploy) {
         deployFilterSquare = SQUARE_MAP[filterSquare!]
@@ -1286,8 +1392,15 @@ export class CoTuLenh {
         deployFilterSquare = this._deploySession!.stackSquare
       }
       allMoves = generateDeployMoves(this, deployFilterSquare, filterPiece)
+      console.log(
+        `[DEBUG] _moves() generateDeployMoves returned ${allMoves.length} moves`,
+      )
     } else {
+      console.log(`[DEBUG] _moves() Using generateNormalMoves()`)
       allMoves = generateNormalMoves(this, us, filterPiece, filterSquare)
+      console.log(
+        `[DEBUG] _moves() generateNormalMoves returned ${allMoves.length} moves`,
+      )
     }
 
     // Filter illegal moves (leaving commander in check)
@@ -1484,6 +1597,10 @@ export class CoTuLenh {
     const them = swapColor(us)
 
     // 1. Create the command object for this move with context
+    console.log(
+      `[DEBUG] _applyMoveWithContext: Creating command with context.hasSession=${!!context.deploySession}, context.isBatchMode=${context.deploySession?.isBatchMode}`,
+    )
+
     let moveCommand: CTLMoveCommandInteface
     if (isInternalDeployMove(move)) {
       moveCommand = new DeployMoveCommand(this, move, context)
@@ -1542,6 +1659,12 @@ export class CoTuLenh {
 
     // --- Context-aware turn switching ---
     if (context.isDeployMode) {
+      // Skip turn switching in batch mode - wrapper handles it
+      if (context.deploySession?.isBatchMode) {
+        // Batch mode: Don't switch turn, wrapper will do it after commit
+        return
+      }
+
       // In deploy mode, check if session is complete and commit if so
       const sessionCompleted = this._checkAndCommitDeploySession(context)
 
@@ -1566,10 +1689,20 @@ export class CoTuLenh {
 
   private _undoMove(): InternalMove | InternalDeployMove | null {
     // this._movesCache.clear()
+    console.log(
+      `[DEBUG] _undoMove: Called, history length=${this._history.length}`,
+    )
     const old = this._history.pop()
-    if (!old) return null
+    if (!old) {
+      console.log(`[DEBUG] _undoMove: No history to undo`)
+      return null
+    }
 
     const command = old.move // Get the command object
+    console.log(
+      `[DEBUG] _undoMove: Undoing move, restoring deploySession=`,
+      old.deploySession,
+    )
 
     // Restore general game state BEFORE the command modified the board
     this._commanders = old.commanders
@@ -1579,7 +1712,12 @@ export class CoTuLenh {
     this._deploySession = old.deploySession
 
     // Ask the command to revert its specific board changes
+    console.log(`[DEBUG] _undoMove: Calling command.undo()`)
     command.undo()
+    console.log(
+      `[DEBUG] _undoMove: After command.undo(), board at c2:`,
+      this.get('c2'),
+    )
 
     // (Optional: Decrement position count)
 
@@ -2007,24 +2145,48 @@ export class CoTuLenh {
         legal: true,
         square: move.from as Square,
         ...(move.piece && { pieceType: move.piece }),
+        ...(move.deploy && { deploy: true }), // ← CRITICAL FIX!
       })
       const foundMoves: InternalMove[] = []
+
+      console.log(
+        `[DEBUG] move() object format: Looking for move:`,
+        JSON.stringify(move),
+      )
+      console.log(
+        `[DEBUG] move() Generated ${legalMoves.length} legal moves from square ${move.from}`,
+      )
+
       for (const m of legalMoves) {
         const isStayMove = (m.flags & BITS.STAY_CAPTURE) !== 0
         const targetSquareInternal = m.to
 
         const isDeployMove = (m.flags & BITS.DEPLOY) !== 0
 
-        if (
-          m.from === fromSq &&
-          targetSquareInternal === toSq &&
-          (move.piece === undefined || m.piece.type === move.piece) &&
-          (move.stay !== undefined ? move.stay === isStayMove : true) &&
-          (move.deploy !== undefined ? move.deploy === isDeployMove : true)
-        ) {
+        console.log(
+          `[DEBUG] move() Checking move: from=${algebraic(m.from)}, to=${algebraic(m.to)}, piece=${m.piece.type}, isDeploy=${isDeployMove}, flags=${m.flags}`,
+        )
+
+        const fromMatch = m.from === fromSq
+        const toMatch = targetSquareInternal === toSq
+        const pieceMatch =
+          move.piece === undefined || m.piece.type === move.piece
+        const stayMatch =
+          move.stay !== undefined ? move.stay === isStayMove : true
+        const deployMatch =
+          move.deploy !== undefined ? move.deploy === isDeployMove : true
+
+        console.log(
+          `[DEBUG] move() Matching: from=${fromMatch}, to=${toMatch}, piece=${pieceMatch}, stay=${stayMatch}, deploy=${deployMatch}`,
+        )
+
+        if (fromMatch && toMatch && pieceMatch && stayMatch && deployMatch) {
+          console.log(`[DEBUG] move() ✅ MATCH FOUND!`)
           foundMoves.push(m)
         }
       }
+
+      console.log(`[DEBUG] move() Found ${foundMoves.length} matching moves`)
 
       if (foundMoves.length === 0) {
         throw new Error(`No matching legal move found: ${JSON.stringify(move)}`)
@@ -2053,28 +2215,118 @@ export class CoTuLenh {
 
   deployMove(deployMove: DeployMoveRequest): DeployMove {
     const sqFrom = SQUARE_MAP[deployMove.from]
-    const deployMoves = this._moves({ square: deployMove.from, deploy: true })
-    const originalPiece = this.get(deployMove.from) // Use get() which handles virtual state
 
-    if (!originalPiece)
+    if (sqFrom === undefined) {
+      throw new Error(`Deploy move error: invalid square ${deployMove.from}`)
+    }
+
+    console.log(
+      `[DEBUG] deployMove: START - deploying from ${deployMove.from} (index ${sqFrom})`,
+    )
+    console.log(
+      `[DEBUG] deployMove: _board[${sqFrom}]:`,
+      this._board[sqFrom]
+        ? `${this._board[sqFrom]!.type} carrying ${this._board[sqFrom]!.carrying?.length || 0}`
+        : 'null/undefined',
+    )
+    console.log(
+      `[DEBUG] deployMove: _deploySession:`,
+      this._deploySession ? 'exists' : 'null',
+    )
+
+    const originalPiece = this.get(deployMove.from)
+    console.log(
+      `[DEBUG] deployMove: get() returned:`,
+      originalPiece
+        ? `${originalPiece.type} carrying ${originalPiece.carrying?.length || 0}`
+        : 'null/undefined',
+    )
+
+    if (!originalPiece) {
       throw new Error('Deploy move error: original piece not found')
-    const internalDeployMove = createInternalDeployMove(
-      originalPiece,
-      deployMove,
-      deployMoves,
-    )
-    console.log(
-      '[DEBUG] deployMove created internalDeployMove:',
-      internalDeployMove,
-    )
-    console.log(
-      '[DEBUG] isInternalDeployMove check:',
-      isInternalDeployMove(internalDeployMove),
-    )
-    const prettyMove = new DeployMove(this, internalDeployMove)
-    this._makeMove(internalDeployMove)
+    }
 
-    return prettyMove
+    // Capture FEN BEFORE execution
+    const beforeFEN = this.fen()
+
+    // Convert user request to internal moves without validation
+    // Let the individual move commands validate during execution
+    const internalMoves: InternalMove[] = deployMove.moves.map((m) => ({
+      from: sqFrom,
+      to: SQUARE_MAP[m.to],
+      piece: m.piece,
+      color: this._turn,
+      flags: BITS.DEPLOY,
+    }))
+
+    // Create internal deploy move structure
+    const internalDeployMove: InternalDeployMove = {
+      from: sqFrom,
+      moves: internalMoves,
+      stay: deployMove.stay,
+      captured: [],
+    }
+
+    console.log(
+      '[DEBUG] deployMove: Starting batch deploy with',
+      internalDeployMove.moves.length,
+      'moves',
+    )
+
+    // Skip SAN generation for now - will generate after successful execution
+    let san = ''
+    let lan = ''
+
+    // Start batch deploy session
+    const session = this.startBatchDeploySession(deployMove.from, originalPiece)
+
+    try {
+      // Execute each individual move with batch context
+      for (const move of internalDeployMove.moves) {
+        const context: MoveContext = {
+          isDeployMode: true,
+          deploySession: session,
+          preventCommit: true, // Don't commit yet, accumulate in virtual state
+          isTesting: false,
+        }
+
+        console.log(
+          `[DEBUG] deployMove: Executing move ${move.piece.type} to ${algebraic(move.to)}`,
+        )
+        console.log(
+          `[DEBUG] deployMove: About to call _applyMoveWithContext with session=${!!session}, context.deploySession=${!!context.deploySession}`,
+        )
+        console.log(
+          `[DEBUG] deployMove: Session object:`,
+          session
+            ? `stackSquare=${algebraic(session.stackSquare)}, isBatchMode=${session.isBatchMode}`
+            : 'null',
+        )
+
+        this._applyMoveWithContext(move, context)
+      }
+
+      // Handle staying pieces
+      if (internalDeployMove.stay) {
+        session.stayingPieces = flattenPiece(internalDeployMove.stay)
+        console.log(
+          `[DEBUG] deployMove: ${session.stayingPieces.length} pieces staying`,
+        )
+      }
+
+      // Commit entire batch atomically
+      this.commitBatchDeploySession(session)
+
+      console.log('[DEBUG] deployMove: Batch deploy completed successfully')
+
+      // Create result object with before/after FEN and SAN
+      return new DeployMove(this, internalDeployMove, beforeFEN, san, lan)
+    } catch (error) {
+      // Rollback on error
+      console.error('[DEBUG] deployMove: Error during batch deploy:', error)
+      this.rollbackBatchDeploySession(session)
+      throw error
+    }
   }
 
   /**

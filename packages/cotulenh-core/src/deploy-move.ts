@@ -39,6 +39,20 @@ export function createInternalDeployMove(
   deployMove: DeployMoveRequest,
   validMoves: InternalMove[],
 ): InternalDeployMove {
+  console.log(
+    '[DEBUG] createInternalDeployMove: Received',
+    validMoves.length,
+    'validMoves',
+  )
+  console.log(
+    '[DEBUG] createInternalDeployMove: AIR_FORCE in validMoves:',
+    validMoves.filter((m) => m.piece.type === 'f').length,
+  )
+  console.log(
+    '[DEBUG] createInternalDeployMove: TANK in validMoves:',
+    validMoves.filter((m) => m.piece.type === 't').length,
+  )
+
   if (!originalPiece) throw new Error('Original piece not found')
   if (deployMove.stay) {
     const { combined, uncombined } = createCombineStackFromPieces(
@@ -109,6 +123,41 @@ export function createInternalDeployMove(
     }
   }
   if (foundMove.length !== toSquareNumDests.length) {
+    console.error('[DEBUG] Deploy move validation failed:')
+    console.error(
+      '  Requested destinations:',
+      toSquareNumDests.map(
+        (d) =>
+          `${d.piece.type} from=${d.from} to=${d.to} (${algebraic(d.from)}->${algebraic(d.to)})`,
+      ),
+    )
+    console.error(
+      '  Found moves:',
+      foundMove.map(
+        (m) =>
+          `${m.piece.type} from=${m.from} to=${m.to} (${algebraic(m.from)}->${algebraic(m.to)})`,
+      ),
+    )
+    console.error(
+      '  Sample validMoves:',
+      validMoves
+        .slice(0, 10)
+        .map((m) => `${m.piece.type} from=${m.from} to=${m.to}`),
+    )
+    console.error(
+      '  AIR_FORCE moves:',
+      validMoves
+        .filter((m) => m.piece.type === 'f')
+        .slice(0, 3)
+        .map((m) => `from=${m.from} to=${m.to}`),
+    )
+    console.error(
+      '  TANK moves:',
+      validMoves
+        .filter((m) => m.piece.type === 't')
+        .slice(0, 3)
+        .map((m) => `from=${m.from} to=${m.to}`),
+    )
     throw new Error('Deploy move error: move not found')
   }
   foundMove.sort((a, b) => {
@@ -146,8 +195,19 @@ export class DeployMove {
   lan?: string // Long Algebraic Notation (needs implementation)
   before: string // FEN before move
   after: string // FEN after move
-  constructor(game: CoTuLenh, internal: InternalDeployMove) {
-    this.color = internal.moves[0].color
+  constructor(
+    game: CoTuLenh,
+    internal: InternalDeployMove,
+    beforeFEN?: string,
+    san?: string,
+    lan?: string,
+  ) {
+    // Handle empty moves (all pieces stay)
+    this.color =
+      internal.moves.length > 0
+        ? internal.moves[0].color
+        : internal.stay?.color || game.turn()
+
     this.from = algebraic(internal.from)
     this.to = internal.moves.reduce<Map<Square, Piece>>((acc, move) => {
       acc.set(algebraic(move.to), move.piece)
@@ -155,17 +215,29 @@ export class DeployMove {
     }, new Map())
     this.stay = internal.stay
     this.captured = internal.captured
-    this.before = game.fen()
 
-    // Generate SAN/LAN before making the move to avoid issues with moved pieces
-    const [san, lan] = deployMoveToSanLan(game, internal)
-    this.san = san
-    this.lan = lan
+    // If beforeFEN provided (batch wrapper), use it directly
+    if (beforeFEN) {
+      this.before = beforeFEN
+      this.after = game.fen() // Current state after wrapper executed
 
-    // Generate the FEN for the 'after' key
-    game['_makeMove'](internal)
-    this.after = game.fen()
-    game['_undoMove']()
+      // Use provided SAN/LAN (wrapper generated before executing)
+      this.san = san
+      this.lan = lan
+    } else {
+      // Legacy path: make/undo move to generate FEN
+      this.before = game.fen()
+
+      // Generate SAN/LAN before making the move to avoid issues with moved pieces
+      const [san, lan] = deployMoveToSanLan(game, internal)
+      this.san = san
+      this.lan = lan
+
+      // Generate the FEN for the 'after' key
+      game['_makeMove'](internal)
+      this.after = game.fen()
+      game['_undoMove']()
+    }
   }
 }
 

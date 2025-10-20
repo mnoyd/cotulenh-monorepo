@@ -41,14 +41,17 @@ class RemovePieceAction implements CTLAtomicMoveAction {
   execute(): void {
     const piece = this.game.get(this.square)
     if (piece) {
-      this.removedPiece = { ...piece }
+      // Deep copy to prevent reference mutations
+      this.removedPiece = {
+        ...piece,
+        carrying: piece.carrying?.map((p) => ({ ...p })),
+      }
 
-      if (this.context?.isDeployMode && this.context.deploySession) {
+      // Check game's current deploy session
+      const currentDeploySession = this.game.getDeployState()
+      if (this.context?.isDeployMode && currentDeploySession) {
         // In deploy mode, update virtual state
-        this.context.deploySession.virtualChanges.set(
-          algebraic(this.square),
-          null,
-        )
+        currentDeploySession.virtualChanges.set(algebraic(this.square), null)
       } else {
         // In normal mode, update real board
         this.game.remove(algebraic(this.square))
@@ -58,9 +61,11 @@ class RemovePieceAction implements CTLAtomicMoveAction {
 
   undo(): void {
     if (this.removedPiece) {
-      if (this.context?.isDeployMode && this.context.deploySession) {
+      // ✅ CRITICAL FIX: Check game's current deploy session, not stale context
+      const currentDeploySession = this.game.getDeployState()
+      if (this.context?.isDeployMode && currentDeploySession) {
         // In deploy mode, restore virtual state by removing the virtual change
-        this.context.deploySession.virtualChanges.delete(algebraic(this.square))
+        currentDeploySession.virtualChanges.delete(algebraic(this.square))
       } else {
         // In normal mode, restore real board
         const result = this.game.put(this.removedPiece, algebraic(this.square))
@@ -90,13 +95,23 @@ class PlacePieceAction implements CTLAtomicMoveAction {
 
   execute(): void {
     const piece = this.game.get(this.square)
+    console.log(
+      `[DEBUG] PlacePieceAction.execute: Placing ${this.piece.type} at ${algebraic(this.square)}, existing:`,
+      piece ? piece.type : 'empty',
+    )
     if (piece) {
-      this.existingPiece = { ...piece }
+      // Deep copy to prevent reference mutations
+      this.existingPiece = {
+        ...piece,
+        carrying: piece.carrying?.map((p) => ({ ...p })),
+      }
     }
 
-    if (this.context?.isDeployMode && this.context.deploySession) {
+    // ✅ Check game's current deploy session, not stale context
+    const currentDeploySession = this.game.getDeployState()
+    if (this.context?.isDeployMode && currentDeploySession) {
       // In deploy mode, update virtual state
-      this.context.deploySession.virtualChanges.set(
+      currentDeploySession.virtualChanges.set(
         algebraic(this.square),
         this.piece,
       )
@@ -114,18 +129,35 @@ class PlacePieceAction implements CTLAtomicMoveAction {
   }
 
   undo(): void {
-    if (this.context?.isDeployMode && this.context.deploySession) {
+    console.log(
+      `[DEBUG] PlacePieceAction.undo: Removing ${this.piece.type} from ${algebraic(this.square)}, restoring:`,
+      this.existingPiece ? this.existingPiece.type : 'empty',
+    )
+
+    // ✅ CRITICAL FIX: Check GAME's current deploy session, not stale context
+    // The context.deploySession points to the session that existed during execute(),
+    // but by undo time, the game's _deploySession might have been restored to null.
+    // We must respect the game's current state!
+    const currentDeploySession = this.game.getDeployState()
+    const shouldUseVirtualState =
+      this.context?.isDeployMode && currentDeploySession
+
+    if (shouldUseVirtualState) {
       // In deploy mode, restore virtual state
+      console.log(
+        `[DEBUG] PlacePieceAction.undo: Using virtual state restoration`,
+      )
       if (this.existingPiece) {
-        this.context.deploySession.virtualChanges.set(
+        currentDeploySession!.virtualChanges.set(
           algebraic(this.square),
           this.existingPiece,
         )
       } else {
-        this.context.deploySession.virtualChanges.delete(algebraic(this.square))
+        currentDeploySession!.virtualChanges.delete(algebraic(this.square))
       }
     } else {
       // In normal mode, restore real board
+      console.log(`[DEBUG] PlacePieceAction.undo: Using real board restoration`)
       if (this.existingPiece) {
         const result = this.game.put(this.existingPiece, algebraic(this.square))
         if (!result) {
@@ -136,8 +168,17 @@ class PlacePieceAction implements CTLAtomicMoveAction {
           )
         }
       } else {
+        console.log(
+          `[DEBUG] PlacePieceAction.undo: Removing piece from ${algebraic(this.square)}`,
+        )
         this.game.remove(algebraic(this.square))
       }
+
+      const verification = this.game.get(this.square)
+      console.log(
+        `[DEBUG] PlacePieceAction.undo: Verified board at ${algebraic(this.square)}:`,
+        verification ? verification.type : 'empty',
+      )
     }
   }
 }
@@ -147,15 +188,47 @@ class PlacePieceAction implements CTLAtomicMoveAction {
  */
 class RemoveFromStackAction implements CTLAtomicMoveAction {
   private removedPiece: Piece[] | null = null
+  private originalState: Piece | undefined // Save complete original state for proper undo
+
   constructor(
     protected game: CoTuLenh,
     private carrierSquare: number,
     private piece: Piece,
     private context?: MoveContext,
-  ) {}
+  ) {
+    // ✅ CRITICAL: Save original state BEFORE any modifications with DEEP COPY
+    // This ensures undo can restore the exact original state,
+    // not a reconstructed state that might be wrong if something
+    // else modified the square in between.
+    // MUST be deep copy to avoid reference mutations!
+    const original = this.game.get(this.carrierSquare)
+    if (original) {
+      this.originalState = {
+        ...original,
+        carrying: original.carrying?.map((p) => ({ ...p })),
+      }
+    } else {
+      this.originalState = undefined
+    }
+    console.log(
+      `[DEBUG] RemoveFromStackAction constructor: Saved original state at ${algebraic(this.carrierSquare)}:`,
+      this.originalState
+        ? `${this.originalState.type} carrying ${this.originalState.carrying?.length || 0}`
+        : 'empty',
+    )
+  }
 
   execute(): void {
     const carrier = this.game.get(this.carrierSquare)
+    console.log(
+      `[DEBUG] RemoveFromStackAction: Removing ${this.piece.type} from ${algebraic(this.carrierSquare)}`,
+    )
+    console.log(
+      `[DEBUG] RemoveFromStackAction: Carrier at square:`,
+      carrier
+        ? `${carrier.type} carrying ${carrier.carrying?.length || 0} pieces`
+        : 'null',
+    )
     if (!carrier) {
       throw new Error(
         `No carrier or carrying pieces at ${algebraic(this.carrierSquare)}`,
@@ -164,6 +237,10 @@ class RemoveFromStackAction implements CTLAtomicMoveAction {
     const movingPiece = flattenPiece(this.piece)
     this.removedPiece = [...movingPiece]
     const allPieces = flattenPiece(carrier)
+    console.log(
+      `[DEBUG] RemoveFromStackAction: All pieces in carrier:`,
+      allPieces.map((p) => p.type),
+    )
 
     // Better piece matching logic that handles multiple pieces of same type
     const remainingPiece = [...allPieces]
@@ -172,7 +249,7 @@ class RemoveFromStackAction implements CTLAtomicMoveAction {
         (p) =>
           p.type === pieceToRemove.type &&
           p.color === pieceToRemove.color &&
-          p.heroic === pieceToRemove.heroic,
+          (p.heroic || false) === (pieceToRemove.heroic || false),
       )
       if (index === -1) {
         console.error(`[DEBUG] RemoveFromStackAction failed:`)
@@ -187,12 +264,26 @@ class RemoveFromStackAction implements CTLAtomicMoveAction {
       remainingPiece.splice(index, 1)
     }
 
-    if (this.context?.isDeployMode && this.context.deploySession) {
-      // In deploy mode, update virtual state
+    // Update board state - either virtual or real
+    // ✅ Check game's current deploy session, not stale context
+    const currentDeploySession = this.game.getDeployState()
+    if (this.context?.isDeployMode && currentDeploySession) {
+      // Deploy mode with session: update virtual state
+      console.log(
+        `[DEBUG] RemoveFromStackAction: Updating virtual state at ${algebraic(this.carrierSquare)}`,
+      )
+      console.log(
+        `[DEBUG] RemoveFromStackAction: Remaining pieces after removal:`,
+        remainingPiece.map((p) => p.type),
+      )
+
       if (remainingPiece.length === 0) {
-        this.context.deploySession.virtualChanges.set(
+        currentDeploySession.virtualChanges.set(
           algebraic(this.carrierSquare),
           null,
+        )
+        console.log(
+          `[DEBUG] RemoveFromStackAction: Set virtual state to NULL (empty)`,
         )
       } else {
         const { combined: combinedPiece, uncombined } =
@@ -202,31 +293,42 @@ class RemoveFromStackAction implements CTLAtomicMoveAction {
             `Failed to remove piece from stack at ${algebraic(this.carrierSquare)}`,
           )
         }
-        this.context.deploySession.virtualChanges.set(
+        currentDeploySession.virtualChanges.set(
           algebraic(this.carrierSquare),
           combinedPiece,
         )
+        console.log(
+          `[DEBUG] RemoveFromStackAction: Set virtual state to ${combinedPiece.type} carrying ${combinedPiece.carrying?.length || 0}`,
+        )
+        console.log(
+          `[DEBUG] RemoveFromStackAction: Virtual changes map size:`,
+          currentDeploySession.virtualChanges.size,
+        )
       }
     } else {
-      // In normal mode, update real board
+      // Normal mode OR deploy testing mode (no session): update real board
+      // The undo() will restore the original state
       if (remainingPiece.length === 0) {
         this.game.remove(algebraic(this.carrierSquare))
-        return
-      }
-      const { combined: combinedPiece, uncombined } =
-        createCombineStackFromPieces(remainingPiece)
-      if (!combinedPiece || (uncombined?.length ?? 0) > 0) {
-        throw new Error(
-          `Failed to remove piece from stack at ${algebraic(this.carrierSquare)}`,
+      } else {
+        const { combined: combinedPiece, uncombined } =
+          createCombineStackFromPieces(remainingPiece)
+        if (!combinedPiece || (uncombined?.length ?? 0) > 0) {
+          throw new Error(
+            `Failed to remove piece from stack at ${algebraic(this.carrierSquare)}`,
+          )
+        }
+        const result = this.game.put(
+          combinedPiece,
+          algebraic(this.carrierSquare),
         )
-      }
-      const result = this.game.put(combinedPiece, algebraic(this.carrierSquare))
-      if (!result) {
-        throw new Error(
-          'Place piece fail:' +
-            JSON.stringify(combinedPiece) +
-            algebraic(this.carrierSquare),
-        )
+        if (!result) {
+          throw new Error(
+            'Place piece fail:' +
+              JSON.stringify(combinedPiece) +
+              algebraic(this.carrierSquare),
+          )
+        }
       }
     }
 
@@ -238,31 +340,62 @@ class RemoveFromStackAction implements CTLAtomicMoveAction {
   undo(): void {
     if (!this.removedPiece) return
 
-    if (this.context?.isDeployMode && this.context.deploySession) {
-      // In deploy mode, restore virtual state by removing the virtual change
+    console.log(
+      `[DEBUG] RemoveFromStackAction.undo: Restoring to ${algebraic(this.carrierSquare)}`,
+    )
+
+    // ✅ CRITICAL FIX: Check GAME's current deploy session, not stale context
+    // The context.deploySession points to the session that existed during execute(),
+    // but by undo time, the game's _deploySession might have been restored to null.
+    // We must respect the game's current state!
+    const currentDeploySession = this.game.getDeployState()
+    const hasActiveVirtualChanges =
+      this.context?.isDeployMode &&
+      currentDeploySession &&
+      currentDeploySession.virtualChanges.has(algebraic(this.carrierSquare))
+
+    if (hasActiveVirtualChanges) {
+      // In deploy mode with active virtual changes: restore virtual state
       // This will make the effective board show the original state
-      this.context.deploySession.virtualChanges.delete(
-        algebraic(this.carrierSquare),
+      console.log(
+        '[DEBUG] RemoveFromStackAction.undo: Using virtual state restoration',
       )
+      currentDeploySession!.virtualChanges.delete(algebraic(this.carrierSquare))
     } else {
-      // In normal mode, restore real board
-      const carrier = this.game.get(this.carrierSquare)
-      const allPieces = carrier ? flattenPiece(carrier) : []
-      const { combined: combinedPiece, uncombined } =
-        createCombineStackFromPieces([...allPieces, ...this.removedPiece])
-      if (!combinedPiece || (uncombined?.length ?? 0) > 0) {
-        throw new Error(
-          `Failed to remove piece from stack at ${algebraic(this.carrierSquare)}`,
+      // ✅ CRITICAL FIX: Restore ORIGINAL state, not reconstructed state
+      // Previous bug: reconstructed from current state which might be corrupted
+      // New fix: restore exact original state saved in constructor
+      console.log(
+        `[DEBUG] RemoveFromStackAction.undo: Restoring original state:`,
+        this.originalState
+          ? `${this.originalState.type} carrying ${this.originalState.carrying?.length || 0}`
+          : 'empty',
+      )
+
+      if (this.originalState) {
+        const result = this.game.put(
+          this.originalState,
+          algebraic(this.carrierSquare),
         )
+        if (!result) {
+          throw new Error(
+            `Failed to restore original state at ${algebraic(this.carrierSquare)}: ` +
+              JSON.stringify(this.originalState),
+          )
+        }
+      } else {
+        // Original state was empty - remove the piece
+        this.game.remove(algebraic(this.carrierSquare))
       }
-      const result = this.game.put(combinedPiece, algebraic(this.carrierSquare))
-      if (!result) {
-        throw new Error(
-          'Place piece fail:' +
-            JSON.stringify(combinedPiece) +
-            algebraic(this.carrierSquare),
-        )
-      }
+
+      // Verify restoration
+      const verification = this.game.get(this.carrierSquare)
+      console.log(
+        `[DEBUG] RemoveFromStackAction.undo: Verified board now has:`,
+        verification
+          ? `${verification.type} carrying ${verification.carrying?.length || 0}`
+          : 'empty',
+      )
     }
   }
 }
@@ -281,6 +414,11 @@ class InitializeDeploySessionAction implements CTLAtomicMoveAction {
   ) {}
 
   execute(): void {
+    // Skip session initialization if in testing mode
+    if (this.context?.isTesting) {
+      return
+    }
+
     // Only initialize if no deploy session exists
     if (!this.game.getDeployState()) {
       const deploySession = this.game['startDeploySession'](
@@ -325,11 +463,13 @@ class UpdateDeploySessionAction implements CTLAtomicMoveAction {
   ) {}
 
   execute(): void {
-    if (this.context.deploySession) {
-      this.previousMoveCount = this.context.deploySession.movedPieces.length
+    // ✅ Check game's current deploy session
+    const currentDeploySession = this.game.getDeployState()
+    if (currentDeploySession) {
+      this.previousMoveCount = currentDeploySession.movedPieces.length
 
       // Add the moved piece to the deploy session
-      this.context.deploySession.movedPieces.push({
+      currentDeploySession.movedPieces.push({
         piece: this.movedPiece,
         from: this.fromSquare,
         to: this.toSquare,
@@ -337,15 +477,17 @@ class UpdateDeploySessionAction implements CTLAtomicMoveAction {
       })
 
       console.log(
-        `[DEBUG] UpdateDeploySessionAction: Added piece ${this.movedPiece.type} from ${this.fromSquare} to ${this.toSquare}. Total moved: ${this.context.deploySession.movedPieces.length}`,
+        `[DEBUG] UpdateDeploySessionAction: Added piece ${this.movedPiece.type} from ${this.fromSquare} to ${this.toSquare}. Total moved: ${currentDeploySession.movedPieces.length}`,
       )
     }
   }
 
   undo(): void {
-    if (this.context.deploySession) {
+    // ✅ CRITICAL FIX: Check game's current deploy session
+    const currentDeploySession = this.game.getDeployState()
+    if (currentDeploySession) {
       // Remove the last moved piece
-      this.context.deploySession.movedPieces.splice(this.previousMoveCount)
+      currentDeploySession.movedPieces.splice(this.previousMoveCount)
     }
   }
 }
@@ -447,6 +589,13 @@ export class CaptureMoveCommand extends CTLMoveCommand {
 
 export class SingleDeployMoveCommand extends CTLMoveCommand {
   protected buildActions(): void {
+    console.log(
+      `[DEBUG] SingleDeployMoveCommand.buildActions: piece=${this.move.piece.type}, from=${algebraic(this.move.from)}, to=${algebraic(this.move.to)}`,
+    )
+    console.log(
+      `[DEBUG] SingleDeployMoveCommand: context.isDeployMode=${this.context?.isDeployMode}, hasSession=${!!this.context?.deploySession}`,
+    )
+
     const us = this.move.color
     const them = swapColor(us)
 
@@ -464,15 +613,15 @@ export class SingleDeployMoveCommand extends CTLMoveCommand {
 
     // If we're in deploy mode and no piece at the original square,
     // check if we have a deploy session with the original piece
-    if (
-      !carrierPiece &&
-      this.context?.isDeployMode &&
-      this.context.deploySession
-    ) {
-      const deploySession = this.context.deploySession
-      if (algebraic(deploySession.stackSquare) === algebraic(this.move.from)) {
+    // ✅ Check game's current deploy session
+    const currentDeploySession = this.game.getDeployState()
+    if (!carrierPiece && this.context?.isDeployMode && currentDeploySession) {
+      if (
+        algebraic(currentDeploySession.stackSquare) ===
+        algebraic(this.move.from)
+      ) {
         // Use the original piece from the deploy session
-        carrierPiece = deploySession.originalPiece
+        carrierPiece = currentDeploySession.originalPiece
       }
     }
 
@@ -861,6 +1010,11 @@ export class DeployMoveCommand extends SequenceMoveCommand {
   execute(): void {
     // Execute all the individual moves
     super.execute()
+
+    // Skip session commit if in testing mode or preventCommit flag is set
+    if (this.context?.isTesting || this.context?.preventCommit) {
+      return
+    }
 
     // After executing all moves, force completion of the deploy session
     const deploySession = this.game.getDeployState()
