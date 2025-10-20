@@ -26,10 +26,9 @@
 // ============================================================================
 
 export interface Piece {
-  id: string;
   color: string;
-  role: string;
   carrying?: Piece[];
+  [key: string]: any; // Allow additional properties
 }
 
 export interface CombinationRule {

@@ -92,15 +92,15 @@
   .pieces-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 0.3rem;
+    gap: 0.25rem;
   }
 
   .palette-piece-wrapper {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 0.15rem;
-    padding: 0.2rem;
+    gap: 0.1rem;
+    padding: 0.15rem;
     border-radius: 6px;
     transition: background-color 0.2s;
   }
@@ -164,26 +164,87 @@
     white-space: nowrap;
   }
 
-  @media (max-width: 1200px) {
+  /* When palettes are stacked horizontally */
+  @media (max-width: 1000px) {
     .pieces-grid {
       grid-template-columns: repeat(6, 1fr);
-      gap: 0.5rem;
+      gap: 0.35rem;
+    }
+
+    .palette-piece-wrapper {
+      gap: 0.08rem;
+      padding: 0.12rem;
+    }
+
+    .palette-piece-container {
+      width: clamp(35px, 8vw, 50px);
+      height: clamp(35px, 8vw, 50px);
     }
   }
 
   @media (max-width: 768px) {
     .pieces-grid {
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(5, 1fr);
+      gap: 0.3rem;
+    }
+
+    .palette-piece-wrapper {
+      gap: 0.06rem;
+      padding: 0.1rem;
     }
 
     .palette-piece-container {
-      width: 40px;
-      height: 40px;
+      width: clamp(32px, 10vw, 45px);
+      height: clamp(32px, 10vw, 45px);
     }
 
     .piece-label {
       font-size: 0.6rem;
-      max-width: 45px;
+      max-width: clamp(40px, 10vw, 50px);
+    }
+  }
+
+  @media (max-width: 480px) {
+    .pieces-grid {
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.25rem;
+    }
+
+    .palette-piece-wrapper {
+      gap: 0.05rem;
+      padding: 0.08rem;
+    }
+
+    .palette-piece-container {
+      width: clamp(30px, 12vw, 40px);
+      height: clamp(30px, 12vw, 40px);
+    }
+
+    .piece-label {
+      font-size: 0.55rem;
+      max-width: clamp(35px, 12vw, 45px);
+    }
+  }
+
+  @media (max-width: 360px) {
+    .pieces-grid {
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.2rem;
+    }
+
+    .palette-piece-wrapper {
+      gap: 0.04rem;
+      padding: 0.06rem;
+    }
+
+    .palette-piece-container {
+      width: clamp(28px, 15vw, 38px);
+      height: clamp(28px, 15vw, 38px);
+    }
+
+    .piece-label {
+      font-size: 0.5rem;
+      max-width: clamp(30px, 15vw, 40px);
     }
   }
 </style>

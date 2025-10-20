@@ -17,13 +17,14 @@
   let selectedPiece: { role: Role; color: Color } | null = null;
   let ghostPosition = { x: 0, y: 0 };
   let showGhost = false;
-  
+
   // Special marker for delete mode
   const DELETE_MARKER: Piece = { role: 'commander', color: 'red' };
 
   // Initial empty board FEN
   const EMPTY_FEN = '11/11/11/11/11/11/11/11/11/11/11/11';
-  const STARTING_FEN = '6c4/1n2fh1hf2/3a2s2a1/2n1gt1tg2/2ie2m2ei/11/11/2IE2M2EI/2N1GT1TG2/3A2S2A1/1N2FH1HF2/6C4 r - - 0 1';
+  const STARTING_FEN =
+    '6c4/1n2fh1hf2/3a2s2a1/2n1gt1tg2/2ie2m2ei/11/11/2IE2M2EI/2N1GT1TG2/3A2S2A1/1N2FH1HF2/6C4 r - - 0 1';
 
   function updateFEN() {
     if (boardApi) {
@@ -34,9 +35,9 @@
   function applyFEN() {
     if (boardApi && fenInput) {
       try {
-        boardApi.set({ 
+        boardApi.set({
           fen: fenInput,
-          lastMove: undefined 
+          lastMove: undefined
         });
       } catch (error) {
         alert('Invalid FEN: ' + error);
@@ -47,9 +48,9 @@
   function clearBoard() {
     if (boardApi) {
       // Set to empty FEN
-      boardApi.set({ 
+      boardApi.set({
         fen: EMPTY_FEN,
-        lastMove: undefined 
+        lastMove: undefined
       });
       updateFEN();
     }
@@ -65,7 +66,7 @@
 
   function toggleDeleteMode() {
     if (!boardApi) return;
-    
+
     // Toggle delete mode only if clicking the same button
     if (deleteMode) {
       console.log('Disabling delete mode');
@@ -90,7 +91,7 @@
 
   function handlePieceSelect(role: Role, color: Color) {
     if (!boardApi) return;
-    
+
     // Toggle selection if clicking the same piece
     if (selectedPiece?.role === role && selectedPiece?.color === color) {
       selectedPiece = null;
@@ -119,16 +120,15 @@
 
   function handleAfterNewPiece(role: Role, key: string) {
     if (!boardApi) return;
-    
+
     console.log('afterNewPiece:', role, 'at', key, 'deleteMode:', deleteMode);
-    
+
     // Check if this was a delete action (using our marker)
     if (deleteMode && role === DELETE_MARKER.role) {
       console.log('Delete mode detected! Removing piece at', key);
-      // Remove the marker piece that was just placed AND any existing piece
-      boardApi.state.pieces.delete(key);
+      // Use the proper API to remove the piece
+      boardApi.setPieces(new Map([[key, undefined]]));
       boardApi.state.lastMove = undefined; // Clear last move highlight
-      boardApi.redrawAll();
       updateFEN();
       // Keep delete mode active for multiple deletions
     } else {
@@ -142,15 +142,17 @@
 
   function cancelSelection(e: MouseEvent) {
     if (!boardApi) return;
-    
+
     // Only cancel if clicking outside the board and palettes
     const target = e.target as HTMLElement;
-    if (target.closest('.board-container') || 
-        target.closest('.palette-section') || 
-        target.closest('.controls-container')) {
+    if (
+      target.closest('.board-container') ||
+      target.closest('.palette-section') ||
+      target.closest('.controls-container')
+    ) {
       return;
     }
-    
+
     selectedPiece = null;
     showGhost = false;
     deleteMode = false;
@@ -161,9 +163,9 @@
 
   function loadStartingPosition() {
     if (boardApi) {
-      boardApi.set({ 
+      boardApi.set({
         fen: STARTING_FEN,
-        lastMove: undefined 
+        lastMove: undefined
       });
       updateFEN();
     }
@@ -198,11 +200,11 @@
       const loadHtml2Canvas = new Function('return import("html2canvas")');
       const module = await loadHtml2Canvas();
       const html2canvas = module.default;
-      
+
       if (boardContainerElement) {
         const canvas = await html2canvas(boardContainerElement);
         const dataUrl = canvas.toDataURL('image/png');
-        
+
         // Download the image
         const link = document.createElement('a');
         link.download = 'cotulenh-position.png';
@@ -211,13 +213,30 @@
       }
     } catch (error) {
       console.error('Screenshot failed:', error);
-      alert('Screenshot feature requires html2canvas library.\n\nInstall it with: pnpm add html2canvas --filter cotulenh-app');
+      alert(
+        'Screenshot feature requires html2canvas library.\n\nInstall it with: pnpm add html2canvas --filter cotulenh-app'
+      );
     }
   }
 
   onMount(() => {
     if (boardContainerElement) {
       console.log('Initializing board editor...');
+
+      // Force proper sizing before and after board initialization
+      const ensureBoardSize = () => {
+        if (!boardContainerElement) return;
+
+        const container = boardContainerElement.querySelector('cg-container') as HTMLElement;
+        if (container) {
+          const rect = boardContainerElement.getBoundingClientRect();
+          // Only set size if the container has proper dimensions
+          if (rect.width > 0 && rect.height > 0) {
+            container.style.width = rect.width + 'px';
+            container.style.height = rect.height + 'px';
+          }
+        }
+      };
 
       boardApi = CotulenhBoard(boardContainerElement, {
         fen: EMPTY_FEN,
@@ -247,7 +266,24 @@
       boardApi.state.highlight.lastMove = false;
       boardApi.state.highlight.check = false;
 
+      // Ensure proper sizing after initialization
+      setTimeout(ensureBoardSize, 50);
+      setTimeout(ensureBoardSize, 200);
+
       updateFEN();
+
+      // Add resize observer for better cross-browser compatibility
+      let resizeObserver: ResizeObserver | undefined;
+      if (window.ResizeObserver) {
+        resizeObserver = new ResizeObserver(() => {
+          ensureBoardSize();
+        });
+        resizeObserver.observe(boardContainerElement);
+      }
+
+      // Fallback resize handler
+      const handleResize = () => ensureBoardSize();
+      window.addEventListener('resize', handleResize);
 
       return () => {
         console.log('Cleaning up board editor.');
@@ -255,6 +291,10 @@
         if (boardApi) {
           boardApi.state.dropmode = { active: false };
         }
+        if (resizeObserver) {
+          resizeObserver.disconnect();
+        }
+        window.removeEventListener('resize', handleResize);
         boardApi?.destroy();
       };
     }
@@ -266,14 +306,14 @@
 <main>
   <div class="editor-container">
     <h1>CoTuLenh Board Editor</h1>
-    
+
     <div class="editor-layout">
       <div class="board-and-palettes">
         <!-- Left Palette (Blue when red orientation, Red when blue orientation) -->
         <div class="palette-section left-palette">
           <h3>{boardOrientation === 'red' ? 'Blue' : 'Red'} Pieces</h3>
-          <PiecePalette 
-            {boardApi} 
+          <PiecePalette
+            {boardApi}
             color={boardOrientation === 'red' ? 'blue' : 'red'}
             onPieceSelect={handlePieceSelect}
             {selectedPiece}
@@ -282,8 +322,8 @@
 
         <!-- Board Container -->
         <div class="board-section">
-          <div 
-            bind:this={boardContainerElement} 
+          <div
+            bind:this={boardContainerElement}
             class="board-container"
             class:delete-mode={deleteMode}
             class:place-mode={selectedPiece !== null}
@@ -295,8 +335,8 @@
         <!-- Right Palette (Red when red orientation, Blue when blue orientation) -->
         <div class="palette-section right-palette">
           <h3>{boardOrientation === 'red' ? 'Red' : 'Blue'} Pieces</h3>
-          <PiecePalette 
-            {boardApi} 
+          <PiecePalette
+            {boardApi}
             color={boardOrientation === 'red' ? 'red' : 'blue'}
             onPieceSelect={handlePieceSelect}
             {selectedPiece}
@@ -307,20 +347,14 @@
 
     <!-- Ghost piece that follows mouse -->
     {#if showGhost && selectedPiece}
-      <div 
-        class="ghost-piece cg-wrap"
-        style="left: {ghostPosition.x}px; top: {ghostPosition.y}px;"
-      >
+      <div class="ghost-piece cg-wrap" style="left: {ghostPosition.x}px; top: {ghostPosition.y}px;">
         <piece class="{selectedPiece.role} {selectedPiece.color}"></piece>
       </div>
     {/if}
 
     <!-- Ghost recycle bin that follows mouse in delete mode -->
     {#if deleteMode}
-      <div 
-        class="ghost-recycle-bin"
-        style="left: {ghostPosition.x}px; top: {ghostPosition.y}px;"
-      >
+      <div class="ghost-recycle-bin" style="left: {ghostPosition.x}px; top: {ghostPosition.y}px;">
         🗑️
       </div>
     {/if}
@@ -328,26 +362,18 @@
     <!-- Controls Section at Bottom -->
     <div class="controls-container">
       <div class="button-row">
-        <button class="btn btn-primary" on:click={loadStartingPosition}>
-          Starting Position
-        </button>
-        <button class="btn btn-secondary" on:click={clearBoard}>
-          Clear Board
-        </button>
-        <button class="btn btn-secondary" on:click={flipBoard}>
-          Flip Board
-        </button>
-        <button 
-          class="btn" 
+        <button class="btn btn-primary" on:click={loadStartingPosition}> Starting Position </button>
+        <button class="btn btn-secondary" on:click={clearBoard}> Clear Board </button>
+        <button class="btn btn-secondary" on:click={flipBoard}> Flip Board </button>
+        <button
+          class="btn"
           class:btn-danger={deleteMode}
           class:btn-secondary={!deleteMode}
           on:click={toggleDeleteMode}
         >
           🗑️ {deleteMode ? 'Delete Mode ON' : 'Delete Mode'}
         </button>
-        <button class="btn btn-secondary" on:click={screenshot}>
-          Screenshot
-        </button>
+        <button class="btn btn-secondary" on:click={screenshot}> Screenshot </button>
       </div>
 
       <div class="fen-section">
@@ -360,9 +386,7 @@
             placeholder="Enter FEN string..."
             class="fen-input"
           />
-          <button class="btn btn-small" on:click={applyFEN}>
-            Apply
-          </button>
+          <button class="btn btn-small" on:click={applyFEN}> Apply </button>
           <button class="btn btn-small" on:click={copyFEN}>
             {copyButtonText}
           </button>
@@ -409,6 +433,8 @@
     gap: 0;
     align-items: stretch;
     justify-content: center;
+    width: fit-content;
+    margin: 0 auto;
   }
 
   .palette-section {
@@ -416,8 +442,13 @@
     padding: 1rem 0.75rem;
     display: flex;
     flex-direction: column;
+    justify-content: flex-start;
     width: 140px;
+    min-width: 120px;
+    flex-shrink: 0;
     border: 2px solid #ddd;
+    /* Match board height on desktop */
+    align-self: stretch;
   }
 
   .left-palette {
@@ -436,6 +467,7 @@
     font-weight: 600;
     color: var(--text-primary, #333);
     text-align: center;
+    flex-shrink: 0;
   }
 
   .controls-container {
@@ -449,12 +481,15 @@
   .board-section {
     display: flex;
     justify-content: center;
-    align-items: center;
+    align-items: stretch;
+    flex-shrink: 0;
   }
 
   .board-container {
     width: 650px;
+    /* Always provide explicit height based on aspect ratio 12:13 */
     aspect-ratio: 12 / 13;
+    height: auto;
     position: relative;
     display: flex;
     justify-content: center;
@@ -462,6 +497,23 @@
     background: var(--bg-primary, white);
     border: 2px solid #ddd;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+
+  /* Ensure minimum size for board rendering */
+  @supports (aspect-ratio: 12 / 13) {
+    .board-container {
+      /* Let aspect-ratio handle the height */
+      min-height: 300px;
+    }
+  }
+
+  /* Fallback for browsers without aspect-ratio support */
+  @supports not (aspect-ratio: 1) {
+    .board-container {
+      height: calc((100vw - 2rem) * 13 / 12);
+      max-height: 703px;
+      min-height: 300px;
+    }
   }
 
   .board-container.delete-mode {
@@ -624,29 +676,53 @@
     margin-bottom: 0.25rem;
   }
 
-  @media (max-width: 1200px) {
+  /* Tablet and below - stack palettes above/below board */
+  @media (max-width: 1000px) {
     .board-and-palettes {
       flex-direction: column;
-      align-items: center;
-      gap: 1rem;
+      align-items: stretch;
+      gap: 0;
+      width: 100%;
+      max-width: min(600px, calc(100vw - 2rem));
     }
 
-    .left-palette,
-    .right-palette {
+    .left-palette {
       width: 100%;
-      max-width: 600px;
-      border-radius: 8px !important;
+      border-radius: 8px 8px 0 0 !important;
       border: 2px solid #ddd !important;
+      border-bottom: 1px solid #ddd !important;
+      order: 1;
+    }
+
+    .board-section {
+      width: 100%;
+      order: 2;
+      align-items: center;
     }
 
     .board-container {
+      width: 100% !important;
+      max-width: 100%;
+      border-radius: 0 !important;
+      border-left: 2px solid #ddd;
+      border-right: 2px solid #ddd;
+      border-top: none;
+      border-bottom: none;
+      min-height: 300px;
+      box-shadow: none;
+    }
+
+    .right-palette {
       width: 100%;
-      max-width: 600px;
-      border-radius: 8px;
+      border-radius: 0 0 8px 8px !important;
+      border: 2px solid #ddd !important;
+      border-top: 1px solid #ddd !important;
+      order: 3;
     }
 
     .controls-container {
-      max-width: 600px;
+      max-width: min(600px, calc(100vw - 2rem));
+      margin-top: 1rem;
     }
 
     .info-section ul {
@@ -654,10 +730,22 @@
     }
   }
 
+  /* Mobile landscape and smaller tablets */
   @media (max-width: 768px) {
+    .editor-container {
+      padding: 0.75rem;
+    }
+
+    .board-and-palettes {
+      max-width: calc(100vw - 1.5rem);
+    }
+
     .board-container {
-      width: 100%;
-      max-width: 450px;
+      min-height: 280px;
+    }
+
+    .controls-container {
+      max-width: calc(100vw - 1.5rem);
     }
 
     .button-row {
@@ -674,6 +762,92 @@
 
     .btn-small {
       width: 100%;
+    }
+  }
+
+  /* Small mobile devices */
+  @media (max-width: 480px) {
+    .editor-container {
+      padding: 0.5rem;
+      margin: 0.5rem auto;
+    }
+
+    h1 {
+      font-size: 1.3rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .board-and-palettes {
+      max-width: calc(100vw - 1rem);
+    }
+
+    .board-container {
+      min-height: 260px;
+    }
+
+    .left-palette,
+    .right-palette {
+      padding: 0.75rem 0.5rem;
+    }
+
+    .palette-section h3 {
+      font-size: 0.75rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .controls-container {
+      padding: 0.75rem;
+      max-width: calc(100vw - 1rem);
+    }
+
+    .info-section ul {
+      font-size: 0.7rem;
+    }
+
+    .btn {
+      padding: 0.6rem 0.8rem;
+      font-size: 0.85rem;
+    }
+
+    .fen-input {
+      font-size: 0.75rem;
+    }
+  }
+
+  /* Very small screens */
+  @media (max-width: 360px) {
+    .editor-container {
+      padding: 0.25rem;
+    }
+
+    h1 {
+      font-size: 1.1rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .board-and-palettes {
+      max-width: calc(100vw - 0.5rem);
+    }
+
+    .board-container {
+      min-height: 240px;
+      border-width: 1px;
+    }
+
+    .left-palette,
+    .right-palette {
+      padding: 0.5rem 0.25rem;
+      border-width: 1px !important;
+    }
+
+    .controls-container {
+      padding: 0.5rem;
+      max-width: calc(100vw - 0.5rem);
+    }
+
+    .btn {
+      padding: 0.5rem 0.6rem;
+      font-size: 0.8rem;
     }
   }
 </style>
