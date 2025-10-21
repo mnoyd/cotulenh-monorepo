@@ -1,3 +1,4 @@
+import { beforeEach, describe, expect, it } from 'vitest'
 import { CoTuLenh, Move } from '../src/cotulenh'
 import {
   AIR_FORCE,
@@ -268,9 +269,9 @@ describe('CoTuLenh Commander Rules', () => {
   describe('Commander Exposure (_isCommanderExposed)', () => {
     // ... existing code ...
 
-    test('should detect exposed commanders on the same file (clear path)', () => {
+    it('should detect exposed commanders on the same file (clear path)', () => {
       // c on g12, C on g7, Red to move. Path is clear.
-      // Test by trying to move a blocking piece away.
+      // it by trying to move a blocking piece away.
       const blockingGame = new CoTuLenh(
         '6c4/11/6I4/11/11/6C4/11/11/11/11/11/11 r - - 0 1',
       ) // Corrected: k->c, K->C
@@ -281,7 +282,7 @@ describe('CoTuLenh Commander Rules', () => {
       expect(findMove(moves, 'g10', 'f10')).toBeUndefined() // Should be illegal as it exposes Red Commander
     })
 
-    test('should detect exposed commanders on the same rank (clear path)', () => {
+    it('should detect exposed commanders on the same rank (clear path)', () => {
       // c on a6, C on k6, Red to move. Path is clear.
       const blockingGame = new CoTuLenh(
         '11/11/11/11/11/2c1I4C1/11/11/11/11/11/11 r - - 0 1',
@@ -293,7 +294,7 @@ describe('CoTuLenh Commander Rules', () => {
       expect(findMove(moves, 'e7', 'e8')).toBeUndefined() // Should be illegal as it exposes Red Commander
     })
 
-    test('should NOT detect exposure if path is blocked (file)', () => {
+    it('should NOT detect exposure if path is blocked (file)', () => {
       // c on e12, C on e6, Infantry on e9 blocks. Red to move.
       const fen = '6c4/11/11/6I4/11/6C4/11/11/11/11/11/11 r - - 0 1' // Corrected: k->c, K->C
       const game = new CoTuLenh(fen)
@@ -305,7 +306,7 @@ describe('CoTuLenh Commander Rules', () => {
       expect(findMove(commanderMove, 'g7', 'g1')).toBeDefined() // Should be legal as path is blocked
     })
 
-    test('should NOT detect exposure if path is blocked (rank)', () => {
+    it('should NOT detect exposure if path is blocked (rank)', () => {
       // c on a6, C on k6, Infantry on e6 blocks. Red to move.
       const fen = '11/11/11/11/11/2c1I4C1/11/11/11/11/11/11 r - - 0 1' // Corrected: k->c, K->C
       const game = new CoTuLenh(fen)
@@ -317,7 +318,7 @@ describe('CoTuLenh Commander Rules', () => {
       expect(findMove(commanderMove, 'j7', 'g7')).toBeDefined() // Should be legal as path is blocked
     })
 
-    test('should NOT allow move to exposed square', () => {
+    it('should NOT allow move to exposed square', () => {
       const fen = '3c1i5/11/11/5I5/11/7C3/11/11/11/11/11/11 r - - 0 1' // Corrected: k->c, K->C
       const game = new CoTuLenh(fen)
       // Any legal commander move should be allowed
@@ -331,7 +332,7 @@ describe('CoTuLenh Commander Rules', () => {
   })
 
   describe('Commander Capture (Flying General)', () => {
-    test('should generate capture move when commanders are exposed (file)', () => {
+    it('should generate capture move when commanders are exposed (file)', () => {
       // c on e12, C on e6, Red to move. Path is clear.
       const fen = '6c4/11/11/11/11/6C4/11/11/11/11/11/11 r - - 0 1' // Corrected: k->c, K->C
       const game = new CoTuLenh(fen)
@@ -348,7 +349,7 @@ describe('CoTuLenh Commander Rules', () => {
       expect(captureMove?.to).toBe('g12')
     })
 
-    test('should generate capture move when commanders are exposed (rank)', () => {
+    it('should generate capture move when commanders are exposed (rank)', () => {
       // c on a6, C on k6, Red to move. Path is clear.
       const fen = '11/11/11/11/11/3c5C1/11/11/11/11/11/11 r - - 0 1' // Corrected: k->c, K->C
       const game = new CoTuLenh(fen)
@@ -363,7 +364,7 @@ describe('CoTuLenh Commander Rules', () => {
       expect(captureMove?.to).toBe('d7')
     })
 
-    test('should NOT generate capture move if path is blocked (file)', () => {
+    it('should NOT generate capture move if path is blocked (file)', () => {
       // c on e12, C on e6, Infantry on e9 blocks. Red to move.
       const fen = '6c4/11/11/6I4/11/6C4/11/11/11/11/11/11 r - - 0 1' // Corrected: k->c, K->C
       const game = new CoTuLenh(fen)
@@ -372,7 +373,7 @@ describe('CoTuLenh Commander Rules', () => {
       expect(captureMove).toBeUndefined() // Capture should not be possible
     })
 
-    test('should NOT generate capture move if path is blocked (rank)', () => {
+    it('should NOT generate capture move if path is blocked (rank)', () => {
       // c on a6, C on k6, Infantry on e6 blocks. Red to move.
       const fen = '11/11/11/11/11/2c1I4C1/11/11/11/11/11/11 r - - 0 1' // Corrected: k->c, K->C
       const game = new CoTuLenh(fen)

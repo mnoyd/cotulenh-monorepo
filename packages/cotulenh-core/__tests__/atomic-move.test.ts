@@ -1,4 +1,5 @@
 import { CoTuLenh } from '../src/cotulenh.js'
+import { beforeEach, describe, expect, it } from 'vitest'
 import {
   CaptureMoveCommand,
   NormalMoveCommand,
