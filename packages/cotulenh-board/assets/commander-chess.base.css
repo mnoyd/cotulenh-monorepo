@@ -258,6 +258,20 @@ cg-board piece-ambigous-stack::before {
   animation: pulse 1.5s infinite;
 }
 
+.cg-wrap piece.promoted {
+  filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.8));
+}
+
+.cg-wrap piece.promoted::before {
+  content: '⭐';
+  position: absolute;
+  top: -8%;
+  right: -8%;
+  font-size: 30%;
+  z-index: 10;
+  text-shadow: 0 0 4px rgba(255, 215, 0, 1);
+}
+
 @keyframes pulse {
   0% {
     transform: scale(1);
