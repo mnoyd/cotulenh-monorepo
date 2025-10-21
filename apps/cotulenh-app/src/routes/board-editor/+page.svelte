@@ -8,12 +8,15 @@
   import '@repo/cotulenh-board/assets/commander-chess.pieces.css';
   import '@repo/cotulenh-board/assets/commander-chess.clasic.css';
 
+  // Mode system: 'hand' | 'drop' | 'delete'
+  type EditorMode = 'hand' | 'drop' | 'delete';
+  
   let boardContainerElement: HTMLElement | null = null;
   let boardApi: Api | null = null;
   let fenInput = '';
   let copyButtonText = 'Copy FEN';
   let boardOrientation: 'red' | 'blue' = 'red';
-  let deleteMode = false;
+  let editorMode: EditorMode = 'hand';
   let selectedPiece: { role: Role; color: Color; promoted?: boolean } | null = null;
   let ghostPosition = { x: 0, y: 0 };
   let showGhost = false;
@@ -66,29 +69,42 @@
     }
   }
 
-  function toggleDeleteMode() {
+  function setMode(mode: EditorMode) {
     if (!boardApi) return;
 
-    // Toggle delete mode only if clicking the same button
-    if (deleteMode) {
-      console.log('Disabling delete mode');
-      deleteMode = false;
-      // Disable dropmode
-      boardApi.state.dropmode = { active: false };
-      document.body.style.cursor = 'default';
-    } else {
-      console.log('Enabling delete mode with marker:', DELETE_MARKER);
-      deleteMode = true;
+    console.log('Setting mode to:', mode);
+    editorMode = mode;
+
+    if (mode === 'hand') {
+      // Hand mode: can drag pieces on board
       selectedPiece = null;
       showGhost = false;
-      // Enable dropmode with delete marker
+      boardApi.state.dropmode = { active: false };
+      boardApi.state.movable.color = 'both';
+      document.body.style.cursor = 'default';
+    } else if (mode === 'delete') {
+      // Delete mode: click pieces to delete
+      selectedPiece = null;
+      showGhost = false;
       boardApi.state.dropmode = {
         active: true,
         piece: DELETE_MARKER
       };
-      console.log('Dropmode state:', boardApi.state.dropmode);
       document.body.style.cursor = 'not-allowed';
+    } else if (mode === 'drop') {
+      // Drop mode: place selected piece
+      // This is set when a piece is selected
+      document.body.style.cursor = 'default';
     }
+  }
+
+  function toggleHandMode() {
+    // Always set to hand mode when clicked
+    setMode('hand');
+  }
+
+  function toggleDeleteMode() {
+    setMode(editorMode === 'delete' ? 'hand' : 'delete');
   }
 
   function handlePieceSelect(role: Role, color: Color) {
@@ -97,16 +113,16 @@
     // Toggle selection if clicking the same piece
     const isPromoted = heroicMode && role !== 'commander';
     if (selectedPiece?.role === role && selectedPiece?.color === color && selectedPiece?.promoted === isPromoted) {
+      // Deselect piece - return to hand mode
       selectedPiece = null;
       showGhost = false;
-      // Disable dropmode
-      boardApi.state.dropmode = { active: false };
-      document.body.style.cursor = 'default';
+      setMode('hand');
     } else {
-      // Commander cannot be heroic (promoted)
+      // Select piece - enter drop mode
       selectedPiece = { role, color, promoted: isPromoted ? true : undefined };
-      deleteMode = false;
+      editorMode = 'drop';
       showGhost = true;
+      
       // Enable dropmode with the selected piece (including promoted/heroic status)
       const piece: Piece = { role, color };
       if (isPromoted) {
@@ -131,7 +147,7 @@
   }
 
   function handleMouseMove(e: MouseEvent) {
-    if (selectedPiece || deleteMode) {
+    if (selectedPiece || editorMode === 'delete') {
       ghostPosition = { x: e.clientX, y: e.clientY };
       
       // Check if mouse is over palette or board area
@@ -147,10 +163,10 @@
   function handleAfterNewPiece(role: Role, key: string) {
     if (!boardApi) return;
 
-    console.log('afterNewPiece:', role, 'at', key, 'deleteMode:', deleteMode);
+    console.log('afterNewPiece:', role, 'at', key, 'mode:', editorMode);
 
     // Check if this was a delete action (using our marker)
-    if (deleteMode && role === DELETE_MARKER.role) {
+    if (editorMode === 'delete' && role === DELETE_MARKER.role) {
       console.log('Delete mode detected! Removing piece at', key);
       // Use the proper API to remove the piece
       boardApi.setPieces(new Map([[key, undefined]]));
@@ -158,11 +174,11 @@
       updateFEN();
       // Keep delete mode active for multiple deletions
     } else {
-      // Normal piece placement
+      // Normal piece placement in drop mode
       console.log('Normal placement:', role, 'at', key);
       boardApi.state.lastMove = undefined; // Don't highlight in editor
       updateFEN();
-      // Keep selection active for multiple placements
+      // Keep selection active for multiple placements (stay in drop mode)
     }
   }
 
@@ -179,12 +195,10 @@
       return;
     }
 
+    // Return to hand mode
     selectedPiece = null;
     showGhost = false;
-    deleteMode = false;
-    // Disable dropmode
-    boardApi.state.dropmode = { active: false };
-    document.body.style.cursor = 'default';
+    setMode('hand');
   }
 
   function loadStartingPosition() {
@@ -351,6 +365,9 @@
             onPieceSelect={handlePieceSelect}
             {selectedPiece}
             {heroicMode}
+            {editorMode}
+            onHandModeToggle={toggleHandMode}
+            onDeleteModeToggle={toggleDeleteMode}
           />
         </div>
 
@@ -359,7 +376,7 @@
           <div
             bind:this={boardContainerElement}
             class="board-container"
-            class:delete-mode={deleteMode}
+            class:delete-mode={editorMode === 'delete'}
             class:place-mode={selectedPiece !== null}
           >
             {#if !boardApi}<p>Loading board...</p>{/if}
@@ -382,6 +399,9 @@
             onPieceSelect={handlePieceSelect}
             {selectedPiece}
             {heroicMode}
+            {editorMode}
+            onHandModeToggle={toggleHandMode}
+            onDeleteModeToggle={toggleDeleteMode}
           />
         </div>
       </div>
@@ -395,7 +415,7 @@
     {/if}
 
     <!-- Ghost recycle bin that follows mouse in delete mode (only in relevant areas) -->
-    {#if deleteMode && isOverRelevantArea}
+    {#if editorMode === 'delete' && isOverRelevantArea}
       <div class="ghost-recycle-bin" style="left: {ghostPosition.x}px; top: {ghostPosition.y}px;">
         🗑️
       </div>
@@ -407,15 +427,7 @@
         <button class="btn btn-primary" on:click={loadStartingPosition}> Starting Position </button>
         <button class="btn btn-secondary" on:click={clearBoard}> Clear Board </button>
         <button class="btn btn-secondary" on:click={flipBoard}> Flip Board </button>
-        <button
-          class="btn"
-          class:btn-danger={deleteMode}
-          class:btn-secondary={!deleteMode}
-          on:click={toggleDeleteMode}
-        >
-          🗑️ {deleteMode ? 'Delete Mode ON' : 'Delete Mode'}
-        </button>
-        <button class="btn btn-secondary" on:click={screenshot}> Screenshot </button>
+        <button class="btn btn-secondary" on:click={screenshot} disabled> Screenshot </button>
       </div>
 
       <div class="fen-section">
@@ -438,12 +450,12 @@
       <div class="info-section">
         <h4>Instructions</h4>
         <ul>
-          <li><strong>Drag</strong> pieces from palette to board</li>
-          <li><strong>Click</strong> piece to select, then click squares to place multiple</li>
-          <li><strong>Click same piece</strong> again to deselect</li>
-          <li><strong>Delete Mode:</strong> Click 🗑️, then click pieces to delete multiple</li>
-          <li><strong>Drag</strong> pieces on board to move them</li>
+          <li><strong>Hand Mode (✋):</strong> Drag pieces on board to move them</li>
+          <li><strong>Drop Mode:</strong> Click piece in palette to select, then click squares to place</li>
+          <li><strong>Delete Mode (🗑️):</strong> Click to delete pieces on board</li>
+          <li><strong>Drag</strong> pieces from palette to board anytime</li>
           <li>Drag pieces off board to delete them</li>
+          <li>Modes sync across both palettes</li>
         </ul>
       </div>
     </div>
@@ -623,6 +635,11 @@
     cursor: pointer;
     transition: all 0.2s;
     text-align: center;
+  }
+
+  .btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
   }
 
   .btn-primary {
