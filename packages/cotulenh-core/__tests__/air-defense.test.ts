@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeEach } from 'vitest'
 import { CoTuLenh } from '../src/cotulenh'
 import { RED, BLUE, ANTI_AIR, INFANTRY, SQUARE_MAP } from '../src/type'
 import { setupGameBasic } from './test-helpers'

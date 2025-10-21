@@ -1,3 +1,4 @@
+import { beforeEach, describe, expect, it } from 'vitest'
 import { CoTuLenh, Move } from '../src/cotulenh'
 import {
   BLUE,
@@ -30,7 +31,7 @@ describe('Heroic Piece Functionality', () => {
     return game.put({ ...piece, heroic: true }, square)
   }
 
-  test('Infantry gains diagonal movement when heroic', () => {
+  it('Infantry gains diagonal movement when heroic', () => {
     // Place an infantry piece
     game.put({ type: INFANTRY, color: BLUE }, 'd5')
     game['_turn'] = BLUE
@@ -67,7 +68,7 @@ describe('Heroic Piece Functionality', () => {
     expect(diagonalMovesAfter.length).toBeGreaterThan(0)
   })
 
-  test('Tank gets +1 to movement range when heroic', () => {
+  it('Tank gets +1 to movement range when heroic', () => {
     // Place a tank piece with clear path
     game.put({ type: TANK, color: BLUE }, 'e5')
     game['_turn'] = BLUE
@@ -99,7 +100,7 @@ describe('Heroic Piece Functionality', () => {
     expect(canReachE2After).toBe(true) // Should now reach 3 spaces
   })
 
-  test('Heroic headquarters can move like militia', () => {
+  it('Heroic headquarters can move like militia', () => {
     // Normal HQ cannot move
     game.put({ type: HEADQUARTER, color: BLUE }, 'd5')
     game['_turn'] = BLUE
@@ -135,7 +136,7 @@ describe('Heroic Piece Functionality', () => {
     expect(diagonalMoves.length).toBeGreaterThan(0)
   })
 
-  test('Heroic status is reflected in move SAN notation', () => {
+  it('Heroic status is reflected in move SAN notation', () => {
     // Setup a piece and make it heroic
     game.put({ type: INFANTRY, color: BLUE }, 'e4')
     game['_turn'] = BLUE
@@ -172,7 +173,7 @@ describe('Move makes piece heroic test', () => {
     game.put({ type: INFANTRY, color: BLUE }, 'c7')
   })
 
-  test('Tank becomes heroic after checking commander', () => {
+  it('Tank becomes heroic after checking commander', () => {
     game.put({ type: TANK, color: RED }, 'e11')
     game['_turn'] = RED
 
@@ -193,7 +194,7 @@ describe('Move makes piece heroic test', () => {
     expect(game.isCheck()).toBe(false) // Red should not be in check anymore
   })
 
-  test('Infantry becomes heroic after capture that results in check', () => {
+  it('Infantry becomes heroic after capture that results in check', () => {
     game.put({ type: TANK, color: BLUE }, 'g11')
     game.put({ type: INFANTRY, color: RED }, 'g10')
     game['_turn'] = RED
@@ -216,7 +217,7 @@ describe('Move makes piece heroic test', () => {
     expect(game.isCheck()).toBe(false)
   })
 
-  test('Piece does NOT become heroic if move does not result in check', () => {
+  it('Piece does NOT become heroic if move does not result in check', () => {
     game.put({ type: INFANTRY, color: BLUE }, 'd11')
     game['_turn'] = BLUE
 
@@ -230,7 +231,7 @@ describe('Move makes piece heroic test', () => {
     expect(game.isCheck()).toBe(false) // Red should NOT be in check
   })
 
-  test('Piece move result in another piece become heroic', () => {
+  it('Piece move result in another piece become heroic', () => {
     game.put({ type: INFANTRY, color: RED, heroic: true }, 'f12')
     game.put({ type: TANK, color: RED }, 'e12')
     game['_turn'] = RED
@@ -245,7 +246,7 @@ describe('Move makes piece heroic test', () => {
     expect(game.isCheck()).toBe(true) // Red should NOT be in check
   })
 
-  test('Nested pieces become heroic if multiple pieces can attack commander after a move', () => {
+  it('Nested pieces become heroic if multiple pieces can attack commander after a move', () => {
     game.put(
       { type: NAVY, color: BLUE, carrying: [{ type: AIR_FORCE, color: BLUE }] },
       'b2',
@@ -301,26 +302,26 @@ describe('setHeroicStatus', () => {
     )
   })
 
-  test('sets heroic status for a direct piece', () => {
+  it('sets heroic status for a direct piece', () => {
     expect(game.setHeroicStatus('h2', INFANTRY, true)).toBe(true)
     expect(game.getHeroicStatus('h2', INFANTRY)).toBe(true)
   })
 
-  test('sets heroic status for a carried piece', () => {
+  it('sets heroic status for a carried piece', () => {
     expect(game.setHeroicStatus('c3', NAVY, true)).toBe(true)
     expect(game.getHeroicStatus('c3', NAVY)).toBe(true)
   })
 
-  test('returns false if square is empty', () => {
+  it('returns false if square is empty', () => {
     expect(game.setHeroicStatus('d4', INFANTRY, true)).toBe(false)
   })
 
-  test('returns false if piece type not found', () => {
+  it('returns false if piece type not found', () => {
     expect(game.setHeroicStatus('h2', TANK, true)).toBe(false)
     expect(game.setHeroicStatus('c3', COMMANDER, true)).toBe(false)
   })
 
-  test('returns false if square is invalid', () => {
+  it('returns false if square is invalid', () => {
     expect(game.setHeroicStatus('z9' as any, INFANTRY, true)).toBe(false)
   })
 })

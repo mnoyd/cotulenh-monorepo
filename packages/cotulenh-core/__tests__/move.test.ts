@@ -1,3 +1,4 @@
+import { beforeEach, describe, expect, it } from 'vitest'
 import { CoTuLenh, DeployMove, Move, DeployMoveRequest } from '../src/cotulenh'
 import {
   RED,
@@ -22,7 +23,7 @@ describe('CoTuLenh Stay Capture Logic', () => {
     game = setupGameBasic()
   })
 
-  test('Land piece (Tank) capturing on Land should REPLACE', () => {
+  it('Land piece (Tank) capturing on Land should REPLACE', () => {
     game.put({ type: TANK, color: RED }, 'd4')
     game.put({ type: INFANTRY, color: BLUE }, 'd5')
     game['_turn'] = RED // Access private for test setup
@@ -43,7 +44,7 @@ describe('CoTuLenh Stay Capture Logic', () => {
     expect(captureMove?.captured?.type).toBe(INFANTRY)
   })
 
-  test('Heavy piece (Artillery) capturing across river on Land should REPLACE', () => {
+  it('Heavy piece (Artillery) capturing across river on Land should REPLACE', () => {
     game.put({ type: ARTILLERY, color: RED }, 'i5')
     game.put({ type: INFANTRY, color: BLUE }, 'i8')
     game['_turn'] = RED
@@ -64,7 +65,7 @@ describe('CoTuLenh Stay Capture Logic', () => {
     expect(captureMove?.captured?.type).toBe(INFANTRY)
   })
 
-  test('Navy capturing Navy on Water should REPLACE', () => {
+  it('Navy capturing Navy on Water should REPLACE', () => {
     game.put({ type: NAVY, color: RED }, 'b3')
     game.put({ type: NAVY, color: BLUE }, 'b5')
     game['_turn'] = RED
@@ -85,7 +86,7 @@ describe('CoTuLenh Stay Capture Logic', () => {
     expect(captureMove?.captured?.type).toBe(NAVY)
   })
 
-  test('Navy capturing Land piece on Mixed terrain (c file) should REPLACE', () => {
+  it('Navy capturing Land piece on Mixed terrain (c file) should REPLACE', () => {
     game.put({ type: NAVY, color: RED }, 'c4')
     game.put({ type: TANK, color: BLUE }, 'c5')
     game['_turn'] = RED
@@ -106,7 +107,7 @@ describe('CoTuLenh Stay Capture Logic', () => {
     expect(captureMove?.captured?.type).toBe(TANK)
   })
 
-  test('Land piece (Tank) capturing Navy on pure Water should STAY', () => {
+  it('Land piece (Tank) capturing Navy on pure Water should STAY', () => {
     // Tank d3, Navy b3
     game.put({ type: TANK, color: RED }, 'd3')
     game.put({ type: NAVY, color: BLUE }, 'b3')
@@ -129,7 +130,7 @@ describe('CoTuLenh Stay Capture Logic', () => {
     expect(captureMove?.captured?.type).toBe(NAVY)
   })
 
-  test('Navy capturing Land piece on pure Land should STAY', () => {
+  it('Navy capturing Land piece on pure Land should STAY', () => {
     // Navy c3, Tank f3 (range 3)
     game.put({ type: NAVY, color: RED }, 'c3')
     game.put({ type: TANK, color: BLUE }, 'f3')
@@ -152,7 +153,7 @@ describe('CoTuLenh Stay Capture Logic', () => {
     expect(captureMove?.captured?.type).toBe(TANK)
   })
 
-  test('Air Force capturing Navy kamikaze', () => {
+  it('Air Force capturing Navy kamikaze', () => {
     // AF d2, Navy b2
     game.put({ type: AIR_FORCE, color: RED }, 'd2')
     game.put({ type: NAVY, color: BLUE }, 'b2')
@@ -175,7 +176,7 @@ describe('CoTuLenh Stay Capture Logic', () => {
     expect(suicideCaptureMove?.captured?.type).toBe(NAVY)
   })
 
-  test('Air Force capturing Land piece on Land should REPLACE', () => {
+  it('Air Force capturing Land piece on Land should REPLACE', () => {
     game.put({ type: AIR_FORCE, color: RED }, 'd4')
     game.put({ type: INFANTRY, color: BLUE }, 'd5')
     game['_turn'] = RED
@@ -203,7 +204,7 @@ describe('Move History and Undo', () => {
     game = new CoTuLenh(DEFAULT_POSITION) // Start with default position
   })
 
-  test('history() should record moves correctly (simple and verbose)', () => {
+  it('history() should record moves correctly (simple and verbose)', () => {
     const move1 = game.move({ from: 'c5', to: 'c6' }) // Red Infantry forward
     const move2 = game.move({ from: 'g8', to: 'g7' }) // Blue Militia forward
 
@@ -225,7 +226,7 @@ describe('Move History and Undo', () => {
     expect(historyVerbose[1].to).toBe('g7')
   })
 
-  test('undo() should revert the last move', () => {
+  it('undo() should revert the last move', () => {
     const initialFen = game.fen()
     game.move({ from: 'd3', to: 'd4' }) // Red Tank
     const fenAfterMove = game.fen()
@@ -239,7 +240,7 @@ describe('Move History and Undo', () => {
     expect(game.turn()).toBe(RED) // Turn should revert
   })
 
-  test('undo() multiple moves', () => {
+  it('undo() multiple moves', () => {
     const initialFen = game.fen()
     game.move({ from: 'd3', to: 'd4' }) // R Tank
     const fen1 = game.fen()
@@ -270,7 +271,7 @@ describe('Move History and Undo', () => {
     expect(game.fen()).toBe(initialFen)
   })
 
-  test('undo() a suicide capture move', () => {
+  it('undo() a suicide capture move', () => {
     // Setup: Red Air Force d2, Blue Navy b2
     game.load('5c5/11/11/11/11/11/11/11/11/11/1n1F7/4C6 r - - 0 1')
     const initialFen = game.fen()
@@ -298,7 +299,7 @@ describe('SAN Conversion', () => {
     game = new CoTuLenh(DEFAULT_POSITION)
   })
 
-  test('move() should accept basic SAN strings', () => {
+  it('move() should accept basic SAN strings', () => {
     const initialFen = game.fen()
     // Use a valid move from the default position
     const move = game.move('c5-c6') // Red Infantry
@@ -311,7 +312,7 @@ describe('SAN Conversion', () => {
     expect(game.get('c6')?.color).toBe(RED)
   })
 
-  test('move() should handle SAN for captures', () => {
+  it('move() should handle SAN for captures', () => {
     // Setup: Red Infantry d4, Blue Infantry d5
     game.load('5c5/11/11/11/11/11/11/3i7/3I7/11/11/4C6 r - - 0 1')
     const move = game.move('Id4xd5') // Capture using SAN
@@ -324,7 +325,7 @@ describe('SAN Conversion', () => {
     expect(game.get('d4')).toBeUndefined()
   })
 
-  test('move() should handle SAN for stay captures', () => {
+  it('move() should handle SAN for stay captures', () => {
     // Setup: Red AF d2, Blue Navy b2
     game.load('5c5/11/11/11/11/11/11/11/11/11/1n1F7/4C6 r - - 0 1')
     //TODO update ambiguous moves SAN
@@ -353,7 +354,7 @@ describe('Piece Blocking Movement Logic', () => {
     game = setupGameBasic()
   })
 
-  test('Sliding piece (Tank) should be blocked by friendly pieces', () => {
+  it('Sliding piece (Tank) should be blocked by friendly pieces', () => {
     // Setup: Red Tank at d3, Red Infantry at d4
     game.put({ type: TANK, color: RED }, 'd3')
     game.put({ type: INFANTRY, color: RED }, 'd4')
@@ -370,7 +371,7 @@ describe('Piece Blocking Movement Logic', () => {
     expect(moveToE3).toBeDefined()
   })
 
-  test('Non-sliding piece (Infantry) should be blocked by friendly pieces', () => {
+  it('Non-sliding piece (Infantry) should be blocked by friendly pieces', () => {
     // Setup: Red Infantry at d4, Red Tank at d5
     game.put({ type: INFANTRY, color: RED }, 'd4')
     game.put({ type: TANK, color: RED }, 'd5')
@@ -387,7 +388,7 @@ describe('Piece Blocking Movement Logic', () => {
     expect(moveToE4).toBeDefined()
   })
 
-  test('Air Force should ignore piece blocking', () => {
+  it('Air Force should ignore piece blocking', () => {
     // Setup: Red Air Force at d4, Red Infantry at d5, Blue Tank at d6
     game.put({ type: AIR_FORCE, color: RED }, 'd4')
     game.put({ type: INFANTRY, color: RED }, 'd5')
@@ -407,7 +408,7 @@ describe('Piece Blocking Movement Logic', () => {
     expect(captureD6).toBeDefined()
   })
 
-  test('Artillery should be blocked for movement but not for capture', () => {
+  it('Artillery should be blocked for movement but not for capture', () => {
     // Setup: Red Artillery at d3, Red Infantry at d4, Blue Tank at d5
     game.put({ type: ARTILLERY, color: RED }, 'd3')
     game.put({ type: INFANTRY, color: RED }, 'd4')
@@ -431,7 +432,7 @@ describe('Piece Blocking Movement Logic', () => {
     expect(captureD5).toBeDefined()
   })
 
-  test('Navy should ignore friendly piece blocking', () => {
+  it('Navy should ignore friendly piece blocking', () => {
     // Setup: Red Navy at b3, Red Navy at b4, Blue Navy at b5
     game.put({ type: NAVY, color: RED }, 'b3')
     game.put({ type: NAVY, color: RED }, 'b4')
@@ -451,7 +452,7 @@ describe('Piece Blocking Movement Logic', () => {
     expect(captureB6).toBeDefined()
   })
 
-  test('Tank special rule: cannot shoot over blocking piece at range 2', () => {
+  it('Tank special rule: cannot shoot over blocking piece at range 2', () => {
     // Setup: Red Tank at d3, Red Infantry at d4, Blue Infantry at d5
     game.put({ type: TANK, color: RED }, 'd3')
     game.put({ type: INFANTRY, color: RED }, 'd4')
@@ -477,13 +478,13 @@ describe('Generate Moves', () => {
   beforeEach(() => {
     game = setupGameBasic()
   })
-  test('should generate all possible moves from initial position', () => {
+  it('should generate all possible moves from initial position', () => {
     game.clear()
     game = new CoTuLenh()
     const moves = game.moves({ verbose: true }) as Move[]
     expect(moves.length).toBe(116)
   })
-  test('should correctly filter moves by piece type', () => {
+  it('should correctly filter moves by piece type', () => {
     const carried: Piece = { type: INFANTRY, color: RED }
     game.put({ type: TANK, color: RED, carrying: [carried] }, 'c2')
     game.load(game.fen())
@@ -507,7 +508,7 @@ describe('Terrain blocking movement logic', () => {
     game = setupGameBasic()
   })
 
-  test('should block heavy piece movement across river', () => {
+  it('should block heavy piece movement across river', () => {
     game.put({ type: ARTILLERY, color: RED }, 'd5')
     game['_turn'] = RED
 
@@ -516,7 +517,7 @@ describe('Terrain blocking movement logic', () => {
     expect(moveD5D8).toBeUndefined()
   })
 
-  test('should allow light piece movement across river', () => {
+  it('should allow light piece movement across river', () => {
     game.put({ type: TANK, color: RED }, 'd5')
     game['_turn'] = RED
 
@@ -525,7 +526,7 @@ describe('Terrain blocking movement logic', () => {
     expect(moveD5D7).toBeDefined()
   })
 
-  test('should allow heavy piece capture across river', () => {
+  it('should allow heavy piece capture across river', () => {
     game.put({ type: ARTILLERY, color: RED }, 'd5')
     game.put({ type: INFANTRY, color: BLUE }, 'd8')
     game['_turn'] = RED
@@ -535,7 +536,7 @@ describe('Terrain blocking movement logic', () => {
     expect(captureD5D8).toBeDefined()
   })
 
-  test('should allow heavy piece capture enemy navy at sea', () => {
+  it('should allow heavy piece capture enemy navy at sea', () => {
     game.put({ type: ARTILLERY, color: RED }, 'd5')
     game.put({ type: NAVY, color: BLUE }, 'b5')
     game['_turn'] = RED
@@ -547,7 +548,7 @@ describe('Terrain blocking movement logic', () => {
     expect(captureD5B5).toBeDefined()
   })
 
-  test('should allow air force to fly to navy at sea and combine', () => {
+  it('should allow air force to fly to navy at sea and combine', () => {
     game.put({ type: AIR_FORCE, color: RED }, 'e2')
     game.put({ type: NAVY, color: RED }, 'a2')
     game['_turn'] = RED
@@ -557,7 +558,7 @@ describe('Terrain blocking movement logic', () => {
     expect(combineE2A2).toBeDefined()
   })
 
-  test('should not allow navy to create combination with air force on land', () => {
+  it('should not allow navy to create combination with air force on land', () => {
     game.put({ type: AIR_FORCE, color: RED }, 'e2')
     game.put({ type: NAVY, color: RED }, 'b2')
     game['_turn'] = RED
@@ -572,7 +573,7 @@ describe('move sequesce', () => {
   beforeEach(() => {
     game = setupGameBasic()
   })
-  test('sequence of moves from initial position', () => {
+  it('sequence of moves from initial position', () => {
     const game = new CoTuLenh()
 
     // Verify initial position
@@ -612,7 +613,7 @@ describe('move sequesce', () => {
 
 describe('Re run random fail move', () => {
   //   //TODO: DeployMove: modify InternalMove generation to include instruction for what piece can move with the moving piece
-  //   // test('should fail move if move is invalid', () => {
+  //   // it('should fail move if move is invalid', () => {
   //   //   const game = new CoTuLenh("10c/1n2fh2f2/9a1/4(eag)t1sg2/6m4/11/11/3EG1MA2I/4ATT1G2/6S4/5H1HF2/1N5C3 b - - 10 14")
   //   //   const move = {
   //   //     color: "b",
