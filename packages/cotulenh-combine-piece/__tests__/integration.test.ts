@@ -2,7 +2,7 @@
 // Tests the complete system with real blueprint configurations
 // NOTE: When blueprint.yaml is edited, these tests must be updated accordingly
 
-import { PieceStacker, ROLE_FLAGS } from '../src/index.js';
+import { PieceStacker, ROLE_FLAGS, DEFAULT_ROLE_MAPPING } from '../src/index.js';
 
 // New Piece interface for testing
 interface TestPiece {
@@ -12,11 +12,11 @@ interface TestPiece {
   carrying?: TestPiece[];
 }
 
-// Create a stacker instance for tests
-const testStacker = new PieceStacker<TestPiece>((piece: TestPiece) => {
-  const roleKey = piece.role.toUpperCase() as keyof typeof ROLE_FLAGS;
-  return ROLE_FLAGS[roleKey] || 0;
-});
+// Create a stacker instance for tests using the new role mapping system
+const testStacker = PieceStacker.withRoleMapping<TestPiece>(
+  (piece: TestPiece) => piece.role,
+  DEFAULT_ROLE_MAPPING
+);
 
 // Helper to create test pieces
 function createPiece(role: string, color: string = 'red', heroic: boolean = false): TestPiece {
@@ -43,6 +43,119 @@ function createPieceWithCarrying(
 }
 
 describe('PieceStacker - Integration Tests', () => {
+  describe('Migration and Compatibility', () => {
+    it('should work with old constructor style (backward compatibility)', () => {
+      // OLD WAY - Still works!
+      const oldStacker = new PieceStacker<TestPiece>((piece: TestPiece) => {
+        const roleKey = piece.role.toUpperCase() as keyof typeof ROLE_FLAGS;
+        return ROLE_FLAGS[roleKey] || 0;
+      });
+
+      const tank = createPiece('TANK');
+      const infantry = createPiece('INFANTRY');
+
+      const result = oldStacker.combine([tank, infantry]);
+
+      expect(result?.role).toBe('TANK');
+      expect(result?.carrying?.[0]?.role).toBe('INFANTRY');
+    });
+
+    it('should work with new role mapping system using default mapping', () => {
+      // NEW WAY - Using default mapping
+      const newStacker = PieceStacker.withRoleMapping<TestPiece>(
+        (piece: TestPiece) => piece.role,
+        DEFAULT_ROLE_MAPPING
+      );
+
+      const tank = createPiece('TANK');
+      const infantry = createPiece('INFANTRY');
+
+      const result = newStacker.combine([tank, infantry]);
+
+      expect(result?.role).toBe('TANK');
+      expect(result?.carrying?.[0]?.role).toBe('INFANTRY');
+    });
+
+    it('should produce identical results with both old and new systems', () => {
+      const oldStacker = new PieceStacker<TestPiece>((piece: TestPiece) => {
+        const roleKey = piece.role.toUpperCase() as keyof typeof ROLE_FLAGS;
+        return ROLE_FLAGS[roleKey] || 0;
+      });
+
+      const newStacker = PieceStacker.withRoleMapping<TestPiece>(
+        (piece: TestPiece) => piece.role,
+        DEFAULT_ROLE_MAPPING
+      );
+
+      const tank = createPiece('TANK');
+      const infantry = createPiece('INFANTRY');
+
+      const oldResult = oldStacker.combine([tank, infantry]);
+      const newResult = newStacker.combine([tank, infantry]);
+
+      expect(oldResult).toEqual(newResult);
+    });
+  });
+
+  describe('Custom Role Mapping', () => {
+    it('should work with custom role names using role mapping', () => {
+      // Define custom role mapping
+      const customRoleMapping = {
+        i: 'INFANTRY',
+        infantry: 'INFANTRY',
+        t: 'TANK',
+        tank: 'TANK',
+        n: 'NAVY',
+        navy: 'NAVY'
+      } as const;
+
+      // Create stacker with custom role mapping
+      const customStacker = PieceStacker.withRoleMapping<TestPiece>(
+        (piece: TestPiece) => piece.role,
+        customRoleMapping
+      );
+
+      // Test with short role names - tank can carry infantry
+      const tank = { color: 'red', role: 't', heroic: false };
+      const infantry = { color: 'red', role: 'i', heroic: false };
+
+      const result = customStacker.combine([tank, infantry]);
+
+      expect(result).toEqual({
+        color: 'red',
+        role: 't',
+        heroic: false,
+        carrying: [
+          {
+            color: 'red',
+            role: 'i',
+            heroic: false
+          }
+        ]
+      });
+    });
+
+    it('should work with mixed case role names', () => {
+      const customRoleMapping = {
+        Infantry: 'INFANTRY',
+        Tank: 'TANK',
+        Navy: 'NAVY'
+      } as const;
+
+      const customStacker = PieceStacker.withRoleMapping<TestPiece>(
+        (piece: TestPiece) => piece.role,
+        customRoleMapping
+      );
+
+      const tank = { color: 'blue', role: 'Tank', heroic: false };
+      const infantry = { color: 'blue', role: 'Infantry', heroic: false };
+
+      const result = customStacker.combine([tank, infantry]);
+
+      expect(result?.role).toBe('Tank');
+      expect(result?.carrying?.[0]?.role).toBe('Infantry');
+    });
+  });
   describe('Basic Stacking', () => {
     it('should stack infantry onto a tank', () => {
       const tank = createPiece('TANK');
@@ -145,6 +258,32 @@ describe('PieceStacker - Integration Tests', () => {
           {
             color: 'red',
             role: 'COMMANDER',
+            heroic: false
+          }
+        ]
+      });
+    });
+
+    it('should stack tank and air force onto navy at sea c3', () => {
+      const navy = createPiece('NAVY');
+      const tank = createPiece('TANK');
+      const airforce = createPiece('AIR_FORCE');
+
+      const result = testStacker.combine([navy, tank, airforce]);
+
+      expect(result).toEqual({
+        color: 'red',
+        role: 'NAVY',
+        heroic: false,
+        carrying: [
+          {
+            color: 'red',
+            role: 'AIR_FORCE',
+            heroic: false
+          },
+          {
+            color: 'red',
+            role: 'TANK',
             heroic: false
           }
         ]
@@ -332,6 +471,31 @@ describe('PieceStacker - Integration Tests', () => {
       expect(result?.role).toBe('TANK');
       expect(result?.heroic).toBe(false);
       // After removing INFANTRY, should just be TANK
+    });
+
+    it('should remove air force from navy stack leaving navy carrying tank at c3', () => {
+      // Create a navy stack with both AIR_FORCE and TANK
+      const navy = createPiece('NAVY');
+      const airforce = createPiece('AIR_FORCE');
+      const tank = createPiece('TANK');
+
+      const navyWithAirforceAndTank = testStacker.combine([navy, airforce, tank]);
+      expect(navyWithAirforceAndTank).not.toBeNull();
+
+      const result = testStacker.remove(navyWithAirforceAndTank!, 'AIR_FORCE');
+
+      expect(result).toEqual({
+        color: 'red',
+        role: 'NAVY',
+        heroic: false,
+        carrying: [
+          {
+            color: 'red',
+            role: 'TANK',
+            heroic: false
+          }
+        ]
+      });
     });
   });
 
