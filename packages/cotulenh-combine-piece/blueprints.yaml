@@ -1,0 +1,33 @@
+# Single source of truth for piece stacking blueprints
+# Human-readable format using role names
+# Role values are defined in src/index.ts ROLE_FLAGS
+
+blueprints:
+  # Navy can carry:
+  # - Slot 1: Air Force only
+  # - Slot 2: Humanlike roles or tank
+  NAVY:
+    - [AIR_FORCE]
+    - [COMMANDER, INFANTRY, MILITIA, TANK]
+
+  # Tank can carry:
+  # - Slot 1: Humanlike roles only
+  TANK:
+    - [COMMANDER, INFANTRY, MILITIA]
+
+  # Engineer can carry:
+  # - Slot 1: Heavy equipment only
+  ENGINEER:
+    - [ARTILLERY, ANTI_AIR, MISSILE]
+
+  # Air Force can carry:
+  # - Slot 1: Tank only
+  # - Slot 2: Humanlike roles only
+  AIR_FORCE:
+    - [TANK]
+    - [COMMANDER, INFANTRY, MILITIA]
+
+  # Headquarter can carry:
+  # - Slot 1: Commander only
+  HEADQUARTER:
+    - [COMMANDER]

@@ -6,7 +6,7 @@ import * as board from './board.js';
 import * as util from './util.js';
 import * as drag from './drag.js';
 
-import { CombinePieceFactory } from '@repo/cotulenh-combine-piece';
+import { PieceStacker, ROLE_FLAGS } from '@repo/cotulenh-combine-piece';
 import { createEl } from './util.js';
 import { createAmbigousModeHandling } from './popup/ambigous-move.js';
 import { userMove } from './board.js';
@@ -14,10 +14,23 @@ import { userMove } from './board.js';
 const END_MOVE = 'end-move';
 type EndMove = typeof END_MOVE;
 
-const combinePieceFactory = new CombinePieceFactory(
-  p => p.role,
-  r => r,
-);
+// Role to flag mapping for board pieces
+const boardRoleToFlagMap: Record<string, number> = {
+  commander: ROLE_FLAGS.COMMANDER,
+  infantry: ROLE_FLAGS.INFANTRY,
+  tank: ROLE_FLAGS.TANK,
+  militia: ROLE_FLAGS.MILITIA,
+  engineer: ROLE_FLAGS.ENGINEER,
+  artillery: ROLE_FLAGS.ARTILLERY,
+  anti_air: ROLE_FLAGS.ANTI_AIR,
+  missile: ROLE_FLAGS.MISSILE,
+  air_force: ROLE_FLAGS.AIR_FORCE,
+  navy: ROLE_FLAGS.NAVY,
+  headquarter: ROLE_FLAGS.HEADQUARTER,
+};
+
+// Create PieceStacker instance for board pieces
+const pieceStacker = new PieceStacker<cg.Piece>(piece => boardRoleToFlagMap[piece.role] || 0);
 /**
  * Attempts to combine two pieces into a stack
  * @param origPiece The piece being moved/dragged
@@ -28,8 +41,8 @@ export function tryCombinePieces(origPiece: cg.Piece, destPiece: cg.Piece): cg.P
   if (!origPiece || !destPiece) return undefined;
 
   try {
-    const combined = combinePieceFactory.formStack(origPiece, destPiece);
-    return (combined as cg.Piece) ?? undefined;
+    const combined = pieceStacker.combine([origPiece, destPiece]);
+    return combined ?? undefined;
   } catch (error) {
     console.error('Error combining pieces:', error);
     return undefined;
@@ -40,12 +53,26 @@ export function createCombineStackFromPieces(pieces: cg.Piece[]): {
   combined: cg.Piece | undefined;
   uncombined: cg.Piece[] | undefined;
 } {
-  // Use the generic function from cotulenh-combine-piece package
-  const result = combinePieceFactory.createCombineStackFromPieces(pieces);
-  return {
-    combined: result.combined as cg.Piece | undefined,
-    uncombined: result.uncombined as cg.Piece[] | undefined,
-  };
+  // Try to combine all pieces using PieceStacker
+  const combined = pieceStacker.combine(pieces);
+
+  if (combined) {
+    // All pieces were successfully combined
+    return { combined, uncombined: undefined };
+  }
+
+  // If combination failed, return all pieces as uncombined
+  return { combined: undefined, uncombined: pieces };
+}
+
+/**
+ * Remove a piece with specific role from a stack
+ * @param stackPiece - The stack piece to remove from
+ * @param roleToRemove - The role to remove (e.g., 'infantry', 'tank')
+ * @returns The remaining stack/piece after removal, or null if no pieces remain
+ */
+export function removePieceFromStack(stackPiece: cg.Piece, roleToRemove: cg.Role): cg.Piece | null {
+  return pieceStacker.remove(stackPiece, roleToRemove);
 }
 
 export const COMBINED_PIECE_POPUP_TYPE = 'combined-piece';
