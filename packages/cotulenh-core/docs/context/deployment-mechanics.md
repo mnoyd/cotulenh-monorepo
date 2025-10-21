@@ -1,10 +1,23 @@
 # Deployment Mechanics
 
+> ⚠️ **CRITICAL**: Read
+> [DEPLOY-CRITICAL-LEARNINGS.md](./DEPLOY-CRITICAL-LEARNINGS.md) before
+> modifying deploy system!  
+> Contains critical bug fixes, undocumented behavior, and production insights
+> from Phase 3.
+
 ## Overview
 
 CoTuLenh's deployment system allows stacked pieces to be separated and deployed
 to different squares in a multi-phase process. This creates strategic depth by
 enabling complex piece positioning and tactical flexibility.
+
+**Two Deploy APIs Available**:
+
+1. **Incremental API** (legacy): `startDeploy()` → `move()` → `move()` →
+   `completeDeploy()`
+2. **Batch API** (Phase 3): `deployMove(request)` - atomic execution of all
+   moves
 
 ## Deploy State Management
 
@@ -20,12 +33,104 @@ type DeployState = {
 }
 ```
 
+### Deploy Session Structure (Phase 3 - Virtual State)
+
+```typescript
+interface DeploySession {
+  stackSquare: number
+  turn: Color
+  originalPiece: Piece
+  virtualChanges: Map<Square, Piece | null> // ← NEW: Virtual board overlay
+  movedPieces: Array<{ piece: Piece; from: Square; to: Square }>
+  stayingPieces: Piece[]
+  isBatchMode?: boolean // ← NEW: Batch vs incremental mode
+}
+```
+
+**Critical**: `virtualChanges` holds temporary board state during deployment:
+
+- Changes accumulate without mutating real board
+- Committed atomically when deployment completes
+- **After commit, virtualChanges is cleared** (important for undo!)
+- See
+  [Virtual State Undo Bug](./DEPLOY-CRITICAL-LEARNINGS.md#1-virtual-state-undo-after-commit-bug)
+
 ### Deploy State Lifecycle
 
 1. **Initiation**: Deploy state created when first piece is deployed from stack
 2. **Active Phase**: Multiple deploy moves can be made from same stack
 3. **Termination**: Deploy state cleared when all pieces are accounted for
 4. **Turn Switch**: Turn changes only when deployment phase ends
+
+## MoveContext Flags (Critical for Correctness)
+
+> ⚠️ **MUST READ**: See
+> [MoveContext Flags Reference](./DEPLOY-CRITICAL-LEARNINGS.md#-movecontext-flags-reference)
+
+```typescript
+interface MoveContext {
+  isDeployMode: boolean // Deploy vs normal move
+  deploySession?: DeploySession
+  preventCommit?: boolean // Batch: don't commit until all moves done
+  isTesting?: boolean // Testing: don't mutate persistent state
+}
+```
+
+### isTesting Flag (Critical!)
+
+**Purpose**: Prevent state mutations during move simulation/validation
+
+**When to use**:
+
+- Move generation (`_filterLegalMoves`)
+- Move constructor (creating verbose Move objects)
+- Any move simulation that will be undone
+
+**What it prevents**:
+
+```typescript
+// InitializeDeploySessionAction
+if (context.isTesting) {
+  return // Don't create deploy sessions during testing
+}
+
+// _checkAndCommitDeploySession
+if (isComplete && !context.isTesting) {
+  commitDeploySession() // Only commit if NOT testing
+}
+```
+
+**❌ Common mistake**:
+
+```typescript
+// Missing isTesting flag
+game._applyMoveWithContext(move, { isDeployMode: true })
+// → Creates sessions, commits changes, corrupts state!
+
+// ✅ Correct
+game._applyMoveWithContext(move, { isDeployMode: true, isTesting: true })
+// → Simulates without side effects
+```
+
+### preventCommit Flag
+
+**Purpose**: Accumulate changes in batch mode without committing
+
+**Used in**: Batch deploy wrapper to execute multiple moves atomically
+
+```typescript
+for (const move of deployMoves) {
+  const context: MoveContext = {
+    isDeployMode: true,
+    deploySession: session,
+    preventCommit: true, // ← Don't commit yet!
+    isTesting: false,
+  }
+  this._applyMoveWithContext(move, context)
+}
+// All moves accumulated in virtualChanges
+this.commitBatchDeploySession(session) // Now commit all at once
+```
 
 ## Deploy Phase Initiation
 
@@ -134,6 +239,46 @@ if (deployState && deployState.turn === us) {
 2. **Remaining Pieces**: Only pieces not yet moved can be deployed
 3. **Terrain Compatibility**: Deployed pieces must satisfy terrain requirements
 4. **Capture Validation**: Deploy moves can capture enemy pieces
+
+### Terrain Restrictions (Critical!)
+
+> ⚠️ **UNDOCUMENTED BEHAVIOR**: Navy can ONLY be placed on water squares!
+
+**Valid Navy squares** (NAVY_MASK):
+
+- `a1-a11` (a-file) ✅
+- `b1-b11` (b-file) ✅
+- `c6-c7` (river banks) ✅
+- `d6-d7, e6-e7` (river banks) ✅
+
+**Invalid Navy squares**:
+
+- `c1-c5, c8-c11` (land) ❌
+- `d-k` files (most of board) ❌
+
+**Critical for testing**:
+
+```typescript
+// ❌ WRONG - These return false!
+game.put({ type: NAVY, ... }, 'e5') // Land square
+game.put({ type: NAVY, ... }, 'd4') // Land square
+game.put({ type: NAVY, ... }, 'h1') // Land square
+
+// ✅ CORRECT - These work
+game.put({ type: NAVY, ... }, 'a3') // Water square
+game.put({ type: NAVY, ... }, 'b5') // Water square
+game.put({ type: NAVY, ... }, 'c6') // River
+
+// Always check return value!
+const success = game.put(piece, square)
+if (!success) {
+  throw new Error(`Invalid placement: ${piece.type} at ${square}`)
+}
+```
+
+See
+[Navy Terrain Restrictions](./DEPLOY-CRITICAL-LEARNINGS.md#-navy-terrain-restrictions-undocumented)
+for full details.
 
 ## Deploy State Transitions
 
