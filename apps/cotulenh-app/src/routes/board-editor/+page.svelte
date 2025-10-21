@@ -14,9 +14,11 @@
   let copyButtonText = 'Copy FEN';
   let boardOrientation: 'red' | 'blue' = 'red';
   let deleteMode = false;
-  let selectedPiece: { role: Role; color: Color } | null = null;
+  let selectedPiece: { role: Role; color: Color; promoted?: boolean } | null = null;
   let ghostPosition = { x: 0, y: 0 };
   let showGhost = false;
+  let isOverRelevantArea = false;
+  let heroicMode = false;
 
   // Special marker for delete mode
   const DELETE_MARKER: Piece = { role: 'commander', color: 'red' };
@@ -93,28 +95,52 @@
     if (!boardApi) return;
 
     // Toggle selection if clicking the same piece
-    if (selectedPiece?.role === role && selectedPiece?.color === color) {
+    const isPromoted = heroicMode && role !== 'commander';
+    if (selectedPiece?.role === role && selectedPiece?.color === color && selectedPiece?.promoted === isPromoted) {
       selectedPiece = null;
       showGhost = false;
       // Disable dropmode
       boardApi.state.dropmode = { active: false };
       document.body.style.cursor = 'default';
     } else {
-      selectedPiece = { role, color };
+      // Commander cannot be heroic (promoted)
+      selectedPiece = { role, color, promoted: isPromoted ? true : undefined };
       deleteMode = false;
       showGhost = true;
-      // Enable dropmode with the selected piece
+      // Enable dropmode with the selected piece (including promoted/heroic status)
+      const piece: Piece = { role, color };
+      if (isPromoted) {
+        piece.promoted = true;
+      }
       boardApi.state.dropmode = {
         active: true,
-        piece: { role, color }
+        piece
       };
       document.body.style.cursor = 'default';
+    }
+  }
+
+  function toggleHeroicMode() {
+    heroicMode = !heroicMode;
+    // If a piece is already selected, reselect it with new promoted status
+    if (selectedPiece) {
+      const { role, color } = selectedPiece;
+      selectedPiece = null;
+      handlePieceSelect(role, color);
     }
   }
 
   function handleMouseMove(e: MouseEvent) {
     if (selectedPiece || deleteMode) {
       ghostPosition = { x: e.clientX, y: e.clientY };
+      
+      // Check if mouse is over palette or board area
+      const target = e.target as HTMLElement;
+      isOverRelevantArea = !!(
+        target.closest('.palette-section') ||
+        target.closest('.board-container') ||
+        target.closest('.board-section')
+      );
     }
   }
 
@@ -312,11 +338,19 @@
         <!-- Left Palette (Blue when red orientation, Red when blue orientation) -->
         <div class="palette-section left-palette">
           <h3>{boardOrientation === 'red' ? 'Blue' : 'Red'} Pieces</h3>
+          <button 
+            class="heroic-toggle btn-small"
+            class:heroic-active={heroicMode}
+            on:click={toggleHeroicMode}
+          >
+            ⭐ {heroicMode ? 'Heroic ON' : 'Heroic'}
+          </button>
           <PiecePalette
             {boardApi}
             color={boardOrientation === 'red' ? 'blue' : 'red'}
             onPieceSelect={handlePieceSelect}
             {selectedPiece}
+            {heroicMode}
           />
         </div>
 
@@ -335,25 +369,33 @@
         <!-- Right Palette (Red when red orientation, Blue when blue orientation) -->
         <div class="palette-section right-palette">
           <h3>{boardOrientation === 'red' ? 'Red' : 'Blue'} Pieces</h3>
+          <button 
+            class="heroic-toggle btn-small"
+            class:heroic-active={heroicMode}
+            on:click={toggleHeroicMode}
+          >
+            ⭐ {heroicMode ? 'Heroic ON' : 'Heroic'}
+          </button>
           <PiecePalette
             {boardApi}
             color={boardOrientation === 'red' ? 'red' : 'blue'}
             onPieceSelect={handlePieceSelect}
             {selectedPiece}
+            {heroicMode}
           />
         </div>
       </div>
     </div>
 
-    <!-- Ghost piece that follows mouse -->
-    {#if showGhost && selectedPiece}
+    <!-- Ghost piece that follows mouse (only in relevant areas) -->
+    {#if showGhost && selectedPiece && isOverRelevantArea}
       <div class="ghost-piece cg-wrap" style="left: {ghostPosition.x}px; top: {ghostPosition.y}px;">
-        <piece class="{selectedPiece.role} {selectedPiece.color}"></piece>
+        <piece class="{selectedPiece.role} {selectedPiece.color}" class:promoted={selectedPiece.promoted}></piece>
       </div>
     {/if}
 
-    <!-- Ghost recycle bin that follows mouse in delete mode -->
-    {#if deleteMode}
+    <!-- Ghost recycle bin that follows mouse in delete mode (only in relevant areas) -->
+    {#if deleteMode && isOverRelevantArea}
       <div class="ghost-recycle-bin" style="left: {ghostPosition.x}px; top: {ghostPosition.y}px;">
         🗑️
       </div>
@@ -613,6 +655,37 @@
 
   .btn-danger:hover {
     background: #c82333;
+  }
+
+  /* Heroic toggle button */
+  .heroic-toggle {
+    width: 100%;
+    margin-bottom: 0.75rem;
+    background: #f8f9fa;
+    color: #495057;
+    border: 2px solid #dee2e6;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.85rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .heroic-toggle:hover {
+    background: #e9ecef;
+    border-color: #cbd3da;
+  }
+
+  .heroic-toggle.heroic-active {
+    background: #ffd700;
+    color: #000;
+    border-color: #ffb700;
+    font-weight: 600;
+  }
+
+  .heroic-toggle.heroic-active:hover {
+    background: #ffed4e;
+    border-color: #ffd700;
   }
 
   .fen-section {

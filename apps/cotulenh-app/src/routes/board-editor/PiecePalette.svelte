@@ -5,7 +5,8 @@
   export let boardApi: Api | null = null;
   export let color: Color = 'red'; // Which color pieces to show
   export let onPieceSelect: (role: Role, color: Color) => void = () => {};
-  export let selectedPiece: { role: Role; color: Color } | null = null;
+  export let selectedPiece: { role: Role; color: Color; promoted?: boolean } | null = null;
+  export let heroicMode: boolean = false; // Whether pieces should be heroic (promoted)
 
   const roles: Role[] = [
     'commander',
@@ -21,20 +22,28 @@
     'headquarter',
   ];
 
-  const colors: Color[] = ['red', 'blue'];
+  // Create piece objects with proper state - promoted represents heroic in board terminology
+  let pieces: Piece[] = [];
+  
+  // Initialize or update pieces based on color and heroicMode
+  $: {
+    pieces = roles.map(role => ({
+      role,
+      color,
+      promoted: heroicMode && role !== 'commander' ? true : undefined
+    }));
+  }
 
-  function handlePieceDragStart(role: Role, color: Color, event: MouseEvent | TouchEvent) {
+  function handlePieceDragStart(piece: Piece, event: MouseEvent | TouchEvent) {
     event.preventDefault();
     
     if (!boardApi) return;
-
-    const piece: Piece = { role, color };
     
     try {
-      // Use the board's built-in dragNewPiece method
+      // Use the board's built-in dragNewPiece method with the actual piece object
       // force=true allows replacing existing pieces
       boardApi.dragNewPiece(piece, event as any, true);
-      console.log(`Started dragging ${color} ${role}`);
+      console.log(`Started dragging ${piece.color} ${piece.role}${piece.promoted ? ' (heroic)' : ''}`);
     } catch (error) {
       console.error('Error starting drag:', error);
     }
@@ -50,34 +59,35 @@
 
 <div class="palette-container">
   <div class="pieces-grid">
-    {#each roles as role}
+    {#each pieces as piece}
       <div
         class="palette-piece-wrapper"
-        class:selected={selectedPiece?.role === role && selectedPiece?.color === color}
-        title="{formatRoleName(role)}"
+        class:selected={selectedPiece?.role === piece.role && selectedPiece?.color === piece.color && selectedPiece?.promoted === piece.promoted}
+        title="{formatRoleName(piece.role)}"
       >
         <div 
           class="cg-wrap palette-piece-container"
           role="button"
           tabindex="0"
-          on:mousedown={(e) => handlePieceDragStart(role, color, e)}
-          on:touchstart={(e) => handlePieceDragStart(role, color, e)}
+          on:mousedown={(e) => handlePieceDragStart(piece, e)}
+          on:touchstart={(e) => handlePieceDragStart(piece, e)}
           on:click={(e) => {
             e.stopPropagation();
-            onPieceSelect(role, color);
+            onPieceSelect(piece.role, piece.color);
           }}
           on:keydown={(e) => {
             if (e.key === 'Enter' || e.key === ' ') {
               e.preventDefault();
-              onPieceSelect(role, color);
+              onPieceSelect(piece.role, piece.color);
             }
           }}
         >
-          <piece class="{role} {color}">
+          <piece class="{piece.role} {piece.color}" class:promoted={piece.promoted}>
             <!-- Piece will be rendered via CSS background from commander-chess.pieces.css -->
+            <!-- Heroic (promoted) pieces get golden glow and star indicator -->
           </piece>
         </div>
-        <span class="piece-label">{formatRoleName(role)}</span>
+        <span class="piece-label">{formatRoleName(piece.role)}</span>
       </div>
     {/each}
   </div>
