@@ -2,11 +2,16 @@
   import type { Api, Piece, Role, Color } from '@repo/cotulenh-board';
   import { onMount } from 'svelte';
 
+  type EditorMode = 'hand' | 'drop' | 'delete';
+
   export let boardApi: Api | null = null;
   export let color: Color = 'red'; // Which color pieces to show
   export let onPieceSelect: (role: Role, color: Color) => void = () => {};
   export let selectedPiece: { role: Role; color: Color; promoted?: boolean } | null = null;
   export let heroicMode: boolean = false; // Whether pieces should be heroic (promoted)
+  export let editorMode: EditorMode = 'hand'; // Current editor mode
+  export let onHandModeToggle: () => void = () => {}; // Callback to toggle hand mode
+  export let onDeleteModeToggle: () => void = () => {}; // Callback to toggle delete mode
 
   const roles: Role[] = [
     'commander',
@@ -58,6 +63,61 @@
 </script>
 
 <div class="palette-container">
+  <!-- Mode buttons: Hand and Delete -->
+  <div class="mode-buttons">
+    <!-- Hand button -->
+    <div
+      class="palette-piece-wrapper mode-button"
+      class:selected={editorMode === 'hand'}
+      title="Hand Mode - Drag pieces on board"
+    >
+      <div 
+        class="palette-piece-container mode-icon"
+        role="button"
+        tabindex="0"
+        on:click={(e) => {
+          e.stopPropagation();
+          onHandModeToggle();
+        }}
+        on:keydown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            onHandModeToggle();
+          }
+        }}
+      >
+        <span class="mode-emoji">✋</span>
+      </div>
+      <span class="piece-label">Hand</span>
+    </div>
+
+    <!-- Delete button -->
+    <div
+      class="palette-piece-wrapper mode-button"
+      class:selected={editorMode === 'delete'}
+      title="Delete Mode - Click pieces to delete"
+    >
+      <div 
+        class="palette-piece-container mode-icon delete-icon"
+        role="button"
+        tabindex="0"
+        on:click={(e) => {
+          e.stopPropagation();
+          onDeleteModeToggle();
+        }}
+        on:keydown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            onDeleteModeToggle();
+          }
+        }}
+      >
+        <span class="mode-emoji">🗑️</span>
+      </div>
+      <span class="piece-label">Delete</span>
+    </div>
+  </div>
+
   <div class="pieces-grid">
     {#each pieces as piece}
       <div
@@ -174,8 +234,54 @@
     white-space: nowrap;
   }
 
+  /* Mode buttons styles */
+  .mode-buttons {
+    display: flex;
+    gap: 0.25rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .mode-button {
+    flex: 1;
+  }
+
+  .mode-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #f8f9fa;
+    cursor: pointer;
+  }
+
+  .mode-icon:hover {
+    background-color: #e9ecef;
+  }
+
+  .mode-button.selected .mode-icon {
+    background-color: rgba(0, 123, 255, 0.2);
+  }
+
+  .delete-icon.mode-icon:hover {
+    background-color: #ffe5e5;
+  }
+
+  .mode-button.selected .delete-icon {
+    background-color: rgba(220, 53, 69, 0.2);
+  }
+
+  .mode-emoji {
+    font-size: 24px;
+    user-select: none;
+    pointer-events: none;
+  }
+
   /* When palettes are stacked horizontally */
   @media (max-width: 1000px) {
+    .mode-buttons {
+      gap: 0.35rem;
+      margin-bottom: 0.75rem;
+    }
+
     .pieces-grid {
       grid-template-columns: repeat(6, 1fr);
       gap: 0.35rem;
@@ -189,6 +295,10 @@
     .palette-piece-container {
       width: clamp(35px, 8vw, 50px);
       height: clamp(35px, 8vw, 50px);
+    }
+
+    .mode-emoji {
+      font-size: 20px;
     }
   }
 
