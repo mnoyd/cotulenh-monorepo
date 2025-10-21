@@ -353,7 +353,7 @@ function canDrop(state: HeadlessState, orig: cg.Key, dest: cg.Key): boolean {
   const piece = state.pieces.get(orig);
   return (
     !!piece &&
-    (orig === dest || !state.pieces.has(dest)) &&
+    (state.movable.free || orig === dest || !state.pieces.has(dest)) &&
     (state.movable.color === 'both' ||
       (state.movable.color === piece.color && state.turnColor === piece.color))
   );
