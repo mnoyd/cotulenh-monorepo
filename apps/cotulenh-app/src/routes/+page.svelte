@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { page } from '$app/stores';
   import { CotulenhBoard, origMoveToKey } from '@repo/cotulenh-board';
   import type { Api, Role as BoardRole, DestMove, OrigMove, OrigMoveKey, Role, StackMove, MoveMetadata } from '@repo/cotulenh-board';
   import { CoTuLenh, getCoreTypeFromRole, getRoleFromCoreType, BLUE, RED } from '@repo/cotulenh-core';
@@ -149,7 +150,22 @@
   onMount(() => {
     if (boardContainerElement) {
       console.log('Initializing game logic and board...');
-      game = new CoTuLenh();
+      
+      // Check for FEN in URL parameters
+      const urlFen = $page.url.searchParams.get('fen');
+      let initialFen: string | undefined = undefined;
+      
+      if (urlFen) {
+        try {
+          initialFen = decodeURIComponent(urlFen);
+          console.log('Loading game with custom FEN:', initialFen);
+        } catch (error) {
+          console.error('Error decoding FEN from URL:', error);
+        }
+      }
+      
+      // Initialize game with custom FEN or default position
+      game = initialFen ? new CoTuLenh(initialFen) : new CoTuLenh();
       gameStore.initialize(game);
 
       const unsubscribe = gameStore.subscribe((state) => {

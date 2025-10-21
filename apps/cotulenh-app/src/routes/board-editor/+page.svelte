@@ -1,7 +1,10 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { page } from '$app/stores';
   import { CotulenhBoard } from '@repo/cotulenh-board';
   import type { Api, Piece, Role, Color } from '@repo/cotulenh-board';
+  import { validateFenString } from '@repo/cotulenh-core';
+  import { goto } from '$app/navigation';
   import PiecePalette from './PiecePalette.svelte';
 
   import '@repo/cotulenh-board/assets/commander-chess.base.css';
@@ -22,28 +25,61 @@
   let showGhost = false;
   let isOverRelevantArea = false;
   let heroicMode = false;
+  let validationError = '';
+  let currentTurn: 'red' | 'blue' = 'red';
 
   // Special marker for delete mode
   const DELETE_MARKER: Piece = { role: 'commander', color: 'red' };
 
   // Initial empty board FEN
-  const EMPTY_FEN = '11/11/11/11/11/11/11/11/11/11/11/11';
+  const EMPTY_FEN = '11/11/11/11/11/11/11/11/11/11/11/11 r - - 0 1';
   const STARTING_FEN =
     '6c4/1n2fh1hf2/3a2s2a1/2n1gt1tg2/2ie2m2ei/11/11/2IE2M2EI/2N1GT1TG2/3A2S2A1/1N2FH1HF2/6C4 r - - 0 1';
 
   function updateFEN() {
     if (boardApi) {
-      fenInput = boardApi.getFen();
+      let rawFen = boardApi.getFen();
+      
+      // Ensure FEN has correct format: [board] [turn] - - 0 1
+      const fenParts = rawFen.split(' ');
+      const boardPart = fenParts[0];
+      
+      // Parse turn (default to current turn if not in FEN)
+      if (fenParts.length >= 2) {
+        currentTurn = fenParts[1] === 'b' ? 'blue' : 'red';
+      }
+      
+      // Reconstruct FEN with proper format
+      const turnChar = currentTurn === 'red' ? 'r' : 'b';
+      fenInput = `${boardPart} ${turnChar} - - 0 1`;
     }
   }
 
   function applyFEN() {
     if (boardApi && fenInput) {
       try {
+        // Parse and normalize FEN
+        const fenParts = fenInput.split(' ');
+        const boardPart = fenParts[0];
+        
+        // Parse turn (default to red if not specified)
+        if (fenParts.length >= 2) {
+          currentTurn = fenParts[1] === 'b' ? 'blue' : 'red';
+        } else {
+          currentTurn = 'red';
+        }
+        
+        // Normalize to proper format: [board] [turn] - - 0 1
+        const turnChar = currentTurn === 'red' ? 'r' : 'b';
+        const normalizedFen = `${boardPart} ${turnChar} - - 0 1`;
+        
         boardApi.set({
-          fen: fenInput,
+          fen: normalizedFen,
           lastMove: undefined
         });
+        
+        // Update fenInput with normalized FEN
+        fenInput = normalizedFen;
       } catch (error) {
         alert('Invalid FEN: ' + error);
       }
@@ -52,6 +88,8 @@
 
   function clearBoard() {
     if (boardApi) {
+      // Reset turn to red when clearing
+      currentTurn = 'red';
       // Set to empty FEN
       boardApi.set({
         fen: EMPTY_FEN,
@@ -207,7 +245,7 @@
         fen: STARTING_FEN,
         lastMove: undefined
       });
-      updateFEN();
+      updateFEN(); // This will also update currentTurn
     }
   }
 
@@ -230,6 +268,59 @@
       setTimeout(() => {
         copyButtonText = 'Copy FEN';
       }, 2000);
+    }
+  }
+
+  function toggleTurn() {
+    currentTurn = currentTurn === 'red' ? 'blue' : 'red';
+    
+    // Update FEN with new turn
+    if (fenInput) {
+      const fenParts = fenInput.split(' ');
+      const boardPart = fenParts[0];
+      const turnChar = currentTurn === 'red' ? 'r' : 'b';
+      
+      // Reconstruct FEN with proper format: [board] [turn] - - 0 1
+      fenInput = `${boardPart} ${turnChar} - - 0 1`;
+      
+      // Apply the updated FEN to the board
+      if (boardApi) {
+        try {
+          boardApi.set({
+            fen: fenInput,
+            lastMove: undefined
+          });
+        } catch (error) {
+          console.error('Error updating turn:', error);
+        }
+      }
+    }
+  }
+
+  function validateAndPlay() {
+    validationError = '';
+    
+    if (!fenInput) {
+      validationError = 'Please enter a FEN position first';
+      return;
+    }
+
+    // Try to validate using cotulenh-core
+    try {
+      const isValid = validateFenString(fenInput);
+      
+      if (!isValid) {
+        validationError = 'Invalid FEN format';
+        return;
+      }
+
+      // If validation passes, navigate to play mode with this FEN
+      // Encode FEN for URL
+      const encodedFen = encodeURIComponent(fenInput);
+      goto(`/?fen=${encodedFen}`);
+    } catch (error) {
+      // If validation throws an error, show it
+      validationError = error instanceof Error ? error.message : 'Invalid FEN';
     }
   }
 
@@ -260,6 +351,32 @@
   }
 
   onMount(() => {
+    // Check for FEN in URL parameters
+    const urlFen = $page.url.searchParams.get('fen');
+    let initialFen = EMPTY_FEN;
+    
+    if (urlFen) {
+      try {
+        let decodedFen = decodeURIComponent(urlFen);
+        
+        // Parse turn from FEN
+        const fenParts = decodedFen.split(' ');
+        const boardPart = fenParts[0];
+        
+        if (fenParts.length >= 2) {
+          currentTurn = fenParts[1] === 'b' ? 'blue' : 'red';
+        }
+        
+        // Normalize FEN to proper format: [board] [turn] - - 0 1
+        const turnChar = currentTurn === 'red' ? 'r' : 'b';
+        initialFen = `${boardPart} ${turnChar} - - 0 1`;
+        fenInput = initialFen;
+      } catch (error) {
+        console.error('Error decoding FEN from URL:', error);
+        initialFen = EMPTY_FEN;
+      }
+    }
+
     if (boardContainerElement) {
       console.log('Initializing board editor...');
 
@@ -279,9 +396,9 @@
       };
 
       boardApi = CotulenhBoard(boardContainerElement, {
-        fen: EMPTY_FEN,
+        fen: initialFen,
         orientation: 'red',
-        turnColor: 'red',
+        turnColor: currentTurn,
         movable: {
           free: true, // Allow any move - editor mode
           color: 'both', // Allow moving both colors
@@ -421,12 +538,33 @@
       </div>
     {/if}
 
+    <!-- Special Play Button -->
+    <div class="play-button-container">
+      <button class="btn-play" on:click={validateAndPlay}>
+        <span class="play-icon">▶</span>
+        <span class="play-text">Play This Position</span>
+      </button>
+      {#if validationError}
+        <div class="validation-error">
+          ⚠️ {validationError}
+        </div>
+      {/if}
+    </div>
+
     <!-- Controls Section at Bottom -->
     <div class="controls-container">
       <div class="button-row">
         <button class="btn btn-primary" on:click={loadStartingPosition}> Starting Position </button>
         <button class="btn btn-secondary" on:click={clearBoard}> Clear Board </button>
         <button class="btn btn-secondary" on:click={flipBoard}> Flip Board </button>
+        <button 
+          class="btn"
+          class:btn-turn-red={currentTurn === 'red'}
+          class:btn-turn-blue={currentTurn === 'blue'}
+          on:click={toggleTurn}
+        >
+          Turn: {currentTurn === 'red' ? '🔴 Red' : '🔵 Blue'}
+        </button>
         <button class="btn btn-secondary" on:click={screenshot} disabled> Screenshot </button>
       </div>
 
@@ -453,9 +591,9 @@
           <li><strong>Hand Mode (✋):</strong> Drag pieces on board to move them</li>
           <li><strong>Drop Mode:</strong> Click piece in palette to select, then click squares to place</li>
           <li><strong>Delete Mode (🗑️):</strong> Click to delete pieces on board</li>
+          <li><strong>Turn Toggle:</strong> Switch between Red and Blue turn</li>
           <li><strong>Drag</strong> pieces from palette to board anytime</li>
           <li>Drag pieces off board to delete them</li>
-          <li>Modes sync across both palettes</li>
         </ul>
       </div>
     </div>
@@ -467,6 +605,96 @@
     max-width: 1400px;
     margin: 1rem auto;
     padding: 1rem;
+  }
+
+  /* Special Play Button */
+  .play-button-container {
+    max-width: 1200px;
+    margin: 2rem auto 1rem;
+    text-align: center;
+  }
+
+  .btn-play {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 50px;
+    padding: 1.25rem 3rem;
+    font-size: 1.25rem;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    position: relative;
+    overflow: hidden;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .btn-play::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    transition: left 0.5s;
+  }
+
+  .btn-play:hover::before {
+    left: 100%;
+  }
+
+  .btn-play:hover {
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: 0 15px 40px rgba(102, 126, 234, 0.5);
+  }
+
+  .btn-play:active {
+    transform: translateY(-1px) scale(1.02);
+  }
+
+  .play-icon {
+    font-size: 1.5rem;
+    display: inline-flex;
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.1);
+    }
+  }
+
+  .play-text {
+    position: relative;
+    z-index: 1;
+  }
+
+  .validation-error {
+    margin-top: 1rem;
+    padding: 0.75rem 1.25rem;
+    background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+    color: white;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    display: inline-block;
+    box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);
+    animation: shake 0.5s;
+  }
+
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
   }
 
   h1 {
@@ -674,6 +902,26 @@
     background: #c82333;
   }
 
+  .btn-turn-red {
+    background: #dc3545;
+    color: white;
+    font-weight: 600;
+  }
+
+  .btn-turn-red:hover {
+    background: #c82333;
+  }
+
+  .btn-turn-blue {
+    background: #007bff;
+    color: white;
+    font-weight: 600;
+  }
+
+  .btn-turn-blue:hover {
+    background: #0056b3;
+  }
+
   /* Heroic toggle button */
   .heroic-toggle {
     width: 100%;
@@ -853,6 +1101,15 @@
     .btn-small {
       width: 100%;
     }
+
+    .btn-play {
+      padding: 1rem 2rem;
+      font-size: 1.1rem;
+    }
+
+    .play-icon {
+      font-size: 1.25rem;
+    }
   }
 
   /* Small mobile devices */
@@ -901,6 +1158,20 @@
 
     .fen-input {
       font-size: 0.75rem;
+    }
+
+    .btn-play {
+      padding: 0.9rem 1.75rem;
+      font-size: 1rem;
+    }
+
+    .play-icon {
+      font-size: 1.1rem;
+    }
+
+    .validation-error {
+      font-size: 0.85rem;
+      padding: 0.65rem 1rem;
     }
   }
 
