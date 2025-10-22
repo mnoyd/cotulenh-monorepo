@@ -9,7 +9,38 @@ needed.
 
 ---
 
+## 🎯 CRITICAL: Deploy Architecture (Updated October 22, 2025)
+
+> **IMPORTANT FOR NEW IMPLEMENTATIONS**
+>
+> Before porting, understand that CoTuLenh has **two architectures**:
+>
+> 1. **Current (Action-Based)** - Recommended for new implementations ✅
+> 2. **Legacy (Virtual State)** - TypeScript reference implementation ⚠️
+>
+> **Read First**:
+>
+> - **[../ARCHITECTURE-MIGRATION.md](../ARCHITECTURE-MIGRATION.md)** - Complete
+>   architecture comparison
+> - **[../deploy-action-based-architecture/FINAL-STATUS.md](../deploy-action-based-architecture/FINAL-STATUS.md)** -
+>   Current specification
+>
+> **Why This Matters**: The action-based architecture is **simpler, more
+> correct, and bug-free**. If porting, use action-based. If studying TypeScript
+> code, understand it uses virtual state (being migrated).
+
+---
+
 ## Quick Start for AI Agents
+
+### Phase 0: Deploy Architecture (30 minutes) ⭐ NEW
+
+**Understand the deploy system architecture:**
+
+0a. **[../ARCHITECTURE-MIGRATION.md](../ARCHITECTURE-MIGRATION.md)** - Why
+action-based is better  
+0b. **[../deploy-action-based-architecture/COMPLETE-IMPLEMENTATION-GUIDE.md](../deploy-action-based-architecture/COMPLETE-IMPLEMENTATION-GUIDE.md)** -
+How to implement it
 
 ### Phase 1: Understanding (30-60 minutes)
 
@@ -47,6 +78,10 @@ needed.
 7. **Advanced Mechanics:**
 
    - [stack-combination-rules.md](stack-combination-rules.md)
+   - [deployment-mechanics.md](deployment-mechanics.md) ⚠️ (historical - see
+     action-based architecture above)
+   - **[../deploy-action-based-architecture/](../deploy-action-based-architecture/)**
+     ⭐ **CURRENT DEPLOY ARCHITECTURE**
    - [stack-splitting-movement.md](stack-splitting-movement.md)
    - [heroic-promotion-system.md](heroic-promotion-system.md)
    - [air-defense-system.md](air-defense-system.md)

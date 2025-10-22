@@ -1,6 +1,31 @@
 # Virtual Deploy State Architecture
 
-## The Problem
+> ## ⚠️ DEPRECATED - DO NOT USE
+>
+> **Status**: LEGACY DOCUMENTATION - Replaced by action-based architecture  
+> **Created**: Historical reference  
+> **Superseded By**: `docs/deploy-action-based-architecture/` (October 22, 2025)
+>
+> **Why Deprecated**:
+>
+> - Context staleness bugs (ghost pieces)
+> - Virtual state undo failures after commit
+> - Dual state complexity
+> - Testing flag requirements
+> - All issues resolved by action-based architecture
+>
+> **Read Instead**:
+>
+> - **Current Architecture**: `docs/ARCHITECTURE-MIGRATION.md`
+> - **Implementation Guide**:
+>   `docs/deploy-action-based-architecture/FINAL-STATUS.md`
+>
+> This document is preserved for historical context and understanding the
+> evolution of the deploy system.
+
+---
+
+## The Problem (Historical Context)
 
 Current deploy implementation:
 

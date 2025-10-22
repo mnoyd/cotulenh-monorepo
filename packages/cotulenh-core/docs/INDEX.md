@@ -2,29 +2,44 @@
 
 Welcome to the comprehensive CoTuLenh documentation!
 
-## 🎯 START HERE: [RECOMMENDED_ARCHITECTURE.md](RECOMMENDED_ARCHITECTURE.md)
+## 🎯 START HERE: Deploy Architecture
 
-**The complete production-ready architecture synthesizing all best practices.**
+### ✅ CURRENT: [Action-Based Deploy Architecture](deploy-action-based-architecture/)
+
+**The authoritative production-ready architecture** - All issues resolved, ready
+to implement
+
+**Read**: `FINAL-STATUS.md` → `COMPLETE-IMPLEMENTATION-GUIDE.md` →
+`SAN-PARSER-SPEC.md`
+
+### 📋 Architecture Overview: [ARCHITECTURE-MIGRATION.md](ARCHITECTURE-MIGRATION.md)
+
+**Complete consolidation of all approaches** - Virtual state evolution →
+Action-based solution
 
 ---
 
 ## 🚀 Quick Start
 
-| Goal                                     | Start Here                                                                                         | Time      |
-| ---------------------------------------- | -------------------------------------------------------------------------------------------------- | --------- |
-| **Port to new language**                 | [context/PORTING-GUIDE.md](context/PORTING-GUIDE.md)                                               | 4-5 hours |
-| **Understand TypeScript implementation** | [implementation/board-representation-analysis.md](implementation/board-representation-analysis.md) | 1 hour    |
-| **Learn game rules only**                | [context/complete-game-mechanics-reference.md](context/complete-game-mechanics-reference.md)       | 1 hour    |
-| **Validate knowledge**                   | [context/IMPLEMENTATION-CHECKLIST.md](context/IMPLEMENTATION-CHECKLIST.md)                         | 30 min    |
+| Goal                                     | Start Here                                                                                                                      | Time      |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- | --------- |
+| **Understand deploy architecture**       | [ARCHITECTURE-MIGRATION.md](ARCHITECTURE-MIGRATION.md) → [deploy-action-based-architecture/](deploy-action-based-architecture/) | 2 hours   |
+| **Port to new language**                 | [context/PORTING-GUIDE.md](context/PORTING-GUIDE.md)                                                                            | 4-5 hours |
+| **Understand TypeScript implementation** | [ARCHITECTURE-MIGRATION.md](ARCHITECTURE-MIGRATION.md) (legacy virtual state explained)                                         | 1 hour    |
+| **Learn game rules only**                | [context/complete-game-mechanics-reference.md](context/complete-game-mechanics-reference.md)                                    | 1 hour    |
+| **Validate knowledge**                   | [context/IMPLEMENTATION-CHECKLIST.md](context/IMPLEMENTATION-CHECKLIST.md)                                                      | 30 min    |
 
 ---
 
 ## 📚 All Documents by Category
 
-### Meta Documentation (5 files)
+### Meta Documentation (7 files)
 
 - [README.md](README.md) - Main documentation hub
 - [INDEX.md](INDEX.md) - This file
+- [ARCHITECTURE-MIGRATION.md](ARCHITECTURE-MIGRATION.md) - **Deploy architecture
+  consolidation** ⭐
+- [STRUCTURE.md](STRUCTURE.md) - Documentation structure
 - [context/README.md](context/README.md) - Context documentation guide
 - [context/PORTING-GUIDE.md](context/PORTING-GUIDE.md) - **Master porting
   guide**
@@ -32,8 +47,6 @@ Welcome to the comprehensive CoTuLenh documentation!
   **118-point validation**
 - [context/AI-MASTER-INSTRUCTION.md](context/AI-MASTER-INSTRUCTION.md) - AI
   agent instructions
-- [context/ORGANIZATION-SUMMARY.md](context/ORGANIZATION-SUMMARY.md) -
-  Documentation organization
 
 ### Complete References (3 files)
 
@@ -121,7 +134,24 @@ Welcome to the comprehensive CoTuLenh documentation!
 - [context/api-validation-test.ts](context/api-validation-test.ts) - Test
   examples
 
-### Implementation Discussions (14 files)
+### Deploy Architecture (Current) ⭐
+
+- [deploy-action-based-architecture/FINAL-STATUS.md](deploy-action-based-architecture/FINAL-STATUS.md) -
+  **Current status, all issues resolved**
+- [deploy-action-based-architecture/COMPLETE-IMPLEMENTATION-GUIDE.md](deploy-action-based-architecture/COMPLETE-IMPLEMENTATION-GUIDE.md) -
+  **Core specification**
+- [deploy-action-based-architecture/SAN-PARSER-SPEC.md](deploy-action-based-architecture/SAN-PARSER-SPEC.md) -
+  **Parser implementation**
+- [deploy-action-based-architecture/RESOLVED-GAPS.md](deploy-action-based-architecture/RESOLVED-GAPS.md) -
+  Design decisions
+- [deploy-action-based-architecture/00-OVERVIEW.md](deploy-action-based-architecture/00-OVERVIEW.md) -
+  Architecture overview
+- [deploy-action-based-architecture/01-FEN-HANDLING.md](deploy-action-based-architecture/01-FEN-HANDLING.md) -
+  Extended FEN format
+- [deploy-action-based-architecture/02-MOVE-GENERATION.md](deploy-action-based-architecture/02-MOVE-GENERATION.md) -
+  Move generation
+
+### Legacy Implementation Discussions (14 files) ⚠️ DEPRECATED
 
 - [implementation/board-and-piece-representation.md](implementation/board-and-piece-representation.md) -
   **16x16 mailbox & Piece structure** ⭐
@@ -135,20 +165,20 @@ Welcome to the comprehensive CoTuLenh documentation!
   **Move types & state transitions**
 - [implementation/mutation-vs-immutability-analysis.md](implementation/mutation-vs-immutability-analysis.md) -
   **Honest performance comparison**
-- [implementation/deploy-session-state-management.md](implementation/deploy-session-state-management.md) -
-  **Deploy state management**
-- [implementation/deploy-session-ui-engine-api.md](implementation/deploy-session-ui-engine-api.md) -
-  **UI ↔ Engine API pattern**
+- [legacy-square-by-square-approaches/deploy-session-state-management.md](legacy-square-by-square-approaches/deploy-session-state-management.md) -
+  ⚠️ **LEGACY - Virtual state approach**
+- [legacy-square-by-square-approaches/deploy-session-ui-engine-api.md](legacy-square-by-square-approaches/deploy-session-ui-engine-api.md) -
+  ⚠️ **LEGACY - UI pattern**
 - [implementation/command-pattern-architecture.md](implementation/command-pattern-architecture.md) -
   **Command Pattern design**
 - [implementation/command-pattern-examples.md](implementation/command-pattern-examples.md) -
   **Complete examples**
-- [implementation/virtual-deploy-state-architecture.md](implementation/virtual-deploy-state-architecture.md) -
-  **Virtual state overlay** ⭐
-- [implementation/air-defense-zones-architecture.md](implementation/air-defense-zones-architecture.md) -
-  **Air defense caching & virtual state** ⭐
-- [implementation/virtual-state-integration-flow.md](implementation/virtual-state-integration-flow.md) -
-  **Complete flow: move() → response** ⭐⭐
+- [legacy-square-by-square-approaches/virtual-deploy-state-architecture.md](legacy-square-by-square-approaches/virtual-deploy-state-architecture.md) -
+  ⚠️ **DEPRECATED - Replaced by action-based**
+- [legacy-square-by-square-approaches/air-defense-zones-architecture.md](legacy-square-by-square-approaches/air-defense-zones-architecture.md) -
+  ⚠️ **LEGACY - Virtual state bugs documented**
+- [legacy-square-by-square-approaches/virtual-state-integration-flow.md](legacy-square-by-square-approaches/virtual-state-integration-flow.md) -
+  ⚠️ **DEPRECATED** **Complete flow: move() → response** ⭐⭐
 - [implementation/board-presentation-api.md](implementation/board-presentation-api.md) -
   **Complete UI/Board API** ⭐⭐
 

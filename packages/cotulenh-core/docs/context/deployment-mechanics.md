@@ -1,66 +1,110 @@
 # Deployment Mechanics
 
-> ⚠️ **CRITICAL**: Read
-> [DEPLOY-CRITICAL-LEARNINGS.md](./DEPLOY-CRITICAL-LEARNINGS.md) before
-> modifying deploy system!  
-> Contains critical bug fixes, undocumented behavior, and production insights
-> from Phase 3.
+> ## 🎯 ARCHITECTURE UPDATE (October 22, 2025)
+>
+> **Current Architecture**: Action-Based Deploy System  
+> **Location**: `docs/deploy-action-based-architecture/`
+>
+> **Read First**:
+>
+> - `docs/ARCHITECTURE-MIGRATION.md` - Complete architecture evolution
+> - `docs/deploy-action-based-architecture/FINAL-STATUS.md` - Current status
+> - `docs/deploy-action-based-architecture/COMPLETE-IMPLEMENTATION-GUIDE.md` -
+>   Specification
+>
+> **Historical Context Below**: This document describes the virtual state
+> implementation. See ARCHITECTURE-MIGRATION.md for why we moved to action-based
+> approach.
 
-## Overview
+> ⚠️ **HISTORICAL**: Read
+> [DEPLOY-CRITICAL-LEARNINGS.md](./DEPLOY-CRITICAL-LEARNINGS.md) for virtual
+> state bugs fixed during Phase 3 implementation (now superseded).
+
+---
+
+## Overview (Game Rules - Unchanged)
 
 CoTuLenh's deployment system allows stacked pieces to be separated and deployed
 to different squares in a multi-phase process. This creates strategic depth by
 enabling complex piece positioning and tactical flexibility.
 
-**Two Deploy APIs Available**:
+**Current Architecture (Action-Based)**:
 
-1. **Incremental API** (legacy): `startDeploy()` → `move()` → `move()` →
+- Single API: `move()` with `deploy` flag
+- Deploy session created lazily on first deploy move
+- Actions tracked, not virtual state
+- Commit when all pieces deployed or manual commit
+
+**Historical APIs** (Virtual State Implementation):
+
+1. **Incremental API**: `startDeploy()` → `move()` → `move()` →
    `completeDeploy()`
-2. **Batch API** (Phase 3): `deployMove(request)` - atomic execution of all
-   moves
+2. **Batch API**: `deployMove(request)` - atomic execution
+
+See `docs/deploy-action-based-architecture/COMPLETE-IMPLEMENTATION-GUIDE.md` for
+current API.
 
 ## Deploy State Management
 
-### Deploy State Structure
+### Current Architecture: Action-Based Deploy Session
 
 ```typescript
-type DeployState = {
-  stackSquare: number // Original stack location (0x88 format)
-  turn: Color // Player whose turn it is during deployment
-  originalPiece: Piece // Complete original stack before deployment
-  movedPieces: Piece[] // Pieces that have been deployed so far
-  stay?: Piece[] // Pieces that will remain at original square
+class DeploySession {
+  stackSquare: Square // Where deployment started
+  turn: Color // Who is deploying
+  originalPiece: Piece // Original stack (for reference)
+  actions: InternalMove[] // ← KEY: Actions taken, not state
+  startFEN: string // FEN before deploy started
+
+  // Calculate remaining on-demand
+  getRemainingPieces(): Piece | null {
+    let remaining = this.originalPiece
+    for (const move of this.actions) {
+      if (move.from === this.stackSquare && move.flags & BITS.DEPLOY) {
+        remaining = removePieceFromStack(remaining, move.piece) || null
+      }
+    }
+    return remaining
+  }
 }
 ```
 
-### Deploy Session Structure (Phase 3 - Virtual State)
+**Key Principles**:
+
+- **Board IS the state** - no virtual overlay
+- **Actions tracked** - for remaining piece calculation
+- **Command pattern** - for perfect undo/redo
+- **Single source of truth** - real board, always correct
+
+### Historical: Virtual State Structure (Deprecated)
+
+<details>
+<summary>Click to see legacy virtual state implementation</summary>
 
 ```typescript
+// DEPRECATED - Virtual State Approach
 interface DeploySession {
-  stackSquare: number
-  turn: Color
-  originalPiece: Piece
-  virtualChanges: Map<Square, Piece | null> // ← NEW: Virtual board overlay
+  virtualChanges: Map<Square, Piece | null> // ❌ No longer used
   movedPieces: Array<{ piece: Piece; from: Square; to: Square }>
-  stayingPieces: Piece[]
-  isBatchMode?: boolean // ← NEW: Batch vs incremental mode
+  // ... complex dual-state management
 }
 ```
 
-**Critical**: `virtualChanges` holds temporary board state during deployment:
+**Why Deprecated**: Context staleness, undo bugs, complexity.  
+See `docs/ARCHITECTURE-MIGRATION.md` for complete analysis.
 
-- Changes accumulate without mutating real board
-- Committed atomically when deployment completes
-- **After commit, virtualChanges is cleared** (important for undo!)
-- See
-  [Virtual State Undo Bug](./DEPLOY-CRITICAL-LEARNINGS.md#1-virtual-state-undo-after-commit-bug)
+</details>
 
-### Deploy State Lifecycle
+### Deploy Session Lifecycle
 
-1. **Initiation**: Deploy state created when first piece is deployed from stack
-2. **Active Phase**: Multiple deploy moves can be made from same stack
-3. **Termination**: Deploy state cleared when all pieces are accounted for
-4. **Turn Switch**: Turn changes only when deployment phase ends
+1. **Lazy Creation**: Session created on first deploy move from stack
+2. **Active Phase**: Moves accumulate in `actions` array, board updates directly
+3. **Completion**: Auto-commit when all pieces moved, or manual commit
+4. **Turn Switch**: Occurs only when session commits
+5. **Cancellation**: Undo all actions via command pattern
+
+**Detailed Specification**:
+`docs/deploy-action-based-architecture/COMPLETE-IMPLEMENTATION-GUIDE.md`
 
 ## MoveContext Flags (Critical for Correctness)
 
