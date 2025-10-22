@@ -1,8 +1,31 @@
 # Deploy System: Critical Learnings & Undocumented Behavior
 
+> ## 🎯 ARCHITECTURE SUPERSEDED (October 22, 2025)
+>
+> **This Document**: Historical analysis of virtual state implementation bugs  
+> **Current Architecture**: Action-Based (all bugs below are resolved)  
+> **Status**: HISTORICAL REFERENCE - Valuable for understanding what NOT to do
+>
+> **Read Current Architecture**:
+>
+> - `docs/ARCHITECTURE-MIGRATION.md` - Why we moved away from virtual state
+> - `docs/deploy-action-based-architecture/FINAL-STATUS.md` - Current system (0
+>   bugs)
+>
+> **Value of This Document**:
+>
+> - Shows real production bugs from virtual state approach
+> - Explains why action-based architecture is superior
+> - Critical learnings about context capture, virtual state, and testing flags
+> - **Keep reading** - these insights informed the new architecture
+
+---
+
 **Last Updated**: October 20, 2025  
-**Status**: Production Insights from Phase 3 Implementation  
-**Severity**: ⚠️ CRITICAL - Must Read Before Working on Deploy System
+**Historical Status**: Production Bugs from Phase 3 Virtual State
+Implementation  
+**Current Status**: All bugs below resolved by action-based architecture  
+**Severity**: 📚 HISTORICAL - Critical insights for architecture decisions
 
 ---
 

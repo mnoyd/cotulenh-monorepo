@@ -1,6 +1,32 @@
 # Deploy Session State Management: The Complete Solution
 
-## The Real Complexity
+> ## ⚠️ DEPRECATED - DO NOT USE
+>
+> **Status**: LEGACY DOCUMENTATION - Superseded by action-based architecture  
+> **Historical**: This was the "complete solution" before discovering simpler
+> approach  
+> **Superseded By**: `docs/deploy-action-based-architecture/` (October 22, 2025)
+>
+> **Why Replaced**:
+>
+> - Virtual state complexity unnecessary
+> - Extended FEN format evolved (now simpler)
+> - Action-based approach eliminates all tracked issues
+> - Command pattern already solved what virtual state attempted
+>
+> **Current Architecture**:
+>
+> - **Migration Guide**: `docs/ARCHITECTURE-MIGRATION.md`
+> - **New Specification**:
+>   `docs/deploy-action-based-architecture/COMPLETE-IMPLEMENTATION-GUIDE.md`
+> - **Extended FEN**: `docs/deploy-action-based-architecture/01-FEN-HANDLING.md`
+>
+> This document shows the complexity virtual state required. The action-based
+> approach is dramatically simpler.
+
+---
+
+## The Real Complexity (Historical Analysis)
 
 You're absolutely right - **deploy sessions are the hardest part of CoTuLenh**.
 Let me address all 6 critical issues you raised.

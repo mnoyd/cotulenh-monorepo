@@ -5,6 +5,32 @@ implementation.
 
 ---
 
+## 🎯 START HERE: Deploy Architecture (October 22, 2025)
+
+### ✅ Current: Action-Based Deploy System
+
+**CRITICAL FOR ALL IMPLEMENTATIONS**: CoTuLenh's most complex feature has been
+redesigned.
+
+- **📚 Master Guide**: [ARCHITECTURE-MIGRATION.md](ARCHITECTURE-MIGRATION.md) -
+  Complete evolution & comparison
+- **⭐ Current Spec**:
+  [deploy-action-based-architecture/](deploy-action-based-architecture/) - Ready
+  to implement
+- **📚 Quick Start**:
+  [deploy-action-based-architecture/FINAL-STATUS.md](deploy-action-based-architecture/FINAL-STATUS.md)
+
+**Why This Matters**:
+
+- **Simpler**: Single source of truth (no virtual state overlay)
+- **Correct**: All bugs from virtual state approach resolved
+- **Complete**: 0 blockers, fully specified, ready to code
+
+**For Porters**: Use action-based architecture (TypeScript codebase uses legacy
+virtual state being migrated)
+
+---
+
 ## 📁 Documentation Structure
 
 ### `/context` - Game Rules & Porting Guide
@@ -31,26 +57,47 @@ to any language.**
 - **[complete-piece-behavior-reference.md](context/complete-piece-behavior-reference.md)** -
   All 11 pieces compiled
 
-> ⚠️ **CRITICAL FOR DEPLOY SYSTEM WORK**:
+> 🎯 **DEPLOY ARCHITECTURE** (Updated October 22, 2025):
 >
+> - **[ARCHITECTURE-MIGRATION.md](ARCHITECTURE-MIGRATION.md)** - **READ
+>   FIRST** - Why action-based architecture
+> - **[deploy-action-based-architecture/](deploy-action-based-architecture/)** -
+>   **CURRENT SPEC** - Implementation guide
 > - **[DEPLOY-CRITICAL-LEARNINGS.md](context/DEPLOY-CRITICAL-LEARNINGS.md)** -
->   **MUST READ** before modifying deploy system!  
->   Contains critical bug fixes, undocumented behavior, and production insights
->   from Phase 3 implementation.
+>   **HISTORICAL** - Virtual state bugs (all resolved)
 
-### `/implementation` - Architecture & Design Decisions
+### `/deploy-action-based-architecture` - Deploy System (Current) ⭐
 
-**Technical discussions, architecture analysis, and implementation strategies
-for the TypeScript codebase.**
+**The authoritative specification for CoTuLenh's deployment system.**
 
-**Start here for:**
+**Complete and ready to implement:**
 
-- 🏗️ Understanding architecture decisions
-- 🔧 Implementation planning
-- ⚡ Performance optimization
-- 🧪 Testing strategies
+- ✅ All critical issues resolved
+- 📄 Full specification with examples
+- 📦 SAN parser detailed
+- 🧪 Test cases defined
+- 🚀 Implementation plan (17-26 hours)
 
 **Key files:**
+
+- **[FINAL-STATUS.md](deploy-action-based-architecture/FINAL-STATUS.md)** -
+  Current status, 0 blockers
+- **[COMPLETE-IMPLEMENTATION-GUIDE.md](deploy-action-based-architecture/COMPLETE-IMPLEMENTATION-GUIDE.md)** -
+  How to implement
+- **[SAN-PARSER-SPEC.md](deploy-action-based-architecture/SAN-PARSER-SPEC.md)** -
+  Parser specification
+
+### `/legacy-square-by-square-approaches` - Historical Reference ⚠️
+
+**Previous deploy architecture attempts - DEPRECATED, for reference only.**
+
+- Virtual state overlay approach (TypeScript implementation)
+- Square-by-square mutations
+- All issues documented and resolved in action-based architecture
+
+### `/implementation` - Other Architecture Discussions
+
+**Technical discussions for non-deploy aspects of TypeScript codebase.**
 
 - **[board-representation-analysis.md](implementation/board-representation-analysis.md)** -
   Why 0x88 array (not bitboards)
@@ -61,22 +108,30 @@ for the TypeScript codebase.**
 
 ### For AI Agents Porting to New Language
 
-1. Read [context/PORTING-GUIDE.md](context/PORTING-GUIDE.md) (30 min)
-2. Read
+1. **[ARCHITECTURE-MIGRATION.md](ARCHITECTURE-MIGRATION.md)** - Deploy
+   architecture (30 min) ⭐
+2. **[deploy-action-based-architecture/FINAL-STATUS.md](deploy-action-based-architecture/FINAL-STATUS.md)** -
+   Implementation guide (30 min)
+3. Read [context/PORTING-GUIDE.md](context/PORTING-GUIDE.md) (30 min)
+4. Read
    [context/complete-game-mechanics-reference.md](context/complete-game-mechanics-reference.md)
    (60 min)
-3. Study all piece mechanics (2 hours)
-4. Complete
+5. Study all piece mechanics (2 hours)
+6. Complete
    [context/IMPLEMENTATION-CHECKLIST.md](context/IMPLEMENTATION-CHECKLIST.md)
-5. **Total: ~4-5 hours for complete understanding**
+7. **Total: ~5-6 hours for complete understanding**
 
 ### For TypeScript Implementation Contributors
 
-1. Read
+1. **[ARCHITECTURE-MIGRATION.md](ARCHITECTURE-MIGRATION.md)** - Understand
+   virtual state → action-based migration ⭐
+2. **[context/DEPLOY-CRITICAL-LEARNINGS.md](context/DEPLOY-CRITICAL-LEARNINGS.md)** -
+   Historical bugs to avoid
+3. Read
    [implementation/board-representation-analysis.md](implementation/board-representation-analysis.md)
-2. Review [context/codebase-dependencies.md](context/codebase-dependencies.md)
-3. Study [context/data-flow-analysis.md](context/data-flow-analysis.md)
-4. Check
+4. Review [context/codebase-dependencies.md](context/codebase-dependencies.md)
+5. Study [context/data-flow-analysis.md](context/data-flow-analysis.md)
+6. Check
    [context/external-api-usage-guide.md](context/external-api-usage-guide.md)
 
 ### For Game Rules Only
