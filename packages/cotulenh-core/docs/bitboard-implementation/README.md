@@ -170,19 +170,89 @@ function generateTankMoves(square: number, occupancy: Bitboard): Bitboard {
 
 ---
 
+## 🎯 Key Learnings from Production Analysis (Oct 2025)
+
+### Chessops Study: How Lichess Does It
+
+We analyzed **chessops** (https://github.com/niklasf/chessops), the TypeScript
+chess library powering **millions of games on lichess.org**. Critical findings:
+
+#### ✅ What Works (Adopt for CoTuLenh):
+
+1. **Context-Based Legal Move Validation** - Compute "context" (pinned pieces,
+   checkers) once, then filter all moves using bitboard operations. **NO
+   make/undo needed for 80% of moves!**
+
+2. **Immutable Bitboards** - All operations return new instances. Simpler
+   reasoning, no mutation bugs, easy snapshots.
+
+3. **Snapshot-Based Undo** - Clone position (~400 bytes) instead of command
+   pattern. Memory cost acceptable (~40KB per 100 moves).
+
+4. **Hyperbola Quintessence > Magic Bitboards** - Faster initialization, smaller
+   memory, good enough performance for web deployment.
+
+5. **No Zobrist Hashing Initially** - Chessops doesn't use it! Only needed if
+   FEN generation becomes bottleneck.
+
+#### ⚠️ CoTuLenh-Specific Challenges:
+
+1. **Air Force Ignores Blocking** - Standard pin detection breaks. Need special
+   Air Force threat calculation that ignores all pieces.
+
+2. **Stay-Captures** - Artillery/Navy can attack where they can't move. Need
+   separate attack/movement range calculation.
+
+3. **Non-Blocking Attacks** - Can't eliminate make/undo entirely. Still need
+   simulation for:
+
+   - Air Force exposure checks
+   - Complex multi-threat scenarios
+   - Deploy move validation
+   - Commander move validation
+
+4. **Stack Hierarchy** - Bitboards alone can't encode carrier/carried
+   relationship. **MUST use supplemental Map<square, StackInfo>**.
+
+#### 📊 Realistic Performance Expectations:
+
+| Scenario               | Traditional | With Bitboards | Speedup                           |
+| ---------------------- | ----------- | -------------- | --------------------------------- |
+| **Simple piece moves** | 50μs        | 2-3μs          | **~20x**                          |
+| **Pinned pieces**      | 50μs        | 2-3μs          | **~20x**                          |
+| **Air Force threats**  | 50μs        | 10-20μs        | **~3x**                           |
+| **Deploy moves**       | 50μs        | 40-50μs        | **~1x** (still need simulation)   |
+| **Commander moves**    | 50μs        | 30-40μs        | **~1.5x** (still need validation) |
+| **Overall average**    | 50μs        | 10-15μs        | **4-5x faster** ✅                |
+
+**Conclusion:** Expect **4-5x overall speedup**, not 50-100x. Still excellent
+for CoTuLenh's complexity!
+
+---
+
 ## Files in This Folder
+
+### 🆕 Latest Research & Analysis
+
+- **`chessops-architecture-analysis.md`** - Deep dive into production bitboard
+  implementation (lichess)
+- **`legal-move-validation-strategies.md`** - How to validate moves without
+  make/undo (context-based filtering)
+
+### Core Implementation Docs
 
 - `README.md` - This overview document
 - `bitboard-basics.md` - Core bitboard concepts and utilities
 - `terrain-encoding.md` - How to encode CoTuLenh's terrain as bitboards
 - `ray-generation.md` - Pre-computing movement and attack rays
-- `move-generation.md` - Fast move generation using bitboards
-- `stay-capture-logic.md` - Implementing stay-capture with bitboards
-- `heroic-promotion.md` - Bitboard-based heroic promotion detection
-- `magic-bitboards.md` - Ultra-fast sliding piece attacks
-- `deploy-sessions.md` - Handling deploy sessions with bitboards
-- `performance-analysis.md` - Benchmarks and optimization techniques
-- `implementation-guide.md` - Step-by-step implementation instructions
+- `advanced-movement-rules.md` - Complex movement mechanics
+- `magic-bitboards-advanced.md` - Ultra-fast sliding piece attacks
+- `heroic-promotion-magic-detailed.md` - Bitboard-based heroic promotion
+- `air-defense-zones.md` - Air defense calculation with bitboards
+- `deploy-sessions-simplified.md` - Handling deploy sessions
+- `runtime-state-and-logic.md` - Runtime state management
+- `advanced-considerations.md` - Critical implementation challenges
+- `project-structure.md` - Complete project organization
 
 ---
 
