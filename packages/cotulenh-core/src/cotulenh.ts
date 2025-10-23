@@ -72,6 +72,7 @@ import {
   getCheckAirDefenseZone,
   updateAirDefensePiecesPosition,
 } from './air-defense.js'
+import { DeploySession } from './deploy-session.js'
 
 // Structure for storing history states
 interface History {
@@ -80,7 +81,8 @@ interface History {
   turn: Color
   halfMoves: number // Half move clock before the move
   moveNumber: number // Move number before the move
-  deployState: DeployState | null // Snapshot of deploy state before move
+  deployState: DeployState | null // Snapshot of deploy state before move (legacy)
+  deploySession: DeploySession | null // Snapshot of deploy session (new action-based)
 }
 
 // Public Move class (similar to chess.js) - can be fleshed out later
@@ -161,7 +163,8 @@ export class CoTuLenh {
   private _history: History[] = []
   private _comments: Record<string, string> = {}
   private _positionCount: Record<string, number> = {}
-  private _deployState: DeployState | null = null // Tracks active deploy phase
+  private _deployState: DeployState | null = null // Tracks active deploy phase (legacy)
+  private _deploySession: DeploySession | null = null // Tracks active deploy session (new action-based)
   private _airDefense: AirDefense = {
     [RED]: new Map<number, number[]>(),
     [BLUE]: new Map<number, number[]>(),
@@ -339,7 +342,7 @@ export class CoTuLenh {
     const castling = '-' // No castling
     const epSquare = '-' // No en passant
 
-    return [
+    const baseFEN = [
       fen,
       this._turn,
       castling,
@@ -347,6 +350,13 @@ export class CoTuLenh {
       this._halfMoves,
       this._moveNumber,
     ].join(' ')
+
+    // If there's an active deploy session, return extended FEN
+    if (this._deploySession) {
+      return this._deploySession.toExtendedFEN(this._deploySession.startFEN)
+    }
+
+    return baseFEN
   }
 
   /**
@@ -508,6 +518,8 @@ export class CoTuLenh {
     let deployState = 'none'
     if (args.deploy) {
       deployState = `${args.square}:${this.turn()}`
+    } else if (this._deploySession) {
+      deployState = `${this._deploySession.stackSquare}:${this._deploySession.turn}`
     } else if (this._deployState) {
       deployState = `${this._deployState.stackSquare}:${this._deployState.turn}`
     } else {
@@ -545,10 +557,19 @@ export class CoTuLenh {
     let allMoves: InternalMove[] = []
 
     // Generate moves based on game state
-    if ((this._deployState && this._deployState.turn === us) || deploy) {
+    // Check for deploy session first (new), then fall back to deploy state (legacy)
+    const activeDeploySession =
+      this._deploySession ||
+      (this._deployState && this._deployState.turn === us
+        ? this._deployState
+        : null)
+
+    if (activeDeploySession || deploy) {
       let deployFilterSquare: number
       if (deploy) {
         deployFilterSquare = SQUARE_MAP[filterSquare!]
+      } else if (this._deploySession) {
+        deployFilterSquare = this._deploySession.stackSquare
       } else {
         deployFilterSquare = this._deployState!.stackSquare
       }
@@ -679,6 +700,9 @@ export class CoTuLenh {
     const preHalfMoves = this._halfMoves
     const preMoveNumber = this._moveNumber
     const preDeployState = this._deployState
+    const preDeploySession = this._deploySession
+      ? this._deploySession.clone()
+      : null
 
     // 2. Execute the command
     try {
@@ -695,6 +719,7 @@ export class CoTuLenh {
       halfMoves: preHalfMoves,
       moveNumber: preMoveNumber,
       deployState: preDeployState,
+      deploySession: preDeploySession,
     }
     this._history.push(historyEntry)
 
@@ -745,6 +770,7 @@ export class CoTuLenh {
     this._halfMoves = old.halfMoves
     this._moveNumber = old.moveNumber
     this._deployState = old.deployState
+    this._deploySession = old.deploySession ? old.deploySession.clone() : null
 
     // Ask the command to revert its specific board changes
     command.undo()
@@ -763,11 +789,31 @@ export class CoTuLenh {
   }
 
   public getDeployState(): DeployState | null {
+    // For backward compatibility, convert session to legacy state
+    if (this._deploySession) {
+      return this._deploySession.toLegacyDeployState()
+    }
     return this._deployState
   }
 
   public setDeployState(deployState: DeployState | null): void {
     this._deployState = deployState
+    // Note: Setting legacy state doesn't create a session (lossy conversion)
+    // New code should use setDeploySession() instead
+  }
+
+  /**
+   * Get the current deploy session (new action-based approach)
+   */
+  public getDeploySession(): DeploySession | null {
+    return this._deploySession
+  }
+
+  /**
+   * Set the deploy session (new action-based approach)
+   */
+  public setDeploySession(session: DeploySession | null): void {
+    this._deploySession = session
   }
 
   /**

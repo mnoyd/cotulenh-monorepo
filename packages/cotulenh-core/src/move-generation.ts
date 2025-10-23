@@ -589,36 +589,56 @@ export function generateDeployMoves(
 ): InternalMove[] {
   const moves: InternalMove[] = []
   const us = gameInstance.turn()
+
+  // Check for new deploy session first, fall back to legacy deploy state
+  const deploySession = gameInstance.getDeploySession()
   const deployState = gameInstance.getDeployState()
+
   const carrierPiece =
-    deployState !== null
-      ? deployState.originalPiece
-      : gameInstance.get(stackSquare)
+    deploySession !== null
+      ? deploySession.originalPiece
+      : deployState !== null
+        ? deployState.originalPiece
+        : gameInstance.get(stackSquare)
+
   if (!carrierPiece || carrierPiece.color !== us) {
     return []
   }
   if (
     (!carrierPiece.carrying || carrierPiece.carrying.length === 0) &&
-    (deployState === null || deployState.stackSquare !== stackSquare)
+    ((deployState === null && deploySession === null) ||
+      (deployState && deployState.stackSquare !== stackSquare) ||
+      (deploySession && deploySession.stackSquare !== stackSquare))
   ) {
     return []
   }
 
   // Generate Deploy Moves for remaining carrying pieces
-
   const flattenedCarrierPiece = flattenPiece(carrierPiece)
-  let deployMoveCandidates = flattenedCarrierPiece.filter(
-    (p) =>
-      !deployState?.movedPieces.some(
-        (mp) => mp.type === p.type && mp.color === p.color,
-      ),
-  )
+
+  // Calculate remaining pieces using session if available
+  let deployMoveCandidates: Piece[]
+  if (deploySession) {
+    const remaining = deploySession.getRemainingPieces()
+    deployMoveCandidates = remaining ? flattenPiece(remaining) : []
+  } else {
+    // Legacy: filter by movedPieces
+    deployMoveCandidates = flattenedCarrierPiece.filter(
+      (p) =>
+        !deployState?.movedPieces.some(
+          (mp) => mp.type === p.type && mp.color === p.color,
+        ),
+    )
+  }
+
   if (carrierPiece.type === NAVY && !LAND_MASK[stackSquare]) {
     //remove carrier from the deployMoveCandidates
     deployMoveCandidates = deployMoveCandidates.filter(
       (p) => p.type !== carrierPiece.type,
     )
   }
+
+  // Generate normal deploy moves
   for (const deployMoveCandidate of deployMoveCandidates) {
     if (filterPiece && deployMoveCandidate.type !== filterPiece) continue
 
@@ -634,16 +654,71 @@ export function generateDeployMoves(
     })
   }
 
-  // // Generate Carrier Moves
-  // if (!filterPiece || carrierPiece.type === filterPiece) {
-  //   const carrierMoves = generateMovesForPiece(
-  //     gameInstance,
-  //     stackSquare,
-  //     carrierPiece,
-  //     carrierPiece.heroic ?? false,
-  //   )
-  //   moves.push(...carrierMoves)
-  // }
+  // Generate recombine moves if we have a session
+  // Only generate recombine moves for carried pieces, not the carrier itself
+  if (deploySession && deployMoveCandidates.length > 0) {
+    const carriedPiecesOnly = deployMoveCandidates.filter(
+      (p) => p.type !== carrierPiece.type,
+    )
+    if (carriedPiecesOnly.length > 0) {
+      const recombineMoves = generateRecombineMoves(
+        gameInstance,
+        deploySession,
+        stackSquare,
+        carriedPiecesOnly,
+        moves,
+        filterPiece,
+      )
+      moves.push(...recombineMoves)
+    }
+  }
+
+  return moves
+}
+
+/**
+ * Generate recombine moves - moves that rejoin deployed pieces
+ */
+function generateRecombineMoves(
+  gameInstance: CoTuLenh,
+  session: any, // DeploySession type
+  stackSquare: number,
+  remainingPieces: Piece[],
+  normalMoves: InternalMove[],
+  filterPiece?: PieceSymbol,
+): InternalMove[] {
+  const moves: InternalMove[] = []
+  const deployedSquares = session.getDeployedSquares()
+
+  for (const piece of remainingPieces) {
+    if (filterPiece && piece.type !== filterPiece) continue
+
+    for (const targetSquare of deployedSquares) {
+      // Skip if there's already a normal move to this square for this piece
+      const hasNormalMove = normalMoves.some(
+        (m) => m.piece.type === piece.type && m.to === targetSquare,
+      )
+
+      if (!hasNormalMove) {
+        const targetPiece = gameInstance.get(targetSquare)
+
+        // Check if pieces can combine
+        if (targetPiece && targetPiece.color === piece.color) {
+          const combined = createCombinedPiece(piece, targetPiece)
+          if (combined) {
+            moves.push({
+              from: stackSquare,
+              to: targetSquare,
+              piece: piece,
+              color: piece.color,
+              flags: BITS.DEPLOY | BITS.COMBINATION,
+              combined: targetPiece, // The piece at the target square (for SAN generation)
+            })
+          }
+        }
+      }
+    }
+  }
 
   return moves
 }
