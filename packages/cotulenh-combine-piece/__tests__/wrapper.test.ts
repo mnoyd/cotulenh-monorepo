@@ -11,6 +11,7 @@ interface TestPiece {
 
 // Create a stacker instance for tests
 const testStacker = new PieceStacker<TestPiece>((piece: TestPiece) => {
+  if (!piece?.role) return 0;
   const roleKey = piece.role.toUpperCase() as keyof typeof ROLE_FLAGS;
   return ROLE_FLAGS[roleKey] || 0;
 });
@@ -32,7 +33,8 @@ describe('PieceStacker Wrapper - Helper Methods', () => {
     };
 
     // Remove the commander, should leave just the tank
-    const result = testStacker.remove(nestedPiece, 'COMMANDER');
+    const commanderPiece: TestPiece = { color: 'red', role: 'COMMANDER', heroic: true };
+    const result = testStacker.remove(nestedPiece, commanderPiece);
 
     expect(result?.color).toBe('red');
     expect(result?.role).toBe('TANK');
@@ -114,7 +116,8 @@ describe('PieceStacker Wrapper - Helper Methods', () => {
       ]
     };
 
-    const result = testStacker.remove(stackPiece, 'COMMANDER');
+    const commanderPiece: TestPiece = { color: 'red', role: 'COMMANDER', heroic: true };
+    const result = testStacker.remove(stackPiece, commanderPiece);
 
     expect(result?.color).toBe('red');
     expect(result?.role).toBe('TANK');
@@ -136,7 +139,8 @@ describe('PieceStacker Wrapper - Helper Methods', () => {
       ]
     };
 
-    const result = testStacker.remove(stackPiece, 'COMMANDER');
+    const commanderPiece: TestPiece = { color: 'red', role: 'COMMANDER', heroic: true };
+    const result = testStacker.remove(stackPiece, commanderPiece);
 
     expect(result?.color).toBe('red');
     expect(result?.role).toBe('TANK');

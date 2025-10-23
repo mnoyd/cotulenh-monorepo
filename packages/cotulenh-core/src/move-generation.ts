@@ -28,10 +28,9 @@ import {
   Square,
   HEAVY_PIECES,
 } from './type.js'
-import { addMove, createCombinedPiece, flattenPiece } from './utils.js'
+import { addMove, combinePieces, flattenPiece } from './utils.js'
 import { BITS } from './type.js'
 import { CoTuLenh } from './cotulenh.js'
-import { generateStackSplitMoves } from './deploy-move.js'
 import { AirDefenseResult, getCheckAirDefenseZone } from './air-defense.js'
 
 // Movement direction offsets
@@ -276,7 +275,7 @@ export function generateMovesInDirection(
         }
       } else if (targetPiece.color === us) {
         // Combination logic (remains unchanged)
-        const combinedPiece = createCombinedPiece(pieceData, targetPiece)
+        const combinedPiece = combinePieces([pieceData, targetPiece])
         if (
           !isDeployMove &&
           combinedPiece &&
@@ -704,7 +703,7 @@ function generateRecombineMoves(
 
         // Check if pieces can combine
         if (targetPiece && targetPiece.color === piece.color) {
-          const combined = createCombinedPiece(piece, targetPiece)
+          const combined = combinePieces([piece, targetPiece])
           if (combined) {
             moves.push({
               from: stackSquare,

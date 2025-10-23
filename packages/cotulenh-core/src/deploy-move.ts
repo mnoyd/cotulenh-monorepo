@@ -15,7 +15,7 @@ import {
 import {
   cloneInternalDeployMove,
   createAllPieceSplits,
-  createCombineStackFromPieces,
+  combinePieces,
   flattenPiece,
   getStepsBetweenSquares,
   makeSanPiece,
@@ -41,10 +41,8 @@ export function createInternalDeployMove(
 ): InternalDeployMove {
   if (!originalPiece) throw new Error('Original piece not found')
   if (deployMove.stay) {
-    const { combined, uncombined } = createCombineStackFromPieces(
-      flattenPiece(deployMove.stay),
-    )
-    if (!combined || (uncombined?.length ?? 0) > 0) {
+    const combined = combinePieces(flattenPiece(deployMove.stay))
+    if (!combined) {
       throw new Error('Deploy move error: stay piece not valid')
     }
   }
@@ -64,10 +62,8 @@ export function createInternalDeployMove(
   const combinedDests: { from: Square; to: Square; piece: Piece }[] =
     cleanedDupDests
       .map((dest) => {
-        const { combined, uncombined } = createCombineStackFromPieces(
-          dest.pieces,
-        )
-        if (!combined || (uncombined?.length ?? 0) > 0) return null
+        const combined = combinePieces(dest.pieces)
+        if (!combined) return null
         // Only include the properties required by the type
         return { from: dest.from, to: dest.to, piece: combined }
       })

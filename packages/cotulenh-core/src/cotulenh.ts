@@ -37,10 +37,9 @@ import {
   printBoard,
   validateFen,
   makeSanPiece,
-  createCombinedPiece,
+  combinePieces,
   strippedSan,
   inferPieceType,
-  createCombineStackFromPieces,
   flattenPiece,
   haveCommander,
 } from './utils.js'
@@ -430,9 +429,8 @@ export class CoTuLenh {
           ...flattenPiece(existingPiece),
           ...flattenPiece(newPiece),
         ]
-        const { combined: combinedPiece, uncombined } =
-          createCombineStackFromPieces(allPieces)
-        if (!combinedPiece || (uncombined?.length ?? 0) > 0) {
+        const combinedPiece = combinePieces(allPieces)
+        if (!combinedPiece) {
           throw new Error(
             `Failed to remove piece from stack at ${algebraic(sq)}`,
           )
@@ -1036,7 +1034,7 @@ export class CoTuLenh {
       if (!move.combined) {
         throw new Error('Move must have combined for combination')
       }
-      const combined = createCombinedPiece(move.piece, move.combined)
+      const combined = combinePieces([move.piece, move.combined])
       if (!combined) {
         throw new Error(
           'Should have successfully combined pieces in combine move',
@@ -1490,7 +1488,6 @@ export class CoTuLenh {
 export * from './type.js'
 export type { DeployMoveRequest } from './deploy-move.js'
 export { DeployMove } from './deploy-move.js'
-export { getCoreTypeFromRole, getRoleFromCoreType } from './utils.js'
 
 /**
  * Validates whether a FEN (Forsyth-Edwards Notation) string is properly formatted and legal.

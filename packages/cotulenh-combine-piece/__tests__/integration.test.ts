@@ -433,8 +433,9 @@ describe('PieceStacker - Integration Tests', () => {
   describe('Piece Removal', () => {
     it('should remove piece from stack', () => {
       const tankWithInfantry = createPieceWithCarrying('TANK', [createPiece('INFANTRY')]);
+      const infantryPiece = createPiece('INFANTRY');
 
-      const result = testStacker.remove(tankWithInfantry, 'INFANTRY');
+      const result = testStacker.remove(tankWithInfantry, infantryPiece);
 
       expect(result?.color).toBe('red');
       expect(result?.role).toBe('TANK');
@@ -444,15 +445,17 @@ describe('PieceStacker - Integration Tests', () => {
 
     it('should return null when removing last piece', () => {
       const singlePiece = createPiece('COMMANDER');
+      const commanderPiece = createPiece('COMMANDER');
 
-      const result = testStacker.remove(singlePiece, 'COMMANDER');
+      const result = testStacker.remove(singlePiece, commanderPiece);
       expect(result).toBeNull();
     });
 
     it('should handle removing non-existent piece', () => {
       const tank = createPiece('TANK');
+      const commanderPiece = createPiece('COMMANDER');
 
-      const result = testStacker.remove(tank, 'COMMANDER');
+      const result = testStacker.remove(tank, commanderPiece);
 
       expect(result).toEqual({
         color: 'red',
@@ -464,8 +467,9 @@ describe('PieceStacker - Integration Tests', () => {
     it('should handle removal from multi-piece stack', () => {
       // Use a simpler test case that we know works
       const tankWithInfantry = createPieceWithCarrying('TANK', [createPiece('INFANTRY')]);
+      const infantryPiece = createPiece('INFANTRY');
 
-      const result = testStacker.remove(tankWithInfantry, 'INFANTRY');
+      const result = testStacker.remove(tankWithInfantry, infantryPiece);
 
       expect(result?.color).toBe('red');
       expect(result?.role).toBe('TANK');
@@ -482,7 +486,7 @@ describe('PieceStacker - Integration Tests', () => {
       const navyWithAirforceAndTank = testStacker.combine([navy, airforce, tank]);
       expect(navyWithAirforceAndTank).not.toBeNull();
 
-      const result = testStacker.remove(navyWithAirforceAndTank!, 'AIR_FORCE');
+      const result = testStacker.remove(navyWithAirforceAndTank!, airforce);
 
       expect(result).toEqual({
         color: 'red',
@@ -495,6 +499,26 @@ describe('PieceStacker - Integration Tests', () => {
             heroic: false
           }
         ]
+      });
+    });
+
+    it('should remove complex piece (with carrying) from stack', () => {
+      // Create a simpler test: Airforce carrying Tank and Infantry
+      const airforce = createPiece('AIR_FORCE');
+      const tankWithInfantry = createPieceWithCarrying('TANK', [createPiece('INFANTRY')]);
+
+      // This creates: Airforce carrying [Tank, Infantry] (flattened)
+      const complexStack = testStacker.combine([airforce, tankWithInfantry]);
+      expect(complexStack).not.toBeNull();
+
+      // Remove the tank piece (which originally had infantry)
+      // This should remove both TANK and INFANTRY roles, leaving just AIRFORCE
+      const result = testStacker.remove(complexStack!, tankWithInfantry);
+
+      expect(result).toEqual({
+        color: 'red',
+        role: 'AIR_FORCE',
+        heroic: false
       });
     });
   });
