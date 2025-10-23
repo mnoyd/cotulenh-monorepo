@@ -7,9 +7,8 @@ import {
   BITS,
   DeployState,
   algebraic,
-  CAPTURE_MASK,
 } from './type.js'
-import { flattenPiece, createCombineStackFromPieces } from './utils.js'
+import { flattenPiece, combinePieces } from './utils.js'
 
 /**
  * DeploySession tracks the state of an active deployment sequence.
@@ -86,8 +85,7 @@ export class DeploySession {
     if (remainingPieces.length === 0) return null
 
     // Reconstruct stack from remaining pieces
-    const { combined } = createCombineStackFromPieces(remainingPieces)
-    return combined || null
+    return combinePieces(remainingPieces)
   }
 
   /**

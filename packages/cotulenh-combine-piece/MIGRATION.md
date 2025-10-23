@@ -135,6 +135,27 @@ const altMapping = {
 - Always add `as const` to your role mapping objects for proper type safety
 - This ensures TypeScript recognizes the string literals as the specific ROLE_FLAGS keys
 
+## Enhanced Remove Functionality
+
+The `remove` method now supports removing complex pieces (pieces with carrying):
+
+```typescript
+// Remove a simple piece
+const tank = createPiece('TANK');
+const result = stacker.remove(complexStack, tank);
+
+// Remove a complex piece (removes all flattened pieces)
+const tankWithInfantry = createPieceWithCarrying('TANK', [createPiece('INFANTRY')]);
+const result = stacker.remove(complexStack, tankWithInfantry);
+// This removes both TANK and INFANTRY from the stack
+```
+
+### Performance Optimizations
+
+- **Fast path for single pieces**: O(1) operation
+- **Bitwise operations**: Direct stack state manipulation
+- **Bulk removal**: Remove multiple roles in one operation
+
 ## Migration Checklist
 
 - [ ] Identify your current role naming convention
@@ -143,6 +164,7 @@ const altMapping = {
 - [ ] Update PieceStacker initialization
 - [ ] Test that stacking behavior remains the same
 - [ ] Update any related tests
+- [ ] Consider using enhanced remove functionality for complex pieces
 
 ## Need Help?
 

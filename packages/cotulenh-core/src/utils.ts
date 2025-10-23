@@ -31,98 +31,62 @@ import {
 
 import { PieceStacker, ROLE_FLAGS } from '@repo/cotulenh-combine-piece'
 
-const symbolToRoleMap: Record<PieceSymbol, string> = {
-  [COMMANDER]: 'commander',
-  [INFANTRY]: 'infantry',
-  [TANK]: 'tank',
-  [MILITIA]: 'militia',
-  [ENGINEER]: 'engineer',
-  [ARTILLERY]: 'artillery',
-  [ANTI_AIR]: 'anti_air',
-  [MISSILE]: 'missile',
-  [AIR_FORCE]: 'air_force',
-  [NAVY]: 'navy',
-  [HEADQUARTER]: 'headquarter',
-}
-
-// Role to flag mapping for PieceStacker
-const roleToFlagMap: Record<string, number> = {
-  commander: ROLE_FLAGS.COMMANDER,
-  infantry: ROLE_FLAGS.INFANTRY,
-  tank: ROLE_FLAGS.TANK,
-  militia: ROLE_FLAGS.MILITIA,
-  engineer: ROLE_FLAGS.ENGINEER,
-  artillery: ROLE_FLAGS.ARTILLERY,
-  anti_air: ROLE_FLAGS.ANTI_AIR,
-  missile: ROLE_FLAGS.MISSILE,
-  air_force: ROLE_FLAGS.AIR_FORCE,
-  navy: ROLE_FLAGS.NAVY,
-  headquarter: ROLE_FLAGS.HEADQUARTER,
-}
-
-// Reverse map: role string to core type (symbol)
-const roleToSymbolMap: Record<string, PieceSymbol> = Object.entries(
-  symbolToRoleMap,
-).reduce(
-  (acc, [symbol, role]) => {
-    acc[role] = symbol as PieceSymbol
-    return acc
-  },
-  {} as Record<string, PieceSymbol>,
-)
-
-/**
- * Converts a full string role (e.g., 'commander') to its core type (symbol, e.g., COMMANDER)
- * @param role - The role string
- * @returns The PieceSymbol or undefined if not found
- */
-export function getCoreTypeFromRole(role: string): PieceSymbol | undefined {
-  return roleToSymbolMap[role]
-}
-
-export const getRoleFromCoreType = (piece: Piece): string =>
-  symbolToRoleMap[piece.type]
-
-// Create PieceStacker instance with role flag extractor
-const pieceStacker = new PieceStacker<Piece>(
-  (piece) => roleToFlagMap[getRoleFromCoreType(piece)] || 0,
-)
-
-export function createCombinedPiece(
-  pieceFrom: Piece,
-  pieceTo: Piece,
-): Piece | null {
-  // Use new PieceStacker.combine() method
-  const combinedPiece = pieceStacker.combine([pieceFrom, pieceTo])
-  return combinedPiece
-}
-export function createCombineStackFromPieces(pieces: Piece[]): {
-  combined: Piece | undefined
-  uncombined: Piece[] | undefined
-} {
-  // Try to combine all pieces
-  const combined = pieceStacker.combine(pieces)
-
-  if (combined) {
-    // All pieces were successfully combined
-    return { combined, uncombined: undefined }
+// Encapsulated piece stacking operations
+const createPieceStackingOperations = () => {
+  // Direct symbol to flag mapping
+  const SYMBOL_TO_FLAG: Record<PieceSymbol, number> = {
+    [COMMANDER]: ROLE_FLAGS.COMMANDER,
+    [INFANTRY]: ROLE_FLAGS.INFANTRY,
+    [TANK]: ROLE_FLAGS.TANK,
+    [MILITIA]: ROLE_FLAGS.MILITIA,
+    [ENGINEER]: ROLE_FLAGS.ENGINEER,
+    [ARTILLERY]: ROLE_FLAGS.ARTILLERY,
+    [ANTI_AIR]: ROLE_FLAGS.ANTI_AIR,
+    [MISSILE]: ROLE_FLAGS.MISSILE,
+    [AIR_FORCE]: ROLE_FLAGS.AIR_FORCE,
+    [NAVY]: ROLE_FLAGS.NAVY,
+    [HEADQUARTER]: ROLE_FLAGS.HEADQUARTER,
   }
 
-  // If combination failed, return all pieces as uncombined
-  return { combined: undefined, uncombined: pieces }
+  // PieceStacker instance with direct flag mapping
+  const stacker = new PieceStacker<Piece>(
+    (piece) => SYMBOL_TO_FLAG[piece.type] || 0,
+  )
+
+  return {
+    combine: (pieces: Piece[]): Piece | null => {
+      return stacker.combine(pieces)
+    },
+
+    remove: (stackPiece: Piece, pieceToRemove: Piece): Piece | null => {
+      return stacker.remove(stackPiece, pieceToRemove)
+    },
+  }
+}
+
+// Create the operations instance
+const pieceOps = createPieceStackingOperations()
+
+/**
+ * Combines multiple pieces into a single stack
+ * @param pieces - Array of pieces to combine
+ * @returns Combined piece or null if combination fails
+ */
+export function combinePieces(pieces: Piece[]): Piece | null {
+  return pieceOps.combine(pieces)
 }
 
 /**
- * Remove a piece with specific role from a stack
- * @param stackPiece - The stack piece to remove from
- * @param roleToRemove - The role name to remove (e.g., 'infantry', 'tank')
- * @returns The remaining stack/piece after removal, or null if no pieces remain
+ * Removes a specific piece type from a stack
+ * @param stackPiece - The stack to remove from
+ * @param pieceToRemove - The piece containing the type to remove
+ * @returns Remaining stack after removal, or null if no pieces remain
  */
 export function removePieceFromStack(
   stackPiece: Piece,
-  roleToRemove: string,
+  pieceToRemove: Piece,
 ): Piece | null {
-  return pieceStacker.remove(stackPiece, roleToRemove)
+  return pieceOps.remove(stackPiece, pieceToRemove)
 }
 
 export function getDisambiguator(
@@ -373,12 +337,9 @@ export function createAllPieceSplits(piece: Piece): Piece[][] {
 
     // Create a stack from the current combination
     if (currentCombination.length > 0) {
-      const { combined, uncombined } = createCombineStackFromPieces([
-        ...currentCombination,
-      ])
-      // Only add to result if combined exists and there are no uncombined pieces
-      // This ensures all pieces in the combination were successfully combined
-      if (combined && (!uncombined || uncombined.length === 0)) {
+      const combined = combinePieces([...currentCombination])
+      // Only add to result if combined exists
+      if (combined) {
         subsets.push(combined)
       }
     }

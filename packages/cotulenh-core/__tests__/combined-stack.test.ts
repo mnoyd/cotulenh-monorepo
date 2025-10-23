@@ -19,7 +19,7 @@ import {
   MILITIA,
   InternalMove,
 } from '../src/type'
-import { createCombinedPiece } from '../src/utils'
+import { combinePieces } from '../src/utils'
 import { findVerboseMove, makePiece, setupGameBasic } from './test-helpers'
 
 describe('Stack Movement and Deployment', () => {
@@ -374,13 +374,13 @@ describe('Stack Movement and Deployment', () => {
   // TODO: Add tests for undoing deploy/carrier moves
   // TODO: Add tests for SAN parsing/generation of deploy moves
 })
-describe('createCombinedPiece (Integration)', () => {
+describe('combinePieces (Integration)', () => {
   it('should correctly combine two basic pieces using formStack', () => {
     const pieceFrom: Piece = { color: RED, type: TANK }
     const pieceTo: Piece = { color: RED, type: INFANTRY }
 
     // Calling the actual implementation which uses formStack internally
-    const combinedPiece = createCombinedPiece(pieceFrom, pieceTo)
+    const combinedPiece = combinePieces([pieceFrom, pieceTo])
 
     // Assertions based on the expected behavior of formStack:
     // - The resulting piece should likely retain the 'from' piece's core identity (color, type).
@@ -405,7 +405,7 @@ describe('createCombinedPiece (Integration)', () => {
     }
     const pieceTo: Piece = { color: RED, type: TANK }
 
-    const combinedPiece = createCombinedPiece(pieceFrom, pieceTo)
+    const combinedPiece = combinePieces([pieceFrom, pieceTo])
 
     expect(combinedPiece).toBeDefined()
     expect(combinedPiece?.color).toBe(RED)
@@ -426,7 +426,7 @@ describe('createCombinedPiece (Integration)', () => {
     const pieceFrom: Piece = { color: RED, type: TANK, heroic: true }
     const pieceTo: Piece = { color: RED, type: INFANTRY }
 
-    const combinedPiece = createCombinedPiece(pieceFrom, pieceTo)
+    const combinedPiece = combinePieces([pieceFrom, pieceTo])
 
     expect(combinedPiece).toBeDefined()
     expect(combinedPiece?.color).toBe(RED)

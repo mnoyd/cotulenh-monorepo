@@ -125,26 +125,75 @@ export class PieceStacker<T> {
   }
 
   /**
-   * Remove piece with specific role from stack
+   * Remove piece from stack using fast bitwise operations
+   * Performance optimizations:
+   * 1. Fast path for single pieces (O(1))
+   * 2. Bitwise operations on stack state instead of array manipulation
+   * 3. Direct stack state lookup instead of full recombination
    */
-  remove(stackPiece: T, roleToRemove: string): T | null {
-    // Flatten the stack
-    const flatPieces = this.flattenPieces([stackPiece]);
+  remove(stackPiece: T, pieceToRemove: T): T | null {
+    // Flatten the piece to remove and get all its role flags
+    const flatPiecesToRemove = this.flattenPieces([pieceToRemove]);
+    const rolesToRemove = flatPiecesToRemove.map((p) => this.getRoleFlag(p));
 
-    // Remove pieces with the target role by comparing the actual role strings
-    const remainingPieces = flatPieces.filter((p) => {
-      // Extract the role from the piece and compare with roleToRemove
-      const pieceRole = (p as any).role;
-      return pieceRole !== roleToRemove && pieceRole !== roleToRemove.toUpperCase();
-    });
+    // Fast path: if removing from a single piece, just check if it matches any role to remove
+    const stackPieceRole = this.getRoleFlag(stackPiece);
+    const carrying = (stackPiece as any).carrying;
 
-    if (remainingPieces.length === 0) return null;
-    if (remainingPieces.length === 1) {
-      return remainingPieces[0];
+    if (!carrying || carrying.length === 0) {
+      // Single piece - return null if it matches any role to remove, otherwise return unchanged
+      return rolesToRemove.includes(stackPieceRole) ? null : stackPiece;
     }
 
-    // Try to recombine remaining pieces
-    return this.combine(remainingPieces);
+    // Multi-piece stack: use bitwise operations
+    const currentStackState = this.getStackState(stackPiece);
+    if (!currentStackState) return null;
+
+    // Use bitwise operation to remove the roles from the stack
+    const newStackState = this.removeRolesFromStack(currentStackState, rolesToRemove);
+    if (!newStackState) return null;
+
+    // Convert the new stack state back to piece format
+    const flatPieces = this.flattenPieces([stackPiece]);
+    const remainingPieces = flatPieces.filter((p) => !rolesToRemove.includes(this.getRoleFlag(p)));
+
+    if (remainingPieces.length === 0) return null;
+    if (remainingPieces.length === 1) return remainingPieces[0];
+
+    return this.makePieceFromCoreStack(newStackState, remainingPieces);
+  }
+
+  /**
+   * Get stack state for a piece (convert piece to bigint representation)
+   */
+  private getStackState(piece: T): bigint | null {
+    const flatPieces = this.flattenPieces([piece]);
+    const roleNumbers = flatPieces.map(this.getRoleFlag);
+    return stackEngine.lookup(roleNumbers);
+  }
+
+  /**
+   * Remove multiple roles from stack state using bitwise operations
+   */
+  private removeRolesFromStack(stackState: bigint, rolesToRemove: number[]): bigint | null {
+    // Extract current roles from the stack state
+    const carrierRole = Number(stackState & 0xffffn);
+    const slot1Role = Number((stackState >> 16n) & 0xffffn);
+    const slot2Role = Number((stackState >> 32n) & 0xffffn);
+    const slot3Role = Number((stackState >> 48n) & 0xffffn);
+
+    // Build new stack without the roles to remove
+    const remainingRoles: number[] = [];
+
+    if (!rolesToRemove.includes(carrierRole)) remainingRoles.push(carrierRole);
+    if (slot1Role && !rolesToRemove.includes(slot1Role)) remainingRoles.push(slot1Role);
+    if (slot2Role && !rolesToRemove.includes(slot2Role)) remainingRoles.push(slot2Role);
+    if (slot3Role && !rolesToRemove.includes(slot3Role)) remainingRoles.push(slot3Role);
+
+    if (remainingRoles.length === 0) return null;
+
+    // Look up the new valid stack state
+    return stackEngine.lookup(remainingRoles);
   }
 
   /**

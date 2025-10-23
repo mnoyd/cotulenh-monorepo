@@ -11,12 +11,7 @@ import {
   Piece,
   DeployState,
 } from './type.js'
-import {
-  createCombinedPiece,
-  createCombineStackFromPieces,
-  flattenPiece,
-} from './utils.js'
-import { DeploySession } from './deploy-session.js'
+import { combinePieces, flattenPiece, removePieceFromStack } from './utils.js'
 
 /**
  * Represents an atomic board action that can be executed and undone
@@ -104,7 +99,7 @@ class PlacePieceAction implements CTLAtomicMoveAction {
  * Removes a piece from a carrier's stack
  */
 class RemoveFromStackAction implements CTLAtomicMoveAction {
-  private removedPiece: Piece[] | null = null
+  private originalCarrier: Piece | null = null
   constructor(
     protected game: CoTuLenh,
     private carrierSquare: number,
@@ -118,58 +113,48 @@ class RemoveFromStackAction implements CTLAtomicMoveAction {
         `No carrier or carrying pieces at ${algebraic(this.carrierSquare)}`,
       )
     }
-    const movingPiece = flattenPiece(this.piece)
-    this.removedPiece = [...movingPiece]
-    const allPieces = flattenPiece(carrier)
-    const remainingPiece = allPieces.filter(
-      (p) => !movingPiece.some((p2) => p2.type === p.type),
-    )
-    if (remainingPiece.length + movingPiece.length !== allPieces.length) {
-      throw new Error(
-        `Request moving piece ${algebraic(this.carrierSquare)} not found in the stack`,
-      )
+
+    // Store original carrier for undo
+    this.originalCarrier = {
+      ...carrier,
+      carrying: carrier.carrying ? [...carrier.carrying] : undefined,
     }
-    if (remainingPiece.length === 0) {
+
+    // Remove piece from stack using utility
+    const remainingCarrier = removePieceFromStack(carrier, this.piece)
+
+    if (!remainingCarrier) {
+      // No pieces remain after removal
       this.game.remove(algebraic(this.carrierSquare))
-      return
-    }
-    const { combined: combinedPiece, uncombined } =
-      createCombineStackFromPieces(remainingPiece)
-    if (!combinedPiece || (uncombined?.length ?? 0) > 0) {
-      throw new Error(
-        `Failed to remove piece from stack at ${algebraic(this.carrierSquare)}`,
+    } else {
+      // Update the carrier with remaining pieces
+      const putResult = this.game.put(
+        remainingCarrier,
+        algebraic(this.carrierSquare),
       )
+      if (!putResult) {
+        throw new Error(
+          `Failed to update carrier at ${algebraic(this.carrierSquare)}`,
+        )
+      }
     }
-    const result = this.game.put(combinedPiece, algebraic(this.carrierSquare))
-    if (!result) {
-      throw new Error(
-        'Place piece fail:' +
-          JSON.stringify(combinedPiece) +
-          algebraic(this.carrierSquare),
-      )
-    }
-    if (movingPiece.some((p) => p.type === COMMANDER)) {
+
+    // Update commander position if commander was moved
+    if (flattenPiece(this.piece).some((p) => p.type === COMMANDER)) {
       this.game['_commanders'][this.piece.color] = -1
     }
   }
 
   undo(): void {
-    if (!this.removedPiece) return
-    const carrier = this.game.get(this.carrierSquare)
-    const allPieces = carrier ? flattenPiece(carrier) : []
-    const { combined: combinedPiece, uncombined } =
-      createCombineStackFromPieces([...allPieces, ...this.removedPiece])
-    if (!combinedPiece || (uncombined?.length ?? 0) > 0) {
-      throw new Error(
-        `Failed to remove piece from stack at ${algebraic(this.carrierSquare)}`,
-      )
-    }
-    const result = this.game.put(combinedPiece, algebraic(this.carrierSquare))
+    if (!this.originalCarrier) return
+
+    const result = this.game.put(
+      this.originalCarrier,
+      algebraic(this.carrierSquare),
+    )
     if (!result) {
       throw new Error(
-        'Place piece fail:' +
-          JSON.stringify(combinedPiece) +
-          algebraic(this.carrierSquare),
+        `Failed to restore carrier at ${algebraic(this.carrierSquare)}`,
       )
     }
   }
@@ -224,50 +209,6 @@ class SetDeployStateAction implements CTLAtomicMoveAction {
     this.game.setDeployState(this.oldDeployState)
     if (this.oldDeployState) {
       this.game['_turn'] = this.oldDeployState.turn
-    }
-  }
-}
-
-/**
- * Sets the deploy session (new action-based approach)
- * Much simpler than SetDeployStateAction - just manages session reference
- */
-class SetDeploySessionAction implements CTLAtomicMoveAction {
-  private oldSession: DeploySession | null = null
-  private turnSwitched: boolean = false
-
-  constructor(
-    protected game: CoTuLenh,
-    private newSession: DeploySession | null,
-  ) {}
-
-  execute(): void {
-    // Capture current session
-    this.oldSession = this.game.getDeploySession()
-
-    // Set new session
-    this.game.setDeploySession(this.newSession)
-
-    // Auto-complete if all pieces deployed
-    if (this.newSession && this.newSession.isComplete()) {
-      this.game.setDeploySession(null)
-      this.game['_turn'] = swapColor(this.newSession.turn)
-      this.turnSwitched = true
-    }
-    // If explicitly clearing session (batch deploy complete)
-    else if (!this.newSession && this.oldSession) {
-      this.game['_turn'] = swapColor(this.oldSession.turn)
-      this.turnSwitched = true
-    }
-  }
-
-  undo(): void {
-    // Restore old session
-    this.game.setDeploySession(this.oldSession)
-
-    // Restore turn if we switched it
-    if (this.turnSwitched && this.oldSession) {
-      this.game['_turn'] = this.oldSession.turn
     }
   }
 }
@@ -415,31 +356,15 @@ export class SingleDeployMoveCommand extends CTLMoveCommand {
       }
     }
 
-    // Update or create deploy session
-    const currentSession = this.game.getDeploySession()
-
-    if (currentSession && currentSession.stackSquare === this.move.from) {
-      // Create updated session with new move added
-      const updatedSession = new DeploySession({
-        stackSquare: currentSession.stackSquare,
-        turn: currentSession.turn,
-        originalPiece: currentSession.originalPiece,
-        startFEN: currentSession.startFEN,
-        actions: [...currentSession.actions, this.move],
-        stayPieces: currentSession.stayPieces,
-      })
-      this.actions.push(new SetDeploySessionAction(this.game, updatedSession))
-    } else {
-      // Create new session
-      const newSession = new DeploySession({
+    // Set deploy state for next move
+    this.actions.push(
+      new SetDeployStateAction(this.game, {
         stackSquare: this.move.from,
         turn: us,
         originalPiece: carrierPiece,
-        startFEN: this.game.fen(),
-        actions: [this.move],
-      })
-      this.actions.push(new SetDeploySessionAction(this.game, newSession))
-    }
+        movedPieces: flattendMovingPieces,
+      }),
+    )
   }
 }
 
@@ -463,7 +388,7 @@ class CombinationMoveCommand extends CTLMoveCommand {
     }
 
     // Create the combined piece
-    const combinedPiece = createCombinedPiece(movingPieceData, targetPieceData)
+    const combinedPiece = combinePieces([movingPieceData, targetPieceData])
     if (!combinedPiece) {
       throw new Error(
         `Failed to create combined piece: ${JSON.stringify(this.move)}`,
@@ -684,16 +609,18 @@ export class DeployMoveCommand extends SequenceMoveCommand {
   }
 
   protected buildActions(): void {
-    // For batch deploy moves, we execute all moves then clear the session
-    // Each individual move will update the session incrementally
-
-    // Execute each individual move (they will create/update session)
-    this.commands = this.moveData.moves.map((move) =>
-      createMoveCommand(this.game, move),
+    this.commands = [
+      new SetDeployStateAction(this.game, {
+        stackSquare: this.moveData.from,
+        turn: this.game['_turn'],
+        originalPiece: this.game.get(this.moveData.from) || undefined,
+        movedPieces: [],
+        stay: this.moveData.stay ? flattenPiece(this.moveData.stay) : [],
+      }),
+    ]
+    this.commands.push(
+      ...this.moveData.moves.map((move) => createMoveCommand(this.game, move)),
     )
-
-    // After all moves, clear the session (deployment complete)
-    this.commands.push(new SetDeploySessionAction(this.game, null))
   }
 }
 
@@ -727,8 +654,8 @@ const getMovingPieceFromInternalMove = (
   if (requestMovingPieces.length > 0) {
     throw new Error(`Not enough pieces to move at ${algebraic(move.from)}`)
   }
-  const { combined, uncombined } = createCombineStackFromPieces(movingPiece)
-  if (!combined || (uncombined && uncombined.length > 0)) {
+  const combined = combinePieces(movingPiece)
+  if (!combined) {
     throw new Error(`Not enough pieces to move at ${algebraic(move.from)}`)
   }
   return combined
