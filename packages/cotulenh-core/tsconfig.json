@@ -1,21 +1,18 @@
 {
   "compilerOptions": {
     "esModuleInterop": true,
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
+    "module": "ESNext",
     "removeComments": false,
     "skipLibCheck": true,
     "sourceMap": true,
     "strict": true,
     "target": "ESNext",
-    "composite": true,
+    "types": ["node"],
+    "declaration": true,
     "declarationMap": true,
-    "types": ["node"]
+    "noEmit": true
   },
   "include": ["src/**/*"],
-  "exclude": ["sample/**", "demo/**"],
-  "references": [
-    { "path": "./tsconfig.cjs.json" },
-    { "path": "./tsconfig.esm.json" },
-    { "path": "./tsconfig.types.json" }
-  ]
+  "exclude": ["node_modules", "dist", "sample/**", "demo/**"]
 }
