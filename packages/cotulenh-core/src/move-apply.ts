@@ -16,6 +16,7 @@ import {
   createCombineStackFromPieces,
   flattenPiece,
 } from './utils.js'
+import { DeploySession } from './deploy-session.js'
 
 /**
  * Represents an atomic board action that can be executed and undone
@@ -227,6 +228,50 @@ class SetDeployStateAction implements CTLAtomicMoveAction {
   }
 }
 
+/**
+ * Sets the deploy session (new action-based approach)
+ * Much simpler than SetDeployStateAction - just manages session reference
+ */
+class SetDeploySessionAction implements CTLAtomicMoveAction {
+  private oldSession: DeploySession | null = null
+  private turnSwitched: boolean = false
+
+  constructor(
+    protected game: CoTuLenh,
+    private newSession: DeploySession | null,
+  ) {}
+
+  execute(): void {
+    // Capture current session
+    this.oldSession = this.game.getDeploySession()
+
+    // Set new session
+    this.game.setDeploySession(this.newSession)
+
+    // Auto-complete if all pieces deployed
+    if (this.newSession && this.newSession.isComplete()) {
+      this.game.setDeploySession(null)
+      this.game['_turn'] = swapColor(this.newSession.turn)
+      this.turnSwitched = true
+    }
+    // If explicitly clearing session (batch deploy complete)
+    else if (!this.newSession && this.oldSession) {
+      this.game['_turn'] = swapColor(this.oldSession.turn)
+      this.turnSwitched = true
+    }
+  }
+
+  undo(): void {
+    // Restore old session
+    this.game.setDeploySession(this.oldSession)
+
+    // Restore turn if we switched it
+    if (this.turnSwitched && this.oldSession) {
+      this.game['_turn'] = this.oldSession.turn
+    }
+  }
+}
+
 export interface CTLMoveCommandInteface extends CTLAtomicMoveAction {
   move: InternalMove | InternalDeployMove
 }
@@ -370,15 +415,31 @@ export class SingleDeployMoveCommand extends CTLMoveCommand {
       }
     }
 
-    // Set deploy state for next move
-    this.actions.push(
-      new SetDeployStateAction(this.game, {
+    // Update or create deploy session
+    const currentSession = this.game.getDeploySession()
+
+    if (currentSession && currentSession.stackSquare === this.move.from) {
+      // Create updated session with new move added
+      const updatedSession = new DeploySession({
+        stackSquare: currentSession.stackSquare,
+        turn: currentSession.turn,
+        originalPiece: currentSession.originalPiece,
+        startFEN: currentSession.startFEN,
+        actions: [...currentSession.actions, this.move],
+        stayPieces: currentSession.stayPieces,
+      })
+      this.actions.push(new SetDeploySessionAction(this.game, updatedSession))
+    } else {
+      // Create new session
+      const newSession = new DeploySession({
         stackSquare: this.move.from,
         turn: us,
         originalPiece: carrierPiece,
-        movedPieces: flattendMovingPieces,
-      }),
-    )
+        startFEN: this.game.fen(),
+        actions: [this.move],
+      })
+      this.actions.push(new SetDeploySessionAction(this.game, newSession))
+    }
   }
 }
 
@@ -623,18 +684,16 @@ export class DeployMoveCommand extends SequenceMoveCommand {
   }
 
   protected buildActions(): void {
-    this.commands = [
-      new SetDeployStateAction(this.game, {
-        stackSquare: this.moveData.from,
-        turn: this.game['_turn'],
-        originalPiece: this.game.get(this.moveData.from) || undefined,
-        movedPieces: [],
-        stay: this.moveData.stay ? flattenPiece(this.moveData.stay) : [],
-      }),
-    ]
-    this.commands.push(
-      ...this.moveData.moves.map((move) => createMoveCommand(this.game, move)),
+    // For batch deploy moves, we execute all moves then clear the session
+    // Each individual move will update the session incrementally
+
+    // Execute each individual move (they will create/update session)
+    this.commands = this.moveData.moves.map((move) =>
+      createMoveCommand(this.game, move),
     )
+
+    // After all moves, clear the session (deployment complete)
+    this.commands.push(new SetDeploySessionAction(this.game, null))
   }
 }
 

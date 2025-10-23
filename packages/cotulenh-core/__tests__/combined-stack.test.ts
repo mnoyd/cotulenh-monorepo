@@ -241,7 +241,12 @@ describe('Stack Movement and Deployment', () => {
       { piece: TANK, isDeploy: true },
     )
     expect(tankDeployMove).toBeDefined()
-    const moveResult = game.move({ from: 'c3', to: 'd3', piece: TANK })
+    const moveResult = game.move({
+      from: 'c3',
+      to: 'd3',
+      piece: TANK,
+      deploy: true,
+    })
 
     expect(moveResult).not.toBeNull()
     expect(game.turn()).toBe(RED) // Turn should still be Red
