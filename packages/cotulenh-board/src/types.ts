@@ -99,6 +99,21 @@ export interface MoveMetadata {
   holdTime?: number;
   captured?: Piece[];
 }
+
+/**
+ * A single deploy move in incremental mode
+ */
+export interface SingleDeployMove {
+  piece: Piece; // The piece being deployed (may have carrying)
+  from: Key; // Origin square (stack location)
+  to: Key; // Destination square
+  capture?: Piece; // Captured piece if any
+}
+
+/**
+ * Metadata for a single deploy step
+ */
+export interface DeployStepMetadata extends MoveMetadata {}
 export type BrushColor = 'green' | 'red' | 'blue' | 'yellow';
 export type KeyPair = [Key, Key];
 
@@ -129,11 +144,6 @@ export interface SingleMove {
   piece: Piece;
   dest: Key;
   capturedPiece?: Piece;
-}
-export interface StackMove {
-  orig: Key;
-  moves: SingleMove[];
-  stay: Piece;
 }
 
 export type AirDefenseInfluenceZoneType = 'friendly' | 'opponent';

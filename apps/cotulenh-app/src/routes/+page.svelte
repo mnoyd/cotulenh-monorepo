@@ -2,12 +2,12 @@
   import { onMount } from 'svelte';
   import { page } from '$app/stores';
   import { CotulenhBoard, origMoveToKey } from '@repo/cotulenh-board';
-  import type { Api, Role as BoardRole, DestMove, OrigMove, OrigMoveKey, Role, StackMove, MoveMetadata } from '@repo/cotulenh-board';
+  import type { Api, Role as BoardRole, DestMove, OrigMove, OrigMoveKey, Role, SingleDeployMove, DeployStepMetadata, MoveMetadata } from '@repo/cotulenh-board';
   import { CoTuLenh, BLUE, RED } from '@repo/cotulenh-core';
   import type { Square, Color, Move, DeployMoveRequest } from '@repo/cotulenh-core';
   import type { Key, Dests } from '@repo/cotulenh-board';
   import GameInfo from '$lib/components/GameInfo.svelte';
-  // import DeployPanel from '$lib/components/DeployPanel.svelte';
+  import DeployControls from '$lib/components/DeployControls.svelte';
   import CombinationPanel from '$lib/components/CombinationPanel.svelte';
   import HeroicStatusPanel from '$lib/components/HeroicStatusPanel.svelte';
   import GameControls from '$lib/components/GameControls.svelte';
@@ -16,7 +16,7 @@
   import '@repo/cotulenh-board/assets/commander-chess.base.css';
   import '@repo/cotulenh-board/assets/commander-chess.pieces.css';
   import '@repo/cotulenh-board/assets/commander-chess.clasic.css';
-    import { boardPieceToCore, convertSetMapToArrayMap, makeCoreMove, typeToRole } from '$lib/utils';
+    import { boardPieceToCore, convertSetMapToArrayMap, makeCoreMove, typeToRole, roleToType } from '$lib/utils';
 
   let boardContainerElement: HTMLElement | null = null;
   let boardApi: Api | null = null;
@@ -56,7 +56,7 @@
             free: false,
             color: coreToBoardColor($gameStore.turn),
             dests: mapPossibleMovesToDests($gameStore.possibleMoves),
-            events: { after: handleMove, afterStackMove: handleStackMove }
+            events: { after: handleMove, afterDeployStep: handleDeployStep }
           }
         });
       }
@@ -112,38 +112,124 @@
     }
   }
 
-  function handleStackMove(stackMove: StackMove, metadata: MoveMetadata) {
-    if (!game) return;
+  /**
+   * Handle individual deploy step (incremental mode)
+   * Fires immediately when user moves a piece during deployment
+   */
+  function handleDeployStep(move: SingleDeployMove, metadata: DeployStepMetadata) {
+    if (!game) {
+      console.error('No game instance available');
+      return;
+    }
 
-    console.log('Board stack move attempt:', stackMove, metadata);
-
-    // Construct DeployMoveRequest from stackMove
-    // This assumes stackMove.orig.square is the 'from' square
-    // and stackMove.dest.square is the 'to' square for the deployed piece.
-    // You might need to adjust this based on your exact StackMove structure
-    // and how it maps to DeployMoveRequest.
-    const deployMoveRequest: DeployMoveRequest = {
-      from: stackMove.orig,
-      moves: stackMove.moves.map(move => ({ piece: boardPieceToCore(move.piece), to: move.dest })),
-      stay: stackMove.stay ? boardPieceToCore(stackMove.stay) : undefined,
-    };
+    console.log('Deploy step:', move, metadata);
 
     try {
-      const deployMoveResult = game.deployMove(deployMoveRequest);
-      console.log('Deploy move result:', deployMoveResult);
+      // Convert board piece type to core piece type
+      const coreType = roleToType(move.piece.role);
+      
+      // Send individual move to core
+      const result = game.move({
+        from: move.from,
+        to: move.to,
+        piece: coreType,
+        deploy: true
+      });
 
-      if (deployMoveResult) {
-        console.log('Game deploy move successful:', deployMoveResult);
-        // Assuming you have a method in gameStore to handle deploy moves
-        // Similar to applyMove, you might need applyDeployMove or similar
-        gameStore.applyDeployMove(game, deployMoveResult); // You'll need to implement this in gameStore
-      } else {
-        // This case might not be reachable if deployMove throws on failure
-        console.warn('Illegal deploy move attempted on board:', stackMove);
+      if (!result) {
+        console.error('Deploy move rejected by core:', move);
+        return;
       }
+
+      console.log('Deploy move accepted:', result);
+
+      // Get updated legal moves from core
+      // Core will generate moves for remaining pieces + recombine moves
+      const updatedMoves = game.moves({ verbose: true }) as Move[];
+      
+      console.log('Updated legal moves count:', updatedMoves.length);
+
+      // Convert to board destination format
+      const newDests = mapPossibleMovesToDests(updatedMoves);
+      
+      // Update board with new legal move destinations
+      boardApi?.set({
+        movable: {
+          dests: newDests
+        }
+      });
+
+      console.log('Board destinations updated');
+
     } catch (error) {
-      reSetupBoard(); // Reset board to a consistent state on error
-      console.error('Error making deploy move in game engine:', error);
+      console.error('Deploy step failed:', error);
+      reSetupBoard();
+    }
+  }
+
+  /**
+   * Manually commit the active deploy session
+   */
+  function commitDeploy() {
+    if (!game) return;
+    
+    try {
+      game.commitDeploySession();
+      
+      console.log('Deploy session committed successfully');
+      
+      // Update game store with final state
+      gameStore.initialize(game);
+      
+      // Update board for normal moves
+      const normalMoves = game.moves({ verbose: true }) as Move[];
+      boardApi?.set({
+        fen: game.fen(),
+        turnColor: coreToBoardColor(game.turn()),
+        check: game.isCheck() ? coreToBoardColor(game.turn()) : undefined,
+        movable: {
+          dests: mapPossibleMovesToDests(normalMoves)
+        }
+      });
+      
+      console.log('Board updated for normal play');
+    } catch (error) {
+      console.error('Failed to commit deploy session:', error);
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+      alert(`Cannot finish deployment: ${errorMsg}`);
+    }
+  }
+
+  /**
+   * Cancel the active deploy session
+   */
+  function cancelDeploy() {
+    if (!game) return;
+    
+    try {
+      game.cancelDeploySession();
+      
+      console.log('Deploy session cancelled, board restored');
+      
+      // Update game store
+      gameStore.initialize(game);
+      
+      // Restore board to pre-deploy state
+      const normalMoves = game.moves({ verbose: true }) as Move[];
+      boardApi?.set({
+        fen: game.fen(),
+        turnColor: coreToBoardColor(game.turn()),
+        check: game.isCheck() ? coreToBoardColor(game.turn()) : undefined,
+        movable: {
+          dests: mapPossibleMovesToDests(normalMoves)
+        }
+      });
+      
+      console.log('Board restored to pre-deployment state');
+    } catch (error) {
+      console.error('Failed to cancel deploy:', error);
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+      alert(`Error cancelling deployment: ${errorMsg}`);
     }
   }
 
@@ -182,7 +268,7 @@
           free: false,
           color: coreToBoardColor($gameStore.turn),
           dests: mapPossibleMovesToDests($gameStore.possibleMoves),
-          events: { after: handleMove, afterStackMove: handleStackMove }
+          events: { after: handleMove, afterDeployStep: handleDeployStep }
         }
       });
 
@@ -210,7 +296,7 @@
       <div class="game-info-container">
         <GameInfo />
         <GameControls {game} />
-        <!-- <DeployPanel {game} /> -->
+        <DeployControls {game} onCommit={commitDeploy} onCancel={cancelDeploy} />
         <CombinationPanel {game} />
         <HeroicStatusPanel {game} />
       </div>

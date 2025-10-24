@@ -815,6 +815,64 @@ export class CoTuLenh {
   }
 
   /**
+   * Commit the active deploy session to history
+   *
+   * The session has already applied moves to the board incrementally.
+   * This method just:
+   * - Validates session is complete
+   * - Clears the session
+   * - Switches turn
+   * - Updates move counter
+   *
+   * @returns true if committed successfully
+   * @throws Error if no active session or session incomplete
+   */
+  public commitDeploySession(): boolean {
+    if (!this._deploySession) {
+      throw new Error('No active deploy session to commit')
+    }
+
+    if (!this._deploySession.canCommit()) {
+      throw new Error('Cannot commit incomplete deploy session')
+    }
+
+    // Session moves are already applied to board
+    // Just clean up and switch turn
+    this._deploySession = null
+    this._turn = swapColor(this._turn)
+
+    if (this._turn === RED) {
+      this._moveNumber++
+    }
+
+    return true
+  }
+
+  /**
+   * Cancel the active deploy session
+   *
+   * Undoes all moves made during the session and clears the session.
+   * The board is restored to its state before deployment started.
+   *
+   * @returns void
+   */
+  public cancelDeploySession(): void {
+    if (!this._deploySession) {
+      return // Nothing to cancel
+    }
+
+    // Undo all moves in the session
+    // Note: moves are in forward order, undo() works backward
+    const moveCount = this._deploySession.actions.length
+    for (let i = 0; i < moveCount; i++) {
+      this.undo()
+    }
+
+    // Clear the session
+    this._deploySession = null
+  }
+
+  /**
    * Updates the recorded position of a commander (king) piece for the specified color.
    * This method maintains the internal tracking of commander locations for check detection.
    * @param sq - The new square position in internal 0xf0 coordinate format
