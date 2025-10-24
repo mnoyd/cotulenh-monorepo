@@ -71,7 +71,7 @@ export function createCombineStackFromPieces(pieces: cg.Piece[]): {
  * @param roleToRemove - The role to remove (e.g., 'infantry', 'tank')
  * @returns The remaining stack/piece after removal, or null if no pieces remain
  */
-export function removePieceFromStack(stackPiece: cg.Piece, roleToRemove: cg.Role): cg.Piece | null {
+export function removePieceFromStack(stackPiece: cg.Piece, roleToRemove: cg.Piece): cg.Piece | null {
   return pieceStacker.remove(stackPiece, roleToRemove);
 }
 
