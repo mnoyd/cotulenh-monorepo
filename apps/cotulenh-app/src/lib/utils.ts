@@ -6,16 +6,133 @@ import {
   type OrigMove,
   type OrigMoveKey,
   type Role,
-  type Piece as BoardPiece
+  type Piece as BoardPiece,
+  type Color as BoardColor
 } from '@repo/cotulenh-board';
 import {
   type CoTuLenh,
   type Move,
-  type Color,
-  getRoleFromCoreType,
-  getCoreTypeFromRole,
-  type Piece as CorePiece
+  type Color as CoreColor,
+  type Piece as CorePiece,
+  type PieceSymbol,
+  COMMANDER,
+  INFANTRY,
+  TANK,
+  MILITIA,
+  ENGINEER,
+  ARTILLERY,
+  ANTI_AIR,
+  MISSILE,
+  AIR_FORCE,
+  NAVY,
+  HEADQUARTER
 } from '@repo/cotulenh-core';
+
+// ============================================================================
+// MAPPING LAYER: Translates between Core (game logic) and Board (UI) packages
+// ============================================================================
+
+/**
+ * Maps Board Role (full names like 'commander') to Core PieceSymbol (single letters like 'c')
+ */
+const ROLE_TO_TYPE_MAP: Record<Role, PieceSymbol> = {
+  commander: COMMANDER,
+  infantry: INFANTRY,
+  tank: TANK,
+  militia: MILITIA,
+  engineer: ENGINEER,
+  artillery: ARTILLERY,
+  anti_air: ANTI_AIR,
+  missile: MISSILE,
+  air_force: AIR_FORCE,
+  navy: NAVY,
+  headquarter: HEADQUARTER
+};
+
+/**
+ * Maps Core PieceSymbol (single letters like 'c') to Board Role (full names like 'commander')
+ */
+const TYPE_TO_ROLE_MAP: Record<PieceSymbol, Role> = {
+  [COMMANDER]: 'commander',
+  [INFANTRY]: 'infantry',
+  [TANK]: 'tank',
+  [MILITIA]: 'militia',
+  [ENGINEER]: 'engineer',
+  [ARTILLERY]: 'artillery',
+  [ANTI_AIR]: 'anti_air',
+  [MISSILE]: 'missile',
+  [AIR_FORCE]: 'air_force',
+  [NAVY]: 'navy',
+  [HEADQUARTER]: 'headquarter'
+};
+
+/**
+ * Converts Board Role to Core PieceSymbol
+ * @param role - Board role (e.g., 'commander')
+ * @returns Core piece symbol (e.g., 'c')
+ */
+export function roleToType(role: Role): PieceSymbol {
+  return ROLE_TO_TYPE_MAP[role];
+}
+
+/**
+ * Converts Core PieceSymbol to Board Role
+ * @param type - Core piece symbol (e.g., 'c')
+ * @returns Board role (e.g., 'commander')
+ */
+export function typeToRole(type: PieceSymbol): Role {
+  return TYPE_TO_ROLE_MAP[type];
+}
+
+/**
+ * Converts Board Color ('red', 'blue') to Core Color ('r', 'b')
+ * @param color - Board color
+ * @returns Core color
+ */
+export function boardColorToCore(color: BoardColor): CoreColor {
+  return color === 'red' ? 'r' : 'b';
+}
+
+/**
+ * Converts Core Color ('r', 'b') to Board Color ('red', 'blue')
+ * @param color - Core color
+ * @returns Board color
+ */
+export function coreColorToBoard(color: CoreColor): BoardColor {
+  return color === 'r' ? 'red' : 'blue';
+}
+
+/**
+ * Converts Board Piece to Core Piece
+ * @param piece - Board piece with role and full color names
+ * @returns Core piece with type symbol and short color codes
+ */
+export function boardPieceToCore(piece: BoardPiece): CorePiece {
+  return {
+    type: roleToType(piece.role),
+    color: boardColorToCore(piece.color),
+    heroic: piece.promoted,
+    carrying: piece.carrying?.map(boardPieceToCore)
+  };
+}
+
+/**
+ * Converts Core Piece to Board Piece
+ * @param piece - Core piece with type symbol and short color codes
+ * @returns Board piece with role and full color names
+ */
+export function corePieceToBoard(piece: CorePiece): BoardPiece {
+  return {
+    role: typeToRole(piece.type),
+    color: coreColorToBoard(piece.color),
+    promoted: piece.heroic,
+    carrying: piece.carrying?.map(corePieceToBoard)
+  };
+}
+
+// ============================================================================
+// GAME UTILITIES
+// ============================================================================
 
 /**
  * Calculates the possible destinations for each piece on the board for CoTuLenh.
@@ -31,7 +148,7 @@ export function getPossibleMoves(game: CoTuLenh): Move[] {
  * @param turn - The current turn ('r' or 'b').
  * @returns 'Red' or 'Blue'.
  */
-export function getTurnColorName(turn: Color): string {
+export function getTurnColorName(turn: CoreColor): string {
   return turn === 'r' ? 'Red' : 'Blue';
 }
 
@@ -40,7 +157,7 @@ export function makeCoreMove(game: CoTuLenh, orig: OrigMove, dest: DestMove): Mo
     const moveResult = game.move({
       from: orig.square,
       to: dest.square,
-      ...(orig.type && { piece: getCoreTypeFromRole(orig.type) }),
+      ...(orig.type && { piece: roleToType(orig.type) }),
       ...(dest.stay !== undefined && { stay: dest.stay }),
       deploy: false
     });
@@ -48,20 +165,6 @@ export function makeCoreMove(game: CoTuLenh, orig: OrigMove, dest: DestMove): Mo
   } catch (error) {
     throw error;
   }
-}
-
-export function convertBoardPieceToCorePiece(piece: BoardPiece): CorePiece {
-  const type = getCoreTypeFromRole(piece.role);
-  if (!type) {
-    throw new Error(`Invalid piece type: ${piece.role}`);
-  }
-  const color = piece.color === 'red' ? 'r' : 'b';
-  return {
-    type,
-    color,
-    heroic: piece.promoted,
-    carrying: piece.carrying?.map((p) => convertBoardPieceToCorePiece(p))
-  };
 }
 export function convertSetMapToArrayMap(map: Map<string, Set<string>>): Map<string, string[]> {
   return new Map(Array.from(map.entries()).map(([k, v]) => [k, Array.from(v)]));

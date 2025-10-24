@@ -594,11 +594,9 @@ export function generateDeployMoves(
   const deployState = gameInstance.getDeployState()
 
   const carrierPiece =
-    deploySession !== null
-      ? deploySession.originalPiece
-      : deployState !== null
-        ? deployState.originalPiece
-        : gameInstance.get(stackSquare)
+    deploySession?.originalPiece ??
+    deployState?.originalPiece ??
+    gameInstance.get(stackSquare)
 
   if (!carrierPiece || carrierPiece.color !== us) {
     return []

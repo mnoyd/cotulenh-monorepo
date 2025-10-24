@@ -3,7 +3,7 @@
   import { page } from '$app/stores';
   import { CotulenhBoard, origMoveToKey } from '@repo/cotulenh-board';
   import type { Api, Role as BoardRole, DestMove, OrigMove, OrigMoveKey, Role, StackMove, MoveMetadata } from '@repo/cotulenh-board';
-  import { CoTuLenh, getCoreTypeFromRole, getRoleFromCoreType, BLUE, RED } from '@repo/cotulenh-core';
+  import { CoTuLenh, BLUE, RED } from '@repo/cotulenh-core';
   import type { Square, Color, Move, DeployMoveRequest } from '@repo/cotulenh-core';
   import type { Key, Dests } from '@repo/cotulenh-board';
   import GameInfo from '$lib/components/GameInfo.svelte';
@@ -16,7 +16,7 @@
   import '@repo/cotulenh-board/assets/commander-chess.base.css';
   import '@repo/cotulenh-board/assets/commander-chess.pieces.css';
   import '@repo/cotulenh-board/assets/commander-chess.clasic.css';
-    import { convertBoardPieceToCorePiece, convertSetMapToArrayMap, makeCoreMove } from '$lib/utils';
+    import { boardPieceToCore, convertSetMapToArrayMap, makeCoreMove, typeToRole } from '$lib/utils';
 
   let boardContainerElement: HTMLElement | null = null;
   let boardApi: Api | null = null;
@@ -68,7 +68,7 @@
     for (const move of possibleMoves) {
         const moveOrig: OrigMove = {
             square: move.from,
-            type: getRoleFromCoreType(move.piece) as Role,
+            type: typeToRole(move.piece.type) as Role,
         }
         const moveDest: DestMove = {
             square: move.to,
@@ -124,8 +124,8 @@
     // and how it maps to DeployMoveRequest.
     const deployMoveRequest: DeployMoveRequest = {
       from: stackMove.orig,
-      moves: stackMove.moves.map(move => ({ piece: convertBoardPieceToCorePiece(move.piece), to: move.dest })),
-      stay: stackMove.stay ? convertBoardPieceToCorePiece(stackMove.stay) : undefined,
+      moves: stackMove.moves.map(move => ({ piece: boardPieceToCore(move.piece), to: move.dest })),
+      stay: stackMove.stay ? boardPieceToCore(stackMove.stay) : undefined,
     };
 
     try {
