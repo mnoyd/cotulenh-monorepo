@@ -11,11 +11,7 @@ import {
   pos2key,
 } from './util.js';
 import * as cg from './types.js';
-import {
-  AMBIGOUS_STACK_MOVE_STAY_PIECES_CANT_COMBINE,
-  createCombineStackFromPieces,
-  tryCombinePieces,
-} from './combined-piece.js';
+import { AMBIGOUS_STACK_MOVE_STAY_PIECES_CANT_COMBINE, tryCombinePieces } from './combined-piece.js';
 import { AMBIGOUS_CAPTURE_STAY_BACK } from './piece-attack';
 import { PopUpType } from './popup/popup-factory';
 
@@ -73,18 +69,18 @@ export const canSelectStackPiece = (state: HeadlessState, orig: cg.OrigMove): bo
 export function isMovable(state: HeadlessState, orig: cg.OrigMove): boolean {
   const piece = state.pieces.get(orig.square);
 
-  // If stackPieceMoves is active, only allow moves from the stack key
-  if (state.stackPieceMoves) {
+  // If deploySession is active, only allow moves from the origin square
+  if (state.deploySession) {
     // Only allow moves from the original stack position
     return (
       !!piece &&
-      orig.square === state.stackPieceMoves.key &&
+      orig.square === state.deploySession.originSquare &&
       (state.movable.color === 'both' ||
         (state.movable.color === piece.color && state.turnColor === piece.color))
     );
   }
 
-  // Normal move validation when stackPieceMoves is not active
+  // Normal move validation when deploySession is not active
   return (
     !!piece &&
     (state.movable.color === 'both' ||
@@ -94,7 +90,7 @@ export function isMovable(state: HeadlessState, orig: cg.OrigMove): boolean {
 
 interface MoveResult {
   piecesPrepared?: PreparedPiece;
-  stackMove?: cg.StackMove;
+  stackMove?: boolean; // True if this is a deploy move
   moveFinished: boolean;
 }
 
@@ -140,19 +136,11 @@ function baseUserMove(state: HeadlessState, orig: cg.OrigMove, dest: cg.DestMove
       };
       return { moveFinished: false };
     } else {
-      if (piecesPrepared.updatedPieces.isStackMove || state.stackPieceMoves) {
-        handleStackPieceMoves(state, piecesPrepared, orig, dest);
-        const stackMove = deployStateToMove(state);
-        unselect(state);
-        if (
-          stackMove.stay === undefined ||
-          !flattenPiece(stackMove.stay).some(piece =>
-            canSelectStackPiece(state, { square: stackMove.orig, type: piece.role }),
-          )
-        ) {
-          return { piecesPrepared, stackMove, moveFinished: true } as MoveResult;
-        }
-        return { piecesPrepared, stackMove, moveFinished: false } as MoveResult;
+      if (piecesPrepared.updatedPieces.isStackMove || state.deploySession) {
+        handleDeployMove(state, piecesPrepared, orig, dest);
+        // In incremental mode, we always return moveFinished: true
+        // The callback has been fired, app will handle the rest
+        return { piecesPrepared, stackMove: true, moveFinished: true } as MoveResult;
       }
     }
     //Move finished
@@ -174,7 +162,10 @@ export function userMove(state: HeadlessState, origMove: cg.OrigMove, destMove: 
       return true;
     }
     if (result.stackMove) {
-      return endUserStackMove(state);
+      // Deploy move - callback already fired in handleDeployMove
+      // Just unselect and return success
+      unselect(state);
+      return true;
     } else {
       return endUserNormalMove(state, result, origMove, destMove);
     }
@@ -209,26 +200,8 @@ export function endUserNormalMove(
   return true;
 }
 
-export function endUserStackMove(state: HeadlessState): boolean {
-  const holdTime = state.hold.stop();
-  unselect(state);
-  const stackMove = deployStateToMove(state);
-  let captures: cg.Piece[] = stackMove.moves
-    .map(move => move.capturedPiece!)
-    .filter(capture => capture !== undefined) as cg.Piece[];
-  const capturesFlatedout = captures.reduce<cg.Piece[]>((acc, piece) => [...acc, ...flattenPiece(piece)], []);
-  const metadata: cg.MoveMetadata = {
-    holdTime,
-    captured: capturesFlatedout,
-  };
-  callUserFunction(state.movable.events.afterStackMove, stackMove, metadata);
-
-  cleanupAfterMove(state);
-  return true;
-}
-
 function cleanupAfterMove(state: HeadlessState) {
-  state.stackPieceMoves = undefined;
+  state.deploySession = undefined;
   state.check = undefined;
   state.movable.dests = undefined;
   state.turnColor = opposite(state.turnColor);
@@ -529,121 +502,38 @@ function preparePieceThatChanges(
   };
 }
 
-function handleStackPieceMoves(
+function handleDeployMove(
   state: HeadlessState,
   piecesPrepared: PreparedPiece,
   origMove: cg.OrigMove,
   destMove: cg.DestMove,
 ): void {
-  const movedPieces = flattenPiece(piecesPrepared.originalPiece.pieceThatMoves!);
-  if (!state.stackPieceMoves) {
-    state.stackPieceMoves = {
-      key: origMove.square,
-      originalPiece: piecesPrepared.originalPiece.originalOrigPiece,
-      moves: movedPieces.map(p => ({
-        newSquare: destMove.square,
-        ...(piecesPrepared.updatedPieces.capture && {
-          capturedPiece: piecesPrepared.originalPiece.originalDestPiece,
-        }),
-        piece: p,
-      })),
+  if (!state.deploySession) {
+    state.deploySession = {
+      originSquare: origMove.square,
+      isActive: true,
     };
-  } else {
-    state.stackPieceMoves.moves.push(
-      ...movedPieces.map(p => ({
-        newSquare: destMove.square,
-        ...(piecesPrepared.updatedPieces.capture && {
-          capturedPiece: piecesPrepared.originalPiece.originalDestPiece,
-        }),
-        piece: p,
-      })),
-    );
   }
-  const originalPiece = state.stackPieceMoves.originalPiece;
-  const allPieces = flattenPiece(originalPiece);
-  const remainingPieces = allPieces.filter(
-    p => !state.stackPieceMoves?.moves.some(m => m.piece.role === p.role),
-  );
-  const dests = state.movable.dests;
-  if (dests) {
-    const keys = remainingPieces.map(piece =>
-      origMoveToKey({
-        square: origMove.square,
-        type: piece.role,
-      }),
-    );
-    const newDest = new Map();
-    keys.forEach(key => {
-      const dest = dests.get(key);
-      if (dest) {
-        newDest.set(
-          key,
-          dest.filter(d => !state.stackPieceMoves?.moves.some(m => m.newSquare === d.square)),
-        );
-      }
-    });
-    remainingPieces.forEach(carriedPiece => {
-      state.stackPieceMoves?.moves.forEach(m => {
-        const combined = tryCombinePieces(m.piece, carriedPiece);
-        if (combined && combined.role === m.piece.role) {
-          const k = origMoveToKey({
-            square: state.stackPieceMoves!.key,
-            type: carriedPiece.role,
-          });
-          const dest = newDest.get(k)?.some((d: cg.DestMove) => d.square === m.newSquare);
-          if (!dest) {
-            newDest.get(k)?.push({
-              square: m.newSquare,
-              stay: false,
-            });
-          }
-        }
-      });
-    });
-    state.movable.dests = newDest;
-    state.lastMove = [state.stackPieceMoves!.key, ...state.stackPieceMoves.moves.map(m => m.newSquare)];
-  }
-}
 
-function deployStateToMove(s: HeadlessState): cg.StackMove {
-  const deployState = s.stackPieceMoves;
-  if (!deployState) {
-    throw new Error('No deploy state');
-  }
-  const originalPiece = deployState.originalPiece;
-  let remainingPieces = flattenPiece(originalPiece);
-  const destsMap = new Map<cg.Key, { piece: cg.Piece[]; capturedPiece?: cg.Piece }>();
-  deployState.moves.forEach(m => {
-    const piece = m.piece;
-    const key = m.newSquare;
-    remainingPieces = remainingPieces.filter(p => p.role !== piece.role);
-    if (destsMap.has(key)) {
-      const value = destsMap.get(key)!;
-      value.piece.push(piece);
-      if (m.capturedPiece) {
-        value.capturedPiece = m.capturedPiece;
-      }
-    } else {
-      destsMap.set(key, { piece: [piece], capturedPiece: m.capturedPiece });
-    }
-  });
-  const moves: cg.SingleMove[] = [];
-  destsMap.forEach((value, key) => {
-    const { combined, uncombined } = createCombineStackFromPieces([...value.piece]);
-    if (combined == null && uncombined != null)
-      throw new Error('the piece is not suitable to stay in one square');
-    moves.push({
-      piece: combined!,
-      dest: key,
-      ...(value.capturedPiece && { capturedPiece: value.capturedPiece }),
-    });
-  });
-  const { combined: stayPiece, uncombined } = createCombineStackFromPieces([...remainingPieces]);
-  if (stayPiece == null && uncombined != null)
-    throw new Error('the piece is not suitable to stay in one square');
-  return {
-    moves,
-    orig: deployState.key,
-    stay: stayPiece!,
+  const movedPieces = flattenPiece(piecesPrepared.originalPiece.pieceThatMoves!);
+  const mainPiece = movedPieces[0];
+
+  const deployMove: cg.SingleDeployMove = {
+    piece: mainPiece,
+    from: origMove.square,
+    to: destMove.square,
+    capture: piecesPrepared.updatedPieces.capture
+      ? piecesPrepared.originalPiece.originalDestPiece
+      : undefined,
   };
+
+  const metadata: cg.DeployStepMetadata = {
+    holdTime: state.hold.stop(),
+    ctrlKey: state.stats.ctrlKey,
+    ...(piecesPrepared.updatedPieces.capture && {
+      captured: flattenPiece(piecesPrepared.originalPiece.originalDestPiece!),
+    }),
+  };
+
+  callUserFunction(state.movable.events.afterDeployStep, deployMove, metadata);
 }

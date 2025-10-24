@@ -67,7 +67,7 @@ export function start(s: State, e: cg.MouchEvent): void {
   if (
     piece &&
     ((piece.carrying && piece.carrying.length > 0) ||
-      (s.stackPieceMoves && s.stackPieceMoves.key === keyAtPosition)) &&
+      (s.deploySession && s.deploySession.originSquare === keyAtPosition)) &&
     board.isMovable(s, { square: keyAtPosition } as cg.OrigMove) &&
     (isRightClick || (isTouchStart && selectedBefore))
   ) {

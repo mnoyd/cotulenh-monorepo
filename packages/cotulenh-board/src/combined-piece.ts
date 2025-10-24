@@ -96,7 +96,8 @@ const combinedPiecePopup = createPopupFactory<cg.Piece | EndMove>({
   onSelect: (s: State, index: number, e?: cg.MouchEvent) => {
     const selectedPiece = s.popup?.items[index];
     if (selectedPiece === END_MOVE) {
-      board.endUserStackMove(s);
+      // In incremental mode, END_MOVE is not used
+      // User must use commit button in app
       board.unselect(s);
     } else {
       if (!e) return;
@@ -141,10 +142,10 @@ export function prepareCombinedPopup(
   key: cg.Key,
 ): (cg.Piece | EndMove)[] {
   const movablePieces = pieces.filter(p => board.canSelectStackPiece(state, { square: key, type: p.role }));
-  if (state.stackPieceMoves && movablePieces.length < 2) return [END_MOVE];
-  const stackPieceMoves = state.stackPieceMoves;
-  if (!stackPieceMoves) return movablePieces;
-  return [...movablePieces, END_MOVE];
+  // In incremental mode, END_MOVE is not used - commit happens via app button
+  if (state.deploySession && movablePieces.length < 2) return movablePieces;
+  if (!state.deploySession) return movablePieces;
+  return movablePieces;
 }
 
 export const MOVE_WITH_CARRIER_POPUP_TYPE = 'move-with-carrier';
