@@ -628,25 +628,7 @@ export function generateDeployMoves(
     )
   }
 
-  // Remove the carrier from deploy candidates ONLY if:
-  // 1. We're in an active deploy session/state (not initial deploy), AND
-  // 2. Only the carrier piece remains (all cargo deployed)
-  // On initial deploy, the carrier can move with its cargo
-  const hasActiveDeployContext = !!(deploySession || deployState)
-  const originalCarrierType = deploySession
-    ? deploySession.originalPiece.type
-    : (deployState?.originalPiece.type ?? carrierPiece.type)
-
-  if (
-    hasActiveDeployContext &&
-    deployMoveCandidates.length === 1 &&
-    deployMoveCandidates[0].type === originalCarrierType
-  ) {
-    // Only carrier remains in active deploy: filter it out, it should move normally
-    deployMoveCandidates = []
-  }
-
-  // Generate normal deploy moves
+  // Generate deploy moves for all remaining pieces including the carrier
   for (const deployMoveCandidate of deployMoveCandidates) {
     if (filterPiece && deployMoveCandidate.type !== filterPiece) continue
 

@@ -323,7 +323,7 @@ describe('Stack Movement and Deployment', () => {
       to: 'c2',
       piece: NAVY,
       deploy: true,
-    }) // Normal move object for carrier
+    })
 
     expect(moveResult).not.toBeNull()
     expect(game.turn()).toBe(BLUE) // Turn SHOULD change now
@@ -351,12 +351,12 @@ describe('Stack Movement and Deployment', () => {
     )
     game['_turn'] = RED
 
-    // Deploy carrier
-    game.move({ from: 'c3', to: 'c2', piece: NAVY, deploy: true }) // Normal move object for carrier
     // Deploy AF
     game.move({ from: 'c3', to: 'c4', piece: AIR_FORCE, deploy: true })
     // Deploy T
     game.move({ from: 'c3', to: 'd3', piece: TANK, deploy: true })
+    // Deploy carrier (still a deploy move)
+    game.move({ from: 'c3', to: 'c2', piece: NAVY, deploy: true })
 
     expect(game.turn()).toBe(BLUE) // Turn SHOULD change now
     expect(game.get('c3')).toBeUndefined() // Carrier moved

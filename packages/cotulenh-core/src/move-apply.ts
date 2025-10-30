@@ -81,15 +81,19 @@ class PlacePieceAction implements CTLAtomicMoveAction {
 
   undo(): void {
     if (this.existingPiece) {
+      // There was an existing piece - restore it
+      // First remove current piece, then place the existing one
+      this.game.remove(algebraic(this.square))
       const result = this.game.put(this.existingPiece, algebraic(this.square))
       if (!result) {
         throw new Error(
           'Place piece fail:' +
-            JSON.stringify(this.piece) +
+            JSON.stringify(this.existingPiece) +
             algebraic(this.square),
         )
       }
     } else {
+      // No existing piece - just remove what we placed
       this.game.remove(algebraic(this.square))
     }
   }
@@ -353,9 +357,32 @@ export class SingleDeployMoveCommand extends CTLMoveCommand {
 
       // Add action to place the deployed piece
       if ((this.move.flags & BITS.SUICIDE_CAPTURE) === 0) {
-        this.actions.push(
-          new PlacePieceAction(this.game, destSq, this.move.piece),
-        )
+        // Check if this is a recombine move (deploy + combination)
+        if (this.move.flags & BITS.COMBINATION) {
+          const targetPiece = this.game.get(destSq)
+          if (targetPiece) {
+            // Combine the moving piece with the target piece
+            const combinedPiece = combinePieces([this.move.piece, targetPiece])
+            if (!combinedPiece) {
+              throw new Error(
+                `Failed to create combined piece during recombine: ${JSON.stringify(this.move)}`,
+              )
+            }
+            this.actions.push(
+              new PlacePieceAction(this.game, destSq, combinedPiece),
+            )
+          } else {
+            // No target piece - just place the moving piece
+            this.actions.push(
+              new PlacePieceAction(this.game, destSq, this.move.piece),
+            )
+          }
+        } else {
+          // Normal deploy - just place the piece
+          this.actions.push(
+            new PlacePieceAction(this.game, destSq, this.move.piece),
+          )
+        }
       }
     }
 

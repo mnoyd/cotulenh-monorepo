@@ -121,9 +121,11 @@ export class Move {
     const skipPreview = !!(game['_deploySession'] && flags & BITS.DEPLOY)
 
     if (!skipPreview) {
-      game['_makeMove'](internal, false) // Don't auto-commit during FEN generation
+      // Execute move temporarily to get FEN
+      const command = game['_executeTemporarily'](internal as InternalMove)
       this.after = game.fen()
-      game['_undoMove']() // Undo from history
+      command.undo()
+      game['_movesCache'].clear()
     } else {
       // During deploy session with deploy move, we can't safely preview
       // The 'after' FEN will be the same as 'before' for now
@@ -582,34 +584,6 @@ export class CoTuLenh {
         deployFilterSquare = this._deployState!.stackSquare
       }
       allMoves = generateDeployMoves(this, deployFilterSquare, filterPiece)
-
-      // Also generate normal moves for the carrier piece if all deployable pieces are deployed
-      // This allows the carrier to move normally to complete the deploy sequence
-      if (this._deploySession) {
-        const remaining = this._deploySession.getRemainingPieces()
-        if (remaining && flattenPiece(remaining).length === 1) {
-          // Only the carrier remains, generate normal moves for it
-          const carrierSquare = algebraic(this._deploySession.stackSquare)
-          const normalMoves = generateNormalMoves(
-            this,
-            us,
-            filterPiece,
-            carrierSquare,
-          )
-
-          // Filter out combination moves to squares where pieces were just deployed
-          // The carrier can't recombine with pieces it just deployed in the same session
-          const deployedSquares = this._deploySession.getDeployedSquares()
-          const filteredMoves = normalMoves.filter((move) => {
-            // Allow non-combination moves
-            if (!(move.flags & BITS.COMBINATION)) return true
-            // Block combination moves to deployed squares
-            return !deployedSquares.includes(move.to)
-          })
-
-          allMoves.push(...filteredMoves)
-        }
-      }
     } else {
       allMoves = generateNormalMoves(this, us, filterPiece, filterSquare)
     }
@@ -676,56 +650,32 @@ export class CoTuLenh {
       ? this._deploySession.clone()
       : null
 
-    console.log(
-      '[_filterLegalMoves] Filtering',
-      moves.length,
-      'moves. Initial session commands:',
-      initialDeploySession?.commands.length || 0,
-    )
-    console.log('[_filterLegalMoves] Commander positions:', this._commanders)
-
     for (const move of moves) {
       try {
-        this._makeMove(move, false) // Don't auto-commit during move generation
+        // Execute move temporarily without affecting history or session
+        let command: CTLMoveCommandInteface
+        if (isInternalDeployMove(move)) {
+          // For batch deploy moves, execute and test via full _makeMove
+          // These are already complete deploy sequences, so they go to history
+          this._makeMove(move)
+          // Will undo via _undoMove below
+        } else {
+          command = this._executeTemporarily(move)
+        }
+
         // A move is legal if it doesn't leave the commander attacked AND doesn't expose the commander
         const commanderAttacked = this._isCommanderAttacked(us)
         const commanderExposed = this._isCommanderExposed(us)
         if (!commanderAttacked && !commanderExposed) {
           legalMoves.push(move)
-          console.log('[_filterLegalMoves] Move accepted')
-        } else {
-          console.log(
-            '[_filterLegalMoves] Move rejected. Attacked:',
-            commanderAttacked,
-            'Exposed:',
-            commanderExposed,
-          )
         }
 
         // Undo the test move
-        // For deploy moves in an active session, manually undo without clearing the session
-        if (
-          this._deploySession &&
-          this._deploySession.commands.length >
-            (initialDeploySession?.commands.length || 0)
-        ) {
-          console.log(
-            '[_filterLegalMoves] Undoing from session. Commands before:',
-            this._deploySession.commands.length,
-          )
-          const cmd = this._deploySession.undoLastCommand()
-          if (cmd) cmd.undo()
-          this._movesCache.clear()
-          console.log(
-            '[_filterLegalMoves] After undo. Session commands:',
-            this._deploySession?.commands.length || 0,
-            'Session exists:',
-            !!this._deploySession,
-          )
-        } else {
-          // Normal move or no active session: use regular undo
-          console.log('[_filterLegalMoves] Undoing from history')
+        if (isInternalDeployMove(move)) {
           this._undoMove()
+        } else {
+          command!.undo()
+          this._movesCache.clear()
         }
       } catch (error) {
         // If there's an error, restore the initial state and continue
@@ -741,33 +691,16 @@ export class CoTuLenh {
     const currentCommandCount = this._deploySession?.commands.length || 0
     const initialCommandCount = initialDeploySession?.commands.length || 0
 
-    console.log(
-      '[_filterLegalMoves] End safety check. Current commands:',
-      currentCommandCount,
-      'Initial commands:',
-      initialCommandCount,
-      'Current session exists:',
-      !!this._deploySession,
-      'Initial session existed:',
-      !!initialDeploySession,
-    )
-
     if (
       currentCommandCount !== initialCommandCount ||
       !!this._deploySession !== !!initialDeploySession
     ) {
-      console.log('[_filterLegalMoves] Restoring session state')
       this._deployState = initialDeployState
       this._deploySession = initialDeploySession
         ? initialDeploySession.clone()
         : null
     }
 
-    console.log(
-      '[_filterLegalMoves] Returning',
-      legalMoves.length,
-      'legal moves',
-    )
     return legalMoves
   }
 
@@ -809,10 +742,20 @@ export class CoTuLenh {
   }
 
   // --- Move Execution/Undo (Updated for Stay Capture & Deploy) ---
-  private _makeMove(
-    move: InternalMove | InternalDeployMove,
-    autoCommit: boolean = true,
-  ) {
+
+  /**
+   * Execute a command temporarily for testing/validation
+   * Does NOT add to history or deploy session
+   * Caller MUST call command.undo() to restore state
+   */
+  private _executeTemporarily(move: InternalMove): CTLMoveCommandInteface {
+    const command = createMoveCommand(this, move)
+    command.execute()
+    this._movesCache.clear()
+    return command
+  }
+
+  private _makeMove(move: InternalMove | InternalDeployMove) {
     const us = this.turn()
     const them = swapColor(us)
 
@@ -941,11 +884,10 @@ export class CoTuLenh {
     // Update position count for threefold repetition
     this._updatePositionCounts()
 
-    // Auto-commit deploy session AFTER all game state is updated (only for real moves, not testing)
-    if (shouldAutoCommit && autoCommit) {
+    // Auto-commit deploy session AFTER all game state is updated
+    if (shouldAutoCommit) {
       try {
-        this.commitDeploySession(false) // Don't switch turn - already switched by normal move
-        // Turn was already switched by the normal move above
+        this.commitDeploySession(true) // Switch turn now that deploy is complete
       } catch (error) {
         // Fallback: just clear the session (and legacy state) and switch turn
         this._deploySession = null
@@ -1376,15 +1318,27 @@ export class CoTuLenh {
     }
     let checkingSuffix = '' // Simplified: Assume Move class handles this better
 
-    this._makeMove(move, false) // Don't auto-commit during SAN generation
-    if (this.isCheck()) {
-      if (this.isCheckmate()) {
-        checkingSuffix = '#'
-      } else {
-        checkingSuffix = '^'
-      }
+    // Execute move temporarily to check for check/checkmate
+    const command = this._executeTemporarily(move)
+    // After executing the move, check if opponent is in check/checkmate
+    // Note: turn hasn't switched yet, so we check the opponent (them)
+    const them = swapColor(move.color)
+    const isCheck = this._isCommanderAttacked(them)
+    let isCheckmate = false
+    if (isCheck) {
+      // To check for checkmate, we need to see if opponent has any legal moves
+      // Temporarily switch turn to opponent
+      const savedTurn = this._turn
+      this._turn = them
+      isCheckmate = this._moves({ legal: true }).length === 0
+      this._turn = savedTurn
     }
-    this._undoMove()
+    command.undo()
+    this._movesCache.clear()
+
+    if (isCheck) {
+      checkingSuffix = isCheckmate ? '#' : '^'
+    }
 
     const san = `${pieceEncoded}${disambiguator}${separator}${toAlg}${combinationSuffix}${checkingSuffix}`
     const lan = `${pieceEncoded}${fromAlg}${separator}${toAlg}${combinationSuffix}${checkingSuffix}`
