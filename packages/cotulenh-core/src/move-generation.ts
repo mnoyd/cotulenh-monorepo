@@ -628,11 +628,22 @@ export function generateDeployMoves(
     )
   }
 
-  if (carrierPiece.type === NAVY && !LAND_MASK[stackSquare]) {
-    //remove carrier from the deployMoveCandidates
-    deployMoveCandidates = deployMoveCandidates.filter(
-      (p) => p.type !== carrierPiece.type,
-    )
+  // Remove the carrier from deploy candidates ONLY if:
+  // 1. We're in an active deploy session/state (not initial deploy), AND
+  // 2. Only the carrier piece remains (all cargo deployed)
+  // On initial deploy, the carrier can move with its cargo
+  const hasActiveDeployContext = !!(deploySession || deployState)
+  const originalCarrierType = deploySession
+    ? deploySession.originalPiece.type
+    : (deployState?.originalPiece.type ?? carrierPiece.type)
+
+  if (
+    hasActiveDeployContext &&
+    deployMoveCandidates.length === 1 &&
+    deployMoveCandidates[0].type === originalCarrierType
+  ) {
+    // Only carrier remains in active deploy: filter it out, it should move normally
+    deployMoveCandidates = []
   }
 
   // Generate normal deploy moves
@@ -735,6 +746,14 @@ export function generateNormalMoves(
 
   if (filterSquare) {
     const sq = SQUARE_MAP[filterSquare]
+    console.log(
+      '[generateNormalMoves] filterSquare:',
+      filterSquare,
+      'sq:',
+      sq,
+      'piece:',
+      gameInstance.get(sq),
+    )
     if (
       sq === undefined ||
       !gameInstance.get(sq) ||
@@ -750,8 +769,21 @@ export function generateNormalMoves(
     const pieceData = gameInstance.get(from)
     if (!pieceData || pieceData.color !== us) continue
 
+    console.log(
+      '[generateNormalMoves] Processing piece at',
+      from,
+      ':',
+      pieceData.type,
+      'carrying:',
+      pieceData.carrying?.length || 0,
+    )
+
     if (pieceData.carrying && pieceData.carrying.length > 0) {
       let deployMoveCandidates = flattenPiece(pieceData)
+      console.log(
+        '[generateNormalMoves] Deploy candidates:',
+        deployMoveCandidates.map((p) => p.type),
+      )
       if (pieceData.type === NAVY && !LAND_MASK[from]) {
         //remove carrier from the deployMoveCandidates
         deployMoveCandidates = deployMoveCandidates.filter(
@@ -759,12 +791,30 @@ export function generateNormalMoves(
         )
       }
       for (const deployMoveCandidate of deployMoveCandidates) {
-        if (filterPiece && deployMoveCandidate.type !== filterPiece) continue
+        if (filterPiece && deployMoveCandidate.type !== filterPiece) {
+          console.log(
+            '[generateNormalMoves] Skipping',
+            deployMoveCandidate.type,
+            'due to filter',
+            filterPiece,
+          )
+          continue
+        }
+        console.log(
+          '[generateNormalMoves] Generating deploy moves for',
+          deployMoveCandidate.type,
+        )
         const deployMoves = generateMovesForPiece(
           gameInstance,
           from,
           deployMoveCandidate,
           true,
+        )
+        console.log(
+          '[generateNormalMoves] Generated',
+          deployMoves.length,
+          'deploy moves for',
+          deployMoveCandidate.type,
         )
         deployMoves.forEach((m) => {
           m.flags |= BITS.DEPLOY

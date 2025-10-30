@@ -43,8 +43,76 @@ function charToPiece(c: string, promoted: boolean): cg.Piece {
   };
 }
 
+export interface ParsedFEN {
+  pieces: cg.Pieces;
+  deployState?: {
+    originSquare: cg.Key;
+    moves: Array<{
+      piece: string; // e.g., "N", "F(EI)"
+      to: cg.Key;
+      capture: boolean;
+    }>;
+    isComplete: boolean; // false if ends with "..."
+  };
+}
+
 export function read(fen: string): cg.Pieces {
+  const parsed = readWithDeployState(fen);
+  return parsed.pieces;
+}
+
+export function readWithDeployState(fen: string): ParsedFEN {
   if (fen === 'start') fen = initial;
+
+  // Check for DEPLOY marker in extended FEN format
+  // Format: "base-fen DEPLOY c3:Nc5,Fd4..."
+  const deployMatch = fen.match(/^(.+)\s+DEPLOY\s+([a-k](?:1[0-2]|[1-9])):(.*)$/);
+
+  if (!deployMatch) {
+    // Normal FEN without deploy state
+    const pieces = parseBaseFEN(fen);
+    return { pieces };
+  }
+
+  // Extended FEN with deploy state
+  const [_, baseFEN, square, moveStr] = deployMatch;
+  const pieces = parseBaseFEN(baseFEN);
+
+  // Parse deploy moves
+  const isComplete = !moveStr.endsWith('...');
+  const cleanMoveStr = moveStr.replace(/\.\.\.$/, '');
+  const moves = parseDeployMoves(cleanMoveStr);
+
+  return {
+    pieces,
+    deployState: {
+      originSquare: square as cg.Key,
+      moves,
+      isComplete,
+    },
+  };
+}
+
+function parseDeployMoves(moveStr: string): Array<{ piece: string; to: cg.Key; capture: boolean }> {
+  if (!moveStr || moveStr.trim() === '') return [];
+
+  // Parse format: "Nc5,F(EI)xd4,Te5"
+  return moveStr.split(',').map(moveNotation => {
+    const captureMatch = moveNotation.match(/([A-Z])(\([A-Z]+\))?(x)?([a-k](?:1[0-2]|[1-9]))/);
+    if (!captureMatch) {
+      throw new Error(`Invalid deploy move notation: ${moveNotation}`);
+    }
+
+    const [__, piece, carrying, capture, to] = captureMatch;
+    return {
+      piece: carrying ? `${piece}${carrying}` : piece,
+      to: to as cg.Key,
+      capture: !!capture,
+    };
+  });
+}
+
+function parseBaseFEN(fen: string): cg.Pieces {
   const pieces: cg.Pieces = new Map();
   let row = 11;
   let col = 0;

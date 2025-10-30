@@ -54,6 +54,7 @@ import {
 import {
   createMoveCommand,
   DeployMoveCommand,
+  createDeployMoveCommand,
   CTLMoveCommandInteface,
 } from './move-apply.js'
 import {
@@ -116,9 +117,18 @@ export class Move {
     this.before = game.fen()
 
     // Generate the FEN for the 'after' key
-    game['_makeMove'](internal)
-    this.after = game.fen()
-    game['_undoMove']()
+    // For deploy moves during an active session, skip preview to avoid session corruption
+    const skipPreview = !!(game['_deploySession'] && flags & BITS.DEPLOY)
+
+    if (!skipPreview) {
+      game['_makeMove'](internal, false) // Don't auto-commit during FEN generation
+      this.after = game.fen()
+      game['_undoMove']() // Undo from history
+    } else {
+      // During deploy session with deploy move, we can't safely preview
+      // The 'after' FEN will be the same as 'before' for now
+      this.after = this.before
+    }
 
     const [san, lan] = game['_moveToSanLan'](
       internal,
@@ -517,7 +527,7 @@ export class CoTuLenh {
     if (args.deploy) {
       deployState = `${args.square}:${this.turn()}`
     } else if (this._deploySession) {
-      deployState = `${this._deploySession.stackSquare}:${this._deploySession.turn}`
+      deployState = `${this._deploySession.stackSquare}:${this._deploySession.turn}:${this._deploySession.commands.length}`
     } else if (this._deployState) {
       deployState = `${this._deployState.stackSquare}:${this._deployState.turn}`
     } else {
@@ -572,6 +582,34 @@ export class CoTuLenh {
         deployFilterSquare = this._deployState!.stackSquare
       }
       allMoves = generateDeployMoves(this, deployFilterSquare, filterPiece)
+
+      // Also generate normal moves for the carrier piece if all deployable pieces are deployed
+      // This allows the carrier to move normally to complete the deploy sequence
+      if (this._deploySession) {
+        const remaining = this._deploySession.getRemainingPieces()
+        if (remaining && flattenPiece(remaining).length === 1) {
+          // Only the carrier remains, generate normal moves for it
+          const carrierSquare = algebraic(this._deploySession.stackSquare)
+          const normalMoves = generateNormalMoves(
+            this,
+            us,
+            filterPiece,
+            carrierSquare,
+          )
+
+          // Filter out combination moves to squares where pieces were just deployed
+          // The carrier can't recombine with pieces it just deployed in the same session
+          const deployedSquares = this._deploySession.getDeployedSquares()
+          const filteredMoves = normalMoves.filter((move) => {
+            // Allow non-combination moves
+            if (!(move.flags & BITS.COMBINATION)) return true
+            // Block combination moves to deployed squares
+            return !deployedSquares.includes(move.to)
+          })
+
+          allMoves.push(...filteredMoves)
+        }
+      }
     } else {
       allMoves = generateNormalMoves(this, us, filterPiece, filterSquare)
     }
@@ -631,14 +669,105 @@ export class CoTuLenh {
     us: Color,
   ): (InternalMove | InternalDeployMove)[] {
     const legalMoves: (InternalMove | InternalDeployMove)[] = []
+
+    // Save the initial deploy state to restore if corrupted
+    const initialDeployState = this._deployState
+    const initialDeploySession = this._deploySession
+      ? this._deploySession.clone()
+      : null
+
+    console.log(
+      '[_filterLegalMoves] Filtering',
+      moves.length,
+      'moves. Initial session commands:',
+      initialDeploySession?.commands.length || 0,
+    )
+    console.log('[_filterLegalMoves] Commander positions:', this._commanders)
+
     for (const move of moves) {
-      this._makeMove(move)
-      // A move is legal if it doesn't leave the commander attacked AND doesn't expose the commander
-      if (!this._isCommanderAttacked(us) && !this._isCommanderExposed(us)) {
-        legalMoves.push(move)
+      try {
+        this._makeMove(move, false) // Don't auto-commit during move generation
+        // A move is legal if it doesn't leave the commander attacked AND doesn't expose the commander
+        const commanderAttacked = this._isCommanderAttacked(us)
+        const commanderExposed = this._isCommanderExposed(us)
+        if (!commanderAttacked && !commanderExposed) {
+          legalMoves.push(move)
+          console.log('[_filterLegalMoves] Move accepted')
+        } else {
+          console.log(
+            '[_filterLegalMoves] Move rejected. Attacked:',
+            commanderAttacked,
+            'Exposed:',
+            commanderExposed,
+          )
+        }
+
+        // Undo the test move
+        // For deploy moves in an active session, manually undo without clearing the session
+        if (
+          this._deploySession &&
+          this._deploySession.commands.length >
+            (initialDeploySession?.commands.length || 0)
+        ) {
+          console.log(
+            '[_filterLegalMoves] Undoing from session. Commands before:',
+            this._deploySession.commands.length,
+          )
+          const cmd = this._deploySession.undoLastCommand()
+          if (cmd) cmd.undo()
+          this._movesCache.clear()
+          console.log(
+            '[_filterLegalMoves] After undo. Session commands:',
+            this._deploySession?.commands.length || 0,
+            'Session exists:',
+            !!this._deploySession,
+          )
+        } else {
+          // Normal move or no active session: use regular undo
+          console.log('[_filterLegalMoves] Undoing from history')
+          this._undoMove()
+        }
+      } catch (error) {
+        // If there's an error, restore the initial state and continue
+        this._deployState = initialDeployState
+        this._deploySession = initialDeploySession
+          ? initialDeploySession.clone()
+          : null
       }
-      this._undoMove()
     }
+
+    // Safety check: ensure we end up in the same deploy state we started with
+    // This should only trigger if something went wrong (e.g., errors during filtering)
+    const currentCommandCount = this._deploySession?.commands.length || 0
+    const initialCommandCount = initialDeploySession?.commands.length || 0
+
+    console.log(
+      '[_filterLegalMoves] End safety check. Current commands:',
+      currentCommandCount,
+      'Initial commands:',
+      initialCommandCount,
+      'Current session exists:',
+      !!this._deploySession,
+      'Initial session existed:',
+      !!initialDeploySession,
+    )
+
+    if (
+      currentCommandCount !== initialCommandCount ||
+      !!this._deploySession !== !!initialDeploySession
+    ) {
+      console.log('[_filterLegalMoves] Restoring session state')
+      this._deployState = initialDeployState
+      this._deploySession = initialDeploySession
+        ? initialDeploySession.clone()
+        : null
+    }
+
+    console.log(
+      '[_filterLegalMoves] Returning',
+      legalMoves.length,
+      'legal moves',
+    )
     return legalMoves
   }
 
@@ -680,7 +809,10 @@ export class CoTuLenh {
   }
 
   // --- Move Execution/Undo (Updated for Stay Capture & Deploy) ---
-  private _makeMove(move: InternalMove | InternalDeployMove) {
+  private _makeMove(
+    move: InternalMove | InternalDeployMove,
+    autoCommit: boolean = true,
+  ) {
     const us = this.turn()
     const them = swapColor(us)
 
@@ -692,7 +824,23 @@ export class CoTuLenh {
       moveCommand = createMoveCommand(this, move)
     }
 
-    // Store pre-move state
+    // 2. Handle deploy session for incremental deploy moves
+    const isDeployMove = !isInternalDeployMove(move) && move.flags & BITS.DEPLOY
+
+    if (isDeployMove) {
+      if (!this._deploySession) {
+        // Start new deploy session
+        const originalPiece = this._board[move.from]!
+        this._deploySession = new DeploySession({
+          stackSquare: move.from,
+          turn: us,
+          originalPiece: originalPiece,
+          startFEN: this.fen(),
+        })
+      }
+    }
+
+    // Store pre-move state (for history, if needed)
     const preCommanderState = { ...this._commanders }
     const preTurn = us
     const preHalfMoves = this._halfMoves
@@ -702,24 +850,32 @@ export class CoTuLenh {
       ? this._deploySession.clone()
       : null
 
-    // 2. Execute the command
+    // 3. Execute the command
     try {
       moveCommand.execute()
+      // Clear moves cache since board state has changed
+      this._movesCache.clear()
     } catch (error) {
       throw error
     }
 
-    // 3. Store post-execution command and pre-move state in history
-    const historyEntry: History = {
-      move: moveCommand, // Now contains updated heroicActions
-      commanders: preCommanderState,
-      turn: preTurn,
-      halfMoves: preHalfMoves,
-      moveNumber: preMoveNumber,
-      deployState: preDeployState,
-      deploySession: preDeploySession,
+    // 4. Add command to session OR history (mutually exclusive!)
+    if (this._deploySession && isDeployMove) {
+      // During deploy: add command to session, NOT to history
+      this._deploySession.addCommand(moveCommand)
+    } else {
+      // Normal move: add to history
+      const historyEntry: History = {
+        move: moveCommand,
+        commanders: preCommanderState,
+        turn: preTurn,
+        halfMoves: preHalfMoves,
+        moveNumber: preMoveNumber,
+        deployState: preDeployState,
+        deploySession: preDeploySession,
+      }
+      this._history.push(historyEntry)
     }
-    this._history.push(historyEntry)
 
     // --- 4. Update General Game State AFTER command execution ---
 
@@ -746,17 +902,60 @@ export class CoTuLenh {
     // TODO: Check for last piece auto-promotion (also needs Commander check)
 
     // --- Switch Turn (or maintain for deploy) ---
-    if (!isInternalDeployMove(move) && !(move.flags & BITS.DEPLOY)) {
-      this._turn = them // Switch turn only for non-deploy moves
+    // Check if we need to auto-commit deploy session BEFORE updating game state
+    let shouldAutoCommit = false
+    if (this._deploySession && !isInternalDeployMove(move)) {
+      const isDeployMove = !!(move.flags & BITS.DEPLOY)
+      const isFromStackSquare = move.from === this._deploySession.stackSquare
+
+      if (isDeployMove) {
+        // Deploy move: check if all pieces are now deployed
+        const remainingPieces = this._deploySession.getRemainingPieces()
+        if (remainingPieces === null) {
+          // All pieces deployed! Mark for auto-commit after position update
+          shouldAutoCommit = true
+        }
+      } else if (isFromStackSquare) {
+        // Normal move from the stack square: this signals end of deploy sequence
+        // The carrier is moving away, completing the deployment
+        shouldAutoCommit = true
+      }
     }
-    // If it was a deploy move, turn remains `us`
+
+    // Don't switch turn if there's an active deploy session OR if it's a deploy move
+    const hasActiveDeploySession = !!this._deploySession
+    const isDeployMoveFlag =
+      !isInternalDeployMove(move) &&
+      !!(move as InternalMove).flags &&
+      !!((move as InternalMove).flags & BITS.DEPLOY)
+    const shouldSwitchTurn =
+      !isInternalDeployMove(move) &&
+      !isDeployMoveFlag &&
+      !hasActiveDeploySession
+
+    if (shouldSwitchTurn) {
+      this._turn = them // Switch turn only for non-deploy moves when no active session
+    }
+    // If it was a deploy move or there's an active session, turn remains `us`
 
     // Update position count for threefold repetition
     this._updatePositionCounts()
+
+    // Auto-commit deploy session AFTER all game state is updated (only for real moves, not testing)
+    if (shouldAutoCommit && autoCommit) {
+      try {
+        this.commitDeploySession(false) // Don't switch turn - already switched by normal move
+        // Turn was already switched by the normal move above
+      } catch (error) {
+        // Fallback: just clear the session (and legacy state) and switch turn
+        this._deploySession = null
+        this._deployState = null
+        this._turn = them
+      }
+    }
   }
 
   private _undoMove(): InternalMove | InternalDeployMove | null {
-    // this._movesCache.clear()
     const old = this._history.pop()
     if (!old) return null
 
@@ -773,7 +972,8 @@ export class CoTuLenh {
     // Ask the command to revert its specific board changes
     command.undo()
 
-    // (Optional: Decrement position count)
+    // Clear moves cache since board state has changed
+    this._movesCache.clear()
 
     return command.move // Return the original InternalMove data
   }
@@ -781,8 +981,39 @@ export class CoTuLenh {
   /**
    * Undoes the last move made on the board, restoring the previous position.
    * Reverts all changes including piece positions, game state, and move counters.
+   *
+   * If there's an active deploy session, undoes from the session first.
+   * Otherwise, undoes from history.
    */
   public undo(): void {
+    // Priority 1: Check active deploy session with commands
+    if (this._deploySession && this._deploySession.commands.length > 0) {
+      const command = this._deploySession.undoLastCommand()
+      if (command) {
+        command.undo()
+      }
+
+      // Clear moves cache since board state has changed
+      this._movesCache.clear()
+
+      // If the deploy session is now empty, clear it completely
+      if (this._deploySession && this._deploySession.commands.length === 0) {
+        this._deploySession = null
+        this._deployState = null // Also clear legacy deploy state
+      }
+      return
+    }
+
+    // Priority 2: Check if there's any deploy state (session or legacy) but no commands
+    // This means we're in an inconsistent state or all deploy moves have been undone
+    if (this._deploySession || this._deployState) {
+      // Clear any remaining deploy state - there's nothing to undo
+      this._deploySession = null
+      this._deployState = null
+      return
+    }
+
+    // Priority 3: Undo from history (normal moves)
     this._undoMove()
   }
 
@@ -827,7 +1058,7 @@ export class CoTuLenh {
    * @returns true if committed successfully
    * @throws Error if no active session or session incomplete
    */
-  public commitDeploySession(): boolean {
+  public commitDeploySession(switchTurn: boolean = true): boolean {
     if (!this._deploySession) {
       throw new Error('No active deploy session to commit')
     }
@@ -836,13 +1067,59 @@ export class CoTuLenh {
       throw new Error('Cannot commit incomplete deploy session')
     }
 
-    // Session moves are already applied to board
-    // Just clean up and switch turn
-    this._deploySession = null
-    this._turn = swapColor(this._turn)
+    // Build InternalDeployMove from session commands
+    const stayPiece = this._deploySession.stayPieces
+      ? combinePieces(this._deploySession.stayPieces)
+      : null
 
-    if (this._turn === RED) {
-      this._moveNumber++
+    const internalDeployMove: InternalDeployMove = {
+      from: this._deploySession.stackSquare,
+      moves: this._deploySession.getActions(), // Get InternalMove[] from commands
+      stay: stayPiece !== null ? stayPiece : undefined,
+    }
+
+    // Create a simple command wrapper for history
+    // We can't use DeployMoveCommand because it validates board state during construction
+    // The moves are already applied, so we just need undo functionality
+    const commands = this._deploySession.commands
+    const deployCommand: CTLMoveCommandInteface = {
+      move: internalDeployMove,
+      execute: () => {
+        // Already executed incrementally, do nothing
+      },
+      undo: () => {
+        // Undo all commands in reverse order
+        for (let i = commands.length - 1; i >= 0; i--) {
+          commands[i].undo()
+        }
+      },
+    }
+
+    // Add to history NOW (first time for these moves)
+    const historyEntry: History = {
+      move: deployCommand,
+      commanders: {
+        r: this._commanders.r,
+        b: this._commanders.b,
+      },
+      turn: this._deploySession.turn,
+      halfMoves: this._halfMoves,
+      moveNumber: this._moveNumber,
+      deployState: null,
+      deploySession: null,
+    }
+    this._history.push(historyEntry)
+
+    // Clear session (and legacy state) and optionally switch turn
+    this._deploySession = null
+    this._deployState = null // Also clear legacy deploy state
+
+    if (switchTurn) {
+      this._turn = swapColor(this._turn)
+
+      if (this._turn === RED) {
+        this._moveNumber++
+      }
     }
 
     return true
@@ -861,15 +1138,12 @@ export class CoTuLenh {
       return // Nothing to cancel
     }
 
-    // Undo all moves in the session
-    // Note: moves are in forward order, undo() works backward
-    const moveCount = this._deploySession.actions.length
-    for (let i = 0; i < moveCount; i++) {
-      this.undo()
-    }
+    // Session handles undoing all its commands in reverse order
+    this._deploySession.cancel()
 
-    // Clear the session
+    // Clear the session (and legacy state)
     this._deploySession = null
+    this._deployState = null
   }
 
   /**
@@ -1102,7 +1376,7 @@ export class CoTuLenh {
     }
     let checkingSuffix = '' // Simplified: Assume Move class handles this better
 
-    this._makeMove(move)
+    this._makeMove(move, false) // Don't auto-commit during SAN generation
     if (this.isCheck()) {
       if (this.isCheckmate()) {
         checkingSuffix = '#'
@@ -1258,6 +1532,20 @@ export class CoTuLenh {
         square: move.from as Square,
         ...(move.piece && { pieceType: move.piece }),
       })
+      if (move.deploy) {
+        console.log(
+          `[move] Looking for deploy move from ${move.from} to ${move.to}, piece ${move.piece}`,
+        )
+        console.log(
+          `[move] Found ${legalMoves.length} legal moves from ${move.from}`,
+        )
+        console.log(
+          '[move] Deploy moves:',
+          legalMoves
+            .filter((m) => m.flags & BITS.DEPLOY)
+            .map((m) => ({ to: algebraic(m.to), piece: m.piece.type })),
+        )
+      }
       const foundMoves: InternalMove[] = []
       for (const m of legalMoves) {
         const isStayMove = (m.flags & BITS.STAY_CAPTURE) !== 0

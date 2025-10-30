@@ -1,5 +1,4 @@
-import { CoTuLenh } from '../dist/esm/src/cotulenh.js'
-import { DEFAULT_POSITION } from '../dist/esm/src/type.js'
+import { CoTuLenh, DEFAULT_POSITION } from '../dist/cotulenh.js'
 
 // Get FEN string from command line arguments (process.argv[2]) or use default
 const fen = process.argv[2] || DEFAULT_POSITION

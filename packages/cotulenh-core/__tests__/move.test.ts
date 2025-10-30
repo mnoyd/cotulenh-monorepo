@@ -13,6 +13,7 @@ import {
   Piece,
   InternalMove,
   COMMANDER,
+  MILITIA,
 } from '../src/type'
 import { setupGameBasic } from './test-helpers'
 
@@ -663,5 +664,56 @@ describe('Re run random fail move', () => {
     const moves = game.moves({ pieceType: COMMANDER, verbose: true }) as Move[]
     expect(moves.find((m) => m.to === 'd12')).toBeUndefined()
     expect(moves).toHaveLength(7)
+  })
+
+  it('should maintain RED turn during deploy move sequence until carrier moves', () => {
+    // Setup: Use a simpler board configuration
+    const game = new CoTuLenh()
+    game.clear()
+    game.put({ type: COMMANDER, color: RED }, 'f1')
+    game.put({ type: COMMANDER, color: BLUE }, 'g12')
+
+    // Put a Tank carrying Militia at f4 - Tank is the carrier
+    const carrierStack = {
+      type: TANK,
+      color: RED,
+      carrying: [{ type: MILITIA, color: RED }],
+    } as Piece
+    game.put(carrierStack, 'f4')
+
+    game['_turn'] = RED
+
+    // Execute deploy move: Militia (from carrying) deploys to f5
+    const moveResult1 = game.move({ from: 'f4', to: 'f5', piece: MILITIA })
+    expect(moveResult1).not.toBeNull()
+    expect(moveResult1!.isDeploy()).toBe(true)
+
+    // Verify piece states after Militia deploy
+    expect(game.get('f5')?.type).toBe(MILITIA)
+    expect(game.get('f5')?.color).toBe(RED)
+    expect(game.get('f4')?.type).toBe(TANK) // Carrier Tank stays at f4
+    expect(game.get('f4')?.carrying).toBeUndefined() // No more carrying
+
+    // Turn should still be RED since carrier hasn't moved
+    expect(game.turn()).toBe(RED)
+
+    // Verify we can still move the carrier Tank
+    const legalMoves = game.moves({ verbose: true }) as Move[]
+    const tankMoves = legalMoves.filter((m) => m.from === 'f4')
+    expect(tankMoves.length).toBeGreaterThan(0)
+
+    // Now move the Tank (carrier piece) to complete deploy sequence
+    // Use the first available legal move for the Tank
+    const tankMove = tankMoves[0]
+    const moveResult2 = game.move({ from: 'f4', to: tankMove.to })
+    expect(moveResult2).not.toBeNull()
+
+    // Verify final piece positions
+    expect(game.get(tankMove.to)?.type).toBe(TANK)
+    expect(game.get(tankMove.to)?.color).toBe(RED)
+    expect(game.get('f4')).toBeUndefined()
+
+    // After carrier moves, deployment is complete and turn changes to BLUE
+    expect(game.turn()).toBe(BLUE)
   })
 })

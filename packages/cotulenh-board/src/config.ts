@@ -1,6 +1,6 @@
 import { HeadlessState } from './state.js';
 import * as cg from './types.js';
-import { read as fenRead } from './fen.js';
+import { readWithDeployState } from './fen.js';
 import { DrawShape, DrawBrushes } from './draw.js';
 import { setCheck, setSelected } from './board.js';
 
@@ -90,10 +90,22 @@ export function configure(state: HeadlessState, config: Config): void {
 
   deepMerge(state, config);
 
-  // if a fen was provided, replace the pieces
+  // if a fen was provided, replace the pieces and parse deploy state
   if (config.fen) {
-    state.pieces = fenRead(config.fen);
+    const parsed = readWithDeployState(config.fen);
+    state.pieces = parsed.pieces;
     state.drawable.shapes = config.drawable?.shapes || [];
+
+    // Update deploy session from FEN
+    if (parsed.deployState) {
+      state.deploySession = {
+        originSquare: parsed.deployState.originSquare,
+        deployedMoves: parsed.deployState.moves,
+        isComplete: parsed.deployState.isComplete,
+      };
+    } else {
+      state.deploySession = undefined;
+    }
   }
 
   // apply config values that could be undefined yet meaningful

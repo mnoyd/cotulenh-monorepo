@@ -1,10 +1,6 @@
 import {
-  origMoveToKey,
-  roles,
-  type Dests as BoardDest,
   type DestMove,
   type OrigMove,
-  type OrigMoveKey,
   type Role,
   type Piece as BoardPiece,
   type Color as BoardColor
@@ -154,15 +150,38 @@ export function getTurnColorName(turn: CoreColor): string {
 
 export function makeCoreMove(game: CoTuLenh, orig: OrigMove, dest: DestMove): Move | null {
   try {
+    const pieceAtSquare = game.get(orig.square);
+    if (!pieceAtSquare) {
+      throw new Error(`No piece at ${orig.square}`);
+    }
+
+    // For combined pieces, we need to determine which piece is actually moving
+    let pieceToMove = pieceAtSquare;
+
+    // If the user selected a specific piece type and it's different from the carrier
+    if (orig.type && roleToType(orig.type) !== pieceAtSquare.type) {
+      // Check if the selected type is in the carrying array
+      const carriedPiece = pieceAtSquare.carrying?.find((p) => p.type === roleToType(orig.type));
+      if (carriedPiece) {
+        // Create a piece that represents moving the selected piece from the stack
+        pieceToMove = {
+          type: carriedPiece.type,
+          color: carriedPiece.color,
+          heroic: carriedPiece.heroic
+        };
+      }
+    }
+
     const moveResult = game.move({
       from: orig.square,
       to: dest.square,
-      ...(orig.type && { piece: roleToType(orig.type) }),
+      piece: pieceToMove.type,
       ...(dest.stay !== undefined && { stay: dest.stay }),
       deploy: false
     });
     return moveResult;
   } catch (error) {
+    console.error('Error in makeCoreMove:', error);
     throw error;
   }
 }
