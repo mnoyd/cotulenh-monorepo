@@ -9,24 +9,26 @@ import {
   algebraic,
 } from './type.js'
 import { flattenPiece, combinePieces } from './utils.js'
+import type { CTLMoveCommandInteface } from './move-apply.js'
 
 /**
  * DeploySession tracks the state of an active deployment sequence.
  *
- * Instead of storing just which pieces moved (like the old DeployState),
- * this stores the complete move history with destinations, captures, etc.
+ * Stores the actual move commands (not just moves) so they can be:
+ * - Undone individually during active session
+ * - Combined into one DeployMoveCommand when committed
+ * - Used for SAN generation (including partial "..." notation)
  *
  * Benefits:
- * - Complete move history for SAN generation
- * - Support for recombine moves
- * - Better undo/redo
- * - Extended FEN serialization
+ * - Clean history (no entries until commit)
+ * - Proper undo during deployment
+ * - Support for partial deploy display
  */
 export class DeploySession {
   stackSquare: number
   turn: Color
   originalPiece: Piece
-  actions: InternalMove[] = []
+  commands: CTLMoveCommandInteface[] = [] // Store commands, not moves!
   startFEN: string
   stayPieces?: Piece[] // Pieces explicitly marked to stay
 
@@ -35,15 +37,87 @@ export class DeploySession {
     turn: Color
     originalPiece: Piece
     startFEN: string
-    actions?: InternalMove[]
+    commands?: CTLMoveCommandInteface[]
+    actions?: InternalMove[] // Backward compatibility
     stayPieces?: Piece[]
   }) {
     this.stackSquare = data.stackSquare
     this.turn = data.turn
     this.originalPiece = data.originalPiece
     this.startFEN = data.startFEN
-    this.actions = data.actions || []
+
+    // Handle both new commands and old actions for backward compatibility
+    if (data.commands) {
+      this.commands = data.commands
+    } else if (data.actions) {
+      // Convert old actions to mock commands for backward compatibility
+      this.commands = data.actions.map((move) => ({
+        move,
+        execute: () => {}, // No-op for backward compatibility
+        undo: () => {}, // No-op for backward compatibility
+      }))
+    } else {
+      this.commands = []
+    }
+
     this.stayPieces = data.stayPieces
+  }
+
+  /**
+   * Get the InternalMove objects from commands (for compatibility)
+   * Deploy sessions only contain single deploy moves, never batch InternalDeployMove
+   */
+  getActions(): InternalMove[] {
+    return this.commands.map((cmd) => {
+      const move = cmd.move
+      // Deploy sessions should only have InternalMove, but type-guard for safety
+      if ('moves' in move) {
+        throw new Error(
+          'Deploy session should not contain batch InternalDeployMove',
+        )
+      }
+      return move
+    })
+  }
+
+  /**
+   * Backward compatibility: get actions as a property
+   * @deprecated Use getActions() method instead
+   */
+  get actions(): InternalMove[] {
+    return this.getActions()
+  }
+
+  /**
+   * Backward compatibility: add move method
+   * @deprecated Use addCommand() instead
+   */
+  addMove(move: InternalMove): void {
+    // For backward compatibility, we need to create a mock command
+    // This is not ideal but maintains API compatibility
+    const mockCommand: CTLMoveCommandInteface = {
+      move,
+      execute: () => {}, // No-op for backward compatibility
+      undo: () => {}, // No-op for backward compatibility
+    }
+    this.addCommand(mockCommand)
+  }
+
+  /**
+   * Backward compatibility: undo last move method
+   * @deprecated Use undoLastCommand() instead
+   */
+  undoLastMove(): InternalMove | null {
+    const command = this.undoLastCommand()
+    if (!command) return null
+
+    const move = command.move
+    if ('moves' in move) {
+      throw new Error(
+        'Deploy session should not contain batch InternalDeployMove',
+      )
+    }
+    return move
   }
 
   /**
@@ -54,37 +128,38 @@ export class DeploySession {
    *          or null if all pieces have been deployed
    */
   getRemainingPieces(): Piece | null {
-    // Flatten original to get all pieces
     const originalFlat = flattenPiece(this.originalPiece)
 
-    // Collect all moved pieces
-    const movedTypes: string[] = []
-    for (const move of this.actions) {
+    // Start with all original pieces
+    const remainingPieces = [...originalFlat]
+
+    // Remove pieces that have been deployed
+    for (const command of this.commands) {
+      const move = command.move
+      if ('moves' in move) continue // Type guard
+
       // Only count moves FROM the stack square with DEPLOY flag
       if (move.from === this.stackSquare && move.flags & BITS.DEPLOY) {
-        const movedPieces = flattenPiece(move.piece)
-        movedTypes.push(...movedPieces.map((p) => p.type))
+        const deployedPieces = flattenPiece(move.piece)
+
+        // Remove each deployed piece from remaining
+        for (const deployedPiece of deployedPieces) {
+          const index = remainingPieces.findIndex(
+            (p) => p.type === deployedPiece.type,
+          )
+          if (index !== -1) {
+            remainingPieces.splice(index, 1)
+          }
+        }
       }
     }
 
-    // Calculate remaining by removing moved pieces
-    const remainingPieces: Piece[] = []
-    const movedTypesCopy = [...movedTypes]
-
-    for (const piece of originalFlat) {
-      const index = movedTypesCopy.indexOf(piece.type)
-      if (index === -1) {
-        // Not moved, keep it
-        remainingPieces.push(piece)
-      } else {
-        // Was moved, remove from tracking
-        movedTypesCopy.splice(index, 1)
-      }
+    // If no pieces remain, return null
+    if (remainingPieces.length === 0) {
+      return null
     }
 
-    if (remainingPieces.length === 0) return null
-
-    // Reconstruct stack from remaining pieces
+    // Combine remaining pieces into a stack
     return combinePieces(remainingPieces)
   }
 
@@ -97,7 +172,9 @@ export class DeploySession {
   getDeployedSquares(): number[] {
     const squares = new Set<number>()
 
-    for (const move of this.actions) {
+    for (const command of this.commands) {
+      const move = command.move
+      if ('moves' in move) continue // Type guard
       if (move.from === this.stackSquare && move.flags & BITS.DEPLOY) {
         squares.add(move.to)
       }
@@ -107,23 +184,23 @@ export class DeploySession {
   }
 
   /**
-   * Add a move to the session.
+   * Add a command to the session.
    * Called when a deploy move is executed.
    *
-   * @param move The move to add to the action history
+   * @param command The command to add to the session
    */
-  addMove(move: InternalMove): void {
-    this.actions.push(move)
+  addCommand(command: CTLMoveCommandInteface): void {
+    this.commands.push(command)
   }
 
   /**
-   * Remove and return the last move from the session.
+   * Remove and return the last command from the session.
    * Used for undo during deployment.
    *
-   * @returns The removed move, or null if no moves to undo
+   * @returns The removed command, or null if no commands to undo
    */
-  undoLastMove(): InternalMove | null {
-    return this.actions.pop() || null
+  undoLastCommand(): CTLMoveCommandInteface | null {
+    return this.commands.pop() || null
   }
 
   /**
@@ -136,7 +213,7 @@ export class DeploySession {
    */
   canCommit(): boolean {
     // Must have made at least one move
-    if (this.actions.length === 0) return false
+    if (this.commands.length === 0) return false
 
     const remaining = this.getRemainingPieces()
 
@@ -162,12 +239,17 @@ export class DeploySession {
     const originalFlat = flattenPiece(this.originalPiece)
 
     // Count moved pieces
-    const movedCount = this.actions.reduce((sum, move) => {
-      if (move.from === this.stackSquare && move.flags & BITS.DEPLOY) {
-        return sum + flattenPiece(move.piece).length
-      }
-      return sum
-    }, 0)
+    const movedCount = this.commands.reduce(
+      (sum: number, command: CTLMoveCommandInteface) => {
+        const move = command.move
+        if ('moves' in move) return sum // Type guard
+        if (move.from === this.stackSquare && move.flags & BITS.DEPLOY) {
+          return sum + flattenPiece(move.piece).length
+        }
+        return sum
+      },
+      0,
+    )
 
     const stayCount = this.stayPieces?.length || 0
 
@@ -178,10 +260,24 @@ export class DeploySession {
    * Cancel the session and return moves to undo in reverse order.
    * Used when user wants to abort the deployment.
    *
-   * @returns Array of moves to undo (in reverse order)
+   * @returns Array of moves in reverse order for undoing
    */
   cancel(): InternalMove[] {
-    return [...this.actions].reverse()
+    const movesToUndo: InternalMove[] = []
+
+    // Collect moves in reverse order
+    for (let i = this.commands.length - 1; i >= 0; i--) {
+      const command = this.commands[i]
+      const move = command.move
+      if ('moves' in move) {
+        throw new Error(
+          'Deploy session should not contain batch InternalDeployMove',
+        )
+      }
+      movesToUndo.push(move)
+    }
+
+    return movesToUndo
   }
 
   /**
@@ -194,7 +290,9 @@ export class DeploySession {
   toLegacyDeployState(): DeployState {
     const movedPieces: Piece[] = []
 
-    for (const move of this.actions) {
+    for (const command of this.commands) {
+      const move = command.move
+      if ('moves' in move) continue // Type guard
       if (move.from === this.stackSquare && move.flags & BITS.DEPLOY) {
         movedPieces.push(...flattenPiece(move.piece))
       }
@@ -219,7 +317,7 @@ export class DeploySession {
    * @returns Extended FEN string with deploy session info
    */
   toExtendedFEN(baseFEN: string): string {
-    if (this.actions.length === 0) {
+    if (this.commands.length === 0) {
       // No moves yet, just indicate deploy started
       return `${baseFEN} DEPLOY ${algebraic(this.stackSquare)}:`
     }
@@ -228,7 +326,9 @@ export class DeploySession {
     // Format: Nc5,Fd4,Te5 (piece type + destination)
     const moveNotations: string[] = []
 
-    for (const move of this.actions) {
+    for (const command of this.commands) {
+      const move = command.move
+      if ('moves' in move) continue // Type guard
       const pieceType = move.piece.type.toUpperCase()
       const dest = algebraic(move.to)
       const capture = move.flags & BITS.CAPTURE ? 'x' : ''
@@ -236,7 +336,7 @@ export class DeploySession {
       // Handle carrying pieces (combined moves)
       if (move.piece.carrying && move.piece.carrying.length > 0) {
         const carryingTypes = move.piece.carrying
-          .map((p) => p.type.toUpperCase())
+          .map((p: Piece) => p.type.toUpperCase())
           .join('')
         moveNotations.push(`${pieceType}(${carryingTypes})${capture}${dest}`)
       } else {
@@ -258,10 +358,10 @@ export class DeploySession {
   toString(): string {
     const remaining = this.getRemainingPieces()
     const remainingStr = remaining
-      ? `${remaining.type}${remaining.carrying ? `(${remaining.carrying.map((p) => p.type).join('')})` : ''}`
+      ? `${remaining.type}${remaining.carrying ? `(${remaining.carrying.map((p: Piece) => p.type).join('')})` : ''}`
       : 'none'
 
-    return `DeploySession(square=${algebraic(this.stackSquare)}, moves=${this.actions.length}, remaining=${remainingStr})`
+    return `DeploySession(square=${algebraic(this.stackSquare)}, moves=${this.commands.length}, remaining=${remainingStr})`
   }
 
   /**
@@ -276,8 +376,8 @@ export class DeploySession {
       turn: this.turn,
       originalPiece: { ...this.originalPiece },
       startFEN: this.startFEN,
-      actions: this.actions.map((move) => ({ ...move })),
-      stayPieces: this.stayPieces?.map((p) => ({ ...p })),
+      commands: [...this.commands], // Create a new array with same commands
+      stayPieces: this.stayPieces?.map((p: Piece) => ({ ...p })),
     })
   }
 }

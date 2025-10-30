@@ -190,7 +190,10 @@ class SetDeployStateAction implements CTLAtomicMoveAction {
         originalLen
       ) {
         this.game.setDeployState(null)
-        this.game['_turn'] = swapColor(this.oldDeployState.turn)
+        // Don't switch turn if there's an active deploy session - let the session system handle it
+        if (!this.game.getDeploySession()) {
+          this.game['_turn'] = swapColor(this.oldDeployState.turn)
+        }
         return
       }
       this.game.setDeployState({

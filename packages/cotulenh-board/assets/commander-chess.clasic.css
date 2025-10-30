@@ -58,6 +58,35 @@ cg-board square.check {
     rgba(158, 0, 0, 0) 100%
   );
 }
+
+/* Deploy session highlights */
+cg-board square.deploy-origin {
+  background-color: rgba(255, 215, 0, 0.35);
+  box-shadow: inset 0 0 0 2px gold;
+  border-radius: 10px;
+}
+
+cg-board square.deploy-dest {
+  background-color: rgba(0, 200, 100, 0.25);
+  border-radius: 10px;
+}
+
+cg-board square.deploy-incomplete {
+  animation: pulse-deploy 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse-deploy {
+  0%,
+  100% {
+    box-shadow: inset 0 0 0 2px gold;
+  }
+  50% {
+    box-shadow:
+      inset 0 0 0 4px gold,
+      0 0 10px rgba(255, 215, 0, 0.5);
+  }
+}
+
 /* Base styles for all influence markers */
 cg-board square.air-defense-influence {
   /* position: relative; */

@@ -7,6 +7,16 @@
       "name": "Launch Firefox against localhost",
       "url": "http://localhost:5173", // Change port if needed
       "webRoot": "${workspaceFolder}/apps/cotulenh-app"
+    },
+    {
+      "type": "chrome",
+      "request": "launch",
+      "name": "Launch Chrome against localhost",
+      "url": "http://localhost:5173",
+      "webRoot": "${workspaceFolder}/apps/cotulenh-app",
+      "sourceMapPathOverrides": {
+        "/*": "${workspaceFolder}/apps/cotulenh-app/*"
+      }
     }
   ]
 }

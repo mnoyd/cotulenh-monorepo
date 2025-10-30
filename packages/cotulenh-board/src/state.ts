@@ -85,7 +85,12 @@ export interface HeadlessState {
   selected?: cg.OrigMove;
   deploySession?: {
     originSquare: cg.Key; // Where deployment started
-    isActive: boolean; // Whether in deploy mode
+    deployedMoves: Array<{
+      piece: string; // e.g., "N", "F(EI)"
+      to: cg.Key;
+      capture: boolean;
+    }>;
+    isComplete: boolean; // false if deployment is ongoing (ends with "...")
   };
   ambigousMove?: {
     type: PopUpType;

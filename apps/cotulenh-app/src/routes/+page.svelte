@@ -66,19 +66,34 @@
   function mapPossibleMovesToDests(possibleMoves: Move[]): Dests {
     const dests = new Map<OrigMoveKey, DestMove[]>();
     for (const move of possibleMoves) {
-        const moveOrig: OrigMove = {
-            square: move.from,
-            type: typeToRole(move.piece.type) as Role,
+        const pieceAtSquare = game?.get(move.from);
+        if (!pieceAtSquare) continue;
+
+        // For combined pieces, create move destinations for all piece types in the stack
+        const piecesToMap = [pieceAtSquare];
+        if (pieceAtSquare.carrying) {
+            piecesToMap.push(...pieceAtSquare.carrying);
         }
-        const moveDest: DestMove = {
-            square: move.to,
-            stay: move.isStayCapture(),
+
+        for (const piece of piecesToMap) {
+            const moveOrig: OrigMove = {
+                square: move.from,
+                type: typeToRole(piece.type) as Role,
+            }
+            const moveDest: DestMove = {
+                square: move.to,
+                stay: move.isStayCapture(),
+            }
+            const key = origMoveToKey(moveOrig);
+            if (!dests.has(key)) {
+                dests.set(key, []);
+            }
+            // Avoid duplicate destinations
+            const existingDests = dests.get(key)!;
+            if (!existingDests.some(d => d.square === moveDest.square && d.stay === moveDest.stay)) {
+                existingDests.push(moveDest);
+            }
         }
-        const key = origMoveToKey(moveOrig);
-        if (!dests.has(key)) {
-            dests.set(key, []);
-        }
-        dests.get(key)!.push(moveDest);
     }
     console.log('Mapped possible moves to dests:', dests);
     return dests;
@@ -92,9 +107,22 @@
   }
 
   function handleMove(orig: OrigMove, dest: DestMove) {
-    if (!game) return;
+    if (!game) {
+      console.warn('handleMove called but game is null');
+      return;
+    }
+
+    if (isUpdatingBoard) {
+      console.warn('Move attempted while board is updating, ignoring');
+      return;
+    }
 
     console.log('Board move attempt:', orig, '->', dest);
+    console.log('Game state at move time:', {
+      turn: game.turn(),
+      fen: game.fen(),
+      hasDeploySession: !!game.getDeploySession()
+    });
 
     try {
       const moveResult = makeCoreMove(game, orig, dest);
@@ -107,28 +135,45 @@
         console.warn('Illegal move attempted on board:', orig, '->', dest);
       }
     } catch (error) {
-      reSetupBoard();
       console.error('Error making move in game engine:', error);
+      console.log('Error details:', {
+        message: (error as Error).message,
+        stack: (error as Error).stack,
+        gameState: {
+          turn: game?.turn(),
+          fen: game?.fen(),
+          hasDeploySession: !!game?.getDeploySession()
+        }
+      });
+      reSetupBoard();
     }
   }
 
   /**
    * Handle individual deploy step (incremental mode)
    * Fires immediately when user moves a piece during deployment
+   * 
+   * Board now derives deploy state from FEN automatically.
+   * We just send the move to core and let reactive updates handle the rest.
    */
   function handleDeployStep(move: SingleDeployMove, metadata: DeployStepMetadata) {
+    console.log('🎯 handleDeployStep:', move);
+    
     if (!game) {
-      console.error('No game instance available');
+      console.error('❌ No game instance available');
       return;
     }
 
-    console.log('Deploy step:', move, metadata);
+    if (isUpdatingBoard) {
+      console.warn('Deploy step attempted while board is updating, ignoring');
+      return;
+    }
 
     try {
       // Convert board piece type to core piece type
       const coreType = roleToType(move.piece.role);
       
-      // Send individual move to core
+      // Send move to core - core will update DeploySession and FEN
       const result = game.move({
         from: move.from,
         to: move.to,
@@ -137,64 +182,53 @@
       });
 
       if (!result) {
-        console.error('Deploy move rejected by core:', move);
+        console.error('❌ Deploy move rejected by core');
         return;
       }
 
-      console.log('Deploy move accepted:', result);
+      console.log('✅ Deploy move accepted');
+      console.log('  FEN:', game.fen());
+      console.log('  Deploy session active:', !!game.getDeploySession());
 
-      // Get updated legal moves from core
-      // Core will generate moves for remaining pieces + recombine moves
-      const updatedMoves = game.moves({ verbose: true }) as Move[];
+      // Update game store with new FEN
+      // The reactive statement ($: if (boardApi && $gameStore.fen)) will:
+      // 1. Parse deploy state from FEN
+      // 2. Update board highlights automatically
+      // 3. Update valid moves
+      gameStore.applyMove(game, result);
       
-      console.log('Updated legal moves count:', updatedMoves.length);
-
-      // Convert to board destination format
-      const newDests = mapPossibleMovesToDests(updatedMoves);
-      
-      // Update board with new legal move destinations
-      boardApi?.set({
-        movable: {
-          dests: newDests
-        }
-      });
-
-      console.log('Board destinations updated');
-
     } catch (error) {
-      console.error('Deploy step failed:', error);
+      console.error('❌ Deploy step failed:', error);
       reSetupBoard();
     }
   }
 
   /**
    * Manually commit the active deploy session
+   * 
+   * Core commits the session and updates FEN (removes DEPLOY marker).
+   * Reactive update will handle board state automatically.
    */
   function commitDeploy() {
-    if (!game) return;
+    console.log('🏁 commitDeploy');
+    
+    if (!game) {
+      console.error('❌ No game instance');
+      return;
+    }
     
     try {
       game.commitDeploySession();
+      console.log('✅ Deploy session committed');
+      console.log('  FEN:', game.fen());
+      console.log('  Turn:', game.turn());
       
-      console.log('Deploy session committed successfully');
-      
-      // Update game store with final state
+      // Update game store with new FEN (without DEPLOY marker)
+      // Reactive statement will update board automatically
       gameStore.initialize(game);
       
-      // Update board for normal moves
-      const normalMoves = game.moves({ verbose: true }) as Move[];
-      boardApi?.set({
-        fen: game.fen(),
-        turnColor: coreToBoardColor(game.turn()),
-        check: game.isCheck() ? coreToBoardColor(game.turn()) : undefined,
-        movable: {
-          dests: mapPossibleMovesToDests(normalMoves)
-        }
-      });
-      
-      console.log('Board updated for normal play');
     } catch (error) {
-      console.error('Failed to commit deploy session:', error);
+      console.error('❌ Failed to commit deploy session:', error);
       const errorMsg = error instanceof Error ? error.message : 'Unknown error';
       alert(`Cannot finish deployment: ${errorMsg}`);
     }
@@ -202,32 +236,27 @@
 
   /**
    * Cancel the active deploy session
+   * 
+   * Core cancels the session and restores FEN to pre-deploy state.
+   * Reactive update will handle board state automatically.
    */
   function cancelDeploy() {
+    console.log('🚫 cancelDeploy');
+    
     if (!game) return;
     
     try {
       game.cancelDeploySession();
+      console.log('✅ Deploy session cancelled');
+      console.log('  FEN:', game.fen());
+      console.log('  Turn:', game.turn());
       
-      console.log('Deploy session cancelled, board restored');
-      
-      // Update game store
+      // Update game store with restored FEN
+      // Reactive statement will update board automatically
       gameStore.initialize(game);
       
-      // Restore board to pre-deploy state
-      const normalMoves = game.moves({ verbose: true }) as Move[];
-      boardApi?.set({
-        fen: game.fen(),
-        turnColor: coreToBoardColor(game.turn()),
-        check: game.isCheck() ? coreToBoardColor(game.turn()) : undefined,
-        movable: {
-          dests: mapPossibleMovesToDests(normalMoves)
-        }
-      });
-      
-      console.log('Board restored to pre-deployment state');
     } catch (error) {
-      console.error('Failed to cancel deploy:', error);
+      console.error('❌ Failed to cancel deploy:', error);
       const errorMsg = error instanceof Error ? error.message : 'Unknown error';
       alert(`Error cancelling deployment: ${errorMsg}`);
     }
@@ -280,8 +309,15 @@
     }
   });
 
+  let isUpdatingBoard = false;
+
   $: if (boardApi && $gameStore.fen) {
-   reSetupBoard();
+    isUpdatingBoard = true;
+    reSetupBoard();
+    // Use setTimeout to ensure the board update completes before allowing new moves
+    setTimeout(() => {
+      isUpdatingBoard = false;
+    }, 0);
   }
 </script>
 

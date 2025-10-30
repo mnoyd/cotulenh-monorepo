@@ -44,7 +44,7 @@ function createGameStore() {
         check: game.isCheck(),
         status: calculateGameStatus(game),
         lastMove: undefined,
-        deployState: game['_deployState']
+        deployState: game.getDeploySession()?.toLegacyDeployState() ?? null
       });
     },
 
@@ -63,7 +63,7 @@ function createGameStore() {
         lastMove: [move.from, move.to],
         check: game.isCheck(),
         status: calculateGameStatus(game),
-        deployState: game['_deployState']
+        deployState: game.getDeploySession()?.toLegacyDeployState() ?? null
       }));
     },
     applyDeployMove(game: CoTuLenh, move: DeployMove) {
@@ -76,7 +76,7 @@ function createGameStore() {
         lastMove: [move.from, ...Array.from(move.to.keys())],
         check: game.isCheck(),
         status: calculateGameStatus(game),
-        deployState: game['_deployState']
+        deployState: game.getDeploySession()?.toLegacyDeployState() ?? null
       }));
     },
 

@@ -379,6 +379,22 @@ function computeSquareClasses(s: State): cg.SquareClasses {
   const o = s.exploding;
   if (o) for (const k of o.keys) addSquare(squares, k, 'exploding' + o.stage);
 
+  // Deploy session highlights
+  if (s.deploySession) {
+    // Highlight origin square (stack being deployed)
+    addSquare(squares, s.deploySession.originSquare, 'deploy-origin');
+
+    // Highlight deployed destination squares
+    for (const move of s.deploySession.deployedMoves) {
+      addSquare(squares, move.to, 'deploy-dest');
+    }
+
+    // Add incomplete indicator if deployment is ongoing
+    if (!s.deploySession.isComplete) {
+      addSquare(squares, s.deploySession.originSquare, 'deploy-incomplete');
+    }
+  }
+
   if (s.highlight.custom) {
     s.highlight.custom.forEach((v: string, k: cg.Key) => {
       addSquare(squares, k, v);

@@ -67,20 +67,11 @@ export const canSelectStackPiece = (state: HeadlessState, orig: cg.OrigMove): bo
 };
 
 export function isMovable(state: HeadlessState, orig: cg.OrigMove): boolean {
-  const piece = state.pieces.get(orig.square);
+  const pieceFound = getPieceFromOrigMove(state, orig);
+  const piece = pieceFound.piece;
 
-  // If deploySession is active, only allow moves from the origin square
-  if (state.deploySession) {
-    // Only allow moves from the original stack position
-    return (
-      !!piece &&
-      orig.square === state.deploySession.originSquare &&
-      (state.movable.color === 'both' ||
-        (state.movable.color === piece.color && state.turnColor === piece.color))
-    );
-  }
-
-  // Normal move validation when deploySession is not active
+  // Board doesn't track deploy state - core controls valid moves via state.movable.dests
+  // If deploy is active, core will restrict dests accordingly
   return (
     !!piece &&
     (state.movable.color === 'both' ||
@@ -136,10 +127,9 @@ function baseUserMove(state: HeadlessState, orig: cg.OrigMove, dest: cg.DestMove
       };
       return { moveFinished: false };
     } else {
-      if (piecesPrepared.updatedPieces.isStackMove || state.deploySession) {
+      if (piecesPrepared.updatedPieces.isStackMove) {
         handleDeployMove(state, piecesPrepared, orig, dest);
-        // In incremental mode, we always return moveFinished: true
-        // The callback has been fired, app will handle the rest
+        // Deploy move detected - callback fired, core will handle deploy state
         return { piecesPrepared, stackMove: true, moveFinished: true } as MoveResult;
       }
     }
@@ -201,7 +191,7 @@ export function endUserNormalMove(
 }
 
 function cleanupAfterMove(state: HeadlessState) {
-  state.deploySession = undefined;
+  // Board doesn't manage deploySession - core handles it
   state.check = undefined;
   state.movable.dests = undefined;
   state.turnColor = opposite(state.turnColor);
@@ -508,12 +498,8 @@ function handleDeployMove(
   origMove: cg.OrigMove,
   destMove: cg.DestMove,
 ): void {
-  if (!state.deploySession) {
-    state.deploySession = {
-      originSquare: origMove.square,
-      isActive: true,
-    };
-  }
+  // Board doesn't manage deploy state - just sends move info to core
+  // Core will handle whether this starts, continues, or ends a deploy session
 
   const movedPieces = flattenPiece(piecesPrepared.originalPiece.pieceThatMoves!);
   const mainPiece = movedPieces[0];
@@ -535,5 +521,6 @@ function handleDeployMove(
     }),
   };
 
+  // Send to core - core will update deploy state and return new FEN
   callUserFunction(state.movable.events.afterDeployStep, deployMove, metadata);
 }
