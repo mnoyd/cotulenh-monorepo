@@ -1486,20 +1486,6 @@ export class CoTuLenh {
         square: move.from as Square,
         ...(move.piece && { pieceType: move.piece }),
       })
-      if (move.deploy) {
-        console.log(
-          `[move] Looking for deploy move from ${move.from} to ${move.to}, piece ${move.piece}`,
-        )
-        console.log(
-          `[move] Found ${legalMoves.length} legal moves from ${move.from}`,
-        )
-        console.log(
-          '[move] Deploy moves:',
-          legalMoves
-            .filter((m) => m.flags & BITS.DEPLOY)
-            .map((m) => ({ to: algebraic(m.to), piece: m.piece.type })),
-        )
-      }
       const foundMoves: InternalMove[] = []
       for (const m of legalMoves) {
         const isStayMove = (m.flags & BITS.STAY_CAPTURE) !== 0
