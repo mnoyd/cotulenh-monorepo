@@ -19,6 +19,9 @@ describe('Recombine Moves', () => {
   beforeEach(() => {
     game = new CoTuLenh()
     game.clear()
+    // Add commanders to make moves legal
+    game.put({ type: 'c', color: RED }, 'g1')
+    game.put({ type: 'c', color: BLUE }, 'h12')
   })
 
   it('should generate recombine move to rejoin deployed pieces', () => {
