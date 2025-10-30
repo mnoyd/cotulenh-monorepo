@@ -680,6 +680,7 @@ describe('Re run random fail move', () => {
       carrying: [{ type: MILITIA, color: RED }],
     } as Piece
     game.put(carrierStack, 'f4')
+    game.put({ type: MILITIA, color: BLUE }, 'g7')
 
     game['_turn'] = RED
 
@@ -715,5 +716,10 @@ describe('Re run random fail move', () => {
 
     // After carrier moves, deployment is complete and turn changes to BLUE
     expect(game.turn()).toBe(BLUE)
+    // Make the blue move here and verify it work
+    const moveResult3 = game.move({ from: 'g7', to: 'g6', piece: MILITIA })
+    expect(moveResult3).not.toBeNull()
+    expect(moveResult3!.isDeploy()).toBe(false)
+    expect(game.turn()).toBe(RED)
   })
 })
