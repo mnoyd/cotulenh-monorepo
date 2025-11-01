@@ -45,34 +45,57 @@
   }
 
   function reSetupBoard():Api|null {
+    const perfStart = performance.now();
     if (boardApi) {
+        const airDefenseStart = performance.now();
+        const airDefense = coreToBoardAirDefense();
+        const airDefenseEnd = performance.now();
+        console.log(`⏱️ coreToBoardAirDefense took ${(airDefenseEnd - airDefenseStart).toFixed(2)}ms`);
+        
+        const destsStart = performance.now();
+        const dests = mapPossibleMovesToDests($gameStore.possibleMoves);
+        const destsEnd = performance.now();
+        console.log(`⏱️ mapPossibleMovesToDests in reSetupBoard took ${(destsEnd - destsStart).toFixed(2)}ms`);
+        
         boardApi.set({
           fen: $gameStore.fen,
           turnColor: coreToBoardColor($gameStore.turn),
           lastMove: mapLastMoveToBoardFormat($gameStore.lastMove),
           check: coreToBoardCheck($gameStore.check, $gameStore.turn),
-          airDefense: {influenceZone: coreToBoardAirDefense()},
+          airDefense: {influenceZone: airDefense},
           movable: {
             free: false,
             color: coreToBoardColor($gameStore.turn),
-            dests: mapPossibleMovesToDests($gameStore.possibleMoves),
+            dests: dests,
             events: { after: handleMove, afterDeployStep: handleDeployStep }
           }
         });
       }
+    const perfEnd = performance.now();
+    console.log(`⏱️ TOTAL reSetupBoard took ${(perfEnd - perfStart).toFixed(2)}ms`);
     return boardApi;
   }
 
   function mapPossibleMovesToDests(possibleMoves: Move[]): Dests {
+    const perfStart = performance.now();
     const dests = new Map<OrigMoveKey, DestMove[]>();
     for (const move of possibleMoves) {
         const pieceAtSquare = game?.get(move.from);
         if (!pieceAtSquare) continue;
 
-        // For combined pieces, create move destinations for all piece types in the stack
-        const piecesToMap = [pieceAtSquare];
-        if (pieceAtSquare.carrying) {
-            piecesToMap.push(...pieceAtSquare.carrying);
+        // For deploy moves: map all pieces in stack (each can move independently)
+        // For normal stack moves: only map the carrier piece (whole stack moves together)
+        const piecesToMap: typeof pieceAtSquare[] = [];
+        
+        if (move.isDeploy()) {
+            // Deploy mode: all pieces in stack can move
+            piecesToMap.push(pieceAtSquare);
+            if (pieceAtSquare.carrying) {
+                piecesToMap.push(...pieceAtSquare.carrying);
+            }
+        } else {
+            // Normal mode: only the carrier piece (the piece that actually moved)
+            piecesToMap.push(move.piece);
         }
 
         for (const piece of piecesToMap) {
@@ -95,6 +118,8 @@
             }
         }
     }
+    const perfEnd = performance.now();
+    console.log(`⏱️ mapPossibleMovesToDests took ${(perfEnd - perfStart).toFixed(2)}ms for ${possibleMoves.length} moves`);
     console.log('Mapped possible moves to dests:', dests);
     return dests;
   }
@@ -107,6 +132,7 @@
   }
 
   function handleMove(orig: OrigMove, dest: DestMove) {
+    const perfStart = performance.now();
     if (!game) {
       console.warn('handleMove called but game is null');
       return;
@@ -125,12 +151,18 @@
     });
 
     try {
+      const moveStart = performance.now();
       const moveResult = makeCoreMove(game, orig, dest);
+      const moveEnd = performance.now();
+      console.log(`⏱️ makeCoreMove took ${(moveEnd - moveStart).toFixed(2)}ms`);
       console.log('Move result:', moveResult); // Log the result for diagnostic
 
       if (moveResult) {
         console.log('Game move successful:', moveResult);
+        const storeStart = performance.now();
         gameStore.applyMove(game, moveResult);
+        const storeEnd = performance.now();
+        console.log(`⏱️ gameStore.applyMove took ${(storeEnd - storeStart).toFixed(2)}ms`);
       } else {
         console.warn('Illegal move attempted on board:', orig, '->', dest);
       }
@@ -147,6 +179,8 @@
       });
       reSetupBoard();
     }
+    const perfEnd = performance.now();
+    console.log(`⏱️ TOTAL handleMove took ${(perfEnd - perfStart).toFixed(2)}ms`);
   }
 
   /**
@@ -312,11 +346,15 @@
   let isUpdatingBoard = false;
 
   $: if (boardApi && $gameStore.fen) {
+    const reactiveStart = performance.now();
+    console.log('🔄 Reactive statement triggered by FEN change');
     isUpdatingBoard = true;
     reSetupBoard();
     // Use setTimeout to ensure the board update completes before allowing new moves
     setTimeout(() => {
       isUpdatingBoard = false;
+      const reactiveEnd = performance.now();
+      console.log(`⏱️ REACTIVE update completed in ${(reactiveEnd - reactiveStart).toFixed(2)}ms`);
     }, 0);
   }
 </script>
