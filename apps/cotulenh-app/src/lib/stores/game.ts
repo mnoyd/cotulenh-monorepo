@@ -36,16 +36,24 @@ function createGameStore() {
      * @param game The CoTuLenh game instance.
      */
     initialize(game: CoTuLenh) {
+      const perfStart = performance.now();
+      const movesStart = performance.now();
+      const possibleMoves = getPossibleMoves(game);
+      const movesEnd = performance.now();
+      console.log(`⏱️ getPossibleMoves in initialize took ${(movesEnd - movesStart).toFixed(2)}ms`);
+
       set({
         fen: game.fen(),
         turn: game.turn(),
         history: [],
-        possibleMoves: getPossibleMoves(game),
+        possibleMoves,
         check: game.isCheck(),
         status: calculateGameStatus(game),
         lastMove: undefined,
         deployState: game.getDeploySession()?.toLegacyDeployState() ?? null
       });
+      const perfEnd = performance.now();
+      console.log(`⏱️ gameStore.initialize took ${(perfEnd - perfStart).toFixed(2)}ms`);
     },
 
     /**
@@ -54,17 +62,27 @@ function createGameStore() {
      * @param move The move that was just made.
      */
     applyMove(game: CoTuLenh, move: Move) {
+      const perfStart = performance.now();
+      const movesStart = performance.now();
+      const possibleMoves = getPossibleMoves(game);
+      const movesEnd = performance.now();
+      console.log(
+        `⏱️ getPossibleMoves in applyMove took ${(movesEnd - movesStart).toFixed(2)}ms, generated ${possibleMoves.length} moves`
+      );
+
       update((state) => ({
         ...state,
         fen: game.fen(),
         turn: game.turn(),
         history: [...state.history, move], // Append the new move
-        possibleMoves: getPossibleMoves(game),
+        possibleMoves,
         lastMove: [move.from, move.to],
         check: game.isCheck(),
         status: calculateGameStatus(game),
         deployState: game.getDeploySession()?.toLegacyDeployState() ?? null
       }));
+      const perfEnd = performance.now();
+      console.log(`⏱️ gameStore.applyMove TOTAL took ${(perfEnd - perfStart).toFixed(2)}ms`);
     },
     applyDeployMove(game: CoTuLenh, move: DeployMove) {
       update((state) => ({
