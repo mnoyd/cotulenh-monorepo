@@ -393,3 +393,29 @@ cg-board square.deploy-incomplete {
     box-shadow: inset 0 0 0 3px rgba(255, 215, 0, 0.9);
   }
 }
+
+/* --- Recombine Option Visualization --- */
+
+/* Safe recombine options - gold pulse */
+cg-board square.recombine-available {
+  background: radial-gradient(circle at center, rgba(255, 215, 0, 0.4) 25%, transparent 50%);
+  animation: recombine-pulse 2s ease-in-out infinite;
+}
+
+/* Unsafe recombine options - warning indicator */
+cg-board square.recombine-unsafe {
+  background: radial-gradient(circle at center, rgba(255, 100, 100, 0.3) 25%, transparent 50%);
+  box-shadow: inset 0 0 0 1px rgba(255, 100, 100, 0.5);
+}
+
+@keyframes recombine-pulse {
+  0%,
+  100% {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.02);
+  }
+}
