@@ -79,44 +79,21 @@
   function mapPossibleMovesToDests(possibleMoves: Move[]): Dests {
     const perfStart = performance.now();
     const dests = new Map<OrigMoveKey, DestMove[]>();
+    
     for (const move of possibleMoves) {
-        const pieceAtSquare = game?.get(move.from);
-        if (!pieceAtSquare) continue;
-
-        // For deploy moves: map all pieces in stack (each can move independently)
-        // For normal stack moves: only map the carrier piece (whole stack moves together)
-        const piecesToMap: typeof pieceAtSquare[] = [];
-        
-        if (move.isDeploy()) {
-            // Deploy mode: all pieces in stack can move
-            piecesToMap.push(pieceAtSquare);
-            if (pieceAtSquare.carrying) {
-                piecesToMap.push(...pieceAtSquare.carrying);
-            }
-        } else {
-            // Normal mode: only the carrier piece (the piece that actually moved)
-            piecesToMap.push(move.piece);
+        const moveOrig: OrigMove = {
+            square: move.from,
+            type: typeToRole(move.piece.type) as Role,
         }
-
-        for (const piece of piecesToMap) {
-            const moveOrig: OrigMove = {
-                square: move.from,
-                type: typeToRole(piece.type) as Role,
-            }
-            const moveDest: DestMove = {
-                square: move.to,
-                stay: move.isStayCapture(),
-            }
-            const key = origMoveToKey(moveOrig);
-            if (!dests.has(key)) {
-                dests.set(key, []);
-            }
-            // Avoid duplicate destinations
-            const existingDests = dests.get(key)!;
-            if (!existingDests.some(d => d.square === moveDest.square && d.stay === moveDest.stay)) {
-                existingDests.push(moveDest);
-            }
+        const moveDest: DestMove = {
+            square: move.to,
+            stay: move.isStayCapture(),
         }
+        const key = origMoveToKey(moveOrig);
+        if (!dests.has(key)) {
+            dests.set(key, []);
+        }
+        dests.get(key)!.push(moveDest);
     }
     const perfEnd = performance.now();
     console.log(`⏱️ mapPossibleMovesToDests took ${(perfEnd - perfStart).toFixed(2)}ms for ${possibleMoves.length} moves`);
