@@ -172,12 +172,15 @@ export function makeCoreMove(game: CoTuLenh, orig: OrigMove, dest: DestMove): Mo
       }
     }
 
+    // Check if there's an active deploy session
+    const hasDeploySession = game.getDeployState() !== null;
+
     const moveResult = game.move({
       from: orig.square,
       to: dest.square,
       piece: pieceToMove.type,
       ...(dest.stay !== undefined && { stay: dest.stay }),
-      deploy: false
+      deploy: hasDeploySession // Auto-detect deploy mode
     });
     return moveResult;
   } catch (error) {
