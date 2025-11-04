@@ -362,9 +362,9 @@ export class CoTuLenh {
       this._moveNumber,
     ].join(' ')
 
-    // If there's an active deploy session, return extended FEN
+    // If there's an active deploy session, return extended FEN with CURRENT board state
     if (this._deploySession) {
-      return this._deploySession.toExtendedFEN(this._deploySession.startFEN)
+      return this._deploySession.toExtendedFEN(baseFEN)
     }
 
     return baseFEN
