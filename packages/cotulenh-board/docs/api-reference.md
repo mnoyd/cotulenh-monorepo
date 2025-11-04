@@ -207,6 +207,22 @@ interface MovableConfig {
   showDests?: boolean; // Highlight valid moves
   events?: MovableEvents; // Movement callbacks
 }
+
+/**
+ * When specifying `movable.dests`, you must provide destination keys for both
+ * the carrier piece and any pieces it may be carrying. This is necessary to
+ * correctly highlight valid moves for each piece in the stack.
+ *
+ * For example, if a square contains a stack with a `tank` carrier and an
+ * `infantry` piece, you should include the following keys in your `Dests`
+ * mapping:
+ *
+ * - `square.tank` for the carrier's destinations
+ * - `square.infantry` for the carried piece's destinations
+ *
+ * If a square contains a single piece, you only need to provide a single key
+ * for that piece.
+ */
 ```
 
 ### `Dests` Type
@@ -223,6 +239,15 @@ const dests = new Map([
   ['d1.commander', [{ square: 'd2' }, { square: 'e1' }]],
 ]);
 ```
+
+#### Stack selection keys
+
+When a square contains a stack, the board may look up destinations using **two** keys:
+
+1. `square.role` — used when a specific piece has been chosen (for example from the combine-piece popup).
+2. `square.undefined` — used when the user clicks the stack itself without selecting a particular piece. This key should only list the carrier piece's legal moves so the board highlights the correct squares.
+
+In deploy mode every piece in the stack can move independently, so include entries for each `square.role`. In normal mode you typically provide the carrier's destinations for `square.undefined` and restrict carried pieces to popup selection only.
 
 ## Key Types
 
