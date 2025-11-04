@@ -1,6 +1,6 @@
 // __tests__/deploy-session.test.ts
 
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeEach } from 'vitest'
 import { DeploySession } from '../src/deploy-session.js'
 import {
   BITS,
@@ -12,6 +12,7 @@ import {
   INFANTRY,
 } from '../src/type.js'
 import type { Piece, InternalMove } from '../src/type.js'
+import { CoTuLenh, DeployMoveRequest } from '../src/cotulenh.js'
 
 describe('DeploySession', () => {
   // Helper to create a test piece
@@ -600,5 +601,90 @@ describe('DeploySession', () => {
       const extendedFEN = session.toExtendedFEN('base-fen r - - 0 1')
       expect(extendedFEN).toBe('base-fen r - - 0 1 DEPLOY c3:Nc5,Fc4')
     })
+  })
+})
+
+/**
+ * Test suite for deploy session history behavior
+ *
+ * Key behaviors documented:
+ * 1. During deploy session: individual moves are NOT added to history
+ * 2. During deploy session: moves are stored in session.commands
+ * 3. On commit/auto-commit: entire deploy sequence added to history as ONE entry
+ * 4. On undo: entire deploy sequence undone at once
+ *
+ * IMPORTANT INSIGHT:
+ * - When using internal _makeMove() with DEPLOY flag: moves go to session.commands (NOT history)
+ * - When using batch deployMove() API: entire sequence auto-commits and goes to history as ONE entry
+ * - On undo: the entire deploy sequence (all piece movements) is undone as a single operation
+ *
+ * This ensures that deploy moves maintain atomicity - either all pieces deploy or none do.
+ */
+describe('Deploy Session History Management', () => {
+  let game: CoTuLenh
+
+  beforeEach(() => {
+    game = new CoTuLenh()
+    game.clear() // Start with empty board
+    game.put({ type: 'c', color: RED }, 'g1')
+    game.put({ type: 'c', color: BLUE }, 'h12')
+  })
+
+  it('should add entire deploy sequence to history as ONE entry (batch API)', () => {
+    // This test uses the working setup from combined-stack.test.ts
+    // and adds history assertions to document the behavior
+
+    game.put(
+      {
+        type: TANK,
+        color: RED,
+        carrying: [{ type: INFANTRY, color: RED }],
+      },
+      'c3',
+    )
+    game['_turn'] = RED
+
+    const initialHistoryLength = game.history().length
+    const initialFEN = game.fen()
+
+    // Use batch deployMove API
+    const deployMove: DeployMoveRequest = {
+      from: 'c3',
+      moves: [
+        { piece: { type: INFANTRY, color: RED }, to: 'c4' },
+        { piece: { type: TANK, color: RED }, to: 'd3' },
+      ],
+    }
+    game.deployMove(deployMove)
+
+    // ✅ KEY BEHAVIOR: ONE entry added to history for entire deploy sequence
+    expect(game.history().length).toBe(initialHistoryLength + 1)
+
+    // Verify pieces are deployed
+    expect(game.get('c3')).toBeUndefined()
+    expect(game.get('c4')?.type).toBe(INFANTRY)
+    expect(game.get('d3')?.type).toBe(TANK)
+
+    // ✅ KEY BEHAVIOR: Undo reverts ENTIRE deploy sequence at once
+    const undone = game.undo()
+    expect(undone).not.toBeNull()
+
+    // Board restored to initial state
+    expect(game.fen()).toBe(initialFEN)
+    expect(game.history().length).toBe(initialHistoryLength)
+
+    // Original stack restored
+    const stackPiece = game.get('c3')
+    expect(stackPiece).toBeDefined()
+    expect(stackPiece?.type).toBe(TANK)
+    expect(stackPiece?.carrying).toHaveLength(1)
+    expect(stackPiece?.carrying?.[0].type).toBe(INFANTRY)
+
+    // Deployed squares empty
+    expect(game.get('c4')).toBeUndefined()
+    expect(game.get('d3')).toBeUndefined()
+
+    // Turn restored
+    expect(game.turn()).toBe(RED)
   })
 })
