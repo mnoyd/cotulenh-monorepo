@@ -393,6 +393,14 @@ function computeSquareClasses(s: State): cg.SquareClasses {
     if (!s.deploySession.isComplete) {
       addSquare(squares, s.deploySession.originSquare, 'deploy-incomplete');
     }
+
+    // Highlight recombine options
+    if (s.deploySession.recombineOptions) {
+      for (const option of s.deploySession.recombineOptions) {
+        const className = option.isSafe ? 'recombine-available' : 'recombine-unsafe';
+        addSquare(squares, option.targetSquare, className);
+      }
+    }
   }
 
   if (s.highlight.custom) {

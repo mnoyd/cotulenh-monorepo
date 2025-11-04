@@ -91,6 +91,11 @@ export interface HeadlessState {
       capture: boolean;
     }>;
     isComplete: boolean; // false if deployment is ongoing (ends with "...")
+    recombineOptions?: Array<{
+      piece: string;
+      targetSquare: cg.Key;
+      isSafe: boolean;
+    }>;
   };
   ambigousMove?: {
     type: PopUpType;

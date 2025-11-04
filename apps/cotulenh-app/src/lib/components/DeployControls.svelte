@@ -7,7 +7,11 @@
   
   $: deploySession = game?.getDeploySession();
   $: hasSession = deploySession !== null;
-  $: canCommit = deploySession?.canCommit() ?? false;
+  $: commitStatus = game?.canCommitDeploy() ?? { canCommit: false };
+  $: canCommit = commitStatus.canCommit;
+  $: commitMessage = canCommit 
+    ? 'Finish deployment' 
+    : commitStatus.reason || 'Deploy at least one piece first';
 </script>
 
 {#if hasSession}
@@ -15,6 +19,10 @@
     <div class="deploy-info">
       <h3>🚀 Deploying Pieces</h3>
       <p class="hint">Move remaining pieces or finish deployment</p>
+      
+      {#if !canCommit && commitStatus.suggestion}
+        <p class="warning">💡 {commitStatus.suggestion}</p>
+      {/if}
     </div>
     
     <div class="deploy-buttons">
@@ -22,7 +30,7 @@
         class="btn-finish" 
         on:click={onCommit}
         disabled={!canCommit}
-        title={canCommit ? 'Finish deployment' : 'Deploy at least one piece first'}
+        title={commitMessage}
       >
         ✓ Finish Deployment
       </button>
@@ -109,5 +117,15 @@
     background: linear-gradient(135deg, #da190b, #c41408);
     transform: translateY(-1px);
     box-shadow: 0 4px 8px rgba(244, 67, 54, 0.4);
+  }
+  
+  .warning {
+    margin: 0.5rem 0 0 0;
+    padding: 0.5rem;
+    background: rgba(255, 152, 0, 0.1);
+    border-left: 3px solid #ff9800;
+    font-size: 0.85rem;
+    color: #666;
+    border-radius: 0.25rem;
   }
 </style>

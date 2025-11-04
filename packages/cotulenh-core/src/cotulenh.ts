@@ -31,6 +31,7 @@ import {
   AirDefense,
   CAPTURE_MASK,
   AIR_FORCE,
+  COMMANDER,
 } from './type.js'
 import {
   getDisambiguator,
@@ -72,7 +73,12 @@ import {
   getCheckAirDefenseZone,
   updateAirDefensePiecesPosition,
 } from './air-defense.js'
-import { DeploySession } from './deploy-session.js'
+import {
+  DeploySession,
+  RecombineOption,
+  CommitValidation,
+  CommitResult,
+} from './deploy-session.js'
 
 // Structure for storing history states
 interface History {
@@ -652,6 +658,25 @@ export class CoTuLenh {
 
     for (const move of moves) {
       try {
+        // DELAYED VALIDATION: Allow deploy moves that could be part of check escape sequences
+        // Validation will happen at commit time (allows deploy sequences to escape check)
+        const isDeploy = 'flags' in move && (move.flags & BITS.DEPLOY) !== 0
+        if (isDeploy) {
+          // Check if this is a deploy move from a stack containing the Commander
+          const fromPiece = this.get(move.from)
+          const hasCommander =
+            fromPiece &&
+            (fromPiece.type === COMMANDER ||
+              fromPiece.carrying?.some((p) => p.type === COMMANDER))
+
+          // If commander is in the stack, allow the deploy move (might be escape sequence)
+          // Or if session already active, allow all deploy moves
+          if (this._deploySession || hasCommander) {
+            legalMoves.push(move)
+            continue
+          }
+        }
+
         // Execute move temporarily without affecting history or session
         let command: CTLMoveCommandInteface
         if (isInternalDeployMove(move)) {
@@ -988,25 +1013,48 @@ export class CoTuLenh {
   }
 
   /**
-   * Commit the active deploy session to history
+   * Commit the current deploy session.
    *
    * The session has already applied moves to the board incrementally.
-   * This method just:
+   * This method:
+   * - Applies queued recombine instructions
    * - Validates session is complete
+   * - Validates commander safety (check escape)
+   * - Adds to history
    * - Clears the session
-   * - Switches turn
-   * - Updates move counter
    *
-   * @returns true if committed successfully
-   * @throws Error if no active session or session incomplete
+   * @returns Result object with success status and optional error message
    */
-  public commitDeploySession(switchTurn: boolean = true): boolean {
+  public commitDeploySession(switchTurn: boolean = true): CommitResult {
     if (!this._deploySession) {
-      throw new Error('No active deploy session to commit')
+      return {
+        success: false,
+        reason: 'No active deploy session to commit',
+      }
     }
 
     if (!this._deploySession.canCommit()) {
-      throw new Error('Cannot commit incomplete deploy session')
+      return {
+        success: false,
+        reason: 'Cannot commit incomplete deploy session',
+      }
+    }
+
+    // Apply all queued recombine instructions
+    this._deploySession['applyRecombines'](this)
+
+    // DELAYED VALIDATION: Check commander safety after all moves + recombines
+    // This allows deploy sequences to escape check (e.g., deploy carrier, recombine commander)
+    const us = this._deploySession.turn
+    if (this._isCommanderAttacked(us) || this._isCommanderExposed(us)) {
+      // Rollback the recombines and fail
+      // Note: The deploy moves are already in history, but we haven't committed the session yet
+      // The session will be rolled back by the caller or by undo
+      return {
+        success: false,
+        reason:
+          'Deploy sequence does not escape check. Commander still in danger.',
+      }
     }
 
     // Build InternalDeployMove from session commands
@@ -1064,7 +1112,7 @@ export class CoTuLenh {
       }
     }
 
-    return true
+    return { success: true }
   }
 
   /**
@@ -1092,6 +1140,88 @@ export class CoTuLenh {
     // Clear the session (and legacy state)
     this._deploySession = null
     this._deployState = null
+  }
+
+  // ============================================================================
+  // RECOMBINE INSTRUCTION SYSTEM (NEW)
+  // ============================================================================
+
+  /**
+   * Recombine a piece with a deployed piece during active deploy session
+   * This is NOT a move - it's a session instruction
+   *
+   * @param from - Source square (stack square)
+   * @param to - Target square (deployed piece square)
+   * @param piece - Piece type to recombine
+   * @returns true if recombine succeeded
+   */
+  public recombine(from: Square, to: Square, piece: PieceSymbol): boolean {
+    const session = this.getDeploySession()
+    if (!session) {
+      throw new Error('No active deploy session')
+    }
+
+    const fromSq = SQUARE_MAP[from]
+    const toSq = SQUARE_MAP[to]
+    const pieceObj: Piece = { type: piece, color: this.turn() }
+
+    return session.recombine(this, fromSq, toSq, pieceObj)
+  }
+
+  /**
+   * Get available recombine options (separate from moves)
+   *
+   * @param square - Stack square
+   * @returns Array of recombine options with safety validation
+   */
+  public getRecombineOptions(square: Square): RecombineOption[] {
+    const session = this.getDeploySession()
+    if (!session) return []
+
+    return session.getRecombineOptions(this, SQUARE_MAP[square])
+  }
+
+  /**
+   * Undo the last recombine instruction
+   */
+  public undoRecombineInstruction(): void {
+    const session = this.getDeploySession()
+    if (!session) return
+
+    session.undoLastRecombine()
+  }
+
+  /**
+   * Check if current deploy state can be committed (without actually committing)
+   * Useful for UI to show warnings before commit attempt
+   *
+   * @returns Validation result with reason and suggestion if commit would fail
+   */
+  public canCommitDeploy(): CommitValidation {
+    const session = this.getDeploySession()
+    if (!session) {
+      return { canCommit: false, reason: 'No active deploy session' }
+    }
+
+    if (!session.canCommit()) {
+      return {
+        canCommit: false,
+        reason:
+          'Deploy session is incomplete (pieces remain without being moved or staying)',
+      }
+    }
+
+    // TODO: Add Commander safety validation here
+    // For now, just check if session can commit
+    return { canCommit: true }
+  }
+
+  /**
+   * Reset the current deploy session (start over)
+   * Undoes all moves and clears the session
+   */
+  public resetDeploySession(): void {
+    this.cancelDeploySession()
   }
 
   /**
@@ -1234,6 +1364,17 @@ export class CoTuLenh {
   /**
    * Determines whether the current player is in checkmate.
    * Checkmate occurs when the commander is in check and no legal moves can escape the threat.
+   *
+   * TODO: This currently only checks normal moves. It does NOT check if commander
+   * can escape via deploy sequences (deploy carrier + recombine commander).
+   * See docs/CHECKMATE-DETECTION-TODO.md for implementation details.
+   *
+   * Example of missing case:
+   * - Commander at c2, checked by Tank at c4
+   * - F(C) stack at c2
+   * - Can deploy AirForce → f2, then recombine Commander → escape!
+   * - Current implementation would incorrectly return true (checkmate)
+   *
    * @returns True if the current player is in checkmate, false otherwise
    */
   isCheckmate(): boolean {

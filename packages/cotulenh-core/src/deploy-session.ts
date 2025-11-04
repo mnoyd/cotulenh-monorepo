@@ -7,9 +7,53 @@ import {
   BITS,
   DeployState,
   algebraic,
+  swapColor,
+  NAVY_MASK,
+  LAND_MASK,
 } from './type.js'
-import { flattenPiece, combinePieces } from './utils.js'
+import { flattenPiece, combinePieces, removePieceFromStack } from './utils.js'
 import type { CTLMoveCommandInteface } from './move-apply.js'
+import type { CoTuLenh } from './cotulenh.js'
+
+/**
+ * Instruction to recombine a piece with a deployed piece
+ * This is NOT a move - it's a session modification
+ */
+export interface RecombineInstruction {
+  piece: Piece
+  fromSquare: number
+  toSquare: number
+  timestamp: number // Preserves order (index when instruction was added)
+}
+
+/**
+ * A recombine option available to the player
+ */
+export interface RecombineOption {
+  piece: Piece // Piece to recombine
+  targetSquare: number // Where it will recombine
+  targetPiece: Piece // Piece it will combine with
+  resultPiece: Piece // Combined result
+  isSafe: boolean // Commander safety check
+}
+
+/**
+ * Result of commit validation
+ */
+export interface CommitValidation {
+  canCommit: boolean
+  reason?: string
+  suggestion?: string
+}
+
+/**
+ * Result of session commit
+ */
+export interface CommitResult {
+  success: boolean
+  reason?: string
+  suggestion?: string
+}
 
 /**
  * DeploySession tracks the state of an active deployment sequence.
@@ -31,6 +75,7 @@ export class DeploySession {
   commands: CTLMoveCommandInteface[] = [] // Store commands, not moves!
   startFEN: string
   stayPieces?: Piece[] // Pieces explicitly marked to stay
+  recombineInstructions: RecombineInstruction[] = [] // Recombine instructions
 
   constructor(data: {
     stackSquare: number
@@ -40,6 +85,7 @@ export class DeploySession {
     commands?: CTLMoveCommandInteface[]
     actions?: InternalMove[] // Backward compatibility
     stayPieces?: Piece[]
+    recombineInstructions?: RecombineInstruction[]
   }) {
     this.stackSquare = data.stackSquare
     this.turn = data.turn
@@ -61,6 +107,7 @@ export class DeploySession {
     }
 
     this.stayPieces = data.stayPieces
+    this.recombineInstructions = data.recombineInstructions || []
   }
 
   /**
@@ -207,7 +254,8 @@ export class DeploySession {
    * Check if the session can be committed.
    * A session can be committed if:
    * - At least one move has been made, AND
-   * - Either all pieces are deployed OR staying pieces are specified
+   * - Either all pieces are deployed OR staying pieces are specified OR
+   *   recombine instructions will handle remaining pieces
    *
    * @returns true if the session can be committed
    */
@@ -222,6 +270,32 @@ export class DeploySession {
 
     // If staying pieces specified, can commit
     if (this.stayPieces?.length) return true
+
+    // Check if recombine instructions will handle all remaining pieces
+    if (this.recombineInstructions.length > 0) {
+      const remainingFlat = flattenPiece(remaining)
+      const recombinedTypes = this.recombineInstructions.map(
+        (inst) => inst.piece.type,
+      )
+
+      // Count pieces by type in both remaining and recombined
+      const remainingCounts: Record<string, number> = {}
+      for (const piece of remainingFlat) {
+        remainingCounts[piece.type] = (remainingCounts[piece.type] || 0) + 1
+      }
+
+      const recombinedCounts: Record<string, number> = {}
+      for (const type of recombinedTypes) {
+        recombinedCounts[type] = (recombinedCounts[type] || 0) + 1
+      }
+
+      // Check if all remaining pieces have enough recombine instructions
+      const allPiecesHandled = Object.keys(remainingCounts).every(
+        (type) => recombinedCounts[type] >= remainingCounts[type],
+      )
+
+      if (allPiecesHandled) return true
+    }
 
     // Otherwise, cannot commit (pieces remain without being marked as staying)
     return false
@@ -378,6 +452,261 @@ export class DeploySession {
       startFEN: this.startFEN,
       commands: [...this.commands], // Create a new array with same commands
       stayPieces: this.stayPieces?.map((p: Piece) => ({ ...p })),
+      recombineInstructions: this.recombineInstructions.map((inst) => ({
+        ...inst,
+      })),
     })
+  }
+
+  // ============================================================================
+  // RECOMBINE INSTRUCTION SYSTEM
+  // ============================================================================
+
+  /**
+   * Record a recombine instruction (doesn't execute yet, queues for commit)
+   *
+   * @param game - The game instance
+   * @param stackSquare - Source square (must be the stack square)
+   * @param targetSquare - Target square (must be a deployed square)
+   * @param pieceToRecombine - Piece to recombine
+   * @returns true if instruction was recorded successfully
+   */
+  recombine(
+    game: CoTuLenh,
+    stackSquare: number,
+    targetSquare: number,
+    pieceToRecombine: Piece,
+  ): boolean {
+    // Validate: must be the stack square
+    if (stackSquare !== this.stackSquare) {
+      throw new Error('Can only recombine from the stack square')
+    }
+
+    // Validate: target must be deployed in this session
+    const deployedSquares = this.getDeployedSquares()
+    if (!deployedSquares.includes(targetSquare)) {
+      throw new Error('Cannot recombine to non-deployed square')
+    }
+
+    // Validate: piece must be in remaining pieces
+    const remaining = this.getRemainingPieces()
+    if (!remaining) return false
+
+    const remainingFlat = flattenPiece(remaining)
+    const hasPiece = remainingFlat.some((p) => p.type === pieceToRecombine.type)
+    if (!hasPiece) return false
+
+    // Get target piece and check if combination is possible
+    const targetPiece = game.get(targetSquare)
+    if (!targetPiece) return false
+
+    // Check if pieces can combine
+    const combinedPiece = combinePieces([pieceToRecombine, targetPiece])
+    if (!combinedPiece) {
+      throw new Error('Cannot combine these pieces')
+    }
+
+    // TERRAIN COMPATIBILITY CHECK
+    // The resulting carrier must be compatible with the target square terrain
+    const carrierType = combinedPiece.type
+
+    if (carrierType === 'n') {
+      // NAVY
+      if (!NAVY_MASK[targetSquare]) {
+        throw new Error(
+          'Cannot recombine: Navy cannot be carrier on land square',
+        )
+      }
+    } else {
+      // Land pieces
+      if (!LAND_MASK[targetSquare]) {
+        throw new Error(
+          'Cannot recombine: Land piece cannot be carrier on water square',
+        )
+      }
+    }
+
+    // COMMANDER SAFETY CHECK
+    const us = game.turn()
+    const isCommander = pieceToRecombine.type === 'c' // COMMANDER
+    const targetHasCommander =
+      targetPiece.type === 'c' ||
+      targetPiece.carrying?.some((p) => p.type === 'c')
+
+    if (isCommander || targetHasCommander) {
+      if (!this.isSquareSafeForCommander(game, targetSquare, us)) {
+        throw new Error('Cannot recombine Commander to attacked square')
+      }
+    }
+
+    // Record instruction (don't execute yet)
+    this.recombineInstructions.push({
+      piece: pieceToRecombine,
+      fromSquare: stackSquare,
+      toSquare: targetSquare,
+      timestamp: this.commands.length, // Preserves order
+    })
+
+    return true
+  }
+
+  /**
+   * Get available recombine options for remaining pieces
+   *
+   * @param game - The game instance
+   * @param stackSquare - The stack square
+   * @returns Array of recombine options (filtered for safety)
+   */
+  getRecombineOptions(game: CoTuLenh, stackSquare: number): RecombineOption[] {
+    const options: RecombineOption[] = []
+    const remaining = this.getRemainingPieces()
+    const us = game.turn()
+
+    if (!remaining) return options
+
+    const remainingFlat = flattenPiece(remaining)
+    const deployedSquares = this.getDeployedSquares()
+
+    for (const piece of remainingFlat) {
+      const isCommander = piece.type === 'c'
+
+      for (const targetSquare of deployedSquares) {
+        const targetPiece = game.get(targetSquare)
+        if (!targetPiece) continue
+
+        // Check if pieces can combine
+        const combined = combinePieces([piece, targetPiece])
+        if (!combined) continue
+
+        // TERRAIN COMPATIBILITY CHECK
+        const carrierType = combined.type
+        if (carrierType === 'n') {
+          // NAVY
+          if (!NAVY_MASK[targetSquare]) continue // Navy can't be carrier on land
+        } else {
+          // Land pieces
+          if (!LAND_MASK[targetSquare]) continue // Land piece can't be carrier on water
+        }
+
+        // COMMANDER SAFETY FILTERING
+        if (isCommander) {
+          if (!this.isSquareSafeForCommander(game, targetSquare, us)) {
+            continue // Skip unsafe square
+          }
+        }
+
+        // Check if target has Commander
+        if (
+          targetPiece.type === 'c' ||
+          targetPiece.carrying?.some((p) => p.type === 'c')
+        ) {
+          if (!this.isSquareSafeForCommander(game, targetSquare, us)) {
+            continue // Skip - would expose Commander
+          }
+        }
+
+        options.push({
+          piece,
+          targetSquare,
+          targetPiece,
+          resultPiece: combined,
+          isSafe: true, // Only safe options included
+        })
+      }
+    }
+
+    return options
+  }
+
+  /**
+   * Undo the last recombine instruction
+   */
+  undoLastRecombine(): void {
+    if (this.recombineInstructions.length === 0) return
+    this.recombineInstructions.pop()
+  }
+
+  /**
+   * Apply all queued recombine instructions to the board
+   * Called at commit time
+   *
+   * @param game - The game instance
+   */
+  private applyRecombines(game: CoTuLenh): void {
+    // Sort by timestamp to maintain request order
+    const sorted = [...this.recombineInstructions].sort(
+      (a, b) => a.timestamp - b.timestamp,
+    )
+
+    for (const instruction of sorted) {
+      const targetPiece = game.get(instruction.toSquare)
+      const stackPiece = game.get(instruction.fromSquare)
+
+      if (!targetPiece || !stackPiece) continue
+
+      // Check if Commander is being recombined
+      const isCommanderRecombining = instruction.piece.type === 'c'
+
+      // Combine
+      const combined = combinePieces([targetPiece, instruction.piece])
+      if (!combined) continue
+
+      // Update target square directly (bypass put() validation for recombines)
+      // We need to bypass put() because it has Commander placement restrictions
+      // that don't apply when recombining pieces
+      game['_board'][instruction.toSquare] = combined
+
+      // Update commander position if Commander was recombined
+      if (isCommanderRecombining) {
+        game['_commanders'][instruction.piece.color] = instruction.toSquare
+      }
+
+      // Update air defense if needed
+      const BASE_AIRDEFENSE_CONFIG = game['BASE_AIRDEFENSE_CONFIG'] || {}
+      if (BASE_AIRDEFENSE_CONFIG[combined.type]) {
+        const updateAirDefense = game['updateAirDefensePiecesPosition']
+        if (updateAirDefense) {
+          game['_airDefense'] = updateAirDefense(game)
+        }
+      }
+
+      // Update stack square
+      const remaining = removePieceFromStack(stackPiece, instruction.piece)
+      if (remaining) {
+        game.put(remaining, algebraic(instruction.fromSquare))
+      } else {
+        game.remove(algebraic(instruction.fromSquare))
+      }
+    }
+  }
+
+  /**
+   * Undo all recombines (for rollback when commit fails)
+   * Stores original board state before applying recombines
+   */
+  private undoRecombines(game: CoTuLenh): void {
+    // For now, we rely on the validation happening before apply
+    // If needed, we can implement full state snapshot/restore here
+    this.recombineInstructions = []
+  }
+
+  /**
+   * Check if a square is safe for Commander (not under attack)
+   *
+   * @param game - The game instance
+   * @param square - Square to check
+   * @param color - Commander's color
+   * @returns true if square is safe
+   */
+  private isSquareSafeForCommander(
+    game: CoTuLenh,
+    square: number,
+    color: Color,
+  ): boolean {
+    const them = swapColor(color)
+
+    // Check if any enemy piece can attack this square
+    const attackers = game.getAttackers(square, them)
+    return attackers.length === 0
   }
 }
