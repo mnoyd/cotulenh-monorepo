@@ -1080,8 +1080,14 @@ export class CoTuLenh {
       return // Nothing to cancel
     }
 
-    // Session handles undoing all its commands in reverse order
-    this._deploySession.cancel()
+    // Undo all commands in reverse order
+    const commands = this._deploySession.commands
+    for (let i = commands.length - 1; i >= 0; i--) {
+      commands[i].undo()
+    }
+
+    // Clear move cache after undoing
+    this._movesCache.clear()
 
     // Clear the session (and legacy state)
     this._deploySession = null
