@@ -102,6 +102,15 @@ to any language.**
 - **[board-representation-analysis.md](implementation/board-representation-analysis.md)** -
   Why 0x88 array (not bitboards)
 
+### `/performance` - Performance Analysis & Optimization
+
+**Performance documentation for the core library.**
+
+- **[VERBOSE_MODE_PERFORMANCE_ANALYSIS.md](performance/VERBOSE_MODE_PERFORMANCE_ANALYSIS.md)** -
+  Deep dive into verbose mode bottlenecks
+- **[VERBOSE_BOTTLENECK_SUMMARY.md](performance/VERBOSE_BOTTLENECK_SUMMARY.md)** -
+  Executive summary of performance issues
+
 ---
 
 ## Quick Navigation

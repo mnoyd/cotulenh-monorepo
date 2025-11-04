@@ -16,7 +16,7 @@
   import '@repo/cotulenh-board/assets/commander-chess.base.css';
   import '@repo/cotulenh-board/assets/commander-chess.pieces.css';
   import '@repo/cotulenh-board/assets/commander-chess.clasic.css';
-    import { boardPieceToCore, convertSetMapToArrayMap, makeCoreMove, typeToRole, roleToType } from '$lib/utils';
+    import { boardPieceToCore, convertSetMapToArrayMap, makeCoreMove, typeToRole, roleToType, getMovesForSquare } from '$lib/utils';
 
   let boardContainerElement: HTMLElement | null = null;
   let boardApi: Api | null = null;
@@ -44,6 +44,35 @@
     };
   }
 
+  // ✅ LAZY LOADING: Generate moves for a specific square on-demand
+  let currentDests = $state<Dests>(new Map());
+  
+  function loadMovesForSquare(square: Key): Dests {
+    if (!game) return new Map();
+    
+    const perfStart = performance.now();
+    const moves = getMovesForSquare(game, square);
+    const dests = mapPossibleMovesToDests(moves);
+    const perfEnd = performance.now();
+    console.log(`⏱️ Lazy loaded ${moves.length} moves for ${square} in ${(perfEnd - perfStart).toFixed(2)}ms`);
+    
+    return dests;
+  }
+  
+  function handlePieceSelect(orig: OrigMove) {
+    // Generate moves only for the selected piece
+    currentDests = loadMovesForSquare(orig.square);
+    
+    // Update board with new destinations
+    if (boardApi) {
+      boardApi.set({
+        movable: {
+          dests: currentDests
+        }
+      });
+    }
+  }
+
   function reSetupBoard():Api|null {
     const perfStart = performance.now();
     if (boardApi) {
@@ -52,10 +81,8 @@
         const airDefenseEnd = performance.now();
         console.log(`⏱️ coreToBoardAirDefense took ${(airDefenseEnd - airDefenseStart).toFixed(2)}ms`);
         
-        const destsStart = performance.now();
-        const dests = mapPossibleMovesToDests($gameStore.possibleMoves);
-        const destsEnd = performance.now();
-        console.log(`⏱️ mapPossibleMovesToDests in reSetupBoard took ${(destsEnd - destsStart).toFixed(2)}ms`);
+        // ✅ OPTIMIZATION: Don't pre-compute dests, they'll be loaded on piece selection
+        console.log('⏱️ Skipping pre-computation of dests (lazy loading enabled)');
         
         boardApi.set({
           fen: $gameStore.fen,
@@ -66,8 +93,14 @@
           movable: {
             free: false,
             color: coreToBoardColor($gameStore.turn),
-            dests: dests,
-            events: { after: handleMove, afterDeployStep: handleDeployStep }
+            dests: new Map(), // Empty - will be loaded on piece selection
+            events: { 
+              after: handleMove, 
+              afterDeployStep: handleDeployStep
+            }
+          },
+          events: {
+            select: handlePieceSelect // ✅ NEW: Load moves when piece is selected
           }
         });
       }
@@ -307,8 +340,11 @@
         movable: {
           free: false,
           color: coreToBoardColor($gameStore.turn),
-          dests: mapPossibleMovesToDests($gameStore.possibleMoves),
+          dests: new Map(), // ✅ Empty - will be loaded on piece selection
           events: { after: handleMove, afterDeployStep: handleDeployStep }
+        },
+        events: {
+          select: handlePieceSelect // ✅ NEW: Load moves when piece is selected
         }
       });
 
@@ -320,20 +356,22 @@
     }
   });
 
-  let isUpdatingBoard = false;
+  let isUpdatingBoard = $state(false);
 
-  $: if (boardApi && $gameStore.fen) {
-    const reactiveStart = performance.now();
-    console.log('🔄 Reactive statement triggered by FEN change');
-    isUpdatingBoard = true;
-    reSetupBoard();
-    // Use setTimeout to ensure the board update completes before allowing new moves
-    setTimeout(() => {
-      isUpdatingBoard = false;
-      const reactiveEnd = performance.now();
-      console.log(`⏱️ REACTIVE update completed in ${(reactiveEnd - reactiveStart).toFixed(2)}ms`);
-    }, 0);
-  }
+  $effect(() => {
+    if (boardApi && $gameStore.fen) {
+      const reactiveStart = performance.now();
+      console.log('🔄 Effect triggered by FEN change');
+      isUpdatingBoard = true;
+      reSetupBoard();
+      // Use setTimeout to ensure the board update completes before allowing new moves
+      setTimeout(() => {
+        isUpdatingBoard = false;
+        const reactiveEnd = performance.now();
+        console.log(`⏱️ REACTIVE update completed in ${(reactiveEnd - reactiveStart).toFixed(2)}ms`);
+      }, 0);
+    }
+  });
 </script>
 
 <main>
