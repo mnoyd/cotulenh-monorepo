@@ -37,23 +37,24 @@ function createGameStore() {
      */
     initialize(game: CoTuLenh) {
       const perfStart = performance.now();
-      const movesStart = performance.now();
-      const possibleMoves = getPossibleMoves(game);
-      const movesEnd = performance.now();
-      console.log(`⏱️ getPossibleMoves in initialize took ${(movesEnd - movesStart).toFixed(2)}ms`);
+      // ✅ OPTIMIZATION: Don't pre-generate all moves (lazy loading pattern)
+      // Moves will be generated on-demand when user clicks a piece
+      console.log('⏱️ Initializing game store with lazy move loading...');
 
       set({
         fen: game.fen(),
         turn: game.turn(),
         history: [],
-        possibleMoves,
+        possibleMoves: [], // Empty - will be loaded on-demand per piece
         check: game.isCheck(),
         status: calculateGameStatus(game),
         lastMove: undefined,
         deployState: game.getDeploySession()?.toLegacyDeployState() ?? null
       });
       const perfEnd = performance.now();
-      console.log(`⏱️ gameStore.initialize took ${(perfEnd - perfStart).toFixed(2)}ms`);
+      console.log(
+        `⏱️ gameStore.initialize took ${(perfEnd - perfStart).toFixed(2)}ms (lazy loading enabled)`
+      );
     },
 
     /**
@@ -63,34 +64,33 @@ function createGameStore() {
      */
     applyMove(game: CoTuLenh, move: Move) {
       const perfStart = performance.now();
-      const movesStart = performance.now();
-      const possibleMoves = getPossibleMoves(game);
-      const movesEnd = performance.now();
-      console.log(
-        `⏱️ getPossibleMoves in applyMove took ${(movesEnd - movesStart).toFixed(2)}ms, generated ${possibleMoves.length} moves`
-      );
+      // ✅ OPTIMIZATION: Don't pre-generate all moves (lazy loading pattern)
+      // Moves will be generated on-demand when user clicks next piece
 
       update((state) => ({
         ...state,
         fen: game.fen(),
         turn: game.turn(),
         history: [...state.history, move], // Append the new move
-        possibleMoves,
+        possibleMoves: [], // Empty - will be loaded on-demand per piece
         lastMove: [move.from, move.to],
         check: game.isCheck(),
         status: calculateGameStatus(game),
         deployState: game.getDeploySession()?.toLegacyDeployState() ?? null
       }));
       const perfEnd = performance.now();
-      console.log(`⏱️ gameStore.applyMove TOTAL took ${(perfEnd - perfStart).toFixed(2)}ms`);
+      console.log(
+        `⏱️ gameStore.applyMove TOTAL took ${(perfEnd - perfStart).toFixed(2)}ms (lazy loading enabled)`
+      );
     },
     applyDeployMove(game: CoTuLenh, move: DeployMove) {
+      // ✅ OPTIMIZATION: Don't pre-generate all moves (lazy loading pattern)
       update((state) => ({
         ...state,
         fen: game.fen(),
         turn: game.turn(),
         history: [...state.history, move], // Append the new move
-        possibleMoves: getPossibleMoves(game),
+        possibleMoves: [], // Empty - will be loaded on-demand per piece
         lastMove: [move.from, ...Array.from(move.to.keys())],
         check: game.isCheck(),
         status: calculateGameStatus(game),

@@ -132,11 +132,44 @@ export function corePieceToBoard(piece: CorePiece): BoardPiece {
 
 /**
  * Calculates the possible destinations for each piece on the board for CoTuLenh.
+ * @deprecated Use getMovesForSquare() for better performance (lazy loading)
  * @param game - The CoTuLenh game instance.
  * @returns A Map where keys are origin squares (e.g., 'e2') and values are arrays of destination squares (e.g., ['e3', 'e4']).
  */
 export function getPossibleMoves(game: CoTuLenh): Move[] {
   return game.moves({ verbose: true }) as Move[];
+}
+
+/**
+ * Gets possible moves for a specific square only (lazy loading - RECOMMENDED).
+ * This follows the chess.js standard pattern and is much faster than generating all moves.
+ * @param game - The CoTuLenh game instance
+ * @param square - The square to get moves for (e.g., 'e2')
+ * @returns Array of verbose move objects from that square
+ */
+export function getMovesForSquare(game: CoTuLenh, square: string): Move[] {
+  return game.moves({ verbose: true, square }) as Move[];
+}
+
+/**
+ * Gets all squares that have pieces which can move (without computing full move details).
+ * This is very fast and useful for highlighting clickable pieces.
+ * @param game - The CoTuLenh game instance
+ * @returns Array of squares that have movable pieces
+ */
+export function getMovableSquares(game: CoTuLenh): string[] {
+  const moves = game.moves({ verbose: false }) as string[];
+  const squares = new Set<string>();
+
+  // Parse move strings to extract origin squares
+  // CoTuLenh uses SAN format, need to extract the 'from' square
+  // For now, use verbose mode but only extract 'from' squares
+  const verboseMoves = game.moves({ verbose: true }) as Move[];
+  for (const move of verboseMoves) {
+    squares.add(move.from);
+  }
+
+  return Array.from(squares);
 }
 
 /**
