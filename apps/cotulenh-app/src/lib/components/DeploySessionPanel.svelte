@@ -16,7 +16,8 @@
   // Use the reactive store instead of reading directly from game
   $: deployState = $gameStore.deployState;
   $: hasSession = deployState !== null;
-  $: commitStatus = game?.canCommitDeploy() ?? { canCommit: false };
+  // Make commitStatus reactive to deployState changes, not just game reference
+  $: commitStatus = deployState && game ? game.canCommitDeploy() : { canCommit: false };
   $: canCommit = commitStatus.canCommit;
   $: commitMessage = canCommit 
     ? 'Finish deployment and add move to history' 
