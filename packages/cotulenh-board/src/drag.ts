@@ -36,6 +36,12 @@ export function start(s: State, e: cg.MouchEvent): void {
   if (!keyAtPosition) return;
   const piece = s.pieces.get(keyAtPosition);
 
+  // Fire lazy loading BEFORE any decision logic (popup, selection, etc.)
+  if (piece && board.isMovable(s, { square: keyAtPosition } as cg.OrigMove)) {
+    const origMove = { square: keyAtPosition, type: piece?.role } as cg.OrigMove;
+    board.callUserFunction(s.events.select, origMove);
+  }
+
   const previouslySelected = s.selected?.square;
   if (
     !previouslySelected &&
@@ -78,6 +84,7 @@ export function start(s: State, e: cg.MouchEvent): void {
         prepareCombinedPopup(s, util.flattenPiece(piece), keyAtPosition),
         keyAtPosition,
       );
+      s.dom.redraw(); // Redraw immediately to show popup
       return;
     }
     board.unselect(s);
