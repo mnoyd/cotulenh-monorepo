@@ -98,7 +98,7 @@ describe('Recombine Instructions System', () => {
       // Check that instruction was queued (not applied yet)
       const session = game.getDeploySession()
       expect(session).toBeTruthy()
-      expect(session['recombineInstructions']).toHaveLength(1)
+      expect(session!['recombineInstructions']).toHaveLength(1)
     })
 
     it('should handle multiple recombines to same square', () => {

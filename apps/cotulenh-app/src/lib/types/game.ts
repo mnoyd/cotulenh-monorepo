@@ -1,9 +1,17 @@
-import type { Square, Move, Color, DeployMove } from '@repo/cotulenh-core';
+import type { Square, Move, Color, DeployMove, DeployState } from '@repo/cotulenh-core';
 
 /**
  * Represents the possible states of the game.
  */
 export type GameStatus = 'playing' | 'checkmate' | 'stalemate' | 'draw';
+
+/**
+ * Extended deploy state for UI with additional computed properties
+ */
+export interface UIDeployState extends DeployState {
+  actions: any[]; // Actions from the deploy session
+  remainingPieces: any; // Remaining pieces to deploy
+}
 
 /**
  * Defines the structure for the game's state.
@@ -16,5 +24,5 @@ export interface GameState {
   lastMove?: Square[]; // The last move made [from, to]
   status: GameStatus; // Current status of the game
   check: boolean; // Is the current player in check?
-  deployState: { stackSquare: number; turn: Color } | null; // Current deployment state
+  deployState: UIDeployState | null; // Current deployment state with UI helpers
 }

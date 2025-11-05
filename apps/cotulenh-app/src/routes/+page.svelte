@@ -7,8 +7,7 @@
   import type { Square, Color, Move, DeployMoveRequest } from '@repo/cotulenh-core';
   import type { Key, Dests } from '@repo/cotulenh-board';
   import GameInfo from '$lib/components/GameInfo.svelte';
-  import DeployControls from '$lib/components/DeployControls.svelte';
-  import CombinationPanel from '$lib/components/CombinationPanel.svelte';
+  import DeploySessionPanel from '$lib/components/DeploySessionPanel.svelte';
   import HeroicStatusPanel from '$lib/components/HeroicStatusPanel.svelte';
   import GameControls from '$lib/components/GameControls.svelte';
   import { gameStore } from '$lib/stores/game';
@@ -19,8 +18,8 @@
     import { boardPieceToCore, convertSetMapToArrayMap, makeCoreMove, typeToRole, roleToType, getMovesForSquare } from '$lib/utils';
 
   let boardContainerElement: HTMLElement | null = null;
-  let boardApi: Api | null = null;
-  let game: CoTuLenh | null = null;
+  let boardApi = $state<Api | null>(null);
+  let game = $state<CoTuLenh | null>(null);
 
   function coreToBoardColor(coreColor: Color | null): 'red' | 'blue' | undefined {
     return coreColor ? (coreColor === 'r' ? 'red' : 'blue') : undefined;
@@ -251,7 +250,7 @@
    * Manually commit the active deploy session
    * 
    * Core commits the session and updates FEN (removes DEPLOY marker).
-   * Reactive update will handle board state automatically.
+   * Get the SAN notation and add it to history.
    */
   function commitDeploy() {
     console.log('🏁 commitDeploy');
@@ -262,14 +261,34 @@
     }
     
     try {
-      game.commitDeploySession();
+      // Get SAN notation before commit
+      const deploySession = game.getDeploySession();
+      if (!deploySession) {
+        console.error('❌ No deploy session active');
+        return;
+      }
+      
+      // Get the deploy move SAN by accessing the last history entry after commit
+      const historyBefore = game.history();
+      const result = game.commitDeploySession();
+      
+      if (!result.success) {
+        console.error('❌ Failed to commit:', result.reason);
+        alert(`Cannot finish deployment: ${result.reason}`);
+        return;
+      }
+      
+      // Get the SAN from history (last entry added by commit)
+      const historyAfter = game.history();
+      const deployMoveSan = historyAfter[historyAfter.length - 1] || 'Deploy';
+      
       console.log('✅ Deploy session committed');
+      console.log('  Deploy SAN:', deployMoveSan);
       console.log('  FEN:', game.fen());
       console.log('  Turn:', game.turn());
       
-      // Update game store with new FEN (without DEPLOY marker)
-      // Reactive statement will update board automatically
-      gameStore.initialize(game);
+      // Update game store with the deploy move SAN
+      gameStore.applyDeployCommit(game, deployMoveSan);
       
     } catch (error) {
       console.error('❌ Failed to commit deploy session:', error);
@@ -282,7 +301,7 @@
    * Cancel the active deploy session
    * 
    * Core cancels the session and restores FEN to pre-deploy state.
-   * Reactive update will handle board state automatically.
+   * Refresh the game store to reflect the restored state.
    */
   function cancelDeploy() {
     console.log('🚫 cancelDeploy');
@@ -295,8 +314,7 @@
       console.log('  FEN:', game.fen());
       console.log('  Turn:', game.turn());
       
-      // Update game store with restored FEN
-      // Reactive statement will update board automatically
+      // Reinitialize game store with restored state
       gameStore.initialize(game);
       
     } catch (error) {
@@ -384,9 +402,8 @@
 
       <div class="game-info-container">
         <GameInfo />
+        <DeploySessionPanel {game} onCommit={commitDeploy} onCancel={cancelDeploy} />
         <GameControls {game} />
-        <DeployControls {game} onCommit={commitDeploy} onCancel={cancelDeploy} />
-        <CombinationPanel {game} />
         <HeroicStatusPanel {game} />
       </div>
     </div>
@@ -395,57 +412,111 @@
 
 <style>
   .layout-container {
-    max-width: 1200px;
-    margin: 1rem auto;
-    padding: 1rem;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 1.5rem;
+    min-height: 100vh;
   }
 
   .game-layout {
     display: grid;
-    grid-template-columns: minmax(300px, 1fr) 250px;
-    gap: 2rem;
+    grid-template-columns: 1fr 380px;
+    gap: 2.5rem;
     align-items: start;
   }
 
   .board-container {
-    width: 700px;
-    aspect-ratio: 12 / 13; /* Adjust if necessary for CoTuLenh */
+    width: 100%;
+    max-width: 750px;
+    aspect-ratio: 12 / 13;
     position: relative;
     display: flex;
     justify-content: center;
     align-items: center;
+    margin: 0 auto;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    border-radius: 8px;
+    overflow: hidden;
   }
 
   .game-info-container {
-    flex: 1;
-    min-width: 250px;
     display: flex;
     flex-direction: column;
-    gap: 1rem;
-    max-height: 600px;
+    gap: 1.25rem;
+    max-height: 85vh;
     overflow-y: auto;
+    padding-right: 0.5rem;
+  }
+  
+  .game-info-container::-webkit-scrollbar {
+    width: 8px;
+  }
+  
+  .game-info-container::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 4px;
+  }
+  
+  .game-info-container::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+  }
+  
+  .game-info-container::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 0, 0, 0.3);
   }
 
   h1 {
     text-align: center;
     margin-bottom: 1.5rem;
     color: var(--text-primary);
+    font-size: 2.5rem;
+    font-weight: 700;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  @media (max-width: 1200px) {
+    .game-layout {
+      grid-template-columns: 1fr 320px;
+      gap: 1.5rem;
+    }
+    
+    .board-container {
+      max-width: 650px;
+    }
   }
 
   @media (max-width: 1000px) {
     .game-layout {
       grid-template-columns: 1fr;
+      gap: 2rem;
     }
 
     .board-container {
-      width: 100%;
       max-width: 600px;
-      margin: 0 auto;
     }
 
     .game-info-container {
-      width: 100%;
       max-height: none;
+      padding-right: 0;
+    }
+  }
+  
+  @media (max-width: 768px) {
+    .layout-container {
+      padding: 1rem;
+    }
+    
+    h1 {
+      font-size: 2rem;
+      margin-bottom: 1rem;
+    }
+    
+    .board-container {
+      max-width: 100%;
     }
   }
 </style>

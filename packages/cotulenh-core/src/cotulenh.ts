@@ -1043,6 +1043,21 @@ export class CoTuLenh {
     // Apply all queued recombine instructions
     this._deploySession['applyRecombines'](this)
 
+    // Auto-mark remaining pieces as staying if not explicitly set
+    if (
+      !this._deploySession.stayPieces ||
+      this._deploySession.stayPieces.length === 0
+    ) {
+      const remaining = this._deploySession.getRemainingPieces()
+      if (remaining) {
+        // Flatten the remaining piece and mark all as staying
+        const remainingFlat = remaining.carrying?.length
+          ? [{ ...remaining, carrying: undefined }, ...remaining.carrying]
+          : [remaining]
+        this._deploySession.stayPieces = remainingFlat
+      }
+    }
+
     // DELAYED VALIDATION: Check commander safety after all moves + recombines
     // This allows deploy sequences to escape check (e.g., deploy carrier, recombine commander)
     const us = this._deploySession.turn
