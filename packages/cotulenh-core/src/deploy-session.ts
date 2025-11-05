@@ -14,6 +14,10 @@ import {
 import { flattenPiece, combinePieces, removePieceFromStack } from './utils.js'
 import type { CTLMoveCommandInteface } from './move-apply.js'
 import type { CoTuLenh } from './cotulenh.js'
+import {
+  BASE_AIRDEFENSE_CONFIG,
+  updateAirDefensePiecesPosition,
+} from './air-defense.js'
 
 /**
  * Instruction to recombine a piece with a deployed piece
@@ -253,9 +257,9 @@ export class DeploySession {
   /**
    * Check if the session can be committed.
    * A session can be committed if:
-   * - At least one move has been made, AND
-   * - Either all pieces are deployed OR staying pieces are specified OR
-   *   recombine instructions will handle remaining pieces
+   * - At least one move has been made
+   *
+   * Remaining pieces will automatically be marked as staying during commit.
    *
    * @returns true if the session can be committed
    */
@@ -263,42 +267,9 @@ export class DeploySession {
     // Must have made at least one move
     if (this.commands.length === 0) return false
 
-    const remaining = this.getRemainingPieces()
-
-    // If no pieces remain, can commit
-    if (!remaining) return true
-
-    // If staying pieces specified, can commit
-    if (this.stayPieces?.length) return true
-
-    // Check if recombine instructions will handle all remaining pieces
-    if (this.recombineInstructions.length > 0) {
-      const remainingFlat = flattenPiece(remaining)
-      const recombinedTypes = this.recombineInstructions.map(
-        (inst) => inst.piece.type,
-      )
-
-      // Count pieces by type in both remaining and recombined
-      const remainingCounts: Record<string, number> = {}
-      for (const piece of remainingFlat) {
-        remainingCounts[piece.type] = (remainingCounts[piece.type] || 0) + 1
-      }
-
-      const recombinedCounts: Record<string, number> = {}
-      for (const type of recombinedTypes) {
-        recombinedCounts[type] = (recombinedCounts[type] || 0) + 1
-      }
-
-      // Check if all remaining pieces have enough recombine instructions
-      const allPiecesHandled = Object.keys(remainingCounts).every(
-        (type) => recombinedCounts[type] >= remainingCounts[type],
-      )
-
-      if (allPiecesHandled) return true
-    }
-
-    // Otherwise, cannot commit (pieces remain without being marked as staying)
-    return false
+    // Can always commit if at least one piece has been deployed
+    // Remaining pieces will be automatically marked as staying
+    return true
   }
 
   /**
@@ -662,12 +633,8 @@ export class DeploySession {
       }
 
       // Update air defense if needed
-      const BASE_AIRDEFENSE_CONFIG = game['BASE_AIRDEFENSE_CONFIG'] || {}
       if (BASE_AIRDEFENSE_CONFIG[combined.type]) {
-        const updateAirDefense = game['updateAirDefensePiecesPosition']
-        if (updateAirDefense) {
-          game['_airDefense'] = updateAirDefense(game)
-        }
+        game['_airDefense'] = updateAirDefensePiecesPosition(game)
       }
 
       // Update stack square

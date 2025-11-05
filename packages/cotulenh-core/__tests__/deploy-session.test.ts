@@ -329,7 +329,7 @@ describe('DeploySession', () => {
       expect(session.canCommit()).toBe(true)
     })
 
-    it('should return false when pieces remain and no stay specified', () => {
+    it('should return true when pieces remain (auto-stay on commit)', () => {
       const originalPiece = createPiece(NAVY, [createPiece(AIR_FORCE)])
 
       const session = new DeploySession({
@@ -341,7 +341,8 @@ describe('DeploySession', () => {
 
       session.addMove(createMove(0x92, 0x72, createPiece(NAVY)))
 
-      expect(session.canCommit()).toBe(false)
+      // Can commit now - remaining pieces will be auto-marked as staying
+      expect(session.canCommit()).toBe(true)
     })
   })
 
