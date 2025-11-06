@@ -1,240 +1,200 @@
 # CoTuLenh Documentation Index
 
-Welcome to the comprehensive CoTuLenh documentation!
+Welcome to the consolidated CoTuLenh documentation!
 
-## 🎯 START HERE: Deploy Architecture
+**📚 Documentation Version 2.0** - Streamlined from 126 files into organized
+structure (November 2025)
 
-### ✅ CURRENT: [Action-Based Deploy Architecture](deploy-action-based-architecture/)
+## 🎯 START HERE
 
-**The authoritative production-ready architecture** - All issues resolved, ready
-to implement
+### For Current Implementation
 
-**Read**: `FINAL-STATUS.md` → `COMPLETE-IMPLEMENTATION-GUIDE.md` →
-`SAN-PARSER-SPEC.md`
+**👉 [current/README.md](current/README.md)** - Single entry point for current
+TypeScript codebase
 
-### 📋 Architecture Overview: [ARCHITECTURE-MIGRATION.md](ARCHITECTURE-MIGRATION.md)
+### For Alternative Architectures
 
-**Complete consolidation of all approaches** - Virtual state evolution →
-Action-based solution
+**👉 [alternatives/README.md](alternatives/README.md)** - Modern approaches and
+bitboard exploration
+
+### For Deep Technical Analysis
+
+**👉 [extracted-information/](extracted-information/)** - Comprehensive
+technical details
 
 ---
 
 ## 🚀 Quick Start
 
-| Goal                                     | Start Here                                                                                                                      | Time      |
-| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- | --------- |
-| **Understand deploy architecture**       | [ARCHITECTURE-MIGRATION.md](ARCHITECTURE-MIGRATION.md) → [deploy-action-based-architecture/](deploy-action-based-architecture/) | 2 hours   |
-| **Port to new language**                 | [context/PORTING-GUIDE.md](context/PORTING-GUIDE.md)                                                                            | 4-5 hours |
-| **Understand TypeScript implementation** | [ARCHITECTURE-MIGRATION.md](ARCHITECTURE-MIGRATION.md) (legacy virtual state explained)                                         | 1 hour    |
-| **Learn game rules only**                | [context/complete-game-mechanics-reference.md](context/complete-game-mechanics-reference.md)                                    | 1 hour    |
-| **Validate knowledge**                   | [context/IMPLEMENTATION-CHECKLIST.md](context/IMPLEMENTATION-CHECKLIST.md)                                                      | 30 min    |
+| Goal                                  | Start Here                                                                                                | Time    |
+| ------------------------------------- | --------------------------------------------------------------------------------------------------------- | ------- |
+| **Work with current codebase**        | [current/README.md](current/README.md) → [current/GAME-RULES.md](current/GAME-RULES.md)                   | 2 hours |
+| **Port to new language**              | [current/GAME-RULES.md](current/GAME-RULES.md) → [current/PIECE-REFERENCE.md](current/PIECE-REFERENCE.md) | 3 hours |
+| **Understand current architecture**   | [current/IMPLEMENTATION-GUIDE.md](current/IMPLEMENTATION-GUIDE.md)                                        | 1 hour  |
+| **Learn game rules only**             | [current/GAME-RULES.md](current/GAME-RULES.md)                                                            | 1 hour  |
+| **Explore alternative architectures** | [alternatives/README.md](alternatives/README.md) → [alternatives/bitboard/](alternatives/bitboard/)       | 2 hours |
+| **Deep technical analysis**           | [extracted-information/](extracted-information/)                                                          | 1 hour  |
 
 ---
 
 ## 📚 All Documents by Category
 
-### Meta Documentation (7 files)
+### Current Implementation (8 files)
 
-- [README.md](README.md) - Main documentation hub
-- [INDEX.md](INDEX.md) - This file
-- [ARCHITECTURE-MIGRATION.md](ARCHITECTURE-MIGRATION.md) - **Deploy architecture
-  consolidation** ⭐
-- [STRUCTURE.md](STRUCTURE.md) - Documentation structure
-- [context/README.md](context/README.md) - Context documentation guide
-- [context/PORTING-GUIDE.md](context/PORTING-GUIDE.md) - **Master porting
-  guide**
-- [context/IMPLEMENTATION-CHECKLIST.md](context/IMPLEMENTATION-CHECKLIST.md) -
-  **118-point validation**
-- [context/AI-MASTER-INSTRUCTION.md](context/AI-MASTER-INSTRUCTION.md) - AI
-  agent instructions
+- **[current/README.md](current/README.md)** - Navigation hub for current
+  codebase
+- **[current/GAME-RULES.md](current/GAME-RULES.md)** - Complete game mechanics
+  (all 11 pieces, terrain, special rules)
+- **[current/API-GUIDE.md](current/API-GUIDE.md)** - Current TypeScript API
+  reference
+- **[current/IMPLEMENTATION-GUIDE.md](current/IMPLEMENTATION-GUIDE.md)** -
+  Current 0x88 architecture
+- **[current/MIGRATION-GUIDE.md](current/MIGRATION-GUIDE.md)** - Incremental
+  improvement strategies
+- **[current/DATA-FORMATS.md](current/DATA-FORMATS.md)** - FEN/SAN
+  specifications
+- **[current/PIECE-REFERENCE.md](current/PIECE-REFERENCE.md)** - All 11 piece
+  types reference
+- **[current/TESTING-GUIDE.md](current/TESTING-GUIDE.md)** - Validation and
+  testing approaches
 
-### Complete References (3 files)
+### Current Implementation References (5 files)
 
-- [context/complete-game-mechanics-reference.md](context/complete-game-mechanics-reference.md) -
-  **All rules**
-- [context/complete-piece-behavior-reference.md](context/complete-piece-behavior-reference.md) -
-  **All 11 pieces**
-- [context/complete-request-response-examples.md](context/complete-request-response-examples.md) -
-  **Test cases**
+- **[current/references/CHANGELOG.md](current/references/CHANGELOG.md)** -
+  Version history and changes
+- **[current/references/GLOSSARY.md](current/references/GLOSSARY.md)** - Terms
+  and definitions
+- **[current/references/EXAMPLES.md](current/references/EXAMPLES.md)** - Code
+  examples and scenarios
+- **[current/references/QUICK-REFERENCE.md](current/references/QUICK-REFERENCE.md)** -
+  Quick reference cards
+- **[current/references/TROUBLESHOOTING.md](current/references/TROUBLESHOOTING.md)** -
+  Common issues and solutions
 
-### Piece Mechanics (9 files)
+### Alternative Architectures (6 files)
 
-- [context/piece-mechanics-commander.md](context/piece-mechanics-commander.md) -
-  Commander (C)
-- [context/piece-mechanics-infantry-engineer-antiair.md](context/piece-mechanics-infantry-engineer-antiair.md) -
-  Infantry (I), Engineer (E), Anti-Air (A)
-- [context/piece-mechanics-militia.md](context/piece-mechanics-militia.md) -
-  Militia (M)
-- [context/piece-mechanics-tank.md](context/piece-mechanics-tank.md) - Tank (T)
-- [context/piece-mechanics-artillery.md](context/piece-mechanics-artillery.md) -
-  Artillery (G)
-- [context/piece-mechanics-missile.md](context/piece-mechanics-missile.md) -
-  Missile (S)
-- [context/piece-mechanics-airforce.md](context/piece-mechanics-airforce.md) -
-  Air Force (F)
-- [context/piece-mechanics-navy.md](context/piece-mechanics-navy.md) - Navy (N)
-- [context/piece-mechanics-headquarter.md](context/piece-mechanics-headquarter.md) -
-  Headquarter (H)
+- **[alternatives/README.md](alternatives/README.md)** - Alternative approaches
+  overview
+- **[alternatives/bitboard/BITBOARD-ARCHITECTURE.md](alternatives/bitboard/BITBOARD-ARCHITECTURE.md)** -
+  Bitboard design principles
+- **[alternatives/bitboard/COTULENH-BITBOARD-ADAPTATIONS.md](alternatives/bitboard/COTULENH-BITBOARD-ADAPTATIONS.md)** -
+  CoTuLenh-specific challenges
+- **[alternatives/bitboard/BITBOARD-PERFORMANCE-ANALYSIS.md](alternatives/bitboard/BITBOARD-PERFORMANCE-ANALYSIS.md)** -
+  Performance comparisons
+- **[alternatives/bitboard/BITBOARD-IMPLEMENTATION-STRATEGY.md](alternatives/bitboard/BITBOARD-IMPLEMENTATION-STRATEGY.md)** -
+  Implementation guidance
+- **[alternatives/bitboard/README.md](alternatives/bitboard/README.md)** -
+  Bitboard exploration overview
 
-### Terrain System (3 files)
+### Alternative Architecture References (5 files)
 
-- [context/terrain-board-layout.md](context/terrain-board-layout.md) - Board
-  structure
-- [context/terrain-zones-masks.md](context/terrain-zones-masks.md) -
-  Water/land/mixed zones
-- [context/heavy-piece-river-crossing.md](context/heavy-piece-river-crossing.md) -
-  River crossing rules
+- **[alternatives/references/ARCHITECTURE-COMPARISON.md](alternatives/references/ARCHITECTURE-COMPARISON.md)** -
+  Architecture comparison matrices
+- **[alternatives/references/PERFORMANCE-BENCHMARKS.md](alternatives/references/PERFORMANCE-BENCHMARKS.md)** -
+  Benchmarking methodologies
+- **[alternatives/references/IMPLEMENTATION-COMPLEXITY.md](alternatives/references/IMPLEMENTATION-COMPLEXITY.md)** -
+  Complexity assessments
+- **[alternatives/references/MIGRATION-TEMPLATES.md](alternatives/references/MIGRATION-TEMPLATES.md)** -
+  Migration planning tools
+- **[alternatives/references/RESEARCH-REFERENCES.md](alternatives/references/RESEARCH-REFERENCES.md)** -
+  Related work and references
 
-### Advanced Mechanics (7 files)
+### Deep Technical Analysis (5 files)
 
-- [context/stack-combination-rules.md](context/stack-combination-rules.md) -
-  Stack formation
-- [context/stack-splitting-movement.md](context/stack-splitting-movement.md) -
-  Deploy mechanics
-- [context/heroic-promotion-system.md](context/heroic-promotion-system.md) -
-  Heroic status
-- [context/air-defense-system.md](context/air-defense-system.md) - Air defense
-  zones
-- [context/commander-exposure-rules.md](context/commander-exposure-rules.md) -
-  Flying general
-- [context/capture-types-mechanics.md](context/capture-types-mechanics.md) -
-  Normal/stay/suicide
-- [context/piece-mechanics-validation.md](context/piece-mechanics-validation.md) -
-  Cross-validation
+- **[extracted-information/critical-markers-catalog.md](extracted-information/critical-markers-catalog.md)** -
+  All CRITICAL/WARNING markers
+- **[extracted-information/edge-cases-special-mechanics.md](extracted-information/edge-cases-special-mechanics.md)** -
+  Complex game scenarios
+- **[extracted-information/known-issues-bug-catalog.md](extracted-information/known-issues-bug-catalog.md)** -
+  Documented bugs and limitations
+- **[extracted-information/technical-implementation-details.md](extracted-information/technical-implementation-details.md)** -
+  0x88 implementation specifics
+- **[extracted-information/implementation-specific-knowledge.md](extracted-information/implementation-specific-knowledge.md)** -
+  Patterns and dependencies
 
-### Data Formats (3 files)
+### Archive (Historical) ⚠️
 
-- [context/fen-format-construction.md](context/fen-format-construction.md) - FEN
-  with stacks
-- [context/san-notation-construction.md](context/san-notation-construction.md) -
-  Move notation
-- [context/internal-game-state-representation.md](context/internal-game-state-representation.md) -
-  State design
-
-### API & Patterns (3 files)
-
-- [context/external-api-usage-guide.md](context/external-api-usage-guide.md) -
-  Public API
-- [context/game-initialization-pattern.md](context/game-initialization-pattern.md) -
-  Setup
-- [context/move-validation-execution-cycle.md](context/move-validation-execution-cycle.md) -
-  Move flow
-- [context/game-state-query-interface.md](context/game-state-query-interface.md) -
-  State queries
-
-### TypeScript Implementation (5 files)
-
-- [context/codebase-dependencies.md](context/codebase-dependencies.md) - Code
-  structure
-- [context/data-flow-analysis.md](context/data-flow-analysis.md) - Data flow
-- [context/deploy-move-documentation.md](context/deploy-move-documentation.md) -
-  Deploy system
-- [context/api-flow-documentation.md](context/api-flow-documentation.md) - API
-  flow
-- [context/api-validation-test.ts](context/api-validation-test.ts) - Test
-  examples
-
-### Deploy Architecture (Current) ⭐
-
-- [deploy-action-based-architecture/FINAL-STATUS.md](deploy-action-based-architecture/FINAL-STATUS.md) -
-  **Current status, all issues resolved**
-- [deploy-action-based-architecture/COMPLETE-IMPLEMENTATION-GUIDE.md](deploy-action-based-architecture/COMPLETE-IMPLEMENTATION-GUIDE.md) -
-  **Core specification**
-- [deploy-action-based-architecture/SAN-PARSER-SPEC.md](deploy-action-based-architecture/SAN-PARSER-SPEC.md) -
-  **Parser implementation**
-- [deploy-action-based-architecture/RESOLVED-GAPS.md](deploy-action-based-architecture/RESOLVED-GAPS.md) -
-  Design decisions
-- [deploy-action-based-architecture/00-OVERVIEW.md](deploy-action-based-architecture/00-OVERVIEW.md) -
-  Architecture overview
-- [deploy-action-based-architecture/01-FEN-HANDLING.md](deploy-action-based-architecture/01-FEN-HANDLING.md) -
-  Extended FEN format
-- [deploy-action-based-architecture/02-MOVE-GENERATION.md](deploy-action-based-architecture/02-MOVE-GENERATION.md) -
-  Move generation
-
-### Legacy Implementation Discussions (14 files) ⚠️ DEPRECATED
-
-- [implementation/board-and-piece-representation.md](implementation/board-and-piece-representation.md) -
-  **16x16 mailbox & Piece structure** ⭐
-- [implementation/board-representation-analysis.md](implementation/board-representation-analysis.md) -
-  **Why mailbox (not bitboards)**
-- [implementation/fen-san-notation-design.md](implementation/fen-san-notation-design.md) -
-  **FEN & SAN notation analysis**
-- [implementation/move-generation-with-immutable-state.md](implementation/move-generation-with-immutable-state.md) -
-  **Move generation strategies**
-- [implementation/move-application-architecture.md](implementation/move-application-architecture.md) -
-  **Move types & state transitions**
-- [implementation/mutation-vs-immutability-analysis.md](implementation/mutation-vs-immutability-analysis.md) -
-  **Honest performance comparison**
-- [legacy-square-by-square-approaches/deploy-session-state-management.md](legacy-square-by-square-approaches/deploy-session-state-management.md) -
-  ⚠️ **LEGACY - Virtual state approach**
-- [legacy-square-by-square-approaches/deploy-session-ui-engine-api.md](legacy-square-by-square-approaches/deploy-session-ui-engine-api.md) -
-  ⚠️ **LEGACY - UI pattern**
-- [implementation/command-pattern-architecture.md](implementation/command-pattern-architecture.md) -
-  **Command Pattern design**
-- [implementation/command-pattern-examples.md](implementation/command-pattern-examples.md) -
-  **Complete examples**
-- [legacy-square-by-square-approaches/virtual-deploy-state-architecture.md](legacy-square-by-square-approaches/virtual-deploy-state-architecture.md) -
-  ⚠️ **DEPRECATED - Replaced by action-based**
-- [legacy-square-by-square-approaches/air-defense-zones-architecture.md](legacy-square-by-square-approaches/air-defense-zones-architecture.md) -
-  ⚠️ **LEGACY - Virtual state bugs documented**
-- [legacy-square-by-square-approaches/virtual-state-integration-flow.md](legacy-square-by-square-approaches/virtual-state-integration-flow.md) -
-  ⚠️ **DEPRECATED** **Complete flow: move() → response** ⭐⭐
-- [implementation/board-presentation-api.md](implementation/board-presentation-api.md) -
-  **Complete UI/Board API** ⭐⭐
+- **[archive/README.md](archive/README.md)** - Archive overview and policies
+- **[archive/ARCHIVE-INDEX.md](archive/ARCHIVE-INDEX.md)** - Detailed content
+  mapping
+- **[archive/VERSION-HISTORY.md](archive/VERSION-HISTORY.md)** - Documentation
+  evolution
+- **[archive/legacy-implementations/](archive/legacy-implementations/)** -
+  Deprecated approaches
+- **[archive/historical-discussions/](archive/historical-discussions/)** -
+  Completed discussions
+- **[archive/redundant-context/](archive/redundant-context/)** - Consolidated
+  context files
 
 ---
 
 ## 📖 Reading Paths
 
-### Path 1: Porting to New Language (4-5 hours)
+### Path 1: Current Implementation Development (2-3 hours)
 
-**Phase 1: Understanding (30-60 min)**
+**Phase 1: Overview (30 min)**
 
-1. [context/PORTING-GUIDE.md](context/PORTING-GUIDE.md)
-2. [context/complete-game-mechanics-reference.md](context/complete-game-mechanics-reference.md)
-3. [context/internal-game-state-representation.md](context/internal-game-state-representation.md)
+1. [current/README.md](current/README.md) - Navigation and overview
+2. [current/GAME-RULES.md](current/GAME-RULES.md) - Complete game mechanics
 
-**Phase 2: Deep Dive (2-4 hours)** 4.
-[context/terrain-board-layout.md](context/terrain-board-layout.md) 5.
-[context/terrain-zones-masks.md](context/terrain-zones-masks.md) 6. All 9
-piece-mechanics-\*.md files 7. All 7 advanced mechanics files 8.
-[context/fen-format-construction.md](context/fen-format-construction.md) 9.
-[context/san-notation-construction.md](context/san-notation-construction.md)
+**Phase 2: Implementation (1 hour)** 3.
+[current/API-GUIDE.md](current/API-GUIDE.md) - Current TypeScript API 4.
+[current/IMPLEMENTATION-GUIDE.md](current/IMPLEMENTATION-GUIDE.md) - Current
+architecture
 
-**Phase 3: Validation (30 min)** 10.
-[context/IMPLEMENTATION-CHECKLIST.md](context/IMPLEMENTATION-CHECKLIST.md) 11.
-[context/complete-request-response-examples.md](context/complete-request-response-examples.md)
+**Phase 3: Enhancement (1 hour)** 5.
+[current/MIGRATION-GUIDE.md](current/MIGRATION-GUIDE.md) - Improvement
+strategies 6. [current/TESTING-GUIDE.md](current/TESTING-GUIDE.md) - Validation
+approaches
 
-### Path 2: TypeScript Implementation (2-3 hours)
+### Path 2: Porting to New Language (3-4 hours)
 
-**Phase 1: Architecture (1 hour)**
+**Phase 1: Game Understanding (1 hour)**
 
-1. [implementation/board-representation-analysis.md](implementation/board-representation-analysis.md)
-2. [context/codebase-dependencies.md](context/codebase-dependencies.md)
-3. [context/data-flow-analysis.md](context/data-flow-analysis.md)
+1. [current/GAME-RULES.md](current/GAME-RULES.md) - Complete game mechanics
+2. [current/PIECE-REFERENCE.md](current/PIECE-REFERENCE.md) - All 11 piece types
 
-**Phase 2: Patterns (1 hour)** 4.
-[context/external-api-usage-guide.md](context/external-api-usage-guide.md) 5.
-[context/game-initialization-pattern.md](context/game-initialization-pattern.md) 6.
-[context/move-validation-execution-cycle.md](context/move-validation-execution-cycle.md)
+**Phase 2: Data Formats (30 min)** 3.
+[current/DATA-FORMATS.md](current/DATA-FORMATS.md) - FEN/SAN specifications
 
-**Phase 3: Details (1 hour)** 7.
-[context/deploy-move-documentation.md](context/deploy-move-documentation.md) 8.
-[context/api-flow-documentation.md](context/api-flow-documentation.md) 9.
-[context/complete-game-mechanics-reference.md](context/complete-game-mechanics-reference.md)
+**Phase 3: Deep Analysis (1-2 hours)** 4.
+[extracted-information/](extracted-information/) - Technical details and edge
+cases 5. [current/TESTING-GUIDE.md](current/TESTING-GUIDE.md) - Validation
+strategies
 
-### Path 3: Game Rules Only (1-2 hours)
+**Phase 4: Reference (30 min)** 6. [current/references/](current/references/) -
+Examples and troubleshooting
+
+### Path 3: Alternative Architecture Research (2-3 hours)
+
+**Phase 1: Overview (30 min)**
+
+1. [alternatives/README.md](alternatives/README.md) - Alternative approaches
+   overview
+
+**Phase 2: Bitboard Exploration (2 hours)** 2.
+[alternatives/bitboard/BITBOARD-ARCHITECTURE.md](alternatives/bitboard/BITBOARD-ARCHITECTURE.md) -
+Design principles 3.
+[alternatives/bitboard/COTULENH-BITBOARD-ADAPTATIONS.md](alternatives/bitboard/COTULENH-BITBOARD-ADAPTATIONS.md) -
+CoTuLenh challenges 4.
+[alternatives/bitboard/BITBOARD-PERFORMANCE-ANALYSIS.md](alternatives/bitboard/BITBOARD-PERFORMANCE-ANALYSIS.md) -
+Performance analysis 5.
+[alternatives/bitboard/BITBOARD-IMPLEMENTATION-STRATEGY.md](alternatives/bitboard/BITBOARD-IMPLEMENTATION-STRATEGY.md) -
+Implementation guidance
+
+**Phase 3: Comparison (30 min)** 6.
+[alternatives/references/](alternatives/references/) - Architecture comparisons
+
+### Path 4: Game Rules Only (1 hour)
 
 **Quick Overview (30 min)**
 
-1. [context/complete-game-mechanics-reference.md](context/complete-game-mechanics-reference.md)
-2. [context/complete-piece-behavior-reference.md](context/complete-piece-behavior-reference.md)
+1. [current/GAME-RULES.md](current/GAME-RULES.md) - Complete game mechanics
 
-**Deep Dive (1 hour)** 3. Individual piece-mechanics-\*.md files for pieces of
-interest 4.
-[context/stack-combination-rules.md](context/stack-combination-rules.md) 5.
-[context/heroic-promotion-system.md](context/heroic-promotion-system.md) 6.
-[context/air-defense-system.md](context/air-defense-system.md)
+**Detailed Reference (30 min)** 2.
+[current/PIECE-REFERENCE.md](current/PIECE-REFERENCE.md) - All piece types 3.
+[current/references/QUICK-REFERENCE.md](current/references/QUICK-REFERENCE.md) -
+Quick reference cards
 
 ---
 
@@ -242,66 +202,90 @@ interest 4.
 
 ### Board & Coordinates
 
-- [context/terrain-board-layout.md](context/terrain-board-layout.md)
-- [context/internal-game-state-representation.md](context/internal-game-state-representation.md)
-- [implementation/board-representation-analysis.md](implementation/board-representation-analysis.md)
+- [current/GAME-RULES.md](current/GAME-RULES.md) - Board layout and terrain
+  system
+- [current/IMPLEMENTATION-GUIDE.md](current/IMPLEMENTATION-GUIDE.md) - 0x88
+  representation
+- [extracted-information/technical-implementation-details.md](extracted-information/technical-implementation-details.md) -
+  Implementation specifics
 
 ### Piece Movement
 
-- [context/complete-piece-behavior-reference.md](context/complete-piece-behavior-reference.md)
-- All piece-mechanics-\*.md files
+- [current/PIECE-REFERENCE.md](current/PIECE-REFERENCE.md) - All 11 piece types
+- [current/GAME-RULES.md](current/GAME-RULES.md) - Movement rules and
+  interactions
+- [extracted-information/edge-cases-special-mechanics.md](extracted-information/edge-cases-special-mechanics.md) -
+  Complex scenarios
 
 ### Stacks & Deploy
 
-- [context/stack-combination-rules.md](context/stack-combination-rules.md)
-- [context/stack-splitting-movement.md](context/stack-splitting-movement.md)
-- [context/deploy-move-documentation.md](context/deploy-move-documentation.md)
+- [current/GAME-RULES.md](current/GAME-RULES.md) - Stack combination and deploy
+  mechanics
+- [current/API-GUIDE.md](current/API-GUIDE.md) - Deploy API implementation
+- [extracted-information/known-issues-bug-catalog.md](extracted-information/known-issues-bug-catalog.md) -
+  Deploy system issues
 
 ### Special Mechanics
 
-- [context/heroic-promotion-system.md](context/heroic-promotion-system.md)
-- [context/air-defense-system.md](context/air-defense-system.md)
-- [context/commander-exposure-rules.md](context/commander-exposure-rules.md)
-- [context/capture-types-mechanics.md](context/capture-types-mechanics.md)
+- [current/GAME-RULES.md](current/GAME-RULES.md) - Heroic promotion, air
+  defense, commander exposure
+- [current/PIECE-REFERENCE.md](current/PIECE-REFERENCE.md) - Piece-specific
+  special abilities
+- [extracted-information/edge-cases-special-mechanics.md](extracted-information/edge-cases-special-mechanics.md) -
+  Edge cases
 
 ### Data Formats
 
-- [context/fen-format-construction.md](context/fen-format-construction.md)
-- [context/san-notation-construction.md](context/san-notation-construction.md)
+- [current/DATA-FORMATS.md](current/DATA-FORMATS.md) - FEN/SAN specifications
+- [current/API-GUIDE.md](current/API-GUIDE.md) - Data format usage in API
 
 ### Implementation
 
-- [implementation/board-representation-analysis.md](implementation/board-representation-analysis.md)
-- [context/codebase-dependencies.md](context/codebase-dependencies.md)
-- [context/data-flow-analysis.md](context/data-flow-analysis.md)
+- [current/IMPLEMENTATION-GUIDE.md](current/IMPLEMENTATION-GUIDE.md) - Current
+  0x88 architecture
+- [current/MIGRATION-GUIDE.md](current/MIGRATION-GUIDE.md) - Improvement
+  strategies
+- [extracted-information/implementation-specific-knowledge.md](extracted-information/implementation-specific-knowledge.md) -
+  Patterns and dependencies
+
+### Alternative Architectures
+
+- [alternatives/bitboard/](alternatives/bitboard/) - Bitboard approach
+  exploration
+- [alternatives/references/ARCHITECTURE-COMPARISON.md](alternatives/references/ARCHITECTURE-COMPARISON.md) -
+  Architecture comparisons
 
 ---
 
 ## 📊 Document Statistics
 
-- **Total documents:** 40+
-- **Context (game rules):** 35+ files
-- **Implementation (architecture):** 1+ files (growing)
-- **Total words:** ~150,000+
-- **Reading time:** 4-8 hours for complete mastery
+- **Total documents:** 29 active documents
+- **Current implementation:** 13 files (8 core + 5 references)
+- **Alternative architectures:** 11 files (6 core + 5 references)
+- **Deep analysis:** 5 files
+- **Archive:** 100+ files (preserved for reference)
+- **Reading time:** 2-3 hours for complete understanding (65% reduction from
+  v1.x)
 
 ---
 
 ## 🎯 Common Questions → Documents
 
-| Question                          | Document                                                                                           |
-| --------------------------------- | -------------------------------------------------------------------------------------------------- |
-| How do I port CoTuLenh to Rust?   | [context/PORTING-GUIDE.md](context/PORTING-GUIDE.md)                                               |
-| What are all the piece types?     | [context/complete-piece-behavior-reference.md](context/complete-piece-behavior-reference.md)       |
-| How does heroic promotion work?   | [context/heroic-promotion-system.md](context/heroic-promotion-system.md)                           |
-| What is stay-capture?             | [context/capture-types-mechanics.md](context/capture-types-mechanics.md)                           |
-| How do stacks work?               | [context/stack-combination-rules.md](context/stack-combination-rules.md)                           |
-| Why not use bitboards?            | [implementation/board-representation-analysis.md](implementation/board-representation-analysis.md) |
-| What is the FEN format?           | [context/fen-format-construction.md](context/fen-format-construction.md)                           |
-| How does air defense work?        | [context/air-defense-system.md](context/air-defense-system.md)                                     |
-| What is commander exposure?       | [context/commander-exposure-rules.md](context/commander-exposure-rules.md)                         |
-| How to validate my understanding? | [context/IMPLEMENTATION-CHECKLIST.md](context/IMPLEMENTATION-CHECKLIST.md)                         |
+| Question                         | Document                                                                                                         |
+| -------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| How do I work with current code? | [current/README.md](current/README.md) → [current/IMPLEMENTATION-GUIDE.md](current/IMPLEMENTATION-GUIDE.md)      |
+| How do I port CoTuLenh?          | [current/GAME-RULES.md](current/GAME-RULES.md) → [current/PIECE-REFERENCE.md](current/PIECE-REFERENCE.md)        |
+| What are all the piece types?    | [current/PIECE-REFERENCE.md](current/PIECE-REFERENCE.md)                                                         |
+| How does heroic promotion work?  | [current/GAME-RULES.md](current/GAME-RULES.md) (Heroic Promotion section)                                        |
+| What is stay-capture?            | [current/GAME-RULES.md](current/GAME-RULES.md) (Capture Types section)                                           |
+| How do stacks work?              | [current/GAME-RULES.md](current/GAME-RULES.md) (Stack System section)                                            |
+| Should I use bitboards?          | [alternatives/bitboard/BITBOARD-PERFORMANCE-ANALYSIS.md](alternatives/bitboard/BITBOARD-PERFORMANCE-ANALYSIS.md) |
+| What is the FEN format?          | [current/DATA-FORMATS.md](current/DATA-FORMATS.md)                                                               |
+| How does air defense work?       | [current/GAME-RULES.md](current/GAME-RULES.md) (Air Defense section)                                             |
+| What are known issues?           | [extracted-information/known-issues-bug-catalog.md](extracted-information/known-issues-bug-catalog.md)           |
+| How to improve current code?     | [current/MIGRATION-GUIDE.md](current/MIGRATION-GUIDE.md)                                                         |
+| What was archived and why?       | [archive/README.md](archive/README.md) → [archive/ARCHIVE-INDEX.md](archive/ARCHIVE-INDEX.md)                    |
 
 ---
 
-**Last updated:** 2025-10-14
+**Last updated:** November 2025 (Documentation v2.0)
