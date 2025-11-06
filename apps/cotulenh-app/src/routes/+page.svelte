@@ -269,7 +269,7 @@
       }
       
       // Get the deploy move SAN by accessing the last history entry after commit
-      const historyBefore = game.history();
+      // const historyBefore = game.history();
       const result = game.commitDeploySession();
       
       if (!result.success) {
