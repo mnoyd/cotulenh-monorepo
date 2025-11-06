@@ -1,10 +1,6 @@
-import {
-  AMBIGOUS_STACK_MOVE_STAY_PIECES_CANT_COMBINE,
-  ambigousStackMoveStayPiecesCantCombineHandling,
-} from '../combined-piece';
-import { AMBIGOUS_CAPTURE_STAY_BACK, ambigousCaptureStayBackHandling } from '../piece-attack';
 import { State } from '../state';
 import { CTLPopup } from './popup-factory';
+import { ambigousMoveRegistry } from './ambigous-move-registry';
 
 export type AmbigousMoveType = string;
 type AmbigousMoveHandlingOption<T> = {
@@ -37,16 +33,13 @@ function createStartHandler<T>(option: AmbigousMoveHandlingOption<T>): (s: State
   };
 }
 
+/**
+ * Get the ambiguous move handler for the current ambiguous move type
+ * Uses the registry to avoid circular dependencies
+ */
 export function getAmbigousMoveHandling(state: State): AmbigousMoveHandling<any> | undefined {
   if (!state.ambigousMove) {
     return undefined;
   }
-  switch (state.ambigousMove.type) {
-    case AMBIGOUS_CAPTURE_STAY_BACK:
-      return ambigousCaptureStayBackHandling;
-    case AMBIGOUS_STACK_MOVE_STAY_PIECES_CANT_COMBINE:
-      return ambigousStackMoveStayPiecesCantCombineHandling;
-    default:
-      return undefined;
-  }
+  return ambigousMoveRegistry.get(state.ambigousMove.type);
 }

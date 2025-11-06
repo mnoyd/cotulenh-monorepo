@@ -8,6 +8,7 @@ export default defineConfig(({ mode }) => {
     optimizeDeps: {
       include: [],
       // Exclude workspace packages from pre-bundling in dev to use source directly
+      // All packages now work with source debugging (circular dependency fixed)
       exclude:
         mode === 'development'
           ? ['@repo/cotulenh-core', '@repo/cotulenh-board', '@repo/cotulenh-combine-piece']
@@ -41,12 +42,20 @@ export default defineConfig(({ mode }) => {
   if (mode === 'development') {
     config.resolve = {
       alias: {
-        // Development: Point to source files for seamless debugging
+        // Development: Point to source entry files for seamless debugging
+        // Circular dependency fixed via popup registry pattern
         '@repo/cotulenh-core': path.resolve(
           __dirname,
           '../../packages/cotulenh-core/src/cotulenh.ts'
         ),
-        '@repo/cotulenh-board': path.resolve(__dirname, '../../packages/cotulenh-board/src'),
+        '@repo/cotulenh-board/assets': path.resolve(
+          __dirname,
+          '../../packages/cotulenh-board/assets'
+        ),
+        '@repo/cotulenh-board': path.resolve(
+          __dirname,
+          '../../packages/cotulenh-board/src/index.ts'
+        ),
         '@repo/cotulenh-combine-piece': path.resolve(
           __dirname,
           '../../packages/cotulenh-combine-piece/src/index.ts'

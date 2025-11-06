@@ -8,6 +8,8 @@ import * as drag from './drag.js';
 
 import { PieceStacker, ROLE_FLAGS } from '@repo/cotulenh-combine-piece';
 import { createEl } from './util.js';
+import { popupRegistry } from './popup/popup-registry';
+import { ambigousMoveRegistry } from './popup/ambigous-move-registry';
 import { createAmbigousModeHandling } from './popup/ambigous-move.js';
 import { userMove } from './board.js';
 
@@ -134,6 +136,10 @@ const combinedPiecePopup = createPopupFactory<cg.Piece | EndMove>({
     return true;
   },
 });
+
+// Register the popup in the registry to avoid circular dependencies
+popupRegistry.register(COMBINED_PIECE_POPUP_TYPE, combinedPiecePopup);
+
 export { combinedPiecePopup };
 
 export function prepareCombinedPopup(
@@ -182,6 +188,10 @@ const moveWithCarrierPopup = createPopupFactory<cg.Piece>({
     board.unselect(s);
   },
 });
+
+// Register the popup in the registry to avoid circular dependencies
+popupRegistry.register(MOVE_WITH_CARRIER_POPUP_TYPE, moveWithCarrierPopup);
+
 const AMBIGOUS_STACK_MOVE_STAY_PIECES_CANT_COMBINE = 'ambigous-stack-move-stay-pieces-cant-combine';
 const ambigousStackMoveStayPiecesCantCombineHandling = createAmbigousModeHandling<cg.Piece>({
   type: AMBIGOUS_STACK_MOVE_STAY_PIECES_CANT_COMBINE,
@@ -203,4 +213,11 @@ const ambigousStackMoveStayPiecesCantCombineHandling = createAmbigousModeHandlin
     s.dom.redraw();
   },
 });
+
+// Register the ambiguous move handler in the registry to avoid circular dependencies
+ambigousMoveRegistry.register(
+  AMBIGOUS_STACK_MOVE_STAY_PIECES_CANT_COMBINE,
+  ambigousStackMoveStayPiecesCantCombineHandling,
+);
+
 export { ambigousStackMoveStayPiecesCantCombineHandling, AMBIGOUS_STACK_MOVE_STAY_PIECES_CANT_COMBINE };

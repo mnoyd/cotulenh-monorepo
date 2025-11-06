@@ -5,6 +5,8 @@ import { createAmbigousPiecesStackElement } from './render';
 import { State } from './state';
 import { createEl } from './util';
 import { PopUpType } from './popup/popup-factory';
+import { popupRegistry } from './popup/popup-registry';
+import { ambigousMoveRegistry } from './popup/ambigous-move-registry';
 
 export const PIECE_ATTACK_POPUP_TYPE: PopUpType = 'piece-attack';
 const pieceAttackPopup = createPopupFactory<string>({
@@ -40,6 +42,10 @@ const pieceAttackPopup = createPopupFactory<string>({
     unselect(s);
   },
 });
+
+// Register the popup in the registry to avoid circular dependencies
+popupRegistry.register(PIECE_ATTACK_POPUP_TYPE, pieceAttackPopup);
+
 const AMBIGOUS_CAPTURE_STAY_BACK: AmbigousMoveType = 'capture-stay-back-ambigous';
 const ambigousCaptureStayBackHandling = createAmbigousModeHandling({
   type: AMBIGOUS_CAPTURE_STAY_BACK,
@@ -62,4 +68,8 @@ const ambigousCaptureStayBackHandling = createAmbigousModeHandling({
     s.dom.redraw();
   },
 });
+
+// Register the ambiguous move handler in the registry to avoid circular dependencies
+ambigousMoveRegistry.register(AMBIGOUS_CAPTURE_STAY_BACK, ambigousCaptureStayBackHandling);
+
 export { ambigousCaptureStayBackHandling, AMBIGOUS_CAPTURE_STAY_BACK };
