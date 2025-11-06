@@ -2,10 +2,7 @@ import { State } from '../state.js';
 import * as board from '../board.js';
 import * as util from '../util.js';
 import * as cg from '../types.js';
-import { ambigousStackMoveStayPiecesCantCombineHandling, combinedPiecePopup } from '../combined-piece.js';
-import { ambigousCaptureStayBackHandling } from '../piece-attack.js';
-import { COMBINED_PIECE_POPUP_TYPE, MOVE_WITH_CARRIER_POPUP_TYPE } from '../combined-piece.js';
-import { PIECE_ATTACK_POPUP_TYPE } from '../piece-attack.js';
+import { popupRegistry } from './popup-registry.js';
 
 // Constants for popup dimensions and positioning
 // These values serve as defaults and will be scaled based on board dimensions
@@ -270,19 +267,13 @@ function createHandlePopupClick<T>(
   };
 }
 
+/**
+ * Get the popup instance for the current popup type
+ * Uses the popup registry to avoid circular dependencies
+ */
 export function getPopup(s: State): CTLPopup<any> | undefined {
   if (!s.popup) {
     return undefined;
   }
-  const filter = s.popup.type;
-  switch (filter as PopUpType) {
-    case COMBINED_PIECE_POPUP_TYPE:
-      return combinedPiecePopup;
-    case PIECE_ATTACK_POPUP_TYPE:
-      return ambigousCaptureStayBackHandling.popup;
-    case MOVE_WITH_CARRIER_POPUP_TYPE:
-      return ambigousStackMoveStayPiecesCantCombineHandling.popup;
-    default:
-      return undefined;
-  }
+  return popupRegistry.get(s.popup.type);
 }
