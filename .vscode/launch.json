@@ -2,21 +2,28 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "type": "firefox",
-      "request": "launch",
-      "name": "Launch Firefox against localhost",
-      "url": "http://localhost:5173", // Change port if needed
-      "webRoot": "${workspaceFolder}/apps/cotulenh-app"
-    },
-    {
+      "name": "Debug SvelteKit Client (Chrome)",
       "type": "chrome",
       "request": "launch",
-      "name": "Launch Chrome against localhost",
       "url": "http://localhost:5173",
       "webRoot": "${workspaceFolder}/apps/cotulenh-app",
+      "sourceMaps": true,
+      "userDataDir": "${workspaceFolder}/.vscode/chrome-debug-profile",
+      "runtimeArgs": ["--disable-web-security", "--disable-features=VizDisplayCompositor"],
       "sourceMapPathOverrides": {
-        "/*": "${workspaceFolder}/apps/cotulenh-app/*"
+        "webpack:///./src/*": "${webRoot}/src/*",
+        "/src/*": "${webRoot}/src/*"
       }
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Debug SvelteKit (Server with Source Maps)",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev:debug"],
+      "cwd": "${workspaceFolder}/apps/cotulenh-app",
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen"
     }
   ]
 }
