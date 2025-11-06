@@ -1,11 +1,15 @@
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { CoTuLenh } from '../src/cotulenh.js'
 import { RED, BLUE, TANK, MILITIA, AIR_FORCE } from '../src/type.js'
+import { setupGameBasic } from './test-helpers.js'
 
 describe('Deploy Session - Turn Switching on Commit', () => {
-  it('should switch turn from RED to BLUE after manual commit', () => {
-    const game = new CoTuLenh()
+  let game: CoTuLenh
+  beforeEach(() => {
+    game = setupGameBasic()
+  })
 
+  it('should switch turn from RED to BLUE after manual commit', () => {
     // Set up position: Red (TM) stack at c3
     game.put(
       { type: TANK, color: RED, carrying: [{ type: MILITIA, color: RED }] },
@@ -46,8 +50,6 @@ describe('Deploy Session - Turn Switching on Commit', () => {
   })
 
   it('should properly handle turn switching with auto-stay pieces', () => {
-    const game = new CoTuLenh()
-
     // Set up position: Red (TM) stack at c3
     game.put(
       { type: TANK, color: RED, carrying: [{ type: MILITIA, color: RED }] },
@@ -76,8 +78,6 @@ describe('Deploy Session - Turn Switching on Commit', () => {
   })
 
   it('should add deploy move to history and switch turn', () => {
-    const game = new CoTuLenh()
-
     // Set up position
     game.put(
       { type: TANK, color: RED, carrying: [{ type: MILITIA, color: RED }] },
@@ -94,12 +94,17 @@ describe('Deploy Session - Turn Switching on Commit', () => {
     expect(game.history().length).toBe(historyBefore)
 
     // Commit
-    game.commitDeploySession()
+    const result = game.commitDeploySession()
+    expect(result.success).toBe(true)
+
+    // Turn should be switched IMMEDIATELY after commit
+    expect(game.turn()).toBe(BLUE)
 
     // History should now have one more entry
+    // NOTE: history() undoes and replays all moves, which changes game state!
     expect(game.history().length).toBe(historyBefore + 1)
 
-    // Turn should be switched
+    // After history() replay, turn should still be BLUE
     expect(game.turn()).toBe(BLUE)
   })
 })
