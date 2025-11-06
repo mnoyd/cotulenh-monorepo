@@ -172,8 +172,7 @@ Recombine moves have specific characteristics you can detect:
 const moves = game.moves({ verbose: true, square: 'c3' })
 
 for (const move of moves) {
-  const isRecombine =
-    move.flags?.includes('d') && move.flags?.includes('b') // DEPLOY flag // COMBINATION flag
+  const isRecombine = move.flags?.includes('d') && move.flags?.includes('b') // DEPLOY flag // COMBINATION flag
 
   if (isRecombine) {
     console.log(`Recombine: ${move.piece.type} → ${move.to}`)
