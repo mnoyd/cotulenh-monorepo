@@ -890,7 +890,10 @@ export class CoTuLenh {
       }
     }
 
-    // Don't switch turn if there's an active deploy session OR if it's a deploy move
+    // Turn switching logic:
+    // - InternalDeployMove: ALWAYS switch (it's a completed deploy sequence)
+    // - InternalMove with DEPLOY flag: DON'T switch (part of ongoing deploy session)
+    // - Normal moves: switch if no active deploy session
     const hasActiveDeploySession = !!this._deploySession
     const isDeployMoveFlag =
       !isInternalDeployMove(move) &&
@@ -904,7 +907,7 @@ export class CoTuLenh {
     if (shouldSwitchTurn) {
       this._turn = them // Switch turn only for non-deploy moves when no active session
     }
-    // If it was a deploy move or there's an active session, turn remains `us`
+    // If it's an incremental deploy move (DEPLOY flag), turn remains `us`
 
     // Update position count for threefold repetition
     this._updatePositionCounts()
@@ -1100,21 +1103,6 @@ export class CoTuLenh {
       },
     }
 
-    // Add to history NOW (first time for these moves)
-    const historyEntry: History = {
-      move: deployCommand,
-      commanders: {
-        r: this._commanders.r,
-        b: this._commanders.b,
-      },
-      turn: this._deploySession.turn,
-      halfMoves: this._halfMoves,
-      moveNumber: this._moveNumber,
-      deployState: null,
-      deploySession: null,
-    }
-    this._history.push(historyEntry)
-
     // Clear session (and legacy state) and optionally switch turn
     this._deploySession = null
     this._deployState = null // Also clear legacy deploy state
@@ -1126,6 +1114,22 @@ export class CoTuLenh {
         this._moveNumber++
       }
     }
+
+    // Add to history AFTER turn switch (so history stores the state BEFORE the move for undo)
+    // Note: For deploy moves, we store the turn BEFORE the switch, so undo restores correctly
+    const historyEntry: History = {
+      move: deployCommand,
+      commanders: {
+        r: this._commanders.r,
+        b: this._commanders.b,
+      },
+      turn: us, // Store the turn that made the move (before switch)
+      halfMoves: this._halfMoves,
+      moveNumber: this._moveNumber,
+      deployState: null,
+      deploySession: null,
+    }
+    this._history.push(historyEntry)
 
     return { success: true }
   }
