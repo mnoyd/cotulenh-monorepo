@@ -15,10 +15,12 @@ export default defineConfig({
       output: {
         preserveModules: false,
         exports: 'named',
+        sourcemap: true, // Enable source maps for debugging
       },
     },
     outDir: 'dist',
     emptyOutDir: true,
+    sourcemap: true, // Enable source maps
   },
   plugins: [
     dts({

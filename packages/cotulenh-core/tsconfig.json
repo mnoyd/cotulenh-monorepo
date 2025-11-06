@@ -11,8 +11,10 @@
     "types": ["node"],
     "declaration": true,
     "declarationMap": true,
-    "noEmit": true
+    "composite": true,
+    "outDir": "dist",
+    "rootDir": "src"
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "sample/**", "demo/**"]
+  "exclude": ["node_modules", "dist", "sample/**", "demo/**", "__tests__/**"]
 }
