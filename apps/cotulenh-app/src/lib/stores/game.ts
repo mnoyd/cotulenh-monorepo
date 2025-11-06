@@ -1,20 +1,41 @@
 import { writable } from 'svelte/store';
 import type { GameState, GameStatus, UIDeployState } from '$lib/types/game';
-import { CoTuLenh, DeployMove } from '@repo/cotulenh-core';
-import { type Square, Move } from '@repo/cotulenh-core';
+import { CoTuLenh, DeployMove, BITS } from '@repo/cotulenh-core';
+import type { Square, Move, Piece } from '@repo/cotulenh-core';
 import { getPossibleMoves } from '$lib/utils';
 
 /**
- * Convert DeploySession to UIDeployState with computed properties
+ * Helper function to flatten a piece (inline implementation)
+ */
+function flattenPiece(piece: Piece): Piece[] {
+  if (!piece.carrying?.length) return [piece];
+  return [{ ...piece, carrying: undefined }, ...piece.carrying];
+}
+
+/**
+ * Convert DeploySession to UIDeployState using modern API
  */
 function createUIDeployState(game: CoTuLenh): UIDeployState | null {
   const session = game.getDeploySession();
   if (!session) return null;
 
-  const legacyState = session.toLegacyDeployState();
+  // Use modern DeploySession API instead of deprecated toLegacyDeployState()
+  // Reconstruct the DeployState properties manually
+  const actions = session.getActions();
+  const movedPieces = actions
+    .filter((move) => move.from === session.stackSquare && move.flags & BITS.DEPLOY)
+    .flatMap((move) => flattenPiece(move.piece)); // Properly flatten pieces like the original
+
   return {
-    ...legacyState,
-    actions: session.getActions(),
+    // DeployState properties (reconstructed from modern API)
+    stackSquare: session.stackSquare,
+    turn: session.turn,
+    originalPiece: session.originalPiece,
+    movedPieces,
+    stay: session.stayPieces,
+
+    // UIDeployState additional properties
+    actions: actions,
     remainingPieces: session.getRemainingPieces()
   };
 }
