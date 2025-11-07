@@ -132,76 +132,106 @@
 
 <style>
   .deploy-session-panel {
-    background: linear-gradient(135deg, rgba(150, 150, 150, 0.1), rgba(120, 120, 120, 0.05));
-    border: 2px solid rgba(150, 150, 150, 0.3);
-    border-radius: 0.75rem;
-    padding: 1rem;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    transition: all 0.3s ease;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow-md);
+    transition: all var(--transition-slow);
   }
   
   .deploy-session-panel.active {
-    background: linear-gradient(135deg, rgba(100, 200, 255, 0.15), rgba(100, 150, 255, 0.1));
-    border: 2px solid rgba(100, 200, 255, 0.4);
-    box-shadow: 0 6px 12px rgba(100, 200, 255, 0.2);
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2), var(--shadow-lg);
+    animation: activePulse 2s ease-in-out infinite;
+  }
+
+  @keyframes activePulse {
+    0%, 100% {
+      box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2), var(--shadow-lg);
+    }
+    50% {
+      box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.4), var(--shadow-xl);
+    }
   }
   
   .panel-header {
-    margin-bottom: 1rem;
-    padding-bottom: 0.75rem;
-    border-bottom: 2px solid rgba(100, 200, 255, 0.3);
+    padding: var(--spacing-md) var(--spacing-lg);
+    background: linear-gradient(135deg, rgba(37, 99, 235, 0.15), rgba(124, 58, 237, 0.1));
+    border-bottom: 1px solid var(--color-border);
   }
   
   .panel-header h3 {
-    margin: 0 0 0.25rem 0;
-    font-size: 1.2rem;
-    color: #4a9eff;
+    margin: 0 0 var(--spacing-xs) 0;
+    font-size: 1.1rem;
+    color: var(--color-text-primary);
     font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
   }
   
   .stack-info {
     margin: 0;
-    font-size: 0.9rem;
-    color: #666;
+    font-size: 0.875rem;
+    color: var(--color-text-secondary);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
   }
   
   .stack-info strong {
-    color: #333;
+    color: var(--color-primary);
     font-weight: 600;
+    padding: 2px var(--spacing-xs);
+    background: rgba(37, 99, 235, 0.1);
+    border-radius: var(--radius-sm);
   }
   
   .panel-content {
+    padding: var(--spacing-lg);
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
-    margin-bottom: 1rem;
+    gap: var(--spacing-md);
   }
   
   .info-section {
-    background: rgba(255, 255, 255, 0.6);
-    border-radius: 0.5rem;
-    padding: 0.75rem;
+    background: var(--color-bg-secondary);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-md);
+    transition: all var(--transition-base);
+  }
+
+  .info-section:hover {
+    background: var(--color-bg-tertiary);
   }
   
   .info-section h4 {
-    margin: 0 0 0.5rem 0;
-    font-size: 0.95rem;
-    color: #555;
+    margin: 0 0 var(--spacing-sm) 0;
+    font-size: 0.9rem;
+    color: var(--color-text-secondary);
     font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
   }
   
   .pieces-list {
     margin: 0;
-    font-family: monospace;
-    font-size: 0.9rem;
-    color: #333;
-    font-weight: 500;
+    font-family: 'Courier New', monospace;
+    font-size: 0.95rem;
+    color: var(--color-text-primary);
+    font-weight: 600;
+    padding: var(--spacing-xs) var(--spacing-sm);
+    background: rgba(37, 99, 235, 0.1);
+    border-radius: var(--radius-sm);
+    border-left: 3px solid var(--color-primary);
   }
   
   .empty-text {
     margin: 0;
-    font-size: 0.85rem;
-    color: #999;
+    font-size: 0.875rem;
+    color: var(--color-text-tertiary);
     font-style: italic;
   }
   
@@ -209,98 +239,151 @@
     list-style: none;
     padding: 0;
     margin: 0;
-    font-family: monospace;
+    font-family: 'Courier New', monospace;
     font-size: 0.9rem;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
   }
   
   .moves-list li {
-    padding: 0.25rem 0.5rem;
-    margin-bottom: 0.25rem;
-    background: rgba(255, 255, 255, 0.5);
-    border-radius: 0.25rem;
-    color: #333;
+    padding: var(--spacing-xs) var(--spacing-sm);
+    background: var(--color-bg-tertiary);
+    border-radius: var(--radius-sm);
+    color: var(--color-text-primary);
+    border-left: 3px solid var(--color-success);
+    transition: all var(--transition-fast);
+  }
+
+  .moves-list li:hover {
+    transform: translateX(4px);
+    background: var(--color-surface-overlay);
   }
   
   .warning {
-    padding: 0.5rem;
-    background: rgba(255, 152, 0, 0.1);
-    border-left: 3px solid #ff9800;
-    border-radius: 0.25rem;
+    padding: var(--spacing-md);
+    background: rgba(245, 158, 11, 0.1);
+    border-left: 3px solid var(--color-warning);
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: flex-start;
+    gap: var(--spacing-sm);
   }
   
   .warning p {
     margin: 0;
-    font-size: 0.85rem;
-    color: #666;
+    font-size: 0.875rem;
+    color: var(--color-text-secondary);
+    line-height: 1.5;
   }
   
   .panel-actions {
-    display: flex;
-    gap: 0.75rem;
+    padding: 0 var(--spacing-lg) var(--spacing-lg);
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-md);
   }
   
   button {
-    padding: 0.75rem 1.25rem;
-    border-radius: 0.5rem;
+    padding: var(--spacing-md) var(--spacing-lg);
+    border-radius: var(--radius-md);
     border: none;
     cursor: pointer;
     font-weight: 600;
     font-size: 0.95rem;
-    transition: all 0.2s ease;
-    flex: 1;
+    transition: all var(--transition-base);
+    position: relative;
+    overflow: hidden;
   }
   
   .btn-commit {
-    background: linear-gradient(135deg, #4caf50, #45a049);
+    background: linear-gradient(135deg, var(--color-success), #059669);
     color: white;
-    box-shadow: 0 2px 4px rgba(76, 175, 80, 0.3);
+    box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.4);
   }
   
   .btn-commit:hover:not(:disabled) {
-    background: linear-gradient(135deg, #45a049, #3d8b40);
-    transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(76, 175, 80, 0.4);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px -2px rgba(16, 185, 129, 0.5);
+  }
+
+  .btn-commit:active:not(:disabled) {
+    transform: translateY(0);
   }
   
   .btn-commit:disabled {
-    background: #ccc;
-    color: #666;
+    background: var(--color-bg-tertiary);
+    color: var(--color-text-muted);
     cursor: not-allowed;
     box-shadow: none;
+    opacity: 0.6;
   }
   
   .btn-cancel {
-    background: linear-gradient(135deg, #f44336, #da190b);
+    background: linear-gradient(135deg, var(--color-error), #dc2626);
     color: white;
-    box-shadow: 0 2px 4px rgba(244, 67, 54, 0.3);
+    box-shadow: 0 4px 6px -1px rgba(239, 68, 68, 0.4);
   }
   
   .btn-cancel:hover {
-    background: linear-gradient(135deg, #da190b, #c41408);
-    transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(244, 67, 54, 0.4);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px -2px rgba(239, 68, 68, 0.5);
+  }
+
+  .btn-cancel:active {
+    transform: translateY(0);
   }
   
   .btn-demo {
-    padding: 0.75rem 1.25rem;
-    border-radius: 0.5rem;
-    border: none;
+    padding: var(--spacing-md) var(--spacing-lg);
+    border-radius: var(--radius-md);
+    border: 1px dashed var(--color-border);
     cursor: not-allowed;
     font-weight: 600;
     font-size: 0.95rem;
-    background: #e0e0e0;
-    color: #999;
-    width: 100%;
+    background: transparent;
+    color: var(--color-text-tertiary);
+    grid-column: 1 / -1;
   }
   
   .demo-text {
-    margin: 0.5rem 0;
-    font-size: 0.9rem;
-    color: #666;
-    line-height: 1.5;
+    margin: var(--spacing-xs) 0;
+    font-size: 0.875rem;
+    color: var(--color-text-secondary);
+    line-height: 1.6;
+    padding-left: var(--spacing-md);
+    position: relative;
+  }
+
+  .demo-text::before {
+    content: '•';
+    position: absolute;
+    left: 0;
+    color: var(--color-primary);
+    font-weight: bold;
   }
   
   .info-section.demo {
-    background: rgba(255, 255, 255, 0.4);
+    background: transparent;
+    border-style: dashed;
+  }
+
+  @media (max-width: 768px) {
+    .panel-header {
+      padding: var(--spacing-sm) var(--spacing-md);
+    }
+
+    .panel-content {
+      padding: var(--spacing-md);
+    }
+
+    .panel-actions {
+      padding: 0 var(--spacing-md) var(--spacing-md);
+      grid-template-columns: 1fr;
+    }
+
+    button {
+      font-size: 0.875rem;
+    }
   }
 </style>
