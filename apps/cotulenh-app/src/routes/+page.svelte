@@ -394,129 +394,273 @@
 
 <main>
   <div class="layout-container">
-    <h1>CoTuLenh</h1>
+    <div class="page-header">
+      <div class="header-content">
+        <h1>Strategic Command</h1>
+        <p class="subtitle">Master the art of tactical warfare in CoTuLenh</p>
+      </div>
+    </div>
+    
     <div class="game-layout">
-      <div bind:this={boardContainerElement} class="board-container">
-        {#if !boardApi}<p>Loading board...</p>{/if}
+      <div class="board-section">
+        <div bind:this={boardContainerElement} class="board-container">
+          {#if !boardApi}
+            <div class="loading-state">
+              <div class="loading-spinner"></div>
+              <p>Initializing battlefield...</p>
+            </div>
+          {/if}
+        </div>
       </div>
 
-      <div class="game-info-container">
-        <GameInfo />
-        <DeploySessionPanel {game} onCommit={commitDeploy} onCancel={cancelDeploy} />
-        <GameControls {game} />
-        <HeroicStatusPanel {game} />
+      <div class="controls-section">
+        <div class="controls-grid">
+          <GameInfo />
+          <DeploySessionPanel {game} onCommit={commitDeploy} onCancel={cancelDeploy} />
+          <GameControls {game} />
+          <HeroicStatusPanel {game} />
+        </div>
       </div>
     </div>
   </div>
 </main>
 
 <style>
+  main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+
   .layout-container {
-    max-width: 1400px;
+    max-width: 1600px;
     margin: 0 auto;
-    padding: 1.5rem;
-    min-height: 100vh;
+    padding: var(--spacing-xl);
+    width: 100%;
+  }
+
+  .page-header {
+    margin-bottom: var(--spacing-xl);
+    text-align: center;
+  }
+
+  .header-content {
+    display: inline-block;
+    position: relative;
+  }
+
+  h1 {
+    font-size: clamp(2.5rem, 5vw, 4rem);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    margin-bottom: var(--spacing-sm);
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 50%, var(--color-accent) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    position: relative;
+    display: inline-block;
+  }
+
+  h1::after {
+    content: '';
+    position: absolute;
+    bottom: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60%;
+    height: 4px;
+    background: linear-gradient(90deg, transparent, var(--color-primary), transparent);
+    border-radius: 2px;
+  }
+
+  .subtitle {
+    font-size: 1.1rem;
+    color: var(--color-text-secondary);
+    font-weight: 400;
+    margin: 0;
+    margin-top: var(--spacing-md);
   }
 
   .game-layout {
     display: grid;
-    grid-template-columns: 1fr 380px;
-    gap: 2.5rem;
+    grid-template-columns: minmax(0, 1fr) 420px;
+    gap: var(--spacing-xl);
     align-items: start;
+  }
+
+  .board-section {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
   }
 
   .board-container {
     width: 100%;
-    max-width: 750px;
+    max-width: 800px;
     aspect-ratio: 12 / 13;
     position: relative;
     display: flex;
     justify-content: center;
     align-items: center;
-    margin: 0 auto;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-    border-radius: 8px;
+    background: var(--color-surface);
+    box-shadow: var(--shadow-xl);
+    border-radius: var(--radius-xl);
+    border: 1px solid var(--color-border);
     overflow: hidden;
+    transition: transform var(--transition-slow), box-shadow var(--transition-slow);
   }
 
-  .game-info-container {
+  .board-container:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 24px 38px -8px rgba(0, 0, 0, 0.5), 0 12px 16px -8px rgba(0, 0, 0, 0.4);
+  }
+
+  .loading-state {
     display: flex;
     flex-direction: column;
-    gap: 1.25rem;
-    max-height: 85vh;
-    overflow-y: auto;
-    padding-right: 0.5rem;
-  }
-  
-  .game-info-container::-webkit-scrollbar {
-    width: 8px;
-  }
-  
-  .game-info-container::-webkit-scrollbar-track {
-    background: rgba(0, 0, 0, 0.05);
-    border-radius: 4px;
-  }
-  
-  .game-info-container::-webkit-scrollbar-thumb {
-    background: rgba(0, 0, 0, 0.2);
-    border-radius: 4px;
-  }
-  
-  .game-info-container::-webkit-scrollbar-thumb:hover {
-    background: rgba(0, 0, 0, 0.3);
+    align-items: center;
+    gap: var(--spacing-md);
+    color: var(--color-text-secondary);
   }
 
-  h1 {
-    text-align: center;
-    margin-bottom: 1.5rem;
-    color: var(--text-primary);
-    font-size: 2.5rem;
-    font-weight: 700;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+  .loading-spinner {
+    width: 48px;
+    height: 48px;
+    border: 4px solid var(--color-border);
+    border-top-color: var(--color-primary);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  .loading-state p {
+    margin: 0;
+    font-size: 0.95rem;
+    font-weight: 500;
+  }
+
+  .controls-section {
+    position: sticky;
+    top: calc(70px + var(--spacing-lg));
+    max-height: calc(100vh - 70px - var(--spacing-xl) * 2);
+    overflow-y: auto;
+    padding-right: var(--spacing-xs);
+  }
+
+  .controls-section::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  .controls-section::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  .controls-section::-webkit-scrollbar-thumb {
+    background: var(--color-border);
+    border-radius: 3px;
+  }
+  
+  .controls-section::-webkit-scrollbar-thumb:hover {
+    background: var(--color-border-light);
+  }
+
+  .controls-grid {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-lg);
+  }
+
+  /* Responsive Design */
+  @media (max-width: 1400px) {
+    .game-layout {
+      grid-template-columns: minmax(0, 1fr) 380px;
+      gap: var(--spacing-lg);
+    }
   }
 
   @media (max-width: 1200px) {
-    .game-layout {
-      grid-template-columns: 1fr 320px;
-      gap: 1.5rem;
+    .layout-container {
+      padding: var(--spacing-lg);
     }
-    
+
+    .game-layout {
+      grid-template-columns: minmax(0, 1fr) 340px;
+    }
+
     .board-container {
-      max-width: 650px;
+      max-width: 700px;
     }
   }
 
-  @media (max-width: 1000px) {
+  @media (max-width: 1024px) {
     .game-layout {
       grid-template-columns: 1fr;
-      gap: 2rem;
+      gap: var(--spacing-xl);
     }
 
     .board-container {
-      max-width: 600px;
+      max-width: 650px;
     }
 
-    .game-info-container {
+    .controls-section {
+      position: static;
       max-height: none;
       padding-right: 0;
+    }
+
+    .controls-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: var(--spacing-lg);
     }
   }
   
   @media (max-width: 768px) {
     .layout-container {
-      padding: 1rem;
+      padding: var(--spacing-md);
+    }
+
+    .page-header {
+      margin-bottom: var(--spacing-lg);
     }
     
     h1 {
       font-size: 2rem;
-      margin-bottom: 1rem;
+    }
+
+    .subtitle {
+      font-size: 1rem;
+    }
+
+    .game-layout {
+      gap: var(--spacing-lg);
     }
     
     .board-container {
       max-width: 100%;
+      border-radius: var(--radius-lg);
+    }
+
+    .controls-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .layout-container {
+      padding: var(--spacing-sm);
+    }
+
+    h1 {
+      font-size: 1.75rem;
+    }
+
+    .subtitle {
+      font-size: 0.9rem;
     }
   }
 </style>
