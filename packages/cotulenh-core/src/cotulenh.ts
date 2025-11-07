@@ -55,7 +55,6 @@ import {
 import {
   createMoveCommand,
   DeployMoveCommand,
-  createDeployMoveCommand,
   CTLMoveCommandInteface,
 } from './move-apply.js'
 import {
@@ -576,9 +575,7 @@ export class CoTuLenh {
     // Check for deploy session first (new), then fall back to deploy state (legacy)
     const activeDeploySession =
       this._deploySession ||
-      (this._deployState && this._deployState.turn === us
-        ? this._deployState
-        : null)
+      (this._deployState?.turn === us ? this._deployState : null)
 
     if (activeDeploySession || deploy) {
       let deployFilterSquare: number
@@ -703,6 +700,8 @@ export class CoTuLenh {
           this._movesCache.clear()
         }
       } catch (error) {
+        // Log the error for debugging
+        console.error('Error during move validation, restoring state:', error)
         // If there's an error, restore the initial state and continue
         this._deployState = initialDeployState
         this._deploySession = initialDeploySession
@@ -784,7 +783,7 @@ export class CoTuLenh {
     const us = this.turn()
     const them = swapColor(us)
 
-    // 1. Create the command object for this move
+    // Create the command object for this move
     let moveCommand: CTLMoveCommandInteface
     if (isInternalDeployMove(move)) {
       moveCommand = new DeployMoveCommand(this, move)
@@ -792,23 +791,36 @@ export class CoTuLenh {
       moveCommand = createMoveCommand(this, move)
     }
 
-    // 2. Handle deploy session for incremental deploy moves
-    const isDeployMove = !isInternalDeployMove(move) && move.flags & BITS.DEPLOY
+    // Check if this is an incremental deploy move (DEPLOY flag)
+    const isIncrementalDeploy =
+      !isInternalDeployMove(move) && !!(move.flags & BITS.DEPLOY)
 
-    if (isDeployMove) {
-      if (!this._deploySession) {
-        // Start new deploy session
-        const originalPiece = this._board[move.from]!
-        this._deploySession = new DeploySession({
-          stackSquare: move.from,
-          turn: us,
-          originalPiece: originalPiece,
-          startFEN: this.fen(),
-        })
-      }
+    if (isIncrementalDeploy) {
+      // DEPLOY MOVE PATH: Delegate everything to DeploySession
+      DeploySession.handleDeployMove(this, move, moveCommand)
+    } else {
+      // NORMAL MOVE PATH: Handle turn switching, move counting, history
+      this._handleNormalMove(move, moveCommand, us, them)
     }
 
-    // Store pre-move state (for history, if needed)
+    // Clear moves cache since board state has changed
+    this._movesCache.clear()
+
+    // Update position count for threefold repetition
+    this._updatePositionCounts()
+  }
+
+  /**
+   * Handle normal moves and batch deploy moves (InternalDeployMove).
+   * Updates turn, move count, and history.
+   */
+  private _handleNormalMove(
+    move: InternalMove | InternalDeployMove,
+    moveCommand: CTLMoveCommandInteface,
+    us: Color,
+    them: Color,
+  ): void {
+    // Store pre-move state for history
     const preCommanderState = { ...this._commanders }
     const preTurn = us
     const preHalfMoves = this._halfMoves
@@ -818,36 +830,22 @@ export class CoTuLenh {
       ? this._deploySession.clone()
       : null
 
-    // 3. Execute the command
-    try {
-      moveCommand.execute()
-      // Clear moves cache since board state has changed
-      this._movesCache.clear()
-    } catch (error) {
-      throw error
+    // Execute the command
+    moveCommand.execute()
+
+    // Add to history
+    const historyEntry: History = {
+      move: moveCommand,
+      commanders: preCommanderState,
+      turn: preTurn,
+      halfMoves: preHalfMoves,
+      moveNumber: preMoveNumber,
+      deployState: preDeployState,
+      deploySession: preDeploySession,
     }
+    this._history.push(historyEntry)
 
-    // 4. Add command to session OR history (mutually exclusive!)
-    if (this._deploySession && isDeployMove) {
-      // During deploy: add command to session, NOT to history
-      this._deploySession.addCommand(moveCommand)
-    } else {
-      // Normal move: add to history
-      const historyEntry: History = {
-        move: moveCommand,
-        commanders: preCommanderState,
-        turn: preTurn,
-        halfMoves: preHalfMoves,
-        moveNumber: preMoveNumber,
-        deployState: preDeployState,
-        deploySession: preDeploySession,
-      }
-      this._history.push(historyEntry)
-    }
-
-    // --- 4. Update General Game State AFTER command execution ---
-
-    // Reset half moves counter if capture occurred OR commander moved
+    // Update half moves counter
     if (
       (Array.isArray(moveCommand.move.captured) &&
         moveCommand.move.captured.length > 0) ||
@@ -858,71 +856,13 @@ export class CoTuLenh {
       this._halfMoves++
     }
 
-    // // Increment move number if Blue moved
-    if (
-      !isInternalDeployMove(move) &&
-      us === BLUE &&
-      !(move.flags & BITS.DEPLOY)
-    ) {
-      // Only increment if not a deploy move by blue
+    // Increment move number if Blue moved
+    if (us === BLUE) {
       this._moveNumber++
     }
-    // TODO: Check for last piece auto-promotion (also needs Commander check)
 
-    // --- Switch Turn (or maintain for deploy) ---
-    // Check if we need to auto-commit deploy session BEFORE updating game state
-    let shouldAutoCommit = false
-    if (this._deploySession && !isInternalDeployMove(move)) {
-      const isDeployMove = !!(move.flags & BITS.DEPLOY)
-      const isFromStackSquare = move.from === this._deploySession.stackSquare
-
-      if (isDeployMove) {
-        // Deploy move: check if all pieces are now deployed
-        const remainingPieces = this._deploySession.getRemainingPieces()
-        if (remainingPieces === null) {
-          // All pieces deployed! Mark for auto-commit after position update
-          shouldAutoCommit = true
-        }
-      } else if (isFromStackSquare) {
-        // Normal move from the stack square: this signals end of deploy sequence
-        // The carrier is moving away, completing the deployment
-        shouldAutoCommit = true
-      }
-    }
-
-    // Turn switching logic:
-    // - InternalDeployMove: ALWAYS switch (it's a completed deploy sequence)
-    // - InternalMove with DEPLOY flag: DON'T switch (part of ongoing deploy session)
-    // - Normal moves: switch if no active deploy session
-    const hasActiveDeploySession = !!this._deploySession
-    const isDeployMoveFlag =
-      !isInternalDeployMove(move) &&
-      !!(move as InternalMove).flags &&
-      !!((move as InternalMove).flags & BITS.DEPLOY)
-    const shouldSwitchTurn =
-      !isInternalDeployMove(move) &&
-      !isDeployMoveFlag &&
-      !hasActiveDeploySession
-
-    if (shouldSwitchTurn) {
-      this._turn = them // Switch turn only for non-deploy moves when no active session
-    }
-    // If it's an incremental deploy move (DEPLOY flag), turn remains `us`
-
-    // Update position count for threefold repetition
-    this._updatePositionCounts()
-
-    // Auto-commit deploy session AFTER all game state is updated
-    if (shouldAutoCommit) {
-      try {
-        this.commitDeploySession(true) // Switch turn now that deploy is complete
-      } catch (error) {
-        // Fallback: just clear the session (and legacy state) and switch turn
-        this._deploySession = null
-        this._deployState = null
-        this._turn = them
-      }
-    }
+    // Switch turn
+    this._turn = them
   }
 
   private _undoMove(): InternalMove | InternalDeployMove | null {
@@ -957,8 +897,8 @@ export class CoTuLenh {
    */
   public undo(): void {
     // Priority 1: Check active deploy session with commands
-    if (this._deploySession && this._deploySession.commands.length > 0) {
-      const command = this._deploySession.undoLastCommand()
+    if ((this._deploySession?.commands.length ?? 0) > 0) {
+      const command = this._deploySession?.undoLastCommand()
       if (command) {
         command.undo()
       }
@@ -967,7 +907,7 @@ export class CoTuLenh {
       this._movesCache.clear()
 
       // If the deploy session is now empty, clear it completely
-      if (this._deploySession && this._deploySession.commands.length === 0) {
+      if ((this._deploySession?.commands.length ?? 0) === 0) {
         this._deploySession = null
         this._deployState = null // Also clear legacy deploy state
       }
@@ -990,6 +930,7 @@ export class CoTuLenh {
   public getDeployState(): DeployState | null {
     // For backward compatibility, convert session to legacy state
     if (this._deploySession) {
+      // eslint-disable-next-line deprecation/deprecation
       return this._deploySession.toLegacyDeployState()
     }
     return this._deployState
@@ -1083,7 +1024,7 @@ export class CoTuLenh {
     const internalDeployMove: InternalDeployMove = {
       from: this._deploySession.stackSquare,
       moves: this._deploySession.getActions(), // Get InternalMove[] from commands
-      stay: stayPiece !== null ? stayPiece : undefined,
+      stay: stayPiece ?? undefined,
     }
 
     // Create a simple command wrapper for history

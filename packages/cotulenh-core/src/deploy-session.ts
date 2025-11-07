@@ -430,6 +430,88 @@ export class DeploySession {
   }
 
   // ============================================================================
+  // DEPLOY SESSION MANAGEMENT
+  // ============================================================================
+
+  /**
+   * Handle an incremental deploy move.
+   * This is the main entry point for processing deploy moves with DEPLOY flag.
+   *
+   * Responsibilities:
+   * - Initialize session if needed
+   * - Execute the move command
+   * - Add command to session (NOT to history)
+   * - Auto-commit when all pieces are deployed
+   * - NO turn switching
+   * - NO move count increment
+   *
+   * @param game - The game instance
+   * @param move - The deploy move to handle
+   * @param moveCommand - The command to execute
+   * @returns The active session (this or newly created)
+   */
+  static handleDeployMove(
+    game: CoTuLenh,
+    move: InternalMove,
+    moveCommand: CTLMoveCommandInteface,
+  ): DeploySession {
+    // Get or create session
+    let session = game['_deploySession']
+
+    if (!session) {
+      // Initialize new session
+      const originalPiece = game['_board'][move.from]
+      if (!originalPiece) {
+        throw new Error(
+          'Cannot start deploy session: no piece at source square',
+        )
+      }
+
+      session = new DeploySession({
+        stackSquare: move.from,
+        turn: game.turn(),
+        originalPiece: originalPiece,
+        startFEN: game.fen(),
+      })
+
+      game['_deploySession'] = session
+    }
+
+    // Execute the command
+    moveCommand.execute()
+
+    // Add to session (NOT to history)
+    session.addCommand(moveCommand)
+
+    // Check if session should auto-commit
+    if (session.shouldAutoCommit()) {
+      try {
+        game.commitDeploySession(true)
+      } catch (error) {
+        console.error('Failed to auto-commit deploy session:', error)
+        // Fallback: clear session and switch turn
+        game['_deploySession'] = null
+        game['_deployState'] = null
+        game['_turn'] = swapColor(game.turn())
+      }
+    }
+
+    return session
+  }
+
+  /**
+   * Check if a move should trigger auto-commit of the deploy session.
+   * Auto-commit happens when all pieces are deployed.
+   *
+   * @returns true if the session should be auto-committed
+   */
+  private shouldAutoCommit(): boolean {
+    // After this move is added, check if all pieces are deployed
+    const remainingPieces = this.getRemainingPieces()
+    return remainingPieces === null // All pieces deployed
+  }
+
+  // ============================================================================
   // RECOMBINE INSTRUCTION SYSTEM
   // ============================================================================
 
