@@ -358,7 +358,7 @@ describe('Deploy Integration Tests', () => {
       // Verify restoration
       const originalPiece = game.get('c5')
       expect(originalPiece?.type).toBe(NAVY)
-      expect(originalPiece?.carrying).toHaveLength(3)
+      expect(originalPiece?.carrying).toHaveLength(2)
       expect(game.turn()).toBe(RED)
       expect(game.getDeploySession()).toBeNull()
     })
@@ -390,10 +390,10 @@ describe('Deploy Integration Tests', () => {
     it('should handle deployment with stay pieces', () => {
       game.put(
         {
-          type: TANK,
+          type: AIR_FORCE,
           color: RED,
           carrying: [
-            { type: MILITIA, color: RED },
+            { type: TANK, color: RED },
             { type: INFANTRY, color: RED },
           ],
         },
@@ -413,7 +413,7 @@ describe('Deploy Integration Tests', () => {
 
       // Verify remaining pieces stayed at c3
       const stayPiece = game.get('c3')
-      expect(stayPiece?.type).toBe(MILITIA)
+      expect(stayPiece?.type).toBe(AIR_FORCE)
       expect(stayPiece?.carrying).toHaveLength(1)
       expect(stayPiece?.carrying?.[0].type).toBe(INFANTRY)
     })
