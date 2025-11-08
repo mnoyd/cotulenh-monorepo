@@ -196,13 +196,7 @@ export type InternalMove = {
   combined?: Piece
   flags: number // Bitmask using BITS
 }
-export type DeployState = {
-  stackSquare: number
-  turn: Color
-  originalPiece: Piece
-  movedPieces: Piece[]
-  stay?: Piece[]
-}
+// DeployState type removed - use DeploySession instead
 export type AirDefenseForSide = Map<number, number[]>
 //For generating moves for air_force
 export type AirDefense = {

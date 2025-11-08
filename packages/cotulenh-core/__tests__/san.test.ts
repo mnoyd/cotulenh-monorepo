@@ -186,7 +186,7 @@ describe('CoTuLenh Class - move() with SAN', () => {
 
     // Turn doesn't switch on deploy
     expect(game.turn()).toBe(RED)
-    expect(game.getDeployState()?.stackSquare).toBe(SQUARE_MAP['c2']) // c2 in 0x88
+    expect(game.getDeploySession()?.stackSquare).toBe(SQUARE_MAP['c2']) // c2 in 0x88
   })
 
   it('should return null for an invalid SAN move', () => {

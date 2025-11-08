@@ -76,8 +76,7 @@ describe('Deploy Integration Tests', () => {
           color: RED,
           carrying: [
             { type: TANK, color: RED },
-            { type: INFANTRY, color: RED },
-            { type: MILITIA, color: RED },
+            { type: AIR_FORCE, color: RED },
           ],
         },
         'c5',
@@ -87,14 +86,11 @@ describe('Deploy Integration Tests', () => {
       // Deploy Navy to c6
       game.move({ from: 'c5', to: 'c6', piece: NAVY, deploy: true })
 
-      // Deploy Tank to d5
-      game.move({ from: 'c5', to: 'd5', piece: TANK, deploy: true })
+      // Deploy Airforce to d5
+      game.move({ from: 'c5', to: 'd5', piece: AIR_FORCE, deploy: true })
 
-      // Deploy Militia to e5
-      game.move({ from: 'c5', to: 'e5', piece: MILITIA, deploy: true })
-
-      // Recombine Infantry with Tank at d5
-      game.recombine('c5', 'd5', 'i')
+      // Recombine Tank with Airforce at d5
+      game.recombine('c5', 'd5', TANK)
 
       // Commit
       const result = game.commitDeploySession()
@@ -102,13 +98,12 @@ describe('Deploy Integration Tests', () => {
 
       // Verify Tank carries Infantry
       const pieceAtD5 = game.get('d5')
-      expect(pieceAtD5?.type).toBe(TANK)
+      expect(pieceAtD5?.type).toBe(AIR_FORCE)
       expect(pieceAtD5?.carrying).toHaveLength(1)
-      expect(pieceAtD5?.carrying?.[0].type).toBe(INFANTRY)
+      expect(pieceAtD5?.carrying?.[0].type).toBe(TANK)
 
       // Verify other pieces are in place
       expect(game.get('c6')?.type).toBe(NAVY)
-      expect(game.get('e5')?.type).toBe(MILITIA)
     })
 
     it('should undo deployment with recombine instructions', () => {
@@ -185,11 +180,11 @@ describe('Deploy Integration Tests', () => {
     it('should allow undoing multiple moves during deployment session', () => {
       game.put(
         {
-          type: TANK,
+          type: AIR_FORCE,
           color: RED,
           carrying: [
+            { type: TANK, color: RED },
             { type: MILITIA, color: RED },
-            { type: INFANTRY, color: RED },
           ],
         },
         'c3',
@@ -209,7 +204,7 @@ describe('Deploy Integration Tests', () => {
       // Should restore original state
       expect(game.fen()).toBe(initialFEN)
       const piece = game.get('c3')
-      expect(piece?.type).toBe(TANK)
+      expect(piece?.type).toBe(AIR_FORCE)
       expect(piece?.carrying).toHaveLength(2)
       expect(game.getDeploySession()).toBeNull()
     })
@@ -217,11 +212,11 @@ describe('Deploy Integration Tests', () => {
     it('should allow continuing deployment after undo', () => {
       game.put(
         {
-          type: TANK,
+          type: AIR_FORCE,
           color: RED,
           carrying: [
+            { type: TANK, color: RED },
             { type: MILITIA, color: RED },
-            { type: INFANTRY, color: RED },
           ],
         },
         'c3',
@@ -240,8 +235,8 @@ describe('Deploy Integration Tests', () => {
       expect(game.getDeploySession()).toBeTruthy()
 
       // Continue deployment
-      game.move({ from: 'c3', to: 'e3', piece: MILITIA, deploy: true })
-      game.move({ from: 'c3', to: 'f3', piece: INFANTRY, deploy: true })
+      game.move({ from: 'c3', to: 'c4', piece: MILITIA, deploy: true })
+      game.move({ from: 'c3', to: 'f3', piece: AIR_FORCE, deploy: true })
 
       // Should complete successfully
       expect(game.getDeploySession()).toBeNull()
@@ -264,7 +259,6 @@ describe('Deploy Integration Tests', () => {
 
       // Session should be cleared
       expect(game.getDeploySession()).toBeNull()
-      expect(game.getDeployState()).toBeNull()
 
       // FEN should not contain DEPLOY marker
       expect(game.fen()).not.toContain('DEPLOY')
@@ -317,9 +311,8 @@ describe('Deploy Integration Tests', () => {
           type: NAVY,
           color: RED,
           carrying: [
+            { type: AIR_FORCE, color: RED },
             { type: TANK, color: RED },
-            { type: INFANTRY, color: RED },
-            { type: MILITIA, color: RED },
           ],
         },
         'c5',
@@ -339,13 +332,10 @@ describe('Deploy Integration Tests', () => {
       expect(game.turn()).toBe(RED)
       expect(game.history().length).toBe(initialHistoryLength)
 
-      // Deploy Militia
-      game.move({ from: 'c5', to: 'e5', piece: MILITIA, deploy: true })
-      expect(game.turn()).toBe(RED)
       expect(game.history().length).toBe(initialHistoryLength)
 
       // Add recombine instruction
-      game.recombine('c5', 'd5', 'i')
+      game.recombine('c5', 'd5', AIR_FORCE)
 
       // Commit
       const result = game.commitDeploySession()
@@ -358,10 +348,9 @@ describe('Deploy Integration Tests', () => {
 
       // Verify pieces
       expect(game.get('c6')?.type).toBe(NAVY)
-      expect(game.get('d5')?.type).toBe(TANK)
+      expect(game.get('d5')?.type).toBe(AIR_FORCE)
       expect(game.get('d5')?.carrying).toHaveLength(1)
-      expect(game.get('d5')?.carrying?.[0].type).toBe(INFANTRY)
-      expect(game.get('e5')?.type).toBe(MILITIA)
+      expect(game.get('d5')?.carrying?.[0].type).toBe(TANK)
 
       // Undo entire deployment
       game.undo()

@@ -5,7 +5,6 @@ import {
   Piece,
   InternalMove,
   BITS,
-  DeployState,
   algebraic,
   swapColor,
   NAVY_MASK,
@@ -335,32 +334,7 @@ export class DeploySession {
     return movesToUndo
   }
 
-  /**
-   * Convert to legacy DeployState format for backward compatibility.
-   * Note: This is a lossy conversion - destination information is lost.
-   *
-   * @returns DeployState object compatible with old code
-   * @deprecated Use DeploySession directly instead
-   */
-  toLegacyDeployState(): DeployState {
-    const movedPieces: Piece[] = []
-
-    for (const command of this.commands) {
-      const move = command.move
-      if ('moves' in move) continue // Type guard
-      if (move.from === this.stackSquare && move.flags & BITS.DEPLOY) {
-        movedPieces.push(...flattenPiece(move.piece))
-      }
-    }
-
-    return {
-      stackSquare: this.stackSquare,
-      turn: this.turn,
-      originalPiece: this.originalPiece,
-      movedPieces,
-      stay: this.stayPieces,
-    }
-  }
+  // toLegacyDeployState() removed - DeployState type no longer exists
 
   /**
    * Generate extended FEN format with DEPLOY marker.
@@ -532,7 +506,6 @@ export class DeploySession {
         console.error('Failed to auto-commit deploy session:', error)
         // Fallback: clear session and switch turn
         game['_deploySession'] = null
-        game['_deployState'] = null
         game['_turn'] = swapColor(game.turn())
       }
     }
@@ -594,7 +567,6 @@ export class DeploySession {
     if (session.shouldAutoCommit()) {
       // Clear session state
       game['_deploySession'] = null
-      game['_deployState'] = null
 
       return {
         isComplete: true,
@@ -691,6 +663,7 @@ export class DeploySession {
     if (stackSquare !== this.stackSquare) {
       throw new Error('Can only recombine from the stack square')
     }
+    //TODO: Add check if recombine dealing with the original stack
 
     // Validate: target must be deployed in this session
     const deployedSquares = this.getDeployedSquares()

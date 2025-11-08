@@ -367,7 +367,7 @@ describe('Stack Movement and Deployment', () => {
     // Cannot move air force at c4 because turn is blue
     expect(game.moves({ square: 'c4' }).length).toEqual(0)
 
-    expect(game.getDeployState()).toBeDefined()
+    expect(game.getDeploySession()).toBeDefined()
   })
 
   // TODO: Add tests for deploy captures (normal and stay)
@@ -471,7 +471,7 @@ describe('Use deploy move', () => {
     expect(game.get('c4')?.type).toBe(INFANTRY)
     expect(game.get('d3')?.type).toBe(TANK)
     expect(game.get('d3')?.carrying).toBeUndefined()
-    expect(game.getDeployState()).toBeNull()
+    expect(game.getDeploySession()).toBeNull()
     expect(game.turn()).toBe(BLUE)
   })
   it('should deploy all 3 pieces', () => {
@@ -510,7 +510,7 @@ describe('Use deploy move', () => {
     expect(game.get('a3')?.carrying).toBeFalsy()
     expect(game.get('d3')?.type).toBe(TANK)
     expect(game.get('d3')?.carrying).toBeFalsy()
-    expect(game.getDeployState()).toBeNull()
+    expect(game.getDeploySession()).toBeNull()
     expect(game.turn()).toBe(BLUE)
   })
 
@@ -549,7 +549,7 @@ describe('Use deploy move', () => {
     expect(game.get('c4')?.carrying?.[0].type).toBe(TANK)
     expect(game.get('a3')?.type).toBe(NAVY)
     expect(game.get('a3')?.carrying).toBeUndefined()
-    expect(game.getDeployState()).toBeNull()
+    expect(game.getDeploySession()).toBeNull()
     expect(game.turn()).toBe(BLUE)
   })
 
@@ -582,7 +582,7 @@ describe('Use deploy move', () => {
     expect(game.get('c3')?.carrying?.[0].type).toBe(TANK)
     expect(game.get('a3')?.type).toBe(NAVY)
     expect(game.get('a3')?.carrying).toBeFalsy()
-    expect(game.getDeployState()).toBeNull()
+    expect(game.getDeploySession()).toBeNull()
     expect(game.turn()).toBe(BLUE)
   })
 })
