@@ -84,13 +84,13 @@ const combinedPiecePopup = createPopupFactory<cg.Piece | EndMove>({
     const squareSize = s.dom.bounds().width / 12;
     if (item === END_MOVE) {
       const el = createEl('cg-btn', 'end-stack-move');
-      el.setAttribute('data-index', index.toString());
+      el.dataset.index = index.toString();
       el.style.width = squareSize + 'px';
       el.style.height = squareSize + 'px';
       return el;
     }
     const piece = createSinglePieceElement(item);
-    piece.setAttribute('data-index', index.toString());
+    piece.dataset.index = index.toString();
     piece.style.width = squareSize + 'px';
     piece.style.height = squareSize + 'px';
     return piece;
@@ -151,7 +151,7 @@ export function prepareCombinedPopup(
   // In incremental mode, END_MOVE is not used - commit happens via app button
   if (state.deploySession && movablePieces.length < 2) return movablePieces;
   if (!state.deploySession) return movablePieces;
-  return movablePieces;
+  return [...movablePieces, END_MOVE];
 }
 
 export const MOVE_WITH_CARRIER_POPUP_TYPE = 'move-with-carrier';
@@ -160,7 +160,7 @@ const moveWithCarrierPopup = createPopupFactory<cg.Piece>({
   renderItem: (s: State, item: cg.Piece, index: number) => {
     const piece = createSinglePieceElement(item);
     const squareSize = s.dom.bounds().width / 12;
-    piece.setAttribute('data-index', index.toString());
+    piece.dataset.index = index.toString();
     piece.style.width = squareSize + 'px';
     piece.style.height = squareSize + 'px';
     return piece;
@@ -198,7 +198,7 @@ const ambigousStackMoveStayPiecesCantCombineHandling = createAmbigousModeHandlin
   popup: moveWithCarrierPopup,
   renderAmbigousMoveElements: (s: State, popup: CTLPopup<cg.Piece>) => {
     if (!s.ambigousMove) return;
-    const carrying = s.ambigousMove.pieceAtOrig!.carrying;
+    const carrying = s.ambigousMove.pieceAtOrig.carrying;
     if (!carrying) return;
     popup.setPopup(s, carrying, s.ambigousMove.destKey);
     const ambigousStackEl = createAmbigousPiecesStackElement(carrying);
