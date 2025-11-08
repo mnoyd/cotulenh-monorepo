@@ -13,30 +13,18 @@ describe('Deploy Undo Fix', () => {
     expect(game.getDeployState()).toBeNull()
     expect(game.getDeploySession()).toBeNull()
 
-    // Make a deploy move from square 133 (f4) to 117 (f5)
-    const move = {
-      color: 'r' as const,
-      from: 133,
-      to: 117,
-      piece: {
-        type: 'm' as const,
-        color: 'r' as const,
-      },
-      flags: 17, // DEPLOY flag
-    }
+    // Make a deploy move using the public API (which uses processMove internally)
+    // Deploy Militia - Tank remains, so session stays active
+    game.move({ from: 'f4', to: 'f5', piece: 'm', deploy: true })
 
-    // Execute the move
-    game['_makeMove'](move)
-
-    // After the move, there should be a deploy state and session
-    expect(game.getDeployState()).not.toBeNull()
+    // Session should be active (Tank remains)
     expect(game.getDeploySession()).not.toBeNull()
+    expect(game.getDeployState()).not.toBeNull()
 
     // Undo the move
     game.undo()
 
     // After undo, both deploy state and session should be cleared
-    // This is the main fix - previously the deploy state would remain
     expect(game.getDeployState()).toBeNull()
     expect(game.getDeploySession()).toBeNull()
 
@@ -53,47 +41,30 @@ describe('Deploy Undo Fix', () => {
 
     expect(game.getDeployState()).toBeNull()
 
-    // Make first deploy move
-    const move1 = {
-      color: 'r' as const,
-      from: 133, // f4
-      to: 117, // f5
-      piece: {
-        type: 't' as const,
-        color: 'r' as const,
-      },
-      flags: 17, // DEPLOY flag
-    }
-
-    game['_makeMove'](move1)
+    // Make first deploy move using public API
+    game.move({ from: 'f4', to: 'f5', piece: 't', deploy: true })
     expect(game.getDeployState()).not.toBeNull()
     expect(game.getDeploySession()).not.toBeNull()
 
     // Make second deploy move
-    const move2 = {
-      color: 'r' as const,
-      from: 133, // f4
-      to: 149, // f3
-      piece: {
-        type: 'f' as const,
-        color: 'r' as const,
-      },
-      flags: 17, // DEPLOY flag
-    }
-
-    game['_makeMove'](move2)
+    game.move({ from: 'f4', to: 'f3', piece: 'f', deploy: true })
     expect(game.getDeployState()).not.toBeNull()
     expect(game.getDeploySession()).not.toBeNull()
 
-    // Undo the second move
-    game.undo()
-    expect(game.getDeployState()).not.toBeNull() // Should still have deploy state
-    expect(game.getDeploySession()).not.toBeNull() // Should still have session
+    // Make third deploy move - should auto-commit
+    game.move({ from: 'f4', to: 'g4', piece: 'm', deploy: true })
+    expect(game.getDeployState()).toBeNull() // Auto-committed
+    expect(game.getDeploySession()).toBeNull() // Auto-committed
 
-    // Undo the first move
+    // Undo the entire deploy sequence
     game.undo()
-    expect(game.getDeployState()).toBeNull() // Now should be cleared
-    expect(game.getDeploySession()).toBeNull() // Now should be cleared
+    expect(game.getDeployState()).toBeNull() // Should be cleared
+    expect(game.getDeploySession()).toBeNull() // Should be cleared
+
+    // Original stack should be restored
+    const piece = game.get('f4')
+    expect(piece?.type).toBe('t')
+    expect(piece?.carrying).toHaveLength(2)
   })
 
   it('should handle edge case: empty deploy session', () => {
@@ -153,29 +124,23 @@ describe('Deploy Undo Fix', () => {
     // Record initial history length
     const initialHistoryLength = game['_history'].length
 
-    // Make a deploy move
-    const move = {
-      color: 'r' as const,
-      from: 133,
-      to: 117,
-      piece: {
-        type: 'm' as const,
-        color: 'r' as const,
-      },
-      flags: 17, // DEPLOY flag
-    }
+    // Make a deploy move using public API
+    // Deploy Militia - Tank remains, so session stays active
+    game.move({ from: 'f4', to: 'f5', piece: 'm', deploy: true })
 
-    game['_makeMove'](move)
+    // Session is active, so move is NOT in history yet
+    expect(game['_history'].length).toBe(initialHistoryLength)
+    expect(game.getDeploySession()).not.toBeNull() // Session still active
 
-    // CRITICAL: Deploy moves are NOT added to history when there's an active session
-    expect(game['_history'].length).toBe(initialHistoryLength) // History unchanged!
-    expect(game.getDeploySession()?.commands.length).toBe(1) // But session has the command
+    // Deploy Tank - should auto-commit
+    game.move({ from: 'f4', to: 'f6', piece: 't', deploy: true })
 
-    // This demonstrates why calling _undoMove() when there's a deploy state
-    // but no session commands would fail - there's nothing in history to undo!
+    // After auto-commit, the deploy move IS added to history as a single entry
+    expect(game['_history'].length).toBe(initialHistoryLength + 1)
+    expect(game.getDeploySession()).toBeNull() // Session cleared after auto-commit
   })
 
-  it('should demonstrate the _filterLegalMoves bug', () => {
+  it('should demonstrate the _filterLegalMoves bug is fixed', () => {
     const game = new CoTuLenh(
       '6c4/11/11/11/11/6m4/11/11/5(TM)5/11/11/5C5 r - - 0 1',
     )
@@ -186,37 +151,24 @@ describe('Deploy Undo Fix', () => {
 
     const initialHistoryLength = game['_history'].length
 
-    // Create a deploy move
-    const deployMove = {
-      color: 'r' as const,
-      from: 133,
-      to: 117,
-      piece: {
-        type: 'm' as const,
-        color: 'r' as const,
-      },
-      flags: 17, // DEPLOY flag
-    }
+    // Make deploy moves to complete the sequence
+    game.move({ from: 'f4', to: 'f5', piece: 'm', deploy: true })
+    game.move({ from: 'f4', to: 'f6', piece: 't', deploy: true })
 
-    // Simulate what happens in _filterLegalMoves
-    game['_makeMove'](deployMove)
-
-    // After _makeMove: deploy session created, move added to session (not history)
-    expect(game.getDeploySession()).not.toBeNull()
-    expect(game.getDeploySession()!.commands.length).toBe(1)
-    expect(game['_history'].length).toBe(initialHistoryLength) // History unchanged!
+    // After auto-commit: move added to history
+    expect(game.getDeploySession()).toBeNull()
+    expect(game['_history'].length).toBe(initialHistoryLength + 1)
 
     // Now call _undoMove (private method) like _filterLegalMoves does
     const undoResult = game['_undoMove']()
 
-    // BUG: _undoMove returns null because there's nothing in history to undo
-    expect(undoResult).toBeNull()
+    // FIXED: _undoMove returns the move because it's in history
+    expect(undoResult).not.toBeNull()
 
-    // BUG: Deploy session is still active! The move was NOT undone!
-    expect(game.getDeploySession()).not.toBeNull()
-    expect(game.getDeploySession()!.commands.length).toBe(1)
+    // FIXED: Deploy session is cleared after undo
+    expect(game.getDeploySession()).toBeNull()
 
-    // This leaves the game in an inconsistent state
+    // Game is in a consistent state
   })
 
   it('should fix _filterLegalMoves to properly undo deploy moves', () => {
@@ -228,26 +180,14 @@ describe('Deploy Undo Fix', () => {
     expect(game.getDeployState()).toBeNull()
     expect(game.getDeploySession()).toBeNull()
 
-    // Create a deploy move
-    const deployMove = {
-      color: 'r' as const,
-      from: 133,
-      to: 117,
-      piece: {
-        type: 'm' as const,
-        color: 'r' as const,
-      },
-      flags: 17, // DEPLOY flag
-    }
+    // Make deploy moves to complete the sequence
+    game.move({ from: 'f4', to: 'f5', piece: 'm', deploy: true })
+    game.move({ from: 'f4', to: 'f6', piece: 't', deploy: true })
 
-    // Simulate what happens in the FIXED _filterLegalMoves
-    game['_makeMove'](deployMove)
+    // After auto-commit: session cleared
+    expect(game.getDeploySession()).toBeNull()
 
-    // After _makeMove: deploy session created
-    expect(game.getDeploySession()).not.toBeNull()
-    expect(game.getDeploySession()!.commands.length).toBe(1)
-
-    // Now call the public undo() method (like the fixed _filterLegalMoves does)
+    // Now call the public undo() method
     game.undo()
 
     // FIXED: Deploy session should be cleared properly

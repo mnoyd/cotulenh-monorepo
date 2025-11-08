@@ -29,7 +29,6 @@ import {
   file,
   AirDefenseInfluence,
   AirDefense,
-  CAPTURE_MASK,
   AIR_FORCE,
   COMMANDER,
 } from './type.js'
@@ -103,7 +102,12 @@ export class Move {
   before: string // FEN before move
   after: string // FEN after move
 
-  // Constructor needs the main class instance to generate SAN, FENs etc.
+  /**
+   * Legacy constructor - reconstructs move by executing it temporarily.
+   * Used for history reconstruction and non-deploy moves.
+   *
+   * @deprecated For deploy moves during active session, use Move.fromExecutedMove()
+   */
   constructor(game: CoTuLenh, internal: InternalMove) {
     const { color, piece, from, to, flags, captured, combined } = internal
 
@@ -143,6 +147,39 @@ export class Move {
     )
     this.san = san
     this.lan = lan
+  }
+
+  /**
+   * Create Move from already-executed move data (preferred for deploy session moves).
+   * No game state manipulation required - all data provided directly.
+   *
+   * @param data - Complete move data
+   * @returns Move instance
+   */
+  static fromExecutedMove(data: {
+    color: Color
+    from: Square
+    to: Square
+    piece: Piece
+    captured?: Piece
+    flags: string
+    before: string
+    after: string
+    san: string
+    lan: string
+  }): Move {
+    const move = Object.create(Move.prototype)
+    move.color = data.color
+    move.from = data.from
+    move.to = data.to
+    move.piece = data.piece
+    move.captured = data.captured
+    move.flags = data.flags
+    move.before = data.before
+    move.after = data.after
+    move.san = data.san
+    move.lan = data.lan
+    return move
   }
 
   // Add helper methods like isCapture(), isPromotion() etc. if needed
@@ -783,43 +820,11 @@ export class CoTuLenh {
     const us = this.turn()
     const them = swapColor(us)
 
-    // Create the command object for this move
-    let moveCommand: CTLMoveCommandInteface
-    if (isInternalDeployMove(move)) {
-      moveCommand = new DeployMoveCommand(this, move)
-    } else {
-      moveCommand = createMoveCommand(this, move)
-    }
+    // Create command using isInternalDeployMove() check
+    const moveCommand: CTLMoveCommandInteface = isInternalDeployMove(move)
+      ? new DeployMoveCommand(this, move)
+      : createMoveCommand(this, move)
 
-    // Check if this is an incremental deploy move (DEPLOY flag)
-    const isIncrementalDeploy =
-      !isInternalDeployMove(move) && !!(move.flags & BITS.DEPLOY)
-
-    if (isIncrementalDeploy) {
-      // DEPLOY MOVE PATH: Delegate everything to DeploySession
-      DeploySession.handleDeployMove(this, move, moveCommand)
-    } else {
-      // NORMAL MOVE PATH: Handle turn switching, move counting, history
-      this._handleNormalMove(move, moveCommand, us, them)
-    }
-
-    // Clear moves cache since board state has changed
-    this._movesCache.clear()
-
-    // Update position count for threefold repetition
-    this._updatePositionCounts()
-  }
-
-  /**
-   * Handle normal moves and batch deploy moves (InternalDeployMove).
-   * Updates turn, move count, and history.
-   */
-  private _handleNormalMove(
-    move: InternalMove | InternalDeployMove,
-    moveCommand: CTLMoveCommandInteface,
-    us: Color,
-    them: Color,
-  ): void {
     // Store pre-move state for history
     const preCommanderState = { ...this._commanders }
     const preTurn = us
@@ -830,7 +835,7 @@ export class CoTuLenh {
       ? this._deploySession.clone()
       : null
 
-    // Execute the command
+    // Execute command
     moveCommand.execute()
 
     // Add to history
@@ -856,13 +861,105 @@ export class CoTuLenh {
       this._halfMoves++
     }
 
-    // Increment move number if Blue moved
+    // Switch turn
+    this._turn = them
+
+    // Increment move count if turn was BLUE
     if (us === BLUE) {
       this._moveNumber++
     }
 
+    // Clear moves cache
+    this._movesCache.clear()
+
+    // Update position counts
+    this._updatePositionCounts()
+  }
+
+  /**
+   * Add a move command to history and update game state.
+   * Shared logic for both normal moves and deploy sequences.
+   *
+   * @param moveCommand - The command to add to history
+   * @param preState - The game state before the move
+   * @param hasCapture - Whether the move captured a piece
+   */
+  private _addMoveToHistory(
+    moveCommand: CTLMoveCommandInteface,
+    preState: {
+      commanders: Record<Color, number>
+      turn: Color
+      halfMoves: number
+      moveNumber: number
+    },
+    hasCapture: boolean,
+  ): void {
+    const us = preState.turn
+    const them = swapColor(us)
+
+    // Add to history
+    const historyEntry: History = {
+      move: moveCommand,
+      commanders: preState.commanders,
+      turn: preState.turn,
+      halfMoves: preState.halfMoves,
+      moveNumber: preState.moveNumber,
+      deployState: null,
+      deploySession: null,
+    }
+    this._history.push(historyEntry)
+
+    // Update half moves counter
+    if (hasCapture) {
+      this._halfMoves = 0
+    } else {
+      this._halfMoves++
+    }
+
     // Switch turn
     this._turn = them
+
+    // Increment move count if turn was BLUE
+    if (us === BLUE) {
+      this._moveNumber++
+    }
+
+    // Clear moves cache
+    this._movesCache.clear()
+
+    // Update position counts
+    this._updatePositionCounts()
+  }
+
+  /**
+   * Finalize a deploy move by adding it to history.
+   * Called when a deploy session is committed.
+   *
+   * @param session - The deploy session to commit
+   */
+  private _finalizeDeployMove(session: DeploySession): void {
+    const us = this.turn()
+
+    // Capture pre-move state
+    const preState = {
+      commanders: { ...this._commanders },
+      turn: us,
+      halfMoves: this._halfMoves,
+      moveNumber: this._moveNumber,
+    }
+
+    // Let session create the command
+    const moveCommand = session.commit(this)
+
+    // Check if any move captured
+    const deployMove = moveCommand.move as InternalDeployMove
+    const hasCapture = deployMove.moves.some((move) => {
+      if ('moves' in move) return false
+      return !!(move.flags & BITS.CAPTURE)
+    })
+
+    // Add to history and update game state
+    this._addMoveToHistory(moveCommand, preState, hasCapture)
   }
 
   private _undoMove(): InternalMove | InternalDeployMove | null {
@@ -1557,7 +1654,7 @@ export class CoTuLenh {
    * @param move - The move to execute, either as SAN string (e.g., 'Nf3') or move object with from/to squares
    * @param options - Configuration options for move execution
    * @param options.strict - Whether to use strict parsing rules for algebraic notation moves
-   * @returns The executed Move object, or null if the move was invalid
+   * @returns The executed Move or DeployMove object, or null if the move was invalid
    * @throws Error if the move is invalid, illegal, or ambiguous
    */
   move(
@@ -1571,7 +1668,7 @@ export class CoTuLenh {
           deploy?: boolean
         },
     { strict = false }: { strict?: boolean } = {},
-  ): Move | null {
+  ): Move | DeployMove | null {
     let internalMove: InternalMove | null = null
 
     // 1. Parse move
@@ -1628,6 +1725,115 @@ export class CoTuLenh {
       throw new Error(`Invalid or illegal move: ${JSON.stringify(move)}`)
     }
 
+    // 3. Check if this is an incremental deploy move (DEPLOY flag)
+    if (internalMove.flags & BITS.DEPLOY) {
+      // Create the move command
+      const moveCommand = createMoveCommand(this, internalMove)
+
+      // Delegate to DeploySession.processMove()
+      const result = DeploySession.processMove(this, internalMove, moveCommand)
+
+      if (result.isComplete && result.session) {
+        // Session complete - all moves already executed incrementally
+        // Board is now in "after" state
+
+        // 1. Build InternalDeployMove for notation generation
+        const internalDeployMove = result.session.toInternalDeployMove()
+
+        // 2. Capture after FEN
+        const afterFEN = this.fen()
+
+        // 3. Generate SAN/LAN (we need to undo temporarily to get correct notation)
+        // Save current turn (should be the player who made the move)
+        const savedTurn = this._turn
+
+        // Undo all session commands
+        const commands = result.session.commands
+        for (let i = commands.length - 1; i >= 0; i--) {
+          commands[i].undo()
+        }
+
+        // Now board is in "before" state, generate notation
+        const [san, lan] = deployMoveToSanLan(this, internalDeployMove)
+        const beforeFEN = this.fen()
+
+        // Re-apply all commands
+        for (const command of commands) {
+          command.execute()
+        }
+
+        // Restore turn (commands might have switched it)
+        this._turn = savedTurn
+
+        // 4. Build DeployMove data
+        const data = {
+          color: internalDeployMove.moves[0].color,
+          from: algebraic(internalDeployMove.from),
+          to: internalDeployMove.moves.reduce<Map<string, Piece>>(
+            (acc, move) => {
+              acc.set(algebraic(move.to), move.piece)
+              return acc
+            },
+            new Map(),
+          ),
+          stay: internalDeployMove.stay,
+          captured: internalDeployMove.captured,
+          before: beforeFEN,
+          after: afterFEN,
+          san,
+          lan,
+        }
+
+        const deployMove = DeployMove.fromSession(data)
+
+        // 5. Add to history and switch turn
+        this._finalizeDeployMove(result.session)
+
+        // 6. Return the DeployMove
+        return deployMove
+      } else {
+        // Session incomplete - move already executed, need to build Move from data
+        // The move has been executed, so board is in "after" state
+        const afterFEN = this.fen()
+
+        // Undo to get "before" state and generate notation
+        const command =
+          result.session!.commands[result.session!.commands.length - 1]
+        command.undo()
+
+        const beforeFEN = this.fen()
+        const [san, lan] = this._moveToSanLan(
+          internalMove,
+          this._moves({ legal: true }),
+        )
+
+        // Re-apply the move
+        command.execute()
+
+        // Build flags string
+        let flagsStr = ''
+        for (const flag in BITS) {
+          if (BITS[flag] & internalMove.flags) {
+            flagsStr += FLAGS[flag]
+          }
+        }
+
+        // Create Move from executed data
+        return Move.fromExecutedMove({
+          color: internalMove.color,
+          from: algebraic(internalMove.from),
+          to: algebraic(internalMove.to),
+          piece: internalMove.piece,
+          captured: internalMove.captured,
+          flags: flagsStr,
+          before: beforeFEN,
+          after: afterFEN,
+          san,
+          lan,
+        })
+      }
+    }
+
     const prettyMove = new Move(this, internalMove)
 
     // 4. Make the move
@@ -1643,13 +1849,43 @@ export class CoTuLenh {
 
     if (!originalPiece)
       throw new Error('Deploy move error: original piece not found')
+
+    // Create internal deploy move
     const internalDeployMove = createInternalDeployMove(
       originalPiece,
       deployMove,
       deployMoves,
     )
-    const prettyMove = new DeployMove(this, internalDeployMove)
+
+    // Generate SAN/LAN BEFORE applying moves (board in "before" state)
+    const [san, lan] = deployMoveToSanLan(this, internalDeployMove)
+
+    // Capture before FEN
+    const beforeFEN = this.fen()
+
+    // Apply the move
     this._makeMove(internalDeployMove)
+
+    // Capture after FEN
+    const afterFEN = this.fen()
+
+    // Build DeployMove data
+    const data = {
+      color: internalDeployMove.moves[0].color,
+      from: algebraic(internalDeployMove.from),
+      to: internalDeployMove.moves.reduce<Map<string, Piece>>((acc, move) => {
+        acc.set(algebraic(move.to), move.piece)
+        return acc
+      }, new Map()),
+      stay: internalDeployMove.stay,
+      captured: internalDeployMove.captured,
+      before: beforeFEN,
+      after: afterFEN,
+      san,
+      lan,
+    }
+
+    const prettyMove = DeployMove.fromSession(data)
 
     return prettyMove
   }
@@ -1730,7 +1966,33 @@ export class CoTuLenh {
       if (verbose) {
         // Check if this is a deploy move or a regular move
         if (isInternalDeployMove(move)) {
-          moveHistory.push(new DeployMove(this, move))
+          // Board is in "before" state, generate notation
+          const [san, lan] = deployMoveToSanLan(this, move)
+          const beforeFEN = this.fen()
+
+          // Apply move to get after FEN
+          this._makeMove(move)
+          const afterFEN = this.fen()
+
+          // Build DeployMove data
+          const data = {
+            color: move.moves[0].color,
+            from: algebraic(move.from),
+            to: move.moves.reduce<Map<string, Piece>>((acc, m) => {
+              acc.set(algebraic(m.to), m.piece)
+              return acc
+            }, new Map()),
+            stay: move.stay,
+            captured: move.captured,
+            before: beforeFEN,
+            after: afterFEN,
+            san,
+            lan,
+          }
+
+          moveHistory.push(DeployMove.fromSession(data))
+
+          continue // Skip the _makeMove below since we already did it
         } else {
           moveHistory.push(new Move(this, move))
         }

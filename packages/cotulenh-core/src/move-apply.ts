@@ -304,7 +304,19 @@ export class SingleDeployMoveCommand extends CTLMoveCommand {
   protected buildActions(): void {
     const us = this.move.color
     const them = swapColor(us)
-    const carrierPiece = this.game.get(this.move.from)
+
+    // During active deploy session, get carrier from session's remaining pieces
+    // Otherwise get from board (for batch deploy moves)
+    const deploySession = this.game.getDeploySession()
+    let carrierPiece: Piece | null = null
+
+    if (deploySession && deploySession.stackSquare === this.move.from) {
+      // Active deploy session - use remaining pieces from session
+      carrierPiece = deploySession.getRemainingPieces()
+    } else {
+      // No active session or different square - use board state
+      carrierPiece = this.game.get(this.move.from) || null
+    }
 
     if (!carrierPiece) {
       throw new Error(
@@ -387,11 +399,13 @@ export class SingleDeployMoveCommand extends CTLMoveCommand {
     }
 
     // Set deploy state for next move
+    // Use original piece from session if available, otherwise use current carrier
+    const originalPieceForState = deploySession?.originalPiece ?? carrierPiece
     this.actions.push(
       new SetDeployStateAction(this.game, {
         stackSquare: this.move.from,
         turn: us,
-        originalPiece: carrierPiece,
+        originalPiece: originalPieceForState,
         movedPieces: flattendMovingPieces,
       }),
     )
@@ -605,9 +619,12 @@ export abstract class SequenceMoveCommand implements CTLMoveCommandInteface {
   constructor(
     protected game: CoTuLenh,
     protected moveData: InternalDeployMove,
+    skipBuild: boolean = false,
   ) {
     this.move = moveData
-    this.buildActions()
+    if (!skipBuild) {
+      this.buildActions()
+    }
   }
 
   protected buildActions(): void {}
@@ -629,16 +646,26 @@ export abstract class SequenceMoveCommand implements CTLMoveCommandInteface {
 
 /**
  * Handles the entire sequence of moves in a deploy move.
+ * Can be used for:
+ * - Batch execution (execute all moves at once)
+ * - Wrapping already-executed moves from a session (for history/undo only)
  */
 export class DeployMoveCommand extends SequenceMoveCommand {
   constructor(
     protected game: CoTuLenh,
     protected moveData: InternalDeployMove,
+    providedCommands?: CTLMoveCommandInteface[],
   ) {
-    super(game, moveData)
+    // Skip buildActions if we have provided commands
+    super(game, moveData, !!providedCommands)
+    // Set commands if provided
+    if (providedCommands) {
+      this.commands = providedCommands
+    }
   }
 
   protected buildActions(): void {
+    // Build from scratch (for backward compatibility or batch moves)
     this.commands = [
       new SetDeployStateAction(this.game, {
         stackSquare: this.moveData.from,
