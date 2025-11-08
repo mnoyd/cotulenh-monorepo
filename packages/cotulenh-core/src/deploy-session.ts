@@ -18,6 +18,16 @@ import {
   BASE_AIRDEFENSE_CONFIG,
   updateAirDefensePiecesPosition,
 } from './air-defense.js'
+import { InternalDeployMove, deployMoveToSanLan } from './deploy-move.js'
+import { DeployMoveCommand } from './move-apply.js'
+
+/**
+ * Result of processing a deploy move
+ */
+export interface DeploySessionResult {
+  isComplete: boolean // Is the deployment sequence finished?
+  session?: DeploySession // The session (for commit if complete, or for continuation if incomplete)
+}
 
 /**
  * Instruction to recombine a piece with a deployed piece
@@ -430,6 +440,37 @@ export class DeploySession {
   }
 
   // ============================================================================
+  // DEPLOY MOVE CONSTRUCTION
+  // ============================================================================
+
+  /**
+   * Convert session to InternalDeployMove representation.
+   * Used for history storage and SAN generation.
+   *
+   * @returns InternalDeployMove object
+   */
+  toInternalDeployMove(): InternalDeployMove {
+    const captured: Piece[] = []
+
+    for (const command of this.commands) {
+      const move = command.move
+      if ('moves' in move) continue // Type guard
+      if (move.captured) {
+        captured.push(move.captured)
+      }
+    }
+
+    return {
+      from: this.stackSquare,
+      moves: this.getActions(),
+      stay: this.stayPieces
+        ? combinePieces(this.stayPieces) || undefined
+        : undefined,
+      captured: captured.length > 0 ? captured : undefined,
+    }
+  }
+
+  // ============================================================================
   // DEPLOY SESSION MANAGEMENT
   // ============================================================================
 
@@ -500,6 +541,75 @@ export class DeploySession {
   }
 
   /**
+   * Process an incremental deploy move and return the result.
+   * This is the new entry point for handling deploy moves with DEPLOY flag.
+   *
+   * Responsibilities:
+   * - Initialize session if needed
+   * - Execute the move command
+   * - Add command to session (NOT to history)
+   * - Check if complete and return session for commit
+   * - NO turn switching
+   * - NO move count increment
+   *
+   * @param game - The game instance
+   * @param move - The deploy move to process
+   * @param moveCommand - The command to execute
+   * @returns DeploySessionResult indicating completion status
+   */
+  static processMove(
+    game: CoTuLenh,
+    move: InternalMove,
+    moveCommand: CTLMoveCommandInteface,
+  ): DeploySessionResult {
+    // Get or create session
+    let session = game['_deploySession']
+
+    if (!session) {
+      // Initialize new session
+      const originalPiece = game['_board'][move.from]
+      if (!originalPiece) {
+        throw new Error(
+          'Cannot start deploy session: no piece at source square',
+        )
+      }
+
+      session = new DeploySession({
+        stackSquare: move.from,
+        turn: game.turn(),
+        originalPiece: originalPiece,
+        startFEN: game.fen(),
+      })
+
+      game['_deploySession'] = session
+    }
+
+    // Execute the command
+    moveCommand.execute()
+
+    // Add to session (NOT to history)
+    session.addCommand(moveCommand)
+
+    // Check if session should auto-commit
+    if (session.shouldAutoCommit()) {
+      // Clear session state
+      game['_deploySession'] = null
+      game['_deployState'] = null
+
+      return {
+        isComplete: true,
+        session: session, // Return session for commit
+      }
+    }
+
+    // Session incomplete
+    return {
+      isComplete: false,
+      session: session,
+    }
+  }
+
+  /**
    * Check if a move should trigger auto-commit of the deploy session.
    * Auto-commit happens when all pieces are deployed.
    *
@@ -509,6 +619,53 @@ export class DeploySession {
     // After this move is added, check if all pieces are deployed
     const remainingPieces = this.getRemainingPieces()
     return remainingPieces === null // All pieces deployed
+  }
+
+  /**
+   * Commit the deploy session and create the final DeployMoveCommand.
+   *
+   * Responsibilities:
+   * - Validate can commit
+   * - Mark remaining pieces as staying
+   * - Create DeployMoveCommand with executed commands
+   * - Apply recombines (modifies board state)
+   *
+   * @param game - The game instance
+   * @returns DeployMoveCommand ready to be added to history
+   * @throws Error if cannot commit
+   */
+  commit(game: CoTuLenh): DeployMoveCommand {
+    // Validate
+    if (!this.canCommit()) {
+      throw new Error('Cannot commit: no moves made')
+    }
+
+    // Mark remaining pieces as staying
+    const remaining = this.getRemainingPieces()
+    if (remaining && !this.stayPieces) {
+      this.stayPieces = flattenPiece(remaining)
+    }
+
+    // Build the InternalDeployMove (BEFORE applying recombines)
+    const deployMove: InternalDeployMove = {
+      from: this.stackSquare,
+      moves: this.getActions(),
+      stay: this.stayPieces
+        ? combinePieces(this.stayPieces) || undefined
+        : undefined,
+    }
+
+    // Create command with our already-executed commands (BEFORE applying recombines)
+    const command = new DeployMoveCommand(
+      game,
+      deployMove,
+      this.commands, // Pass the actual command instances
+    )
+
+    // NOW apply recombines (modifies board state)
+    this.applyRecombines(game)
+
+    return command
   }
 
   // ============================================================================
