@@ -9,7 +9,6 @@ import {
   COMMANDER,
   BITS,
   Piece,
-  DeployState,
 } from './type.js'
 import { combinePieces, flattenPiece, removePieceFromStack } from './utils.js'
 
@@ -164,61 +163,7 @@ class RemoveFromStackAction implements CTLAtomicMoveAction {
   }
 }
 
-/**
- * Sets the deploy state
- */
-class SetDeployStateAction implements CTLAtomicMoveAction {
-  private oldDeployState: DeployState | null = null
-  constructor(
-    protected game: CoTuLenh,
-    private newDeployState: Partial<DeployState> | null,
-  ) {
-    // Don't capture oldDeployState here, we'll do it in execute()
-  }
-
-  execute(): void {
-    // Capture the current deploy state at execution time, not construction time
-    this.oldDeployState = this.game.getDeployState()
-    if (this.newDeployState === null) {
-      this.game.setDeployState(null)
-      return
-    }
-    if (this.oldDeployState) {
-      const updatedMovedPiece = [
-        ...this.oldDeployState.movedPieces,
-        ...(this.newDeployState.movedPieces ?? []),
-      ]
-      const originalLen = flattenPiece(this.oldDeployState.originalPiece).length
-      if (
-        updatedMovedPiece.length + (this.oldDeployState.stay?.length ?? 0) ===
-        originalLen
-      ) {
-        this.game.setDeployState(null)
-        // Don't switch turn if there's an active deploy session - let the session system handle it
-        if (!this.game.getDeploySession()) {
-          this.game['_turn'] = swapColor(this.oldDeployState.turn)
-        }
-        return
-      }
-      this.game.setDeployState({
-        stackSquare: this.oldDeployState.stackSquare,
-        turn: this.oldDeployState.turn,
-        originalPiece: this.oldDeployState.originalPiece,
-        movedPieces: updatedMovedPiece,
-        stay: this.oldDeployState.stay,
-      })
-    } else {
-      this.game.setDeployState(this.newDeployState as DeployState)
-    }
-  }
-
-  undo(): void {
-    this.game.setDeployState(this.oldDeployState)
-    if (this.oldDeployState) {
-      this.game['_turn'] = this.oldDeployState.turn
-    }
-  }
-}
+// SetDeployStateAction removed - deploy state tracking now handled by DeploySession
 
 export interface CTLMoveCommandInteface extends CTLAtomicMoveAction {
   move: InternalMove | InternalDeployMove
@@ -398,17 +343,8 @@ export class SingleDeployMoveCommand extends CTLMoveCommand {
       }
     }
 
-    // Set deploy state for next move
-    // Use original piece from session if available, otherwise use current carrier
-    const originalPieceForState = deploySession?.originalPiece ?? carrierPiece
-    this.actions.push(
-      new SetDeployStateAction(this.game, {
-        stackSquare: this.move.from,
-        turn: us,
-        originalPiece: originalPieceForState,
-        movedPieces: flattendMovingPieces,
-      }),
-    )
+    // Deploy state tracking is now handled by DeploySession
+    // No need for SetDeployStateAction - session tracks all commands
   }
 }
 
@@ -666,17 +602,9 @@ export class DeployMoveCommand extends SequenceMoveCommand {
 
   protected buildActions(): void {
     // Build from scratch (for backward compatibility or batch moves)
-    this.commands = [
-      new SetDeployStateAction(this.game, {
-        stackSquare: this.moveData.from,
-        turn: this.game['_turn'],
-        originalPiece: this.game.get(this.moveData.from) || undefined,
-        movedPieces: [],
-        stay: this.moveData.stay ? flattenPiece(this.moveData.stay) : [],
-      }),
-    ]
-    this.commands.push(
-      ...this.moveData.moves.map((move) => createMoveCommand(this.game, move)),
+    // Deploy state tracking is now handled by DeploySession
+    this.commands = this.moveData.moves.map((move) =>
+      createMoveCommand(this.game, move),
     )
   }
 }

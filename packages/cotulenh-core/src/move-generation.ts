@@ -542,17 +542,6 @@ export function generateMoveCandidateForSinglePieceInStack(
 
   // Generate moves for each individual piece in the stack
   for (const piece of flattenedPieces) {
-    // Save the current deploy state
-    const originalDeployState = gameInstance.getDeployState()
-
-    // Set a temporary deploy state to generate moves for this piece
-    gameInstance.setDeployState({
-      stackSquare,
-      originalPiece: pieceStack,
-      turn: us,
-      movedPieces: [],
-    })
-
     // Generate moves for this piece
     const pieceMoves = generateMovesForPiece(
       gameInstance,
@@ -570,9 +559,6 @@ export function generateMoveCandidateForSinglePieceInStack(
     if (pieceMoves.length > 0) {
       moveMap.set(piece.type, pieceMoves)
     }
-
-    // Restore the original deploy state
-    gameInstance.setDeployState(originalDeployState)
   }
 
   return moveMap
@@ -589,22 +575,18 @@ export function generateDeployMoves(
   const moves: InternalMove[] = []
   const us = gameInstance.turn()
 
-  // Check for new deploy session first, fall back to legacy deploy state
+  // Check for deploy session
   const deploySession = gameInstance.getDeploySession()
-  const deployState = gameInstance.getDeployState()
 
   const carrierPiece =
-    deploySession?.originalPiece ??
-    deployState?.originalPiece ??
-    gameInstance.get(stackSquare)
+    deploySession?.originalPiece ?? gameInstance.get(stackSquare)
 
   if (!carrierPiece || carrierPiece.color !== us) {
     return []
   }
   if (
     (!carrierPiece.carrying || carrierPiece.carrying.length === 0) &&
-    ((deployState === null && deploySession === null) ||
-      (deployState && deployState.stackSquare !== stackSquare) ||
+    (deploySession === null ||
       (deploySession && deploySession.stackSquare !== stackSquare))
   ) {
     return []
@@ -613,19 +595,14 @@ export function generateDeployMoves(
   // Generate Deploy Moves for remaining carrying pieces
   const flattenedCarrierPiece = flattenPiece(carrierPiece)
 
-  // Calculate remaining pieces using session if available
+  // Calculate remaining pieces using session
   let deployMoveCandidates: Piece[]
   if (deploySession) {
     const remaining = deploySession.getRemainingPieces()
     deployMoveCandidates = remaining ? flattenPiece(remaining) : []
   } else {
-    // Legacy: filter by movedPieces
-    deployMoveCandidates = flattenedCarrierPiece.filter(
-      (p) =>
-        !deployState?.movedPieces.some(
-          (mp) => mp.type === p.type && mp.color === p.color,
-        ),
-    )
+    // No session - all pieces available
+    deployMoveCandidates = flattenedCarrierPiece
   }
 
   // Generate deploy moves for all remaining pieces including the carrier

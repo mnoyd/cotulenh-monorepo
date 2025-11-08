@@ -165,11 +165,11 @@ describe('DeploySession.processMove()', () => {
     it('should allow multiple incremental deploy moves', () => {
       game.put(
         {
-          type: TANK,
+          type: AIR_FORCE,
           color: RED,
           carrying: [
+            { type: TANK, color: RED },
             { type: MILITIA, color: RED },
-            { type: INFANTRY, color: RED },
           ],
         },
         'c3',

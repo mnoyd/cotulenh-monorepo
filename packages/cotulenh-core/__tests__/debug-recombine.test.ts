@@ -39,7 +39,7 @@ describe('Debug Recombine', () => {
       'c5 after Navy deploy:',
       JSON.stringify(game.get('c5'), null, 2),
     )
-    console.log('Deploy session:', game.getDeployState())
+    console.log('Deploy session:', game.getDeploySession())
 
     // Check available moves
     console.log('\n=== Available moves from c3 ===')
@@ -68,7 +68,7 @@ describe('Debug Recombine', () => {
       'c5 after AirForce recombine:',
       JSON.stringify(game.get('c5'), null, 2),
     )
-    console.log('Deploy session:', game.getDeployState())
+    console.log('Deploy session:', game.getDeploySession())
 
     // Check available moves again
     console.log('\n=== Available moves from c3 after AirForce recombine ===')

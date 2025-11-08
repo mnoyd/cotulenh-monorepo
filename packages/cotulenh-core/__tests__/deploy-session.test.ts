@@ -448,33 +448,6 @@ describe('DeploySession', () => {
     })
   })
 
-  describe('toLegacyDeployState', () => {
-    it('should convert to legacy format', () => {
-      const originalPiece = createPiece(NAVY, [createPiece(AIR_FORCE)])
-
-      const session = new DeploySession({
-        stackSquare: 0x92,
-        turn: RED,
-        originalPiece,
-        startFEN: 'test-fen',
-        stayPieces: [createPiece(TANK)],
-      })
-
-      session.addMove(createMove(0x92, 0x72, createPiece(NAVY)))
-      session.addMove(createMove(0x92, 0x82, createPiece(AIR_FORCE)))
-
-      const legacy = session.toLegacyDeployState()
-
-      expect(legacy.stackSquare).toBe(0x92)
-      expect(legacy.turn).toBe(RED)
-      expect(legacy.originalPiece).toEqual(originalPiece)
-      expect(legacy.movedPieces).toHaveLength(2)
-      expect(legacy.movedPieces[0].type).toBe(NAVY)
-      expect(legacy.movedPieces[1].type).toBe(AIR_FORCE)
-      expect(legacy.stay).toEqual([createPiece(TANK)])
-    })
-  })
-
   describe('toString', () => {
     it('should return readable string representation', () => {
       const originalPiece = createPiece(NAVY, [

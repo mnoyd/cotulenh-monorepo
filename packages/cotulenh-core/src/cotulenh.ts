@@ -25,7 +25,6 @@ import {
   NAVY_MASK,
   LAND_MASK,
   isSquareOnBoard,
-  DeployState,
   file,
   AirDefenseInfluence,
   AirDefense,
@@ -85,8 +84,7 @@ interface History {
   turn: Color
   halfMoves: number // Half move clock before the move
   moveNumber: number // Move number before the move
-  deployState: DeployState | null // Snapshot of deploy state before move (legacy)
-  deploySession: DeploySession | null // Snapshot of deploy session (new action-based)
+  deploySession: DeploySession | null // Snapshot of deploy session
 }
 
 // Public Move class (similar to chess.js) - can be fleshed out later
@@ -216,8 +214,7 @@ export class CoTuLenh {
   private _history: History[] = []
   private _comments: Record<string, string> = {}
   private _positionCount: Record<string, number> = {}
-  private _deployState: DeployState | null = null // Tracks active deploy phase (legacy)
-  private _deploySession: DeploySession | null = null // Tracks active deploy session (new action-based)
+  private _deploySession: DeploySession | null = null // Tracks active deploy session
   private _airDefense: AirDefense = {
     [RED]: new Map<number, number[]>(),
     [BLUE]: new Map<number, number[]>(),
@@ -572,10 +569,6 @@ export class CoTuLenh {
       deployState = `${args.square}:${this.turn()}`
     } else if (this._deploySession) {
       deployState = `${this._deploySession.stackSquare}:${this._deploySession.turn}:${this._deploySession.commands.length}`
-    } else if (this._deployState) {
-      deployState = `${this._deployState.stackSquare}:${this._deployState.turn}`
-    } else {
-      deployState = 'none'
     }
     const { legal = true, pieceType, square } = args
     return `${fen}|deploy:${deployState}|legal:${legal}|pieceType:${pieceType ?? ''}|square:${square ?? ''}`
@@ -609,19 +602,19 @@ export class CoTuLenh {
     let allMoves: InternalMove[] = []
 
     // Generate moves based on game state
-    // Check for deploy session first (new), then fall back to deploy state (legacy)
-    const activeDeploySession =
-      this._deploySession ||
-      (this._deployState?.turn === us ? this._deployState : null)
+    // Check for deploy session
+    const activeDeploySession = this._deploySession
 
     if (activeDeploySession || deploy) {
       let deployFilterSquare: number
-      if (deploy) {
-        deployFilterSquare = SQUARE_MAP[filterSquare!]
+      if (deploy && filterSquare) {
+        deployFilterSquare = SQUARE_MAP[filterSquare]
       } else if (this._deploySession) {
         deployFilterSquare = this._deploySession.stackSquare
       } else {
-        deployFilterSquare = this._deployState!.stackSquare
+        throw new Error(
+          'Deploy move requires active session or square argument',
+        )
       }
       allMoves = generateDeployMoves(this, deployFilterSquare, filterPiece)
     } else {
@@ -684,8 +677,7 @@ export class CoTuLenh {
   ): (InternalMove | InternalDeployMove)[] {
     const legalMoves: (InternalMove | InternalDeployMove)[] = []
 
-    // Save the initial deploy state to restore if corrupted
-    const initialDeployState = this._deployState
+    // Save the initial deploy session to restore if corrupted
     const initialDeploySession = this._deploySession
       ? this._deploySession.clone()
       : null
@@ -740,7 +732,6 @@ export class CoTuLenh {
         // Log the error for debugging
         console.error('Error during move validation, restoring state:', error)
         // If there's an error, restore the initial state and continue
-        this._deployState = initialDeployState
         this._deploySession = initialDeploySession
           ? initialDeploySession.clone()
           : null
@@ -756,7 +747,6 @@ export class CoTuLenh {
       currentCommandCount !== initialCommandCount ||
       !!this._deploySession !== !!initialDeploySession
     ) {
-      this._deployState = initialDeployState
       this._deploySession = initialDeploySession
         ? initialDeploySession.clone()
         : null
@@ -830,7 +820,6 @@ export class CoTuLenh {
     const preTurn = us
     const preHalfMoves = this._halfMoves
     const preMoveNumber = this._moveNumber
-    const preDeployState = this._deployState
     const preDeploySession = this._deploySession
       ? this._deploySession.clone()
       : null
@@ -845,7 +834,6 @@ export class CoTuLenh {
       turn: preTurn,
       halfMoves: preHalfMoves,
       moveNumber: preMoveNumber,
-      deployState: preDeployState,
       deploySession: preDeploySession,
     }
     this._history.push(historyEntry)
@@ -904,7 +892,6 @@ export class CoTuLenh {
       turn: preState.turn,
       halfMoves: preState.halfMoves,
       moveNumber: preState.moveNumber,
-      deployState: null,
       deploySession: null,
     }
     this._history.push(historyEntry)
@@ -973,7 +960,6 @@ export class CoTuLenh {
     this._turn = old.turn
     this._halfMoves = old.halfMoves
     this._moveNumber = old.moveNumber
-    this._deployState = old.deployState
     this._deploySession = old.deploySession ? old.deploySession.clone() : null
 
     // Ask the command to revert its specific board changes
@@ -1006,17 +992,15 @@ export class CoTuLenh {
       // If the deploy session is now empty, clear it completely
       if ((this._deploySession?.commands.length ?? 0) === 0) {
         this._deploySession = null
-        this._deployState = null // Also clear legacy deploy state
       }
       return
     }
 
-    // Priority 2: Check if there's any deploy state (session or legacy) but no commands
+    // Priority 2: Check if there's any deploy session but no commands
     // This means we're in an inconsistent state or all deploy moves have been undone
-    if (this._deploySession || this._deployState) {
-      // Clear any remaining deploy state - there's nothing to undo
+    if (this._deploySession) {
+      // Clear any remaining deploy session - there's nothing to undo
       this._deploySession = null
-      this._deployState = null
       return
     }
 
@@ -1024,20 +1008,7 @@ export class CoTuLenh {
     this._undoMove()
   }
 
-  public getDeployState(): DeployState | null {
-    // For backward compatibility, convert session to legacy state
-    if (this._deploySession) {
-      // eslint-disable-next-line deprecation/deprecation
-      return this._deploySession.toLegacyDeployState()
-    }
-    return this._deployState
-  }
-
-  public setDeployState(deployState: DeployState | null): void {
-    this._deployState = deployState
-    // Note: Setting legacy state doesn't create a session (lossy conversion)
-    // New code should use setDeploySession() instead
-  }
+  // getDeployState() and setDeployState() removed - use getDeploySession() instead
 
   /**
    * Get the current deploy session (new action-based approach)
@@ -1141,9 +1112,8 @@ export class CoTuLenh {
       },
     }
 
-    // Clear session (and legacy state) and optionally switch turn
+    // Clear session and optionally switch turn
     this._deploySession = null
-    this._deployState = null // Also clear legacy deploy state
 
     if (switchTurn) {
       this._turn = swapColor(this._turn)
@@ -1164,7 +1134,6 @@ export class CoTuLenh {
       turn: us, // Store the turn that made the move (before switch)
       halfMoves: this._halfMoves,
       moveNumber: this._moveNumber,
-      deployState: null,
       deploySession: null,
     }
     this._history.push(historyEntry)
@@ -1194,9 +1163,8 @@ export class CoTuLenh {
     // Clear move cache after undoing
     this._movesCache.clear()
 
-    // Clear the session (and legacy state)
+    // Clear the session
     this._deploySession = null
-    this._deployState = null
   }
 
   // ============================================================================
