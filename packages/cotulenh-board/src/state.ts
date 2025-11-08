@@ -3,7 +3,6 @@ import * as fen from './fen.js';
 import { AnimCurrent } from './anim.js';
 import { Drawable } from './draw.js';
 import { DragCurrent } from './drag.js';
-import { PopUpType } from './popup/popup-factory.js';
 
 export interface HeadlessState {
   orientation: cg.Color;
@@ -39,7 +38,7 @@ export interface HeadlessState {
     enabled: boolean;
   };
   airDefense?: {
-    showInfluceZone?: cg.Color | undefined;
+    showInfluceZone: cg.Color | undefined;
     influenceZone?: {
       red: Map<cg.Key, cg.Key[]>;
       blue: Map<cg.Key, cg.Key[]>;
@@ -98,21 +97,21 @@ export interface HeadlessState {
     }>;
   };
   ambigousMove?: {
-    type: PopUpType;
+    type: string;
     destKey: cg.Key;
     origKey: cg.Key;
     pieceAtDest: cg.Piece | undefined;
     pieceAtOrig: cg.Piece;
     pieceThatMoves: cg.Piece;
     renderGuide?: {
-      atOrig: undefined | any;
-      atDest: undefined | any;
+      atOrig: HTMLElement | undefined;
+      atDest: HTMLElement | undefined;
     };
   };
   popup?: {
     square?: cg.Key; // square where it initiate this popup
     items: any[];
-    type: PopUpType;
+    type: string;
     containerEl: HTMLElement;
   };
 }

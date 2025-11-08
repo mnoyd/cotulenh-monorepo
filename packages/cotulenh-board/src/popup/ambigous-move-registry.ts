@@ -5,7 +5,7 @@ import { AmbigousMoveHandling } from './ambigous-move';
  * This breaks the circular dependency between ambigous-move and its consumers
  */
 class AmbigousMoveRegistry {
-  private handlers = new Map<string, AmbigousMoveHandling<any>>();
+  private readonly handlers = new Map<string, AmbigousMoveHandling<any>>();
 
   /**
    * Register an ambiguous move handler with a type identifier

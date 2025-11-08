@@ -10,13 +10,11 @@ const ITEM_GAP = 5;
 const POPUP_PADDING = 5;
 const POPUP_VERTICAL_OFFSET = 60;
 
-export type PopUpType = string;
-
 type PopupFactoryOptions<T> = {
   /**
    * Type of the popup
    */
-  type: PopUpType;
+  type: string;
   /**
    * Function to convert each array element to an HTML element
    */
@@ -156,10 +154,10 @@ export function calculatePopupPosition(
   let maxHeight = 0;
 
   // Measure each item's dimensions
-  items.forEach((itemEl, index) => {
+  for (const [index, itemEl] of items.entries()) {
     // Get the actual size of each item element
-    const itemWidth = itemEl.offsetWidth || itemEl.clientWidth || parseInt(itemEl.style.width);
-    const itemHeight = itemEl.offsetHeight || itemEl.clientHeight || parseInt(itemEl.style.height);
+    const itemWidth = itemEl.offsetWidth || itemEl.clientWidth || Number.parseInt(itemEl.style.width);
+    const itemHeight = itemEl.offsetHeight || itemEl.clientHeight || Number.parseInt(itemEl.style.height);
 
     // Add item width to total
     totalWidth += itemWidth;
@@ -171,7 +169,7 @@ export function calculatePopupPosition(
 
     // Track maximum height
     maxHeight = Math.max(maxHeight, itemHeight);
-  });
+  }
 
   // Add padding to dimensions
   const popupWidth = totalWidth + scaledPadding * 2;
@@ -220,7 +218,7 @@ function createSetPopUp<T>(options: PopupFactoryOptions<T>): CTLPopup<T>['setPop
     const itemElements = items.map((item, index) => {
       const itemEl = options.renderItem(s, item, index);
       itemEl.classList.add('popup-item');
-      itemEl.setAttribute('data-index', index.toString());
+      itemEl.dataset.index = index.toString();
       return itemEl;
     });
     const { position: popupPosition } = calculatePopupPosition(s, itemElements, key);
@@ -251,9 +249,9 @@ function createPopupElement(itemElements: HTMLElement[], position: cg.NumberPair
   containerEl.style.top = `${position[1]}px`;
 
   // Add items to popup
-  itemElements.forEach(itemEl => {
+  for (const itemEl of itemElements) {
     containerEl.appendChild(itemEl);
-  });
+  }
 
   // Set state to indicate popup is shown
   return containerEl;

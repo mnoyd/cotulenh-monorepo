@@ -1,14 +1,13 @@
 import { unselect, userMove } from './board';
-import { AmbigousMoveType, createAmbigousModeHandling } from './popup/ambigous-move';
+import { createAmbigousModeHandling } from './popup/ambigous-move';
 import { clearPopup, createPopupFactory, CTLPopup } from './popup/popup-factory';
 import { createAmbigousPiecesStackElement } from './render';
 import { State } from './state';
 import { createEl } from './util';
-import { PopUpType } from './popup/popup-factory';
 import { popupRegistry } from './popup/popup-registry';
 import { ambigousMoveRegistry } from './popup/ambigous-move-registry';
 
-export const PIECE_ATTACK_POPUP_TYPE: PopUpType = 'piece-attack';
+export const PIECE_ATTACK_POPUP_TYPE: string = 'piece-attack';
 const pieceAttackPopup = createPopupFactory<string>({
   type: PIECE_ATTACK_POPUP_TYPE,
   renderItem: (_s: State, item: string, index: number) => {
@@ -19,7 +18,7 @@ const pieceAttackPopup = createPopupFactory<string>({
     const squareSize = _s.dom.bounds().width / 12;
     el.style.width = squareSize + 'px';
     el.style.height = squareSize + 'px';
-    el.setAttribute('data-index', index.toString());
+    el.dataset.index = index.toString();
     return el;
   },
   onSelect: (s: State, index: number) => {
@@ -46,7 +45,7 @@ const pieceAttackPopup = createPopupFactory<string>({
 // Register the popup in the registry to avoid circular dependencies
 popupRegistry.register(PIECE_ATTACK_POPUP_TYPE, pieceAttackPopup);
 
-const AMBIGOUS_CAPTURE_STAY_BACK: AmbigousMoveType = 'capture-stay-back-ambigous';
+const AMBIGOUS_CAPTURE_STAY_BACK: string = 'capture-stay-back-ambigous';
 const ambigousCaptureStayBackHandling = createAmbigousModeHandling({
   type: AMBIGOUS_CAPTURE_STAY_BACK,
   popup: pieceAttackPopup,

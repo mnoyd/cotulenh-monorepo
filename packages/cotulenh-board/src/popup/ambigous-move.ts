@@ -2,15 +2,14 @@ import { State } from '../state';
 import { CTLPopup } from './popup-factory';
 import { ambigousMoveRegistry } from './ambigous-move-registry';
 
-export type AmbigousMoveType = string;
 type AmbigousMoveHandlingOption<T> = {
-  type: AmbigousMoveType;
+  type: string;
   popup: CTLPopup<T>;
   renderAmbigousMoveElements: (s: State, popup: CTLPopup<T>) => void;
 };
 
 export interface AmbigousMoveHandling<T> {
-  type: AmbigousMoveType;
+  type: string;
   popup: CTLPopup<T>;
   start: (s: State) => void;
 }
