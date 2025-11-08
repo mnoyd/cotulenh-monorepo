@@ -1,7 +1,6 @@
 // __tests__/deploy-session-process-move.test.ts
 
 import { describe, it, expect, beforeEach } from 'vitest'
-import { DeploySession } from '../src/deploy-session.js'
 import { CoTuLenh } from '../src/cotulenh.js'
 import {
   RED,
@@ -331,35 +330,26 @@ describe('DeploySession.processMove()', () => {
           type: NAVY,
           color: RED,
           carrying: [
+            { type: AIR_FORCE, color: RED },
             { type: TANK, color: RED },
-            { type: INFANTRY, color: RED },
-            { type: MILITIA, color: RED },
           ],
         },
         'c5',
       )
       game['_turn'] = RED
 
-      // Deploy Navy to c6
-      game.move({ from: 'c5', to: 'c6', piece: NAVY, deploy: true })
+      game.move({ from: 'c5', to: 'f5', piece: AIR_FORCE, deploy: true })
 
-      // Deploy Tank to d5
-      game.move({ from: 'c5', to: 'd5', piece: TANK, deploy: true })
-
-      // Deploy Militia to e5
-      game.move({ from: 'c5', to: 'e5', piece: MILITIA, deploy: true })
-
-      // Recombine Infantry with Tank at d5
-      game.recombine('c5', 'd5', 'i')
+      game.recombine('c5', 'f5', TANK)
 
       // Commit
       const result = game.commitDeploySession()
       expect(result.success).toBe(true)
 
       // Verify recombine happened
-      const pieceAtD5 = game.get('d5')
+      const pieceAtD5 = game.get('f5')
       expect(pieceAtD5?.carrying).toHaveLength(1)
-      expect(pieceAtD5?.carrying?.[0].type).toBe(INFANTRY)
+      expect(pieceAtD5?.carrying?.[0].type).toBe(TANK)
     })
   })
 })

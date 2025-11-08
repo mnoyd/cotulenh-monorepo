@@ -7,18 +7,14 @@ import {
   BITS,
   algebraic,
   swapColor,
-  NAVY_MASK,
-  LAND_MASK,
 } from './type.js'
-import { flattenPiece, combinePieces, removePieceFromStack } from './utils.js'
+import { flattenPiece, combinePieces } from './utils.js'
 import type { CTLMoveCommandInteface } from './move-apply.js'
 import type { CoTuLenh } from './cotulenh.js'
-import {
-  BASE_AIRDEFENSE_CONFIG,
-  updateAirDefensePiecesPosition,
-} from './air-defense.js'
-import { InternalDeployMove, deployMoveToSanLan } from './deploy-move.js'
+
+import { InternalDeployMove } from './deploy-move.js'
 import { DeployMoveCommand } from './move-apply.js'
+import { RecombineManager } from './recombine-manager.js'
 
 /**
  * Result of processing a deploy move
@@ -89,6 +85,7 @@ export class DeploySession {
   startFEN: string
   stayPieces?: Piece[] // Pieces explicitly marked to stay
   recombineInstructions: RecombineInstruction[] = [] // Recombine instructions
+  private recombineManager = new RecombineManager() // Manages recombine logic
 
   constructor(data: {
     stackSquare: number
@@ -663,7 +660,6 @@ export class DeploySession {
     if (stackSquare !== this.stackSquare) {
       throw new Error('Can only recombine from the stack square')
     }
-    //TODO: Add check if recombine dealing with the original stack
 
     // Validate: target must be deployed in this session
     const deployedSquares = this.getDeployedSquares()
@@ -671,134 +667,34 @@ export class DeploySession {
       throw new Error('Cannot recombine to non-deployed square')
     }
 
-    // Validate: piece must be in remaining pieces
-    const remaining = this.getRemainingPieces()
-    if (!remaining) return false
-
-    const remainingFlat = flattenPiece(remaining)
-    const hasPiece = remainingFlat.some((p) => p.type === pieceToRecombine.type)
-    if (!hasPiece) return false
-
-    // Get target piece and check if combination is possible
-    const targetPiece = game.get(targetSquare)
-    if (!targetPiece) return false
-
-    // Check if pieces can combine
-    const combinedPiece = combinePieces([pieceToRecombine, targetPiece])
-    if (!combinedPiece) {
-      throw new Error('Cannot combine these pieces')
-    }
-
-    // TERRAIN COMPATIBILITY CHECK
-    // The resulting carrier must be compatible with the target square terrain
-    const carrierType = combinedPiece.type
-
-    if (carrierType === 'n') {
-      // NAVY
-      if (!NAVY_MASK[targetSquare]) {
-        throw new Error(
-          'Cannot recombine: Navy cannot be carrier on land square',
-        )
-      }
-    } else {
-      // Land pieces
-      if (!LAND_MASK[targetSquare]) {
-        throw new Error(
-          'Cannot recombine: Land piece cannot be carrier on water square',
-        )
-      }
-    }
-
-    // COMMANDER SAFETY CHECK
-    const us = game.turn()
-    const isCommander = pieceToRecombine.type === 'c' // COMMANDER
-    const targetHasCommander =
-      targetPiece.type === 'c' ||
-      targetPiece.carrying?.some((p) => p.type === 'c')
-
-    if (isCommander || targetHasCommander) {
-      if (!this.isSquareSafeForCommander(game, targetSquare, us)) {
-        throw new Error('Cannot recombine Commander to attacked square')
-      }
-    }
-
-    // Record instruction (don't execute yet)
-    this.recombineInstructions.push({
+    // Create instruction
+    const instruction: RecombineInstruction = {
       piece: pieceToRecombine,
       fromSquare: stackSquare,
       toSquare: targetSquare,
-      timestamp: this.commands.length, // Preserves order
-    })
+      timestamp: this.commands.length,
+    }
 
-    return true
+    // Validate and queue using RecombineManager
+    const success = this.recombineManager.recombine(instruction, this, game)
+
+    if (success) {
+      // Add to instructions
+      this.recombineInstructions.push(instruction)
+    }
+
+    return success
   }
 
   /**
    * Get available recombine options for remaining pieces
    *
    * @param game - The game instance
-   * @param stackSquare - The stack square
+   * @param stackSquare - The stack square (unused, kept for backward compatibility)
    * @returns Array of recombine options (filtered for safety)
    */
-  getRecombineOptions(game: CoTuLenh, stackSquare: number): RecombineOption[] {
-    const options: RecombineOption[] = []
-    const remaining = this.getRemainingPieces()
-    const us = game.turn()
-
-    if (!remaining) return options
-
-    const remainingFlat = flattenPiece(remaining)
-    const deployedSquares = this.getDeployedSquares()
-
-    for (const piece of remainingFlat) {
-      const isCommander = piece.type === 'c'
-
-      for (const targetSquare of deployedSquares) {
-        const targetPiece = game.get(targetSquare)
-        if (!targetPiece) continue
-
-        // Check if pieces can combine
-        const combined = combinePieces([piece, targetPiece])
-        if (!combined) continue
-
-        // TERRAIN COMPATIBILITY CHECK
-        const carrierType = combined.type
-        if (carrierType === 'n') {
-          // NAVY
-          if (!NAVY_MASK[targetSquare]) continue // Navy can't be carrier on land
-        } else {
-          // Land pieces
-          if (!LAND_MASK[targetSquare]) continue // Land piece can't be carrier on water
-        }
-
-        // COMMANDER SAFETY FILTERING
-        if (isCommander) {
-          if (!this.isSquareSafeForCommander(game, targetSquare, us)) {
-            continue // Skip unsafe square
-          }
-        }
-
-        // Check if target has Commander
-        if (
-          targetPiece.type === 'c' ||
-          targetPiece.carrying?.some((p) => p.type === 'c')
-        ) {
-          if (!this.isSquareSafeForCommander(game, targetSquare, us)) {
-            continue // Skip - would expose Commander
-          }
-        }
-
-        options.push({
-          piece,
-          targetSquare,
-          targetPiece,
-          resultPiece: combined,
-          isSafe: true, // Only safe options included
-        })
-      }
-    }
-
-    return options
+  getRecombineOptions(game: CoTuLenh, stackSquare?: number): RecombineOption[] {
+    return this.recombineManager.recombineOptions(this, game)
   }
 
   /**
@@ -813,79 +709,11 @@ export class DeploySession {
    * Apply all queued recombine instructions to the board
    * Called at commit time
    *
+   * Uses RecombineManager to undo all commands, reconstruct with recombines, and re-execute
+   *
    * @param game - The game instance
    */
   private applyRecombines(game: CoTuLenh): void {
-    // Sort by timestamp to maintain request order
-    const sorted = [...this.recombineInstructions].sort(
-      (a, b) => a.timestamp - b.timestamp,
-    )
-
-    for (const instruction of sorted) {
-      const targetPiece = game.get(instruction.toSquare)
-      const stackPiece = game.get(instruction.fromSquare)
-
-      if (!targetPiece || !stackPiece) continue
-
-      // Check if Commander is being recombined
-      const isCommanderRecombining = instruction.piece.type === 'c'
-
-      // Combine
-      const combined = combinePieces([targetPiece, instruction.piece])
-      if (!combined) continue
-
-      // Update target square directly (bypass put() validation for recombines)
-      // We need to bypass put() because it has Commander placement restrictions
-      // that don't apply when recombining pieces
-      game['_board'][instruction.toSquare] = combined
-
-      // Update commander position if Commander was recombined
-      if (isCommanderRecombining) {
-        game['_commanders'][instruction.piece.color] = instruction.toSquare
-      }
-
-      // Update air defense if needed
-      if (BASE_AIRDEFENSE_CONFIG[combined.type]) {
-        game['_airDefense'] = updateAirDefensePiecesPosition(game)
-      }
-
-      // Update stack square
-      const remaining = removePieceFromStack(stackPiece, instruction.piece)
-      if (remaining) {
-        game.put(remaining, algebraic(instruction.fromSquare))
-      } else {
-        game.remove(algebraic(instruction.fromSquare))
-      }
-    }
-  }
-
-  /**
-   * Undo all recombines (for rollback when commit fails)
-   * Stores original board state before applying recombines
-   */
-  private undoRecombines(game: CoTuLenh): void {
-    // For now, we rely on the validation happening before apply
-    // If needed, we can implement full state snapshot/restore here
-    this.recombineInstructions = []
-  }
-
-  /**
-   * Check if a square is safe for Commander (not under attack)
-   *
-   * @param game - The game instance
-   * @param square - Square to check
-   * @param color - Commander's color
-   * @returns true if square is safe
-   */
-  private isSquareSafeForCommander(
-    game: CoTuLenh,
-    square: number,
-    color: Color,
-  ): boolean {
-    const them = swapColor(color)
-
-    // Check if any enemy piece can attack this square
-    const attackers = game.getAttackers(square, them)
-    return attackers.length === 0
+    this.recombineManager.applyRecombines(this, game)
   }
 }
