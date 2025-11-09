@@ -49,7 +49,6 @@ export function unselect(state: HeadlessState): void {
 }
 
 export const canMove = (state: HeadlessState, orig: cg.OrigMove, dest: cg.DestMove): boolean => {
-  // If moving from a stack, use the original key for validation
   return (
     orig.square !== dest.square &&
     isMovable(state, orig) &&
@@ -123,6 +122,7 @@ function baseUserMove(state: HeadlessState, orig: cg.OrigMove, dest: cg.DestMove
         pieceAtDest: piecesPrepared.originalPiece.originalDestPiece,
         pieceAtOrig: piecesPrepared.originalPiece.originalOrigPiece,
         pieceThatMoves: piecesPrepared.originalPiece.pieceThatMoves,
+        savedDests: state.movable.dests, // Save current dests
       };
       return { moveFinished: false };
     } else {

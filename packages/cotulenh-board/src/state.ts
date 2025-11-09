@@ -103,6 +103,7 @@ export interface HeadlessState {
     pieceAtDest: cg.Piece | undefined;
     pieceAtOrig: cg.Piece;
     pieceThatMoves: cg.Piece;
+    savedDests?: cg.Dests; // Preserve dests during ambiguous move
     renderGuide?: {
       atOrig: HTMLElement | undefined;
       atDest: HTMLElement | undefined;
