@@ -13,7 +13,6 @@ import {
 import * as cg from './types.js';
 import { AMBIGOUS_STACK_MOVE_STAY_PIECES_CANT_COMBINE, tryCombinePieces } from './combined-piece.js';
 import { AMBIGOUS_CAPTURE_STAY_BACK } from './piece-attack';
-import { PopUpType } from './popup/popup-factory';
 
 export function toggleOrientation(state: HeadlessState): void {
   state.orientation = opposite(state.orientation);
@@ -439,7 +438,7 @@ interface PreparedPiece {
   originalPiece: OriginalPiece;
 }
 interface AmbigousMove {
-  type: PopUpType;
+  type: string;
   originalPiece: OriginalPiece;
 }
 

@@ -206,7 +206,7 @@ export function makeCoreMove(game: CoTuLenh, orig: OrigMove, dest: DestMove): Mo
     }
 
     // Check if there's an active deploy session
-    const hasDeploySession = game.getDeployState() !== null;
+    const hasDeploySession = game.getDeploySession() !== null;
 
     const moveResult = game.move({
       from: orig.square,

@@ -54,6 +54,7 @@ export const eventPosition = (e: cg.MouchEvent): cg.NumberPair | undefined => {
   if (e.clientX || e.clientX === 0) return [e.clientX, e.clientY!];
   if (e.targetTouches?.[0]) return [e.targetTouches[0].clientX, e.targetTouches[0].clientY];
   // touchend has no position!
+  return undefined;
 };
 
 // export const key2pos = (k: cg.Key): cg.Pos => k.split('.').map(Number) as cg.Pos;
