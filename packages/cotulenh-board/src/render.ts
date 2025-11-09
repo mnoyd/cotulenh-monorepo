@@ -190,11 +190,12 @@ export function render(s: State): void {
           if (s.addPieceZIndex) el.style.zIndex = posZIndex(key2pos(k), asRed);
         }
         //With ambigous move presents, rendering at orig and dest square will be handle by ambigous handling
-        if (s.ambigousMove?.destKey === k || s.ambigousMove?.origKey === k) {
+        const isAmbiguousSquare = s.ambigousMove?.destKey === k || s.ambigousMove?.origKey === k;
+        if (isAmbiguousSquare) {
           appendValue(movedPieces, elPieceName, el);
         }
-        // same piece: flag as same
-        if (elPieceName === pieceNameOf(pieceAtKey) && (!fading || !el.cgFading)) {
+        // same piece: flag as same (but not if it's at an ambiguous square)
+        else if (elPieceName === pieceNameOf(pieceAtKey) && (!fading || !el.cgFading)) {
           samePieces.add(k);
         }
         // different piece: flag as moved unless it is a fading piece
@@ -244,7 +245,10 @@ export function render(s: State): void {
   // or append new pieces
   for (const [k, p] of pieces) {
     anim = anims.get(k);
-    if (!samePieces.has(k) && (s.ambigousMove?.destKey !== k || s.ambigousMove?.origKey !== k)) {
+    // Skip rendering pieces at ambiguous move squares - they'll be handled by ambiguous move rendering
+    const isAmbiguousSquare =
+      s.ambigousMove && (s.ambigousMove.destKey === k || s.ambigousMove.origKey === k);
+    if (!samePieces.has(k) && !isAmbiguousSquare) {
       pMvdset = movedPieces.get(pieceNameOf(p));
       pMvd = pMvdset && pMvdset.pop();
       // a same piece was moved

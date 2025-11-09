@@ -184,6 +184,10 @@ const moveWithCarrierPopup = createPopupFactory<cg.Piece>({
     s.dom.redraw();
   },
   onClose: (s: State) => {
+    // Restore saved dests if move was cancelled
+    if (s.ambigousMove?.savedDests) {
+      s.movable.dests = s.ambigousMove.savedDests;
+    }
     s.ambigousMove = undefined;
     board.unselect(s);
   },

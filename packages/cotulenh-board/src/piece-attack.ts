@@ -22,7 +22,10 @@ const pieceAttackPopup = createPopupFactory<string>({
     return el;
   },
   onSelect: (s: State, index: number) => {
-    if (!s.ambigousMove) return;
+    if (!s.ambigousMove) {
+      return;
+    }
+
     const origMove = {
       square: s.ambigousMove.origKey,
       type: s.ambigousMove.pieceThatMoves.role,
@@ -31,12 +34,17 @@ const pieceAttackPopup = createPopupFactory<string>({
       square: s.ambigousMove.destKey,
       stay: s.popup?.items[index] === 'stay',
     };
+
     userMove(s, origMove, destMove);
     s.ambigousMove = undefined;
     clearPopup(s);
     s.dom.redraw();
   },
   onClose: (s: State) => {
+    // Restore saved dests if move was cancelled
+    if (s.ambigousMove?.savedDests) {
+      s.movable.dests = s.ambigousMove.savedDests;
+    }
     s.ambigousMove = undefined;
     unselect(s);
   },
@@ -50,8 +58,15 @@ const ambigousCaptureStayBackHandling = createAmbigousModeHandling({
   type: AMBIGOUS_CAPTURE_STAY_BACK,
   popup: pieceAttackPopup,
   renderAmbigousMoveElements: (s: State, popup: CTLPopup<string>) => {
-    if (!s.ambigousMove) return;
-    popup.setPopup(s, ['normal', 'stay'], s.ambigousMove.destKey);
+    if (!s.ambigousMove) {
+      return;
+    }
+
+    // Check if this is a long-range attack (air_force or navy) - if so, delay popup to show move animation first
+    const isLongRangeAttack =
+      s.ambigousMove.pieceThatMoves.role === 'air_force' || s.ambigousMove.pieceThatMoves.role === 'navy';
+
+    // Create the visual element at destination showing both pieces
     const elAtDest = createAmbigousPiecesStackElement([
       s.ambigousMove.pieceAtDest!,
       s.ambigousMove.pieceThatMoves,
@@ -64,7 +79,26 @@ const ambigousCaptureStayBackHandling = createAmbigousModeHandling({
       atOrig: undefined,
       atDest: elAtDest,
     };
-    s.dom.redraw();
+
+    if (isLongRangeAttack && s.animation.enabled) {
+      // Lazy load: Show move animation first, then popup after animation completes
+      const animationDuration = s.animation.duration || 200;
+
+      // Redraw to show the animation
+      s.dom.redraw();
+
+      // Delay popup until after animation completes
+      setTimeout(() => {
+        if (s.ambigousMove) {
+          popup.setPopup(s, ['normal', 'stay'], s.ambigousMove.destKey);
+          s.dom.redraw();
+        }
+      }, animationDuration);
+    } else {
+      // Show popup immediately for non-long-range pieces or when animation is disabled
+      popup.setPopup(s, ['normal', 'stay'], s.ambigousMove.destKey);
+      s.dom.redraw();
+    }
   },
 });
 
