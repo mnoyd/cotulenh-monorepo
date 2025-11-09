@@ -352,17 +352,21 @@ function computeSquareClasses(s: State): cg.SquareClasses {
   let isFirstSquareInLastMove = true;
   if (s.lastMove && s.highlight.lastMove)
     for (const k of s.lastMove) {
-      addSquare(squares, k, 'last-move ' + (isFirstSquareInLastMove ? 'from' : 'to'));
-      isFirstSquareInLastMove = false;
+      if (k && typeof k === 'string') {
+        addSquare(squares, k, 'last-move ' + (isFirstSquareInLastMove ? 'from' : 'to'));
+        isFirstSquareInLastMove = false;
+      }
     }
-  if (s.check && s.highlight.check) addSquare(squares, s.check, 'check');
-  if (s.selected) {
+  if (s.check && s.highlight.check && typeof s.check === 'string') addSquare(squares, s.check, 'check');
+  if (s.selected && s.selected.square && typeof s.selected.square === 'string') {
     addSquare(squares, s.selected.square, 'selected' + (s.selected.stackMove ? ' sm' : ''));
     if (s.movable.showDests) {
       const dests = s.movable.dests?.get(origMoveToKey(s.selected)) || [];
       if (dests)
         for (const k of dests) {
-          addSquare(squares, k.square, 'move-dest' + (s.pieces.has(k.square) ? ' oc' : ''));
+          if (k.square && typeof k.square === 'string') {
+            addSquare(squares, k.square, 'move-dest' + (s.pieces.has(k.square) ? ' oc' : ''));
+          }
         }
     }
     if (s.airDefense?.showInfluceZone) {
@@ -377,35 +381,52 @@ function computeSquareClasses(s: State): cg.SquareClasses {
   }
 
   const o = s.exploding;
-  if (o) for (const k of o.keys) addSquare(squares, k, 'exploding' + o.stage);
+  if (o)
+    for (const k of o.keys) {
+      if (k && typeof k === 'string') {
+        addSquare(squares, k, 'exploding' + o.stage);
+      }
+    }
 
   // Deploy session highlights
   if (s.deploySession) {
     // Highlight origin square (stack being deployed)
-    addSquare(squares, s.deploySession.originSquare, 'deploy-origin');
+    if (s.deploySession.originSquare && typeof s.deploySession.originSquare === 'string') {
+      addSquare(squares, s.deploySession.originSquare, 'deploy-origin');
+    }
 
     // Highlight deployed destination squares
     for (const move of s.deploySession.deployedMoves) {
-      addSquare(squares, move.to, 'deploy-dest');
+      if (move.to && typeof move.to === 'string') {
+        addSquare(squares, move.to, 'deploy-dest');
+      }
     }
 
     // Add incomplete indicator if deployment is ongoing
-    if (!s.deploySession.isComplete) {
+    if (
+      !s.deploySession.isComplete &&
+      s.deploySession.originSquare &&
+      typeof s.deploySession.originSquare === 'string'
+    ) {
       addSquare(squares, s.deploySession.originSquare, 'deploy-incomplete');
     }
 
     // Highlight recombine options
     if (s.deploySession.recombineOptions) {
       for (const option of s.deploySession.recombineOptions) {
-        const className = option.isSafe ? 'recombine-available' : 'recombine-unsafe';
-        addSquare(squares, option.targetSquare, className);
+        if (option.targetSquare && typeof option.targetSquare === 'string') {
+          const className = option.isSafe ? 'recombine-available' : 'recombine-unsafe';
+          addSquare(squares, option.targetSquare, className);
+        }
       }
     }
   }
 
   if (s.highlight.custom) {
     s.highlight.custom.forEach((v: string, k: cg.Key) => {
-      addSquare(squares, k, v);
+      if (k && typeof k === 'string') {
+        addSquare(squares, k, v);
+      }
     });
   }
 
