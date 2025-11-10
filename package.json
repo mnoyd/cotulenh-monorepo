@@ -2,7 +2,8 @@
   "name": "cotulenh-monorepo",
   "private": true,
   "scripts": {
-    "build": "turbo run build --filter='!web-one'",
+    "build": "turbo run build",
+    "build:app": "turbo run build --filter=cotulenh-app",
     "dev": "turbo run dev",
     "lint": "turbo run lint",
     "format": "prettier --write .",
