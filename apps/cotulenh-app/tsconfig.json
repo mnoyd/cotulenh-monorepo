@@ -8,13 +8,9 @@
     "resolveJsonModule": true,
     "skipLibCheck": true,
     "sourceMap": true,
-    "inlineSourceMap": false,
-    "inlineSources": false,
     "strict": true,
     "moduleResolution": "bundler",
-    "module": "ESNext",
-    "declaration": true,
-    "declarationMap": true
+    "module": "ESNext"
   }
   // Path aliases are handled by https://svelte.dev/docs/kit/configuration#alias
   // except $lib which is handled by https://svelte.dev/docs/kit/configuration#files

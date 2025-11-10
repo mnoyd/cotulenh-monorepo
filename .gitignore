@@ -30,4 +30,10 @@ yarn-error.log*
 .turbo
 **/dist/*
 tsconfig.tsbuildinfo
+
 **/chrome-debug-profile
+
+# deployment
+build
+.vercel
+.netlify
