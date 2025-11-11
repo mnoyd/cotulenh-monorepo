@@ -1,6 +1,5 @@
 <script lang="ts">
   import type { Api, Piece, Role, Color } from '@repo/cotulenh-board';
-  import { onMount } from 'svelte';
 
   type EditorMode = 'hand' | 'drop' | 'delete';
 
@@ -12,6 +11,7 @@
   export let editorMode: EditorMode = 'hand'; // Current editor mode
   export let onHandModeToggle: () => void = () => {}; // Callback to toggle hand mode
   export let onDeleteModeToggle: () => void = () => {}; // Callback to toggle delete mode
+  export let onHeroicToggle: () => void = () => {}; // Callback to toggle heroic mode
 
   const roles: Role[] = [
     'commander',
@@ -63,16 +63,42 @@
 </script>
 
 <div class="palette-container">
-  <!-- Mode buttons: Hand and Delete -->
-  <div class="mode-buttons">
+  <!-- Control buttons: Heroic, Hand and Delete -->
+  <div class="control-buttons">
+    <!-- Heroic button -->
+    <div
+      class="palette-piece-wrapper control-button heroic-button"
+      class:heroic-active={heroicMode}
+      title="Toggle Heroic Mode"
+    >
+      <div 
+        class="palette-piece-container control-icon"
+        role="button"
+        tabindex="0"
+        on:click={(e) => {
+          e.stopPropagation();
+          onHeroicToggle();
+        }}
+        on:keydown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            onHeroicToggle();
+          }
+        }}
+      >
+        <span class="control-emoji">⭐</span>
+      </div>
+      <span class="piece-label">Heroic</span>
+    </div>
+
     <!-- Hand button -->
     <div
-      class="palette-piece-wrapper mode-button"
+      class="palette-piece-wrapper control-button"
       class:selected={editorMode === 'hand'}
       title="Hand Mode - Drag pieces on board"
     >
       <div 
-        class="palette-piece-container mode-icon"
+        class="palette-piece-container control-icon"
         role="button"
         tabindex="0"
         on:click={(e) => {
@@ -86,19 +112,19 @@
           }
         }}
       >
-        <span class="mode-emoji">✋</span>
+        <span class="control-emoji">✋</span>
       </div>
       <span class="piece-label">Hand</span>
     </div>
 
     <!-- Delete button -->
     <div
-      class="palette-piece-wrapper mode-button"
+      class="palette-piece-wrapper control-button"
       class:selected={editorMode === 'delete'}
       title="Delete Mode - Click pieces to delete"
     >
       <div 
-        class="palette-piece-container mode-icon delete-icon"
+        class="palette-piece-container control-icon delete-icon"
         role="button"
         tabindex="0"
         on:click={(e) => {
@@ -112,7 +138,7 @@
           }
         }}
       >
-        <span class="mode-emoji">🗑️</span>
+        <span class="control-emoji">🗑️</span>
       </div>
       <span class="piece-label">Delete</span>
     </div>
@@ -234,18 +260,19 @@
     white-space: nowrap;
   }
 
-  /* Mode buttons styles */
-  .mode-buttons {
-    display: flex;
+  /* Control buttons styles */
+  .control-buttons {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
     gap: 0.25rem;
     margin-bottom: 0.5rem;
   }
 
-  .mode-button {
+  .control-button {
     flex: 1;
   }
 
-  .mode-icon {
+  .control-icon {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -253,23 +280,31 @@
     cursor: pointer;
   }
 
-  .mode-icon:hover {
+  .control-icon:hover {
     background-color: #e9ecef;
   }
 
-  .mode-button.selected .mode-icon {
+  .control-button.selected .control-icon {
     background-color: rgba(0, 123, 255, 0.2);
   }
 
-  .delete-icon.mode-icon:hover {
+  .heroic-button.heroic-active .control-icon {
+    background-color: #ffd700;
+  }
+
+  .heroic-button.heroic-active .control-icon:hover {
+    background-color: #ffed4e;
+  }
+
+  .delete-icon.control-icon:hover {
     background-color: #ffe5e5;
   }
 
-  .mode-button.selected .delete-icon {
+  .control-button.selected .delete-icon {
     background-color: rgba(220, 53, 69, 0.2);
   }
 
-  .mode-emoji {
+  .control-emoji {
     font-size: 24px;
     user-select: none;
     pointer-events: none;
@@ -277,79 +312,14 @@
 
   /* When palettes are stacked horizontally */
   @media (max-width: 1000px) {
-    .mode-buttons {
-      gap: 0.35rem;
-      margin-bottom: 0.75rem;
+    .control-buttons {
+      gap: 0.15rem;
+      margin-bottom: 0.3rem;
     }
 
     .pieces-grid {
       grid-template-columns: repeat(6, 1fr);
-      gap: 0.35rem;
-    }
-
-    .palette-piece-wrapper {
-      gap: 0.08rem;
-      padding: 0.12rem;
-    }
-
-    .palette-piece-container {
-      width: clamp(35px, 8vw, 50px);
-      height: clamp(35px, 8vw, 50px);
-    }
-
-    .mode-emoji {
-      font-size: 20px;
-    }
-  }
-
-  @media (max-width: 768px) {
-    .pieces-grid {
-      grid-template-columns: repeat(5, 1fr);
-      gap: 0.3rem;
-    }
-
-    .palette-piece-wrapper {
-      gap: 0.06rem;
-      padding: 0.1rem;
-    }
-
-    .palette-piece-container {
-      width: clamp(32px, 10vw, 45px);
-      height: clamp(32px, 10vw, 45px);
-    }
-
-    .piece-label {
-      font-size: 0.6rem;
-      max-width: clamp(40px, 10vw, 50px);
-    }
-  }
-
-  @media (max-width: 480px) {
-    .pieces-grid {
-      grid-template-columns: repeat(4, 1fr);
-      gap: 0.25rem;
-    }
-
-    .palette-piece-wrapper {
-      gap: 0.05rem;
-      padding: 0.08rem;
-    }
-
-    .palette-piece-container {
-      width: clamp(30px, 12vw, 40px);
-      height: clamp(30px, 12vw, 40px);
-    }
-
-    .piece-label {
-      font-size: 0.55rem;
-      max-width: clamp(35px, 12vw, 45px);
-    }
-  }
-
-  @media (max-width: 360px) {
-    .pieces-grid {
-      grid-template-columns: repeat(3, 1fr);
-      gap: 0.2rem;
+      gap: 0.15rem;
     }
 
     .palette-piece-wrapper {
@@ -358,13 +328,105 @@
     }
 
     .palette-piece-container {
+      width: clamp(35px, 8vw, 50px);
+      height: clamp(35px, 8vw, 50px);
+    }
+
+    .control-emoji {
+      font-size: 20px;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .control-buttons {
+      gap: 0.12rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .pieces-grid {
+      grid-template-columns: repeat(6, 1fr);
+      gap: 0.12rem;
+    }
+
+    .palette-piece-wrapper {
+      gap: 0.03rem;
+      padding: 0.05rem;
+    }
+
+    .palette-piece-container {
+      width: clamp(32px, 10vw, 45px);
+      height: clamp(32px, 10vw, 45px);
+    }
+
+    .piece-label {
+      font-size: 0.55rem;
+      max-width: clamp(40px, 10vw, 50px);
+    }
+
+    .control-emoji {
+      font-size: 18px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .control-buttons {
+      gap: 0.1rem;
+      margin-bottom: 0.2rem;
+    }
+
+    .pieces-grid {
+      grid-template-columns: repeat(6, 1fr);
+      gap: 0.1rem;
+    }
+
+    .palette-piece-wrapper {
+      gap: 0.02rem;
+      padding: 0.04rem;
+    }
+
+    .palette-piece-container {
+      width: clamp(30px, 12vw, 40px);
+      height: clamp(30px, 12vw, 40px);
+    }
+
+    .piece-label {
+      font-size: 0.52rem;
+      max-width: clamp(35px, 12vw, 45px);
+    }
+
+    .control-emoji {
+      font-size: 16px;
+    }
+  }
+
+  @media (max-width: 360px) {
+    .control-buttons {
+      gap: 0.08rem;
+      margin-bottom: 0.15rem;
+    }
+
+    .pieces-grid {
+      grid-template-columns: repeat(5, 1fr);
+      gap: 0.08rem;
+    }
+
+    .palette-piece-wrapper {
+      gap: 0.02rem;
+      padding: 0.03rem;
+    }
+
+    .palette-piece-container {
       width: clamp(28px, 15vw, 38px);
       height: clamp(28px, 15vw, 38px);
     }
 
     .piece-label {
-      font-size: 0.5rem;
+      font-size: 0.48rem;
       max-width: clamp(30px, 15vw, 40px);
+    }
+
+    .control-emoji {
+      font-size: 14px;
     }
   }
 </style>

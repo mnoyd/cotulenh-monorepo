@@ -469,13 +469,6 @@
         <!-- Left Palette (Blue when red orientation, Red when blue orientation) -->
         <div class="palette-section left-palette">
           <h3>{boardOrientation === 'red' ? 'Blue' : 'Red'} Pieces</h3>
-          <button 
-            class="heroic-toggle btn-small"
-            class:heroic-active={heroicMode}
-            on:click={toggleHeroicMode}
-          >
-            ⭐ {heroicMode ? 'Heroic ON' : 'Heroic'}
-          </button>
           <PiecePalette
             {boardApi}
             color={boardOrientation === 'red' ? 'blue' : 'red'}
@@ -485,6 +478,7 @@
             {editorMode}
             onHandModeToggle={toggleHandMode}
             onDeleteModeToggle={toggleDeleteMode}
+            onHeroicToggle={toggleHeroicMode}
           />
         </div>
 
@@ -503,13 +497,6 @@
         <!-- Right Palette (Red when red orientation, Blue when blue orientation) -->
         <div class="palette-section right-palette">
           <h3>{boardOrientation === 'red' ? 'Red' : 'Blue'} Pieces</h3>
-          <button 
-            class="heroic-toggle btn-small"
-            class:heroic-active={heroicMode}
-            on:click={toggleHeroicMode}
-          >
-            ⭐ {heroicMode ? 'Heroic ON' : 'Heroic'}
-          </button>
           <PiecePalette
             {boardApi}
             color={boardOrientation === 'red' ? 'red' : 'blue'}
@@ -519,6 +506,7 @@
             {editorMode}
             onHandModeToggle={toggleHandMode}
             onDeleteModeToggle={toggleDeleteMode}
+            onHeroicToggle={toggleHeroicMode}
           />
         </div>
       </div>
@@ -922,36 +910,7 @@
     background: #0056b3;
   }
 
-  /* Heroic toggle button */
-  .heroic-toggle {
-    width: 100%;
-    margin-bottom: 0.75rem;
-    background: #f8f9fa;
-    color: #495057;
-    border: 2px solid #dee2e6;
-    padding: 0.5rem 0.75rem;
-    font-size: 0.85rem;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
 
-  .heroic-toggle:hover {
-    background: #e9ecef;
-    border-color: #cbd3da;
-  }
-
-  .heroic-toggle.heroic-active {
-    background: #ffd700;
-    color: #000;
-    border-color: #ffb700;
-    font-weight: 600;
-  }
-
-  .heroic-toggle.heroic-active:hover {
-    background: #ffed4e;
-    border-color: #ffd700;
-  }
 
   .fen-section {
     margin-bottom: 1.5rem;
