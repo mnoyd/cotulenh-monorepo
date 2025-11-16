@@ -1,0 +1,56 @@
+{
+  "name": "@repo/cotulenh-bitboard",
+  "version": "0.1.0",
+  "description": "High-performance bitboard-based CoTuLenh chess engine implementation",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "vite build && tsc --emitDeclarationOnly --outDir dist",
+    "dev": "vite build --watch",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest --coverage",
+    "type-check": "tsc --noEmit",
+    "lint": "eslint src --ext .ts",
+    "clean": "rm -rf dist"
+  },
+  "keywords": [
+    "cotulenh",
+    "chess",
+    "bitboard",
+    "game-engine",
+    "typescript"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "@vitest/ui": "^1.0.0",
+    "typescript": "^5.3.3",
+    "vite": "^5.0.0",
+    "vite-plugin-dts": "^3.6.4",
+    "vitest": "^1.0.0"
+  },
+  "dependencies": {
+    "@repo/cotulenh-combine-piece": "workspace:*"
+  },
+  "peerDependencies": {
+    "@repo/cotulenh-core": "workspace:*"
+  },
+  "peerDependenciesMeta": {
+    "@repo/cotulenh-core": {
+      "optional": true
+    }
+  }
+}

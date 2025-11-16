@@ -149,6 +149,34 @@ importers:
         specifier: ^5
         version: 5.8.2
 
+  packages/cotulenh-bitboard:
+    dependencies:
+      '@repo/cotulenh-combine-piece':
+        specifier: workspace:*
+        version: link:../cotulenh-combine-piece
+      '@repo/cotulenh-core':
+        specifier: workspace:*
+        version: link:../cotulenh-core
+    devDependencies:
+      '@types/node':
+        specifier: ^20.10.0
+        version: 20.19.9
+      '@vitest/ui':
+        specifier: ^1.0.0
+        version: 1.6.1(vitest@1.6.1)
+      typescript:
+        specifier: ^5.3.3
+        version: 5.8.2
+      vite:
+        specifier: ^5.0.0
+        version: 5.4.18(@types/node@20.19.9)
+      vite-plugin-dts:
+        specifier: ^3.6.4
+        version: 3.9.1(@types/node@20.19.9)(typescript@5.8.2)(vite@5.4.18)
+      vitest:
+        specifier: ^1.0.0
+        version: 1.6.1(@types/node@20.19.9)(@vitest/ui@1.6.1)
+
   packages/cotulenh-board:
     dependencies:
       '@repo/cotulenh-combine-piece':
@@ -191,7 +219,7 @@ importers:
         version: 3.9.1(@types/node@20.19.9)(typescript@5.8.2)(vite@5.4.18)
       vitest:
         specifier: ^1.2.0
-        version: 1.6.1(@types/node@20.19.9)
+        version: 1.6.1(@types/node@20.19.9)(@vitest/ui@1.6.1)
 
   packages/cotulenh-core:
     dependencies:
@@ -2840,6 +2868,21 @@ packages:
     dependencies:
       tinyspy: 2.2.1
 
+  /@vitest/ui@1.6.1(vitest@1.6.1):
+    resolution: {integrity: sha512-xa57bCPGuzEFqGjPs3vVLyqareG8DX0uMkr5U/v5vLv5/ZUrBrPL7gzxzTJedEyZxFMfsozwTIbbYfEQVo3kgg==}
+    peerDependencies:
+      vitest: 1.6.1
+    dependencies:
+      '@vitest/utils': 1.6.1
+      fast-glob: 3.3.3
+      fflate: 0.8.2
+      flatted: 3.3.3
+      pathe: 1.1.2
+      picocolors: 1.1.1
+      sirv: 2.0.4
+      vitest: 1.6.1(@types/node@20.19.9)(@vitest/ui@1.6.1)
+    dev: true
+
   /@vitest/utils@1.6.1:
     resolution: {integrity: sha512-jOrrUvXM4Av9ZWiG1EajNto0u96kWAhJ1LmPmJhXXQx/32MecEKd10pOLYgS2BQx1TgkGhloPU1ArDW2vvaY6g==}
     dependencies:
@@ -4192,6 +4235,10 @@ packages:
         optional: true
     dependencies:
       picomatch: 4.0.3
+    dev: true
+
+  /fflate@0.8.2:
+    resolution: {integrity: sha512-cPJU47OaAoCbg0pBvzsgpTPhmhqI5eJjh/JIu8tPj5q+T7iLvW/JAYUqmE7KOB4R1ZyEhzBaIQpQpardBF5z8A==}
     dev: true
 
   /file-entry-cache@8.0.0:
@@ -5952,6 +5999,15 @@ packages:
     dev: false
     optional: true
 
+  /sirv@2.0.4:
+    resolution: {integrity: sha512-94Bdh3cC2PKrbgSOUqTiGPWVZeSiXfKOVZNJniWoqrWrRkB1CJzBU3NEbiTsPcYy1lDsANA/THzS+9WBiy5nfQ==}
+    engines: {node: '>= 10'}
+    dependencies:
+      '@polka/url': 1.0.0-next.28
+      mrmime: 2.0.1
+      totalist: 3.0.1
+    dev: true
+
   /sirv@3.0.1:
     resolution: {integrity: sha512-FoqMu0NCGBLCcAkS1qA+XJIQTR6/JHfQXl+uGteNCQ76T91DMUjPa9xfmeqMY3z80nLSg9yQmNjK0Px6RWsH/A==}
     engines: {node: '>=18'}
@@ -6890,7 +6946,7 @@ packages:
       - terser
     dev: false
 
-  /vitest@1.6.1(@types/node@20.19.9):
+  /vitest@1.6.1(@types/node@20.19.9)(@vitest/ui@1.6.1):
     resolution: {integrity: sha512-Ljb1cnSJSivGN0LqXd/zmDbWEM0RNNg2t1QW/XUhYl/qPqyu7CsqeWtqQXHVaJsecLPuDoak2oJcZN2QoRIOag==}
     engines: {node: ^18.0.0 || >=20.0.0}
     hasBin: true
@@ -6920,6 +6976,7 @@ packages:
       '@vitest/runner': 1.6.1
       '@vitest/snapshot': 1.6.1
       '@vitest/spy': 1.6.1
+      '@vitest/ui': 1.6.1(vitest@1.6.1)
       '@vitest/utils': 1.6.1
       acorn-walk: 8.3.4
       chai: 4.5.0
