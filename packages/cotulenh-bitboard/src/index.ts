@@ -21,15 +21,8 @@
 // TODO: Implement CoTuLenh class with bitboard architecture
 // See docs/IMPLEMENTATION-GUIDE.md for detailed implementation plan
 
-/**
- * Placeholder for the main CoTuLenh class.
- * This will be implemented following the bitboard architecture design.
- */
-export class CoTuLenh {
-  constructor() {
-    throw new Error('CoTuLenh bitboard implementation is under development');
-  }
-}
+// Export main CoTuLenh class
+export { CoTuLenh, Move as PublicMove } from './cotulenh';
 
 // Export types and interfaces
 export type { Piece, Color, Square, PieceSymbol } from './types';

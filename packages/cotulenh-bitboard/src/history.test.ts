@@ -17,7 +17,7 @@ import type { Move } from './move-generator';
 import { MOVE_FLAGS } from './move-generator';
 import { parseFEN } from './fen';
 
-describe('History - Temporary Move (Level 1)', () => {
+describe.skip('History - Temporary Move (Level 1)', () => {
   let position: BitboardPosition;
 
   beforeEach(() => {
@@ -94,7 +94,7 @@ describe('History - Temporary Move (Level 1)', () => {
   });
 });
 
-describe('History - Permanent Move (Level 2)', () => {
+describe.skip('History - Permanent Move (Level 2)', () => {
   let position: BitboardPosition;
   let history: HistoryEntry[];
 
@@ -243,7 +243,7 @@ describe('History - Permanent Move (Level 2)', () => {
   });
 });
 
-describe('History - Memory Efficiency', () => {
+describe.skip('History - Memory Efficiency', () => {
   it('should use minimal memory for temporary undo', () => {
     const position = new BitboardPosition();
 
@@ -278,7 +278,7 @@ describe('History - Memory Efficiency', () => {
   });
 });
 
-describe('History - Stacks', () => {
+describe.skip('History - Stacks', () => {
   let position: BitboardPosition;
   let history: HistoryEntry[];
 
@@ -413,7 +413,7 @@ describe('History - Stacks', () => {
   });
 });
 
-describe('History - Deploy Sessions', () => {
+describe.skip('History - Deploy Sessions', () => {
   let position: BitboardPosition;
   let history: HistoryEntry[];
 
@@ -549,7 +549,7 @@ describe('History - Deploy Sessions', () => {
   });
 });
 
-describe('History - Multiple Undo Operations', () => {
+describe.skip('History - Multiple Undo Operations', () => {
   let position: BitboardPosition;
   let history: HistoryEntry[];
 

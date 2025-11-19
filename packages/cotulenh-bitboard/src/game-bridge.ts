@@ -145,7 +145,7 @@ export class BitboardGameBridge implements GameBridge {
    * Load from FEN (only for save/load/share).
    * NOT called in hot path.
    */
-  fromFEN(fen: string): void {
+  fromFEN(_fen: string): void {
     // TODO: Implement FEN parsing
     this.position.clear();
 

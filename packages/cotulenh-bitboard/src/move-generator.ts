@@ -30,7 +30,8 @@ export const MOVE_FLAGS = {
   CAPTURE: 1,
   COMBINATION: 2,
   DEPLOY: 4,
-  KAMIKAZE: 8
+  KAMIKAZE: 8,
+  STAY_CAPTURE: 16
 } as const;
 
 /**
@@ -237,18 +238,17 @@ function generateMovesInDirection(
     if (targetPiece) {
       // Capture logic
       if (targetPiece.color === them && currentRange <= config.captureRange) {
-        // Check terrain restrictions
-        if (!canPieceStayOnSquare(piece.type, to)) {
-          break;
-        }
-
-        moves.push({
+        // Use handleCaptureLogic to handle normal and stay captures
+        handleCaptureLogic(
+          moves,
           from,
           to,
           piece,
-          captured: targetPiece,
-          flags: MOVE_FLAGS.CAPTURE
-        });
+          targetPiece,
+          currentRange,
+          config,
+          false // isDeployMove - will be updated for deploy moves
+        );
       } else if (targetPiece.color === us) {
         // Combination logic (friendly piece)
         if (currentRange <= config.moveRange && !pieceBlockedMovement) {
@@ -300,6 +300,97 @@ function canPieceStayOnSquare(pieceType: PieceSymbol, square: number): boolean {
     return isSet(WATER_MASK, square);
   } else {
     return isSet(LAND_MASK, square);
+  }
+}
+
+/**
+ * Handles capture logic including stay capture mechanics
+ * @param moves - Array to add moves to
+ * @param from - Source square
+ * @param to - Target square
+ * @param attacker - Attacking piece
+ * @param target - Target piece being captured
+ * @param currentRange - Current range of the move
+ * @param config - Movement configuration
+ * @param isDeployMove - Whether this is a deploy move
+ */
+function handleCaptureLogic(
+  moves: Move[],
+  from: number,
+  to: number,
+  attacker: Piece,
+  target: Piece,
+  currentRange: number,
+  config: PieceMovementConfig,
+  isDeployMove: boolean
+): void {
+  let addNormalCapture = true;
+  let addStayCapture = false;
+
+  // Check if attacker can stay on target square (terrain compatibility)
+  const canLandOnTarget = canPieceStayOnSquare(attacker.type, to);
+
+  if (!canLandOnTarget) {
+    // Terrain incompatible → stay capture only
+    addStayCapture = true;
+    addNormalCapture = false;
+  }
+
+  // Air Force special case: can choose both options (except Navy at sea)
+  if (attacker.type === 'f') {
+    // Air Force
+    if (canLandOnTarget) {
+      // Can land on target → offer both options (unless in deploy mode)
+      if (!isDeployMove) {
+        addStayCapture = true; // Add stay capture option
+      }
+      addNormalCapture = true; // Keep normal capture option
+    } else {
+      // Can't land (e.g., Navy at sea) → stay capture only
+      addStayCapture = true;
+      addNormalCapture = false;
+    }
+  }
+
+  // Commander special rule: only captures adjacent
+  if (attacker.type === 'c' && currentRange > 1) {
+    return; // No capture allowed
+  }
+
+  // Navy special attack mechanisms
+  if (attacker.type === 'n') {
+    if (target.type === 'n') {
+      // Torpedo attack (Navy vs Navy)
+      if (currentRange > config.captureRange) {
+        return; // Out of range
+      }
+    } else {
+      // Naval Gun attack (Navy vs Land)
+      if (currentRange > config.captureRange - 1) {
+        return; // Out of range
+      }
+    }
+  }
+
+  // Add the appropriate capture moves
+  if (addNormalCapture) {
+    moves.push({
+      from,
+      to,
+      piece: attacker,
+      captured: target,
+      flags: MOVE_FLAGS.CAPTURE
+    });
+  }
+
+  if (addStayCapture) {
+    moves.push({
+      from,
+      to,
+      piece: attacker,
+      captured: target,
+      flags: MOVE_FLAGS.STAY_CAPTURE
+    });
   }
 }
 

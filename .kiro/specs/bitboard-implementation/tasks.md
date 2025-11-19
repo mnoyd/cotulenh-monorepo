@@ -463,8 +463,8 @@ After studying mature chess projects (chessops, chess.js, chessground, En Croiss
   - Test memory usage (minimal vs full)
   - _Requirements: 8.1, 8.2, 8.3, 8.4, 8.5, 8.6, 8.7, 8.8_
 
-- [ ] 11. Implement Bridge Layer and Public API
-- [ ] 11.0 Implement Bridge Layer (NEW - inspired by chess programming)
+- [x] 11. Implement Bridge Layer and Public API
+- [x] 11.0 Implement Bridge Layer (NEW - inspired by chess programming)
 
   - ✅ Define bridge interfaces (UIMove, UIPiece, UIGameState, UILegalMoves)
   - ✅ Create BitboardGameBridge class
@@ -476,7 +476,7 @@ After studying mature chess projects (chessops, chess.js, chessground, En Croiss
   - _Requirements: Communication efficiency, UI integration_
   - _See: docs/BRIDGE-ARCHITECTURE.md_
 
-- [ ] 11.1 Create CoTuLenh class with same interface
+- [x] 11.1 Create CoTuLenh class with same interface
 
   - Implement constructor(fen)
   - Implement clear() method
@@ -484,21 +484,21 @@ After studying mature chess projects (chessops, chess.js, chessground, En Croiss
   - Implement fen() method
   - _Requirements: 1.1, 1.2, 1.3, 1.4_
 
-- [ ] 11.2 Implement piece manipulation methods
+- [x] 11.2 Implement piece manipulation methods
 
   - Implement get(square, pieceType) method
   - Implement put(piece, square) method
   - Implement remove(square) method
   - _Requirements: 1.1, 1.2, 1.3_
 
-- [ ] 11.3 Implement move methods
+- [x] 11.3 Implement move methods
 
   - Implement moves(options) method with verbose and filtering
   - Implement move(from, to) method
   - Implement undo() method
   - _Requirements: 1.1, 1.2, 1.3, 1.5, 1.6, 1.7_
 
-- [ ] 11.4 Implement deploy session methods
+- [x] 11.4 Implement deploy session methods
 
   - Implement getDeploySession() method
   - Implement setDeploySession() method
@@ -512,7 +512,7 @@ After studying mature chess projects (chessops, chess.js, chessground, En Croiss
   - Implement deployMove(request) for backward compatibility
   - _Requirements: 1.1, 1.2, 1.3_
 
-- [ ] 11.5 Implement game state query methods
+- [x] 11.5 Implement game state query methods
 
   - Implement turn() method
   - Implement isCheck() method
@@ -520,7 +520,7 @@ After studying mature chess projects (chessops, chess.js, chessground, En Croiss
   - Implement isGameOver() method
   - _Requirements: 1.1, 1.2, 1.3_
 
-- [ ] 11.6 Implement draw detection methods
+- [x] 11.6 Implement draw detection methods
 
   - Implement isDrawByFiftyMoves() checking half-move counter
   - Add position count tracking in makeMove
@@ -528,7 +528,7 @@ After studying mature chess projects (chessops, chess.js, chessground, En Croiss
   - Implement isDraw() combining all draw conditions
   - _Requirements: 1.1, 1.2, 1.3_
 
-- [ ] 11.7 Implement SAN/LAN notation support
+- [x] 11.7 Implement SAN/LAN notation support
 
   - Implement moveToSanLan() to generate notation from move
   - Implement moveFromSan() to parse SAN strings
@@ -536,14 +536,14 @@ After studying mature chess projects (chessops, chess.js, chessground, En Croiss
   - Support all move types (normal, capture, deploy, combination)
   - _Requirements: 1.7_
 
-- [ ] 11.8 Implement additional query methods
+- [x] 11.8 Implement additional query methods
 
   - Implement board() to return 2D array representation
   - Implement getCommanderSquare(color) public method
   - Implement getAttackers(square, color) using bitboards
   - _Requirements: 1.1, 1.2, 1.3_
 
-- [ ] 11.9 Ensure error handling matches cotulenh-core
+- [x] 11.9 Ensure error handling matches cotulenh-core
 
   - Return null for invalid moves
   - Return false for invalid operations
