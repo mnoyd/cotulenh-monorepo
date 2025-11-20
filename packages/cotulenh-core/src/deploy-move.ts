@@ -133,42 +133,15 @@ export function isInternalDeployMove(
   return (move as InternalDeployMove).moves !== undefined
 }
 export class DeployMove {
-  color: Color
-  from: Square
-  to: Map<Square, Piece> // Destination square (piece's final location)
+  color!: Color
+  from!: Square
+  to!: Map<Square, Piece> // Destination square (piece's final location)
   stay: Piece | undefined
   captured?: Piece[]
   san?: string // Standard Algebraic Notation (needs implementation)
   lan?: string // Long Algebraic Notation (needs implementation)
-  before: string // FEN before move
-  after: string // FEN after move
-
-  /**
-   * Legacy constructor - reconstructs from InternalDeployMove by replaying moves.
-   * This is used for history reconstruction.
-   *
-   * @deprecated Prefer using DeployMove.fromSession() for new code
-   */
-  constructor(game: CoTuLenh, internal: InternalDeployMove) {
-    this.color = internal.moves[0].color
-    this.from = algebraic(internal.from)
-    this.to = internal.moves.reduce<Map<Square, Piece>>((acc, move) => {
-      acc.set(algebraic(move.to), move.piece)
-      return acc
-    }, new Map())
-    this.stay = internal.stay
-    this.captured = internal.captured
-    this.before = game.fen()
-
-    // Generate the FEN for the 'after' key
-    game['_makeMove'](internal)
-    this.after = game.fen()
-    game['_undoMove']()
-
-    const [san, lan] = deployMoveToSanLan(game, internal)
-    this.san = san
-    this.lan = lan
-  }
+  before!: string // FEN before move
+  after!: string // FEN after move
 
   /**
    * Create DeployMove from session data (preferred method).

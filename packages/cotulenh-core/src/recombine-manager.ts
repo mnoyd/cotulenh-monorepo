@@ -330,32 +330,16 @@ export class RecombineManager {
         }
 
         // Create fresh command
-        const newCmd = this.createDeployCommand(game, newMove)
+        const newCmd = createMoveCommand(game, newMove)
         newCommands.push(newCmd)
       } else {
         // No recombines for this destination - keep original
         // Recreate command for clean state
-        const newCmd = this.createDeployCommand(game, move)
+        const newCmd = createMoveCommand(game, move)
         newCommands.push(newCmd)
       }
     }
 
     return newCommands
-  }
-
-  /**
-   * Create a fresh deploy command for a move
-   *
-   * @param game - The game instance
-   * @param move - The move to create command for
-   * @returns A new move command (SingleDeployMoveCommand for deploy moves)
-   */
-  private createDeployCommand(
-    game: CoTuLenh,
-    move: InternalMove,
-  ): CTLMoveCommandInteface {
-    // Use the factory function to create the appropriate command type
-    // For deploy moves, this will create a SingleDeployMoveCommand
-    return createMoveCommand(game, move)
   }
 }

@@ -81,6 +81,7 @@ export class DeploySession {
   stackSquare: number
   turn: Color
   originalPiece: Piece
+  private originalFlat: Piece[] // Cache flattened original pieces
   commands: CTLMoveCommandInteface[] = [] // Store commands, not moves!
   startFEN: string
   stayPieces?: Piece[] // Pieces explicitly marked to stay
@@ -93,35 +94,21 @@ export class DeploySession {
     originalPiece: Piece
     startFEN: string
     commands?: CTLMoveCommandInteface[]
-    actions?: InternalMove[] // Backward compatibility
     stayPieces?: Piece[]
     recombineInstructions?: RecombineInstruction[]
   }) {
     this.stackSquare = data.stackSquare
     this.turn = data.turn
     this.originalPiece = data.originalPiece
+    this.originalFlat = flattenPiece(data.originalPiece)
     this.startFEN = data.startFEN
-
-    // Handle both new commands and old actions for backward compatibility
-    if (data.commands) {
-      this.commands = data.commands
-    } else if (data.actions) {
-      // Convert old actions to mock commands for backward compatibility
-      this.commands = data.actions.map((move) => ({
-        move,
-        execute: () => {}, // No-op for backward compatibility
-        undo: () => {}, // No-op for backward compatibility
-      }))
-    } else {
-      this.commands = []
-    }
-
+    this.commands = data.commands || []
     this.stayPieces = data.stayPieces
     this.recombineInstructions = data.recombineInstructions || []
   }
 
   /**
-   * Get the InternalMove objects from commands (for compatibility)
+   * Get the InternalMove objects from commands
    * Deploy sessions only contain single deploy moves, never batch InternalDeployMove
    */
   getActions(): InternalMove[] {
@@ -138,46 +125,6 @@ export class DeploySession {
   }
 
   /**
-   * Backward compatibility: get actions as a property
-   * @deprecated Use getActions() method instead
-   */
-  get actions(): InternalMove[] {
-    return this.getActions()
-  }
-
-  /**
-   * Backward compatibility: add move method
-   * @deprecated Use addCommand() instead
-   */
-  addMove(move: InternalMove): void {
-    // For backward compatibility, we need to create a mock command
-    // This is not ideal but maintains API compatibility
-    const mockCommand: CTLMoveCommandInteface = {
-      move,
-      execute: () => {}, // No-op for backward compatibility
-      undo: () => {}, // No-op for backward compatibility
-    }
-    this.addCommand(mockCommand)
-  }
-
-  /**
-   * Backward compatibility: undo last move method
-   * @deprecated Use undoLastCommand() instead
-   */
-  undoLastMove(): InternalMove | null {
-    const command = this.undoLastCommand()
-    if (!command) return null
-
-    const move = command.move
-    if ('moves' in move) {
-      throw new Error(
-        'Deploy session should not contain batch InternalDeployMove',
-      )
-    }
-    return move
-  }
-
-  /**
    * Calculate remaining pieces by subtracting moved pieces from original.
    * This is the core method that replaces the old movedPieces array.
    *
@@ -185,10 +132,8 @@ export class DeploySession {
    *          or null if all pieces have been deployed
    */
   getRemainingPieces(): Piece | null {
-    const originalFlat = flattenPiece(this.originalPiece)
-
-    // Start with all original pieces
-    const remainingPieces = [...originalFlat]
+    // Start with all original pieces (cached)
+    const remainingPieces = [...this.originalFlat]
 
     // Remove pieces that have been deployed
     for (const command of this.commands) {

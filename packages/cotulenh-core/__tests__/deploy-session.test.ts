@@ -36,6 +36,13 @@ describe('DeploySession', () => {
     flags,
   })
 
+  // Helper to create a mock command
+  const createMockCommand = (move: InternalMove): any => ({
+    move,
+    execute: () => {},
+    undo: () => {},
+  })
+
   describe('Constructor', () => {
     it('should create a session with required fields', () => {
       const originalPiece = createPiece(NAVY, [
@@ -54,13 +61,14 @@ describe('DeploySession', () => {
       expect(session.turn).toBe(RED)
       expect(session.originalPiece).toEqual(originalPiece)
       expect(session.startFEN).toBe('test-fen')
-      expect(session.actions).toEqual([])
+      expect(session.commands).toEqual([])
       expect(session.stayPieces).toBeUndefined()
     })
 
-    it('should accept optional actions and stayPieces', () => {
+    it('should accept optional commands and stayPieces', () => {
       const originalPiece = createPiece(NAVY)
-      const actions = [createMove(0x92, 0x72, createPiece(NAVY))]
+      const move = createMove(0x92, 0x72, createPiece(NAVY))
+      const commands = [createMockCommand(move)]
       const stayPieces = [createPiece(TANK)]
 
       const session = new DeploySession({
@@ -68,11 +76,11 @@ describe('DeploySession', () => {
         turn: RED,
         originalPiece,
         startFEN: 'test-fen',
-        actions,
+        commands,
         stayPieces,
       })
 
-      expect(session.actions).toEqual(actions)
+      expect(session.commands).toEqual(commands)
       expect(session.stayPieces).toEqual(stayPieces)
     })
   })
@@ -109,7 +117,9 @@ describe('DeploySession', () => {
       })
 
       // Deploy Navy
-      session.addMove(createMove(0x92, 0x72, createPiece(NAVY)))
+      session.addCommand(
+        createMockCommand(createMove(0x92, 0x72, createPiece(NAVY))),
+      )
 
       const remaining = session.getRemainingPieces()
       expect(remaining).toBeTruthy()
@@ -132,9 +142,15 @@ describe('DeploySession', () => {
       })
 
       // Deploy all pieces
-      session.addMove(createMove(0x92, 0x72, createPiece(NAVY)))
-      session.addMove(createMove(0x92, 0x82, createPiece(AIR_FORCE)))
-      session.addMove(createMove(0x92, 0x93, createPiece(TANK)))
+      session.addCommand(
+        createMockCommand(createMove(0x92, 0x72, createPiece(NAVY))),
+      )
+      session.addCommand(
+        createMockCommand(createMove(0x92, 0x82, createPiece(AIR_FORCE))),
+      )
+      session.addCommand(
+        createMockCommand(createMove(0x92, 0x93, createPiece(TANK))),
+      )
 
       const remaining = session.getRemainingPieces()
       expect(remaining).toBeNull()
@@ -151,10 +167,14 @@ describe('DeploySession', () => {
       })
 
       // Deploy Navy from stack
-      session.addMove(createMove(0x92, 0x72, createPiece(NAVY)))
+      session.addCommand(
+        createMockCommand(createMove(0x92, 0x72, createPiece(NAVY))),
+      )
 
       // Add a move from different square (shouldn't affect remaining)
-      session.addMove(createMove(0x72, 0x73, createPiece(NAVY)))
+      session.addCommand(
+        createMockCommand(createMove(0x72, 0x73, createPiece(NAVY))),
+      )
 
       const remaining = session.getRemainingPieces()
       expect(remaining).toBeTruthy()
@@ -172,7 +192,11 @@ describe('DeploySession', () => {
       })
 
       // Add a non-deploy move (shouldn't affect remaining)
-      session.addMove(createMove(0x92, 0x72, createPiece(NAVY), BITS.NORMAL))
+      session.addCommand(
+        createMockCommand(
+          createMove(0x92, 0x72, createPiece(NAVY), BITS.NORMAL),
+        ),
+      )
 
       const remaining = session.getRemainingPieces()
       expect(remaining).toEqual(originalPiece) // Should be unchanged
@@ -204,9 +228,15 @@ describe('DeploySession', () => {
         startFEN: 'test-fen',
       })
 
-      session.addMove(createMove(0x92, 0x72, createPiece(NAVY)))
-      session.addMove(createMove(0x92, 0x82, createPiece(AIR_FORCE)))
-      session.addMove(createMove(0x92, 0x93, createPiece(TANK)))
+      session.addCommand(
+        createMockCommand(createMove(0x92, 0x72, createPiece(NAVY))),
+      )
+      session.addCommand(
+        createMockCommand(createMove(0x92, 0x82, createPiece(AIR_FORCE))),
+      )
+      session.addCommand(
+        createMockCommand(createMove(0x92, 0x93, createPiece(TANK))),
+      )
 
       const squares = session.getDeployedSquares()
       expect(squares).toHaveLength(3)
@@ -226,8 +256,12 @@ describe('DeploySession', () => {
       })
 
       // Both pieces to same square (recombine scenario)
-      session.addMove(createMove(0x92, 0x72, createPiece(NAVY)))
-      session.addMove(createMove(0x92, 0x72, createPiece(AIR_FORCE)))
+      session.addCommand(
+        createMockCommand(createMove(0x92, 0x72, createPiece(NAVY))),
+      )
+      session.addCommand(
+        createMockCommand(createMove(0x92, 0x72, createPiece(AIR_FORCE))),
+      )
 
       const squares = session.getDeployedSquares()
       expect(squares).toHaveLength(1)
@@ -235,8 +269,8 @@ describe('DeploySession', () => {
     })
   })
 
-  describe('addMove and undoLastMove', () => {
-    it('should add moves to actions array', () => {
+  describe('addCommand and undoLastCommand', () => {
+    it('should add commands to commands array', () => {
       const session = new DeploySession({
         stackSquare: 0x92,
         turn: RED,
@@ -245,13 +279,14 @@ describe('DeploySession', () => {
       })
 
       const move = createMove(0x92, 0x72, createPiece(NAVY))
-      session.addMove(move)
+      const command = createMockCommand(move)
+      session.addCommand(command)
 
-      expect(session.actions).toHaveLength(1)
-      expect(session.actions[0]).toEqual(move)
+      expect(session.commands).toHaveLength(1)
+      expect(session.commands[0]).toEqual(command)
     })
 
-    it('should undo last move', () => {
+    it('should undo last command', () => {
       const session = new DeploySession({
         stackSquare: 0x92,
         turn: RED,
@@ -261,15 +296,17 @@ describe('DeploySession', () => {
 
       const move1 = createMove(0x92, 0x72, createPiece(NAVY))
       const move2 = createMove(0x92, 0x82, createPiece(AIR_FORCE))
+      const cmd1 = createMockCommand(move1)
+      const cmd2 = createMockCommand(move2)
 
-      session.addMove(move1)
-      session.addMove(move2)
+      session.addCommand(cmd1)
+      session.addCommand(cmd2)
 
-      const undone = session.undoLastMove()
+      const undone = session.undoLastCommand()
 
-      expect(undone).toEqual(move2)
-      expect(session.actions).toHaveLength(1)
-      expect(session.actions[0]).toEqual(move1)
+      expect(undone).toEqual(cmd2)
+      expect(session.commands).toHaveLength(1)
+      expect(session.commands[0]).toEqual(cmd1)
     })
 
     it('should return null when undoing empty session', () => {
@@ -280,7 +317,7 @@ describe('DeploySession', () => {
         startFEN: 'test-fen',
       })
 
-      const undone = session.undoLastMove()
+      const undone = session.undoLastCommand()
       expect(undone).toBeNull()
     })
   })
@@ -307,8 +344,12 @@ describe('DeploySession', () => {
         startFEN: 'test-fen',
       })
 
-      session.addMove(createMove(0x92, 0x72, createPiece(NAVY)))
-      session.addMove(createMove(0x92, 0x82, createPiece(AIR_FORCE)))
+      session.addCommand(
+        createMockCommand(createMove(0x92, 0x72, createPiece(NAVY))),
+      )
+      session.addCommand(
+        createMockCommand(createMove(0x92, 0x82, createPiece(AIR_FORCE))),
+      )
 
       expect(session.canCommit()).toBe(true)
     })
@@ -324,7 +365,9 @@ describe('DeploySession', () => {
         stayPieces: [createPiece(AIR_FORCE)],
       })
 
-      session.addMove(createMove(0x92, 0x72, createPiece(NAVY)))
+      session.addCommand(
+        createMockCommand(createMove(0x92, 0x72, createPiece(NAVY))),
+      )
 
       expect(session.canCommit()).toBe(true)
     })
@@ -339,7 +382,9 @@ describe('DeploySession', () => {
         startFEN: 'test-fen',
       })
 
-      session.addMove(createMove(0x92, 0x72, createPiece(NAVY)))
+      session.addCommand(
+        createMockCommand(createMove(0x92, 0x72, createPiece(NAVY))),
+      )
 
       // Can commit now - remaining pieces will be auto-marked as staying
       expect(session.canCommit()).toBe(true)
@@ -360,9 +405,15 @@ describe('DeploySession', () => {
         startFEN: 'test-fen',
       })
 
-      session.addMove(createMove(0x92, 0x72, createPiece(NAVY)))
-      session.addMove(createMove(0x92, 0x82, createPiece(AIR_FORCE)))
-      session.addMove(createMove(0x92, 0x93, createPiece(TANK)))
+      session.addCommand(
+        createMockCommand(createMove(0x92, 0x72, createPiece(NAVY))),
+      )
+      session.addCommand(
+        createMockCommand(createMove(0x92, 0x82, createPiece(AIR_FORCE))),
+      )
+      session.addCommand(
+        createMockCommand(createMove(0x92, 0x93, createPiece(TANK))),
+      )
 
       expect(session.isComplete()).toBe(true)
     })
@@ -381,8 +432,12 @@ describe('DeploySession', () => {
         stayPieces: [createPiece(TANK)],
       })
 
-      session.addMove(createMove(0x92, 0x72, createPiece(NAVY)))
-      session.addMove(createMove(0x92, 0x82, createPiece(AIR_FORCE)))
+      session.addCommand(
+        createMockCommand(createMove(0x92, 0x72, createPiece(NAVY))),
+      )
+      session.addCommand(
+        createMockCommand(createMove(0x92, 0x82, createPiece(AIR_FORCE))),
+      )
 
       expect(session.isComplete()).toBe(true)
     })
@@ -400,7 +455,9 @@ describe('DeploySession', () => {
         startFEN: 'test-fen',
       })
 
-      session.addMove(createMove(0x92, 0x72, createPiece(NAVY)))
+      session.addCommand(
+        createMockCommand(createMove(0x92, 0x72, createPiece(NAVY))),
+      )
 
       expect(session.isComplete()).toBe(false)
     })
@@ -419,9 +476,9 @@ describe('DeploySession', () => {
       const move2 = createMove(0x92, 0x82, createPiece(AIR_FORCE))
       const move3 = createMove(0x92, 0x93, createPiece(TANK))
 
-      session.addMove(move1)
-      session.addMove(move2)
-      session.addMove(move3)
+      session.addCommand(createMockCommand(move1))
+      session.addCommand(createMockCommand(move2))
+      session.addCommand(createMockCommand(move3))
 
       const toUndo = session.cancel()
 
@@ -431,7 +488,7 @@ describe('DeploySession', () => {
       expect(toUndo[2]).toEqual(move1)
     })
 
-    it('should not modify original actions array', () => {
+    it('should not modify original commands array', () => {
       const session = new DeploySession({
         stackSquare: 0x92,
         turn: RED,
@@ -439,12 +496,14 @@ describe('DeploySession', () => {
         startFEN: 'test-fen',
       })
 
-      session.addMove(createMove(0x92, 0x72, createPiece(NAVY)))
+      session.addCommand(
+        createMockCommand(createMove(0x92, 0x72, createPiece(NAVY))),
+      )
 
       const toUndo = session.cancel()
       toUndo.pop()
 
-      expect(session.actions).toHaveLength(1) // Original unchanged
+      expect(session.commands).toHaveLength(1) // Original unchanged
     })
   })
 
@@ -462,7 +521,9 @@ describe('DeploySession', () => {
         startFEN: 'test-fen',
       })
 
-      session.addMove(createMove(0x92, 0x72, createPiece(NAVY)))
+      session.addCommand(
+        createMockCommand(createMove(0x92, 0x72, createPiece(NAVY))),
+      )
 
       const str = session.toString()
       expect(str).toContain('c3')
@@ -482,16 +543,20 @@ describe('DeploySession', () => {
         startFEN: 'test-fen',
       })
 
-      session.addMove(createMove(0x92, 0x72, createPiece(NAVY)))
+      session.addCommand(
+        createMockCommand(createMove(0x92, 0x72, createPiece(NAVY))),
+      )
 
       const cloned = session.clone()
 
       // Modify original
-      session.addMove(createMove(0x92, 0x82, createPiece(AIR_FORCE)))
+      session.addCommand(
+        createMockCommand(createMove(0x92, 0x82, createPiece(AIR_FORCE))),
+      )
 
       // Clone should be unchanged
-      expect(cloned.actions).toHaveLength(1)
-      expect(session.actions).toHaveLength(2)
+      expect(cloned.commands).toHaveLength(1)
+      expect(session.commands).toHaveLength(2)
     })
   })
 
@@ -519,8 +584,12 @@ describe('DeploySession', () => {
         startFEN: 'base-fen r - - 0 1',
       })
 
-      session.addMove(createMove(0x92, 0x72, createPiece(NAVY))) // c3 to c5
-      session.addMove(createMove(0x92, 0x82, createPiece(AIR_FORCE))) // c3 to c4
+      session.addCommand(
+        createMockCommand(createMove(0x92, 0x72, createPiece(NAVY))),
+      ) // c3 to c5
+      session.addCommand(
+        createMockCommand(createMove(0x92, 0x82, createPiece(AIR_FORCE))),
+      ) // c3 to c4
 
       const extendedFEN = session.toExtendedFEN('base-fen r - - 0 1')
       expect(extendedFEN).toBe('base-fen r - - 0 1 DEPLOY c3:Nc5,Fc4...')
@@ -535,8 +604,10 @@ describe('DeploySession', () => {
         startFEN: 'base-fen r - - 0 1',
       })
 
-      session.addMove(
-        createMove(0x92, 0x72, createPiece(NAVY), BITS.DEPLOY | BITS.CAPTURE),
+      session.addCommand(
+        createMockCommand(
+          createMove(0x92, 0x72, createPiece(NAVY), BITS.DEPLOY | BITS.CAPTURE),
+        ),
       )
 
       const extendedFEN = session.toExtendedFEN('base-fen r - - 0 1')
@@ -552,7 +623,9 @@ describe('DeploySession', () => {
         startFEN: 'base-fen r - - 0 1',
       })
 
-      session.addMove(createMove(0x92, 0x72, combinedPiece))
+      session.addCommand(
+        createMockCommand(createMove(0x92, 0x72, combinedPiece)),
+      )
 
       const extendedFEN = session.toExtendedFEN('base-fen r - - 0 1')
       // This is complete because we deployed the entire stack
@@ -569,8 +642,12 @@ describe('DeploySession', () => {
       })
 
       // Deploy all pieces
-      session.addMove(createMove(0x92, 0x72, createPiece(NAVY)))
-      session.addMove(createMove(0x92, 0x82, createPiece(AIR_FORCE)))
+      session.addCommand(
+        createMockCommand(createMove(0x92, 0x72, createPiece(NAVY))),
+      )
+      session.addCommand(
+        createMockCommand(createMove(0x92, 0x82, createPiece(AIR_FORCE))),
+      )
 
       const extendedFEN = session.toExtendedFEN('base-fen r - - 0 1')
       expect(extendedFEN).toBe('base-fen r - - 0 1 DEPLOY c3:Nc5,Fc4')
