@@ -977,24 +977,14 @@ export class CoTuLenh {
    */
   public undo(): void {
     // Priority 1: Check active deploy session with moves
-    if ((this._deploySession?.moves.length ?? 0) > 0) {
-      const result = this._deploySession?.undo()
-      if (result) {
-        // Use the stored command to undo board state
-        if (result.command) {
-          result.command.undo()
-        } else {
-          // Fallback: Re-create command (may fail if state dependent)
-          const cmd = createMoveCommand(this, result.move)
-          cmd.undo()
-        }
-      }
+    if (this._deploySession && !this._deploySession.isEmpty) {
+      this._deploySession.undoCommand()
 
       // Clear moves cache since board state has changed
       this._movesCache.clear()
 
       // If the deploy session is now empty, clear it completely
-      if ((this._deploySession?.moves.length ?? 0) === 0) {
+      if (this._deploySession.isEmpty) {
         this._deploySession = null
       }
       return
@@ -1010,6 +1000,17 @@ export class CoTuLenh {
 
     // Priority 3: Undo from history (normal moves)
     this._undoMove()
+  }
+
+  /**
+   * Cancels the current deploy session, reverting all deploy moves made so far.
+   */
+  public cancelDeploy(): void {
+    if (this._deploySession) {
+      this._deploySession.cancel()
+      this._deploySession = null
+      this._movesCache.clear()
+    }
   }
 
   // getDeployState() and setDeployState() removed - use getDeploySession() instead
@@ -1728,14 +1729,7 @@ export class CoTuLenh {
     // 4. Apply moves to session and board
     const beforeFEN = this.fen()
 
-    for (const move of internalDeployMove.moves) {
-      // Execute on board
-      const cmd = createMoveCommand(this, move)
-      cmd.execute()
-
-      // Add to session
-      session.addMove(move, cmd)
-    }
+    session.executeMoves(this, internalDeployMove.moves)
 
     // 5. Commit session
     const committedMove = session.commit()

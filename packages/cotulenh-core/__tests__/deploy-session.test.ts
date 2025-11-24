@@ -1,7 +1,7 @@
 // __tests__/deploy-session.test.ts
 
-import { describe, it, expect, beforeEach } from 'vitest'
-import { DeploySession } from '../src/deploy-session.js'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { DeploySession, handleDeployMove } from '../src/deploy-session.js'
 import {
   BITS,
   RED,
@@ -14,35 +14,35 @@ import {
 import type { Piece, InternalMove } from '../src/type.js'
 import { CoTuLenh, DeployMoveRequest } from '../src/cotulenh.js'
 
+// Helper to create a test piece
+const createPiece = (type: string, carrying?: Piece[]): Piece => ({
+  color: RED,
+  type: type as any,
+  carrying,
+})
+
+// Helper to create a test move
+const createMove = (
+  from: number,
+  to: number,
+  piece: Piece,
+  flags = BITS.DEPLOY,
+): InternalMove => ({
+  color: RED,
+  from,
+  to,
+  piece,
+  flags,
+})
+
+// Helper to create a mock command
+const createMockCommand = (move: InternalMove): any => ({
+  move,
+  execute: vi.fn(),
+  undo: vi.fn(),
+})
+
 describe('DeploySession', () => {
-  // Helper to create a test piece
-  const createPiece = (type: string, carrying?: Piece[]): Piece => ({
-    color: RED,
-    type: type as any,
-    carrying,
-  })
-
-  // Helper to create a test move
-  const createMove = (
-    from: number,
-    to: number,
-    piece: Piece,
-    flags = BITS.DEPLOY,
-  ): InternalMove => ({
-    color: RED,
-    from,
-    to,
-    piece,
-    flags,
-  })
-
-  // Helper to create a mock command
-  const createMockCommand = (move: InternalMove): any => ({
-    move,
-    execute: () => {},
-    undo: () => {},
-  })
-
   describe('Constructor', () => {
     it('should create a session with required fields', () => {
       const originalPiece = createPiece(NAVY, [
@@ -101,7 +101,7 @@ describe('DeploySession', () => {
 
       // Deploy Navy
       const move = createMove(0x92, 0x72, createPiece(NAVY))
-      session.addMove(move, createMockCommand(move))
+      session.addCommand(createMockCommand(move))
 
       const remaining = session.remaining
       expect(remaining).toHaveLength(2) // AirForce + Tank
@@ -124,13 +124,13 @@ describe('DeploySession', () => {
 
       // Deploy all pieces
       const move1 = createMove(0x92, 0x72, createPiece(NAVY))
-      session.addMove(move1, createMockCommand(move1))
+      session.addCommand(createMockCommand(move1))
 
       const move2 = createMove(0x92, 0x82, createPiece(AIR_FORCE))
-      session.addMove(move2, createMockCommand(move2))
+      session.addCommand(createMockCommand(move2))
 
       const move3 = createMove(0x92, 0x93, createPiece(TANK))
-      session.addMove(move3, createMockCommand(move3))
+      session.addCommand(createMockCommand(move3))
 
       const remaining = session.remaining
       expect(remaining).toHaveLength(0)
@@ -147,7 +147,7 @@ describe('DeploySession', () => {
 
       const move = createMove(0x92, 0x72, createPiece(NAVY))
       const command = createMockCommand(move)
-      session.addMove(move, command)
+      session.addCommand(command)
 
       expect(session.moves).toHaveLength(1)
       expect(session.moves[0]).toEqual(move)
@@ -165,15 +165,36 @@ describe('DeploySession', () => {
       const move1 = createMove(0x92, 0x72, createPiece(NAVY))
       const cmd1 = createMockCommand(move1)
 
-      session.addMove(move1, cmd1)
+      session.addCommand(cmd1)
 
-      const undone = session.undo()
+      const undone = session.undoCommand()
 
       expect(undone).toBeDefined()
       expect(undone?.move).toEqual(move1)
-      expect(undone?.command).toEqual(cmd1)
       expect(session.moves).toHaveLength(0)
       expect(session.commands).toHaveLength(0)
+    })
+
+    it('should cancel session and undo all commands', () => {
+      const session = new DeploySession({
+        stackSquare: 0x92,
+        turn: RED,
+        originalPiece: createPiece(NAVY),
+      })
+      const move1 = createMove(0x92, 0x72, createPiece(NAVY))
+      const cmd1 = createMockCommand(move1)
+      session.addCommand(cmd1)
+
+      const move2 = createMove(0x92, 0x82, createPiece(AIR_FORCE))
+      const cmd2 = createMockCommand(move2)
+      session.addCommand(cmd2)
+
+      session.cancel()
+
+      expect(session.moves).toHaveLength(0)
+      expect(session.commands).toHaveLength(0)
+      expect(cmd1.undo).toHaveBeenCalled()
+      expect(cmd2.undo).toHaveBeenCalled()
     })
   })
 
@@ -198,10 +219,10 @@ describe('DeploySession', () => {
       })
 
       const move1 = createMove(0x92, 0x72, createPiece(NAVY))
-      session.addMove(move1, createMockCommand(move1))
+      session.addCommand(createMockCommand(move1))
 
       const move2 = createMove(0x92, 0x82, createPiece(AIR_FORCE))
-      session.addMove(move2, createMockCommand(move2))
+      session.addCommand(createMockCommand(move2))
 
       expect(session.isComplete).toBe(true)
     })
@@ -230,10 +251,10 @@ describe('DeploySession', () => {
       })
 
       const move1 = createMove(0x92, 0x72, createPiece(NAVY)) // c3 to c5
-      session.addMove(move1, createMockCommand(move1))
+      session.addCommand(createMockCommand(move1))
 
       const move2 = createMove(0x92, 0x82, createPiece(AIR_FORCE)) // c3 to c4
-      session.addMove(move2, createMockCommand(move2))
+      session.addCommand(createMockCommand(move2))
 
       const extendedFEN = session.toFenString('base-fen r - - 0 1')
       expect(extendedFEN).toBe('base-fen r - - 0 1 DEPLOY c3:Nc5,Fc4...')
@@ -253,7 +274,7 @@ describe('DeploySession', () => {
         createPiece(NAVY),
         BITS.DEPLOY | BITS.CAPTURE,
       )
-      session.addMove(move, createMockCommand(move))
+      session.addCommand(createMockCommand(move))
 
       const extendedFEN = session.toFenString('base-fen r - - 0 1')
       expect(extendedFEN).toBe('base-fen r - - 0 1 DEPLOY c3:Nxc5...')
@@ -268,7 +289,7 @@ describe('DeploySession', () => {
       })
 
       const move = createMove(0x92, 0x72, combinedPiece)
-      session.addMove(move, createMockCommand(move))
+      session.addCommand(createMockCommand(move))
 
       const extendedFEN = session.toFenString('base-fen r - - 0 1')
       // This is complete because we deployed the entire stack
@@ -285,10 +306,10 @@ describe('DeploySession', () => {
 
       // Deploy all pieces
       const move1 = createMove(0x92, 0x72, createPiece(NAVY))
-      session.addMove(move1, createMockCommand(move1))
+      session.addCommand(createMockCommand(move1))
 
       const move2 = createMove(0x92, 0x82, createPiece(AIR_FORCE))
-      session.addMove(move2, createMockCommand(move2))
+      session.addCommand(createMockCommand(move2))
 
       const extendedFEN = session.toFenString('base-fen r - - 0 1')
       expect(extendedFEN).toBe('base-fen r - - 0 1 DEPLOY c3:Nc5,Fc4')
@@ -362,5 +383,55 @@ describe('Deploy Session History Management', () => {
 
     // Turn restored
     expect(game.turn()).toBe(RED)
+  })
+})
+
+describe('handleDeployMove', () => {
+  let game: CoTuLenh
+
+  beforeEach(() => {
+    game = new CoTuLenh()
+    game.clear()
+    // Setup a simple deploy scenario: Navy carrying AirForce
+    const originalPiece = createPiece(NAVY, [createPiece(AIR_FORCE)])
+    game.put(originalPiece, 'c3')
+    game['_turn'] = RED
+  })
+
+  it('should auto-commit when session completes by default', () => {
+    // Spy on commitDeploySession
+    const commitSpy = vi.spyOn(game, 'commitDeploySession')
+
+    // 1. Deploy Navy (incomplete)
+    const move1 = createMove(0x92, 0x72, createPiece(NAVY))
+    handleDeployMove(game, move1)
+    expect(commitSpy).not.toHaveBeenCalled()
+
+    // 2. Deploy AirForce (complete)
+    const move2 = createMove(0x92, 0x82, createPiece(AIR_FORCE))
+    handleDeployMove(game, move2)
+
+    expect(commitSpy).toHaveBeenCalled()
+  })
+
+  it('should NOT auto-commit when autoCommit is false', () => {
+    // Spy on commitDeploySession
+    const commitSpy = vi.spyOn(game, 'commitDeploySession')
+
+    // 1. Deploy Navy (incomplete)
+    const move1 = createMove(0x92, 0x72, createPiece(NAVY))
+    handleDeployMove(game, move1, false)
+    expect(commitSpy).not.toHaveBeenCalled()
+
+    // 2. Deploy AirForce (complete)
+    const move2 = createMove(0x92, 0x82, createPiece(AIR_FORCE))
+    handleDeployMove(game, move2, false)
+
+    expect(commitSpy).not.toHaveBeenCalled()
+
+    // Verify session is still active and complete
+    const session = game.getDeploySession()
+    expect(session).not.toBeNull()
+    expect(session?.isComplete).toBe(true)
   })
 })
