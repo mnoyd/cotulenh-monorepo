@@ -1,14 +1,8 @@
-import {
-  Color,
-  Piece,
-  InternalMove,
-  BITS,
-  algebraic,
-  swapColor,
-} from './type.js'
+import { Color, Piece, InternalMove, BITS, algebraic } from './type.js'
 import { flattenPiece, combinePieces } from './utils.js'
 import { InternalDeployMove } from './deploy-move.js'
-import { CTLMoveCommandInteface } from './move-apply.js'
+import { CTLMoveCommandInteface, createMoveCommand } from './move-apply.js'
+import type { CoTuLenh } from './cotulenh.js'
 
 /**
  * DeploySession tracks the state of an active deployment sequence.
@@ -24,10 +18,7 @@ export class DeploySession {
   public readonly turn: Color
   public readonly originalPiece: Piece
 
-  // State
-  private _remainingPieces: Piece[]
-  private _moves: InternalMove[] = []
-  private _commands: CTLMoveCommandInteface[] = []
+  private readonly _commands: CTLMoveCommandInteface[] = []
 
   constructor(data: {
     stackSquare: number
@@ -37,75 +28,86 @@ export class DeploySession {
     this.stackSquare = data.stackSquare
     this.turn = data.turn
     this.originalPiece = data.originalPiece
-    this._remainingPieces = flattenPiece(data.originalPiece)
   }
 
   /**
-   * Add a deploy move to the session
-   * Updates state immediately
+   * Add a deploy command to the session
+   * Executes the command and updates state immediately
    */
-  addMove(move: InternalMove, command?: CTLMoveCommandInteface): void {
-    // 1. Validate move source
-    if (move.from !== this.stackSquare) {
-      throw new Error(
-        `Deploy move must start from stack square ${algebraic(this.stackSquare)}`,
-      )
-    }
+  addCommand(command: CTLMoveCommandInteface): void {
+    command.execute()
+    this._commands.push(command)
+  }
 
-    // 2. Update remaining pieces
-    const deployedPieces = flattenPiece(move.piece)
-    for (const deployedPiece of deployedPieces) {
-      const index = this._remainingPieces.findIndex(
-        (p) => p.type === deployedPiece.type,
-      )
-      if (index === -1) {
-        throw new Error(`Piece ${deployedPiece.type} not available in stack`)
-      }
-      this._remainingPieces.splice(index, 1)
-    }
-
-    // 3. Record move
-    this._moves.push(move)
-    if (command) {
-      this._commands.push(command)
+  /**
+   * Cancel the session by undoing all commands
+   */
+  cancel(): void {
+    while (this._commands.length > 0) {
+      this.undoCommand()
     }
   }
 
   /**
-   * Undo the last move
-   * Restores state immediately
+   * Undo the last command
+   * Undoes the command and restores state immediately
    */
-  undo(): { move: InternalMove; command?: CTLMoveCommandInteface } | undefined {
-    const move = this._moves.pop()
+  undoCommand(): CTLMoveCommandInteface | undefined {
     const command = this._commands.pop()
-    if (!move) return undefined
+    if (!command) return undefined
 
-    // Restore pieces to remaining
-    const deployedPieces = flattenPiece(move.piece)
-    this._remainingPieces.push(...deployedPieces)
+    // Undo command execution
+    command.undo()
 
-    return { move, command }
+    return command
   }
 
   /**
    * Get the pieces remaining in the stack
    */
   get remaining(): Piece[] {
-    return [...this._remainingPieces]
+    const remaining = flattenPiece(this.originalPiece)
+    for (const move of this.moves) {
+      const deployedPieces = flattenPiece(move.piece)
+      for (const deployedPiece of deployedPieces) {
+        const index = remaining.findIndex((p) => p.type === deployedPiece.type)
+        if (index !== -1) {
+          remaining.splice(index, 1)
+        }
+      }
+    }
+    return remaining
   }
 
   /**
    * Check if deployment is complete (all pieces deployed)
    */
   get isComplete(): boolean {
-    return this._remainingPieces.length === 0
+    return this.remaining.length === 0
+  }
+
+  /**
+   * Check if the session is empty (no commands executed)
+   */
+  get isEmpty(): boolean {
+    return this._commands.length === 0
+  }
+
+  /**
+   * Execute a batch of moves and add them to the session
+   */
+  executeMoves(game: CoTuLenh, moves: InternalMove[]): void {
+    for (const move of moves) {
+      const command = createMoveCommand(game, move)
+      this.addCommand(command)
+    }
   }
 
   /**
    * Get all moves made in this session
    */
   get moves(): InternalMove[] {
-    return [...this._moves]
+    return this._commands.map((c) => c.move as InternalMove)
   }
 
   /**
@@ -119,24 +121,23 @@ export class DeploySession {
    * Commit the session to a single InternalDeployMove
    */
   commit(): InternalDeployMove {
-    if (this._moves.length === 0) {
+    if (this._commands.length === 0) {
       throw new Error('Cannot commit empty deploy session')
     }
 
-    const stay =
-      this._remainingPieces.length > 0
-        ? combinePieces(this._remainingPieces)
-        : undefined
+    const remaining = this.remaining
+    const stay = remaining.length > 0 ? combinePieces(remaining) : undefined
 
     // Collect captured pieces from all moves
     const captured: Piece[] = []
-    for (const move of this._moves) {
+    for (const command of this._commands) {
+      const move = command.move as InternalMove
       if (move.captured) captured.push(move.captured)
     }
 
     return {
       from: this.stackSquare,
-      moves: this._moves,
+      moves: this.moves,
       stay: stay || undefined,
       captured: captured.length > 0 ? captured : undefined,
     }
@@ -146,12 +147,13 @@ export class DeploySession {
    * Generates the FEN string for the current deploy session
    */
   toFenString(baseFEN: string): string {
-    if (this._moves.length === 0) {
+    if (this._commands.length === 0) {
       return `${baseFEN} DEPLOY ${algebraic(this.stackSquare)}:`
     }
 
     const moveNotations: string[] = []
-    for (const move of this._moves) {
+    for (const command of this._commands) {
+      const move = command.move as InternalMove
       const pieceType = move.piece.type.toUpperCase()
       const dest = algebraic(move.to)
       const capture = move.flags & BITS.CAPTURE ? 'x' : ''
@@ -172,17 +174,19 @@ export class DeploySession {
   }
 }
 
-import type { CoTuLenh } from './cotulenh.js'
-import { createMoveCommand } from './move-apply.js'
-
 /**
  * Handles a deploy move by creating or updating a deploy session.
  *
  * @param game - The game instance
  * @param move - The internal move to process
+ * @param autoCommit - Whether to automatically commit the session when complete (default: true)
  * @returns True if the deploy session is complete, false otherwise
  */
-export function handleDeployMove(game: CoTuLenh, move: InternalMove): boolean {
+export function handleDeployMove(
+  game: CoTuLenh,
+  move: InternalMove,
+  autoCommit: boolean = true,
+): boolean {
   let session = game.getDeploySession()
 
   if (!session) {
@@ -199,7 +203,7 @@ export function handleDeployMove(game: CoTuLenh, move: InternalMove): boolean {
     session = new DeploySession({
       stackSquare,
       turn: game.turn(),
-      originalPiece: JSON.parse(JSON.stringify(originalPiece)), // Deep copy
+      originalPiece: structuredClone(originalPiece), // Deep copy
     })
     game.setDeploySession(session)
   }
@@ -207,11 +211,12 @@ export function handleDeployMove(game: CoTuLenh, move: InternalMove): boolean {
   // Create command
   const command = createMoveCommand(game, move)
 
-  // Execute command (updates board)
-  command.execute()
+  // Add to session (executes command)
+  session.addCommand(command)
 
-  // Add to session
-  session.addMove(move, command)
+  if (session.isComplete && autoCommit) {
+    game.commitDeploySession()
+  }
 
   return session.isComplete
 }
