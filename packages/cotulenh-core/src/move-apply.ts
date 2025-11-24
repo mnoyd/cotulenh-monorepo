@@ -257,7 +257,23 @@ export class SingleDeployMoveCommand extends CTLMoveCommand {
 
     if (deploySession && deploySession.stackSquare === this.move.from) {
       // Active deploy session - use remaining pieces from session
-      carrierPiece = deploySession.getRemainingPieces()
+      // If remaining pieces are empty, it means we are moving the last piece(s).
+      // But we need a "carrier" to remove from.
+      // In the new design, we don't really need a "carrier" object to remove from,
+      // we just need to know that the pieces we are moving ARE available.
+      // However, RemoveFromStackAction expects a carrier on the board.
+
+      // Wait, RemoveFromStackAction calls game.get(carrierSquare).
+      // So it gets the CURRENT state of the stack on the board.
+      // SingleDeployMoveCommand doesn't need to pass the carrier to the action.
+      // It just needs to verify validity?
+
+      // The error "Carrier missing or empty" comes from the check `if (!carrierPiece)`.
+      // This check seems to be trying to validate that the move is possible.
+
+      // If we are in a deploy session, the board state is updated incrementally.
+      // So game.get(this.move.from) should return the current stack.
+      carrierPiece = this.game.get(this.move.from) || null
     } else {
       // No active session or different square - use board state
       carrierPiece = this.game.get(this.move.from) || null
@@ -319,8 +335,14 @@ export class SingleDeployMoveCommand extends CTLMoveCommand {
           const targetPiece = this.game.get(destSq)
           if (targetPiece) {
             // Combine the moving piece with the target piece
-            const combinedPiece = combinePieces([this.move.piece, targetPiece])
+            // Important: combinePieces expects flattened pieces if we want to merge stacks
+            const piecesToCombine = [
+              ...flattenPiece(targetPiece),
+              ...flattenPiece(this.move.piece),
+            ]
+            const combinedPiece = combinePieces(piecesToCombine)
             if (!combinedPiece) {
+              // console.log('Failed to combine pieces:', JSON.stringify(piecesToCombine, null, 2))
               throw new Error(
                 `Failed to create combined piece during recombine: ${JSON.stringify(this.move)}`,
               )

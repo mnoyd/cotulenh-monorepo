@@ -598,8 +598,8 @@ export function generateDeployMoves(
   // Calculate remaining pieces using session
   let deployMoveCandidates: Piece[]
   if (deploySession) {
-    const remaining = deploySession.getRemainingPieces()
-    deployMoveCandidates = remaining ? flattenPiece(remaining) : []
+    const remaining = deploySession.remaining
+    deployMoveCandidates = remaining || []
   } else {
     // No session - all pieces available
     deployMoveCandidates = flattenedCarrierPiece
@@ -655,7 +655,7 @@ function generateRecombineMoves(
   filterPiece?: PieceSymbol,
 ): InternalMove[] {
   const moves: InternalMove[] = []
-  const deployedSquares = session.getDeployedSquares()
+  const deployedSquares = session.moves.map((m: InternalMove) => m.to)
 
   for (const piece of remainingPieces) {
     if (filterPiece && piece.type !== filterPiece) continue
