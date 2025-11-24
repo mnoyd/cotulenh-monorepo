@@ -1,4 +1,4 @@
-import { CoTuLenh, Move } from './cotulenh'
+import type { CoTuLenh, Move } from './cotulenh.js'
 import {
   canStayOnSquare,
   generateMoveCandidateForSinglePieceInStack,

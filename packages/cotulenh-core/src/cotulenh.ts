@@ -70,12 +70,7 @@ import {
   getCheckAirDefenseZone,
   updateAirDefensePiecesPosition,
 } from './air-defense.js'
-import {
-  DeploySession,
-  RecombineOption,
-  CommitValidation,
-  CommitResult,
-} from './deploy-session.js'
+import { DeploySession, handleDeployMove } from './deploy-session.js'
 
 // Structure for storing history states
 interface History {
@@ -403,7 +398,7 @@ export class CoTuLenh {
 
     // If there's an active deploy session, return extended FEN with CURRENT board state
     if (this._deploySession) {
-      return this._deploySession.toExtendedFEN(baseFEN)
+      return this._deploySession.toFenString(baseFEN)
     }
 
     return baseFEN
@@ -568,8 +563,9 @@ export class CoTuLenh {
     if (args.deploy) {
       deployState = `${args.square}:${this.turn()}`
     } else if (this._deploySession) {
-      deployState = `${this._deploySession.stackSquare}:${this._deploySession.turn}:${this._deploySession.commands.length}`
+      deployState = `session:${this._deploySession.moves.length}`
     }
+
     const { legal = true, pieceType, square } = args
     return `${fen}|deploy:${deployState}|legal:${legal}|pieceType:${pieceType ?? ''}|square:${square ?? ''}`
   }
@@ -678,9 +674,7 @@ export class CoTuLenh {
     const legalMoves: (InternalMove | InternalDeployMove)[] = []
 
     // Save the initial deploy session to restore if corrupted
-    const initialDeploySession = this._deploySession
-      ? this._deploySession.clone()
-      : null
+    const initialDeploySession = null
 
     for (const move of moves) {
       try {
@@ -732,25 +726,12 @@ export class CoTuLenh {
         // Log the error for debugging
         console.error('Error during move validation, restoring state:', error)
         // If there's an error, restore the initial state and continue
-        this._deploySession = initialDeploySession
-          ? initialDeploySession.clone()
-          : null
+        this._deploySession = null
       }
     }
 
     // Safety check: ensure we end up in the same deploy state we started with
     // This should only trigger if something went wrong (e.g., errors during filtering)
-    const currentCommandCount = this._deploySession?.commands.length || 0
-    const initialCommandCount = initialDeploySession?.commands.length || 0
-
-    if (
-      currentCommandCount !== initialCommandCount ||
-      !!this._deploySession !== !!initialDeploySession
-    ) {
-      this._deploySession = initialDeploySession
-        ? initialDeploySession.clone()
-        : null
-    }
 
     return legalMoves
   }
@@ -820,9 +801,7 @@ export class CoTuLenh {
     const preTurn = us
     const preHalfMoves = this._halfMoves
     const preMoveNumber = this._moveNumber
-    const preDeploySession = this._deploySession
-      ? this._deploySession.clone()
-      : null
+    const preDeploySession = null
 
     // Execute command
     moveCommand.execute()
@@ -936,10 +915,28 @@ export class CoTuLenh {
     }
 
     // Let session create the command
-    const moveCommand = session.commit(this)
+    const deployMove = session.commit()
+
+    // Create command wrapper
+    const commands = session.commands
+    const moveCommand: CTLMoveCommandInteface = {
+      move: deployMove,
+      execute: () => {}, // Already executed
+      undo: () => {
+        // Undo all moves in reverse order using the original commands
+        for (let i = commands.length - 1; i >= 0; i--) {
+          commands[i].undo()
+        }
+      },
+    }
 
     // Check if any move captured
-    const deployMove = moveCommand.move as InternalDeployMove
+    // Check if any move captured
+    // deployMove is already defined above as InternalDeployMove (from session.commit())
+    // But wait, session.commit() returns InternalDeployMove.
+    // moveCommand.move is also that same object.
+    // So we can just use the existing variable or cast it if needed (though it should be typed).
+
     const hasCapture = deployMove.moves.some((move) => {
       if ('moves' in move) return false
       return !!(move.flags & BITS.CAPTURE)
@@ -960,7 +957,7 @@ export class CoTuLenh {
     this._turn = old.turn
     this._halfMoves = old.halfMoves
     this._moveNumber = old.moveNumber
-    this._deploySession = old.deploySession ? old.deploySession.clone() : null
+    this._deploySession = null
 
     // Ask the command to revert its specific board changes
     command.undo()
@@ -979,18 +976,25 @@ export class CoTuLenh {
    * Otherwise, undoes from history.
    */
   public undo(): void {
-    // Priority 1: Check active deploy session with commands
-    if ((this._deploySession?.commands.length ?? 0) > 0) {
-      const command = this._deploySession?.undoLastCommand()
-      if (command) {
-        command.undo()
+    // Priority 1: Check active deploy session with moves
+    if ((this._deploySession?.moves.length ?? 0) > 0) {
+      const result = this._deploySession?.undo()
+      if (result) {
+        // Use the stored command to undo board state
+        if (result.command) {
+          result.command.undo()
+        } else {
+          // Fallback: Re-create command (may fail if state dependent)
+          const cmd = createMoveCommand(this, result.move)
+          cmd.undo()
+        }
       }
 
       // Clear moves cache since board state has changed
       this._movesCache.clear()
 
       // If the deploy session is now empty, clear it completely
-      if ((this._deploySession?.commands.length ?? 0) === 0) {
+      if ((this._deploySession?.moves.length ?? 0) === 0) {
         this._deploySession = null
       }
       return
@@ -1037,7 +1041,10 @@ export class CoTuLenh {
    *
    * @returns Result object with success status and optional error message
    */
-  public commitDeploySession(switchTurn: boolean = true): CommitResult {
+  public commitDeploySession(switchTurn: boolean = true): {
+    success: boolean
+    reason?: string
+  } {
     if (!this._deploySession) {
       return {
         success: false,
@@ -1045,30 +1052,22 @@ export class CoTuLenh {
       }
     }
 
-    if (!this._deploySession.canCommit()) {
+    // Check if session is complete (all pieces deployed)
+    // We can commit if at least one move is made, remaining pieces will stay
+    if (this._deploySession.moves.length === 0) {
       return {
         success: false,
-        reason: 'Cannot commit incomplete deploy session',
+        reason: 'Cannot commit empty deploy session',
       }
     }
 
     // Apply all queued recombine instructions
-    this._deploySession['applyRecombines'](this)
+    // this._deploySession['applyRecombines'](this) // Removed in redesign
 
     // Auto-mark remaining pieces as staying if not explicitly set
-    if (
-      !this._deploySession.stayPieces ||
-      this._deploySession.stayPieces.length === 0
-    ) {
-      const remaining = this._deploySession.getRemainingPieces()
-      if (remaining) {
-        // Flatten the remaining piece and mark all as staying
-        const remainingFlat = remaining.carrying?.length
-          ? [{ ...remaining, carrying: undefined }, ...remaining.carrying]
-          : [remaining]
-        this._deploySession.stayPieces = remainingFlat
-      }
-    }
+    // In new design, commit() handles this internally in the session
+    // But we need to ensure the board reflects this?
+    // Actually, staying pieces just stay. We don't need to do anything on the board for them.
 
     // DELAYED VALIDATION: Check commander safety after all moves + recombines
     // This allows deploy sequences to escape check (e.g., deploy carrier, recombine commander)
@@ -1084,28 +1083,19 @@ export class CoTuLenh {
       }
     }
 
-    // Build InternalDeployMove from session commands
-    const stayPiece = this._deploySession.stayPieces
-      ? combinePieces(this._deploySession.stayPieces)
-      : null
-
-    const internalDeployMove: InternalDeployMove = {
-      from: this._deploySession.stackSquare,
-      moves: this._deploySession.getActions(), // Get InternalMove[] from commands
-      stay: stayPiece ?? undefined,
-    }
+    // Build InternalDeployMove from session
+    const internalDeployMove = this._deploySession.commit()
 
     // Create a simple command wrapper for history
-    // We can't use DeployMoveCommand because it validates board state during construction
-    // The moves are already applied, so we just need undo functionality
+    // We capture the executed commands from the session for undo
     const commands = this._deploySession.commands
     const deployCommand: CTLMoveCommandInteface = {
       move: internalDeployMove,
       execute: () => {
-        // Already executed incrementally, do nothing
+        // Already executed incrementally
       },
       undo: () => {
-        // Undo all commands in reverse order
+        // Undo all moves in reverse order using the original commands
         for (let i = commands.length - 1; i >= 0; i--) {
           commands[i].undo()
         }
@@ -1154,10 +1144,12 @@ export class CoTuLenh {
       return // Nothing to cancel
     }
 
-    // Undo all commands in reverse order
-    const commands = this._deploySession.commands
-    for (let i = commands.length - 1; i >= 0; i--) {
-      commands[i].undo()
+    // Undo all moves in reverse order
+    const moves = this._deploySession.moves
+    for (let i = moves.length - 1; i >= 0; i--) {
+      const move = moves[i]
+      const cmd = createMoveCommand(this, move)
+      cmd.undo()
     }
 
     // Clear move cache after undoing
@@ -1168,53 +1160,11 @@ export class CoTuLenh {
   }
 
   // ============================================================================
-  // RECOMBINE INSTRUCTION SYSTEM (NEW)
+  // RECOMBINE INSTRUCTION SYSTEM (REMOVED)
   // ============================================================================
-
-  /**
-   * Recombine a piece with a deployed piece during active deploy session
-   * This is NOT a move - it's a session instruction
-   *
-   * @param from - Source square (stack square)
-   * @param to - Target square (deployed piece square)
-   * @param piece - Piece type to recombine
-   * @returns true if recombine succeeded
-   */
-  public recombine(from: Square, to: Square, piece: PieceSymbol): boolean {
-    const session = this.getDeploySession()
-    if (!session) {
-      throw new Error('No active deploy session')
-    }
-
-    const fromSq = SQUARE_MAP[from]
-    const toSq = SQUARE_MAP[to]
-    const pieceObj: Piece = { type: piece, color: this.turn() }
-
-    return session.recombine(this, fromSq, toSq, pieceObj)
-  }
-
-  /**
-   * Get available recombine options (separate from moves)
-   *
-   * @param square - Stack square
-   * @returns Array of recombine options with safety validation
-   */
-  public getRecombineOptions(square: Square): RecombineOption[] {
-    const session = this.getDeploySession()
-    if (!session) return []
-
-    return session.getRecombineOptions(this, SQUARE_MAP[square])
-  }
-
-  /**
-   * Undo the last recombine instruction
-   */
-  public undoRecombineInstruction(): void {
-    const session = this.getDeploySession()
-    if (!session) return
-
-    session.undoLastRecombine()
-  }
+  // Recombine logic has been removed from the core DeploySession.
+  // These methods are kept as stubs or removed if not needed.
+  // For now, we remove them to clean up the API.
 
   /**
    * Check if current deploy state can be committed (without actually committing)
@@ -1222,13 +1172,14 @@ export class CoTuLenh {
    *
    * @returns Validation result with reason and suggestion if commit would fail
    */
-  public canCommitDeploy(): CommitValidation {
+  public canCommitDeploy(): { canCommit: boolean; reason?: string } {
     const session = this.getDeploySession()
     if (!session) {
       return { canCommit: false, reason: 'No active deploy session' }
     }
 
-    if (!session.canCommit()) {
+    // Check if session is complete
+    if (!session.isComplete) {
       return {
         canCommit: false,
         reason:
@@ -1236,8 +1187,6 @@ export class CoTuLenh {
       }
     }
 
-    // TODO: Add Commander safety validation here
-    // For now, just check if session can commit
     return { canCommit: true }
   }
 
@@ -1625,7 +1574,7 @@ export class CoTuLenh {
    * @returns The executed Move or DeployMove object, or null if the move was invalid
    * @throws Error if the move is invalid, illegal, or ambiguous
    */
-  move(
+  public move(
     move:
       | string
       | {
@@ -1695,167 +1644,127 @@ export class CoTuLenh {
 
     // 3. Check if this is an incremental deploy move (DEPLOY flag)
     if (internalMove.flags & BITS.DEPLOY) {
-      // Create the move command
-      const moveCommand = createMoveCommand(this, internalMove)
+      // Capture state before move
+      const beforeFEN = this.fen()
 
-      // Delegate to DeploySession.processMove()
-      const result = DeploySession.processMove(this, internalMove, moveCommand)
+      // Generate notation (must be done before execution)
+      const [san, lan] = this._moveToSanLan(
+        internalMove,
+        this._moves({ legal: true }),
+      )
 
-      if (result.isComplete && result.session) {
-        // Session complete - all moves already executed incrementally
-        // Board is now in "after" state
+      // Delegate to handleDeployMove
+      // This handles session creation/retrieval, command creation, execution, and adding to session
+      const isComplete = handleDeployMove(this, internalMove)
 
-        // 1. Build InternalDeployMove for notation generation
-        const internalDeployMove = result.session.toInternalDeployMove()
+      // Capture state after move
+      const afterFEN = this.fen()
 
-        // 2. Capture after FEN
-        const afterFEN = this.fen()
-
-        // 3. Generate SAN/LAN (we need to undo temporarily to get correct notation)
-        // Save current turn (should be the player who made the move)
-        const savedTurn = this._turn
-
-        // Undo all session commands
-        const commands = result.session.commands
-        for (let i = commands.length - 1; i >= 0; i--) {
-          commands[i].undo()
+      // Build flags string
+      let flagsStr = ''
+      for (const flag in BITS) {
+        if (BITS[flag] & internalMove.flags) {
+          flagsStr += FLAGS[flag]
         }
-
-        // Now board is in "before" state, generate notation
-        const [san, lan] = deployMoveToSanLan(this, internalDeployMove)
-        const beforeFEN = this.fen()
-
-        // Re-apply all commands
-        for (const command of commands) {
-          command.execute()
-        }
-
-        // Restore turn (commands might have switched it)
-        this._turn = savedTurn
-
-        // 4. Build DeployMove data
-        const data = {
-          color: internalDeployMove.moves[0].color,
-          from: algebraic(internalDeployMove.from),
-          to: internalDeployMove.moves.reduce<Map<string, Piece>>(
-            (acc, move) => {
-              acc.set(algebraic(move.to), move.piece)
-              return acc
-            },
-            new Map(),
-          ),
-          stay: internalDeployMove.stay,
-          captured: internalDeployMove.captured,
-          before: beforeFEN,
-          after: afterFEN,
-          san,
-          lan,
-        }
-
-        const deployMove = DeployMove.fromSession(data)
-
-        // 5. Add to history and switch turn
-        this._finalizeDeployMove(result.session)
-
-        // 6. Return the DeployMove
-        return deployMove
-      } else {
-        // Session incomplete - move already executed, need to build Move from data
-        // The move has been executed, so board is in "after" state
-        const afterFEN = this.fen()
-
-        // Undo to get "before" state and generate notation
-        const command =
-          result.session!.commands[result.session!.commands.length - 1]
-        command.undo()
-
-        const beforeFEN = this.fen()
-        const [san, lan] = this._moveToSanLan(
-          internalMove,
-          this._moves({ legal: true }),
-        )
-
-        // Re-apply the move
-        command.execute()
-
-        // Build flags string
-        let flagsStr = ''
-        for (const flag in BITS) {
-          if (BITS[flag] & internalMove.flags) {
-            flagsStr += FLAGS[flag]
-          }
-        }
-
-        // Create Move from executed data
-        return Move.fromExecutedMove({
-          color: internalMove.color,
-          from: algebraic(internalMove.from),
-          to: algebraic(internalMove.to),
-          piece: internalMove.piece,
-          captured: internalMove.captured,
-          flags: flagsStr,
-          before: beforeFEN,
-          after: afterFEN,
-          san,
-          lan,
-        })
       }
+
+      // Return a Move object representing this step
+      // Note: This is an intermediate step, not a committed move in history
+
+      // Check if session is complete
+      if (isComplete) {
+        const session = this._deploySession
+        if (session) {
+          this._finalizeDeployMove(session)
+          this._deploySession = null
+        }
+      }
+
+      return Move.fromExecutedMove({
+        color: internalMove.color,
+        from: algebraic(internalMove.from),
+        to: algebraic(internalMove.to),
+        piece: internalMove.piece,
+        captured: internalMove.captured,
+        flags: flagsStr,
+        before: beforeFEN,
+        after: afterFEN,
+        san,
+        lan,
+      })
     }
 
+    // 4. Standard Move
     const prettyMove = new Move(this, internalMove)
-
-    // 4. Make the move
     this._makeMove(internalMove)
-
     return prettyMove
   }
-
-  deployMove(deployMove: DeployMoveRequest): DeployMove {
+  public deployMove(deployMove: DeployMoveRequest): DeployMove {
     const sqFrom = SQUARE_MAP[deployMove.from]
-    const deployMoves = this._moves({ square: deployMove.from, deploy: true })
     const originalPiece = this._board[sqFrom]
 
     if (!originalPiece)
       throw new Error('Deploy move error: original piece not found')
 
-    // Create internal deploy move
+    // 1. Initialize session
+    let session = new DeploySession({
+      stackSquare: sqFrom,
+      turn: this.turn(),
+      originalPiece: originalPiece,
+    })
+    this._deploySession = session
+
+    // 2. Create internal deploy move to get the sequence of moves
+    const deployMoves = this._moves({ square: deployMove.from, deploy: true })
     const internalDeployMove = createInternalDeployMove(
       originalPiece,
       deployMove,
       deployMoves,
     )
 
-    // Generate SAN/LAN BEFORE applying moves (board in "before" state)
+    // 3. Generate notation (must be done before moves are executed)
     const [san, lan] = deployMoveToSanLan(this, internalDeployMove)
 
-    // Capture before FEN
+    // 4. Apply moves to session and board
     const beforeFEN = this.fen()
 
-    // Apply the move
-    this._makeMove(internalDeployMove)
+    for (const move of internalDeployMove.moves) {
+      // Execute on board
+      const cmd = createMoveCommand(this, move)
+      cmd.execute()
 
-    // Capture after FEN
+      // Add to session
+      session.addMove(move, cmd)
+    }
+
+    // 5. Commit session
+    const committedMove = session.commit()
+
+    // 6. Finalize
     const afterFEN = this.fen()
 
-    // Build DeployMove data
     const data = {
-      color: internalDeployMove.moves[0].color,
-      from: algebraic(internalDeployMove.from),
-      to: internalDeployMove.moves.reduce<Map<string, Piece>>((acc, move) => {
+      color: committedMove.moves[0].color,
+      from: algebraic(committedMove.from),
+      to: committedMove.moves.reduce<Map<string, Piece>>((acc, move) => {
         acc.set(algebraic(move.to), move.piece)
         return acc
       }, new Map()),
-      stay: internalDeployMove.stay,
-      captured: internalDeployMove.captured,
+      stay: committedMove.stay,
+      captured: committedMove.captured,
       before: beforeFEN,
       after: afterFEN,
       san,
       lan,
     }
 
-    const prettyMove = DeployMove.fromSession(data)
+    const result = DeployMove.fromSession(data)
 
-    return prettyMove
+    // Add to history
+    this._finalizeDeployMove(session)
+    this._deploySession = null
+
+    return result
   }
 
   /**

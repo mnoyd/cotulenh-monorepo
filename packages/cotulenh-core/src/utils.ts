@@ -73,6 +73,12 @@ const pieceOps = createPieceStackingOperations()
  * @returns Combined piece or null if combination fails
  */
 export function combinePieces(pieces: Piece[]): Piece | null {
+  // Ensure all pieces have the same color
+  if (pieces.length === 0) return null
+  const color = pieces[0].color
+  if (pieces.some((p) => p.color !== color)) return null
+
+  // Use PieceStacker to combine
   return pieceOps.combine(pieces)
 }
 
