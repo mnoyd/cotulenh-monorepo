@@ -7,3 +7,5 @@ sample/
 coverage/
 memory-bank/
 test-runner-profile/
+
+.idea

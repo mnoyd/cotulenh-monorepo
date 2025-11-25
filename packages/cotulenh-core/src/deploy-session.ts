@@ -183,10 +183,10 @@ export class DeploySession {
  * @param deployMove - The deploy move to build commands for
  * @returns A DeployMoveCommand with all commands built and ready
  */
-export function buildDeployMoveCommand(
+export function buildDeployMoveCommands(
   game: CoTuLenh,
   deployMove: InternalDeployMove,
-): DeployMoveCommand {
+): CTLMoveCommandInteface[] {
   // Execute moves through handleDeployMove to ensure consistency
   // Pass autoCommit=false so we can capture the session
   for (const move of deployMove.moves) {
@@ -196,7 +196,7 @@ export function buildDeployMoveCommand(
   const session = game.getDeploySession()
   if (!session) {
     throw new Error(
-      'Failed to create deploy session during buildDeployMoveCommand',
+      'Failed to create deploy session during buildDeployMoveCommands',
     )
   }
 
@@ -212,7 +212,23 @@ export function buildDeployMoveCommand(
   // Clear the session from the game
   game.setDeploySession(null)
 
-  // Return a new DeployMoveCommand with the captured commands
+  // Return the captured commands
+  return commands
+}
+
+/**
+ * Creates a DeployMoveCommand using session-based logic.
+ * This ensures all deploy command creation goes through the same consistent path.
+ *
+ * @param game - The game instance
+ * @param deployMove - The deploy move to create a command for
+ * @returns A DeployMoveCommand ready to execute
+ */
+export function createDeployMoveCommand(
+  game: CoTuLenh,
+  deployMove: InternalDeployMove,
+): DeployMoveCommand {
+  const commands = buildDeployMoveCommands(game, deployMove)
   return new DeployMoveCommand(game, deployMove, commands)
 }
 
