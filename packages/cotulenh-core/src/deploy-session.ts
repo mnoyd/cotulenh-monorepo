@@ -1,7 +1,11 @@
 import { Color, Piece, InternalMove, BITS, algebraic } from './type.js'
 import { flattenPiece, combinePieces } from './utils.js'
 import { InternalDeployMove } from './deploy-move.js'
-import { CTLMoveCommandInteface, createMoveCommand } from './move-apply.js'
+import {
+  CTLMoveCommandInteface,
+  createMoveCommand,
+  DeployMoveCommand,
+} from './move-apply.js'
 import type { CoTuLenh } from './cotulenh.js'
 
 /**
@@ -17,14 +21,19 @@ export class DeploySession {
   public readonly stackSquare: number
   public readonly turn: Color
   public readonly originalPiece: Piece
+  private readonly _game: CoTuLenh
 
   private readonly _commands: CTLMoveCommandInteface[] = []
 
-  constructor(data: {
-    stackSquare: number
-    turn: Color
-    originalPiece: Piece
-  }) {
+  constructor(
+    game: CoTuLenh,
+    data: {
+      stackSquare: number
+      turn: Color
+      originalPiece: Piece
+    },
+  ) {
+    this._game = game
     this.stackSquare = data.stackSquare
     this.turn = data.turn
     this.originalPiece = data.originalPiece
@@ -94,16 +103,6 @@ export class DeploySession {
   }
 
   /**
-   * Execute a batch of moves and add them to the session
-   */
-  executeMoves(game: CoTuLenh, moves: InternalMove[]): void {
-    for (const move of moves) {
-      const command = createMoveCommand(game, move)
-      this.addCommand(command)
-    }
-  }
-
-  /**
    * Get all moves made in this session
    */
   get moves(): InternalMove[] {
@@ -118,9 +117,9 @@ export class DeploySession {
   }
 
   /**
-   * Commit the session to a single InternalDeployMove
+   * Commit the session to a single DeployMoveCommand
    */
-  commit(): InternalDeployMove {
+  commit(): DeployMoveCommand {
     if (this._commands.length === 0) {
       throw new Error('Cannot commit empty deploy session')
     }
@@ -135,12 +134,14 @@ export class DeploySession {
       if (move.captured) captured.push(move.captured)
     }
 
-    return {
+    const internalDeployMove: InternalDeployMove = {
       from: this.stackSquare,
       moves: this.moves,
       stay: stay || undefined,
       captured: captured.length > 0 ? captured : undefined,
     }
+
+    return new DeployMoveCommand(this._game, internalDeployMove, this.commands)
   }
 
   /**
@@ -175,6 +176,47 @@ export class DeploySession {
 }
 
 /**
+ * Builds a DeployMoveCommand from an InternalDeployMove by executing moves through a session.
+ * This is used when reconstructing a deploy move (e.g., for undo/redo or history replay).
+ *
+ * @param game - The game instance
+ * @param deployMove - The deploy move to build commands for
+ * @returns A DeployMoveCommand with all commands built and ready
+ */
+export function buildDeployMoveCommand(
+  game: CoTuLenh,
+  deployMove: InternalDeployMove,
+): DeployMoveCommand {
+  // Execute moves through handleDeployMove to ensure consistency
+  // Pass autoCommit=false so we can capture the session
+  for (const move of deployMove.moves) {
+    handleDeployMove(game, move, false)
+  }
+
+  const session = game.getDeploySession()
+  if (!session) {
+    throw new Error(
+      'Failed to create deploy session during buildDeployMoveCommand',
+    )
+  }
+
+  // Capture the commands before undoing
+  const commands = session.commands
+
+  // IMPORTANT: We must undo all moves to restore the board state
+  // because this function is used to BUILD a command that will be executed later.
+  // The moves have already been executed on the board during handleDeployMove calls,
+  // but we need to return a command that can be executed fresh.
+  session.cancel()
+
+  // Clear the session from the game
+  game.setDeploySession(null)
+
+  // Return a new DeployMoveCommand with the captured commands
+  return new DeployMoveCommand(game, deployMove, commands)
+}
+
+/**
  * Handles a deploy move by creating or updating a deploy session.
  *
  * @param game - The game instance
@@ -200,7 +242,7 @@ export function handleDeployMove(
       )
     }
 
-    session = new DeploySession({
+    session = new DeploySession(game, {
       stackSquare,
       turn: game.turn(),
       originalPiece: structuredClone(originalPiece), // Deep copy

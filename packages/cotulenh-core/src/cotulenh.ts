@@ -52,8 +52,8 @@ import {
 } from './move-generation.js'
 import {
   createMoveCommand,
-  DeployMoveCommand,
   CTLMoveCommandInteface,
+  DeployMoveCommand,
 } from './move-apply.js'
 import {
   createInternalDeployMove,
@@ -459,7 +459,9 @@ export class CoTuLenh {
     allowCombine = false,
   ): boolean {
     // this._movesCache.clear()
-    if (!(square in SQUARE_MAP)) return false
+    if (!(square in SQUARE_MAP)) {
+      throw new Error(`Invalid square: ${square}`)
+    }
     const sq = SQUARE_MAP[square]
 
     let newPiece = {
@@ -487,8 +489,16 @@ export class CoTuLenh {
 
     //Piece should be put on correct relative terrain.
     if (newPiece.type === NAVY) {
-      if (!NAVY_MASK[sq]) return false
-    } else if (!LAND_MASK[sq]) return false
+      if (!NAVY_MASK[sq]) {
+        throw new Error(
+          `Invalid terrain: Navy cannot be placed on ${algebraic(sq)}`,
+        )
+      }
+    } else if (!LAND_MASK[sq]) {
+      throw new Error(
+        `Invalid terrain: ${newPiece.type} cannot be placed on ${algebraic(sq)}`,
+      )
+    }
 
     // Handle commander limit
     if (
@@ -496,7 +506,7 @@ export class CoTuLenh {
       this._commanders[color] !== -1 &&
       this._commanders[color] !== sq
     ) {
-      return false
+      throw new Error(`Commander limit reached for ${color}`)
     }
 
     const currentPiece = this._board[sq]
@@ -865,15 +875,14 @@ export class CoTuLenh {
     const them = swapColor(us)
 
     // Add to history
-    const historyEntry: History = {
+    this._history.push({
       move: moveCommand,
       commanders: preState.commanders,
       turn: preState.turn,
       halfMoves: preState.halfMoves,
       moveNumber: preState.moveNumber,
       deploySession: null,
-    }
-    this._history.push(historyEntry)
+    })
 
     // Update half moves counter
     if (hasCapture) {
@@ -915,7 +924,8 @@ export class CoTuLenh {
     }
 
     // Let session create the command
-    const deployMove = session.commit()
+    const deployCommand = session.commit()
+    const deployMove = deployCommand.move as InternalDeployMove
 
     // Create command wrapper
     const commands = session.commands
@@ -931,12 +941,6 @@ export class CoTuLenh {
     }
 
     // Check if any move captured
-    // Check if any move captured
-    // deployMove is already defined above as InternalDeployMove (from session.commit())
-    // But wait, session.commit() returns InternalDeployMove.
-    // moveCommand.move is also that same object.
-    // So we can just use the existing variable or cast it if needed (though it should be typed).
-
     const hasCapture = deployMove.moves.some((move) => {
       if ('moves' in move) return false
       return !!(move.flags & BITS.CAPTURE)
@@ -1085,12 +1089,13 @@ export class CoTuLenh {
     }
 
     // Build InternalDeployMove from session
-    const internalDeployMove = this._deploySession.commit()
+    const deployCommand = this._deploySession.commit()
+    const internalDeployMove = deployCommand.move as InternalDeployMove
 
     // Create a simple command wrapper for history
     // We capture the executed commands from the session for undo
     const commands = this._deploySession.commands
-    const deployCommand: CTLMoveCommandInteface = {
+    const moveCommand: CTLMoveCommandInteface = {
       move: internalDeployMove,
       execute: () => {
         // Already executed incrementally
@@ -1708,7 +1713,7 @@ export class CoTuLenh {
       throw new Error('Deploy move error: original piece not found')
 
     // 1. Initialize session
-    let session = new DeploySession({
+    let session = new DeploySession(this, {
       stackSquare: sqFrom,
       turn: this.turn(),
       originalPiece: originalPiece,
@@ -1729,10 +1734,14 @@ export class CoTuLenh {
     // 4. Apply moves to session and board
     const beforeFEN = this.fen()
 
-    session.executeMoves(this, internalDeployMove.moves)
+    for (const move of internalDeployMove.moves) {
+      const command = createMoveCommand(this, move)
+      session.addCommand(command)
+    }
 
     // 5. Commit session
-    const committedMove = session.commit()
+    const deployCommand = session.commit()
+    const committedMove = deployCommand.move as InternalDeployMove
 
     // 6. Finalize
     const afterFEN = this.fen()
@@ -1754,7 +1763,7 @@ export class CoTuLenh {
 
     const result = DeployMove.fromSession(data)
 
-    // Add to history
+    // Finalize the deploy move (adds to history)
     this._finalizeDeployMove(session)
     this._deploySession = null
 

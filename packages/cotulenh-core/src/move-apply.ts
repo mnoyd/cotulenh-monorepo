@@ -2,6 +2,7 @@
 
 import type { Color, CoTuLenh, PieceSymbol } from './cotulenh.js'
 import { InternalDeployMove } from './deploy-move.js'
+import { buildDeployMoveCommand } from './deploy-session.js'
 import {
   swapColor,
   algebraic,
@@ -121,6 +122,26 @@ class RemoveFromStackAction implements CTLAtomicMoveAction {
     this.originalCarrier = {
       ...carrier,
       carrying: carrier.carrying ? [...carrier.carrying] : undefined,
+    }
+
+    // Validate that the piece to remove is actually in the stack
+    const carrierPieces = flattenPiece(carrier)
+    const piecesToRemove = flattenPiece(this.piece)
+
+    // We need to match by type and count
+    const carrierCounts = new Map<string, number>()
+    for (const p of carrierPieces) {
+      carrierCounts.set(p.type, (carrierCounts.get(p.type) || 0) + 1)
+    }
+
+    for (const p of piecesToRemove) {
+      const count = carrierCounts.get(p.type) || 0
+      if (count <= 0) {
+        throw new Error(
+          `Piece ${p.type} not found in stack at ${algebraic(this.carrierSquare)}`,
+        )
+      }
+      carrierCounts.set(p.type, count - 1)
     }
 
     // Remove piece from stack using utility
@@ -623,11 +644,10 @@ export class DeployMoveCommand extends SequenceMoveCommand {
   }
 
   protected buildActions(): void {
-    // Build from scratch (for backward compatibility or batch moves)
-    // Deploy state tracking is now handled by DeploySession
-    this.commands = this.moveData.moves.map((move) =>
-      createMoveCommand(this.game, move),
-    )
+    // Delegate to deploy-session to build the command
+    // This ensures all deploy logic goes through DeploySession
+    const builtCommand = buildDeployMoveCommand(this.game, this.moveData)
+    this.commands = builtCommand.commands
   }
 }
 

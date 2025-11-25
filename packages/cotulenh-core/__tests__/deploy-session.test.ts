@@ -43,6 +43,11 @@ const createMockCommand = (move: InternalMove): any => ({
 })
 
 describe('DeploySession', () => {
+  let game: CoTuLenh
+
+  beforeEach(() => {
+    game = new CoTuLenh()
+  })
   describe('Constructor', () => {
     it('should create a session with required fields', () => {
       const originalPiece = createPiece(NAVY, [
@@ -50,7 +55,7 @@ describe('DeploySession', () => {
         createPiece(TANK),
       ])
 
-      const session = new DeploySession({
+      const session = new DeploySession(game, {
         stackSquare: 0x92, // c3
         turn: RED,
         originalPiece,
@@ -70,7 +75,7 @@ describe('DeploySession', () => {
         createPiece(TANK),
       ])
 
-      const session = new DeploySession({
+      const session = new DeploySession(game, {
         stackSquare: 0x92,
         turn: RED,
         originalPiece,
@@ -93,7 +98,7 @@ describe('DeploySession', () => {
         createPiece(TANK),
       ])
 
-      const session = new DeploySession({
+      const session = new DeploySession(game, {
         stackSquare: 0x92,
         turn: RED,
         originalPiece,
@@ -116,7 +121,7 @@ describe('DeploySession', () => {
         createPiece(TANK),
       ])
 
-      const session = new DeploySession({
+      const session = new DeploySession(game, {
         stackSquare: 0x92,
         turn: RED,
         originalPiece,
@@ -139,7 +144,7 @@ describe('DeploySession', () => {
 
   describe('moves and commands', () => {
     it('should add moves and commands', () => {
-      const session = new DeploySession({
+      const session = new DeploySession(game, {
         stackSquare: 0x92,
         turn: RED,
         originalPiece: createPiece(NAVY),
@@ -156,7 +161,7 @@ describe('DeploySession', () => {
     })
 
     it('should undo last move', () => {
-      const session = new DeploySession({
+      const session = new DeploySession(game, {
         stackSquare: 0x92,
         turn: RED,
         originalPiece: createPiece(NAVY),
@@ -176,7 +181,7 @@ describe('DeploySession', () => {
     })
 
     it('should cancel session and undo all commands', () => {
-      const session = new DeploySession({
+      const session = new DeploySession(game, {
         stackSquare: 0x92,
         turn: RED,
         originalPiece: createPiece(NAVY),
@@ -200,7 +205,7 @@ describe('DeploySession', () => {
 
   describe('isComplete', () => {
     it('should return false when no moves made', () => {
-      const session = new DeploySession({
+      const session = new DeploySession(game, {
         stackSquare: 0x92,
         turn: RED,
         originalPiece: createPiece(NAVY),
@@ -212,7 +217,7 @@ describe('DeploySession', () => {
     it('should return true when all pieces deployed', () => {
       const originalPiece = createPiece(NAVY, [createPiece(AIR_FORCE)])
 
-      const session = new DeploySession({
+      const session = new DeploySession(game, {
         stackSquare: 0x92,
         turn: RED,
         originalPiece,
@@ -230,7 +235,7 @@ describe('DeploySession', () => {
 
   describe('toFenString', () => {
     it('should generate extended FEN with no moves', () => {
-      const session = new DeploySession({
+      const session = new DeploySession(game, {
         stackSquare: 0x92, // c3
         turn: RED,
         originalPiece: createPiece(NAVY),
@@ -241,7 +246,7 @@ describe('DeploySession', () => {
     })
 
     it('should generate extended FEN with moves', () => {
-      const session = new DeploySession({
+      const session = new DeploySession(game, {
         stackSquare: 0x92, // c3
         turn: RED,
         originalPiece: createPiece(NAVY, [
@@ -262,7 +267,7 @@ describe('DeploySession', () => {
 
     it('should generate extended FEN with capture', () => {
       const originalPiece = createPiece(NAVY, [createPiece(TANK)])
-      const session = new DeploySession({
+      const session = new DeploySession(game, {
         stackSquare: 0x92,
         turn: RED,
         originalPiece,
@@ -282,7 +287,7 @@ describe('DeploySession', () => {
 
     it('should generate extended FEN with combined pieces', () => {
       const combinedPiece = createPiece(NAVY, [createPiece(TANK)])
-      const session = new DeploySession({
+      const session = new DeploySession(game, {
         stackSquare: 0x92,
         turn: RED,
         originalPiece: combinedPiece,
@@ -298,7 +303,7 @@ describe('DeploySession', () => {
 
     it('should not include ... when complete', () => {
       const originalPiece = createPiece(NAVY, [createPiece(AIR_FORCE)])
-      const session = new DeploySession({
+      const session = new DeploySession(game, {
         stackSquare: 0x92,
         turn: RED,
         originalPiece,
