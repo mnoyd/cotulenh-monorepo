@@ -70,7 +70,11 @@ import {
   getCheckAirDefenseZone,
   updateAirDefensePiecesPosition,
 } from './air-defense.js'
-import { DeploySession, handleDeployMove } from './deploy-session.js'
+import {
+  DeploySession,
+  handleDeployMove,
+  createDeployMoveCommand,
+} from './deploy-session.js'
 
 // Structure for storing history states
 interface History {
@@ -803,7 +807,7 @@ export class CoTuLenh {
 
     // Create command using isInternalDeployMove() check
     const moveCommand: CTLMoveCommandInteface = isInternalDeployMove(move)
-      ? new DeployMoveCommand(this, move)
+      ? createDeployMoveCommand(this, move)
       : createMoveCommand(this, move)
 
     // Store pre-move state for history

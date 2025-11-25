@@ -2,7 +2,7 @@
 
 import type { Color, CoTuLenh, PieceSymbol } from './cotulenh.js'
 import { InternalDeployMove } from './deploy-move.js'
-import { buildDeployMoveCommand } from './deploy-session.js'
+import { buildDeployMoveCommands } from './deploy-session.js'
 import {
   swapColor,
   algebraic,
@@ -646,19 +646,9 @@ export class DeployMoveCommand extends SequenceMoveCommand {
   protected buildActions(): void {
     // Delegate to deploy-session to build the command
     // This ensures all deploy logic goes through DeploySession
-    const builtCommand = buildDeployMoveCommand(this.game, this.moveData)
-    this.commands = builtCommand.commands
+    const commands = buildDeployMoveCommands(this.game, this.moveData)
+    this.commands = commands
   }
-}
-
-/**
- * Creates a DeployMoveCommand for handling sequences of deploy moves
- */
-export function createDeployMoveCommand(
-  game: CoTuLenh,
-  move: InternalDeployMove,
-): DeployMoveCommand {
-  return new DeployMoveCommand(game, move)
 }
 
 const getMovingPieceFromInternalMove = (
