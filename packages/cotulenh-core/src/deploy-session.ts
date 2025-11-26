@@ -1,9 +1,19 @@
-import { Color, Piece, InternalMove, BITS, algebraic } from './type.js'
+import {
+  Color,
+  Piece,
+  InternalMove,
+  BITS,
+  algebraic,
+  FLAGS,
+  type MoveResult,
+} from './type.js'
 import { flattenPiece, combinePieces } from './utils.js'
 import { CTLMoveCommandInteface, createMoveCommand } from './move-apply.js'
 import type { CoTuLenh } from './cotulenh.js'
 import { Move } from './cotulenh.js'
 import { DeployMove } from './deploy-move.js'
+
+export type { MoveResult } from './type.js'
 
 /**
  * MoveSession tracks moves (normal or deploy) before committing to history.
@@ -14,6 +24,7 @@ import { DeployMove } from './deploy-move.js'
  * - Deploy moves: create session, add N moves, manual commit
  * - Session converts InternalMove → Command → executes
  * - Commit produces: CTLMoveCommandInteface + (Move | DeployMove)
+ * - Generates SAN/LAN/FEN internally without temporary execute/undo
  */
 export class MoveSession {
   public readonly stackSquare: number
@@ -21,7 +32,7 @@ export class MoveSession {
   public readonly originalPiece: Piece
   public readonly isDeploy: boolean
   private readonly _game: CoTuLenh
-
+  private readonly _beforeFEN: string
   private readonly _commands: CTLMoveCommandInteface[] = []
 
   constructor(
@@ -38,6 +49,8 @@ export class MoveSession {
     this.turn = data.turn
     this.originalPiece = data.originalPiece
     this.isDeploy = data.isDeploy
+    // Capture FEN before any moves
+    this._beforeFEN = game.fen()
   }
 
   /**
@@ -120,21 +133,55 @@ export class MoveSession {
   }
 
   /**
+   * Create a MoveResult for an intermediate deploy step
+   * Simple placeholder - real notation generated at commit
+   */
+  createIntermediateResult(): MoveResult {
+    // Simple placeholder for intermediate steps
+    const san = 'DEPLOY...'
+    const lan = 'DEPLOY...'
+
+    // Create a minimal Move object for intermediate state
+    const moveObj = Move.fromExecutedMove({
+      color: this.turn,
+      from: algebraic(this.stackSquare),
+      to: algebraic(this.stackSquare), // Placeholder
+      piece: this.originalPiece,
+      captured: undefined,
+      flags: 'd', // Deploy flag
+      before: this._beforeFEN,
+      after: this._game.fen(),
+      san,
+      lan,
+    })
+
+    return {
+      completed: false,
+      move: moveObj,
+      san,
+      lan,
+    }
+  }
+
+  /**
    * Commit the session
-   * Returns: command for history + Move/DeployMove object for API
+   * Generates SAN/LAN/FEN at commit time
+   * Returns: command for history + Move/DeployMove object + MoveResult
    */
   commit(): {
     command: CTLMoveCommandInteface
     moveObject: Move | DeployMove
+    result: MoveResult
   } {
     if (this._commands.length === 0) {
       throw new Error('Cannot commit empty session')
     }
 
-    const beforeFEN = this._game.fen() // This should be captured before session started
+    // Capture after FEN (board already updated)
+    const afterFEN = this._game.fen()
 
     if (this.isDeploy) {
-      // Deploy move: wrap all commands
+      // === DEPLOY MOVE ===
       const remaining = this.remaining
       const stay = remaining.length > 0 ? combinePieces(remaining) : undefined
 
@@ -144,12 +191,12 @@ export class MoveSession {
         if (cmd.move.captured) captured.push(cmd.move.captured)
       }
 
-      // Create wrapper command
+      // Create wrapper command for history
       const deployCommand: CTLMoveCommandInteface = {
         move: {
           color: this.turn,
           from: this.stackSquare,
-          to: this.stackSquare, // Deploy doesn't have single "to"
+          to: this.stackSquare,
           piece: this.originalPiece,
           flags: BITS.DEPLOY,
         },
@@ -157,38 +204,82 @@ export class MoveSession {
           // Already executed
         },
         undo: () => {
-          // Undo all commands in reverse
           for (let i = this._commands.length - 1; i >= 0; i--) {
             this._commands[i].undo()
           }
         },
       }
 
-      // Create DeployMove object
-      const afterFEN = this._game.fen()
+      // Build destination map
       const toMap = new Map<string, Piece>()
       for (const move of this.moves) {
         toMap.set(algebraic(move.to), move.piece)
       }
 
+      // Generate notation
+      const san = 'DEPLOY' // TODO: proper SAN
+      const lan = 'DEPLOY' // TODO: proper LAN
+
+      // Create DeployMove object
       const deployMove = DeployMove.fromSession({
         color: this.turn,
         from: algebraic(this.stackSquare),
         to: toMap,
         stay: stay ?? undefined,
         captured: captured.length > 0 ? captured : undefined,
-        before: beforeFEN,
+        before: this._beforeFEN,
         after: afterFEN,
-        san: 'DEPLOY', // TODO: proper SAN
-        lan: 'DEPLOY', // TODO: proper LAN
+        san,
+        lan,
       })
 
-      return { command: deployCommand, moveObject: deployMove }
+      const result: MoveResult = {
+        completed: true,
+        move: deployMove,
+        san,
+        lan,
+      }
+
+      return { command: deployCommand, moveObject: deployMove, result }
     } else {
-      // Normal move: single command
+      // === NORMAL MOVE ===
       const command = this._commands[0]
-      const move = new Move(this._game, command.move)
-      return { command, moveObject: move }
+      const move = command.move
+
+      // Generate notation (simple for now)
+      const san = `${move.piece.type.toUpperCase()}${algebraic(move.to)}`
+      const lan = `${algebraic(move.from)}-${algebraic(move.to)}`
+
+      // Build flags string
+      let flagsStr = ''
+      for (const flag in BITS) {
+        if (BITS[flag] & move.flags) {
+          flagsStr += FLAGS[flag]
+        }
+      }
+
+      // Create Move object
+      const moveObj = Move.fromExecutedMove({
+        color: move.color,
+        from: algebraic(move.from),
+        to: algebraic(move.to),
+        piece: move.piece,
+        captured: move.captured,
+        flags: flagsStr,
+        before: this._beforeFEN,
+        after: afterFEN,
+        san,
+        lan,
+      })
+
+      const result: MoveResult = {
+        completed: true,
+        move: moveObj,
+        san,
+        lan,
+      }
+
+      return { command, moveObject: moveObj, result }
     }
   }
 
@@ -245,13 +336,13 @@ export class DeploySession extends MoveSession {
  * @param game - The game instance
  * @param move - The internal move to process
  * @param autoCommit - Whether to automatically commit the session when complete (default: true)
- * @returns True if the deploy session is complete, false otherwise
+ * @returns MoveResult indicating completion status and move object
  */
 export function handleDeployMove(
   game: CoTuLenh,
   move: InternalMove,
   autoCommit: boolean = true,
-): boolean {
+): MoveResult {
   let session = game.getDeploySession()
 
   if (!session) {
@@ -273,12 +364,20 @@ export function handleDeployMove(
     game.setDeploySession(session)
   }
 
-  // Add move to session (converts to command and executes)
+  // Add move to session (executes immediately)
   session.addMove(move)
 
+  // Check if complete
   if (session.isComplete && autoCommit) {
-    game.commitDeploySession()
+    // Commit and return completed result
+    const commitResult = game.commitDeploySession()
+    if (commitResult.success && commitResult.result) {
+      return commitResult.result
+    }
+    // If commit failed, return intermediate
+    return session.createIntermediateResult()
   }
 
-  return session.isComplete
+  // Return intermediate result (not complete yet)
+  return session.createIntermediateResult()
 }

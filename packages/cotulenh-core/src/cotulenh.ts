@@ -30,6 +30,7 @@ import {
   AirDefense,
   AIR_FORCE,
   COMMANDER,
+  type MoveResult,
 } from './type.js'
 import {
   getDisambiguator,
@@ -77,63 +78,18 @@ interface History {
 
 // Public Move class (similar to chess.js) - can be fleshed out later
 export class Move {
-  color: Color
-  from: Square
-  to: Square // Destination square (piece's final location)
-  piece: Piece
+  color!: Color
+  from!: Square
+  to!: Square // Destination square (piece's final location)
+  piece!: Piece
   captured?: Piece
-  flags: string // String representation of flags
+  flags!: string // String representation of flags
   san?: string // Standard Algebraic Notation (needs implementation)
   lan?: string // Long Algebraic Notation (needs implementation)
-  before: string // FEN before move
-  after: string // FEN after move
+  before!: string // FEN before move
+  after!: string // FEN after move
 
-  /**
-   * Legacy constructor - reconstructs move by executing it temporarily.
-   * Used for history reconstruction and non-deploy moves.
-   *
-   * @deprecated For deploy moves during active session, use Move.fromExecutedMove()
-   */
-  constructor(game: CoTuLenh, internal: InternalMove) {
-    const { color, piece, from, to, flags, captured, combined } = internal
-
-    this.color = color
-    this.piece = piece // This is the piece that MOVED (or was deployed)
-    this.from = algebraic(from) // Square the move originated from (stack location for deploy)
-    this.flags = ''
-    for (const flag in BITS) {
-      if (BITS[flag] & flags) {
-        this.flags += FLAGS[flag]
-      }
-    }
-    if (captured) this.captured = captured
-    this.to = algebraic(to)
-
-    this.before = game.fen()
-
-    // Generate the FEN for the 'after' key
-    // For deploy moves during an active session, skip preview to avoid session corruption
-    const skipPreview = !!(game['_deploySession'] && flags & BITS.DEPLOY)
-
-    if (!skipPreview) {
-      // Execute move temporarily to get FEN
-      const command = game['_executeTemporarily'](internal as InternalMove)
-      this.after = game.fen()
-      command.undo()
-      game['_movesCache'].clear()
-    } else {
-      // During deploy session with deploy move, we can't safely preview
-      // The 'after' FEN will be the same as 'before' for now
-      this.after = this.before
-    }
-
-    const [san, lan] = game['_moveToSanLan'](
-      internal,
-      game['_moves']({ legal: true }),
-    )
-    this.san = san
-    this.lan = lan
-  }
+  // Old constructor removed - use Move.fromExecutedMove() instead
 
   /**
    * Create Move from already-executed move data (preferred for deploy session moves).
@@ -730,8 +686,8 @@ export class CoTuLenh {
    * @param options - Configuration options for move generation
    * @param options.square - Generate moves only for pieces on this specific square
    * @param options.pieceType - Generate moves only for this specific piece type
-   * @param options.verbose - If true, returns Move objects; if false, returns SAN strings
-   * @returns An array of legal moves, either as Move objects or algebraic notation strings
+   * @param options.verbose - If true, returns InternalMove objects; if false, returns SAN strings
+   * @returns An array of legal moves, either as InternalMove objects or algebraic notation strings
    */
   moves({
     verbose = false,
@@ -741,22 +697,20 @@ export class CoTuLenh {
     verbose?: boolean
     square?: Square
     pieceType?: PieceSymbol
-  } = {}): string[] | Move[] {
+  } = {}): string[] | InternalMove[] {
     const internalMoves = this._moves({
       square,
       pieceType,
       legal: true,
-    }) // Generate legal moves
+    })
 
     if (verbose) {
-      // Map to Move objects, passing current heroic status
-      return internalMoves.map((move) => new Move(this, move))
+      // Return InternalMove objects directly (no temp execute needed)
+      return internalMoves
     } else {
-      // Generate SAN strings (needs proper implementation)
-      // Pass all legal moves for ambiguity resolution
-      const allLegalMoves = this._moves({ legal: true })
+      // Generate SAN strings (simple, no temp execute)
       return internalMoves.map(
-        (move) => this._moveToSanLan(move, allLegalMoves)[0],
+        (move) => this._moveToSanLan(move, internalMoves)[0],
       )
     }
   }
@@ -777,24 +731,26 @@ export class CoTuLenh {
 
   /**
    * Execute a normal (non-deploy) move and add it to history.
-   * Uses unified session approach: create session, add 1 move, commit.
+   * Simple flow: Execute → Commit immediately → Generate SAN/LAN/FEN at commit
+   * @returns MoveResult with completed=true
    */
-  private _makeMove(move: InternalMove) {
+  private _makeMove(move: InternalMove): MoveResult {
     const us = this.turn()
     const them = swapColor(us)
 
-    // Store pre-move state for history
+    // 1. Store pre-move state
     const preCommanderState = { ...this._commanders }
     const preTurn = us
     const preHalfMoves = this._halfMoves
     const preMoveNumber = this._moveNumber
 
-    // Create a session for this single move
+    // 2. Get piece
     const pieceAtSquare = this.get(move.from)
     if (!pieceAtSquare) {
       throw new Error(`No piece at ${algebraic(move.from)} to move`)
     }
 
+    // 3. Create session, add move, commit immediately
     const session = new MoveSession(this, {
       stackSquare: move.from,
       turn: us,
@@ -802,100 +758,67 @@ export class CoTuLenh {
       isDeploy: false,
     })
 
-    // Add the move (executes it)
-    session.addMove(move)
+    session.addMove(move) // Execute
+    const { command, result } = session.commit() // Commit (generates SAN/LAN/FEN)
 
-    // Commit to get command and Move object
-    const { command: moveCommand, moveObject } = session.commit()
-
-    // Add to history
-    const historyEntry: History = {
-      move: moveCommand,
+    // 4. Add to history
+    this._history.push({
+      move: command,
       commanders: preCommanderState,
       turn: preTurn,
       halfMoves: preHalfMoves,
       moveNumber: preMoveNumber,
       deploySession: null,
-    }
-    this._history.push(historyEntry)
+    })
 
-    // Update half moves counter
-    if (move.captured) {
-      this._halfMoves = 0
-    } else {
-      this._halfMoves++
-    }
-
-    // Switch turn
+    // 5. Update game state
+    this._halfMoves = move.captured ? 0 : this._halfMoves + 1
     this._turn = them
-
-    // Increment move count if turn was BLUE
-    if (us === BLUE) {
-      this._moveNumber++
-    }
-
-    // Clear moves cache
+    if (us === BLUE) this._moveNumber++
     this._movesCache.clear()
-
-    // Update position counts
     this._updatePositionCounts()
+
+    return result
   }
 
   /**
    * Finalize a deploy move by adding it to history.
-   * Called when a deploy session is committed.
-   *
-   * @param session - The deploy session to commit
+   * Simple flow: Commit session → Generate SAN/LAN/FEN → Add to history
+   * @returns MoveResult with completed=true
    */
-  private _finalizeDeployMove(session: DeploySession): void {
+  private _finalizeDeployMove(session: DeploySession): MoveResult {
     const us = this.turn()
 
-    // Capture pre-move state
+    // 1. Store pre-move state
     const preCommanderState = { ...this._commanders }
     const preTurn = us
     const preHalfMoves = this._halfMoves
     const preMoveNumber = this._moveNumber
 
-    // Commit session to get command and DeployMove object
-    const { command: deployCommand, moveObject: deployMoveObject } =
-      session.commit()
+    // 2. Commit session (generates SAN/LAN/FEN)
+    const { command, result } = session.commit()
 
-    // Check if any move captured
-    const hasCapture = session.moves.some((move) => {
-      return !!(move.flags & BITS.CAPTURE)
-    })
+    // 3. Check if any capture
+    const hasCapture = session.moves.some((m) => !!(m.flags & BITS.CAPTURE))
 
-    // Add to history
-    const historyEntry: History = {
-      move: deployCommand,
+    // 4. Add to history
+    this._history.push({
+      move: command,
       commanders: preCommanderState,
       turn: preTurn,
       halfMoves: preHalfMoves,
       moveNumber: preMoveNumber,
       deploySession: null,
-    }
-    this._history.push(historyEntry)
+    })
 
-    // Update half moves counter
-    if (hasCapture) {
-      this._halfMoves = 0
-    } else {
-      this._halfMoves++
-    }
-
-    // Switch turn
+    // 5. Update game state
+    this._halfMoves = hasCapture ? 0 : this._halfMoves + 1
     this._turn = swapColor(us)
-
-    // Increment move count if turn was BLUE
-    if (us === BLUE) {
-      this._moveNumber++
-    }
-
-    // Clear moves cache
+    if (us === BLUE) this._moveNumber++
     this._movesCache.clear()
-
-    // Update position counts
     this._updatePositionCounts()
+
+    return result
   }
 
   private _undoMove(): InternalMove | null {
@@ -996,6 +919,7 @@ export class CoTuLenh {
   public commitDeploySession(switchTurn: boolean = true): {
     success: boolean
     reason?: string
+    result?: MoveResult
   } {
     if (!this._deploySession) {
       return {
@@ -1025,12 +949,12 @@ export class CoTuLenh {
     }
 
     // Finalize the deploy move (adds to history, switches turn)
-    this._finalizeDeployMove(this._deploySession)
+    const result = this._finalizeDeployMove(this._deploySession)
 
     // Clear session
     this._deploySession = null
 
-    return { success: true }
+    return { success: true, result }
   }
 
   /**
@@ -1339,32 +1263,10 @@ export class CoTuLenh {
       }
       combinationSuffix = makeSanPiece(combined, true)
     }
-    let checkingSuffix = '' // Simplified: Assume Move class handles this better
-
-    // Execute move temporarily to check for check/checkmate
-    const command = this._executeTemporarily(move)
-    // After executing the move, check if opponent is in check/checkmate
-    // Note: turn hasn't switched yet, so we check the opponent (them)
-    const them = swapColor(move.color)
-    const isCheck = this._isCommanderAttacked(them)
-    let isCheckmate = false
-    if (isCheck) {
-      // To check for checkmate, we need to see if opponent has any legal moves
-      // Temporarily switch turn to opponent
-      const savedTurn = this._turn
-      this._turn = them
-      isCheckmate = this._moves({ legal: true }).length === 0
-      this._turn = savedTurn
-    }
-    command.undo()
-    this._movesCache.clear()
-
-    if (isCheck) {
-      checkingSuffix = isCheckmate ? '#' : '^'
-    }
-
-    const san = `${pieceEncoded}${disambiguator}${separator}${toAlg}${combinationSuffix}${checkingSuffix}`
-    const lan = `${pieceEncoded}${fromAlg}${separator}${toAlg}${combinationSuffix}${checkingSuffix}`
+    // Note: Check detection removed - notation generated without temp execute
+    // Check symbols (^, #) can be added separately if needed
+    const san = `${pieceEncoded}${disambiguator}${separator}${toAlg}${combinationSuffix}`
+    const lan = `${pieceEncoded}${fromAlg}${separator}${toAlg}${combinationSuffix}`
 
     return [san, lan] // Return both SAN and LAN strings
   }
@@ -1473,7 +1375,7 @@ export class CoTuLenh {
    * @param move - The move to execute, either as SAN string (e.g., 'Nf3') or move object with from/to squares
    * @param options - Configuration options for move execution
    * @param options.strict - Whether to use strict parsing rules for algebraic notation moves
-   * @returns The executed Move or DeployMove object, or null if the move was invalid
+   * @returns MoveResult indicating completion status and the move object
    * @throws Error if the move is invalid, illegal, or ambiguous
    */
   public move(
@@ -1487,15 +1389,15 @@ export class CoTuLenh {
           deploy?: boolean
         },
     { strict = false }: { strict?: boolean } = {},
-  ): Move | DeployMove | null {
+  ): MoveResult | null {
     let internalMove: InternalMove | null = null
 
     // 1. Parse move
     if (typeof move === 'string') {
       internalMove = this._moveFromSan(move, strict)
     } else if (typeof move === 'object') {
-      const fromSq = SQUARE_MAP[move.from as Square]
-      const toSq = SQUARE_MAP[move.to as Square]
+      const fromSq = SQUARE_MAP[move.from]
+      const toSq = SQUARE_MAP[move.to]
 
       if (fromSq === undefined || toSq === undefined) {
         throw new Error(
@@ -1506,7 +1408,7 @@ export class CoTuLenh {
       // Find matching move in legal moves
       const legalMoves = this._moves({
         legal: true,
-        square: move.from as Square,
+        square: move.from,
         ...(move.piece && { pieceType: move.piece }),
       })
       const foundMoves: InternalMove[] = []
@@ -1546,60 +1448,14 @@ export class CoTuLenh {
 
     // 3. Check if this is an incremental deploy move (DEPLOY flag)
     if (internalMove.flags & BITS.DEPLOY) {
-      // Capture state before move
-      const beforeFEN = this.fen()
-
-      // Generate notation (must be done before execution)
-      const [san, lan] = this._moveToSanLan(
-        internalMove,
-        this._moves({ legal: true }),
-      )
-
       // Delegate to handleDeployMove
       // This handles session creation/retrieval, command creation, execution, and adding to session
-      const isComplete = handleDeployMove(this, internalMove)
-
-      // Capture state after move
-      const afterFEN = this.fen()
-
-      // Build flags string
-      let flagsStr = ''
-      for (const flag in BITS) {
-        if (BITS[flag] & internalMove.flags) {
-          flagsStr += FLAGS[flag]
-        }
-      }
-
-      // Return a Move object representing this step
-      // Note: This is an intermediate step, not a committed move in history
-
-      // Check if session is complete
-      if (isComplete) {
-        const session = this._deploySession
-        if (session) {
-          this._finalizeDeployMove(session)
-          this._deploySession = null
-        }
-      }
-
-      return Move.fromExecutedMove({
-        color: internalMove.color,
-        from: algebraic(internalMove.from),
-        to: algebraic(internalMove.to),
-        piece: internalMove.piece,
-        captured: internalMove.captured,
-        flags: flagsStr,
-        before: beforeFEN,
-        after: afterFEN,
-        san,
-        lan,
-      })
+      // Returns MoveResult with completed flag and move object
+      return handleDeployMove(this, internalMove)
     }
 
-    // 4. Standard Move
-    const prettyMove = new Move(this, internalMove)
-    this._makeMove(internalMove)
-    return prettyMove
+    // 4. Standard Move - use unified session approach
+    return this._makeMove(internalMove)
   }
   // deployMove() method removed - use handleDeployMove() from deploy-session.ts instead
   // The new architecture uses DeploySession for incremental deploy move handling
@@ -1653,96 +1509,78 @@ export class CoTuLenh {
   /**
    * Retrieves the complete move history of the current game.
    * Can return moves either as algebraic notation strings or detailed Move objects.
+   * Replays all moves to validate history integrity and generate notation.
    * @param options - Configuration options for history format
    * @param options.verbose - If true, returns Move/DeployMove objects; if false, returns SAN strings
    * @returns An array containing all moves made in the game, in chronological order
    */
   history(): string[]
-  history({ verbose }: { verbose: true }): (Move | DeployMove)[]
-  history({ verbose }: { verbose: false }): string[]
-  history({ verbose }: { verbose: boolean }): string[] | (Move | DeployMove)[]
-  history({ verbose = false }: { verbose?: boolean } = {}) {
-    const reversedHistory: CTLMoveCommandInteface[] = []
+  history(options: { verbose: true }): (Move | DeployMove)[]
+  history(options: { verbose: false }): string[]
+  history(options?: { verbose?: boolean }): string[] | (Move | DeployMove)[]
+  history(
+    options: { verbose?: boolean } = {},
+  ): string[] | (Move | DeployMove)[] {
+    const { verbose = false } = options
+    const reversedHistory: History[] = []
     const moveHistory: (string | Move | DeployMove)[] = []
 
-    // Undo all moves to collect commands in reverse order
+    // Undo all moves
     while (this._history.length > 0) {
-      const historyEntry = this._history.pop()
-      if (historyEntry) {
-        reversedHistory.push(historyEntry.move)
-        // Undo to get to previous state
-        historyEntry.move.undo()
-        this._commanders = historyEntry.commanders
-        this._turn = historyEntry.turn
-        this._halfMoves = historyEntry.halfMoves
-        this._moveNumber = historyEntry.moveNumber
-        this._movesCache.clear()
-      }
+      reversedHistory.push(this._history[this._history.length - 1])
+      this._undoMove()
     }
 
-    // Replay the moves and build the history
-    for (const command of reversedHistory.reverse()) {
-      const beforeFEN = this.fen()
+    // Replay and collect
+    while (reversedHistory.length > 0) {
+      const h = reversedHistory.pop()!
+      const beforeFen = this.fen()
+      h.move.execute()
+      const legalMoves = this._moves({ legal: false })
+      const [san, lan] = this._moveToSanLan(h.move.move, legalMoves)
 
-      // Check if this is a deploy move command (has 'moves' property)
-      const isDeployMove = 'moves' in command && Array.isArray(command.moves)
+      if (verbose) {
+        const move = h.move.move
+        const isDeploy = move.flags & BITS.DEPLOY
 
-      if (isDeployMove) {
-        // Handle deploy move
-        const deployCmd = command as any // DeployMoveCommand
-
-        if (verbose) {
-          // Execute to get after state
-          command.execute()
-          const afterFEN = this.fen()
-
-          // Build DeployMove data
-          const data = {
-            color: deployCmd.moves[0].color,
-            from: algebraic(deployCmd.from),
-            to: deployCmd.moves.reduce(
-              (acc: Map<string, Piece>, m: InternalMove) => {
-                acc.set(algebraic(m.to), m.piece)
-                return acc
-              },
-              new Map<string, Piece>(),
-            ),
-            stay: deployCmd.stay,
-            captured: deployCmd.captured,
-            before: beforeFEN,
-            after: afterFEN,
-            san: '', // TODO: Generate SAN for deploy moves
-            lan: '', // TODO: Generate LAN for deploy moves
-          }
-
-          moveHistory.push(DeployMove.fromSession(data))
-        } else {
-          // For string representation, just execute and use a placeholder
-          command.execute()
-          moveHistory.push('DEPLOY') // TODO: Generate proper SAN
-        }
-
-        // Update game state after deploy
-        this._turn = swapColor(this._turn)
-        if (this._turn === RED) this._moveNumber++
-        this._movesCache.clear()
+        moveHistory.push(
+          isDeploy
+            ? DeployMove.fromSession({
+                color: move.color,
+                from: algebraic(move.from),
+                to: new Map([[algebraic(move.to), move.piece]]),
+                stay: undefined,
+                captured: move.captured ? [move.captured] : undefined,
+                before: beforeFen,
+                after: this.fen(),
+                san,
+                lan,
+              })
+            : Move.fromExecutedMove({
+                color: move.color,
+                from: algebraic(move.from),
+                to: algebraic(move.to),
+                piece: move.piece,
+                captured: move.captured,
+                flags: Object.keys(BITS)
+                  .filter((flag) => BITS[flag] & move.flags)
+                  .map((flag) => FLAGS[flag])
+                  .join(''),
+                before: beforeFen,
+                after: this.fen(),
+                san,
+                lan,
+              }),
+        )
       } else {
-        // Handle normal move
-        const move = command.move
-
-        if (verbose) {
-          moveHistory.push(new Move(this, move))
-        } else {
-          const allLegalMoves = this._moves({ legal: true })
-          moveHistory.push(this._moveToSanLan(move, allLegalMoves)[0])
-        }
-
-        // Execute the move
-        this._makeMove(move)
+        moveHistory.push(san)
       }
+
+      // Restore history entry
+      this._history.push(h)
     }
 
-    return moveHistory
+    return moveHistory as any
   }
 
   /**
