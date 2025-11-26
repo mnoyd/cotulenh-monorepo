@@ -71,6 +71,21 @@ export type Piece = {
   heroic?: boolean // Indicates if the piece has heroic status
 }
 
+/**
+ * Result of a move operation
+ * Indicates whether the move sequence is complete and provides the move object
+ */
+export interface MoveResult {
+  /** Whether the move sequence is complete (true for normal moves, true when deploy finishes) */
+  completed: boolean
+  /** The move object (Move for normal/intermediate, DeployMove when deploy completes) */
+  move: any // Using any to avoid circular dependency - will be Move | DeployMove at runtime
+  /** SAN notation */
+  san: string
+  /** LAN notation */
+  lan: string
+}
+
 // --- 0x88 Style Board Representation (Adapted for 16x16) ---
 // We use a 16x16 board (256 squares) to fit 11x12
 // Square 0 = a12, Square 1 = b12, ..., Square 10 = k12
