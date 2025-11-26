@@ -51,7 +51,7 @@ describe('Deploy Auto-Commit Behavior', () => {
     })
   })
 
-  // Note: InternalDeployMove creation details are tested in deploy-session-process-move.test.ts
+  // Note: Deploy move handling details are tested in deploy-session-process-move.test.ts
 
   // Note: Session clearing is tested in deploy-session-process-move.test.ts
 

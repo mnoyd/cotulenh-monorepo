@@ -50,19 +50,8 @@ import {
   getPieceMovementConfig,
   getOppositeOffset,
 } from './move-generation.js'
-import {
-  createMoveCommand,
-  CTLMoveCommandInteface,
-  DeployMoveCommand,
-} from './move-apply.js'
-import {
-  createInternalDeployMove,
-  DeployMove,
-  DeployMoveRequest,
-  deployMoveToSanLan,
-  InternalDeployMove,
-  isInternalDeployMove,
-} from './deploy-move.js'
+import { createMoveCommand, CTLMoveCommandInteface } from './move-apply.js'
+import { DeployMove } from './deploy-move.js'
 import {
   AirDefensePiecesPosition,
   BASE_AIRDEFENSE_CONFIG,
@@ -72,8 +61,8 @@ import {
 } from './air-defense.js'
 import {
   DeploySession,
+  MoveSession,
   handleDeployMove,
-  createDeployMoveCommand,
 } from './deploy-session.js'
 
 // Structure for storing history states
@@ -681,11 +670,8 @@ export class CoTuLenh {
   }
 
   // Helper method to filter legal moves
-  private _filterLegalMoves(
-    moves: (InternalMove | InternalDeployMove)[],
-    us: Color,
-  ): (InternalMove | InternalDeployMove)[] {
-    const legalMoves: (InternalMove | InternalDeployMove)[] = []
+  private _filterLegalMoves(moves: InternalMove[], us: Color): InternalMove[] {
+    const legalMoves: InternalMove[] = []
 
     // Save the initial deploy session to restore if corrupted
     const initialDeploySession = null
@@ -694,7 +680,7 @@ export class CoTuLenh {
       try {
         // DELAYED VALIDATION: Allow deploy moves that could be part of check escape sequences
         // Validation will happen at commit time (allows deploy sequences to escape check)
-        const isDeploy = 'flags' in move && (move.flags & BITS.DEPLOY) !== 0
+        const isDeploy = (move.flags & BITS.DEPLOY) !== 0
         if (isDeploy) {
           // Check if this is a deploy move from a stack containing the Commander
           const fromPiece = this.get(move.from)
@@ -712,15 +698,7 @@ export class CoTuLenh {
         }
 
         // Execute move temporarily without affecting history or session
-        let command: CTLMoveCommandInteface
-        if (isInternalDeployMove(move)) {
-          // For batch deploy moves, execute and test via full _makeMove
-          // These are already complete deploy sequences, so they go to history
-          this._makeMove(move)
-          // Will undo via _undoMove below
-        } else {
-          command = this._executeTemporarily(move)
-        }
+        const command = this._executeTemporarily(move)
 
         // A move is legal if it doesn't leave the commander attacked AND doesn't expose the commander
         const commanderAttacked = this._isCommanderAttacked(us)
@@ -730,12 +708,8 @@ export class CoTuLenh {
         }
 
         // Undo the test move
-        if (isInternalDeployMove(move)) {
-          this._undoMove()
-        } else {
-          command!.undo()
-          this._movesCache.clear()
-        }
+        command.undo()
+        this._movesCache.clear()
       } catch (error) {
         // Log the error for debugging
         console.error('Error during move validation, restoring state:', error)
@@ -801,24 +775,38 @@ export class CoTuLenh {
     return command
   }
 
-  private _makeMove(move: InternalMove | InternalDeployMove) {
+  /**
+   * Execute a normal (non-deploy) move and add it to history.
+   * Uses unified session approach: create session, add 1 move, commit.
+   */
+  private _makeMove(move: InternalMove) {
     const us = this.turn()
     const them = swapColor(us)
-
-    // Create command using isInternalDeployMove() check
-    const moveCommand: CTLMoveCommandInteface = isInternalDeployMove(move)
-      ? createDeployMoveCommand(this, move)
-      : createMoveCommand(this, move)
 
     // Store pre-move state for history
     const preCommanderState = { ...this._commanders }
     const preTurn = us
     const preHalfMoves = this._halfMoves
     const preMoveNumber = this._moveNumber
-    const preDeploySession = null
 
-    // Execute command
-    moveCommand.execute()
+    // Create a session for this single move
+    const pieceAtSquare = this.get(move.from)
+    if (!pieceAtSquare) {
+      throw new Error(`No piece at ${algebraic(move.from)} to move`)
+    }
+
+    const session = new MoveSession(this, {
+      stackSquare: move.from,
+      turn: us,
+      originalPiece: pieceAtSquare,
+      isDeploy: false,
+    })
+
+    // Add the move (executes it)
+    session.addMove(move)
+
+    // Commit to get command and Move object
+    const { command: moveCommand, moveObject } = session.commit()
 
     // Add to history
     const historyEntry: History = {
@@ -827,69 +815,12 @@ export class CoTuLenh {
       turn: preTurn,
       halfMoves: preHalfMoves,
       moveNumber: preMoveNumber,
-      deploySession: preDeploySession,
+      deploySession: null,
     }
     this._history.push(historyEntry)
 
     // Update half moves counter
-    if (
-      (Array.isArray(moveCommand.move.captured) &&
-        moveCommand.move.captured.length > 0) ||
-      moveCommand.move.captured
-    ) {
-      this._halfMoves = 0
-    } else {
-      this._halfMoves++
-    }
-
-    // Switch turn
-    this._turn = them
-
-    // Increment move count if turn was BLUE
-    if (us === BLUE) {
-      this._moveNumber++
-    }
-
-    // Clear moves cache
-    this._movesCache.clear()
-
-    // Update position counts
-    this._updatePositionCounts()
-  }
-
-  /**
-   * Add a move command to history and update game state.
-   * Shared logic for both normal moves and deploy sequences.
-   *
-   * @param moveCommand - The command to add to history
-   * @param preState - The game state before the move
-   * @param hasCapture - Whether the move captured a piece
-   */
-  private _addMoveToHistory(
-    moveCommand: CTLMoveCommandInteface,
-    preState: {
-      commanders: Record<Color, number>
-      turn: Color
-      halfMoves: number
-      moveNumber: number
-    },
-    hasCapture: boolean,
-  ): void {
-    const us = preState.turn
-    const them = swapColor(us)
-
-    // Add to history
-    this._history.push({
-      move: moveCommand,
-      commanders: preState.commanders,
-      turn: preState.turn,
-      halfMoves: preState.halfMoves,
-      moveNumber: preState.moveNumber,
-      deploySession: null,
-    })
-
-    // Update half moves counter
-    if (hasCapture) {
+    if (move.captured) {
       this._halfMoves = 0
     } else {
       this._halfMoves++
@@ -920,41 +851,54 @@ export class CoTuLenh {
     const us = this.turn()
 
     // Capture pre-move state
-    const preState = {
-      commanders: { ...this._commanders },
-      turn: us,
-      halfMoves: this._halfMoves,
-      moveNumber: this._moveNumber,
-    }
+    const preCommanderState = { ...this._commanders }
+    const preTurn = us
+    const preHalfMoves = this._halfMoves
+    const preMoveNumber = this._moveNumber
 
-    // Let session create the command
-    const deployCommand = session.commit()
-    const deployMove = deployCommand.move as InternalDeployMove
-
-    // Create command wrapper
-    const commands = session.commands
-    const moveCommand: CTLMoveCommandInteface = {
-      move: deployMove,
-      execute: () => {}, // Already executed
-      undo: () => {
-        // Undo all moves in reverse order using the original commands
-        for (let i = commands.length - 1; i >= 0; i--) {
-          commands[i].undo()
-        }
-      },
-    }
+    // Commit session to get command and DeployMove object
+    const { command: deployCommand, moveObject: deployMoveObject } =
+      session.commit()
 
     // Check if any move captured
-    const hasCapture = deployMove.moves.some((move) => {
-      if ('moves' in move) return false
+    const hasCapture = session.moves.some((move) => {
       return !!(move.flags & BITS.CAPTURE)
     })
 
-    // Add to history and update game state
-    this._addMoveToHistory(moveCommand, preState, hasCapture)
+    // Add to history
+    const historyEntry: History = {
+      move: deployCommand,
+      commanders: preCommanderState,
+      turn: preTurn,
+      halfMoves: preHalfMoves,
+      moveNumber: preMoveNumber,
+      deploySession: null,
+    }
+    this._history.push(historyEntry)
+
+    // Update half moves counter
+    if (hasCapture) {
+      this._halfMoves = 0
+    } else {
+      this._halfMoves++
+    }
+
+    // Switch turn
+    this._turn = swapColor(us)
+
+    // Increment move count if turn was BLUE
+    if (us === BLUE) {
+      this._moveNumber++
+    }
+
+    // Clear moves cache
+    this._movesCache.clear()
+
+    // Update position counts
+    this._updatePositionCounts()
   }
 
-  private _undoMove(): InternalMove | InternalDeployMove | null {
+  private _undoMove(): InternalMove | null {
     const old = this._history.pop()
     if (!old) return null
 
@@ -986,7 +930,7 @@ export class CoTuLenh {
   public undo(): void {
     // Priority 1: Check active deploy session with moves
     if (this._deploySession && !this._deploySession.isEmpty) {
-      this._deploySession.undoCommand()
+      this._deploySession.undoLastMove()
 
       // Clear moves cache since board state has changed
       this._movesCache.clear()
@@ -1042,9 +986,8 @@ export class CoTuLenh {
    *
    * The session has already applied moves to the board incrementally.
    * This method:
-   * - Applies queued recombine instructions
-   * - Validates session is complete
    * - Validates commander safety (check escape)
+   * - Commits session to get command
    * - Adds to history
    * - Clears the session
    *
@@ -1070,21 +1013,10 @@ export class CoTuLenh {
       }
     }
 
-    // Apply all queued recombine instructions
-    // this._deploySession['applyRecombines'](this) // Removed in redesign
-
-    // Auto-mark remaining pieces as staying if not explicitly set
-    // In new design, commit() handles this internally in the session
-    // But we need to ensure the board reflects this?
-    // Actually, staying pieces just stay. We don't need to do anything on the board for them.
-
-    // DELAYED VALIDATION: Check commander safety after all moves + recombines
-    // This allows deploy sequences to escape check (e.g., deploy carrier, recombine commander)
+    // DELAYED VALIDATION: Check commander safety after all moves
+    // This allows deploy sequences to escape check
     const us = this._deploySession.turn
     if (this._isCommanderAttacked(us) || this._isCommanderExposed(us)) {
-      // Rollback the recombines and fail
-      // Note: The deploy moves are already in history, but we haven't committed the session yet
-      // The session will be rolled back by the caller or by undo
       return {
         success: false,
         reason:
@@ -1092,51 +1024,11 @@ export class CoTuLenh {
       }
     }
 
-    // Build InternalDeployMove from session
-    const deployCommand = this._deploySession.commit()
-    const internalDeployMove = deployCommand.move as InternalDeployMove
+    // Finalize the deploy move (adds to history, switches turn)
+    this._finalizeDeployMove(this._deploySession)
 
-    // Create a simple command wrapper for history
-    // We capture the executed commands from the session for undo
-    const commands = this._deploySession.commands
-    const moveCommand: CTLMoveCommandInteface = {
-      move: internalDeployMove,
-      execute: () => {
-        // Already executed incrementally
-      },
-      undo: () => {
-        // Undo all moves in reverse order using the original commands
-        for (let i = commands.length - 1; i >= 0; i--) {
-          commands[i].undo()
-        }
-      },
-    }
-
-    // Clear session and optionally switch turn
+    // Clear session
     this._deploySession = null
-
-    if (switchTurn) {
-      this._turn = swapColor(this._turn)
-
-      if (this._turn === RED) {
-        this._moveNumber++
-      }
-    }
-
-    // Add to history AFTER turn switch (so history stores the state BEFORE the move for undo)
-    // Note: For deploy moves, we store the turn BEFORE the switch, so undo restores correctly
-    const historyEntry: History = {
-      move: deployCommand,
-      commanders: {
-        r: this._commanders.r,
-        b: this._commanders.b,
-      },
-      turn: us, // Store the turn that made the move (before switch)
-      halfMoves: this._halfMoves,
-      moveNumber: this._moveNumber,
-      deploySession: null,
-    }
-    this._history.push(historyEntry)
 
     return { success: true }
   }
@@ -1709,70 +1601,8 @@ export class CoTuLenh {
     this._makeMove(internalMove)
     return prettyMove
   }
-  public deployMove(deployMove: DeployMoveRequest): DeployMove {
-    const sqFrom = SQUARE_MAP[deployMove.from]
-    const originalPiece = this._board[sqFrom]
-
-    if (!originalPiece)
-      throw new Error('Deploy move error: original piece not found')
-
-    // 1. Initialize session
-    let session = new DeploySession(this, {
-      stackSquare: sqFrom,
-      turn: this.turn(),
-      originalPiece: originalPiece,
-    })
-    this._deploySession = session
-
-    // 2. Create internal deploy move to get the sequence of moves
-    const deployMoves = this._moves({ square: deployMove.from, deploy: true })
-    const internalDeployMove = createInternalDeployMove(
-      originalPiece,
-      deployMove,
-      deployMoves,
-    )
-
-    // 3. Generate notation (must be done before moves are executed)
-    const [san, lan] = deployMoveToSanLan(this, internalDeployMove)
-
-    // 4. Apply moves to session and board
-    const beforeFEN = this.fen()
-
-    for (const move of internalDeployMove.moves) {
-      const command = createMoveCommand(this, move)
-      session.addCommand(command)
-    }
-
-    // 5. Commit session
-    const deployCommand = session.commit()
-    const committedMove = deployCommand.move as InternalDeployMove
-
-    // 6. Finalize
-    const afterFEN = this.fen()
-
-    const data = {
-      color: committedMove.moves[0].color,
-      from: algebraic(committedMove.from),
-      to: committedMove.moves.reduce<Map<string, Piece>>((acc, move) => {
-        acc.set(algebraic(move.to), move.piece)
-        return acc
-      }, new Map()),
-      stay: committedMove.stay,
-      captured: committedMove.captured,
-      before: beforeFEN,
-      after: afterFEN,
-      san,
-      lan,
-    }
-
-    const result = DeployMove.fromSession(data)
-
-    // Finalize the deploy move (adds to history)
-    this._finalizeDeployMove(session)
-    this._deploySession = null
-
-    return result
-  }
+  // deployMove() method removed - use handleDeployMove() from deploy-session.ts instead
+  // The new architecture uses DeploySession for incremental deploy move handling
 
   /**
    * Retrieves the color of the player who has the current turn to move.
@@ -1832,66 +1662,84 @@ export class CoTuLenh {
   history({ verbose }: { verbose: false }): string[]
   history({ verbose }: { verbose: boolean }): string[] | (Move | DeployMove)[]
   history({ verbose = false }: { verbose?: boolean } = {}) {
-    const reversedHistory = []
-    const moveHistory = []
+    const reversedHistory: CTLMoveCommandInteface[] = []
+    const moveHistory: (string | Move | DeployMove)[] = []
 
-    // Undo all moves to collect them in reverse order
+    // Undo all moves to collect commands in reverse order
     while (this._history.length > 0) {
-      reversedHistory.push(this._undoMove())
+      const historyEntry = this._history.pop()
+      if (historyEntry) {
+        reversedHistory.push(historyEntry.move)
+        // Undo to get to previous state
+        historyEntry.move.undo()
+        this._commanders = historyEntry.commanders
+        this._turn = historyEntry.turn
+        this._halfMoves = historyEntry.halfMoves
+        this._moveNumber = historyEntry.moveNumber
+        this._movesCache.clear()
+      }
     }
 
     // Replay the moves and build the history
-    while (true) {
-      const move = reversedHistory.pop()
-      if (!move) {
-        break
-      }
+    for (const command of reversedHistory.reverse()) {
+      const beforeFEN = this.fen()
 
-      if (verbose) {
-        // Check if this is a deploy move or a regular move
-        if (isInternalDeployMove(move)) {
-          // Board is in "before" state, generate notation
-          const [san, lan] = deployMoveToSanLan(this, move)
-          const beforeFEN = this.fen()
+      // Check if this is a deploy move command (has 'moves' property)
+      const isDeployMove = 'moves' in command && Array.isArray(command.moves)
 
-          // Apply move to get after FEN
-          this._makeMove(move)
+      if (isDeployMove) {
+        // Handle deploy move
+        const deployCmd = command as any // DeployMoveCommand
+
+        if (verbose) {
+          // Execute to get after state
+          command.execute()
           const afterFEN = this.fen()
 
           // Build DeployMove data
           const data = {
-            color: move.moves[0].color,
-            from: algebraic(move.from),
-            to: move.moves.reduce<Map<string, Piece>>((acc, m) => {
-              acc.set(algebraic(m.to), m.piece)
-              return acc
-            }, new Map()),
-            stay: move.stay,
-            captured: move.captured,
+            color: deployCmd.moves[0].color,
+            from: algebraic(deployCmd.from),
+            to: deployCmd.moves.reduce(
+              (acc: Map<string, Piece>, m: InternalMove) => {
+                acc.set(algebraic(m.to), m.piece)
+                return acc
+              },
+              new Map<string, Piece>(),
+            ),
+            stay: deployCmd.stay,
+            captured: deployCmd.captured,
             before: beforeFEN,
             after: afterFEN,
-            san,
-            lan,
+            san: '', // TODO: Generate SAN for deploy moves
+            lan: '', // TODO: Generate LAN for deploy moves
           }
 
           moveHistory.push(DeployMove.fromSession(data))
-
-          continue // Skip the _makeMove below since we already did it
         } else {
-          moveHistory.push(new Move(this, move))
+          // For string representation, just execute and use a placeholder
+          command.execute()
+          moveHistory.push('DEPLOY') // TODO: Generate proper SAN
         }
+
+        // Update game state after deploy
+        this._turn = swapColor(this._turn)
+        if (this._turn === RED) this._moveNumber++
+        this._movesCache.clear()
       } else {
-        // For string representation
-        if (isInternalDeployMove(move)) {
-          const [san] = deployMoveToSanLan(this, move)
-          moveHistory.push(san)
-        } else {
-          moveHistory.push(this._moveToSanLan(move, this._moves())[0])
-        }
-      }
+        // Handle normal move
+        const move = command.move
 
-      // Replay the move
-      this._makeMove(move)
+        if (verbose) {
+          moveHistory.push(new Move(this, move))
+        } else {
+          const allLegalMoves = this._moves({ legal: true })
+          moveHistory.push(this._moveToSanLan(move, allLegalMoves)[0])
+        }
+
+        // Execute the move
+        this._makeMove(move)
+      }
     }
 
     return moveHistory
@@ -2025,7 +1873,6 @@ export class CoTuLenh {
 }
 
 export * from './type.js'
-export type { DeployMoveRequest } from './deploy-move.js'
 export { DeployMove } from './deploy-move.js'
 
 /**
