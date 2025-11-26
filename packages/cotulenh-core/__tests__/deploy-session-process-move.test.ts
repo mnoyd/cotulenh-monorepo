@@ -241,48 +241,6 @@ describe('DeploySession.processMove()', () => {
     })
   })
 
-  describe('InternalDeployMove creation', () => {
-    it('should create InternalDeployMove with all moves', () => {
-      game.put(
-        { type: TANK, color: RED, carrying: [{ type: MILITIA, color: RED }] },
-        'c3',
-      )
-      game['_turn'] = RED
-
-      const historyBefore = game.history({ verbose: true })
-
-      // Deploy all pieces
-      game.move({ from: 'c3', to: 'c4', piece: TANK, deploy: true })
-      game.move({ from: 'c3', to: 'd3', piece: MILITIA, deploy: true })
-
-      // Get the history entry
-      const historyAfter = game.history({ verbose: true })
-      const deployMove = historyAfter[historyAfter.length - 1]
-
-      // Verify it's a deploy move with correct structure
-      expect(deployMove.from).toBe('c3')
-      // The move should contain both piece movements
-    })
-
-    it('should include stay pieces if any remain', () => {
-      game.put(
-        { type: TANK, color: RED, carrying: [{ type: MILITIA, color: RED }] },
-        'c3',
-      )
-      game['_turn'] = RED
-
-      // Deploy only Tank (Militia stays)
-      game.move({ from: 'c3', to: 'c4', piece: TANK, deploy: true })
-
-      // Manually commit
-      const result = game.commitDeploySession()
-      expect(result.success).toBe(true)
-
-      // Militia should still be at c3
-      expect(game.get('c3')?.type).toBe(MILITIA)
-    })
-  })
-
   describe('Recombine instruction application during commit', () => {
     it('should apply recombine instructions at commit time', () => {
       // Set up a stack with multiple pieces

@@ -1,4 +1,3 @@
-import { InternalDeployMove } from './deploy-move.js'
 import {
   algebraic,
   file,
@@ -479,30 +478,4 @@ export function cloneInternalMove(move: InternalMove): InternalMove {
   }
 
   return clonedMove
-}
-
-/**
- * Creates a deep clone of an InternalDeployMove object
- * @param deployMove - The deploy move to clone
- * @returns A new InternalDeployMove object with the same properties
- */
-export function cloneInternalDeployMove(
-  deployMove: InternalDeployMove,
-): InternalDeployMove {
-  const clonedDeployMove: InternalDeployMove = {
-    from: deployMove.from,
-    moves: deployMove.moves.map((move) => cloneInternalMove(move)),
-  }
-
-  if (deployMove.stay) {
-    clonedDeployMove.stay = clonePiece(deployMove.stay)
-  }
-
-  if (deployMove.captured && deployMove.captured.length > 0) {
-    clonedDeployMove.captured = deployMove.captured.map(
-      (p) => clonePiece(p) as Piece,
-    )
-  }
-
-  return clonedDeployMove
 }

@@ -13,7 +13,6 @@ import {
   SQUARE_MAP,
 } from './type.js'
 import {
-  cloneInternalDeployMove,
   createAllPieceSplits,
   combinePieces,
   flattenPiece,
@@ -21,116 +20,13 @@ import {
   makeSanPiece,
 } from './utils.js'
 
-export interface DeployMoveRequest {
-  from: Square
-  moves: { piece: Piece; to: Square }[]
-  stay?: Piece
-}
-
-export interface InternalDeployMove {
+/**
+ * Represents a complete deployment sequence for a stack
+ */
+export interface DeploySequence {
   from: number
   moves: InternalMove[]
   stay?: Piece
-  captured?: Piece[]
-}
-
-export function createInternalDeployMove(
-  originalPiece: Piece,
-  deployMove: DeployMoveRequest,
-  validMoves: InternalMove[],
-): InternalDeployMove {
-  if (!originalPiece) throw new Error('Original piece not found')
-  if (deployMove.stay) {
-    const combined = combinePieces(flattenPiece(deployMove.stay))
-    if (!combined) {
-      throw new Error('Deploy move error: stay piece not valid')
-    }
-  }
-  const dests = new Map<Square, Piece[]>()
-  for (const move of deployMove.moves) {
-    if (dests.has(move.to)) {
-      dests.get(move.to)?.push(move.piece)
-    } else {
-      dests.set(move.to, [move.piece])
-    }
-  }
-  const cleanedDupDests: { from: Square; to: Square; pieces: Piece[] }[] =
-    Array.from(dests, ([to, pieces]) => {
-      return { from: deployMove.from, to, pieces }
-    })
-
-  const combinedDests: { from: Square; to: Square; piece: Piece }[] =
-    cleanedDupDests
-      .map((dest) => {
-        const combined = combinePieces(dest.pieces)
-        if (!combined) return null
-        // Only include the properties required by the type
-        return { from: dest.from, to: dest.to, piece: combined }
-      })
-      .filter(
-        (dest): dest is { from: Square; to: Square; piece: Piece } =>
-          dest !== null,
-      )
-  const cleanedAllMovingPiece = combinedDests.reduce<Piece[]>((acc, dest) => {
-    acc.push(...flattenPiece(dest.piece))
-    return acc
-  }, [])
-  const allPieces = [
-    ...cleanedAllMovingPiece,
-    ...(deployMove.stay ? flattenPiece(deployMove.stay) : []),
-  ]
-  if (allPieces.length !== flattenPiece(originalPiece).length) {
-    throw new Error(
-      'Deploy move error: ambiguous deploy move. some pieces are not clear whether moved or stay',
-    )
-  }
-  const toSquareNumDests = combinedDests.map((dest) => {
-    return {
-      from: SQUARE_MAP[dest.from],
-      to: SQUARE_MAP[dest.to],
-      piece: dest.piece,
-    }
-  })
-
-  const foundMove: InternalMove[] = []
-  for (const move of validMoves) {
-    const destIndex = toSquareNumDests.findIndex(
-      (dest) =>
-        dest.from === move.from &&
-        dest.to === move.to &&
-        dest.piece.type === move.piece.type,
-    )
-    if (destIndex !== -1) {
-      foundMove.push({ ...move, piece: toSquareNumDests[destIndex].piece })
-    }
-  }
-  if (foundMove.length !== toSquareNumDests.length) {
-    throw new Error('Deploy move error: move not found')
-  }
-  foundMove.sort((a, b) => {
-    const aSteps = getStepsBetweenSquares(a.from, a.to)
-    const bSteps = getStepsBetweenSquares(b.from, b.to)
-    if (aSteps === -1 || bSteps === -1)
-      throw new Error('Deploy move error: invalid move')
-    return aSteps > bSteps ? -1 : 1
-  })
-  const captured: Piece[] = []
-  foundMove.forEach((move) => {
-    if (move.captured) {
-      captured.push(move.captured)
-    }
-  })
-  return {
-    from: SQUARE_MAP[deployMove.from],
-    moves: foundMove,
-    stay: deployMove.stay,
-    captured,
-  }
-}
-export function isInternalDeployMove(
-  move: InternalMove | InternalDeployMove,
-): move is InternalDeployMove {
-  return (move as InternalDeployMove).moves !== undefined
 }
 export class DeployMove {
   color!: Color
@@ -175,21 +71,6 @@ export class DeployMove {
   }
 }
 
-export function deployMoveToSanLan(
-  game: CoTuLenh,
-  move: InternalDeployMove,
-): [string, string] {
-  const legalMoves = game['_moves']({ legal: true })
-  const allMoveSan = move.moves.map((m: InternalMove) => {
-    return game['_moveToSanLan'](m, legalMoves)[0]
-  })
-  const movesSan = allMoveSan.join(',')
-  const stay = move.stay ? `${makeSanPiece(move.stay)}<` : ''
-  const san = `${stay}${movesSan}`
-  const lan = `${algebraic(move.from)}:${san}`
-  return [san, lan]
-}
-
 /**
  * Generates all possible deploy moves for each piece in all possible stack splits.
  * For a stack like (F|TI), it calculates all ways to split the stack and
@@ -197,12 +78,12 @@ export function deployMoveToSanLan(
  *
  * @param gameInstance - The current game instance
  * @param stackSquare - The square where the stack is located (in internal 0xf0 format)
- * @returns A map where keys are piece combinations and values are arrays of InternalDeployMove objects
+ * @returns Array of DeploySequence objects representing all possible deployment combinations
  */
 export function generateStackSplitMoves(
   gameInstance: CoTuLenh,
   stackSquare: number,
-): InternalDeployMove[] {
+): DeploySequence[] {
   const pieceAtSquare = gameInstance.get(stackSquare)
   if (!pieceAtSquare) {
     return []
@@ -212,7 +93,7 @@ export function generateStackSplitMoves(
     gameInstance,
     stackSquare,
   )
-  const allInternalStackMoves: InternalDeployMove[] = []
+  const allInternalStackMoves: DeploySequence[] = []
   for (const splittedPiece of splittedPieces) {
     const internalStackMove = makeStackMoveFromCombination(
       stackSquare,
@@ -226,8 +107,10 @@ export function generateStackSplitMoves(
   const cleanedInternalStackMoves = allInternalStackMoves.filter((move) => {
     const haveMove = move.moves.length > 0
     const totalPiece =
-      move.moves.reduce((acc, m) => acc + flattenPiece(m.piece).length, 0) +
-      (move.stay ? flattenPiece(move.stay).length : 0)
+      move.moves.reduce(
+        (acc: number, m: InternalMove) => acc + flattenPiece(m.piece).length,
+        0,
+      ) + (move.stay ? flattenPiece(move.stay).length : 0)
     const deployCountedForAllPiece = totalPiece === totalStackPiece
     return haveMove && deployCountedForAllPiece
   })
@@ -236,10 +119,10 @@ export function generateStackSplitMoves(
 
 const makeStackMoveFromCombination = (
   fromSquare: number,
-  stackMoves: InternalDeployMove[],
+  stackMoves: DeploySequence[],
   remaining: Piece[],
   moveCandidates: Map<PieceSymbol, InternalMove[]>,
-): InternalDeployMove[] => {
+): DeploySequence[] => {
   const currentStackPiece = remaining.pop()
   if (!currentStackPiece) return stackMoves
   const moveCandiateForCurrentPiece = moveCandidates.get(currentStackPiece.type)
@@ -250,7 +133,7 @@ const makeStackMoveFromCombination = (
       remaining,
       moveCandidates,
     )
-  const newStackMoves: InternalDeployMove[] = []
+  const newStackMoves: DeploySequence[] = []
   if (stackMoves.length === 0) {
     for (const move of moveCandiateForCurrentPiece) {
       newStackMoves.push({
@@ -277,9 +160,14 @@ const makeStackMoveFromCombination = (
   } else {
     for (const stackMove of stackMoves) {
       for (const move of moveCandiateForCurrentPiece) {
-        const newSquares = stackMove.moves.map((m) => m.to)
+        const newSquares = stackMove.moves.map((m: InternalMove) => m.to)
         if (newSquares.includes(move.to)) continue
-        const newStackMove = cloneInternalDeployMove(stackMove)
+        // Clone DeploySequence manually
+        const newStackMove: DeploySequence = {
+          from: stackMove.from,
+          moves: [...stackMove.moves],
+          stay: stackMove.stay,
+        }
         newStackMove.moves.push({
           from: fromSquare,
           to: move.to,
@@ -293,8 +181,12 @@ const makeStackMoveFromCombination = (
         !stackMove.stay &&
         canStayOnSquare(fromSquare, currentStackPiece.type)
       ) {
-        const newStackMove = cloneInternalDeployMove(stackMove)
-        newStackMove.stay = currentStackPiece
+        // Clone DeploySequence manually
+        const newStackMove: DeploySequence = {
+          from: stackMove.from,
+          moves: [...stackMove.moves],
+          stay: currentStackPiece,
+        }
         newStackMoves.push(newStackMove)
       }
     }

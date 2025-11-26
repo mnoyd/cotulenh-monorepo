@@ -1,8 +1,6 @@
 // src/move.ts
 
 import type { Color, CoTuLenh, PieceSymbol } from './cotulenh.js'
-import { InternalDeployMove } from './deploy-move.js'
-import { buildDeployMoveCommands } from './deploy-session.js'
 import {
   swapColor,
   algebraic,
@@ -187,7 +185,7 @@ class RemoveFromStackAction implements CTLAtomicMoveAction {
 // SetDeployStateAction removed - deploy state tracking now handled by DeploySession
 
 export interface CTLMoveCommandInteface extends CTLAtomicMoveAction {
-  move: InternalMove | InternalDeployMove
+  move: InternalMove
 }
 
 /**
@@ -587,69 +585,7 @@ class CheckAndPromoteAttackersAction implements CTLAtomicMoveAction {
     this.heroicActions = []
   }
 }
-/**
- * Abstract base class for commands that handle sequences of moves.
- * Provides common functionality for executing and undoing sequences.
- */
-export abstract class SequenceMoveCommand implements CTLMoveCommandInteface {
-  public readonly move: InternalDeployMove
-  protected commands: (CTLMoveCommand | CTLAtomicMoveAction)[] = []
-
-  constructor(
-    protected game: CoTuLenh,
-    protected moveData: InternalDeployMove,
-    skipBuild: boolean = false,
-  ) {
-    this.move = moveData
-    if (!skipBuild) {
-      this.buildActions()
-    }
-  }
-
-  protected buildActions(): void {}
-
-  execute(): void {
-    // Then execute each move command in sequence
-    for (const command of this.commands) {
-      command.execute()
-    }
-  }
-
-  undo(): void {
-    // First undo moves in reverse order
-    for (let i = this.commands.length - 1; i >= 0; i--) {
-      this.commands[i].undo()
-    }
-  }
-}
-
-/**
- * Handles the entire sequence of moves in a deploy move.
- * Can be used for:
- * - Batch execution (execute all moves at once)
- * - Wrapping already-executed moves from a session (for history/undo only)
- */
-export class DeployMoveCommand extends SequenceMoveCommand {
-  constructor(
-    protected game: CoTuLenh,
-    protected moveData: InternalDeployMove,
-    providedCommands?: CTLMoveCommandInteface[],
-  ) {
-    // Skip buildActions if we have provided commands
-    super(game, moveData, !!providedCommands)
-    // Set commands if provided
-    if (providedCommands) {
-      this.commands = providedCommands
-    }
-  }
-
-  protected buildActions(): void {
-    // Delegate to deploy-session to build the command
-    // This ensures all deploy logic goes through DeploySession
-    const commands = buildDeployMoveCommands(this.game, this.moveData)
-    this.commands = commands
-  }
-}
+// DeployMoveCommand removed - deploy moves now handled by MoveSession.commit()
 
 const getMovingPieceFromInternalMove = (
   game: CoTuLenh,
