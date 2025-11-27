@@ -182,6 +182,48 @@ class RemoveFromStackAction implements CTLAtomicMoveAction {
   }
 }
 
+/**
+ * Updates game state (turn, halfMoves, moveNumber) after a move.
+ * This action encapsulates state changes so they can be executed/undone atomically.
+ */
+class StateUpdateAction implements CTLAtomicMoveAction {
+  private oldTurn: Color
+  private oldHalfMoves: number
+  private oldMoveNumber: number
+
+  constructor(
+    private game: CoTuLenh,
+    private move: InternalMove,
+  ) {
+    // Capture current state before execution
+    this.oldTurn = game.turn()
+    this.oldHalfMoves = game['_halfMoves']
+    this.oldMoveNumber = game['_moveNumber']
+  }
+
+  execute(): void {
+    const us = this.oldTurn
+    const them = swapColor(us)
+    const hasCapture = !!(this.move.flags & BITS.CAPTURE)
+
+    // Update game state
+    this.game['_halfMoves'] = hasCapture ? 0 : this.oldHalfMoves + 1
+    this.game['_turn'] = them
+    if (us === 'b') {
+      this.game['_moveNumber']++
+    }
+    this.game['_movesCache'].clear()
+  }
+
+  undo(): void {
+    // Restore previous state
+    this.game['_turn'] = this.oldTurn
+    this.game['_halfMoves'] = this.oldHalfMoves
+    this.game['_moveNumber'] = this.oldMoveNumber
+    this.game['_movesCache'].clear()
+  }
+}
+
 // SetDeployStateAction removed - deploy state tracking now handled by DeploySession
 
 export interface CTLMoveCommandInteface extends CTLAtomicMoveAction {
@@ -204,6 +246,7 @@ export abstract class CTLMoveCommand implements CTLMoveCommandInteface {
     this.buildActions()
     const defaultPostMoveActions = [
       new CheckAndPromoteAttackersAction(this.game, this.move),
+      new StateUpdateAction(this.game, this.move),
     ]
     this.actions.push(...defaultPostMoveActions)
   }
