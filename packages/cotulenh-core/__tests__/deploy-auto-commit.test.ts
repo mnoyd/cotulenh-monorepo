@@ -47,7 +47,7 @@ describe('Deploy Auto-Commit Behavior', () => {
 
       // Session should still be active (Infantry remains)
       expect(game.getDeploySession()).toBeTruthy()
-      expect(game.getDeploySession()?.getRemainingPieces()?.type).toBe(MILITIA)
+      expect(game.getDeploySession()?.remaining?.[0]?.type).toBe(MILITIA)
     })
   })
 
