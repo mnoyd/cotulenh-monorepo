@@ -31,6 +31,7 @@ export class MoveSession {
   public readonly turn: Color
   public readonly originalPiece: Piece
   public readonly isDeploy: boolean
+  public readonly beforeCommanders: Record<Color, number>
   private readonly _game: CoTuLenh
   private readonly _beforeFEN: string
   private readonly _commands: CTLMoveCommandInteface[] = []
@@ -51,6 +52,8 @@ export class MoveSession {
     this.isDeploy = data.isDeploy
     // Capture FEN before any moves
     this._beforeFEN = game.fen()
+    // Capture commander positions before any moves
+    this.beforeCommanders = game.getCommandersSnapshot()
   }
 
   /**
@@ -316,34 +319,29 @@ export class MoveSession {
   }
 }
 
-// Backward compatibility: DeploySession = MoveSession with isDeploy=true
-export class DeploySession extends MoveSession {
-  constructor(
-    game: CoTuLenh,
-    data: {
-      stackSquare: number
-      turn: Color
-      originalPiece: Piece
-    },
-  ) {
-    super(game, { ...data, isDeploy: true })
-  }
-}
+// Backward compatibility alias
+export const DeploySession = MoveSession
 
 /**
- * Handles a deploy move by creating or updating a deploy session.
+ * Handles a move (normal or deploy) by creating or updating a session.
+ *
+ * Unified handling:
+ * - Detects deploy vs normal from move.flags & BITS.DEPLOY
+ * - Deploy moves: create/update session, auto-commit when complete
+ * - Normal moves: create session, add move, auto-commit immediately
  *
  * @param game - The game instance
  * @param move - The internal move to process
  * @param autoCommit - Whether to automatically commit the session when complete (default: true)
  * @returns MoveResult indicating completion status and move object
  */
-export function handleDeployMove(
+export function handleMove(
   game: CoTuLenh,
   move: InternalMove,
   autoCommit: boolean = true,
 ): MoveResult {
-  let session = game.getDeploySession()
+  const isDeploy = (move.flags & BITS.DEPLOY) !== 0
+  let session = game.getSession()
 
   if (!session) {
     // Start new session
@@ -352,25 +350,26 @@ export function handleDeployMove(
 
     if (!originalPiece) {
       throw new Error(
-        `No piece at ${algebraic(stackSquare)} to start deploy session`,
+        `No piece at ${algebraic(stackSquare)} to start move session`,
       )
     }
 
-    session = new DeploySession(game, {
+    session = new MoveSession(game, {
       stackSquare,
       turn: game.turn(),
       originalPiece: structuredClone(originalPiece),
+      isDeploy,
     })
-    game.setDeploySession(session)
+    game.setSession(session)
   }
 
   // Add move to session (executes immediately)
   session.addMove(move)
 
-  // Check if complete
+  // Check if complete and should auto-commit
   if (session.isComplete && autoCommit) {
     // Commit and return completed result
-    const commitResult = game.commitDeploySession()
+    const commitResult = game.commitSession()
     if (commitResult.success && commitResult.result) {
       return commitResult.result
     }
