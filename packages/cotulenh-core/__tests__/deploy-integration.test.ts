@@ -21,7 +21,7 @@ describe('Deploy Integration Tests', () => {
     game = setupGameBasic()
   })
 
-  // Note: Basic incremental deployment tests are in deploy-session-process-move.test.ts
+  // Note: Basic incremental deployment tests are in move-session-process-move.test.ts
   // This file focuses on complex integration scenarios
 
   // Note: Single history entry tests are in deploy-auto-commit.test.ts

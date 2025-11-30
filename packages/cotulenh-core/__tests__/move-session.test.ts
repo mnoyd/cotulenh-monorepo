@@ -1,7 +1,7 @@
-// __tests__/deploy-session.test.ts
+// __tests__/move-session.test.ts
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { DeploySession, handleDeployMove } from '../src/deploy-session.js'
+import { DeploySession, handleDeployMove } from '../src/move-session.js'
 import {
   BITS,
   RED,
@@ -11,7 +11,7 @@ import {
   TANK,
   INFANTRY,
 } from '../src/type.js'
-import type { Piece, InternalMove } from '../src/type.js'
+import type { Piece, Color, InternalMove } from '../src/type.js'
 import { CoTuLenh } from '../src/cotulenh.js'
 
 // Helper to create a test piece

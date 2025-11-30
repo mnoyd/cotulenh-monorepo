@@ -59,11 +59,7 @@ import {
   getCheckAirDefenseZone,
   updateAirDefensePiecesPosition,
 } from './air-defense.js'
-import {
-  DeploySession,
-  MoveSession,
-  handleDeployMove,
-} from './deploy-session.js'
+import { DeploySession, MoveSession, handleDeployMove } from './move-session.js'
 
 // Structure for storing history states
 interface History {
@@ -810,8 +806,7 @@ export class CoTuLenh {
 
   /**
    * Finalize a move session (Standard or Deploy) by adding it to history.
-   * Simple flow: Commit session → Generate SAN/LAN/FEN → Add to history
-   * State updates (turn, halfMoves, moveNumber) are now handled by StateUpdateAction in command.execute()
+   * Simple flow: Commit session → Generate SAN/LAN/FEN → Add to history → Update State
    * @param session - The move session to finalize
    * @param preCommanderState - Optional pre-move commander state. If not provided, uses current state.
    * @returns MoveResult with completed=true
@@ -823,9 +818,6 @@ export class CoTuLenh {
     const us = this.turn()
 
     // 1. Store pre-move state
-    // If preCommanderState is provided (normal moves), use it.
-    // Otherwise (deploy moves), use current state (which is effectively post-execution but pre-commit/history).
-    // Note: Original code for Deploy used current state, while Normal used pre-execution state.
     const commandersToStore = preCommanderState || { ...this._commanders }
     const preTurn = us
     const preHalfMoves = this._halfMoves
@@ -834,7 +826,10 @@ export class CoTuLenh {
     // 2. Commit session (generates SAN/LAN/FEN)
     const { command, result } = session.commit()
 
-    // 3. Add to history
+    // 3. Check if any capture (check all moves in session)
+    const hasCapture = session.moves.some((m) => !!(m.flags & BITS.CAPTURE))
+
+    // 4. Add to history
     this._history.push({
       move: command,
       commanders: commandersToStore,
@@ -844,11 +839,11 @@ export class CoTuLenh {
       deploySession: null,
     })
 
-    // 4. State updates now handled by StateUpdateAction in command.execute()
-    // The command already executed during session.commit(), which includes StateUpdateAction
-    // So _turn, _halfMoves, _moveNumber are already updated
-
-    // 5. Update position counts (still needed for draw detection)
+    // 5. Update game state
+    this._halfMoves = hasCapture ? 0 : this._halfMoves + 1
+    this._turn = swapColor(us)
+    if (us === BLUE) this._moveNumber++
+    this._movesCache.clear()
     this._updatePositionCounts()
 
     return result
@@ -1482,8 +1477,8 @@ export class CoTuLenh {
     // 4. Execute move
     return this._handleMove(internalMove)
   }
-  // deployMove() method removed - use handleDeployMove() from deploy-session.ts instead
-  // The new architecture uses DeploySession for incremental deploy move handling
+  // deployMove() method removed - use handleDeployMove() from move-session.ts instead
+  // The new architecture uses MoveSession for unified move handling
 
   /**
    * Retrieves the color of the player who has the current turn to move.
@@ -1550,6 +1545,15 @@ export class CoTuLenh {
     const reversedHistory: History[] = []
     const moveHistory: (string | Move | DeployMove)[] = []
 
+    // Save current state to restore after replay
+    const savedState = {
+      turn: this._turn,
+      halfMoves: this._halfMoves,
+      moveNumber: this._moveNumber,
+      commanders: { ...this._commanders },
+      deploySession: this._deploySession,
+    }
+
     // Undo all moves
     while (this._history.length > 0) {
       reversedHistory.push(this._history.at(-1)!)
@@ -1557,14 +1561,13 @@ export class CoTuLenh {
     }
 
     // Replay and collect
-    // Note: execute() now handles both board AND state updates via StateUpdateAction
     while (reversedHistory.length > 0) {
       const h = reversedHistory.pop()!
 
-      // Execute move (updates board AND state atomically)
+      // Execute move (updates board only, not state)
       h.move.execute()
 
-      // Generate notation using current state (which is now correct)
+      // Generate notation using current state
       const legalMoves = this._moves({ legal: false })
       const [san, lan] = this._moveToSanLan(h.move.move, legalMoves)
 
@@ -1606,7 +1609,13 @@ export class CoTuLenh {
       this._history.push(h)
     }
 
-    // No need to restore state - execute() already set it correctly!
+    // Restore game state
+    this._turn = savedState.turn
+    this._halfMoves = savedState.halfMoves
+    this._moveNumber = savedState.moveNumber
+    this._commanders = savedState.commanders
+    this._deploySession = savedState.deploySession
+
     return moveHistory as string[] | (Move | DeployMove)[]
   }
 

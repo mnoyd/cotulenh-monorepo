@@ -51,9 +51,9 @@ describe('Deploy Auto-Commit Behavior', () => {
     })
   })
 
-  // Note: Deploy move handling details are tested in deploy-session-process-move.test.ts
+  // Note: Deploy move handling details are tested in move-session-process-move.test.ts
 
-  // Note: Session clearing is tested in deploy-session-process-move.test.ts
+  // Note: Session clearing is tested in move-session-process-move.test.ts
 
   describe('Turn switching', () => {
     it('should switch turn after auto-commit', () => {
@@ -176,5 +176,5 @@ describe('Deploy Auto-Commit Behavior', () => {
     })
   })
 
-  // Note: Error handling is tested in deploy-session-process-move.test.ts
+  // Note: Error handling is tested in move-session-process-move.test.ts
 })

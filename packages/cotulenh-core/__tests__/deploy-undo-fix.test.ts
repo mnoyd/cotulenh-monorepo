@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { AIR_FORCE, CoTuLenh, MILITIA, TANK } from '../src/cotulenh.js'
-import { DeploySession } from '../src/deploy-session.js'
+import { DeploySession } from '../src/move-session.js'
 
 describe('Deploy Undo Fix', () => {
   it('should clear deploy state when undoing the only deploy move', () => {
@@ -68,17 +68,15 @@ describe('Deploy Undo Fix', () => {
     // Manually create an empty deploy session (edge case)
     const originalPiece = game.get(133)! // f4 square
     game.setDeploySession(
-      new DeploySession({
+      new DeploySession(game, {
         stackSquare: 133,
         turn: 'r',
         originalPiece: originalPiece,
-        startFEN: game.fen(),
-        commands: [], // Empty commands array
       }),
     )
 
     expect(game.getDeploySession()).not.toBeNull()
-    expect(game.getDeploySession()!.commands.length).toBe(0)
+    expect(game.getDeploySession()!.moves.length).toBe(0)
 
     // Calling undo should clear the empty session
     game.undo()
