@@ -59,7 +59,7 @@ import {
   getCheckAirDefenseZone,
   updateAirDefensePiecesPosition,
 } from './air-defense.js'
-import { DeploySession, MoveSession, handleDeployMove } from './move-session.js'
+import { MoveSession, handleMove } from './move-session.js'
 
 // Structure for storing history states
 interface History {
@@ -68,7 +68,6 @@ interface History {
   turn: Color
   halfMoves: number // Half move clock before the move
   moveNumber: number // Move number before the move
-  deploySession: DeploySession | null // Snapshot of deploy session
 }
 
 // Public Move class (similar to chess.js) - can be fleshed out later
@@ -153,7 +152,7 @@ export class CoTuLenh {
   private _history: History[] = []
   private _comments: Record<string, string> = {}
   private _positionCount: Record<string, number> = {}
-  private _deploySession: DeploySession | null = null // Tracks active deploy session
+  private _session: MoveSession | null = null // Tracks active move session
   private _airDefense: AirDefense = {
     [RED]: new Map<number, number[]>(),
     [BLUE]: new Map<number, number[]>(),
@@ -340,9 +339,9 @@ export class CoTuLenh {
       this._moveNumber,
     ].join(' ')
 
-    // If there's an active deploy session, return extended FEN with CURRENT board state
-    if (this._deploySession) {
-      return this._deploySession.toFenString(baseFEN)
+    // If there's an active move session, return extended FEN with CURRENT board state
+    if (this._session) {
+      return this._session.toFenString(baseFEN)
     }
 
     return baseFEN
@@ -516,8 +515,8 @@ export class CoTuLenh {
     let deployState = 'none'
     if (args.deploy) {
       deployState = `${args.square}:${this.turn()}`
-    } else if (this._deploySession) {
-      deployState = `session:${this._deploySession.moves.length}`
+    } else if (this._session) {
+      deployState = `session:${this._session.moves.length}`
     }
 
     const { legal = true, pieceType, square } = args
@@ -552,15 +551,15 @@ export class CoTuLenh {
     let allMoves: InternalMove[] = []
 
     // Generate moves based on game state
-    // Check for deploy session
-    const activeDeploySession = this._deploySession
+    // Check for active session
+    const activeSession = this._session
 
-    if (activeDeploySession || deploy) {
+    if (activeSession || deploy) {
       let deployFilterSquare: number
-      if (deploy && filterSquare) {
+      if (filterSquare) {
         deployFilterSquare = SQUARE_MAP[filterSquare]
-      } else if (this._deploySession) {
-        deployFilterSquare = this._deploySession.stackSquare
+      } else if (this._session) {
+        deployFilterSquare = this._session.stackSquare
       } else {
         throw new Error(
           'Deploy move requires active session or square argument',
@@ -642,7 +641,7 @@ export class CoTuLenh {
 
           // If commander is in the stack, allow the deploy move (might be escape sequence)
           // Or if session already active, allow all deploy moves
-          if (this._deploySession || hasCommander) {
+          if (this._session || hasCommander) {
             legalMoves.push(move)
             continue
           }
@@ -665,7 +664,7 @@ export class CoTuLenh {
         // Log the error for debugging
         console.error('Error during move validation, restoring state:', error)
         // If there's an error, restore the initial state and continue
-        this._deploySession = null
+        this._session = null
       }
     }
 
@@ -769,39 +768,9 @@ export class CoTuLenh {
    * @returns MoveResult indicating completion status and move object
    */
   private _handleMove(move: InternalMove): MoveResult {
-    // 1. Check if this is an incremental deploy move (DEPLOY flag)
-    if (move.flags & BITS.DEPLOY) {
-      // Delegate to handleDeployMove
-      // This handles session creation/retrieval, command creation, execution, and adding to session
-      // Returns MoveResult with completed flag and move object
-      return handleDeployMove(this, move)
-    }
-
-    // 2. Standard Move Logic
-    const us = this.turn()
-
-    // Store pre-move state (Commanders)
-    // IMPORTANT: Capture this BEFORE executing the move to match original behavior for normal moves
-    const preCommanderState = { ...this._commanders }
-
-    // Get piece
-    const pieceAtSquare = this.get(move.from)
-    if (!pieceAtSquare) {
-      throw new Error(`No piece at ${algebraic(move.from)} to move`)
-    }
-
-    // Create session, add move, commit immediately
-    const session = new MoveSession(this, {
-      stackSquare: move.from,
-      turn: us,
-      originalPiece: pieceAtSquare,
-      isDeploy: false,
-    })
-
-    session.addMove(move) // Execute
-
-    // Finalize the move (commits session, adds to history, updates state)
-    return this._finalizeMove(session, preCommanderState)
+    // Unified handling: Delegate everything to handleMove
+    // handleMove will create a session (if needed), add the move, and commit if auto-commit is true
+    return handleMove(this, move)
   }
 
   /**
@@ -818,7 +787,10 @@ export class CoTuLenh {
     const us = this.turn()
 
     // 1. Store pre-move state
-    const commandersToStore = preCommanderState || { ...this._commanders }
+    // Use session's captured state if available, otherwise fallback (though session should always have it)
+    const commandersToStore = session.beforeCommanders || {
+      ...this._commanders,
+    }
     const preTurn = us
     const preHalfMoves = this._halfMoves
     const preMoveNumber = this._moveNumber
@@ -836,7 +808,6 @@ export class CoTuLenh {
       turn: preTurn,
       halfMoves: preHalfMoves,
       moveNumber: preMoveNumber,
-      deploySession: null,
     })
 
     // 5. Update game state
@@ -860,7 +831,7 @@ export class CoTuLenh {
     this._turn = old.turn
     this._halfMoves = old.halfMoves
     this._moveNumber = old.moveNumber
-    this._deploySession = null
+    this._session = null
 
     // Ask the command to revert its specific board changes
     command.undo()
@@ -879,25 +850,25 @@ export class CoTuLenh {
    * Otherwise, undoes from history.
    */
   public undo(): void {
-    // Priority 1: Check active deploy session with moves
-    if (this._deploySession && !this._deploySession.isEmpty) {
-      this._deploySession.undoLastMove()
+    // Priority 1: Check active session with moves
+    if (this._session && !this._session.isEmpty) {
+      this._session.undoLastMove()
 
       // Clear moves cache since board state has changed
       this._movesCache.clear()
 
-      // If the deploy session is now empty, clear it completely
-      if (this._deploySession.isEmpty) {
-        this._deploySession = null
+      // If the session is now empty, clear it completely
+      if (this._session.isEmpty) {
+        this._session = null
       }
       return
     }
 
-    // Priority 2: Check if there's any deploy session but no commands
-    // This means we're in an inconsistent state or all deploy moves have been undone
-    if (this._deploySession) {
-      // Clear any remaining deploy session - there's nothing to undo
-      this._deploySession = null
+    // Priority 2: Check if there's any session but no commands
+    // This means we're in an inconsistent state or all moves have been undone
+    if (this._session) {
+      // Clear any remaining session - there's nothing to undo
+      this._session = null
       return
     }
 
@@ -908,28 +879,43 @@ export class CoTuLenh {
   /**
    * Cancels the current deploy session, reverting all deploy moves made so far.
    */
-  public cancelDeploy(): void {
-    if (this._deploySession) {
-      this._deploySession.cancel()
-      this._deploySession = null
+  public cancelSession(): void {
+    if (this._session) {
+      this._session.cancel()
+      this._session = null
       this._movesCache.clear()
     }
+  }
+
+  // Alias for backward compatibility
+  public cancelDeploy(): void {
+    this.cancelSession()
   }
 
   // getDeployState() and setDeployState() removed - use getDeploySession() instead
 
   /**
-   * Get the current deploy session (new action-based approach)
+   * Get the current move session
    */
-  public getDeploySession(): DeploySession | null {
-    return this._deploySession
+  public getSession(): MoveSession | null {
+    return this._session
+  }
+
+  // Alias
+  public getDeploySession(): MoveSession | null {
+    return this.getSession()
   }
 
   /**
-   * Set the deploy session (new action-based approach)
+   * Set the move session
    */
-  public setDeploySession(session: DeploySession | null): void {
-    this._deploySession = session
+  public setSession(session: MoveSession | null): void {
+    this._session = session
+  }
+
+  // Alias
+  public setDeploySession(session: MoveSession | null): void {
+    this.setSession(session)
   }
 
   /**
@@ -944,45 +930,50 @@ export class CoTuLenh {
    *
    * @returns Result object with success status and optional error message
    */
-  public commitDeploySession(switchTurn: boolean = true): {
+  public commitSession(switchTurn: boolean = true): {
     success: boolean
     reason?: string
     result?: MoveResult
   } {
-    if (!this._deploySession) {
+    if (!this._session) {
       return {
         success: false,
-        reason: 'No active deploy session to commit',
+        reason: 'No active session to commit',
       }
     }
 
     // Check if session is complete (all pieces deployed)
     // We can commit if at least one move is made, remaining pieces will stay
-    if (this._deploySession.moves.length === 0) {
+    if (this._session.moves.length === 0) {
       return {
         success: false,
-        reason: 'Cannot commit empty deploy session',
+        reason: 'Cannot commit empty session',
       }
     }
 
     // DELAYED VALIDATION: Check commander safety after all moves
     // This allows deploy sequences to escape check
-    const us = this._deploySession.turn
+    const us = this._session.turn
     if (this._isCommanderAttacked(us) || this._isCommanderExposed(us)) {
       return {
         success: false,
         reason:
-          'Deploy sequence does not escape check. Commander still in danger.',
+          'Move sequence does not escape check. Commander still in danger.',
       }
     }
 
-    // Finalize the deploy move (adds to history, switches turn)
-    const result = this._finalizeMove(this._deploySession)
+    // Finalize the move (adds to history, switches turn)
+    const result = this._finalizeMove(this._session)
 
     // Clear session
-    this._deploySession = null
+    this._session = null
 
     return { success: true, result }
+  }
+
+  // Alias
+  public commitDeploySession(switchTurn: boolean = true) {
+    return this.commitSession(switchTurn)
   }
 
   /**
@@ -993,13 +984,13 @@ export class CoTuLenh {
    *
    * @returns void
    */
-  public cancelDeploySession(): void {
-    if (!this._deploySession) {
+  public cancelSessionFull(): void {
+    if (!this._session) {
       return // Nothing to cancel
     }
 
     // Undo all moves in reverse order
-    const moves = this._deploySession.moves
+    const moves = this._session.moves
     for (let i = moves.length - 1; i >= 0; i--) {
       const move = moves[i]
       const cmd = createMoveCommand(this, move)
@@ -1010,7 +1001,12 @@ export class CoTuLenh {
     this._movesCache.clear()
 
     // Clear the session
-    this._deploySession = null
+    this._session = null
+  }
+
+  // Alias
+  public cancelDeploySession(): void {
+    this.cancelSessionFull()
   }
 
   // ============================================================================
@@ -1072,6 +1068,14 @@ export class CoTuLenh {
    */
   getCommanderSquare(color: Color): number {
     return this._commanders[color]
+  }
+
+  /**
+   * Get a snapshot of the current commander positions.
+   * Useful for capturing state before a move sequence.
+   */
+  public getCommandersSnapshot(): Record<Color, number> {
+    return { ...this._commanders }
   }
 
   /**
@@ -1551,7 +1555,7 @@ export class CoTuLenh {
       halfMoves: this._halfMoves,
       moveNumber: this._moveNumber,
       commanders: { ...this._commanders },
-      deploySession: this._deploySession,
+      deploySession: this._session,
     }
 
     // Undo all moves
@@ -1614,7 +1618,7 @@ export class CoTuLenh {
     this._halfMoves = savedState.halfMoves
     this._moveNumber = savedState.moveNumber
     this._commanders = savedState.commanders
-    this._deploySession = savedState.deploySession
+    this._session = savedState.deploySession
 
     return moveHistory as string[] | (Move | DeployMove)[]
   }

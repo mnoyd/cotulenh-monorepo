@@ -1,15 +1,17 @@
 // __tests__/move-session.test.ts
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { DeploySession, handleDeployMove } from '../src/move-session.js'
+import { MoveSession, handleMove } from '../src/move-session.js'
 import {
   BITS,
   RED,
+  algebraic,
   BLUE,
   NAVY,
   AIR_FORCE,
   TANK,
   INFANTRY,
+  COMMANDER,
 } from '../src/type.js'
 import type { Piece, Color, InternalMove } from '../src/type.js'
 import { CoTuLenh } from '../src/cotulenh.js'
@@ -23,6 +25,7 @@ const createPiece = (
   color,
   type: type as any,
   carrying,
+  heroic: false,
 })
 
 // Helper to create a test move
@@ -59,10 +62,11 @@ describe('DeploySession', () => {
         createPiece(TANK),
       ])
 
-      const session = new DeploySession(game, {
+      const session = new MoveSession(game, {
         stackSquare: 0x92, // c3
         turn: RED,
         originalPiece,
+        isDeploy: true,
       })
 
       expect(session.stackSquare).toBe(0x92)
@@ -79,10 +83,11 @@ describe('DeploySession', () => {
         createPiece(TANK),
       ])
 
-      const session = new DeploySession(game, {
+      const session = new MoveSession(game, {
         stackSquare: 0x92,
         turn: RED,
         originalPiece,
+        isDeploy: true,
       })
 
       const remaining = session.remaining
@@ -105,10 +110,11 @@ describe('DeploySession', () => {
       // Setup board with the stack
       game.put(originalPiece, 'c3')
 
-      const session = new DeploySession(game, {
+      const session = new MoveSession(game, {
         stackSquare: 0x92,
         turn: RED,
         originalPiece,
+        isDeploy: true,
       })
 
       // Deploy Navy
@@ -131,10 +137,11 @@ describe('DeploySession', () => {
       // Setup board with the stack
       game.put(originalPiece, 'c3')
 
-      const session = new DeploySession(game, {
+      const session = new MoveSession(game, {
         stackSquare: 0x92,
         turn: RED,
         originalPiece,
+        isDeploy: true,
       })
 
       // Deploy all pieces
@@ -156,10 +163,11 @@ describe('DeploySession', () => {
     it('should add moves and commands', () => {
       game.put(createPiece(NAVY), 'c3')
 
-      const session = new DeploySession(game, {
+      const session = new MoveSession(game, {
         stackSquare: 0x92,
         turn: RED,
         originalPiece: createPiece(NAVY),
+        isDeploy: false,
       })
 
       const move = createMove(0x92, 0x72, createPiece(NAVY))
@@ -173,10 +181,11 @@ describe('DeploySession', () => {
     it('should undo last move', () => {
       game.put(createPiece(NAVY), 'c3')
 
-      const session = new DeploySession(game, {
+      const session = new MoveSession(game, {
         stackSquare: 0x92,
         turn: RED,
         originalPiece: createPiece(NAVY),
+        isDeploy: false,
       })
 
       const move1 = createMove(0x92, 0x72, createPiece(NAVY))
@@ -196,10 +205,11 @@ describe('DeploySession', () => {
       const originalPiece = createPiece(NAVY, [createPiece(AIR_FORCE)])
       game.put(originalPiece, 'c3')
 
-      const session = new DeploySession(game, {
+      const session = new MoveSession(game, {
         stackSquare: 0x92,
         turn: RED,
         originalPiece,
+        isDeploy: true,
       })
 
       const move1 = createMove(0x92, 0x72, createPiece(NAVY))
@@ -230,10 +240,11 @@ describe('DeploySession', () => {
 
   describe('isComplete', () => {
     it('should return false when no moves made', () => {
-      const session = new DeploySession(game, {
+      const session = new MoveSession(game, {
         stackSquare: 0x92,
         turn: RED,
         originalPiece: createPiece(NAVY),
+        isDeploy: false,
       })
 
       expect(session.isComplete).toBe(false)
@@ -243,10 +254,11 @@ describe('DeploySession', () => {
       const originalPiece = createPiece(NAVY, [createPiece(AIR_FORCE)])
       game.put(originalPiece, 'c3')
 
-      const session = new DeploySession(game, {
+      const session = new MoveSession(game, {
         stackSquare: 0x92,
         turn: RED,
         originalPiece,
+        isDeploy: true,
       })
 
       const move1 = createMove(0x92, 0x72, createPiece(NAVY))
@@ -261,10 +273,11 @@ describe('DeploySession', () => {
 
   describe('toFenString', () => {
     it('should generate extended FEN with no moves', () => {
-      const session = new DeploySession(game, {
+      const session = new MoveSession(game, {
         stackSquare: 0x92, // c3
         turn: RED,
         originalPiece: createPiece(NAVY),
+        isDeploy: true,
       })
 
       const extendedFEN = session.toFenString('base-fen r - - 0 1')
@@ -278,10 +291,11 @@ describe('DeploySession', () => {
       ])
       game.put(originalPiece, 'c3')
 
-      const session = new DeploySession(game, {
+      const session = new MoveSession(game, {
         stackSquare: 0x92, // c3
         turn: RED,
         originalPiece,
+        isDeploy: true,
       })
 
       const move1 = createMove(0x92, 0x72, createPiece(NAVY)) // c3 to c5
@@ -299,10 +313,11 @@ describe('DeploySession', () => {
       game.put(originalPiece, 'c3')
       game.put(createPiece(INFANTRY, undefined, BLUE), 'c5') // Target for capture
 
-      const session = new DeploySession(game, {
+      const session = new MoveSession(game, {
         stackSquare: 0x92,
         turn: RED,
         originalPiece,
+        isDeploy: true,
       })
 
       const move = createMove(
@@ -321,10 +336,11 @@ describe('DeploySession', () => {
       const combinedPiece = createPiece(NAVY, [createPiece(TANK)])
       game.put(combinedPiece, 'c3')
 
-      const session = new DeploySession(game, {
+      const session = new MoveSession(game, {
         stackSquare: 0x92,
         turn: RED,
         originalPiece: combinedPiece,
+        isDeploy: true,
       })
 
       const move = createMove(0x92, 0x72, combinedPiece)
@@ -339,10 +355,11 @@ describe('DeploySession', () => {
       const originalPiece = createPiece(NAVY, [createPiece(AIR_FORCE)])
       game.put(originalPiece, 'c3')
 
-      const session = new DeploySession(game, {
+      const session = new MoveSession(game, {
         stackSquare: 0x92,
         turn: RED,
         originalPiece,
+        isDeploy: true,
       })
 
       // Deploy all pieces
@@ -368,7 +385,7 @@ describe('Deploy Session History Management', () => {
     game.put({ type: 'c', color: BLUE }, 'h12')
   })
 
-  // TODO: Update this test to use the new handleDeployMove() API instead of the removed deployMove() method
+  // TODO: Update this test to use the new handleMove() API instead of the removed deployMove() method
   it.skip('should add entire deploy sequence to history as ONE entry (batch API)', () => {
     // This test uses the working setup from combined-stack.test.ts
     // and adds history assertions to document the behavior
@@ -387,7 +404,7 @@ describe('Deploy Session History Management', () => {
     const initialFEN = game.fen()
 
     // NOTE: The batch deployMove() API has been removed
-    // Use handleDeployMove() instead for incremental deploy moves
+    // Use handleMove() instead for incremental deploy moves
     /* 
     const deployMove: DeployMoveRequest = {
       from: 'c3',
@@ -444,33 +461,33 @@ describe('handleDeployMove', () => {
   })
 
   it('should auto-commit when session completes by default', () => {
-    // Spy on commitDeploySession
-    const commitSpy = vi.spyOn(game, 'commitDeploySession')
+    // Spy on commitSession
+    const commitSpy = vi.spyOn(game, 'commitSession')
 
     // 1. Deploy Navy (incomplete)
     const move1 = createMove(0x92, 0x72, createPiece(NAVY))
-    handleDeployMove(game, move1)
+    handleMove(game, move1)
     expect(commitSpy).not.toHaveBeenCalled()
 
     // 2. Deploy AirForce (complete)
     const move2 = createMove(0x92, 0x82, createPiece(AIR_FORCE))
-    handleDeployMove(game, move2)
+    handleMove(game, move2)
 
     expect(commitSpy).toHaveBeenCalled()
   })
 
   it('should NOT auto-commit when autoCommit is false', () => {
-    // Spy on commitDeploySession
-    const commitSpy = vi.spyOn(game, 'commitDeploySession')
+    // Spy on commitSession
+    const commitSpy = vi.spyOn(game, 'commitSession')
 
     // 1. Deploy Navy (incomplete)
     const move1 = createMove(0x92, 0x72, createPiece(NAVY))
-    handleDeployMove(game, move1, false)
+    handleMove(game, move1, false)
     expect(commitSpy).not.toHaveBeenCalled()
 
     // 2. Deploy AirForce (complete)
     const move2 = createMove(0x92, 0x82, createPiece(AIR_FORCE))
-    handleDeployMove(game, move2, false)
+    handleMove(game, move2, false)
 
     expect(commitSpy).not.toHaveBeenCalled()
 
@@ -478,5 +495,56 @@ describe('handleDeployMove', () => {
     const session = game.getDeploySession()
     expect(session).not.toBeNull()
     expect(session?.isComplete).toBe(true)
+  })
+
+  describe('Normal Move Handling', () => {
+    it('should handle normal moves correctly', () => {
+      // Create a game with a piece (General) at c3 (0x92)
+      const game = new CoTuLenh()
+      // Use default position but clear c3/c4 first to be safe
+      game.remove('c3')
+      game.remove('c4')
+
+      // Remove existing Red Commander to avoid limit
+      const existingCommanderSq = game.getCommanderSquare(RED)
+      if (existingCommanderSq !== -1) {
+        game.remove(algebraic(existingCommanderSq))
+      }
+
+      const piece = createPiece(COMMANDER, [], RED)
+      game.put(piece, 'c3')
+
+      // Verify setup
+      expect(game.get('c3')).toEqual(piece)
+      expect(game.get('d4')).toBeUndefined()
+
+      // Spy on commitSession
+      const commitSpy = vi.spyOn(game, 'commitSession')
+
+      // Move General from c3 to d4 (0x83)
+      const move = createMove(0x92, 0x83, piece, BITS.NORMAL) // c3 -> d4
+
+      // Handle the move
+      const result = handleMove(game, move)
+
+      // Should be complete and committed immediately
+      expect(result.completed).toBe(true)
+      expect(commitSpy).toHaveBeenCalled()
+
+      // Verify board state
+      expect(game.get('c3')).toBeUndefined()
+      const pieceAtDest = game.get('d4')
+      expect(pieceAtDest).toBeDefined()
+      expect(pieceAtDest?.type).toBe(COMMANDER)
+      expect(pieceAtDest?.color).toBe(RED)
+
+      // Verify undo works (implies state capture was correct)
+      game.undo()
+      const pieceAtStart = game.get('c3')
+      expect(pieceAtStart).toBeDefined()
+      expect(pieceAtStart?.type).toBe(COMMANDER)
+      expect(pieceAtStart?.color).toBe(RED)
+      expect(game.get('d4')).toBeUndefined()
+    })
   })
 })

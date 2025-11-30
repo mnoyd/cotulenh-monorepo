@@ -68,10 +68,11 @@ describe('Deploy Undo Fix', () => {
     // Manually create an empty deploy session (edge case)
     const originalPiece = game.get(133)! // f4 square
     game.setDeploySession(
-      new DeploySession(game, {
+      new MoveSession(game, {
         stackSquare: 133,
         turn: 'r',
         originalPiece: originalPiece,
+        isDeploy: true,
       }),
     )
 
