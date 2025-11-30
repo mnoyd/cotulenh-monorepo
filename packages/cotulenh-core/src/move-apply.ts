@@ -246,7 +246,6 @@ export abstract class CTLMoveCommand implements CTLMoveCommandInteface {
     this.buildActions()
     const defaultPostMoveActions = [
       new CheckAndPromoteAttackersAction(this.game, this.move),
-      new StateUpdateAction(this.game, this.move),
     ]
     this.actions.push(...defaultPostMoveActions)
   }

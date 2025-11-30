@@ -1,4 +1,4 @@
-// __tests__/deploy-session-process-move.test.ts
+// __tests__/move-session-process-move.test.ts
 
 import { describe, it, expect, beforeEach } from 'vitest'
 import { CoTuLenh } from '../src/cotulenh.js'
