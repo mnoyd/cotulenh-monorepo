@@ -479,3 +479,53 @@ export function cloneInternalMove(move: InternalMove): InternalMove {
 
   return clonedMove
 }
+
+/**
+ * Generates SAN and LAN strings for a move
+ * @param move - The move to generate notation for
+ * @param moves - List of all legal moves (for disambiguation)
+ * @returns Tuple of [san, lan]
+ */
+export function moveToSanLan(
+  move: InternalMove,
+  moves: InternalMove[],
+): [string, string] {
+  const pieceEncoded = makeSanPiece(move.piece)
+  const disambiguator = getDisambiguator(move, moves)
+  const toAlg = algebraic(move.to) // Target square
+  const fromAlg = algebraic(move.from) // Origin square
+  let combinationSuffix = '' // Initialize combination suffix
+
+  let separator = ''
+  if (move.flags & BITS.DEPLOY) {
+    separator += '>'
+  }
+  if (move.flags & BITS.STAY_CAPTURE) {
+    separator += '_'
+  }
+  if (move.flags & BITS.CAPTURE) {
+    separator += 'x'
+  }
+  if (move.flags & BITS.SUICIDE_CAPTURE) {
+    separator += '@'
+  }
+  if (move.flags & BITS.COMBINATION) {
+    separator += '&'
+    if (!move.combined) {
+      throw new Error('Move must have combined for combination')
+    }
+    const combined = combinePieces([move.piece, move.combined])
+    if (!combined) {
+      throw new Error(
+        'Should have successfully combined pieces in combine move',
+      )
+    }
+    combinationSuffix = makeSanPiece(combined, true)
+  }
+  // Note: Check detection removed - notation generated without temp execute
+  // Check symbols (^, #) can be added separately if needed
+  const san = `${pieceEncoded}${disambiguator}${separator}${toAlg}${combinationSuffix}`
+  const lan = `${pieceEncoded}${fromAlg}${separator}${toAlg}${combinationSuffix}`
+
+  return [san, lan] // Return both SAN and LAN strings
+}

@@ -5,15 +5,163 @@ import {
   BITS,
   algebraic,
   FLAGS,
-  type MoveResult,
+  Square,
 } from './type.js'
 import { flattenPiece, combinePieces } from './utils.js'
 import { CTLMoveCommandInteface, createMoveCommand } from './move-apply.js'
 import type { CoTuLenh } from './cotulenh.js'
-import { Move } from './cotulenh.js'
-import { DeployMove } from './deploy-move.js'
 
-export type { MoveResult } from './type.js'
+/**
+ * Result of a move operation
+ * Indicates whether the move sequence is complete and provides the move object
+ */
+/**
+ * Result of a move operation
+ * Indicates whether the move sequence is complete and provides the move object
+ */
+export type MoveResult = Move | DeployMove
+
+// Public Move class (similar to chess.js) - can be fleshed out later
+export class Move {
+  color!: Color
+  from!: Square
+  to!: Square // Destination square (piece's final location)
+  piece!: Piece
+  captured?: Piece
+  flags!: string // String representation of flags
+  san?: string // Standard Algebraic Notation (needs implementation)
+  lan?: string // Long Algebraic Notation (needs implementation)
+  before!: string // FEN before move
+  after!: string // FEN after move
+  completed: boolean = true // Default to true for normal moves
+
+  // Old constructor removed - use Move.fromExecutedMove() instead
+
+  /**
+   * Create Move from already-executed move data (preferred for deploy session moves).
+   * No game state manipulation required - all data provided directly.
+   *
+   * @param data - Complete move data
+   * @returns Move instance
+   */
+  static fromExecutedMove(data: {
+    color: Color
+    from: Square
+    to: Square
+    piece: Piece
+    captured?: Piece
+    flags: string
+    before: string
+    after: string
+    san: string
+    lan: string
+    completed?: boolean
+  }): Move {
+    const move = Object.create(Move.prototype)
+    // console.log('Move created:', move, 'Prototype:', Object.getPrototypeOf(move), 'Has method:', typeof move.isSuicideCapture)
+    move.color = data.color
+    move.from = data.from
+    move.to = data.to
+    move.piece = data.piece
+    move.captured = data.captured
+    move.flags = data.flags
+    move.before = data.before
+    move.after = data.after
+    move.san = data.san
+    move.lan = data.lan
+    move.completed = data.completed ?? true
+    return move
+  }
+
+  // Add helper methods like isCapture(), isPromotion() etc. if needed
+  isCapture(): boolean {
+    return this.flags.indexOf(FLAGS.CAPTURE) > -1
+  }
+
+  isStayCapture(): boolean {
+    return this.flags.indexOf(FLAGS.STAY_CAPTURE) > -1
+  }
+
+  isDeploy(): boolean {
+    return this.flags.indexOf(FLAGS.DEPLOY) > -1
+  }
+
+  isCombination(): boolean {
+    return this.flags.indexOf(FLAGS.COMBINATION) > -1
+  }
+
+  isSuicideCapture(): boolean {
+    return this.flags.indexOf(FLAGS.SUICIDE_CAPTURE) > -1
+  }
+}
+
+export class DeployMove {
+  color!: Color
+  from!: Square
+  to!: Map<Square, Piece> // Destination square (piece's final location)
+  piece!: Piece // The main piece being deployed
+  stay: Piece | undefined
+  captured?: Piece[]
+  san?: string // Standard Algebraic Notation (needs implementation)
+  lan?: string // Long Algebraic Notation (needs implementation)
+  before!: string // FEN before move
+  after!: string // FEN after move
+
+  /**
+   * Create DeployMove from session data (preferred method).
+   * No game state manipulation required - all data provided by session.
+   *
+   * @param data - Complete move data from DeploySession
+   * @returns DeployMove instance
+   */
+  static fromSession(data: {
+    color: Color
+    from: Square
+    to: Map<Square, Piece>
+    piece: Piece
+    stay?: Piece
+    captured?: Piece[]
+    before: string
+    after: string
+    san: string
+    lan: string
+    completed?: boolean
+  }): DeployMove {
+    const move = Object.create(DeployMove.prototype)
+    move.color = data.color
+    move.from = data.from
+    move.to = data.to
+    move.piece = data.piece
+    move.stay = data.stay
+    move.captured = data.captured
+    move.before = data.before
+    move.after = data.after
+    move.san = data.san
+    move.lan = data.lan
+    move.completed = data.completed ?? true
+    return move
+  }
+
+  isDeploy(): boolean {
+    return true
+  }
+
+  isCapture(): boolean {
+    return false
+  }
+
+  isStayCapture(): boolean {
+    return false
+  }
+
+  isCombination(): boolean {
+    return false
+  }
+
+  isSuicideCapture(): boolean {
+    return false
+  }
+}
 
 /**
  * MoveSession tracks moves (normal or deploy) before committing to history.
@@ -158,12 +306,7 @@ export class MoveSession {
       lan,
     })
 
-    return {
-      completed: false,
-      move: moveObj,
-      san,
-      lan,
-    }
+    return moveObj
   }
 
   /**
@@ -220,14 +363,16 @@ export class MoveSession {
       }
 
       // Generate notation
-      const san = 'DEPLOY' // TODO: proper SAN
-      const lan = 'DEPLOY' // TODO: proper LAN
+      // Generate notation
+      const san = this.moves.map((m) => m.san || 'DEPLOY').join(' ')
+      const lan = this.moves.map((m) => m.lan || 'DEPLOY').join(' ')
 
       // Create DeployMove object
       const deployMove = DeployMove.fromSession({
         color: this.turn,
         from: algebraic(this.stackSquare),
         to: toMap,
+        piece: this.originalPiece,
         stay: stay ?? undefined,
         captured: captured.length > 0 ? captured : undefined,
         before: this._beforeFEN,
@@ -236,22 +381,22 @@ export class MoveSession {
         lan,
       })
 
-      const result: MoveResult = {
-        completed: true,
-        move: deployMove,
-        san,
-        lan,
+      return {
+        command: deployCommand,
+        moveObject: deployMove,
+        result: deployMove,
       }
-
-      return { command: deployCommand, moveObject: deployMove, result }
     } else {
       // === NORMAL MOVE ===
       const command = this._commands[0]
       const move = command.move
 
-      // Generate notation (simple for now)
-      const san = `${move.piece.type.toUpperCase()}${algebraic(move.to)}`
-      const lan = `${algebraic(move.from)}-${algebraic(move.to)}`
+      // Generate notation
+      const san =
+        move.san || `${move.piece.type.toUpperCase()}${algebraic(move.to)}`
+      const lan =
+        move.lan ||
+        `${move.piece.type.toUpperCase()}${algebraic(move.from)}${algebraic(move.to)}`
 
       // Build flags string
       let flagsStr = ''
@@ -275,14 +420,7 @@ export class MoveSession {
         lan,
       })
 
-      const result: MoveResult = {
-        completed: true,
-        move: moveObj,
-        san,
-        lan,
-      }
-
-      return { command, moveObject: moveObj, result }
+      return { command, moveObject: moveObj, result: moveObj }
     }
   }
 
