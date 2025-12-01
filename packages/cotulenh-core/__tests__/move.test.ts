@@ -569,7 +569,7 @@ describe('Terrain blocking movement logic', () => {
     expect(combineE2B2).toBeUndefined()
   })
 })
-describe('move sequesce', () => {
+describe('move sequence', () => {
   let game: CoTuLenh
   beforeEach(() => {
     game = setupGameBasic()
