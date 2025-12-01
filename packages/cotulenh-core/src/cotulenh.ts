@@ -30,7 +30,6 @@ import {
   AirDefense,
   AIR_FORCE,
   COMMANDER,
-  type MoveResult,
 } from './type.js'
 import {
   getDisambiguator,
@@ -42,6 +41,7 @@ import {
   inferPieceType,
   flattenPiece,
   haveCommander,
+  moveToSanLan,
 } from './utils.js'
 import {
   generateDeployMoves,
@@ -52,14 +52,21 @@ import {
   getOppositeOffset,
 } from './move-generation.js'
 import { createMoveCommand, CTLMoveCommandInteface } from './move-apply.js'
-import { DeployMove } from './deploy-move.js'
 import {
   BASE_AIRDEFENSE_CONFIG,
   getAirDefenseInfluence,
   getCheckAirDefenseZone,
   updateAirDefensePiecesPosition,
 } from './air-defense.js'
-import { MoveSession, handleMove } from './move-session.js'
+import {
+  MoveSession,
+  handleMove,
+  Move,
+  DeployMove,
+  type MoveResult,
+} from './move-session.js'
+
+export { Move, DeployMove, type MoveResult }
 
 // Structure for storing history states
 interface History {
@@ -70,75 +77,7 @@ interface History {
   moveNumber: number // Move number before the move
 }
 
-// Public Move class (similar to chess.js) - can be fleshed out later
-export class Move {
-  color!: Color
-  from!: Square
-  to!: Square // Destination square (piece's final location)
-  piece!: Piece
-  captured?: Piece
-  flags!: string // String representation of flags
-  san?: string // Standard Algebraic Notation (needs implementation)
-  lan?: string // Long Algebraic Notation (needs implementation)
-  before!: string // FEN before move
-  after!: string // FEN after move
-
-  // Old constructor removed - use Move.fromExecutedMove() instead
-
-  /**
-   * Create Move from already-executed move data (preferred for deploy session moves).
-   * No game state manipulation required - all data provided directly.
-   *
-   * @param data - Complete move data
-   * @returns Move instance
-   */
-  static fromExecutedMove(data: {
-    color: Color
-    from: Square
-    to: Square
-    piece: Piece
-    captured?: Piece
-    flags: string
-    before: string
-    after: string
-    san: string
-    lan: string
-  }): Move {
-    const move = Object.create(Move.prototype)
-    move.color = data.color
-    move.from = data.from
-    move.to = data.to
-    move.piece = data.piece
-    move.captured = data.captured
-    move.flags = data.flags
-    move.before = data.before
-    move.after = data.after
-    move.san = data.san
-    move.lan = data.lan
-    return move
-  }
-
-  // Add helper methods like isCapture(), isPromotion() etc. if needed
-  isCapture(): boolean {
-    return this.flags.indexOf(FLAGS.CAPTURE) > -1
-  }
-
-  isStayCapture(): boolean {
-    return this.flags.indexOf(FLAGS.STAY_CAPTURE) > -1
-  }
-
-  isDeploy(): boolean {
-    return this.flags.indexOf(FLAGS.DEPLOY) > -1
-  }
-
-  isCombination(): boolean {
-    return this.flags.indexOf(FLAGS.COMBINATION) > -1
-  }
-
-  isSuicideCapture(): boolean {
-    return this.flags.indexOf(FLAGS.SUICIDE_CAPTURE) > -1
-  }
-}
+// Public Move class moved to move-session.ts
 
 // --- CoTuLenh Class (Additions) ---
 export class CoTuLenh {
@@ -700,7 +639,7 @@ export class CoTuLenh {
 
     if (verbose) {
       return internalMoves.map((move) => {
-        const [san, lan] = this._moveToSanLan(move, internalMoves)
+        const [san, lan] = moveToSanLan(move, internalMoves)
         const isDeploy = move.flags & BITS.DEPLOY
 
         if (isDeploy) {
@@ -708,6 +647,7 @@ export class CoTuLenh {
             color: move.color,
             from: algebraic(move.from),
             to: new Map([[algebraic(move.to), move.piece]]),
+            piece: move.piece,
             stay: undefined,
             captured: move.captured ? [move.captured] : undefined,
             before: this.fen(),
@@ -735,9 +675,7 @@ export class CoTuLenh {
       })
     } else {
       // Generate SAN strings (simple, no temp execute)
-      return internalMoves.map(
-        (move) => this._moveToSanLan(move, internalMoves)[0],
-      )
+      return internalMoves.map((move) => moveToSanLan(move, internalMoves)[0])
     }
   }
 
@@ -1258,50 +1196,6 @@ export class CoTuLenh {
   }
 
   // --- SAN Parsing/Generation (Updated for Stay Capture & Deploy) ---
-  private _moveToSanLan(
-    move: InternalMove,
-    moves: InternalMove[],
-  ): [string, string] {
-    const pieceEncoded = makeSanPiece(move.piece)
-    const disambiguator = getDisambiguator(move, moves)
-    const toAlg = algebraic(move.to) // Target square
-    const fromAlg = algebraic(move.from) // Origin square
-    let combinationSuffix = '' // Initialize combination suffix
-    // const heroicPrefix =
-    //   (this.getHeroicStatus(move.from, move.piece.type) ?? false) ? '+' : '' // Simplified: Assume Move class handles this better
-    let separator = ''
-    if (move.flags & BITS.DEPLOY) {
-      separator += '>'
-    }
-    if (move.flags & BITS.STAY_CAPTURE) {
-      separator += '_'
-    }
-    if (move.flags & BITS.CAPTURE) {
-      separator += 'x'
-    }
-    if (move.flags & BITS.SUICIDE_CAPTURE) {
-      separator += '@'
-    }
-    if (move.flags & BITS.COMBINATION) {
-      separator += '&'
-      if (!move.combined) {
-        throw new Error('Move must have combined for combination')
-      }
-      const combined = combinePieces([move.piece, move.combined])
-      if (!combined) {
-        throw new Error(
-          'Should have successfully combined pieces in combine move',
-        )
-      }
-      combinationSuffix = makeSanPiece(combined, true)
-    }
-    // Note: Check detection removed - notation generated without temp execute
-    // Check symbols (^, #) can be added separately if needed
-    const san = `${pieceEncoded}${disambiguator}${separator}${toAlg}${combinationSuffix}`
-    const lan = `${pieceEncoded}${fromAlg}${separator}${toAlg}${combinationSuffix}`
-
-    return [san, lan] // Return both SAN and LAN strings
-  }
 
   /**
   /**
@@ -1322,8 +1216,10 @@ export class CoTuLenh {
 
     // strict parser
     for (let i = 0, len = moves.length; i < len; i++) {
-      const [san, lan] = this._moveToSanLan(moves[i], moves)
+      const [san, lan] = moveToSanLan(moves[i], moves)
       if (cleanMove === strippedSan(san) || cleanMove === strippedSan(lan)) {
+        moves[i].san = san
+        moves[i].lan = lan
         return moves[i]
       }
     }
@@ -1365,13 +1261,15 @@ export class CoTuLenh {
       return null
     }
     for (let i = 0, len = moves.length; i < len; i++) {
-      const [curSan, curLan] = this._moveToSanLan(moves[i], moves)
+      const [curSan, curLan] = moveToSanLan(moves[i], moves)
       if (!from) {
         // if there is no from square, it could be just 'x' missing from a capture
         if (
           cleanMove === strippedSan(curSan).replace(/[x<>+&-]|>x/g, '') ||
           cleanMove === strippedSan(curLan).replace(/[x<>+&-]|>x/g, '')
         ) {
+          moves[i].san = curSan
+          moves[i].lan = curLan
           return moves[i]
         }
         // hand-compare move properties with the results from our permissive regex
@@ -1380,6 +1278,8 @@ export class CoTuLenh {
         SQUARE_MAP[from] == moves[i].from &&
         SQUARE_MAP[to] == moves[i].to
       ) {
+        moves[i].san = curSan
+        moves[i].lan = curLan
         return moves[i]
       } else if (overlyDisambiguated) {
         /*
@@ -1393,6 +1293,8 @@ export class CoTuLenh {
           SQUARE_MAP[to] == moves[i].to &&
           (from == square[0] || from == square[1])
         ) {
+          moves[i].san = curSan
+          moves[i].lan = curLan
           return moves[i]
         }
       }
@@ -1457,6 +1359,10 @@ export class CoTuLenh {
           (move.stay === undefined || move.stay === isStayMove) &&
           (move.deploy === undefined || move.deploy === isDeployMove)
         ) {
+          // Generate SAN/LAN for the move
+          const [san, lan] = moveToSanLan(m, legalMoves)
+          m.san = san
+          m.lan = lan
           foundMoves.push(m)
         }
       }
@@ -1573,7 +1479,7 @@ export class CoTuLenh {
 
       // Generate notation using current state
       const legalMoves = this._moves({ legal: false })
-      const [san, lan] = this._moveToSanLan(h.move.move, legalMoves)
+      const [san, lan] = moveToSanLan(h.move.move, legalMoves)
 
       if (verbose) {
         const move = h.move.move
@@ -1585,6 +1491,7 @@ export class CoTuLenh {
                 color: move.color,
                 from: algebraic(move.from),
                 to: new Map([[algebraic(move.to), move.piece]]),
+                piece: move.piece,
                 stay: undefined,
                 captured: move.captured ? [move.captured] : undefined,
                 before: '?',
@@ -1751,7 +1658,6 @@ export class CoTuLenh {
 }
 
 export * from './type.js'
-export { DeployMove } from './deploy-move.js'
 
 /**
  * Validates whether a FEN (Forsyth-Edwards Notation) string is properly formatted and legal.

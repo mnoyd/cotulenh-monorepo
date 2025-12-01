@@ -1,4 +1,4 @@
-import type { CoTuLenh, Move } from './cotulenh.js'
+import type { CoTuLenh } from './cotulenh.js'
 import {
   canStayOnSquare,
   generateMoveCandidateForSinglePieceInStack,
@@ -28,48 +28,7 @@ export interface DeploySequence {
   moves: InternalMove[]
   stay?: Piece
 }
-export class DeployMove {
-  color!: Color
-  from!: Square
-  to!: Map<Square, Piece> // Destination square (piece's final location)
-  stay: Piece | undefined
-  captured?: Piece[]
-  san?: string // Standard Algebraic Notation (needs implementation)
-  lan?: string // Long Algebraic Notation (needs implementation)
-  before!: string // FEN before move
-  after!: string // FEN after move
-
-  /**
-   * Create DeployMove from session data (preferred method).
-   * No game state manipulation required - all data provided by session.
-   *
-   * @param data - Complete move data from DeploySession
-   * @returns DeployMove instance
-   */
-  static fromSession(data: {
-    color: Color
-    from: Square
-    to: Map<Square, Piece>
-    stay?: Piece
-    captured?: Piece[]
-    before: string
-    after: string
-    san: string
-    lan: string
-  }): DeployMove {
-    const move = Object.create(DeployMove.prototype)
-    move.color = data.color
-    move.from = data.from
-    move.to = data.to
-    move.stay = data.stay
-    move.captured = data.captured
-    move.before = data.before
-    move.after = data.after
-    move.san = data.san
-    move.lan = data.lan
-    return move
-  }
-}
+import { DeployMove } from './move-session.js'
 
 /**
  * Generates all possible deploy moves for each piece in all possible stack splits.
