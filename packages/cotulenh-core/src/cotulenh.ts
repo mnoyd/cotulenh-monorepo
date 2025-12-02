@@ -32,7 +32,6 @@ import {
   COMMANDER,
 } from './type.js'
 import {
-  getDisambiguator,
   printBoard,
   validateFen,
   makeSanPiece,

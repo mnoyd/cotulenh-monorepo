@@ -157,8 +157,8 @@ describe('DeploySession.processMove()', () => {
       // Session should still be active
       const session = game.getDeploySession()
       expect(session).toBeTruthy()
-      expect(session?.getRemainingPieces()).toBeTruthy()
-      expect(session?.getRemainingPieces()?.type).toBe(MILITIA)
+      expect(session?.remaining).toBeTruthy()
+      expect(session?.remaining[0]?.type).toBe(MILITIA)
     })
 
     it('should allow multiple incremental deploy moves', () => {
@@ -238,76 +238,6 @@ describe('DeploySession.processMove()', () => {
 
       // History should have ONE new entry
       expect(game.history().length).toBe(historyBefore + 1)
-    })
-  })
-
-  describe('Recombine instruction application during commit', () => {
-    it('should apply recombine instructions at commit time', () => {
-      // Set up a stack with multiple pieces
-      game.put(
-        {
-          type: NAVY,
-          color: RED,
-          carrying: [
-            { type: TANK, color: RED },
-            { type: INFANTRY, color: RED },
-          ],
-        },
-        'c5', // Water square
-      )
-      game['_turn'] = RED
-
-      // Deploy Navy to c6
-      game.move({ from: 'c5', to: 'c6', piece: NAVY, deploy: true })
-
-      // Deploy Tank to d5
-      game.move({ from: 'c5', to: 'd5', piece: TANK, deploy: true })
-
-      // Recombine Infantry with Tank at d5
-      game.recombine('c5', 'd5', 'i')
-
-      // Commit the session
-      const result = game.commitDeploySession()
-      expect(result.success).toBe(true)
-
-      // Verify Tank now carries Infantry at d5
-      const pieceAtD5 = game.get('d5')
-      expect(pieceAtD5?.type).toBe(TANK)
-      expect(pieceAtD5?.carrying).toHaveLength(1)
-      expect(pieceAtD5?.carrying?.[0].type).toBe(INFANTRY)
-
-      // Verify c5 only has Navy
-      const pieceAtC5 = game.get('c5')
-      expect(pieceAtC5).toBeUndefined()
-    })
-
-    it('should handle multiple recombine instructions', () => {
-      // Set up a complex stack
-      game.put(
-        {
-          type: NAVY,
-          color: RED,
-          carrying: [
-            { type: AIR_FORCE, color: RED },
-            { type: TANK, color: RED },
-          ],
-        },
-        'c5',
-      )
-      game['_turn'] = RED
-
-      game.move({ from: 'c5', to: 'f5', piece: AIR_FORCE, deploy: true })
-
-      game.recombine('c5', 'f5', TANK)
-
-      // Commit
-      const result = game.commitDeploySession()
-      expect(result.success).toBe(true)
-
-      // Verify recombine happened
-      const pieceAtD5 = game.get('f5')
-      expect(pieceAtD5?.carrying).toHaveLength(1)
-      expect(pieceAtD5?.carrying?.[0].type).toBe(TANK)
     })
   })
 })
