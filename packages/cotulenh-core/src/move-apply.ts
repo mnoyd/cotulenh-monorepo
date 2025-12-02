@@ -14,7 +14,7 @@ import { combinePieces, flattenPiece, removePieceFromStack } from './utils.js'
 /**
  * Represents an atomic board action that can be executed and undone
  */
-interface CTLAtomicMoveAction {
+export interface CTLAtomicMoveAction {
   execute(): void
   undo(): void
 }
@@ -529,6 +529,39 @@ export class SuicideCaptureMoveCommand extends CTLMoveCommand {
       this.actions.push(new RemovePieceAction(this.game, this.move.from))
     }
     this.actions.push(new RemovePieceAction(this.game, targetSq))
+  }
+}
+
+/**
+ * Represents a sequence of moves that make up a full deployment
+ * Used for history management to treat the entire sequence as one atomic operation
+ */
+export class DeployMoveSequenceCommand implements CTLMoveCommandInteface {
+  public readonly move: InternalMove
+  private commands: CTLAtomicMoveAction[] = []
+
+  private constructor(
+    firstMove: InternalMove,
+    commands: CTLAtomicMoveAction[],
+  ) {
+    this.move = firstMove
+    this.commands = commands
+  }
+
+  static create(commands: CTLAtomicMoveAction[], firstMove: InternalMove) {
+    return new DeployMoveSequenceCommand(firstMove, commands)
+  }
+
+  execute(): void {
+    for (const command of this.commands) {
+      command.execute()
+    }
+  }
+
+  undo(): void {
+    for (let i = this.commands.length - 1; i >= 0; i--) {
+      this.commands[i].undo()
+    }
   }
 }
 

@@ -7,8 +7,12 @@ import {
   FLAGS,
   Square,
 } from './type.js'
-import { flattenPiece, combinePieces } from './utils.js'
-import { CTLMoveCommandInteface, createMoveCommand } from './move-apply.js'
+import { flattenPiece, combinePieces, moveToSanLan } from './utils.js'
+import {
+  CTLMoveCommandInteface,
+  createMoveCommand,
+  DeployMoveSequenceCommand,
+} from './move-apply.js'
 import type { CoTuLenh } from './cotulenh.js'
 
 /**
@@ -204,6 +208,10 @@ export class MoveSession {
     this.beforeCommanders = game.getCommandersSnapshot()
   }
 
+  get startFEN(): string {
+    return this._beforeFEN
+  }
+
   /**
    * Add an InternalMove to the session
    * Converts to command and executes immediately
@@ -338,23 +346,10 @@ export class MoveSession {
       }
 
       // Create wrapper command for history
-      const deployCommand: CTLMoveCommandInteface = {
-        move: {
-          color: this.turn,
-          from: this.stackSquare,
-          to: this.stackSquare,
-          piece: this.originalPiece,
-          flags: BITS.DEPLOY,
-        },
-        execute: () => {
-          // Already executed
-        },
-        undo: () => {
-          for (let i = this._commands.length - 1; i >= 0; i--) {
-            this._commands[i].undo()
-          }
-        },
-      }
+      const sequence = DeployMoveSequenceCommand.create(
+        [...this._commands],
+        this._commands[0].move,
+      )
 
       // Build destination map
       const toMap = new Map<string, Piece>()
@@ -382,7 +377,7 @@ export class MoveSession {
       })
 
       return {
-        command: deployCommand,
+        command: sequence,
         moveObject: deployMove,
         result: deployMove,
       }
