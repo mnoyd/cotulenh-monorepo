@@ -50,7 +50,11 @@ import {
   getPieceMovementConfig,
   getOppositeOffset,
 } from './move-generation.js'
-import { createMoveCommand, CTLMoveCommandInteface } from './move-apply.js'
+import {
+  createMoveCommand,
+  CTLMoveCommandInteface,
+  CTLMoveSequenceCommandInterface,
+} from './move-apply.js'
 import {
   BASE_AIRDEFENSE_CONFIG,
   getAirDefenseInfluence,
@@ -69,7 +73,7 @@ export { Move, DeployMove, type MoveResult }
 
 // Structure for storing history states
 interface History {
-  move: CTLMoveCommandInteface
+  move: CTLMoveCommandInteface | CTLMoveSequenceCommandInterface
   commanders: Record<Color, number> // Position of commander before the move
   turn: Color
   halfMoves: number // Half move clock before the move
@@ -729,7 +733,13 @@ export class CoTuLenh {
     // Clear moves cache since board state has changed
     this._movesCache.clear()
 
-    return command.move // Return the original InternalMove data
+    // Return the original InternalMove data
+    // For sequence commands, return the first move
+    if ('moves' in command) {
+      return command.moves[0]
+    } else {
+      return command.move
+    }
   }
 
   /**
@@ -1441,34 +1451,36 @@ export class CoTuLenh {
       // Execute move (updates board only, not state)
       h.move.execute()
 
+      // Get the move data (handle both single and sequence commands)
+      const moveData = 'moves' in h.move ? h.move.moves[0] : h.move.move
+
       // Generate notation using current state
       const legalMoves = this._moves({ legal: false })
-      const [san, lan] = moveToSanLan(h.move.move, legalMoves)
+      const [san, lan] = moveToSanLan(moveData, legalMoves)
 
       if (verbose) {
-        const move = h.move.move
-        const isDeploy = move.flags & BITS.DEPLOY
+        const isDeploy = moveData.flags & BITS.DEPLOY
 
         moveHistory.push(
           isDeploy
             ? DeployMove.fromSession({
-                color: move.color,
-                from: algebraic(move.from),
-                to: new Map([[algebraic(move.to), move.piece]]),
-                piece: move.piece,
+                color: moveData.color,
+                from: algebraic(moveData.from),
+                to: new Map([[algebraic(moveData.to), moveData.piece]]),
+                piece: moveData.piece,
                 stay: undefined,
-                captured: move.captured ? [move.captured] : undefined,
+                captured: moveData.captured ? [moveData.captured] : undefined,
                 before: '?',
                 after: '?',
                 san,
                 lan,
               })
             : Move.fromExecutedMove({
-                color: move.color,
-                from: algebraic(move.from),
-                to: algebraic(move.to),
-                piece: move.piece,
-                captured: move.captured,
+                color: moveData.color,
+                from: algebraic(moveData.from),
+                to: algebraic(moveData.to),
+                piece: moveData.piece,
+                captured: moveData.captured,
                 flags: '',
                 before: '?',
                 after: '?',

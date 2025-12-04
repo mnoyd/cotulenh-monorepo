@@ -8,7 +8,12 @@ import {
   Square,
 } from './type.js'
 import { flattenPiece, combinePieces } from './utils.js'
-import { CTLMoveCommandInteface, createMoveCommand } from './move-apply.js'
+import {
+  CTLMoveCommandInteface,
+  CTLMoveSequenceCommandInterface,
+  DeployMoveSequenceCommand,
+  createMoveCommand,
+} from './move-apply.js'
 import type { CoTuLenh } from './cotulenh.js'
 
 /**
@@ -318,7 +323,7 @@ export class MoveSession {
    * @private
    */
   private _generateCommitData(): {
-    command: CTLMoveCommandInteface
+    command: CTLMoveCommandInteface | CTLMoveSequenceCommandInterface
     result: MoveResult
   } {
     if (this._commands.length === 0) {
@@ -339,24 +344,11 @@ export class MoveSession {
         if (cmd.move.captured) captured.push(cmd.move.captured)
       }
 
-      // Create wrapper command for history
-      const deployCommand: CTLMoveCommandInteface = {
-        move: {
-          color: this.turn,
-          from: this.stackSquare,
-          to: this.stackSquare,
-          piece: this.originalPiece,
-          flags: BITS.DEPLOY,
-        },
-        execute: () => {
-          // Already executed
-        },
-        undo: () => {
-          for (let i = this._commands.length - 1; i >= 0; i--) {
-            this._commands[i].undo()
-          }
-        },
-      }
+      // Create wrapper command for history using DeployMoveSequenceCommand
+      const deployCommand = DeployMoveSequenceCommand.create(
+        this._commands,
+        this.moves,
+      )
 
       // Build destination map
       const toMap = new Map<string, Piece>()
@@ -433,7 +425,7 @@ export class MoveSession {
    * @throws An error if the move is invalid (e.g., leaves the commander in check).
    */
   commit(): {
-    command: CTLMoveCommandInteface
+    command: CTLMoveCommandInteface | CTLMoveSequenceCommandInterface
     result: MoveResult
     hasCapture: boolean
     commandersToStore: Record<Color, number>

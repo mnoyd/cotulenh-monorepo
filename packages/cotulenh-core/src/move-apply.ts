@@ -231,6 +231,13 @@ export interface CTLMoveCommandInteface extends CTLAtomicMoveAction {
 }
 
 /**
+ * Interface for commands that represent a sequence of moves (e.g., deploy sequences)
+ */
+export interface CTLMoveSequenceCommandInterface extends CTLAtomicMoveAction {
+  moves: InternalMove[]
+}
+
+/**
  * Abstract base class for all move commands.
  * Each command knows how to execute and undo itself.
  */
@@ -536,20 +543,19 @@ export class SuicideCaptureMoveCommand extends CTLMoveCommand {
  * Represents a sequence of moves that make up a full deployment
  * Used for history management to treat the entire sequence as one atomic operation
  */
-export class DeployMoveSequenceCommand implements CTLMoveCommandInteface {
-  public readonly move: InternalMove
+export class DeployMoveSequenceCommand
+  implements CTLMoveSequenceCommandInterface
+{
+  public readonly moves: InternalMove[]
   private commands: CTLAtomicMoveAction[] = []
 
-  private constructor(
-    firstMove: InternalMove,
-    commands: CTLAtomicMoveAction[],
-  ) {
-    this.move = firstMove
+  private constructor(moves: InternalMove[], commands: CTLAtomicMoveAction[]) {
+    this.moves = moves
     this.commands = commands
   }
 
-  static create(commands: CTLAtomicMoveAction[], firstMove: InternalMove) {
-    return new DeployMoveSequenceCommand(firstMove, commands)
+  static create(commands: CTLAtomicMoveAction[], moves: InternalMove[]) {
+    return new DeployMoveSequenceCommand(moves, commands)
   }
 
   execute(): void {
