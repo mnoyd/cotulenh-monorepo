@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { AIR_FORCE, CoTuLenh, MILITIA, TANK } from '../src/cotulenh.js'
-import { DeploySession } from '../src/move-session.js'
+import { MoveSession } from '../src/move-session.js'
 
 describe('Deploy Undo Fix', () => {
   it('should clear deploy state when undoing the only deploy move', () => {

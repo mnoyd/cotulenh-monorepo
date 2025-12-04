@@ -7,12 +7,8 @@ import {
   FLAGS,
   Square,
 } from './type.js'
-import { flattenPiece, combinePieces, moveToSanLan } from './utils.js'
-import {
-  CTLMoveCommandInteface,
-  createMoveCommand,
-  DeployMoveSequenceCommand,
-} from './move-apply.js'
+import { flattenPiece, combinePieces } from './utils.js'
+import { CTLMoveCommandInteface, createMoveCommand } from './move-apply.js'
 import type { CoTuLenh } from './cotulenh.js'
 
 /**
@@ -318,13 +314,11 @@ export class MoveSession {
   }
 
   /**
-   * Commit the session
-   * Generates SAN/LAN/FEN at commit time
-   * Returns: command for history + Move/DeployMove object + MoveResult
+   * Generates commit data without finalizing the state.
+   * @private
    */
-  commit(): {
+  private _generateCommitData(): {
     command: CTLMoveCommandInteface
-    moveObject: Move | DeployMove
     result: MoveResult
   } {
     if (this._commands.length === 0) {
@@ -346,10 +340,23 @@ export class MoveSession {
       }
 
       // Create wrapper command for history
-      const sequence = DeployMoveSequenceCommand.create(
-        [...this._commands],
-        this._commands[0].move,
-      )
+      const deployCommand: CTLMoveCommandInteface = {
+        move: {
+          color: this.turn,
+          from: this.stackSquare,
+          to: this.stackSquare,
+          piece: this.originalPiece,
+          flags: BITS.DEPLOY,
+        },
+        execute: () => {
+          // Already executed
+        },
+        undo: () => {
+          for (let i = this._commands.length - 1; i >= 0; i--) {
+            this._commands[i].undo()
+          }
+        },
+      }
 
       // Build destination map
       const toMap = new Map<string, Piece>()
@@ -357,7 +364,6 @@ export class MoveSession {
         toMap.set(algebraic(move.to), move.piece)
       }
 
-      // Generate notation
       // Generate notation
       const san = this.moves.map((m) => m.san || 'DEPLOY').join(' ')
       const lan = this.moves.map((m) => m.lan || 'DEPLOY').join(' ')
@@ -377,8 +383,7 @@ export class MoveSession {
       })
 
       return {
-        command: sequence,
-        moveObject: deployMove,
+        command: deployCommand,
         result: deployMove,
       }
     } else {
@@ -391,7 +396,9 @@ export class MoveSession {
         move.san || `${move.piece.type.toUpperCase()}${algebraic(move.to)}`
       const lan =
         move.lan ||
-        `${move.piece.type.toUpperCase()}${algebraic(move.from)}${algebraic(move.to)}`
+        `${move.piece.type.toUpperCase()}${algebraic(move.from)}${algebraic(
+          move.to,
+        )}`
 
       // Build flags string
       let flagsStr = ''
@@ -415,7 +422,44 @@ export class MoveSession {
         lan,
       })
 
-      return { command, moveObject: moveObj, result: moveObj }
+      return { command, result: moveObj }
+    }
+  }
+
+  /**
+   * Commits the session: validates and generates final commit data.
+   * Does NOT modify game state (history, turn, etc).
+   * @returns Data needed for the game to apply the commit.
+   * @throws An error if the move is invalid (e.g., leaves the commander in check).
+   */
+  commit(): {
+    command: CTLMoveCommandInteface
+    result: MoveResult
+    hasCapture: boolean
+    commandersToStore: Record<Color, number>
+  } {
+    const game = this._game
+    const us = this.turn
+
+    // DELAYED VALIDATION: Check commander safety after all moves
+    // This allows deploy sequences to escape check
+    if (game['_isCommanderAttacked'](us) || game['_isCommanderExposed'](us)) {
+      throw new Error(
+        'Move sequence does not escape check. Commander still in danger.',
+      )
+    }
+
+    // 1. Generate commit data (command and result object)
+    const { command, result } = this._generateCommitData()
+
+    // 2. Check if any capture (check all moves in session)
+    const hasCapture = this.moves.some((m) => !!(m.flags & BITS.CAPTURE))
+
+    return {
+      command,
+      result,
+      hasCapture,
+      commandersToStore: this.beforeCommanders,
     }
   }
 
@@ -448,7 +492,9 @@ export class MoveSession {
 
     const movesStr = moveNotations.join(',')
     const unfinished = this.isComplete ? '' : '...'
-    return `${baseFEN} DEPLOY ${algebraic(this.stackSquare)}:${movesStr}${unfinished}`
+    return `${baseFEN} DEPLOY ${algebraic(
+      this.stackSquare,
+    )}:${movesStr}${unfinished}`
   }
 }
 
@@ -501,12 +547,12 @@ export function handleMove(
 
   // Check if complete and should auto-commit
   if (session.isComplete && autoCommit) {
-    // Commit and return completed result
+    // Commit and return completed result via game method
     const commitResult = game.commitSession()
     if (commitResult.success && commitResult.result) {
       return commitResult.result
     }
-    // If commit failed, return intermediate
+    // If commit failed (validation), return intermediate
     return session.createIntermediateResult()
   }
 

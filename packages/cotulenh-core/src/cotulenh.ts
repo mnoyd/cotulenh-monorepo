@@ -710,53 +710,6 @@ export class CoTuLenh {
     return handleMove(this, move)
   }
 
-  /**
-   * Finalize a move session (Standard or Deploy) by adding it to history.
-   * Simple flow: Commit session → Generate SAN/LAN/FEN → Add to history → Update State
-   * @param session - The move session to finalize
-   * @param preCommanderState - Optional pre-move commander state. If not provided, uses current state.
-   * @returns MoveResult with completed=true
-   */
-  private _finalizeMove(
-    session: MoveSession,
-    preCommanderState?: Record<Color, number>,
-  ): MoveResult {
-    const us = this.turn()
-
-    // 1. Store pre-move state
-    // Use session's captured state if available, otherwise fallback (though session should always have it)
-    const commandersToStore = session.beforeCommanders || {
-      ...this._commanders,
-    }
-    const preTurn = us
-    const preHalfMoves = this._halfMoves
-    const preMoveNumber = this._moveNumber
-
-    // 2. Commit session (generates SAN/LAN/FEN)
-    const { command, result } = session.commit()
-
-    // 3. Check if any capture (check all moves in session)
-    const hasCapture = session.moves.some((m) => !!(m.flags & BITS.CAPTURE))
-
-    // 4. Add to history
-    this._history.push({
-      move: command,
-      commanders: commandersToStore,
-      turn: preTurn,
-      halfMoves: preHalfMoves,
-      moveNumber: preMoveNumber,
-    })
-
-    // 5. Update game state
-    this._halfMoves = hasCapture ? 0 : this._halfMoves + 1
-    this._turn = swapColor(us)
-    if (us === BLUE) this._moveNumber++
-    this._movesCache.clear()
-    this._updatePositionCounts()
-
-    return result
-  }
-
   private _undoMove(): InternalMove | null {
     const old = this._history.pop()
     if (!old) return null
@@ -867,7 +820,7 @@ export class CoTuLenh {
    *
    * @returns Result object with success status and optional error message
    */
-  public commitSession(switchTurn: boolean = true): {
+  public commitSession(): {
     success: boolean
     reason?: string
     result?: MoveResult
@@ -879,8 +832,6 @@ export class CoTuLenh {
       }
     }
 
-    // Check if session is complete (all pieces deployed)
-    // We can commit if at least one move is made, remaining pieces will stay
     if (this._session.moves.length === 0) {
       return {
         success: false,
@@ -888,29 +839,43 @@ export class CoTuLenh {
       }
     }
 
-    // DELAYED VALIDATION: Check commander safety after all moves
-    // This allows deploy sequences to escape check
-    const us = this._session.turn
-    if (this._isCommanderAttacked(us) || this._isCommanderExposed(us)) {
-      return {
-        success: false,
-        reason:
-          'Move sequence does not escape check. Commander still in danger.',
-      }
+    try {
+      const { command, result, hasCapture, commandersToStore } =
+        this._session.commit()
+
+      // 1. Store pre-move state
+      const us = this._turn
+      const preHalfMoves = this._halfMoves
+      const preMoveNumber = this._moveNumber
+
+      // 2. Add to history
+      this._history.push({
+        move: command,
+        commanders: commandersToStore,
+        turn: us,
+        halfMoves: preHalfMoves,
+        moveNumber: preMoveNumber,
+      })
+
+      // 3. Update game state
+      this._halfMoves = hasCapture ? 0 : this._halfMoves + 1
+      this._turn = swapColor(us)
+      if (us === BLUE) this._moveNumber++
+      this._movesCache.clear()
+      this._updatePositionCounts()
+
+      // 4. Clear session
+      this.setSession(null)
+
+      return { success: true, result }
+    } catch (e: any) {
+      return { success: false, reason: e.message }
     }
-
-    // Finalize the move (adds to history, switches turn)
-    const result = this._finalizeMove(this._session)
-
-    // Clear session
-    this._session = null
-
-    return { success: true, result }
   }
 
   // Alias
-  public commitDeploySession(switchTurn: boolean = true) {
-    return this.commitSession(switchTurn)
+  public commitDeploySession() {
+    return this.commitSession()
   }
 
   /**
