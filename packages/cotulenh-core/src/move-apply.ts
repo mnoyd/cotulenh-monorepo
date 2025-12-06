@@ -340,137 +340,14 @@ export class CaptureMoveCommand extends CTLMoveCommand {
     }
 
     // Add actions for the capture move
+    this.move.captured = capturedPieceData // Populate captured piece for history
     this.actions.push(
       new RemoveFromStackAction(this.game, this.move.from, pieceThatMoved),
     )
+    this.actions.push(new RemovePieceAction(this.game, this.move.to))
     this.actions.push(
       new PlacePieceAction(this.game, this.move.to, pieceThatMoved),
     )
-  }
-}
-
-export class SingleDeployMoveCommand extends CTLMoveCommand {
-  protected buildActions(): void {
-    const us = this.move.color
-    const them = swapColor(us)
-
-    // During active deploy session, get carrier from session's remaining pieces
-    // Otherwise get from board (for batch deploy moves)
-    const deploySession = this.game.getDeploySession()
-    let carrierPiece: Piece | null = null
-
-    if (deploySession && deploySession.stackSquare === this.move.from) {
-      // Active deploy session - use remaining pieces from session
-      // If remaining pieces are empty, it means we are moving the last piece(s).
-      // But we need a "carrier" to remove from.
-      // In the new design, we don't really need a "carrier" object to remove from,
-      // we just need to know that the pieces we are moving ARE available.
-      // However, RemoveFromStackAction expects a carrier on the board.
-
-      // Wait, RemoveFromStackAction calls game.get(carrierSquare).
-      // So it gets the CURRENT state of the stack on the board.
-      // SingleDeployMoveCommand doesn't need to pass the carrier to the action.
-      // It just needs to verify validity?
-
-      // The error "Carrier missing or empty" comes from the check `if (!carrierPiece)`.
-      // This check seems to be trying to validate that the move is possible.
-
-      // If we are in a deploy session, the board state is updated incrementally.
-      // So game.get(this.move.from) should return the current stack.
-      carrierPiece = this.game.get(this.move.from) || null
-    } else {
-      // No active session or different square - use board state
-      carrierPiece = this.game.get(this.move.from) || null
-    }
-
-    if (!carrierPiece) {
-      throw new Error(
-        `Build Deploy Error: Carrier missing or empty at ${algebraic(
-          this.move.from,
-        )}`,
-      )
-    }
-
-    const flattendMovingPieces = flattenPiece(this.move.piece)
-    // Handle stay capture
-    if (this.move.flags & BITS.STAY_CAPTURE) {
-      const destSq = this.move.to
-      const capturedPieceData = this.game.get(destSq)
-
-      if (!capturedPieceData || capturedPieceData.color !== them) {
-        throw new Error(
-          `Build Deploy Error: Capture destination invalid ${algebraic(
-            destSq,
-          )}`,
-        )
-      }
-
-      this.move.captured = capturedPieceData
-      this.actions.push(new RemovePieceAction(this.game, destSq))
-    }
-    // Handle normal deploy (with or without capture)
-    else {
-      // Add action to remove the piece from the carrier's stack
-      this.actions.push(
-        new RemoveFromStackAction(this.game, this.move.from, this.move.piece),
-      )
-      const destSq = this.move.to
-
-      // Handle capture if needed
-      if (this.move.flags & (BITS.CAPTURE | BITS.SUICIDE_CAPTURE)) {
-        const capturedPieceData = this.game.get(destSq)
-
-        if (!capturedPieceData || capturedPieceData.color !== them) {
-          throw new Error(
-            `Build Deploy Error: Capture destination invalid ${algebraic(
-              destSq,
-            )}`,
-          )
-        }
-
-        this.move.captured = capturedPieceData
-        this.actions.push(new RemovePieceAction(this.game, destSq))
-      }
-
-      // Add action to place the deployed piece
-      if ((this.move.flags & BITS.SUICIDE_CAPTURE) === 0) {
-        // Check if this is a recombine move (deploy + combination)
-        if (this.move.flags & BITS.COMBINATION) {
-          const targetPiece = this.game.get(destSq)
-          if (targetPiece) {
-            // Combine the moving piece with the target piece
-            // Important: combinePieces expects flattened pieces if we want to merge stacks
-            const piecesToCombine = [
-              ...flattenPiece(targetPiece),
-              ...flattenPiece(this.move.piece),
-            ]
-            const combinedPiece = combinePieces(piecesToCombine)
-            if (!combinedPiece) {
-              // console.log('Failed to combine pieces:', JSON.stringify(piecesToCombine, null, 2))
-              throw new Error(
-                `Failed to create combined piece during recombine: ${JSON.stringify(this.move)}`,
-              )
-            }
-            this.actions.push(
-              new PlacePieceAction(this.game, destSq, combinedPiece),
-            )
-          } else {
-            // No target piece - just place the moving piece
-            this.actions.push(
-              new PlacePieceAction(this.game, destSq, this.move.piece),
-            )
-          }
-        } else {
-          // Normal deploy - just place the piece
-          this.actions.push(
-            new PlacePieceAction(this.game, destSq, this.move.piece),
-          )
-        }
-      }
-    }
-
-    // Deploy state tracking is now handled by DeploySession
-    // No need for SetDeployStateAction - session tracks all commands
   }
 }
 
@@ -500,6 +377,7 @@ class CombinationMoveCommand extends CTLMoveCommand {
         `Failed to create combined piece: ${JSON.stringify(this.move)}`,
       )
     }
+    this.move.combined = combinedPiece // Populate combined piece
 
     // 1. Remove the moving piece from the 'from' square
     this.actions.push(
@@ -538,6 +416,7 @@ export class StayCaptureMoveCommand extends CTLMoveCommand {
     }
 
     // Only action is to remove the captured piece
+    this.move.captured = capturedPiece
     this.actions.push(new RemovePieceAction(this.game, targetSq))
   }
 }
@@ -617,9 +496,8 @@ export function createMoveCommand(
   move: InternalMove,
 ): CTLMoveCommand {
   // Check flags in order of precedence (if applicable)
-  if (move.flags & BITS.DEPLOY) {
-    return new SingleDeployMoveCommand(game, move)
-  } else if (move.flags & BITS.SUICIDE_CAPTURE) {
+  // BITS.DEPLOY removed from precedence - deploy moves are now handled by generic commands
+  if (move.flags & BITS.SUICIDE_CAPTURE) {
     return new SuicideCaptureMoveCommand(game, move)
   } else if (move.flags & BITS.STAY_CAPTURE) {
     return new StayCaptureMoveCommand(game, move)
