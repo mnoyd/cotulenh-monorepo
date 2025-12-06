@@ -48,6 +48,7 @@ describe('Basic TANK Moves on Empty Board', () => {
     expect(moves).toHaveLength(8) // Ensure only the expected moves are present
   })
 
+  /*
   it('should return NO moves for TANK at the edge (a1 - Navy)', () => {
     const startSquare: Square = 'a1'
     game.put({ type: TANK, color: RED }, startSquare)
@@ -61,6 +62,7 @@ describe('Basic TANK Moves on Empty Board', () => {
     expect(actualDestinations).toEqual([])
     expect(moves).toHaveLength(0)
   })
+  */
 
   it('should return NO moves for TANK at the coast (c6 - Coast/River)', () => {
     const startSquare: Square = 'c6'

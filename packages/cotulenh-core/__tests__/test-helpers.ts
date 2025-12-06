@@ -59,16 +59,29 @@ export function setupGameBasic(): CoTuLenh {
 // Simplified helper to check if a move exists in the verbose list
 // (We don't need all options of findVerboseMove for these basic tests)
 export const findMove = (
-  moves: Move[],
+  moves: (Move | any)[], // Use any or Import DeployMove to avoid circular deps if needed, casting for now
   from: Square,
   to: Square,
 ): Move | undefined => {
-  return moves.find((m) => m.from === from && m.to === to)
+  return moves.find((m) => {
+    let mTo = m.to
+    if (typeof m.to !== 'string' && m.to instanceof Map) {
+      mTo = Array.from(m.to.keys())[0]
+    }
+    return m.from === from && mTo === to
+  })
 }
 
 // Helper to extract just the 'to' squares for simple comparison
-export const getDestinationSquares = (moves: Move[]): Square[] => {
-  return moves.map((m) => m.to).sort()
+export const getDestinationSquares = (moves: (Move | any)[]): Square[] => {
+  return moves
+    .map((m) => {
+      if (typeof m.to !== 'string' && m.to instanceof Map) {
+        return Array.from(m.to.keys())[0] as Square
+      }
+      return m.to
+    })
+    .sort()
 }
 
 // Helper to find a specific move in the verbose move list
