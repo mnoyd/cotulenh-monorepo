@@ -1402,86 +1402,47 @@ export class CoTuLenh {
     options: { verbose?: boolean } = {},
   ): string[] | (Move | DeployMove)[] {
     const { verbose = false } = options
-    const reversedHistory: History[] = []
-    const moveHistory: (string | Move | DeployMove)[] = []
 
-    // Save current state to restore after replay
-    const savedState = {
-      turn: this._turn,
-      halfMoves: this._halfMoves,
-      moveNumber: this._moveNumber,
-      commanders: { ...this._commanders },
-      deploySession: this._session,
-    }
+    // 1. Snapshot original history items
+    const originalHistory = [...this._history]
 
-    // Undo all moves
+    // 2. Undo all moves to get back to initial state
+    // We assume the game was constructed with the correct initial FEN/state
     while (this._history.length > 0) {
-      reversedHistory.push(this._history.at(-1)!)
       this._undoMove()
     }
 
-    // Replay and collect
-    while (reversedHistory.length > 0) {
-      const h = reversedHistory.pop()!
+    const results: (Move | DeployMove)[] = []
 
-      // Execute move (updates board AND state)
-      h.command.execute()
+    // 3. Replay history using handleMove to verify/reconstruct
+    // Note: This MODIFIES this._history with NEW command instances
+    for (const h of originalHistory) {
+      const command = h.command
+      let result: MoveResult | undefined
 
-      // Get the move data (handle both single and sequence commands)
-      const moveCommand = h.command
-      const moveData =
-        'moves' in moveCommand ? moveCommand.moves[0] : moveCommand.move
-
-      // Generate notation using current state
-      const legalMoves = this._moves({ legal: false })
-      const [san, lan] = moveToSanLan(moveData, legalMoves)
-
-      if (verbose) {
-        const isDeploy = moveData.flags & BITS.DEPLOY
-
-        moveHistory.push(
-          isDeploy
-            ? DeployMove.fromSession({
-                color: moveData.color,
-                from: algebraic(moveData.from),
-                to: new Map([[algebraic(moveData.to), moveData.piece]]),
-                piece: moveData.piece,
-                stay: undefined,
-                captured: moveData.captured ? [moveData.captured] : undefined,
-                before: '?',
-                after: '?',
-                san,
-                lan,
-              })
-            : Move.fromExecutedMove({
-                color: moveData.color,
-                from: algebraic(moveData.from),
-                to: algebraic(moveData.to),
-                piece: moveData.piece,
-                captured: moveData.captured,
-                flags: '',
-                before: '?',
-                after: '?',
-                san,
-                lan,
-              }),
-        )
+      if ('moves' in command) {
+        // Sequence (Deploy)
+        for (const move of command.moves) {
+          // Pass a shallow copy to ensure we don't accidentally mutate the original history command's move
+          // (though handleMove should be safe)
+          result = handleMove(this, { ...move })
+        }
       } else {
-        moveHistory.push(san)
+        // Single Move
+        result = handleMove(this, { ...command.move })
       }
 
-      // Restore history entry
-      this._history.push(h)
+      if (result) {
+        results.push(result)
+      }
     }
 
-    // Restore game state
-    this._turn = savedState.turn
-    this._halfMoves = savedState.halfMoves
-    this._moveNumber = savedState.moveNumber
-    this._commanders = savedState.commanders
-    this._session = savedState.deploySession
-
-    return moveHistory as string[] | (Move | DeployMove)[]
+    // 4. Return formatted results
+    if (verbose) {
+      return results
+    } else {
+      return results.map((r) => r.san || '')
+    }
   }
 
   /**
