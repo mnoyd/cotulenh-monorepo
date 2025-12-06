@@ -73,11 +73,7 @@ export { Move, DeployMove, type MoveResult }
 
 // Structure for storing history states
 interface History {
-  move: CTLMoveCommandInteface | CTLMoveSequenceCommandInterface
-  commanders: Record<Color, number> // Position of commander before the move
-  turn: Color
-  halfMoves: number // Half move clock before the move
-  moveNumber: number // Move number before the move
+  command: CTLMoveCommandInteface | CTLMoveSequenceCommandInterface
 }
 
 // Public Move class moved to move-session.ts
@@ -718,17 +714,12 @@ export class CoTuLenh {
     const old = this._history.pop()
     if (!old) return null
 
-    const command = old.move // Get the command object
+    const command = old.command // Get the command object
 
-    // Restore general game state BEFORE the command modified the board
-    this._commanders = old.commanders
-    this._turn = old.turn
-    this._halfMoves = old.halfMoves
-    this._moveNumber = old.moveNumber
-    this._session = null
-
-    // Ask the command to revert its specific board changes
+    // Undo everything (restores state and board)
+    // The command now includes the StateUpdateAction internally
     command.undo()
+    this._session = null
 
     // Clear moves cache since board state has changed
     this._movesCache.clear()
@@ -850,29 +841,14 @@ export class CoTuLenh {
     }
 
     try {
-      const { command, result, hasCapture, commandersToStore } =
-        this._session.commit()
+      const { command, result, hasCapture } = this._session.commit()
 
-      // 1. Store pre-move state
-      const us = this._turn
-      const preHalfMoves = this._halfMoves
-      const preMoveNumber = this._moveNumber
+      // State update is already handled and attached by MoveSession.commit()
+      // We just need to store the command in history
 
-      // 2. Add to history
       this._history.push({
-        move: command,
-        commanders: commandersToStore,
-        turn: us,
-        halfMoves: preHalfMoves,
-        moveNumber: preMoveNumber,
+        command: command,
       })
-
-      // 3. Update game state
-      this._halfMoves = hasCapture ? 0 : this._halfMoves + 1
-      this._turn = swapColor(us)
-      if (us === BLUE) this._moveNumber++
-      this._movesCache.clear()
-      this._updatePositionCounts()
 
       // 4. Clear session
       this.setSession(null)
@@ -1448,11 +1424,13 @@ export class CoTuLenh {
     while (reversedHistory.length > 0) {
       const h = reversedHistory.pop()!
 
-      // Execute move (updates board only, not state)
-      h.move.execute()
+      // Execute move (updates board AND state)
+      h.command.execute()
 
       // Get the move data (handle both single and sequence commands)
-      const moveData = 'moves' in h.move ? h.move.moves[0] : h.move.move
+      const moveCommand = h.command
+      const moveData =
+        'moves' in moveCommand ? moveCommand.moves[0] : moveCommand.move
 
       // Generate notation using current state
       const legalMoves = this._moves({ legal: false })

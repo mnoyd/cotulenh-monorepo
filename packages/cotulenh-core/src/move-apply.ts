@@ -186,19 +186,23 @@ class RemoveFromStackAction implements CTLAtomicMoveAction {
  * Updates game state (turn, halfMoves, moveNumber) after a move.
  * This action encapsulates state changes so they can be executed/undone atomically.
  */
-class StateUpdateAction implements CTLAtomicMoveAction {
+export class StateUpdateAction implements CTLAtomicMoveAction {
   private oldTurn: Color
   private oldHalfMoves: number
   private oldMoveNumber: number
+  private oldCommanders: Record<Color, number>
+  private addedFen: string | null = null
 
   constructor(
     private game: CoTuLenh,
     private move: InternalMove,
   ) {
-    // Capture current state before execution
+    // Capture current state before execution (or before update)
+    // Note: StateUpdateAction is usually created AFTER move execution but BEFORE flag update.
     this.oldTurn = game.turn()
     this.oldHalfMoves = game['_halfMoves']
     this.oldMoveNumber = game['_moveNumber']
+    this.oldCommanders = { ...game['_commanders'] }
   }
 
   execute(): void {
@@ -213,13 +217,33 @@ class StateUpdateAction implements CTLAtomicMoveAction {
       this.game['_moveNumber']++
     }
     this.game['_movesCache'].clear()
+
+    // Update position counts (Logic moved from cotulenh.ts)
+    // We generate FEN *after* state update to match the new position
+    this.game['_updatePositionCounts']()
+    this.addedFen = this.game.fen()
   }
 
   undo(): void {
+    // Decrement position count for the state we are leaving
+    if (this.addedFen) {
+      if (this.game['_positionCount'][this.addedFen] > 0) {
+        this.game['_positionCount'][this.addedFen]--
+        if (this.game['_positionCount'][this.addedFen] === 0) {
+          delete this.game['_positionCount'][this.addedFen]
+        }
+      }
+    }
+
     // Restore previous state
     this.game['_turn'] = this.oldTurn
     this.game['_halfMoves'] = this.oldHalfMoves
     this.game['_moveNumber'] = this.oldMoveNumber
+    this.game['_commanders'] = { ...this.oldCommanders }
+
+    // Setup/FEN header updates handled by _updatePositionCounts usually,
+    // but on undo we might just clear cache. Headers will be fixed next forward move.
+
     this.game['_movesCache'].clear()
   }
 }
@@ -228,6 +252,7 @@ class StateUpdateAction implements CTLAtomicMoveAction {
 
 export interface CTLMoveCommandInteface extends CTLAtomicMoveAction {
   move: InternalMove
+  addPostAction(action: CTLAtomicMoveAction): void
 }
 
 /**
@@ -235,6 +260,7 @@ export interface CTLMoveCommandInteface extends CTLAtomicMoveAction {
  */
 export interface CTLMoveSequenceCommandInterface extends CTLAtomicMoveAction {
   moves: InternalMove[]
+  addPostAction(action: CTLAtomicMoveAction): void
 }
 
 /**
@@ -269,6 +295,10 @@ export abstract class CTLMoveCommand implements CTLMoveCommandInteface {
     for (let i = this.actions.length - 1; i >= 0; i--) {
       this.actions[i].undo()
     }
+  }
+
+  addPostAction(action: CTLAtomicMoveAction): void {
+    this.actions.push(action)
   }
 }
 
@@ -568,6 +598,10 @@ export class DeployMoveSequenceCommand
     for (let i = this.commands.length - 1; i >= 0; i--) {
       this.commands[i].undo()
     }
+  }
+
+  addPostAction(action: CTLAtomicMoveAction): void {
+    this.commands.push(action)
   }
 }
 
