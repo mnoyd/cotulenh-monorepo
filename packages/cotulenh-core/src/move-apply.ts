@@ -22,7 +22,7 @@ export interface CTLAtomicMoveAction {
 /**
  * Removes a piece from a square
  */
-class RemovePieceAction implements CTLAtomicMoveAction {
+export class RemovePieceAction implements CTLAtomicMoveAction {
   private removedPiece?: Piece
   constructor(
     protected game: CoTuLenh,
@@ -54,7 +54,7 @@ class RemovePieceAction implements CTLAtomicMoveAction {
 /**
  * Places a piece on a square
  */
-class PlacePieceAction implements CTLAtomicMoveAction {
+export class PlacePieceAction implements CTLAtomicMoveAction {
   private existingPiece?: Piece
   constructor(
     protected game: CoTuLenh,
@@ -100,7 +100,7 @@ class PlacePieceAction implements CTLAtomicMoveAction {
 /**
  * Removes a piece from a carrier's stack
  */
-class RemoveFromStackAction implements CTLAtomicMoveAction {
+export class RemoveFromStackAction implements CTLAtomicMoveAction {
   private originalCarrier: Piece | null = null
   constructor(
     protected game: CoTuLenh,
@@ -135,6 +135,12 @@ class RemoveFromStackAction implements CTLAtomicMoveAction {
     for (const p of piecesToRemove) {
       const count = carrierCounts.get(p.type) || 0
       if (count <= 0) {
+        console.log(
+          'RemoveFromStackAction: Piece not found',
+          p.type,
+          'in',
+          JSON.stringify(carrierPieces),
+        )
         throw new Error(
           `Piece ${p.type} not found in stack at ${algebraic(this.carrierSquare)}`,
         )
@@ -309,9 +315,9 @@ export class NormalMoveCommand extends CTLMoveCommand {
     const pieceThatMoved = getMovingPieceFromInternalMove(this.game, this.move)
 
     // Add actions for the normal move
-    if (!isStackMove(this.move)) {
-      this.actions.push(new RemovePieceAction(this.game, this.move.from))
-    }
+    this.actions.push(
+      new RemoveFromStackAction(this.game, this.move.from, pieceThatMoved),
+    )
     this.actions.push(
       new PlacePieceAction(this.game, this.move.to, pieceThatMoved),
     )
@@ -334,9 +340,9 @@ export class CaptureMoveCommand extends CTLMoveCommand {
     }
 
     // Add actions for the capture move
-    if (!isStackMove(this.move)) {
-      this.actions.push(new RemovePieceAction(this.game, this.move.from))
-    }
+    this.actions.push(
+      new RemoveFromStackAction(this.game, this.move.from, pieceThatMoved),
+    )
     this.actions.push(
       new PlacePieceAction(this.game, this.move.to, pieceThatMoved),
     )
@@ -496,9 +502,9 @@ class CombinationMoveCommand extends CTLMoveCommand {
     }
 
     // 1. Remove the moving piece from the 'from' square
-    if (!isStackMove(this.move)) {
-      this.actions.push(new RemovePieceAction(this.game, this.move.from))
-    }
+    this.actions.push(
+      new RemoveFromStackAction(this.game, this.move.from, movingPieceData),
+    )
 
     // 2. Remove the existing piece from the 'to' square (before placing the combined one)
     //    Using PlacePieceAction with the combined piece handles both removal and placement
@@ -562,9 +568,9 @@ export class SuicideCaptureMoveCommand extends CTLMoveCommand {
 
     this.move.captured = capturedPiece
 
-    if (!isStackMove(this.move)) {
-      this.actions.push(new RemovePieceAction(this.game, this.move.from))
-    }
+    this.actions.push(
+      new RemoveFromStackAction(this.game, this.move.from, pieceAtFrom),
+    )
     this.actions.push(new RemovePieceAction(this.game, targetSq))
   }
 }
