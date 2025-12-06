@@ -13,6 +13,7 @@ import {
   CTLMoveSequenceCommandInterface,
   DeployMoveSequenceCommand,
   createMoveCommand,
+  StateUpdateAction,
 } from './move-apply.js'
 import type { CoTuLenh } from './cotulenh.js'
 
@@ -446,6 +447,13 @@ export class MoveSession {
 
     // 2. Check if any capture (check all moves in session)
     const hasCapture = this.moves.some((m) => !!(m.flags & BITS.CAPTURE))
+
+    // 3. Create, Execute, and Attach StateUpdateAction
+    // This makes the command atomic: Undo board -> Undo state
+    const firstMove = this.moves[0]
+    const stateAction = new StateUpdateAction(game, firstMove)
+    stateAction.execute() // Updates turn/counters immediately
+    command.addPostAction(stateAction) // Will undo AFTER board undo
 
     return {
       command,
