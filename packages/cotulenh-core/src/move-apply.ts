@@ -9,7 +9,12 @@ import {
   BITS,
   Piece,
 } from './type.js'
-import { combinePieces, flattenPiece, removePieceFromStack } from './utils.js'
+import {
+  combinePieces,
+  flattenPiece,
+  removePieceFromStack,
+  clonePiece,
+} from './utils.js'
 
 /**
  * Represents an atomic board action that can be executed and undone
@@ -117,36 +122,7 @@ export class RemoveFromStackAction implements CTLAtomicMoveAction {
     }
 
     // Store original carrier for undo
-    this.originalCarrier = {
-      ...carrier,
-      carrying: carrier.carrying ? [...carrier.carrying] : undefined,
-    }
-
-    // Validate that the piece to remove is actually in the stack
-    const carrierPieces = flattenPiece(carrier)
-    const piecesToRemove = flattenPiece(this.piece)
-
-    // We need to match by type and count
-    const carrierCounts = new Map<string, number>()
-    for (const p of carrierPieces) {
-      carrierCounts.set(p.type, (carrierCounts.get(p.type) || 0) + 1)
-    }
-
-    for (const p of piecesToRemove) {
-      const count = carrierCounts.get(p.type) || 0
-      if (count <= 0) {
-        console.log(
-          'RemoveFromStackAction: Piece not found',
-          p.type,
-          'in',
-          JSON.stringify(carrierPieces),
-        )
-        throw new Error(
-          `Piece ${p.type} not found in stack at ${algebraic(this.carrierSquare)}`,
-        )
-      }
-      carrierCounts.set(p.type, count - 1)
-    }
+    this.originalCarrier = clonePiece(carrier) ?? null
 
     // Remove piece from stack using utility
     const remainingCarrier = removePieceFromStack(carrier, this.piece)
