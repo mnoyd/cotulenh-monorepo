@@ -30,7 +30,7 @@ describe('DeploySession.processMove()', () => {
       game['_turn'] = RED
 
       // Verify no session exists
-      expect(game.getDeploySession()).toBeNull()
+      expect(game.getSession()).toBeNull()
 
       // Make first deploy move
       const move = game.move({
@@ -42,7 +42,7 @@ describe('DeploySession.processMove()', () => {
       expect(move).toBeTruthy()
 
       // Verify session was created
-      const session = game.getDeploySession()
+      const session = game.getSession()
       expect(session).toBeTruthy()
       expect(session?.stackSquare).toBe(0x92) // c3
       expect(session?.turn).toBe(RED)
@@ -58,7 +58,7 @@ describe('DeploySession.processMove()', () => {
 
       game.move({ from: 'c3', to: 'c4', piece: TANK, deploy: true })
 
-      const session = game.getDeploySession()
+      const session = game.getSession()
       expect(session?.originalPiece.type).toBe(TANK)
       expect(session?.originalPiece.carrying).toHaveLength(1)
       expect(session?.originalPiece.carrying?.[0].type).toBe(MILITIA)
@@ -74,7 +74,7 @@ describe('DeploySession.processMove()', () => {
       const startFEN = game.fen()
       game.move({ from: 'c3', to: 'c4', piece: TANK, deploy: true })
 
-      const session = game.getDeploySession()
+      const session = game.getSession()
       expect(session?.startFEN).toContain('r - - 0 1') // Should contain turn and move info
     })
   })
@@ -109,7 +109,7 @@ describe('DeploySession.processMove()', () => {
 
       game.move({ from: 'c3', to: 'c4', piece: TANK, deploy: true })
 
-      const session = game.getDeploySession()
+      const session = game.getSession()
       expect(session?.commands.length).toBe(1)
       expect(session?.commands[0].move.piece.type).toBe(TANK)
     })
@@ -155,7 +155,7 @@ describe('DeploySession.processMove()', () => {
       game.move({ from: 'c3', to: 'c4', piece: TANK, deploy: true })
 
       // Session should still be active
-      const session = game.getDeploySession()
+      const session = game.getSession()
       expect(session).toBeTruthy()
       expect(session?.remaining).toBeTruthy()
       expect(session?.remaining[0]?.type).toBe(MILITIA)
@@ -177,14 +177,14 @@ describe('DeploySession.processMove()', () => {
 
       // Deploy Tank
       game.move({ from: 'c3', to: 'c4', piece: TANK, deploy: true })
-      expect(game.getDeploySession()).toBeTruthy()
+      expect(game.getSession()).toBeTruthy()
 
       // Deploy Militia
       game.move({ from: 'c3', to: 'd3', piece: MILITIA, deploy: true })
-      expect(game.getDeploySession()).toBeTruthy()
+      expect(game.getSession()).toBeTruthy()
 
       // Verify both moves in session
-      const session = game.getDeploySession()
+      const session = game.getSession()
       expect(session?.commands.length).toBe(2)
     })
   })
@@ -199,13 +199,13 @@ describe('DeploySession.processMove()', () => {
 
       // Deploy Tank
       game.move({ from: 'c3', to: 'c4', piece: TANK, deploy: true })
-      expect(game.getDeploySession()).toBeTruthy()
+      expect(game.getSession()).toBeTruthy()
 
       // Deploy Militia - should auto-commit
       game.move({ from: 'c3', to: 'd3', piece: MILITIA, deploy: true })
 
       // Session should be cleared (auto-committed)
-      expect(game.getDeploySession()).toBeNull()
+      expect(game.getSession()).toBeNull()
     })
 
     it('should switch turn after auto-commit', () => {

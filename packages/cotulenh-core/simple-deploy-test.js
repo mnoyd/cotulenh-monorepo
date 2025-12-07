@@ -34,11 +34,8 @@ console.log('After deploy move:')
 console.log('Turn:', game.turn())
 console.log('Piece at f4:', game.get('f4'))
 console.log('Piece at f5:', game.get('f5'))
-console.log('Deploy session exists:', !!game.getDeploySession())
-console.log(
-  'Deploy session commands:',
-  game.getDeploySession()?.commands.length,
-)
+console.log('Deploy session exists:', !!game.getSession())
+console.log('Deploy session commands:', game.getSession()?.commands.length)
 
 // The turn should still be RED
 if (game.turn() === 'r') {

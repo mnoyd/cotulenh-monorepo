@@ -492,7 +492,7 @@ describe('handleDeployMove', () => {
     expect(commitSpy).not.toHaveBeenCalled()
 
     // Verify session is still active and complete
-    const session = game.getDeploySession()
+    const session = game.getSession()
     expect(session).not.toBeNull()
     expect(session?.isComplete).toBe(true)
   })

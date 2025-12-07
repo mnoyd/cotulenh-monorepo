@@ -362,7 +362,7 @@ describe('Stack Movement and Deployment', () => {
     // Cannot move air force at c4 because turn is blue
     expect(game.moves({ square: 'c4' }).length).toEqual(0)
 
-    expect(game.getDeploySession()).toBeDefined()
+    expect(game.getSession()).toBeDefined()
   })
 
   // TODO: Add tests for deploy captures (normal and stay)
