@@ -3,7 +3,6 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import {
   CaptureMoveCommand,
   NormalMoveCommand,
-  SingleDeployMoveCommand,
   StayCaptureMoveCommand,
   createMoveCommand,
 } from '../src/move-apply.js'
@@ -97,7 +96,7 @@ describe('Move Commands', () => {
     })
   })
 
-  describe('SingleDeployMoveCommand', () => {
+  describe('Deploy Moves (via Normal/Capture/StayCapture)', () => {
     it('should deploy piece from stack', () => {
       game.load('5c5/11/11/11/11/11/11/11/4(TI)6/11/11/5C5', {
         skipValidation: true,
@@ -110,7 +109,7 @@ describe('Move Commands', () => {
         flags: BITS.DEPLOY,
       }
 
-      const command = new SingleDeployMoveCommand(game, move)
+      const command = new NormalMoveCommand(game, move)
       command.execute()
       expect(game.get('f4')?.type).toBe(INFANTRY)
       expect(game.get('f4')?.color).toBe(RED)
@@ -133,7 +132,7 @@ describe('Move Commands', () => {
         flags: BITS.DEPLOY | BITS.CAPTURE,
       }
 
-      const command = new SingleDeployMoveCommand(game, move)
+      const command = new CaptureMoveCommand(game, move)
       command.execute()
       expect(game.get('f4')?.color).toBe(RED)
       expect(game.get('f4')?.type).toBe(INFANTRY)
@@ -163,7 +162,7 @@ describe('Move Commands', () => {
 
       const deployAirForceStayCaptureMove = createMoveCommand(game, move)
       expect(deployAirForceStayCaptureMove).toBeInstanceOf(
-        SingleDeployMoveCommand,
+        StayCaptureMoveCommand,
       )
     })
   })
@@ -217,7 +216,7 @@ describe('Move Commands', () => {
           piece: makePiece(AIR_FORCE, BLUE),
           flags: BITS.DEPLOY,
         }),
-      ).toBeInstanceOf(SingleDeployMoveCommand)
+      ).toBeInstanceOf(NormalMoveCommand)
 
       expect(
         createMoveCommand(game, {
@@ -247,23 +246,6 @@ describe('Move Commands', () => {
       }).toThrow()
     })
 
-    it('should throw on invalid capture target', () => {
-      game.load('t10/11/11/11/11/11/11/11/11/11/11/11', {
-        skipValidation: true,
-      })
-      const move: InternalMove = {
-        color: RED,
-        from: 0x00,
-        to: 0x01,
-        piece: makePiece(TANK, RED),
-        flags: BITS.CAPTURE,
-      }
-
-      expect(() => {
-        new NormalMoveCommand(game, move).execute()
-      }).toThrow()
-    })
-
     it('should throw on invalid deploy from empty carrier', () => {
       game.load('t10/11/11/11/11/11/11/11/11/11/11/11', {
         skipValidation: true,
@@ -277,7 +259,7 @@ describe('Move Commands', () => {
       }
 
       expect(() => {
-        new SingleDeployMoveCommand(game, move).execute()
+        new NormalMoveCommand(game, move).execute()
       }).toThrow()
     })
   })

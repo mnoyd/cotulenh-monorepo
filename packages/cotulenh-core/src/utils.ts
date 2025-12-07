@@ -299,6 +299,43 @@ export function flattenPiece(piece: Piece): Piece[] {
 }
 
 /**
+ * Extracts specific pieces from a source stack.
+ * @param source - The source stack to extract from
+ * @param request - The pieces to extract (as a stack or single piece)
+ * @returns Object containing the extracted piece and the remaining piece (or null if empty)
+ * @throws Error if pieces cannot be found or if recombination fails
+ */
+export function extractPieces(
+  source: Piece,
+  request: Piece,
+): { extracted: Piece; remaining: Piece | null } {
+  // 1. Verify existence of requested pieces in source
+  const sourceParts = flattenPiece(source)
+  const requestParts = flattenPiece(request)
+
+  // Use a simple type check assuming types are unique in valid stacks
+  const sourceTypes = new Set(sourceParts.map((p) => p.type))
+  for (const req of requestParts) {
+    if (!sourceTypes.has(req.type)) {
+      throw new Error(`Piece ${req.type} not found in source stack`)
+    }
+  }
+
+  // 2. Validate/Canonicalize the extracted part
+  // Combine request parts to ensure it's a valid stack configuration itself
+  const extracted = pieceOps.combine(requestParts)
+  if (!extracted) {
+    throw new Error('Failed to combine extracted pieces')
+  }
+
+  // 3. Calculate the remaining stack using optimized stack operations
+  // pieceOps.remove handles promoting passengers to carrier if the carrier is removed
+  const remaining = pieceOps.remove(source, extracted)
+
+  return { extracted, remaining }
+}
+
+/**
  * Creates all possible ways to split a piece stack into combinations of subsets.
  * For example, given (A|BC), it returns [(A|BC)], [(A|B),C], [(A|C),B], [A,(B|C)], [A,B,C]
  * @param piece - The piece stack to split

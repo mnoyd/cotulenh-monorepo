@@ -12,8 +12,8 @@ import {
 import {
   combinePieces,
   flattenPiece,
-  removePieceFromStack,
   clonePiece,
+  extractPieces,
 } from './utils.js'
 
 /**
@@ -125,7 +125,14 @@ export class RemoveFromStackAction implements CTLAtomicMoveAction {
     this.originalCarrier = clonePiece(carrier) ?? null
 
     // Remove piece from stack using utility
-    const remainingCarrier = removePieceFromStack(carrier, this.piece)
+    let remainingCarrier: Piece | null = null
+    try {
+      remainingCarrier = extractPieces(carrier, this.piece).remaining
+    } catch (e) {
+      throw new Error(
+        `Failed to remove piece from stack at ${algebraic(this.carrierSquare)}: ${e instanceof Error ? e.message : String(e)}`,
+      )
+    }
 
     if (!remainingCarrier) {
       // No pieces remain after removal
@@ -169,15 +176,15 @@ export class RemoveFromStackAction implements CTLAtomicMoveAction {
  * This action encapsulates state changes so they can be executed/undone atomically.
  */
 export class StateUpdateAction implements CTLAtomicMoveAction {
-  private oldTurn: Color
-  private oldHalfMoves: number
-  private oldMoveNumber: number
-  private oldCommanders: Record<Color, number>
+  private readonly oldTurn: Color
+  private readonly oldHalfMoves: number
+  private readonly oldMoveNumber: number
+  private readonly oldCommanders: Record<Color, number>
   private addedFen: string | null = null
 
   constructor(
     private game: CoTuLenh,
-    private move: InternalMove,
+    private readonly move: InternalMove,
   ) {
     // Capture current state before execution (or before update)
     // Note: StateUpdateAction is usually created AFTER move execution but BEFORE flag update.
@@ -288,7 +295,7 @@ export abstract class CTLMoveCommand implements CTLMoveCommandInteface {
 
 export class NormalMoveCommand extends CTLMoveCommand {
   protected buildActions(): void {
-    const pieceThatMoved = getMovingPieceFromInternalMove(this.game, this.move)
+    const pieceThatMoved = clonePiece(this.move.piece) as Piece
 
     // Add actions for the normal move
     this.actions.push(
@@ -304,7 +311,7 @@ export class CaptureMoveCommand extends CTLMoveCommand {
   protected buildActions(): void {
     const us = this.move.color
     const them = swapColor(us)
-    const pieceThatMoved = getMovingPieceFromInternalMove(this.game, this.move)
+    const pieceThatMoved = clonePiece(this.move.piece) as Piece
 
     const capturedPieceData = this.game.get(this.move.to)
     if (!capturedPieceData || capturedPieceData.color !== them) {
@@ -319,9 +326,7 @@ export class CaptureMoveCommand extends CTLMoveCommand {
     this.move.captured = capturedPieceData // Populate captured piece for history
     this.actions.push(
       new RemoveFromStackAction(this.game, this.move.from, pieceThatMoved),
-    )
-    this.actions.push(new RemovePieceAction(this.game, this.move.to))
-    this.actions.push(
+      new RemovePieceAction(this.game, this.move.to),
       new PlacePieceAction(this.game, this.move.to, pieceThatMoved),
     )
   }
@@ -332,7 +337,7 @@ export class CaptureMoveCommand extends CTLMoveCommand {
  */
 class CombinationMoveCommand extends CTLMoveCommand {
   protected buildActions(): void {
-    const movingPieceData = getMovingPieceFromInternalMove(this.game, this.move)
+    const movingPieceData = clonePiece(this.move.piece) as Piece
     const targetPieceData = this.game.get(this.move.to)
 
     if (
@@ -358,15 +363,6 @@ class CombinationMoveCommand extends CTLMoveCommand {
     // 1. Remove the moving piece from the 'from' square
     this.actions.push(
       new RemoveFromStackAction(this.game, this.move.from, movingPieceData),
-    )
-
-    // 2. Remove the existing piece from the 'to' square (before placing the combined one)
-    //    Using PlacePieceAction with the combined piece handles both removal and placement
-    //    and ensures correct undo behavior (restoring the original target piece).
-    // this.actions.push(new RemovePieceAction(this.game, this.move.to)) // Redundant if PlacePiece handles existing
-
-    // 3. Place the new combined piece on the 'to' square
-    this.actions.push(
       new PlacePieceAction(this.game, this.move.to, combinedPiece),
     )
   }
@@ -407,7 +403,7 @@ export class SuicideCaptureMoveCommand extends CTLMoveCommand {
     const us = this.move.color
     const them = swapColor(us)
     const targetSq = this.move.to
-    const pieceAtFrom = getMovingPieceFromInternalMove(this.game, this.move)
+    const pieceAtFrom = clonePiece(this.move.piece) as Piece
     if (!pieceAtFrom) {
       throw new Error(
         `Build StayCapture Error: No piece to move at ${algebraic(this.move.from)}`,
@@ -425,8 +421,8 @@ export class SuicideCaptureMoveCommand extends CTLMoveCommand {
 
     this.actions.push(
       new RemoveFromStackAction(this.game, this.move.from, pieceAtFrom),
+      new RemovePieceAction(this.game, targetSq),
     )
-    this.actions.push(new RemovePieceAction(this.game, targetSq))
   }
 }
 
@@ -438,7 +434,7 @@ export class DeployMoveSequenceCommand
   implements CTLMoveSequenceCommandInterface
 {
   public readonly moves: InternalMove[]
-  private commands: CTLAtomicMoveAction[] = []
+  private readonly commands: CTLAtomicMoveAction[] = []
 
   private constructor(moves: InternalMove[], commands: CTLAtomicMoveAction[]) {
     this.moves = moves
@@ -561,34 +557,3 @@ class CheckAndPromoteAttackersAction implements CTLAtomicMoveAction {
   }
 }
 // DeployMoveCommand removed - deploy moves now handled by MoveSession.commit()
-
-const getMovingPieceFromInternalMove = (
-  game: CoTuLenh,
-  move: InternalMove,
-): Piece => {
-  const pieceAtFrom = game.get(move.from)
-  if (!pieceAtFrom) {
-    throw new Error(`No piece to move at ${algebraic(move.from)}`)
-  }
-  const requestMovingPieces = flattenPiece(move.piece)
-  const movingPiece: Piece[] = []
-  for (const piece of flattenPiece(pieceAtFrom)) {
-    const idx = requestMovingPieces.findIndex((p) => p.type === piece.type)
-    if (idx !== -1) {
-      movingPiece.push({ ...piece })
-      requestMovingPieces.splice(idx, 1)
-    }
-  }
-  if (requestMovingPieces.length > 0) {
-    throw new Error(`Not enough pieces to move at ${algebraic(move.from)}`)
-  }
-  const combined = combinePieces(movingPiece)
-  if (!combined) {
-    throw new Error(`Not enough pieces to move at ${algebraic(move.from)}`)
-  }
-  return combined
-}
-
-const isStackMove = (move: InternalMove): boolean => {
-  return !!(move.flags & BITS.DEPLOY)
-}
