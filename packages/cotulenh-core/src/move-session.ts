@@ -147,26 +147,6 @@ export class DeployMove {
     move.completed = data.completed ?? true
     return move
   }
-
-  isDeploy(): boolean {
-    return true
-  }
-
-  isCapture(): boolean {
-    return false
-  }
-
-  isStayCapture(): boolean {
-    return false
-  }
-
-  isCombination(): boolean {
-    return false
-  }
-
-  isSuicideCapture(): boolean {
-    return false
-  }
 }
 
 /**
