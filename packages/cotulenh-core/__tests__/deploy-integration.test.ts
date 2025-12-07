@@ -57,7 +57,7 @@ describe('Deploy Integration Tests', () => {
       expect(game.get('c4')).toBeUndefined()
 
       // Session should be cleared
-      expect(game.getDeploySession()).toBeNull()
+      expect(game.getSession()).toBeNull()
     })
 
     it('should allow undoing multiple moves during deployment session', () => {
@@ -89,7 +89,7 @@ describe('Deploy Integration Tests', () => {
       const piece = game.get('c3')
       expect(piece?.type).toBe(AIR_FORCE)
       expect(piece?.carrying).toHaveLength(2)
-      expect(game.getDeploySession()).toBeNull()
+      expect(game.getSession()).toBeNull()
     })
 
     it('should allow continuing deployment after undo', () => {
@@ -115,14 +115,14 @@ describe('Deploy Integration Tests', () => {
       // Deploy to different square
       game.move({ from: 'c3', to: 'd3', piece: TANK, deploy: true })
       expect(game.get('d3')?.type).toBe(TANK)
-      expect(game.getDeploySession()).toBeTruthy()
+      expect(game.getSession()).toBeTruthy()
 
       // Continue deployment
       game.move({ from: 'c3', to: 'c4', piece: MILITIA, deploy: true })
       game.move({ from: 'c3', to: 'f3', piece: AIR_FORCE, deploy: true })
 
       // Should complete successfully
-      expect(game.getDeploySession()).toBeNull()
+      expect(game.getSession()).toBeNull()
       expect(game.turn()).toBe(BLUE)
     })
 
@@ -135,13 +135,13 @@ describe('Deploy Integration Tests', () => {
 
       // Deploy first piece
       game.move({ from: 'c3', to: 'c4', piece: TANK, deploy: true })
-      expect(game.getDeploySession()).toBeTruthy()
+      expect(game.getSession()).toBeTruthy()
 
       // Undo
       game.undo()
 
       // Session should be cleared
-      expect(game.getDeploySession()).toBeNull()
+      expect(game.getSession()).toBeNull()
 
       // FEN should not contain DEPLOY marker
       expect(game.fen()).not.toContain('DEPLOY')
@@ -191,7 +191,7 @@ describe('Deploy Integration Tests', () => {
       game.move({ from: 'c3', to: 'c4', piece: TANK, deploy: true })
 
       // Manually commit (remaining pieces stay)
-      const result = game.commitDeploySession()
+      const result = game.commitSession()
       expect(result.success).toBe(true)
 
       // Verify Tank moved

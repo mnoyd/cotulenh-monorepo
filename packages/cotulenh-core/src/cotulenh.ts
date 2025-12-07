@@ -778,23 +778,13 @@ export class CoTuLenh {
     }
   }
 
-  // Alias for backward compatibility
-  public cancelDeploy(): void {
-    this.cancelSession()
-  }
-
-  // getDeployState() and setDeployState() removed - use getDeploySession() instead
-
   /**
-   * Get the current move session
-   */
+
+     * Get the current move session
+
+     */
   public getSession(): MoveSession | null {
     return this._session
-  }
-
-  // Alias
-  public getDeploySession(): MoveSession | null {
-    return this.getSession()
   }
 
   /**
@@ -802,11 +792,6 @@ export class CoTuLenh {
    */
   public setSession(session: MoveSession | null): void {
     this._session = session
-  }
-
-  // Alias
-  public setDeploySession(session: MoveSession | null): void {
-    this.setSession(session)
   }
 
   /**
@@ -859,61 +844,16 @@ export class CoTuLenh {
     }
   }
 
-  // Alias
-  public commitDeploySession() {
-    return this.commitSession()
-  }
-
   /**
-   * Cancel the active deploy session
-   *
-   * Undoes all moves made during the session and clears the session.
-   * The board is restored to its state before deployment started.
-   *
-   * @returns void
-   */
-  public cancelSessionFull(): void {
-    if (!this._session) {
-      return // Nothing to cancel
-    }
-
-    // Undo all moves in reverse order
-    const moves = this._session.moves
-    for (let i = moves.length - 1; i >= 0; i--) {
-      const move = moves[i]
-      const cmd = createMoveCommand(this, move)
-      cmd.undo()
-    }
-
-    // Clear move cache after undoing
-    this._movesCache.clear()
-
-    // Clear the session
-    this._session = null
-  }
-
-  // Alias
-  public cancelDeploySession(): void {
-    this.cancelSessionFull()
-  }
-
-  // ============================================================================
-  // RECOMBINE INSTRUCTION SYSTEM (REMOVED)
-  // ============================================================================
-  // Recombine logic has been removed from the core DeploySession.
-  // These methods are kept as stubs or removed if not needed.
-  // For now, we remove them to clean up the API.
-
-  /**
-   * Check if current deploy state can be committed (without actually committing)
+   * Check if current session can be committed (without actually committing)
    * Useful for UI to show warnings before commit attempt
    *
    * @returns Validation result with reason and suggestion if commit would fail
    */
-  public canCommitDeploy(): { canCommit: boolean; reason?: string } {
-    const session = this.getDeploySession()
+  public canCommitSession(): { canCommit: boolean; reason?: string } {
+    const session = this.getSession()
     if (!session) {
-      return { canCommit: false, reason: 'No active deploy session' }
+      return { canCommit: false, reason: 'No active session' }
     }
 
     // Check if session is complete
@@ -921,19 +861,11 @@ export class CoTuLenh {
       return {
         canCommit: false,
         reason:
-          'Deploy session is incomplete (pieces remain without being moved or staying)',
+          'Session is incomplete (pieces remain without being moved or staying)',
       }
     }
 
     return { canCommit: true }
-  }
-
-  /**
-   * Reset the current deploy session (start over)
-   * Undoes all moves and clears the session
-   */
-  public resetDeploySession(): void {
-    this.cancelDeploySession()
   }
 
   /**

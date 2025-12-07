@@ -576,7 +576,7 @@ export function generateDeployMoves(
   const us = gameInstance.turn()
 
   // Check for deploy session
-  const deploySession = gameInstance.getDeploySession()
+  const deploySession = gameInstance.getSession()
 
   const carrierPiece =
     deploySession?.originalPiece ?? gameInstance.get(stackSquare)

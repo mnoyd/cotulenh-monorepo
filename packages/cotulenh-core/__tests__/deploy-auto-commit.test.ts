@@ -22,13 +22,13 @@ describe('Deploy Auto-Commit Behavior', () => {
 
       // Deploy Tank
       game.move({ from: 'c3', to: 'c4', piece: TANK, deploy: true })
-      expect(game.getDeploySession()).toBeTruthy()
+      expect(game.getSession()).toBeTruthy()
 
       // Deploy Militia - should trigger auto-commit
       game.move({ from: 'c3', to: 'd3', piece: MILITIA, deploy: true })
 
       // Session should be cleared
-      expect(game.getDeploySession()).toBeNull()
+      expect(game.getSession()).toBeNull()
     })
 
     it('should not auto-commit when pieces remain', () => {
@@ -46,8 +46,8 @@ describe('Deploy Auto-Commit Behavior', () => {
       game.move({ from: 'c3', to: 'c4', piece: TANK, deploy: true })
 
       // Session should still be active (Infantry remains)
-      expect(game.getDeploySession()).toBeTruthy()
-      expect(game.getDeploySession()?.remaining?.[0]?.type).toBe(MILITIA)
+      expect(game.getSession()).toBeTruthy()
+      expect(game.getSession()?.remaining?.[0]?.type).toBe(MILITIA)
     })
   })
 
