@@ -191,6 +191,44 @@ export class MoveSession {
   private readonly _beforeFEN: string
   private readonly _commands: CTLMoveCommandInteface[] = []
 
+  // === Small helpers to avoid duplication ===
+  /** Build flag string for a single move */
+  private _flagsFromMove(move: InternalMove): string {
+    let out = ''
+    for (const flag in BITS) {
+      if (BITS[flag] & move.flags) out += FLAGS[flag]
+    }
+    return out
+  }
+
+  /** Build combined flag string for multiple moves (keeps unique flags, can force include deploy) */
+  private _flagsFromMoves(moves: InternalMove[], ensureDeploy = false): string {
+    const set = new Set<string>()
+    for (const m of moves) {
+      for (const flag in BITS) {
+        if (BITS[flag] & m.flags) set.add(FLAGS[flag])
+      }
+    }
+    // Match previous behavior: when ensureDeploy, 'd' should appear first
+    // and duplicates should be removed. Otherwise, just join in insertion order.
+    const parts = Array.from(set).filter((f) => f !== FLAGS.DEPLOY)
+    if (ensureDeploy) {
+      return FLAGS.DEPLOY + parts.join('')
+    }
+    return parts.join('')
+  }
+
+  /** Default SAN/LAN fallback for a single internal move */
+  private _sanLanForMove(move: InternalMove): { san: string; lan: string } {
+    const piece = move.piece.type.toUpperCase()
+    const to = algebraic(move.to)
+    const from = algebraic(move.from)
+    return {
+      san: move.san || `${piece}${to}`,
+      lan: move.lan || `${piece}${from}${to}`,
+    }
+  }
+
   constructor(
     game: CoTuLenh,
     data: {
@@ -302,10 +340,7 @@ export class MoveSession {
     if (this._commands.length > 0) {
       const lastMove = this._commands[this._commands.length - 1].move
       // Generate flags string
-      const flagsStr = Object.keys(BITS)
-        .filter((flag) => BITS[flag] & lastMove.flags)
-        .map((flag) => FLAGS[flag])
-        .join('')
+      const flagsStr = this._flagsFromMove(lastMove)
 
       return StandardMove.fromExecutedMove({
         color: lastMove.color,
@@ -387,21 +422,7 @@ export class MoveSession {
       const lan = this.moves.map((m) => m.lan || 'DEPLOY').join(' ')
 
       // Generate flags string by combining flags from all moves
-      let flagsStr = FLAGS.DEPLOY // Always include deploy flag
-      const flagSet = new Set<string>()
-      for (const move of this.moves) {
-        for (const flag in BITS) {
-          if (BITS[flag] & move.flags) {
-            flagSet.add(FLAGS[flag])
-          }
-        }
-      }
-      // Add unique flags (excluding deploy which we already added)
-      for (const flag of flagSet) {
-        if (flag !== FLAGS.DEPLOY) {
-          flagsStr += flag
-        }
-      }
+      const flagsStr = this._flagsFromMoves(this.moves, true)
 
       // Create DeploySequence object
       const deployMove = DeploySequence.fromSession({
@@ -428,21 +449,10 @@ export class MoveSession {
       const move = command.move
 
       // Generate notation
-      const san =
-        move.san || `${move.piece.type.toUpperCase()}${algebraic(move.to)}`
-      const lan =
-        move.lan ||
-        `${move.piece.type.toUpperCase()}${algebraic(move.from)}${algebraic(
-          move.to,
-        )}`
+      const { san, lan } = this._sanLanForMove(move)
 
       // Build flags string
-      let flagsStr = ''
-      for (const flag in BITS) {
-        if (BITS[flag] & move.flags) {
-          flagsStr += FLAGS[flag]
-        }
-      }
+      const flagsStr = this._flagsFromMove(move)
 
       // Create StandardMove object
       const moveObj = StandardMove.fromExecutedMove({
