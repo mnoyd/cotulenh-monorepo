@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { CoTuLenh, Move } from '../src/cotulenh'
+import { CoTuLenh, StandardMove } from '../src/cotulenh'
 import {
   BLUE,
   RED,
@@ -40,7 +40,7 @@ describe('Heroic Piece Functionality', () => {
     const movesBefore = game.moves({
       verbose: true,
       square: 'd5',
-    }) as Move[]
+    }) as StandardMove[]
 
     // Check for diagonal moves
     const diagonalMovesBefore = movesBefore.filter(
@@ -57,7 +57,7 @@ describe('Heroic Piece Functionality', () => {
     const movesAfter = game.moves({
       verbose: true,
       square: 'd5',
-    }) as Move[]
+    }) as StandardMove[]
 
     // Check for diagonal moves again
     const diagonalMovesAfter = movesAfter.filter(
@@ -77,7 +77,7 @@ describe('Heroic Piece Functionality', () => {
     const movesBeforeHeroic = game.moves({
       verbose: true,
       square: 'e5',
-    }) as Move[]
+    }) as StandardMove[]
 
     // Check if it can reach e3 (2 spaces away) but not e2 (3 spaces away)
     const canReachE3 = movesBeforeHeroic.some((m) => m.to === 'e3')
@@ -93,7 +93,7 @@ describe('Heroic Piece Functionality', () => {
     const movesAfterHeroic = game.moves({
       verbose: true,
       square: 'e5',
-    }) as Move[]
+    }) as StandardMove[]
 
     // Now check if it can reach e2 (3 spaces away)
     const canReachE2After = movesAfterHeroic.some((m) => m.to === 'e2')
@@ -108,7 +108,7 @@ describe('Heroic Piece Functionality', () => {
     const movesBefore = game.moves({
       verbose: true,
       square: 'd5',
-    }) as Move[]
+    }) as StandardMove[]
     expect(movesBefore.length).toBe(0) // Shouldn't be able to move
 
     // Make HQ heroic
@@ -118,7 +118,7 @@ describe('Heroic Piece Functionality', () => {
     const movesAfter = game.moves({
       verbose: true,
       square: 'd5',
-    }) as Move[]
+    }) as StandardMove[]
 
     // Now HQ should move like militia (1 square in any direction)
     expect(movesAfter.length).toBeGreaterThan(0)
@@ -146,7 +146,7 @@ describe('Heroic Piece Functionality', () => {
     const moves = game.moves({
       verbose: true,
       square: 'e4',
-    }) as Move[]
+    }) as StandardMove[]
 
     expect(moves.length).toBeGreaterThan(0)
 
