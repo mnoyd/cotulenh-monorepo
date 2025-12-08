@@ -47,13 +47,11 @@ describe('Stack Movement and Deployment', () => {
     const deployI_c2 = findVerboseMove(moves, 'c1', 'c2', {
       piece: INFANTRY,
       isDeploy: true,
-      isStayCapture: false,
     })
 
     const deployT_c2 = findVerboseMove(moves, 'c1', 'c2', {
       piece: TANK,
       isDeploy: true,
-      isStayCapture: false,
     })
 
     expect(deployI_c2).toBeDefined()
@@ -102,43 +100,38 @@ describe('Stack Movement and Deployment', () => {
     const deployF_c4 = findVerboseMove(moves, 'c3', 'c4', {
       piece: AIR_FORCE,
       isDeploy: true,
-      isStayCapture: false,
     })
     const deployF_d4 = findVerboseMove(moves, 'c3', 'd4', {
       piece: AIR_FORCE,
       isDeploy: true,
-      isStayCapture: false,
     })
     const deployT_c4 = findVerboseMove(moves, 'c3', 'c4', {
       piece: TANK,
       isDeploy: true,
-      isStayCapture: false,
     })
     const deployT_d3 = findVerboseMove(moves, 'c3', 'd3', {
       piece: TANK,
       isDeploy: true,
-      isStayCapture: false,
     })
     const carrierN_c4 = findVerboseMove(moves, 'c3', 'c4', {
       piece: NAVY,
       isDeploy: false,
-      isStayCapture: false,
     })
 
     expect(deployF_c4).toBeDefined()
-    expect(deployF_c4?.isDeploy()).toBe(true)
+    expect(deployF_c4?.isDeploy).toBe(true)
     expect(deployF_c4?.piece?.type).toBe(AIR_FORCE)
 
     expect(deployF_d4).toBeDefined() // Check another direction
 
     expect(deployT_c4).toBeDefined()
-    expect(deployT_c4?.isDeploy()).toBe(true)
+    expect(deployT_c4?.isDeploy).toBe(true)
     expect(deployT_c4?.piece?.type).toBe(TANK)
 
     expect(deployT_d3).toBeDefined() // Check another direction
 
     expect(carrierN_c4).toBeDefined()
-    expect(carrierN_c4?.isDeploy()).toBe(false)
+    expect(carrierN_c4?.isDeploy).toBe(false)
     expect(carrierN_c4?.piece?.type).toBe(NAVY)
 
     // Check a non-deploy move is not generated for carrying pieces

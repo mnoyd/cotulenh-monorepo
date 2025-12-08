@@ -21,61 +21,77 @@ import type { CoTuLenh } from './cotulenh.js'
  * Result of a move operation
  * Indicates whether the move sequence is complete and provides the move object
  */
-/**
- * Result of a move operation
- * Indicates whether the move sequence is complete and provides the move object
- */
-export type MoveResult = Move | DeployMove
+export type MoveResult = StandardMove | DeploySequence
 
-// Public Move class (similar to chess.js) - can be fleshed out later
-export class Move {
+export interface BaseMoveResult {
+  color: Color
+  from: Square
+  piece: Piece
+  captured?: Piece[]
+  san?: string
+  lan?: string
+  before: string
+  after: string
+  completed: boolean
+  isDeploy: boolean
+}
+
+// Public StandardMove class (formerly Move)
+export class StandardMove implements BaseMoveResult {
   color!: Color
   from!: Square
   to!: Square // Destination square (piece's final location)
   piece!: Piece
-  captured?: Piece
+  captured?: Piece[]
   flags!: string // String representation of flags
   san?: string // Standard Algebraic Notation (needs implementation)
   lan?: string // Long Algebraic Notation (needs implementation)
   before!: string // FEN before move
   after!: string // FEN after move
   completed: boolean = true // Default to true for normal moves
+  isDeploy: boolean = false
 
-  // Old constructor removed - use Move.fromExecutedMove() instead
+  // Old constructor removed - use StandardMove.fromExecutedMove() instead
 
   /**
-   * Create Move from already-executed move data (preferred for deploy session moves).
+   * Create StandardMove from already-executed move data (preferred for deploy session moves).
    * No game state manipulation required - all data provided directly.
    *
    * @param data - Complete move data
-   * @returns Move instance
+   * @returns StandardMove instance
    */
   static fromExecutedMove(data: {
     color: Color
     from: Square
     to: Square
     piece: Piece
-    captured?: Piece
+    captured?: Piece | Piece[]
     flags: string
     before: string
     after: string
     san: string
     lan: string
     completed?: boolean
-  }): Move {
-    const move = Object.create(Move.prototype)
-    // console.log('Move created:', move, 'Prototype:', Object.getPrototypeOf(move), 'Has method:', typeof move.isSuicideCapture)
+  }): StandardMove {
+    const move = Object.create(StandardMove.prototype)
+    // console.log('StandardMove created:', move, 'Prototype:', Object.getPrototypeOf(move), 'Has method:', typeof move.isSuicideCapture)
     move.color = data.color
     move.from = data.from
     move.to = data.to
     move.piece = data.piece
+    // Flatten captured piece(s) to ensure consistent Piece[] type
     move.captured = data.captured
+      ? Array.isArray(data.captured)
+        ? data.captured
+        : flattenPiece(data.captured)
+      : undefined
     move.flags = data.flags
     move.before = data.before
     move.after = data.after
     move.san = data.san
     move.lan = data.lan
     move.completed = data.completed ?? true
+    move.isDeploy = move.flags.includes(FLAGS.DEPLOY)
     return move
   }
 
@@ -88,9 +104,7 @@ export class Move {
     return this.flags.indexOf(FLAGS.STAY_CAPTURE) > -1
   }
 
-  isDeploy(): boolean {
-    return this.flags.indexOf(FLAGS.DEPLOY) > -1
-  }
+  // isDeploy(): boolean { return false } // Removed, use property instead
 
   isCombination(): boolean {
     return this.flags.indexOf(FLAGS.COMBINATION) > -1
@@ -101,24 +115,28 @@ export class Move {
   }
 }
 
-export class DeployMove {
+// Public DeploySequence class (formerly DeployMove)
+export class DeploySequence implements BaseMoveResult {
   color!: Color
   from!: Square
   to!: Map<Square, Piece> // Destination square (piece's final location)
   piece!: Piece // The main piece being deployed
   stay: Piece | undefined
   captured?: Piece[]
+  flags!: string // String representation of flags (e.g., 'd' for deploy, 'c' for capture)
   san?: string // Standard Algebraic Notation (needs implementation)
   lan?: string // Long Algebraic Notation (needs implementation)
   before!: string // FEN before move
   after!: string // FEN after move
+  completed: boolean = true
+  isDeploy: true = true
 
   /**
-   * Create DeployMove from session data (preferred method).
+   * Create DeploySequence from session data (preferred method).
    * No game state manipulation required - all data provided by session.
    *
    * @param data - Complete move data from DeploySession
-   * @returns DeployMove instance
+   * @returns DeploySequence instance
    */
   static fromSession(data: {
     color: Color
@@ -127,24 +145,27 @@ export class DeployMove {
     piece: Piece
     stay?: Piece
     captured?: Piece[]
+    flags: string
     before: string
     after: string
     san: string
     lan: string
     completed?: boolean
-  }): DeployMove {
-    const move = Object.create(DeployMove.prototype)
+  }): DeploySequence {
+    const move = Object.create(DeploySequence.prototype)
     move.color = data.color
     move.from = data.from
     move.to = data.to
     move.piece = data.piece
     move.stay = data.stay
     move.captured = data.captured
+    move.flags = data.flags
     move.before = data.before
     move.after = data.after
     move.san = data.san
     move.lan = data.lan
     move.completed = data.completed ?? true
+    move.isDeploy = true
     return move
   }
 }
@@ -278,12 +299,35 @@ export class MoveSession {
    * Simple placeholder - real notation generated at commit
    */
   createIntermediateResult(): MoveResult {
-    // Simple placeholder for intermediate steps
+    if (this._commands.length > 0) {
+      const lastMove = this._commands[this._commands.length - 1].move
+      // Generate flags string
+      const flagsStr = Object.keys(BITS)
+        .filter((flag) => BITS[flag] & lastMove.flags)
+        .map((flag) => FLAGS[flag])
+        .join('')
+
+      return StandardMove.fromExecutedMove({
+        color: lastMove.color,
+        from: algebraic(lastMove.from),
+        to: algebraic(lastMove.to),
+        piece: lastMove.piece,
+        captured: lastMove.captured,
+        flags: flagsStr,
+        before: this._beforeFEN,
+        after: this._game.fen(),
+        san: lastMove.san || 'DEPLOY...',
+        lan: lastMove.lan || 'DEPLOY...',
+        completed: false, // Session not completed
+      })
+    }
+
+    // Simple placeholder for intermediate steps (fallback)
     const san = 'DEPLOY...'
     const lan = 'DEPLOY...'
 
-    // Create a minimal Move object for intermediate state
-    const moveObj = Move.fromExecutedMove({
+    // Create a minimal StandardMove object for intermediate state
+    const moveObj = StandardMove.fromExecutedMove({
       color: this.turn,
       from: algebraic(this.stackSquare),
       to: algebraic(this.stackSquare), // Placeholder
@@ -294,6 +338,7 @@ export class MoveSession {
       after: this._game.fen(),
       san,
       lan,
+      completed: false,
     })
 
     return moveObj
@@ -341,14 +386,32 @@ export class MoveSession {
       const san = this.moves.map((m) => m.san || 'DEPLOY').join(' ')
       const lan = this.moves.map((m) => m.lan || 'DEPLOY').join(' ')
 
-      // Create DeployMove object
-      const deployMove = DeployMove.fromSession({
+      // Generate flags string by combining flags from all moves
+      let flagsStr = FLAGS.DEPLOY // Always include deploy flag
+      const flagSet = new Set<string>()
+      for (const move of this.moves) {
+        for (const flag in BITS) {
+          if (BITS[flag] & move.flags) {
+            flagSet.add(FLAGS[flag])
+          }
+        }
+      }
+      // Add unique flags (excluding deploy which we already added)
+      for (const flag of flagSet) {
+        if (flag !== FLAGS.DEPLOY) {
+          flagsStr += flag
+        }
+      }
+
+      // Create DeploySequence object
+      const deployMove = DeploySequence.fromSession({
         color: this.turn,
         from: algebraic(this.stackSquare),
         to: toMap,
         piece: this.originalPiece,
         stay: stay ?? undefined,
         captured: captured.length > 0 ? captured : undefined,
+        flags: flagsStr,
         before: this._beforeFEN,
         after: afterFEN,
         san,
@@ -381,8 +444,8 @@ export class MoveSession {
         }
       }
 
-      // Create Move object
-      const moveObj = Move.fromExecutedMove({
+      // Create StandardMove object
+      const moveObj = StandardMove.fromExecutedMove({
         color: move.color,
         from: algebraic(move.from),
         to: algebraic(move.to),

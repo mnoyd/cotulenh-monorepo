@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { CoTuLenh } from '../src/cotulenh.js'
+import { CoTuLenh, StandardMove } from '../src/cotulenh.js'
 import { RED, BLUE, NAVY, AIR_FORCE, TANK, INFANTRY } from '../src/type.js'
-import type { Move } from '../src/cotulenh.js'
 
 describe('Debug Recombine', () => {
   it('debug multiple recombines', () => {
@@ -43,7 +42,10 @@ describe('Debug Recombine', () => {
 
     // Check available moves
     console.log('\n=== Available moves from c3 ===')
-    const movesAfterNavy = game.moves({ verbose: true, square: 'c3' }) as Move[]
+    const movesAfterNavy = game.moves({
+      verbose: true,
+      square: 'c3',
+    }) as StandardMove[]
     console.log(`Total moves: ${movesAfterNavy.length}`)
     movesAfterNavy.forEach((m) => {
       console.log(
@@ -75,7 +77,7 @@ describe('Debug Recombine', () => {
     const movesAfterAirForce = game.moves({
       verbose: true,
       square: 'c3',
-    }) as Move[]
+    }) as StandardMove[]
     console.log(`Total moves: ${movesAfterAirForce.length}`)
     movesAfterAirForce.forEach((m) => {
       console.log(

@@ -64,12 +64,12 @@ import {
 import {
   MoveSession,
   handleMove,
-  Move,
-  DeployMove,
+  StandardMove,
+  DeploySequence,
   type MoveResult,
 } from './move-session.js'
 
-export { Move, DeployMove, type MoveResult }
+export { StandardMove, DeploySequence, type MoveResult }
 
 // Structure for storing history states
 interface History {
@@ -629,7 +629,7 @@ export class CoTuLenh {
     verbose?: boolean
     square?: Square
     pieceType?: PieceSymbol
-  } = {}): string[] | (Move | DeployMove)[] {
+  } = {}): string[] | StandardMove[] {
     const internalMoves = this._moves({
       square,
       pieceType,
@@ -639,38 +639,22 @@ export class CoTuLenh {
     if (verbose) {
       return internalMoves.map((move) => {
         const [san, lan] = moveToSanLan(move, internalMoves)
-        const isDeploy = move.flags & BITS.DEPLOY
 
-        if (isDeploy) {
-          return DeployMove.fromSession({
-            color: move.color,
-            from: algebraic(move.from),
-            to: new Map([[algebraic(move.to), move.piece]]),
-            piece: move.piece,
-            stay: undefined,
-            captured: move.captured ? [move.captured] : undefined,
-            before: this.fen(),
-            after: '?',
-            san,
-            lan,
-          })
-        } else {
-          return Move.fromExecutedMove({
-            color: move.color,
-            from: algebraic(move.from),
-            to: algebraic(move.to),
-            piece: move.piece,
-            captured: move.captured,
-            flags: Object.keys(BITS)
-              .filter((flag) => BITS[flag] & move.flags)
-              .map((flag) => FLAGS[flag])
-              .join(''),
-            before: this.fen(),
-            after: '?',
-            san,
-            lan,
-          })
-        }
+        return StandardMove.fromExecutedMove({
+          color: move.color,
+          from: algebraic(move.from),
+          to: algebraic(move.to),
+          piece: move.piece,
+          captured: move.captured,
+          flags: Object.keys(BITS)
+            .filter((flag) => BITS[flag] & move.flags)
+            .map((flag) => FLAGS[flag])
+            .join(''),
+          before: this.fen(),
+          after: '?',
+          san,
+          lan,
+        })
       })
     } else {
       // Generate SAN strings (simple, no temp execute)
@@ -1327,12 +1311,14 @@ export class CoTuLenh {
    * @returns An array containing all moves made in the game, in chronological order
    */
   history(): string[]
-  history(options: { verbose: true }): (Move | DeployMove)[]
+  history(options: { verbose: true }): (StandardMove | DeploySequence)[]
   history(options: { verbose: false }): string[]
-  history(options?: { verbose?: boolean }): string[] | (Move | DeployMove)[]
+  history(options?: {
+    verbose?: boolean
+  }): string[] | (StandardMove | DeploySequence)[]
   history(
     options: { verbose?: boolean } = {},
-  ): string[] | (Move | DeployMove)[] {
+  ): string[] | (StandardMove | DeploySequence)[] {
     const { verbose = false } = options
 
     // 1. Snapshot original history items
@@ -1344,7 +1330,7 @@ export class CoTuLenh {
       this._undoMove()
     }
 
-    const results: (Move | DeployMove)[] = []
+    const results: (StandardMove | DeploySequence)[] = []
 
     // 3. Replay history using handleMove to verify/reconstruct
     // Note: This MODIFIES this._history with NEW command instances
