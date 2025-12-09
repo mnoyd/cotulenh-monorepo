@@ -333,62 +333,42 @@ export class MoveSession {
   }
 
   /**
-   * Create a MoveResult for an intermediate deploy step
-   * Simple placeholder - real notation generated at commit
-   */
-  createIntermediateResult(): MoveResult {
-    if (this._commands.length > 0) {
-      const lastMove = this._commands[this._commands.length - 1].move
-      // Generate flags string
-      const flagsStr = this._flagsFromMove(lastMove)
-
-      return StandardMove.fromExecutedMove({
-        color: lastMove.color,
-        from: algebraic(lastMove.from),
-        to: algebraic(lastMove.to),
-        piece: lastMove.piece,
-        captured: lastMove.captured,
-        flags: flagsStr,
-        before: this._beforeFEN,
-        after: this._game.fen(),
-        san: lastMove.san || 'DEPLOY...',
-        lan: lastMove.lan || 'DEPLOY...',
-        completed: false, // Session not completed
-      })
-    }
-
-    // Simple placeholder for intermediate steps (fallback)
-    const san = 'DEPLOY...'
-    const lan = 'DEPLOY...'
-
-    // Create a minimal StandardMove object for intermediate state
-    const moveObj = StandardMove.fromExecutedMove({
-      color: this.turn,
-      from: algebraic(this.stackSquare),
-      to: algebraic(this.stackSquare), // Placeholder
-      piece: this.originalPiece,
-      captured: undefined,
-      flags: 'd', // Deploy flag
-      before: this._beforeFEN,
-      after: this._game.fen(),
-      san,
-      lan,
-      completed: false,
-    })
-
-    return moveObj
-  }
-
-  /**
-   * Generates commit data without finalizing the state.
+   * Generates move result data.
+   * @param completed - Whether this is a completed move (true) or intermediate state (false)
    * @private
    */
-  private _generateCommitData(): {
+  private _generateCommitData(completed: boolean): {
     command: CTLMoveCommandInteface | CTLMoveSequenceCommandInterface
+    result: MoveResult
+  }
+  private _generateCommitData(completed: false): {
+    command?: undefined
+    result: MoveResult
+  }
+  private _generateCommitData(completed: boolean = true): {
+    command?: CTLMoveCommandInteface | CTLMoveSequenceCommandInterface
     result: MoveResult
   } {
     if (this._commands.length === 0) {
-      throw new Error('Cannot commit empty session')
+      if (completed) {
+        throw new Error('Cannot commit empty session')
+      }
+      // Return placeholder for empty intermediate state
+      return {
+        result: StandardMove.fromExecutedMove({
+          color: this.turn,
+          from: algebraic(this.stackSquare),
+          to: algebraic(this.stackSquare),
+          piece: this.originalPiece,
+          captured: undefined,
+          flags: this.isDeploy ? 'd' : '',
+          before: this._beforeFEN,
+          after: this._game.fen(),
+          san: this.isDeploy ? 'DEPLOY...' : '...',
+          lan: this.isDeploy ? 'DEPLOY...' : '...',
+          completed: false,
+        }),
+      }
     }
 
     // Capture after FEN (board already updated)
@@ -437,6 +417,7 @@ export class MoveSession {
         after: afterFEN,
         san,
         lan,
+        completed,
       })
 
       return {
@@ -466,10 +447,20 @@ export class MoveSession {
         after: afterFEN,
         san,
         lan,
+        completed,
       })
 
       return { command, result: moveObj }
     }
+  }
+
+  /**
+   * Get the current state of the session as a MoveResult.
+   * This is for intermediate states (not yet committed).
+   * @returns MoveResult with completed=false
+   */
+  getCurrentResult(): MoveResult {
+    return this._generateCommitData(false).result
   }
 
   /**
@@ -496,7 +487,7 @@ export class MoveSession {
     }
 
     // 1. Generate commit data (command and result object)
-    const { command, result } = this._generateCommitData()
+    const { command, result } = this._generateCommitData(true)
 
     // 2. Check if any capture (check all moves in session)
     const hasCapture = this.moves.some((m) => !!(m.flags & BITS.CAPTURE))
@@ -606,9 +597,9 @@ export function handleMove(
       return commitResult.result
     }
     // If commit failed (validation), return intermediate
-    return session.createIntermediateResult()
+    return session.getCurrentResult()
   }
 
   // Return intermediate result (not complete yet)
-  return session.createIntermediateResult()
+  return session.getCurrentResult()
 }
