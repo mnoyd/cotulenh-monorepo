@@ -186,7 +186,6 @@ export class MoveSession {
   public readonly turn: Color
   public readonly originalPiece: Piece
   public readonly isDeploy: boolean
-  public readonly beforeCommanders: Record<Color, number>
   private readonly _game: CoTuLenh
   private readonly _beforeFEN: string
   private readonly _commands: CTLMoveCommandInteface[] = []
@@ -245,8 +244,6 @@ export class MoveSession {
     this.isDeploy = data.isDeploy
     // Capture FEN before any moves
     this._beforeFEN = game.fen()
-    // Capture commander positions before any moves
-    this.beforeCommanders = game.getCommandersSnapshot()
   }
 
   get startFEN(): string {
@@ -473,7 +470,6 @@ export class MoveSession {
     command: CTLMoveCommandInteface | CTLMoveSequenceCommandInterface
     result: MoveResult
     hasCapture: boolean
-    commandersToStore: Record<Color, number>
   } {
     const game = this._game
     const us = this.turn
@@ -503,7 +499,6 @@ export class MoveSession {
       command,
       result,
       hasCapture,
-      commandersToStore: this.beforeCommanders,
     }
   }
 

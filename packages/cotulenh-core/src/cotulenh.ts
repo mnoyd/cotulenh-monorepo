@@ -296,20 +296,13 @@ export class CoTuLenh {
     const sq = typeof square === 'number' ? square : SQUARE_MAP[square]
     if (sq === undefined) return undefined
 
-    const pieceAtSquare = this._board[sq]
-    if (!pieceAtSquare) return undefined
+    const piece = this._board[sq]
+    if (!piece) return undefined
 
     // If no specific piece type requested or the piece matches the requested type, return it
-    if (!pieceType || pieceAtSquare.type === pieceType) {
-      return pieceAtSquare
-    }
+    if (!pieceType || piece.type === pieceType) return piece
 
-    // Check if the requested piece is being carrying in a stack
-    if (pieceAtSquare.carrying && pieceAtSquare.carrying.length > 0) {
-      return pieceAtSquare.carrying.find((p) => p.type === pieceType)
-    }
-
-    return undefined
+    return piece.carrying?.find((p) => p.type === pieceType)
   }
 
   /**
@@ -682,12 +675,6 @@ export class CoTuLenh {
    * @param move - The internal move to execute
    * @returns MoveResult indicating completion status and move object
    */
-  /**
-   * Unified move handler for both standard and deploy moves.
-   * Delegates to handleDeployMove for deploy moves, or executes standard move logic.
-   * @param move - The internal move to execute
-   * @returns MoveResult indicating completion status and move object
-   */
   private _handleMove(move: InternalMove): MoveResult {
     // Unified handling: Delegate everything to handleMove
     // handleMove will create a session (if needed), add the move, and commit if auto-commit is true
@@ -828,40 +815,9 @@ export class CoTuLenh {
     }
   }
 
-  /**
-   * Check if current session can be committed (without actually committing)
-   * Useful for UI to show warnings before commit attempt
-   *
-   * @returns Validation result with reason and suggestion if commit would fail
-   */
   public canCommitSession(): { canCommit: boolean; reason?: string } {
-    const session = this.getSession()
-    if (!session) {
-      return { canCommit: false, reason: 'No active session' }
-    }
-
-    // Check if session is complete
-    if (!session.isComplete) {
-      return {
-        canCommit: false,
-        reason:
-          'Session is incomplete (pieces remain without being moved or staying)',
-      }
-    }
-
+    console.warn('canCommitSession not implemented')
     return { canCommit: true }
-  }
-
-  /**
-   * Updates the recorded position of a commander (king) piece for the specified color.
-   * This method maintains the internal tracking of commander locations for check detection.
-   * @param sq - The new square position in internal 0xf0 coordinate format
-   * @param color - The color of the commander whose position is being updated
-   */
-  public updateCommandersPosition(sq: number, color: Color): void {
-    if (this._commanders[color] === -1) return // Commander captured = loss = no need to update
-    // Update the king's position
-    this._commanders[color] = sq
   }
 
   /**
@@ -872,14 +828,6 @@ export class CoTuLenh {
    */
   getCommanderSquare(color: Color): number {
     return this._commanders[color]
-  }
-
-  /**
-   * Get a snapshot of the current commander positions.
-   * Useful for capturing state before a move sequence.
-   */
-  public getCommandersSnapshot(): Record<Color, number> {
-    return { ...this._commanders }
   }
 
   /**
