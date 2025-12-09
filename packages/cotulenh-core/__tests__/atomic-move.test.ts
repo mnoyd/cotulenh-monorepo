@@ -247,13 +247,13 @@ describe('Move Commands', () => {
     })
 
     it('should throw on invalid deploy from empty carrier', () => {
-      game.load('t10/11/11/11/11/11/11/11/11/11/11/11', {
+      game.load('11/11/11/5t5/11/11/11/11/11/11/11/11', {
         skipValidation: true,
       })
       const move: InternalMove = {
         color: RED,
-        from: 0x00,
-        to: 0x01,
+        from: 0x35,
+        to: 0x36,
         piece: makePiece(INFANTRY, RED),
         flags: BITS.DEPLOY,
       }
