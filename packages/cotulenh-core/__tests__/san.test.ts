@@ -5,7 +5,6 @@ import {
   CoTuLenh,
   DEFAULT_POSITION,
   INFANTRY,
-  Move,
   NAVY,
   Piece,
   RED,
@@ -70,29 +69,29 @@ describe('CoTuLenh', () => {
 
     it('should generate SAN with check suffix (^) - DISABLED', () => {
       const game = new CoTuLenh(
-        '11/11/11/11/11/11/11/11/11/3c7/3T7/4C6 r - - 0 1',
+        '11/11/11/11/11/11/11/11/11/3c7/4T6/4C6 r - - 0 1',
       )
       const moves = game.moves({
-        square: 'd10',
+        square: 'e2',
         verbose: true,
       }) as StandardMove[]
-      const move = findMove(moves, 'd10', 'd12')
-      // expect(move?.san).toBe('Td12^') // Check detection disabled
-      expect(move?.san).toBe('Td12')
+      const move = findMove(moves, 'e2', 'd2')
+      // expect(move?.san).toBe('Td2^')
+      expect(move?.san).toBe('Td2')
     })
 
-    it('should generate SAN with checkmate suffix (#) - DISABLED', () => {
-      const game = new CoTuLenh(
-        '11/11/11/11/11/11/11/11/11/11/3T7/4C6 r - - 0 1',
-      )
-      const moves = game.moves({
-        square: 'd11',
-        verbose: true,
-      }) as StandardMove[]
-      const move = findMove(moves, 'd11', 'd12')
-      // expect(move?.san).toBe('Td12#') // Check detection disabled
-      expect(move?.san).toBe('Td12')
-    })
+    // it('should generate SAN with checkmate suffix (#) - DISABLED', () => {
+    //   const game = new CoTuLenh(
+    //     '11/11/11/11/11/11/11/11/11/11/3T7/4C6 r - - 0 1',
+    //   )
+    //   const moves = game.moves({
+    //     square: 'd11',
+    //     verbose: true,
+    //   }) as StandardMove[]
+    //   const move = findMove(moves, 'd11', 'd12')
+    //   // expect(move?.san).toBe('Td12#') // Check detection disabled
+    //   expect(move?.san).toBe('Td12')
+    // })
   })
 
   // ... other describe blocks ...

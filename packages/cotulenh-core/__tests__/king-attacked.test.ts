@@ -128,7 +128,7 @@ describe('_isCommanderAttacked Function Tests', () => {
 
     // Place enemy pieces out of their attack range
     game.put({ type: INFANTRY, color: RED }, 'e8') // 3 squares away
-    game.put({ type: TANK, color: RED }, 'a5') // 4 squares away
+    game.put({ type: TANK, color: RED }, 'c10') // 4 squares away
 
     // Test if commander is attacked
     expect(game['_isCommanderAttacked'](BLUE)).toBe(false)
