@@ -167,6 +167,7 @@ export class StateUpdateAction implements CTLAtomicMoveAction {
   constructor(
     private game: CoTuLenh,
     private readonly move: InternalMove,
+    private readonly preCalculatedFen?: string,
   ) {
     // Capture current state before execution (or before update)
     // Note: StateUpdateAction is usually created AFTER move execution but BEFORE flag update.
@@ -188,10 +189,30 @@ export class StateUpdateAction implements CTLAtomicMoveAction {
     }
     this.game['_movesCache'].clear()
 
-    // Update position counts (Logic moved from cotulenh.ts)
-    // We generate FEN *after* state update to match the new position
-    this.game['_updatePositionCounts']()
-    this.addedFen = this.game.fen()
+    // Update position counts
+    // Optimization: Cache FEN to avoid re-calculation on redo
+    // and avoid double calculation (once in _updatePositionCounts, once for storage)
+    if (this.addedFen) {
+      // Redo path: Use cached FEN
+      const fen = this.addedFen
+      if (!this.game['_positionCount'][fen]) {
+        this.game['_positionCount'][fen] = 0
+      }
+      this.game['_positionCount'][fen]++
+      this.game['_header']['SetUp'] = '1'
+      this.game['_header']['FEN'] = fen
+    } else {
+      // First execution: Generate FEN once (or use provided)
+      const fen = this.preCalculatedFen ?? this.game.fen()
+      this.addedFen = fen
+
+      if (!this.game['_positionCount'][fen]) {
+        this.game['_positionCount'][fen] = 0
+      }
+      this.game['_positionCount'][fen]++
+      this.game['_header']['SetUp'] = '1'
+      this.game['_header']['FEN'] = fen
+    }
   }
 
   undo(): void {
@@ -247,7 +268,7 @@ export abstract class CTLMoveCommand implements CTLMoveCommandInteface {
     this.move = { ...moveData }
     this.buildActions()
     const defaultPostMoveActions = [
-      new CheckAndPromoteAttackersAction(this.game, this.move),
+      new LazyAction(() => checkAndPromoteAttackers(this.game, this.move)),
     ]
     this.actions.push(...defaultPostMoveActions)
   }
@@ -497,42 +518,59 @@ class SetHeroicAction implements CTLAtomicMoveAction {
  * Checks if the opponent's commander is attacked after a move
  * and promotes the attacking pieces to heroic.
  */
-class CheckAndPromoteAttackersAction implements CTLAtomicMoveAction {
-  private heroicActions: SetHeroicAction[] = []
-  private moveColor: Color
-  constructor(
-    private game: CoTuLenh,
-    move: InternalMove,
-  ) {
-    this.moveColor = move.color
-  }
+/**
+ * A generic action that executes other actions generated on demand.
+ */
+class LazyAction implements CTLAtomicMoveAction {
+  private executedActions: CTLAtomicMoveAction[] | null = null
+
+  constructor(private readonly factory: () => CTLAtomicMoveAction[]) {}
 
   execute(): void {
-    this.heroicActions = []
-    const us = this.moveColor
-    const them = swapColor(us)
-    const themCommanderSq = this.game.getCommanderSquare(them)
-    if (themCommanderSq === -1) return
-    const attackers = this.game.getAttackers(themCommanderSq, us)
-    if (attackers.length === 0) return
-    const processedAttackers = new Set<string>()
-    for (const { square, type } of attackers) {
-      const attackerKey = `${square}:${type}`
-      if (processedAttackers.has(attackerKey)) continue
-      processedAttackers.add(attackerKey)
-      const isHeroic = this.game.getHeroicStatus(square, type)
-      if (!isHeroic) {
-        const promoteAction = new SetHeroicAction(this.game, square, type, true)
-        this.heroicActions.push(promoteAction)
-        promoteAction.execute()
-      }
+    this.executedActions ??= this.factory()
+    for (const action of this.executedActions) {
+      action.execute()
     }
   }
 
   undo(): void {
-    for (let i = this.heroicActions.length - 1; i >= 0; i--) {
-      this.heroicActions[i].undo()
+    if (!this.executedActions) return
+    for (let i = this.executedActions.length - 1; i >= 0; i--) {
+      this.executedActions[i].undo()
     }
-    this.heroicActions = []
   }
+}
+
+/**
+ * Checks if the opponent's commander is attacked after a move
+ * and returns actions to promote the attacking pieces to heroic.
+ */
+function checkAndPromoteAttackers(
+  game: CoTuLenh,
+  move: InternalMove,
+): CTLAtomicMoveAction[] {
+  const actions: CTLAtomicMoveAction[] = []
+  const us = move.color
+  const them = swapColor(us)
+  const themCommanderSq = game.getCommanderSquare(them)
+
+  if (themCommanderSq === -1) return actions
+
+  const attackers = game.getAttackers(themCommanderSq, us)
+  if (attackers.length === 0) return actions
+
+  const processedAttackers = new Set<string>()
+  for (const { square, type } of attackers) {
+    const attackerKey = `${square}:${type}`
+    if (processedAttackers.has(attackerKey)) continue
+    processedAttackers.add(attackerKey)
+
+    const isHeroic = game.getHeroicStatus(square, type)
+    if (!isHeroic) {
+      const promoteAction = new SetHeroicAction(game, square, type, true)
+      actions.push(promoteAction)
+    }
+  }
+
+  return actions
 }
