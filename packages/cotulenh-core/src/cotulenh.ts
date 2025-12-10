@@ -322,7 +322,7 @@ export class CoTuLenh {
       type,
       color,
       heroic = false,
-      carrying = undefined, // Add optional carrying pieces
+      carrying = undefined,
     }: {
       type: PieceSymbol
       color: Color
@@ -332,20 +332,36 @@ export class CoTuLenh {
     square: Square,
     allowCombine = false,
   ): boolean {
-    // this._movesCache.clear()
     if (!(square in SQUARE_MAP)) {
       throw new Error(`Invalid square: ${square}`)
     }
     const sq = SQUARE_MAP[square]
 
-    let newPiece = {
+    // Validate terrain EARLY only when NOT combining
+    // (When combining, the final piece type may differ from input type)
+    if (!allowCombine) {
+      if (type === NAVY) {
+        if (!NAVY_MASK[sq]) {
+          throw new Error(
+            `Invalid terrain: Navy cannot be placed on ${algebraic(sq)}`,
+          )
+        }
+      } else if (!LAND_MASK[sq]) {
+        throw new Error(
+          `Invalid terrain: ${type} cannot be placed on ${algebraic(sq)}`,
+        )
+      }
+    }
+
+    let newPiece: Piece = {
       type,
       color,
-      heroic: heroic ?? false, // Default to false if undefined
+      heroic: heroic ?? false,
       carrying,
-    } as Piece
+    }
+
     if (allowCombine) {
-      const existingPiece = this._board[sq] as Piece
+      const existingPiece = this._board[sq]
       if (existingPiece) {
         const allPieces = [
           ...flattenPiece(existingPiece),
@@ -353,36 +369,38 @@ export class CoTuLenh {
         ]
         const combinedPiece = combinePieces(allPieces)
         if (!combinedPiece) {
-          throw new Error(
-            `Failed to remove piece from stack at ${algebraic(sq)}`,
-          )
+          throw new Error(`Failed to combine pieces at ${algebraic(sq)}`)
         }
         newPiece = combinedPiece
       }
-    }
 
-    //Piece should be put on correct relative terrain.
-    if (newPiece.type === NAVY) {
-      if (!NAVY_MASK[sq]) {
+      // Validate terrain for the FINAL combined piece type
+      if (newPiece.type === NAVY) {
+        if (!NAVY_MASK[sq]) {
+          throw new Error(
+            `Invalid terrain: Navy cannot be placed on ${algebraic(sq)}`,
+          )
+        }
+      } else if (!LAND_MASK[sq]) {
         throw new Error(
-          `Invalid terrain: Navy cannot be placed on ${algebraic(sq)}`,
+          `Invalid terrain: ${newPiece.type} cannot be placed on ${algebraic(sq)}`,
         )
       }
-    } else if (!LAND_MASK[sq]) {
-      throw new Error(
-        `Invalid terrain: ${newPiece.type} cannot be placed on ${algebraic(sq)}`,
-      )
     }
+
+    // Cache haveCommander result to avoid multiple calls
+    const newPieceHasCommander = haveCommander(newPiece)
 
     // Handle commander limit
     if (
-      haveCommander(newPiece) &&
+      newPieceHasCommander &&
       this._commanders[color] !== -1 &&
       this._commanders[color] !== sq
     ) {
       throw new Error(`Commander limit reached for ${color}`)
     }
 
+    // Handle replacing enemy commander
     const currentPiece = this._board[sq]
     if (
       currentPiece &&
@@ -395,13 +413,14 @@ export class CoTuLenh {
 
     // Place the piece or stack
     this._board[sq] = newPiece
-    if (haveCommander(newPiece)) this._commanders[color] = sq
+    if (newPieceHasCommander) {
+      this._commanders[color] = sq
+    }
 
     if (BASE_AIRDEFENSE_CONFIG[newPiece.type]) {
       this._airDefense = updateAirDefensePiecesPosition(this)
     }
 
-    // TODO: Update setup, etc.
     return true
   }
 

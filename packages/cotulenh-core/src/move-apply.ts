@@ -149,11 +149,6 @@ export class RemoveFromStackAction implements CTLAtomicMoveAction {
         )
       }
     }
-
-    // Update commander position if commander was moved
-    if (flattenPiece(this.piece).some((p) => p.type === COMMANDER)) {
-      this.game['_commanders'][this.piece.color] = -1
-    }
   }
 
   undo(): void {
@@ -179,7 +174,6 @@ export class StateUpdateAction implements CTLAtomicMoveAction {
   private readonly oldTurn: Color
   private readonly oldHalfMoves: number
   private readonly oldMoveNumber: number
-  private readonly oldCommanders: Record<Color, number>
   private addedFen: string | null = null
 
   constructor(
@@ -191,7 +185,6 @@ export class StateUpdateAction implements CTLAtomicMoveAction {
     this.oldTurn = game.turn()
     this.oldHalfMoves = game['_halfMoves']
     this.oldMoveNumber = game['_moveNumber']
-    this.oldCommanders = { ...game['_commanders'] }
   }
 
   execute(): void {
@@ -228,7 +221,6 @@ export class StateUpdateAction implements CTLAtomicMoveAction {
     this.game['_turn'] = this.oldTurn
     this.game['_halfMoves'] = this.oldHalfMoves
     this.game['_moveNumber'] = this.oldMoveNumber
-    this.game['_commanders'] = { ...this.oldCommanders }
 
     // Setup/FEN header updates handled by _updatePositionCounts usually,
     // but on undo we might just clear cache. Headers will be fixed next forward move.
@@ -556,4 +548,3 @@ class CheckAndPromoteAttackersAction implements CTLAtomicMoveAction {
     this.heroicActions = []
   }
 }
-// DeployMoveCommand removed - deploy moves now handled by MoveSession.commit()
