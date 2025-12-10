@@ -32,6 +32,7 @@ import { addMove, combinePieces, flattenPiece } from './utils.js'
 import { BITS } from './type.js'
 import { CoTuLenh } from './cotulenh.js'
 import { AirDefenseResult, getCheckAirDefenseZone } from './air-defense.js'
+import type { MoveSession } from './move-session.js'
 
 // Movement direction offsets
 export const ORTHOGONAL_OFFSETS = [-16, 1, 16, -1] // N, E, S, W
@@ -518,50 +519,67 @@ function isHeavyZone(sq: number): 0 | 1 | 2 {
 }
 
 /**
- * Generate move candidates for each individual piece in a stack
- *
- * @param gameInstance - The current game instance
- * @param stackSquare - The square where the stack is located (in internal 0xf0 format)
- * @returns A map where keys are piece types and values are arrays of valid moves
+ * Generate deploy moves for a list of pieces from a given square
+ * Shared by both generateDeployMoves and generateNormalMoves
+ * @private
  */
-export function generateMoveCandidateForSinglePieceInStack(
+function generateDeployMovesForPieces(
   gameInstance: CoTuLenh,
-  stackSquare: number,
-): Map<PieceSymbol, InternalMove[]> {
-  const moveMap = new Map<PieceSymbol, InternalMove[]>()
-  const us = gameInstance.turn()
-
-  // Get the piece stack at the specified square
-  const pieceStack = gameInstance.get(stackSquare)
-  if (!pieceStack || pieceStack.color !== us) {
-    return moveMap
-  }
-
-  // Flatten the piece stack into individual pieces
-  const flattenedPieces = flattenPiece(pieceStack)
-
-  // Generate moves for each individual piece in the stack
-  for (const piece of flattenedPieces) {
-    // Generate moves for this piece
+  fromSquare: number,
+  pieces: Piece[],
+  filterPiece?: PieceSymbol,
+): InternalMove[] {
+  const moves: InternalMove[] = []
+  for (const piece of pieces) {
+    if (filterPiece && piece.type !== filterPiece) continue
     const pieceMoves = generateMovesForPiece(
       gameInstance,
-      stackSquare,
+      fromSquare,
       piece,
-      true, // isDeployMove = true
+      true,
     )
-
-    // Add the DEPLOY flag to each move
-    pieceMoves.forEach((move) => {
-      move.flags |= BITS.DEPLOY
-    })
-
-    // Add the moves to our map, keyed by piece type
-    if (pieceMoves.length > 0) {
-      moveMap.set(piece.type, pieceMoves)
+    for (const m of pieceMoves) {
+      m.flags |= BITS.DEPLOY
+      moves.push(m)
     }
   }
+  return moves
+}
 
-  return moveMap
+/**
+ * Unified move generation function that intelligently determines whether to generate
+ * deploy moves or normal moves based on the current session state.
+ *
+ * @param gameInstance - The current game instance
+ * @param filterSquare - Optional square to filter moves (for deploy mode or specific square)
+ * @param filterPiece - Optional piece type to filter moves
+ * @returns Array of generated internal moves
+ */
+export function generateMoves(
+  gameInstance: CoTuLenh,
+  filterSquare?: Square | number,
+  filterPiece?: PieceSymbol,
+): InternalMove[] {
+  const session = gameInstance.getSession()
+
+  if (session) {
+    // Deploy mode - use session's stack square
+    return generateDeployMoves(
+      gameInstance,
+      session.stackSquare,
+      filterPiece,
+      session,
+    )
+  } else {
+    // Normal mode - scan entire board or specific square
+    const squareToFilter =
+      typeof filterSquare === 'number'
+        ? (Object.keys(SQUARE_MAP).find(
+            (key) => SQUARE_MAP[key as Square] === filterSquare,
+          ) as Square | undefined)
+        : filterSquare
+    return generateNormalMoves(gameInstance, filterPiece, squareToFilter)
+  }
 }
 
 /**
@@ -571,12 +589,12 @@ export function generateDeployMoves(
   gameInstance: CoTuLenh,
   stackSquare: number,
   filterPiece?: PieceSymbol,
+  session?: MoveSession | null,
 ): InternalMove[] {
-  const moves: InternalMove[] = []
   const us = gameInstance.turn()
 
-  // Check for deploy session
-  const deploySession = gameInstance.getSession()
+  // Use provided session or fetch from game instance
+  const deploySession = session ?? gameInstance.getSession()
 
   const carrierPiece =
     deploySession?.originalPiece ?? gameInstance.get(stackSquare)
@@ -606,20 +624,12 @@ export function generateDeployMoves(
   }
 
   // Generate deploy moves for all remaining pieces including the carrier
-  for (const deployMoveCandidate of deployMoveCandidates) {
-    if (filterPiece && deployMoveCandidate.type !== filterPiece) continue
-
-    const deployMoves = generateMovesForPiece(
-      gameInstance,
-      stackSquare,
-      deployMoveCandidate,
-      true,
-    )
-    deployMoves.forEach((m) => {
-      m.flags |= BITS.DEPLOY
-      moves.push(m)
-    })
-  }
+  const moves = generateDeployMovesForPieces(
+    gameInstance,
+    stackSquare,
+    deployMoveCandidates,
+    filterPiece,
+  )
 
   // Generate recombine moves if we have a session
   // Only generate recombine moves for carried pieces, not the carrier itself
@@ -692,13 +702,14 @@ function generateRecombineMoves(
 
 /**
  * Generate all moves for a side in normal (non-deploy) state
+ * Internal function - prefer using generateMoves() which handles session detection
  */
 export function generateNormalMoves(
   gameInstance: CoTuLenh,
-  us: Color,
   filterPiece?: PieceSymbol,
   filterSquare?: Square,
 ): InternalMove[] {
+  const us = gameInstance.turn()
   const moves: InternalMove[] = []
   let startSq = SQUARE_MAP.a12
   let endSq = SQUARE_MAP.k1
@@ -721,30 +732,19 @@ export function generateNormalMoves(
     if (!pieceData || pieceData.color !== us) continue
 
     if (pieceData.carrying && pieceData.carrying.length > 0) {
-      let deployMoveCandidates = flattenPiece(pieceData)
+      let candidates = flattenPiece(pieceData)
       if (pieceData.type === NAVY && !LAND_MASK[from]) {
-        //remove carrier from the deployMoveCandidates
-        deployMoveCandidates = deployMoveCandidates.filter(
-          (p) => p.type !== pieceData.type,
-        )
+        // Remove carrier from the candidates
+        candidates = candidates.filter((p) => p.type !== pieceData.type)
       }
-      for (const deployMoveCandidate of deployMoveCandidates) {
-        if (filterPiece && deployMoveCandidate.type !== filterPiece) {
-          continue
-        }
-        const deployMoves = generateMovesForPiece(
+      moves.push(
+        ...generateDeployMovesForPieces(
           gameInstance,
           from,
-          deployMoveCandidate,
-          true,
-        )
-        deployMoves.forEach((m) => {
-          m.flags |= BITS.DEPLOY
-          moves.push(m)
-        })
-      }
-      // const moves = generateStackSplitMoves(gameInstance, from)
-      // moves.push(...moves)
+          candidates,
+          filterPiece,
+        ),
+      )
     }
 
     // Always generate moves for the piece itself (carrier or not)

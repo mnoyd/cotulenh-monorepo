@@ -43,8 +43,7 @@ import {
   moveToSanLan,
 } from './utils.js'
 import {
-  generateDeployMoves,
-  generateNormalMoves,
+  generateMoves,
   ORTHOGONAL_OFFSETS,
   ALL_OFFSETS,
   getPieceMovementConfig,
@@ -500,25 +499,11 @@ export class CoTuLenh {
     const us = this.turn()
     let allMoves: InternalMove[] = []
 
-    // Generate moves based on game state
-    // Check for active session
-    const activeSession = this._session
-
-    if (activeSession || deploy) {
-      let deployFilterSquare: number
-      if (filterSquare) {
-        deployFilterSquare = SQUARE_MAP[filterSquare]
-      } else if (this._session) {
-        deployFilterSquare = this._session.stackSquare
-      } else {
-        throw new Error(
-          'Deploy move requires active session or square argument',
-        )
-      }
-      allMoves = generateDeployMoves(this, deployFilterSquare, filterPiece)
-    } else {
-      allMoves = generateNormalMoves(this, us, filterPiece, filterSquare)
-    }
+    // Generate moves using unified wrapper that handles session detection
+    // For deploy mode, convert square to internal format if provided
+    const squareFilter =
+      deploy && filterSquare ? SQUARE_MAP[filterSquare] : filterSquare
+    allMoves = generateMoves(this, squareFilter, filterPiece)
 
     // Filter illegal moves (leaving commander in check)
     let result: InternalMove[]
