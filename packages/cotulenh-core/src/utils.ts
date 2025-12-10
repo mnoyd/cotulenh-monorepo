@@ -24,7 +24,6 @@ import {
   NAVY,
   HEADQUARTER,
   VALID_PIECE_TYPES,
-  isSquareOnBoard,
   CAPTURE_MASK,
 } from './type.js'
 
@@ -335,142 +334,9 @@ export function extractPieces(
   return { extracted, remaining }
 }
 
-/**
- * Creates all possible ways to split a piece stack into combinations of subsets.
- * For example, given (A|BC), it returns [(A|BC)], [(A|B),C], [(A|C),B], [A,(B|C)], [A,B,C]
- * @param piece - The piece stack to split
- * @returns An array of arrays, each containing a valid combination of subsets
- */
-export function createAllPieceSplits(piece: Piece): Piece[][] {
-  // Flatten the piece stack into individual pieces
-  const flattenedPieces = flattenPiece(piece)
-
-  // If there's only one piece (no carrying pieces), return just that piece
-  if (flattenedPieces.length <= 1) return [[piece]]
-
-  // The original piece itself is always a valid split (as a single piece)
-  const result: Piece[][] = [[piece]]
-
-  // Get all flattened pieces to check if combinations are valid
-  const originalPieceTypes = new Set(flattenedPieces.map((p) => p.type))
-
-  // Generate all possible subsets first (excluding the original piece and empty set)
-  const subsets: Piece[] = []
-
-  // Generate all possible combinations using bit manipulation
-  const n = flattenedPieces.length
-  const totalCombinations = 1 << n // 2^n combinations
-
-  // Start from 1 to skip the empty set
-  for (let i = 1; i < totalCombinations; i++) {
-    // Skip the combination that would recreate the original piece
-    // The original piece is when all bits are set (all pieces included)
-    if (i === totalCombinations - 1) continue
-
-    const currentCombination: Piece[] = []
-
-    // Check each bit position
-    for (let j = 0; j < n; j++) {
-      // If jth bit is set, include the jth piece
-      if ((i & (1 << j)) !== 0) {
-        currentCombination.push(flattenedPieces[j])
-      }
-    }
-
-    // Create a stack from the current combination
-    if (currentCombination.length > 0) {
-      const combined = combinePieces([...currentCombination])
-      // Only add to result if combined exists
-      if (combined) {
-        subsets.push(combined)
-      }
-    }
-  }
-
-  // Generate all possible partitions of the subsets
-  const generatePartitions = (
-    remaining: Piece[],
-    current: Piece[] = [],
-    usedPieces: Set<string> = new Set(),
-    start: number = 0,
-  ) => {
-    // Check if we've used all pieces from the original stack
-    const allPiecesUsed =
-      Array.from(usedPieces).length === originalPieceTypes.size
-
-    // If we've used all pieces, add the current partition to the result
-    if (allPiecesUsed && current.length > 0) {
-      // Verify that the combination of pieces in 'current' can form the original piece
-      // by checking that all original piece types are represented
-      const currentTypes = new Set<string>()
-      current.forEach((p) => {
-        flattenPiece(p).forEach((fp) => currentTypes.add(fp.type))
-      })
-
-      // Only add if all original piece types are represented
-      if (currentTypes.size === originalPieceTypes.size) {
-        result.push([...current])
-      }
-      return
-    }
-
-    // Try adding each remaining subset to the current partition
-    for (let i = start; i < remaining.length; i++) {
-      const subset = remaining[i]
-
-      // Get the types in this subset
-      const subsetTypes = new Set<string>()
-      flattenPiece(subset).forEach((p) => subsetTypes.add(p.type))
-
-      // Check if adding this subset would cause duplicate piece types
-      let canAdd = true
-      subsetTypes.forEach((type) => {
-        if (usedPieces.has(type)) canAdd = false
-      })
-
-      if (canAdd) {
-        // Add the subset to the current partition
-        current.push(subset)
-
-        // Mark the piece types as used
-        subsetTypes.forEach((type) => usedPieces.add(type))
-
-        // Recursively generate partitions with the remaining subsets
-        generatePartitions(remaining, current, usedPieces, i + 1)
-
-        // Backtrack: remove the subset from the current partition
-        current.pop()
-
-        // Unmark the piece types
-        subsetTypes.forEach((type) => usedPieces.delete(type))
-      }
-    }
-  }
-
-  // Start generating partitions with all subsets
-  generatePartitions(subsets)
-
-  return result
-}
-
 export const haveCommander = (p: Piece) =>
   flattenPiece(p).some((fp) => fp.type === COMMANDER)
 
-export function getStepsBetweenSquares(
-  square1: number,
-  square2: number,
-): number {
-  if (!isSquareOnBoard(square1) || !isSquareOnBoard(square2)) return -1
-
-  // Get the rank and file differences
-  const rankDiff = Math.abs(rank(square1) - rank(square2))
-  const fileDiff = Math.abs(file(square1) - file(square2))
-
-  if (rankDiff === 0 || fileDiff === 0) return Math.max(rankDiff, fileDiff)
-  else if (rankDiff === fileDiff) return rankDiff
-
-  return -1 //nor diagonal or horizontal
-}
 /**
  * Creates a deep clone of a Piece object
  * @param piece - The piece to clone
@@ -493,32 +359,6 @@ export function clonePiece(piece: Piece | undefined): Piece | undefined {
 }
 
 /**
- * Creates a deep clone of an InternalMove object
- * @param move - The move to clone
- * @returns A new InternalMove object with the same properties
- */
-export function cloneInternalMove(move: InternalMove): InternalMove {
-  const clonedMove: InternalMove = {
-    color: move.color,
-    from: move.from,
-    to: move.to,
-    piece: clonePiece(move.piece) as Piece,
-    flags: move.flags,
-  }
-
-  if (move.captured) {
-    clonedMove.captured = clonePiece(move.captured)
-  }
-
-  if (move.combined) {
-    clonedMove.combined = clonePiece(move.combined)
-  }
-
-  return clonedMove
-}
-
-/**
- * Generates SAN and LAN strings for a move
  * @param move - The move to generate notation for
  * @param moves - List of all legal moves (for disambiguation)
  * @returns Tuple of [san, lan]
@@ -531,7 +371,6 @@ export function moveToSanLan(
   const disambiguator = getDisambiguator(move, moves)
   const toAlg = algebraic(move.to) // Target square
   const fromAlg = algebraic(move.from) // Origin square
-  let combinationSuffix = '' // Initialize combination suffix
 
   let separator = ''
   if (move.flags & BITS.DEPLOY) {
@@ -548,21 +387,11 @@ export function moveToSanLan(
   }
   if (move.flags & BITS.COMBINATION) {
     separator += '&'
-    if (!move.combined) {
-      throw new Error('Move must have combined for combination')
-    }
-    const combined = combinePieces([move.piece, move.combined])
-    if (!combined) {
-      throw new Error(
-        'Should have successfully combined pieces in combine move',
-      )
-    }
-    combinationSuffix = makeSanPiece(combined, true)
   }
   // Note: Check detection removed - notation generated without temp execute
   // Check symbols (^, #) can be added separately if needed
-  const san = `${pieceEncoded}${disambiguator}${separator}${toAlg}${combinationSuffix}`
-  const lan = `${pieceEncoded}${fromAlg}${separator}${toAlg}${combinationSuffix}`
+  const san = `${pieceEncoded}${disambiguator}${separator}${toAlg}`
+  const lan = `${pieceEncoded}${fromAlg}${separator}${toAlg}`
 
   return [san, lan] // Return both SAN and LAN strings
 }

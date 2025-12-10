@@ -52,7 +52,7 @@ describe('CoTuLenh', () => {
         verbose: true,
       }) as StandardMove[]
       const move = findMove(moves, 'e5', 'e6')
-      expect(move?.san).toBe('T&e6(T|I)') // Tank at e5 combines with Infantry at e6
+      expect(move?.san).toBe('T&e6') // Tank at e5 combines with Infantry at e6
     })
 
     it('should generate SAN for a heroic combination move', () => {
@@ -64,7 +64,7 @@ describe('CoTuLenh', () => {
         verbose: true,
       }) as StandardMove[]
       const move = findMove(moves, 'e5', 'e6')
-      expect(move?.san).toBe('+T&e6(+T|I)') // Heroic Tank at e5 combines with Infantry at e6
+      expect(move?.san).toBe('+T&e6') // Heroic Tank at e5 combines with Infantry at e6
     })
 
     it('should generate SAN with check suffix (^) - DISABLED', () => {
