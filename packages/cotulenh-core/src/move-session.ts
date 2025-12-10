@@ -175,6 +175,90 @@ export class DeploySequence implements BaseMoveResult {
     move.isDeploy = true
     return move
   }
+
+  /**
+   * Create DeploySequence from raw session data.
+   * Centralizes the logic for creating the DeploySequence result object.
+   */
+  static create(
+    game: CoTuLenh,
+    moves: InternalMove[],
+    remaining: Piece[],
+    stackSquare: number,
+    turn: Color,
+    originalPiece: Piece,
+    beforeFEN: string,
+    completed: boolean,
+    legalMoves: InternalMove[],
+  ): DeploySequence {
+    const afterFEN = game.fen()
+    const stay =
+      remaining.length > 0 ? (combinePieces(remaining) ?? undefined) : undefined
+
+    const captured: Piece[] = []
+    for (const move of moves) {
+      if (move.captured) captured.push(move.captured)
+    }
+
+    const toMap = new Map<string, Piece>()
+    for (const move of moves) {
+      toMap.set(algebraic(move.to), move.piece)
+    }
+
+    const { san, lan } = DeploySequence.calculateSanLan(
+      game,
+      moves,
+      stackSquare,
+      stay,
+      legalMoves,
+    )
+    const flagsStr = DeploySequence.calculateFlags(moves)
+
+    return DeploySequence.fromSession({
+      color: turn,
+      from: algebraic(stackSquare),
+      to: toMap,
+      piece: originalPiece,
+      stay: stay ?? undefined,
+      captured: captured.length > 0 ? captured : undefined,
+      flags: flagsStr,
+      before: beforeFEN,
+      after: afterFEN,
+      san,
+      lan,
+      completed,
+    })
+  }
+
+  private static calculateSanLan(
+    game: CoTuLenh,
+    moves: InternalMove[],
+    stackSquare: number,
+    stay: Piece | undefined,
+    legalMoves: InternalMove[],
+  ): { san: string; lan: string } {
+    const allMoveSan = moves.map((m: InternalMove) => {
+      // Pass isExecuted=true because these moves are part of the session history
+      return moveToSanLan(m, legalMoves)[0]
+    })
+    const movesSan = allMoveSan.join(',')
+    const stayNotation = stay ? `${makeSanPiece(stay)}<` : ''
+    const san = `${stayNotation}${movesSan}`
+    const lan = `${algebraic(stackSquare)}:${san}`
+    return { san, lan }
+  }
+
+  private static calculateFlags(moves: InternalMove[]): string {
+    const set = new Set<string>()
+    for (const m of moves) {
+      for (const flag in BITS) {
+        if (BITS[flag] & m.flags) set.add(FLAGS[flag])
+      }
+    }
+    // ensureDeploy=true logic: 'd' appears first and no duplicates
+    const parts = Array.from(set).filter((f) => f !== FLAGS.DEPLOY)
+    return FLAGS.DEPLOY + parts.join('')
+  }
 }
 
 /**
@@ -205,53 +289,6 @@ export class MoveSession {
       if (BITS[flag] & move.flags) out += FLAGS[flag]
     }
     return out
-  }
-
-  /** Build combined flag string for multiple moves (keeps unique flags, can force include deploy) */
-  private _flagsFromMoves(moves: InternalMove[], ensureDeploy = false): string {
-    const set = new Set<string>()
-    for (const m of moves) {
-      for (const flag in BITS) {
-        if (BITS[flag] & m.flags) set.add(FLAGS[flag])
-      }
-    }
-    // Match previous behavior: when ensureDeploy, 'd' should appear first
-    // and duplicates should be removed. Otherwise, just join in insertion order.
-    const parts = Array.from(set).filter((f) => f !== FLAGS.DEPLOY)
-    if (ensureDeploy) {
-      return FLAGS.DEPLOY + parts.join('')
-    }
-    return parts.join('')
-  }
-
-  /** Default SAN/LAN fallback for a single internal move */
-  private _sanLanForMove(move: InternalMove): { san: string; lan: string } {
-    const piece = move.piece.type.toUpperCase()
-    const to = algebraic(move.to)
-    const from = algebraic(move.from)
-    return {
-      san: move.san || `${piece}${to}`,
-      lan: move.lan || `${piece}${from}${to}`,
-    }
-  }
-
-  /**
-   * Generate SAN/LAN for deploy move sequence using the old deployMoveToSanLan logic.
-   * Format: "P<Pxe4,Pf5" (SAN) and "d4:P<Pxe4,Pf5" (LAN)
-   */
-  private _deployMoveToSanLan(stay: Piece | undefined): {
-    san: string
-    lan: string
-  } {
-    const legalMoves = this._game['_moves']({ legal: true })
-    const allMoveSan = this.moves.map((m: InternalMove) => {
-      return moveToSanLan(m, legalMoves)[0]
-    })
-    const movesSan = allMoveSan.join(',')
-    const stayNotation = stay ? `${makeSanPiece(stay)}<` : ''
-    const san = `${stayNotation}${movesSan}`
-    const lan = `${algebraic(this.stackSquare)}:${san}`
-    return { san, lan }
   }
 
   constructor(
@@ -425,33 +462,21 @@ export class MoveSession {
     command: CTLMoveSequenceCommandInterface
     result: DeploySequence
   } {
-    const remaining = this.remaining
-    const stay =
-      remaining.length > 0 ? (combinePieces(remaining) ?? undefined) : undefined
-
-    const captured = this._collectCapturedPieces()
     const deployCommand = DeployMoveSequenceCommand.create(
       this._commands,
       this.moves,
     )
-    const toMap = this._buildDestinationMap()
-    const { san, lan } = this._deployMoveToSanLan(stay)
-    const flagsStr = this._flagsFromMoves(this.moves, true)
-
-    const deployMove = DeploySequence.fromSession({
-      color: this.turn,
-      from: algebraic(this.stackSquare),
-      to: toMap,
-      piece: this.originalPiece,
-      stay: stay ?? undefined,
-      captured: captured.length > 0 ? captured : undefined,
-      flags: flagsStr,
-      before: this._beforeFEN,
-      after: afterFEN,
-      san,
-      lan,
+    const deployMove = DeploySequence.create(
+      this._game,
+      this.moves,
+      this.remaining,
+      this.stackSquare,
+      this.turn,
+      this.originalPiece,
+      this._beforeFEN,
       completed,
-    })
+      this._game['_moves']({ legal: true }),
+    )
 
     return { command: deployCommand, result: deployMove }
   }
@@ -469,7 +494,11 @@ export class MoveSession {
   } {
     const command = this._commands[0]
     const move = command.move
-    const { san, lan } = this._sanLanForMove(move)
+    // Use cached legal moves from session start for disambiguation
+    const [san, lan] =
+      move.san && move.lan
+        ? [move.san, move.lan]
+        : moveToSanLan(move, this._game['_moves']({ legal: true }))
     const flagsStr = this._flagsFromMove(move)
 
     const moveObj = StandardMove.fromExecutedMove({
@@ -487,30 +516,6 @@ export class MoveSession {
     })
 
     return { command, result: moveObj }
-  }
-
-  /**
-   * Collect captured pieces from all commands
-   * @private
-   */
-  private _collectCapturedPieces(): Piece[] {
-    const captured: Piece[] = []
-    for (const cmd of this._commands) {
-      if (cmd.move.captured) captured.push(cmd.move.captured)
-    }
-    return captured
-  }
-
-  /**
-   * Build destination map for deploy moves
-   * @private
-   */
-  private _buildDestinationMap(): Map<string, Piece> {
-    const toMap = new Map<string, Piece>()
-    for (const move of this.moves) {
-      toMap.set(algebraic(move.to), move.piece)
-    }
-    return toMap
   }
 
   /**
