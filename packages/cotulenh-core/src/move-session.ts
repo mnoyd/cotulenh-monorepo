@@ -85,11 +85,13 @@ export class StandardMove implements BaseMoveResult {
     move.to = data.to
     move.piece = data.piece
     // Flatten captured piece(s) to ensure consistent Piece[] type
-    move.captured = data.captured
-      ? Array.isArray(data.captured)
+    if (data.captured) {
+      move.captured = Array.isArray(data.captured)
         ? data.captured
         : flattenPiece(data.captured)
-      : undefined
+    } else {
+      move.captured = undefined
+    }
     move.flags = data.flags
     move.before = data.before
     move.after = data.after
@@ -134,7 +136,7 @@ export class DeploySequence implements BaseMoveResult {
   before!: string // FEN before move
   after!: string // FEN after move
   completed: boolean = true
-  isDeploy: true = true
+  isDeploy = true as const
 
   /**
    * Create DeploySequence from session data (preferred method).
@@ -363,7 +365,7 @@ export class MoveSession {
     result: MoveResult
   }
   private _generateCommitData(completed: false): {
-    command?: undefined
+    command: undefined
     result: MoveResult
   }
   private _generateCommitData(completed: boolean = true): {
@@ -371,110 +373,144 @@ export class MoveSession {
     result: MoveResult
   } {
     if (this._commands.length === 0) {
-      if (completed) {
-        throw new Error('Cannot commit empty session')
-      }
-      // Return placeholder for empty intermediate state
-      return {
-        result: StandardMove.fromExecutedMove({
-          color: this.turn,
-          from: algebraic(this.stackSquare),
-          to: algebraic(this.stackSquare),
-          piece: this.originalPiece,
-          captured: undefined,
-          flags: this.isDeploy ? 'd' : '',
-          before: this._beforeFEN,
-          after: this._game.fen(),
-          san: this.isDeploy ? 'DEPLOY...' : '...',
-          lan: this.isDeploy ? 'DEPLOY...' : '...',
-          completed: false,
-        }),
-      }
+      return this._handleEmptySession(completed)
     }
 
-    // Capture after FEN (board already updated)
     const afterFEN = this._game.fen()
 
     if (this.isDeploy) {
-      // === DEPLOY MOVE ===
-      const remaining = this.remaining
-      const stay =
-        remaining.length > 0
-          ? (combinePieces(remaining) ?? undefined)
-          : undefined
+      return this._generateDeployCommitData(completed, afterFEN)
+    } else {
+      return this._generateStandardCommitData(completed, afterFEN)
+    }
+  }
 
-      // Collect captured pieces
-      const captured: Piece[] = []
-      for (const cmd of this._commands) {
-        if (cmd.move.captured) captured.push(cmd.move.captured)
-      }
+  /**
+   * Handle empty session case
+   * @private
+   */
+  private _handleEmptySession(completed: boolean): {
+    command?: undefined
+    result: MoveResult
+  } {
+    if (completed) {
+      throw new Error('Cannot commit empty session')
+    }
 
-      // Create wrapper command for history using DeployMoveSequenceCommand
-      const deployCommand = DeployMoveSequenceCommand.create(
-        this._commands,
-        this.moves,
-      )
-
-      // Build destination map
-      const toMap = new Map<string, Piece>()
-      for (const move of this.moves) {
-        toMap.set(algebraic(move.to), move.piece)
-      }
-
-      // Generate notation using old deployMoveToSanLan logic
-      const { san, lan } = this._deployMoveToSanLan(stay)
-
-      // Generate flags string by combining flags from all moves
-      const flagsStr = this._flagsFromMoves(this.moves, true)
-
-      // Create DeploySequence object
-      const deployMove = DeploySequence.fromSession({
+    return {
+      result: StandardMove.fromExecutedMove({
         color: this.turn,
         from: algebraic(this.stackSquare),
-        to: toMap,
+        to: algebraic(this.stackSquare),
         piece: this.originalPiece,
-        stay: stay ?? undefined,
-        captured: captured.length > 0 ? captured : undefined,
-        flags: flagsStr,
+        captured: undefined,
+        flags: this.isDeploy ? 'd' : '',
         before: this._beforeFEN,
-        after: afterFEN,
-        san,
-        lan,
-        completed,
-      })
-
-      return {
-        command: deployCommand,
-        result: deployMove,
-      }
-    } else {
-      // === NORMAL MOVE ===
-      const command = this._commands[0]
-      const move = command.move
-
-      // Generate notation
-      const { san, lan } = this._sanLanForMove(move)
-
-      // Build flags string
-      const flagsStr = this._flagsFromMove(move)
-
-      // Create StandardMove object
-      const moveObj = StandardMove.fromExecutedMove({
-        color: move.color,
-        from: algebraic(move.from),
-        to: algebraic(move.to),
-        piece: move.piece,
-        captured: move.captured,
-        flags: flagsStr,
-        before: this._beforeFEN,
-        after: afterFEN,
-        san,
-        lan,
-        completed,
-      })
-
-      return { command, result: moveObj }
+        after: this._game.fen(),
+        san: this.isDeploy ? 'DEPLOY...' : '...',
+        lan: this.isDeploy ? 'DEPLOY...' : '...',
+        completed: false,
+      }),
     }
+  }
+
+  /**
+   * Generate commit data for deploy moves
+   * @private
+   */
+  private _generateDeployCommitData(
+    completed: boolean,
+    afterFEN: string,
+  ): {
+    command: CTLMoveSequenceCommandInterface
+    result: DeploySequence
+  } {
+    const remaining = this.remaining
+    const stay =
+      remaining.length > 0 ? (combinePieces(remaining) ?? undefined) : undefined
+
+    const captured = this._collectCapturedPieces()
+    const deployCommand = DeployMoveSequenceCommand.create(
+      this._commands,
+      this.moves,
+    )
+    const toMap = this._buildDestinationMap()
+    const { san, lan } = this._deployMoveToSanLan(stay)
+    const flagsStr = this._flagsFromMoves(this.moves, true)
+
+    const deployMove = DeploySequence.fromSession({
+      color: this.turn,
+      from: algebraic(this.stackSquare),
+      to: toMap,
+      piece: this.originalPiece,
+      stay: stay ?? undefined,
+      captured: captured.length > 0 ? captured : undefined,
+      flags: flagsStr,
+      before: this._beforeFEN,
+      after: afterFEN,
+      san,
+      lan,
+      completed,
+    })
+
+    return { command: deployCommand, result: deployMove }
+  }
+
+  /**
+   * Generate commit data for standard moves
+   * @private
+   */
+  private _generateStandardCommitData(
+    completed: boolean,
+    afterFEN: string,
+  ): {
+    command: CTLMoveCommandInteface
+    result: StandardMove
+  } {
+    const command = this._commands[0]
+    const move = command.move
+    const { san, lan } = this._sanLanForMove(move)
+    const flagsStr = this._flagsFromMove(move)
+
+    const moveObj = StandardMove.fromExecutedMove({
+      color: move.color,
+      from: algebraic(move.from),
+      to: algebraic(move.to),
+      piece: move.piece,
+      captured: move.captured,
+      flags: flagsStr,
+      before: this._beforeFEN,
+      after: afterFEN,
+      san,
+      lan,
+      completed,
+    })
+
+    return { command, result: moveObj }
+  }
+
+  /**
+   * Collect captured pieces from all commands
+   * @private
+   */
+  private _collectCapturedPieces(): Piece[] {
+    const captured: Piece[] = []
+    for (const cmd of this._commands) {
+      if (cmd.move.captured) captured.push(cmd.move.captured)
+    }
+    return captured
+  }
+
+  /**
+   * Build destination map for deploy moves
+   * @private
+   */
+  private _buildDestinationMap(): Map<string, Piece> {
+    const toMap = new Map<string, Piece>()
+    for (const move of this.moves) {
+      toMap.set(algebraic(move.to), move.piece)
+    }
+    return toMap
   }
 
   /**
@@ -517,7 +553,7 @@ export class MoveSession {
     // 3. Create, Execute, and Attach StateUpdateAction
     // This makes the command atomic: Undo board -> Undo state
     const firstMove = this.moves[0]
-    const stateAction = new StateUpdateAction(game, firstMove)
+    const stateAction = new StateUpdateAction(game, firstMove, result.after)
     stateAction.execute() // Updates turn/counters immediately
     command.addPostAction(stateAction) // Will undo AFTER board undo
 
