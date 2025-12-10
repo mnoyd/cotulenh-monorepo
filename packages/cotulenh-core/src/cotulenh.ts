@@ -715,9 +715,9 @@ export class CoTuLenh {
     this._movesCache.clear()
 
     // Return the original InternalMove data
-    // For sequence commands, return the first move
+    // For sequence commands, we can't represent the entire sequence as a single InternalMove
     if ('moves' in command) {
-      return command.moves[0]
+      return null // Deploy sequences can't be represented as single InternalMove
     } else {
       return command.move
     }
@@ -1303,22 +1303,25 @@ export class CoTuLenh {
     // Note: This MODIFIES this._history with NEW command instances
     for (const h of originalHistory) {
       const command = h.command
-      let result: MoveResult | undefined
 
       if ('moves' in command) {
-        // Sequence (Deploy)
+        // Sequence (Deploy) - replay all moves to recreate the complete sequence
+        // Each handleMove() adds to the session; only the last one auto-commits
+        let finalResult: MoveResult | undefined
         for (const move of command.moves) {
           // Pass a shallow copy to ensure we don't accidentally mutate the original history command's move
-          // (though handleMove should be safe)
-          result = handleMove(this, { ...move })
+          finalResult = handleMove(this, { ...move })
+        }
+        // Only the final result contains the complete DeploySequence with full SAN/LAN
+        if (finalResult) {
+          results.push(finalResult)
         }
       } else {
         // Single Move
-        result = handleMove(this, { ...command.move })
-      }
-
-      if (result) {
-        results.push(result)
+        const result = handleMove(this, { ...command.move })
+        if (result) {
+          results.push(result)
+        }
       }
     }
 
