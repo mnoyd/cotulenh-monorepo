@@ -1,20 +1,8 @@
 // src/move.ts
 
 import type { Color, CoTuLenh, PieceSymbol } from './cotulenh.js'
-import {
-  swapColor,
-  algebraic,
-  InternalMove,
-  COMMANDER,
-  BITS,
-  Piece,
-} from './type.js'
-import {
-  combinePieces,
-  flattenPiece,
-  clonePiece,
-  extractPieces,
-} from './utils.js'
+import { swapColor, algebraic, InternalMove, BITS, Piece } from './type.js'
+import { combinePieces, clonePiece, extractPieces } from './utils.js'
 
 /**
  * Represents an atomic board action that can be executed and undone

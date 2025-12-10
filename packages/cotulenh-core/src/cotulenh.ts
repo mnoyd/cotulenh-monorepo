@@ -953,16 +953,6 @@ export class CoTuLenh {
    * Determines whether the current player is in checkmate.
    * Checkmate occurs when the commander is in check and no legal moves can escape the threat.
    *
-   * TODO: This currently only checks normal moves. It does NOT check if commander
-   * can escape via deploy sequences (deploy carrier + recombine commander).
-   * See docs/CHECKMATE-DETECTION-TODO.md for implementation details.
-   *
-   * Example of missing case:
-   * - Commander at c2, checked by Tank at c4
-   * - F(C) stack at c2
-   * - Can deploy AirForce → f2, then recombine Commander → escape!
-   * - Current implementation would incorrectly return true (checkmate)
-   *
    * @returns True if the current player is in checkmate, false otherwise
    */
   isCheckmate(): boolean {
