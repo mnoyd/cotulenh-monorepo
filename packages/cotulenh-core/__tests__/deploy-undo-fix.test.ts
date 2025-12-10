@@ -129,8 +129,8 @@ describe('Deploy Undo Fix', () => {
     // Now call _undoMove (private method) like _filterLegalMoves does
     const undoResult = game['_undoMove']()
 
-    // FIXED: _undoMove returns the move because it's in history
-    expect(undoResult).not.toBeNull()
+    // FIXED: _undoMove returns null for deploy sequences (can't represent as single InternalMove)
+    expect(undoResult).toBeNull()
 
     // FIXED: Deploy session is cleared after undo
     expect(game.getSession()).toBeNull()

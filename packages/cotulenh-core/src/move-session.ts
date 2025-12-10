@@ -7,7 +7,12 @@ import {
   FLAGS,
   Square,
 } from './type.js'
-import { flattenPiece, combinePieces } from './utils.js'
+import {
+  flattenPiece,
+  combinePieces,
+  moveToSanLan,
+  makeSanPiece,
+} from './utils.js'
 import {
   CTLMoveCommandInteface,
   CTLMoveSequenceCommandInterface,
@@ -228,6 +233,25 @@ export class MoveSession {
     }
   }
 
+  /**
+   * Generate SAN/LAN for deploy move sequence using the old deployMoveToSanLan logic.
+   * Format: "P<Pxe4,Pf5" (SAN) and "d4:P<Pxe4,Pf5" (LAN)
+   */
+  private _deployMoveToSanLan(stay: Piece | undefined): {
+    san: string
+    lan: string
+  } {
+    const legalMoves = this._game['_moves']({ legal: true })
+    const allMoveSan = this.moves.map((m: InternalMove) => {
+      return moveToSanLan(m, legalMoves)[0]
+    })
+    const movesSan = allMoveSan.join(',')
+    const stayNotation = stay ? `${makeSanPiece(stay)}<` : ''
+    const san = `${stayNotation}${movesSan}`
+    const lan = `${algebraic(this.stackSquare)}:${san}`
+    return { san, lan }
+  }
+
   constructor(
     game: CoTuLenh,
     data: {
@@ -374,7 +398,10 @@ export class MoveSession {
     if (this.isDeploy) {
       // === DEPLOY MOVE ===
       const remaining = this.remaining
-      const stay = remaining.length > 0 ? combinePieces(remaining) : undefined
+      const stay =
+        remaining.length > 0
+          ? (combinePieces(remaining) ?? undefined)
+          : undefined
 
       // Collect captured pieces
       const captured: Piece[] = []
@@ -394,9 +421,8 @@ export class MoveSession {
         toMap.set(algebraic(move.to), move.piece)
       }
 
-      // Generate notation
-      const san = this.moves.map((m) => m.san || 'DEPLOY').join(' ')
-      const lan = this.moves.map((m) => m.lan || 'DEPLOY').join(' ')
+      // Generate notation using old deployMoveToSanLan logic
+      const { san, lan } = this._deployMoveToSanLan(stay)
 
       // Generate flags string by combining flags from all moves
       const flagsStr = this._flagsFromMoves(this.moves, true)

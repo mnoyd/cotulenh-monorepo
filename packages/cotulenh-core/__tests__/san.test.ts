@@ -187,8 +187,8 @@ describe('CoTuLenh Class - move() with SAN', () => {
     // Deploy Infantry to c3
     const result = game.move('I>c3')
     expect(result).not.toBeNull()
-    // The SAN generated might depend on your _moveToSanLan logic, adjust expectation
-    expect(result?.san).toBe('I>c3') // Or similar, check actual output
+    // The SAN generated includes stay piece notation: T< (Tank stays) + I>c3 (Infantry deploys)
+    expect(result?.san).toBe('T<I>c3')
     expect(result?.flags).toContain('d') // Deploy flag
 
     const pieceAtC2 = game.get('c2') // Tank should remain
