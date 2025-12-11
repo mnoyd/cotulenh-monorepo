@@ -515,6 +515,19 @@ export class MoveSession {
   }
 
   /**
+   * Checks if the session can be safely committed.
+   * Returns true if the move sequence is valid and does not leave the commander in danger.
+   */
+  canCommit(): boolean {
+    const game = this._game
+    const us = this.turn
+
+    // DELAYED VALIDATION: Check commander safety after all moves
+    // This allows deploy sequences to escape check
+    return !game.isCommanderInDanger(us)
+  }
+
+  /**
    * Commits the session: validates and generates final commit data.
    * Does NOT modify game state (history, turn, etc).
    * @returns Data needed for the game to apply the commit.
@@ -526,11 +539,8 @@ export class MoveSession {
     hasCapture: boolean
   } {
     const game = this._game
-    const us = this.turn
 
-    // DELAYED VALIDATION: Check commander safety after all moves
-    // This allows deploy sequences to escape check
-    if (game.isCommanderInDanger(us)) {
+    if (!this.canCommit()) {
       throw new Error(
         'Move sequence does not escape check. Commander still in danger.',
       )
