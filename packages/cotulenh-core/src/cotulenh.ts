@@ -798,6 +798,9 @@ export class CoTuLenh {
       }
     }
 
+    if (!this._session) {
+      return { success: false, reason: 'No active session' }
+    }
     try {
       const { command, result, hasCapture } = this._session.commit()
 
@@ -817,9 +820,15 @@ export class CoTuLenh {
     }
   }
 
-  public canCommitSession(): { canCommit: boolean; reason?: string } {
-    console.warn('canCommitSession not implemented')
-    return { canCommit: true }
+  /**
+   * Checks if the current move session can be committed.
+   * Returns true if there is an active session and it is valid to commit.
+   * Returns false if no session or if session is invalid (e.g. commander in check).
+   */
+  public canCommitSession(): boolean {
+    if (!this._session) return false
+    if (this._session.isEmpty) return false
+    return this._session.canCommit()
   }
 
   /**
