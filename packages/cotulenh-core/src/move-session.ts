@@ -530,7 +530,7 @@ export class MoveSession {
 
     // DELAYED VALIDATION: Check commander safety after all moves
     // This allows deploy sequences to escape check
-    if (game['_isCommanderAttacked'](us) || game['_isCommanderExposed'](us)) {
+    if (game.isCommanderInDanger(us)) {
       throw new Error(
         'Move sequence does not escape check. Commander still in danger.',
       )
