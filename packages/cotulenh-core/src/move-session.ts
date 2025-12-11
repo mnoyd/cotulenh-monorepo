@@ -189,7 +189,6 @@ export class DeploySequence implements BaseMoveResult {
     originalPiece: Piece,
     beforeFEN: string,
     completed: boolean,
-    legalMoves: InternalMove[],
   ): DeploySequence {
     const afterFEN = game.fen()
     const stay =
@@ -206,11 +205,9 @@ export class DeploySequence implements BaseMoveResult {
     }
 
     const { san, lan } = DeploySequence.calculateSanLan(
-      game,
       moves,
       stackSquare,
       stay,
-      legalMoves,
     )
     const flagsStr = DeploySequence.calculateFlags(moves)
 
@@ -231,15 +228,14 @@ export class DeploySequence implements BaseMoveResult {
   }
 
   private static calculateSanLan(
-    game: CoTuLenh,
     moves: InternalMove[],
     stackSquare: number,
     stay: Piece | undefined,
-    legalMoves: InternalMove[],
   ): { san: string; lan: string } {
+    // In deploy sessions, only pieces from the same stack can move,
+    // so there's no ambiguity - we can use simplified notation
     const allMoveSan = moves.map((m: InternalMove) => {
-      // Pass isExecuted=true because these moves are part of the session history
-      return moveToSanLan(m, legalMoves)[0]
+      return moveToSanLan(m)[0] // No legal moves needed - no disambiguation
     })
     const movesSan = allMoveSan.join(',')
     const stayNotation = stay ? `${makeSanPiece(stay)}<` : ''
@@ -413,12 +409,10 @@ export class MoveSession {
       return this._handleEmptySession(completed)
     }
 
-    const afterFEN = this._game.fen()
-
     if (this.isDeploy) {
-      return this._generateDeployCommitData(completed, afterFEN)
+      return this._generateDeployCommitData(completed)
     } else {
-      return this._generateStandardCommitData(completed, afterFEN)
+      return this._generateStandardCommitData(completed)
     }
   }
 
@@ -455,10 +449,7 @@ export class MoveSession {
    * Generate commit data for deploy moves
    * @private
    */
-  private _generateDeployCommitData(
-    completed: boolean,
-    afterFEN: string,
-  ): {
+  private _generateDeployCommitData(completed: boolean): {
     command: CTLMoveSequenceCommandInterface
     result: DeploySequence
   } {
@@ -475,7 +466,6 @@ export class MoveSession {
       this.originalPiece,
       this._beforeFEN,
       completed,
-      this._game['_moves']({ legal: true }),
     )
 
     return { command: deployCommand, result: deployMove }
@@ -485,10 +475,7 @@ export class MoveSession {
    * Generate commit data for standard moves
    * @private
    */
-  private _generateStandardCommitData(
-    completed: boolean,
-    afterFEN: string,
-  ): {
+  private _generateStandardCommitData(completed: boolean): {
     command: CTLMoveCommandInteface
     result: StandardMove
   } {
@@ -509,7 +496,7 @@ export class MoveSession {
       captured: move.captured,
       flags: flagsStr,
       before: this._beforeFEN,
-      after: afterFEN,
+      after: this._game.fen(),
       san,
       lan,
       completed,
@@ -603,9 +590,6 @@ export class MoveSession {
     )}:${movesStr}${unfinished}`
   }
 }
-
-// Backward compatibility alias
-export const DeploySession = MoveSession
 
 /**
  * Handles a move (normal or deploy) by creating or updating a session.
