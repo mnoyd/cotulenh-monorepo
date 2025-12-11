@@ -359,6 +359,12 @@ export function clonePiece(piece: Piece | undefined): Piece | undefined {
 }
 
 /**
+ * Overload for deploy sessions where no disambiguation is needed
+ * @param move - The move to generate notation for
+ * @returns Tuple of [san, lan]
+ */
+export function moveToSanLan(move: InternalMove): [string, string]
+/**
  * @param move - The move to generate notation for
  * @param moves - List of all legal moves (for disambiguation)
  * @returns Tuple of [san, lan]
@@ -366,9 +372,14 @@ export function clonePiece(piece: Piece | undefined): Piece | undefined {
 export function moveToSanLan(
   move: InternalMove,
   moves: InternalMove[],
+): [string, string]
+export function moveToSanLan(
+  move: InternalMove,
+  moves?: InternalMove[],
 ): [string, string] {
   const pieceEncoded = makeSanPiece(move.piece)
-  const disambiguator = getDisambiguator(move, moves)
+  // Only calculate disambiguator if moves list is provided
+  const disambiguator = moves ? getDisambiguator(move, moves) : ''
   const toAlg = algebraic(move.to) // Target square
   const fromAlg = algebraic(move.from) // Origin square
 
