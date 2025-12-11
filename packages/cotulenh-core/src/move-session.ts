@@ -227,7 +227,7 @@ export class DeploySequence implements BaseMoveResult {
     })
   }
 
-  private static calculateSanLan(
+  public static calculateSanLan(
     moves: InternalMove[],
     stackSquare: number,
     stay: Piece | undefined,
@@ -562,32 +562,16 @@ export class MoveSession {
   toFenString(baseFEN: string): string {
     if (!this.isDeploy) return baseFEN
 
-    if (this._commands.length === 0) {
-      return `${baseFEN} DEPLOY ${algebraic(this.stackSquare)}:`
-    }
-
-    const moveNotations: string[] = []
-    for (const command of this._commands) {
-      const move = command.move
-      const pieceType = move.piece.type.toUpperCase()
-      const dest = algebraic(move.to)
-      const capture = move.flags & BITS.CAPTURE ? 'x' : ''
-
-      if (move.piece.carrying && move.piece.carrying.length > 0) {
-        const carryingTypes = move.piece.carrying
-          .map((p: Piece) => p.type.toUpperCase())
-          .join('')
-        moveNotations.push(`${pieceType}(${carryingTypes})${capture}${dest}`)
-      } else {
-        moveNotations.push(`${pieceType}${capture}${dest}`)
-      }
-    }
-
-    const movesStr = moveNotations.join(',')
-    const unfinished = this.isComplete ? '' : '...'
-    return `${baseFEN} DEPLOY ${algebraic(
+    const { lan } = DeploySequence.calculateSanLan(
+      this.moves,
       this.stackSquare,
-    )}:${movesStr}${unfinished}`
+      this.remaining.length > 0
+        ? (combinePieces(this.remaining) ?? undefined)
+        : undefined,
+    )
+
+    const unfinished = this.isComplete ? '' : '...'
+    return `${baseFEN} ${lan}${unfinished}`
   }
 }
 
