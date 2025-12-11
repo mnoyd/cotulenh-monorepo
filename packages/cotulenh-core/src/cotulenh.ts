@@ -586,9 +586,7 @@ export class CoTuLenh {
         const command = this._executeTemporarily(move)
 
         // A move is legal if it doesn't leave the commander attacked AND doesn't expose the commander
-        const commanderAttacked = this._isCommanderAttacked(us)
-        const commanderExposed = this._isCommanderExposed(us)
-        if (!commanderAttacked && !commanderExposed) {
+        if (!this.isCommanderInDanger(us)) {
           legalMoves.push(move)
         }
 
@@ -925,6 +923,17 @@ export class CoTuLenh {
     }
 
     return attackers
+  }
+
+  /**
+   * Checks if the commander of the given color is in danger.
+   * A commander is in danger if it is either attacked by any enemy piece
+   * or directly exposed to the enemy commander (face-off rule).
+   * @param color The color of the commander to check.
+   * @returns True if the commander is in danger, false otherwise.
+   */
+  public isCommanderInDanger(color: Color): boolean {
+    return this._isCommanderAttacked(color) || this._isCommanderExposed(color)
   }
 
   // --- Check/Game Over Detection (Updated for Stay Capture) ---
