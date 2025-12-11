@@ -281,7 +281,8 @@ describe('DeploySession', () => {
       })
 
       const extendedFEN = session.toFenString('base-fen r - - 0 1')
-      expect(extendedFEN).toBe('base-fen r - - 0 1 DEPLOY c3:')
+      // Navy is staying at c3 because no moves made yet
+      expect(extendedFEN).toBe('base-fen r - - 0 1 c3:N<...')
     })
 
     it('should generate extended FEN with moves', () => {
@@ -305,7 +306,9 @@ describe('DeploySession', () => {
       session.addMove(move2)
 
       const extendedFEN = session.toFenString('base-fen r - - 0 1')
-      expect(extendedFEN).toBe('base-fen r - - 0 1 DEPLOY c3:Nc5,Fc4...')
+      // Tank remains at c3 -> T<
+      // Moves are N>c5, F>c4
+      expect(extendedFEN).toBe('base-fen r - - 0 1 c3:T<N>c5,F>c4...')
     })
 
     it('should generate extended FEN with capture', () => {
@@ -329,7 +332,9 @@ describe('DeploySession', () => {
       session.addMove(move)
 
       const extendedFEN = session.toFenString('base-fen r - - 0 1')
-      expect(extendedFEN).toBe('base-fen r - - 0 1 DEPLOY c3:Nxc5...')
+      // Tank remains -> T<
+      // Move -> N>xc5
+      expect(extendedFEN).toBe('base-fen r - - 0 1 c3:T<N>xc5...')
     })
 
     it('should generate extended FEN with combined pieces', () => {
@@ -347,8 +352,9 @@ describe('DeploySession', () => {
       session.addMove(move)
 
       const extendedFEN = session.toFenString('base-fen r - - 0 1')
-      // This is complete because we deployed the entire stack
-      expect(extendedFEN).toBe('base-fen r - - 0 1 DEPLOY c3:N(T)c5')
+      // This is complete because we deployed the entire stack, nothing stays
+      // Output: (NT)>c5
+      expect(extendedFEN).toBe('base-fen r - - 0 1 c3:(NT)>c5')
     })
 
     it('should not include ... when complete', () => {
@@ -370,7 +376,8 @@ describe('DeploySession', () => {
       session.addMove(move2)
 
       const extendedFEN = session.toFenString('base-fen r - - 0 1')
-      expect(extendedFEN).toBe('base-fen r - - 0 1 DEPLOY c3:Nc5,Fc4')
+      // Nothing stays -> no < notation
+      expect(extendedFEN).toBe('base-fen r - - 0 1 c3:N>c5,F>c4')
     })
   })
 })
