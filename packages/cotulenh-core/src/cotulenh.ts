@@ -683,7 +683,7 @@ export class CoTuLenh {
     return handleMove(this, move)
   }
 
-  private _undoMove(): InternalMove | null {
+  private _undoMove(): InternalMove | InternalMove[] | null {
     const old = this._history.pop()
     if (!old) return null
 
@@ -700,9 +700,9 @@ export class CoTuLenh {
     // Return the original InternalMove data
     // For sequence commands, we can't represent the entire sequence as a single InternalMove
     if ('moves' in command) {
-      return null // Deploy sequences can't be represented as single InternalMove
+      return command.moves // Return array of moves for sequences
     } else {
-      return command.move
+      return command.move // Return single move
     }
   }
 
@@ -1286,34 +1286,65 @@ export class CoTuLenh {
 
     // 2. Undo all moves to get back to initial state
     // We assume the game was constructed with the correct initial FEN/state
+    const allMoves: InternalMove[] = []
     while (this._history.length > 0) {
-      this._undoMove()
+      const moves = this._undoMove()
+      if (moves) {
+        if (Array.isArray(moves)) {
+          // Flatten array of moves (reverse order because unchecked unshift reverses order later?
+          // No, undoMove returns them in forward order for the specific command?
+          // Let's assume command.moves is [move1, move2].
+          // We are undoing from end.
+          // History: [Sequence(m1, m2), Standard(m3)]
+          // Pop Standard(m3) -> returns m3. Unshift -> [m3]
+          // Pop Sequence(m1, m2) -> returns [m1, m2]. Unshift -> [m1, m2, m3] ??
+          // We need [m1, m2, m3].
+          // Array.prototype.unshift adds items to the beginning.
+          // array.unshift(item) -> [item, ...]
+          // array.unshift(...items) -> [item1, item2, ...] if unshift arguments order is preserved.
+          // Yes: [a].unshift(b, c) -> [b, c, a].
+          allMoves.unshift(...moves)
+        } else {
+          allMoves.unshift(moves)
+        }
+      }
     }
 
     const results: (StandardMove | DeploySequence)[] = []
 
     // 3. Replay history using handleMove to verify/reconstruct
     // Note: This MODIFIES this._history with NEW command instances
-    for (const h of originalHistory) {
-      const command = h.command
 
-      if ('moves' in command) {
-        // Sequence (Deploy) - replay all moves to recreate the complete sequence
-        // Each handleMove() adds to the session; only the last one auto-commits
-        let finalResult: MoveResult | undefined
-        for (const move of command.moves) {
-          // Pass a shallow copy to ensure we don't accidentally mutate the original history command's move
-          finalResult = handleMove(this, { ...move })
-        }
-        // Only the final result contains the complete DeploySequence with full SAN/LAN
-        if (finalResult) {
-          results.push(finalResult)
+    for (let i = 0; i < allMoves.length; i++) {
+      const move = allMoves[i]
+      const isDeploy = (move.flags & BITS.DEPLOY) !== 0
+
+      // Execute move (add to session)
+      // We use handleMove with autoCommit=false to manually control grouping
+      handleMove(this, move, false)
+
+      const nextMove = allMoves[i + 1]
+      const nextIsDeploy = nextMove
+        ? (nextMove.flags & BITS.DEPLOY) !== 0
+        : false
+
+      // Determine if we should commit the session
+      let shouldCommit = false
+
+      if (isDeploy) {
+        // Deploy move: Commit if sequence ends (next is not deploy or no next)
+        if (!nextMove || !nextIsDeploy) {
+          shouldCommit = true
         }
       } else {
-        // Single Move
-        const result = handleMove(this, { ...command.move })
-        if (result) {
-          results.push(result)
+        // Normal move: Always commit (it's atomic)
+        shouldCommit = true
+      }
+
+      if (shouldCommit) {
+        const commitResult = this.commitSession()
+        if (commitResult.success && commitResult.result) {
+          results.push(commitResult.result)
         }
       }
     }
