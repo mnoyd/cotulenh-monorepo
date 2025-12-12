@@ -46,6 +46,7 @@ import {
   generateMoves,
   ORTHOGONAL_OFFSETS,
   ALL_OFFSETS,
+  DIAGONAL_OFFSETS,
   getPieceMovementConfig,
   getOppositeOffset,
 } from './move-generation.js'
@@ -854,6 +855,7 @@ export class CoTuLenh {
   ): { square: number; type: PieceSymbol }[] {
     const attackers: { square: number; type: PieceSymbol }[] = []
     const isLandPiece = this.get(square)?.type !== NAVY
+    const isDiagonal = (offset: number) => DIAGONAL_OFFSETS.includes(offset)
 
     // Check in all directions from the target square
     // Use ALL_OFFSETS to check both orthogonal and diagonal directions
@@ -879,49 +881,61 @@ export class CoTuLenh {
         if (piece.color === attackerColor) {
           // Use flattenPiece to process both the main piece and carried pieces with the same logic
           const allPieces = flattenPiece(piece)
+          const isOffsetDiagonal = isDiagonal(offset)
 
           for (const singlePiece of allPieces) {
-            if (singlePiece.color === attackerColor) {
-              // Get movement configuration for this piece
-              const config = getPieceMovementConfig(
-                singlePiece.type,
-                singlePiece.heroic ?? false,
+            // No need to check color again - flattenPiece returns pieces from the same stack
+            // Get movement configuration for this piece
+            const config = getPieceMovementConfig(
+              singlePiece.type,
+              singlePiece.heroic ?? false,
+            )
+
+            // Early exit: Skip if piece can't move diagonally but offset is diagonal
+            if (!config.canMoveDiagonal && isOffsetDiagonal) {
+              continue
+            }
+
+            // Calculate effective capture range (reduced for navy attacking land pieces)
+            let captureRange = config.captureRange
+            if (isLandPiece && config.specialRules?.navyAttackMechanisms) {
+              captureRange--
+            }
+
+            // Check if distance is within range before doing expensive checks
+            if (distance > captureRange) {
+              continue
+            }
+
+            // Check if piece can attack through blocking pieces
+            if (pieceBlocking && !config.captureIgnoresPieceBlocking) {
+              continue
+            }
+
+            // Special handling for air force - check air defense zones
+            let airForceCanCapture = true
+            if (singlePiece.type === AIR_FORCE) {
+              const checkAirDefenseZone = getCheckAirDefenseZone(
+                this,
+                currentSquare,
+                swapColor(attackerColor),
+                getOppositeOffset(offset)!,
               )
+              let res = -1
+              let i = 0
+              while (res < 2 && i < distance) {
+                res = checkAirDefenseZone()
+                i++
+              }
+              airForceCanCapture = res < 2
+            }
 
-              let captureRange = config.captureRange
-              if (isLandPiece && config.specialRules?.navyAttackMechanisms) {
-                captureRange--
-              }
-              let airForceCanCapture = true
-              if (singlePiece.type === AIR_FORCE) {
-                const checkAirDefenseZone = getCheckAirDefenseZone(
-                  this,
-                  currentSquare,
-                  swapColor(attackerColor),
-                  getOppositeOffset(offset)!,
-                )
-                let res = -1
-                let i = 0
-                while (res < 2 && i < distance) {
-                  res = checkAirDefenseZone()
-                  i++
-                }
-                airForceCanCapture = res < 2
-              }
-
-              // Check if the piece's range allows it to reach the target
-              if (distance <= captureRange) {
-                // Check if the piece can attack through blocking pieces
-                if (
-                  (!pieceBlocking || config.captureIgnoresPieceBlocking) &&
-                  (singlePiece.type === AIR_FORCE ? airForceCanCapture : true)
-                ) {
-                  attackers.push({
-                    square: currentSquare,
-                    type: singlePiece.type,
-                  })
-                }
-              }
+            // Add to attackers if all conditions are met
+            if (airForceCanCapture) {
+              attackers.push({
+                square: currentSquare,
+                type: singlePiece.type,
+              })
             }
           }
         }
@@ -1281,10 +1295,7 @@ export class CoTuLenh {
   ): string[] | (StandardMove | DeploySequence)[] {
     const { verbose = false } = options
 
-    // 1. Snapshot original history items
-    const originalHistory = [...this._history]
-
-    // 2. Undo all moves to get back to initial state
+    // Undo all moves to get back to initial state
     // We assume the game was constructed with the correct initial FEN/state
     const allMoves: InternalMove[] = []
     while (this._history.length > 0) {
@@ -1312,7 +1323,7 @@ export class CoTuLenh {
 
     const results: (StandardMove | DeploySequence)[] = []
 
-    // 3. Replay history using handleMove to verify/reconstruct
+    // Replay history using handleMove to verify/reconstruct
     // Note: This MODIFIES this._history with NEW command instances
 
     for (let i = 0; i < allMoves.length; i++) {

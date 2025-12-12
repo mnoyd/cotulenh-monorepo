@@ -610,16 +610,17 @@ export class MoveSession {
     const game = this._game
     const us = this.turn
 
-    // Pre-compute algebraic squares to avoid repeated conversions
-    const moveSquares = moves.map((m) => algebraic(m.to))
+    // Pre-compute data for each move (one-time per move, not per remaining piece)
+    const moveData = moves.map((move) => ({
+      move,
+      square: algebraic(move.to),
+      hasCommander: haveCommander(move.piece),
+    }))
 
     for (const remainingPiece of remaining) {
-      // Early check: does remaining piece have commander?
       const remainingHasCommander = haveCommander(remainingPiece)
 
-      for (let i = 0; i < moves.length; i++) {
-        const move = moves[i]
-
+      for (const { move, square, hasCommander: moveHasCommander } of moveData) {
         // 1. Attempt combination logic
         const combined = combinePieces([move.piece, remainingPiece])
         if (!combined) continue
@@ -631,7 +632,6 @@ export class MoveSession {
 
         // 3. Commander Safety Check (OPTIMIZED)
         // Only do expensive board manipulation if commander is involved
-        const moveHasCommander = haveCommander(move.piece)
         if (remainingHasCommander || moveHasCommander) {
           // Temporarily manipulate board to check safety
           const originalPieceOnBoard = game.get(move.to)
@@ -654,7 +654,7 @@ export class MoveSession {
         }
 
         options.push({
-          square: moveSquares[i],
+          square,
           piece: remainingPiece,
         })
       }
