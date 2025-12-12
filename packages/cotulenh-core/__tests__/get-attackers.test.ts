@@ -12,6 +12,7 @@ import {
   BLUE,
   PieceSymbol,
   SQUARE_MAP,
+  ENGINEER,
 } from '../src/type'
 
 describe('CoTuLenh.getAttackers', () => {
@@ -86,6 +87,20 @@ describe('CoTuLenh.getAttackers', () => {
     expect(attackers).toEqual([
       expect.objectContaining({ square: SQUARE_MAP['d6'], type: MILITIA }),
     ])
+  })
+
+  it('should NOT identify a non-diagonal piece as a diagonal attacker', () => {
+    // Place a red Engineer diagonally to square e5
+    game.put({ type: ENGINEER, color: RED }, 'd6')
+    // The target square for the attack check
+    const targetSquare = SQUARE_MAP['e5']
+
+    // Get red attackers on the target square.
+    const attackers = game.getAttackers(targetSquare, RED)
+
+    // The Engineer at d6 cannot attack e5 diagonally.
+    // Therefore, the attackers array should be empty.
+    expect(attackers.length).toBe(0)
   })
 
   it('detects air force attacking from afar', () => {
