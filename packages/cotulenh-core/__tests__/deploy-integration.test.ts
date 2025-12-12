@@ -34,10 +34,7 @@ describe('Deploy Integration Tests', () => {
         {
           type: TANK,
           color: RED,
-          carrying: [
-            { type: MILITIA, color: RED },
-            { type: INFANTRY, color: RED },
-          ],
+          carrying: [{ type: INFANTRY, color: RED }],
         },
         'c3',
       )
@@ -53,7 +50,7 @@ describe('Deploy Integration Tests', () => {
       // Tank should be back in stack
       const piece = game.get('c3')
       expect(piece?.type).toBe(TANK)
-      expect(piece?.carrying).toHaveLength(2)
+      expect(piece?.carrying).toHaveLength(1)
       expect(game.get('c4')).toBeUndefined()
 
       // Session should be cleared

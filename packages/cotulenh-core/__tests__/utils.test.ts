@@ -1,3 +1,4 @@
+import { describe, expect, it } from 'vitest'
 import { makeSanSinglePiece, makeSanPiece } from '../src/utils'
 import { Piece, INFANTRY, TANK, COMMANDER, RED, BLUE } from '../src/type' // Adjust path if needed
 

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { CoTuLenh, Move } from '../src/cotulenh'
+import { CoTuLenh, StandardMove } from '../src/cotulenh'
 
 import {
   RED,
@@ -41,7 +41,7 @@ describe('Stack Movement and Deployment', () => {
 
     game['_turn'] = RED // Set turn for testing
 
-    const moves = game.moves({ verbose: true, square: 'c1' }) as Move[]
+    const moves = game.moves({ verbose: true, square: 'c1' }) as StandardMove[]
 
     // Expect deploy moves for F and T, plus carrier moves for N
     const deployI_c2 = findVerboseMove(moves, 'c1', 'c2', {
@@ -94,7 +94,7 @@ describe('Stack Movement and Deployment', () => {
 
     game['_turn'] = RED // Set turn for testing
 
-    const moves = game.moves({ verbose: true, square: 'c3' }) as Move[]
+    const moves = game.moves({ verbose: true, square: 'c3' }) as StandardMove[]
 
     // Expect deploy moves for F and T, plus carrier moves for N
     const deployF_c4 = findVerboseMove(moves, 'c3', 'c4', {
@@ -164,14 +164,14 @@ describe('Stack Movement and Deployment', () => {
     // Let's assume we can find the internal move and use the object format for now.
 
     const deployMove = findVerboseMove(
-      game.moves({ verbose: true, square: 'c3' }) as Move[],
+      game.moves({ verbose: true, square: 'c3' }) as StandardMove[],
       'c3',
       'c4',
       { piece: AIR_FORCE, isDeploy: true },
     )
     expect(deployMove).toBeDefined()
 
-    // Execute using the found Move object (if move() accepts it - needs check)
+    // Execute using the found StandardMove object (if move() accepts it - needs check)
     // Or construct a simpler object if move() supports it
     const moveResult = game.move({ from: 'c3', to: 'c4', piece: AIR_FORCE }) // Hypothetical API
 
@@ -184,7 +184,7 @@ describe('Stack Movement and Deployment', () => {
     expect(game.get('c4')?.color).toBe(RED)
     // Cannot check private _deployState directly, check behavior instead
     // After a deploy move, only moves from the stack square should be possible
-    const nextMoves = game.moves({ verbose: true }) as Move[]
+    const nextMoves = game.moves({ verbose: true }) as StandardMove[]
     expect(nextMoves.every((m) => m.from === 'c3')).toBe(true) // All moves must originate from c3
     expect(
       findVerboseMove(nextMoves, 'c3', 'd3', { piece: TANK, isDeploy: true }),
@@ -211,7 +211,7 @@ describe('Stack Movement and Deployment', () => {
 
     // Deploy AF first
     const afDeployMove = findVerboseMove(
-      game.moves({ verbose: true, square: 'c3' }) as Move[],
+      game.moves({ verbose: true, square: 'c3' }) as StandardMove[],
       'c3',
       'c4',
       { piece: AIR_FORCE, isDeploy: true },
@@ -223,7 +223,7 @@ describe('Stack Movement and Deployment', () => {
 
     // Now deploy Tank
     const tankDeployMove = findVerboseMove(
-      game.moves({ verbose: true, square: 'c3' }) as Move[],
+      game.moves({ verbose: true, square: 'c3' }) as StandardMove[],
       'c3',
       'd3',
       { piece: TANK, isDeploy: true },
@@ -261,7 +261,7 @@ describe('Stack Movement and Deployment', () => {
     game['_turn'] = RED
 
     // Check deploy state behavior
-    const nextMoves = game.moves({ verbose: true }) as Move[]
+    const nextMoves = game.moves({ verbose: true }) as StandardMove[]
     expect(
       nextMoves
         .filter((m) => m.piece.type !== COMMANDER)
@@ -300,7 +300,7 @@ describe('Stack Movement and Deployment', () => {
 
     // Find and execute the carrier move (e.g., Navy c3 to c2)
     const carrierMove = findVerboseMove(
-      game.moves({ verbose: true, square: 'c3' }) as Move[],
+      game.moves({ verbose: true, square: 'c3' }) as StandardMove[],
       'c3',
       'c2',
       { piece: NAVY, isDeploy: true },

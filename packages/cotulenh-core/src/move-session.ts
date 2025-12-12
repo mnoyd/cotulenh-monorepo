@@ -345,6 +345,11 @@ export class MoveSession {
 
     command.undo()
     this._game['_movesCache'].clear()
+
+    if (this.isEmpty) {
+      this._game.setSession(null)
+    }
+
     return command.move
   }
 
@@ -413,43 +418,10 @@ export class MoveSession {
     command?: CTLMoveCommandInteface | CTLMoveSequenceCommandInterface
     result: MoveResult
   } {
-    if (this._commands.length === 0) {
-      return this._handleEmptySession(completed)
-    }
-
     if (this.isDeploy) {
       return this._generateDeployCommitData(completed)
     } else {
       return this._generateStandardCommitData(completed)
-    }
-  }
-
-  /**
-   * Handle empty session case
-   * @private
-   */
-  private _handleEmptySession(completed: boolean): {
-    command?: undefined
-    result: MoveResult
-  } {
-    if (completed) {
-      throw new Error('Cannot commit empty session')
-    }
-
-    return {
-      result: StandardMove.fromExecutedMove({
-        color: this.turn,
-        from: algebraic(this.stackSquare),
-        to: algebraic(this.stackSquare),
-        piece: this.originalPiece,
-        captured: undefined,
-        flags: this.isDeploy ? 'd' : '',
-        before: this._beforeFEN,
-        after: this._game.fen(),
-        san: this.isDeploy ? 'DEPLOY...' : '...',
-        lan: this.isDeploy ? 'DEPLOY...' : '...',
-        completed: false,
-      }),
     }
   }
 
