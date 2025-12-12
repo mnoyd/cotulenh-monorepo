@@ -1,5 +1,5 @@
-import { DEFAULT_POSITION, Move, RED } from '@repo/cotulenh-core';
-import type { DrawShape } from '@repo/cotulenh-board/';
+import { DEFAULT_POSITION, StandardMove as Move, RED } from '@repo/cotulenh-core';
+// import type { DrawShape } from '@repo/cotulenh-board'; (Not exported)
 import type { Annotation } from './annotation';
 import type { Outcome } from './types';
 import { positionFromFen } from './core-intergrate';
@@ -17,7 +17,7 @@ export interface TreeNode {
   san: string | null;
   children: TreeNode[];
   depth: number | null;
-  shapes: DrawShape[];
+  shapes: any[];
   annotations: Annotation[];
   comment: string;
   clock?: number;

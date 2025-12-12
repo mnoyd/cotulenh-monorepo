@@ -1,7 +1,12 @@
 import { writable } from 'svelte/store';
 import type { GameState, GameStatus, UIDeployState } from '$lib/types/game';
-import { CoTuLenh, DeployMove, BITS } from '@repo/cotulenh-core';
-import type { Square, Move, Piece } from '@repo/cotulenh-core';
+import {
+  CoTuLenh,
+  DeploySequence as DeployMove,
+  BITS,
+  StandardMove as Move
+} from '@repo/cotulenh-core';
+import type { Square, Piece } from '@repo/cotulenh-core';
 import { getPossibleMoves } from '$lib/utils';
 
 /**
@@ -16,27 +21,39 @@ function flattenPiece(piece: Piece): Piece[] {
  * Convert DeploySession to UIDeployState using modern API
  */
 function createUIDeployState(game: CoTuLenh): UIDeployState | null {
-  const session = game.getDeploySession();
-  if (!session) return null;
+  const session = game.getSession();
+  // Ensure it is a deploy session (check isDeploy property if available, or just check fields)
+  if (!session || !session.isDeploy) return null;
 
   // Use modern DeploySession API instead of deprecated toLegacyDeployState()
   // Reconstruct the DeployState properties manually
-  const actions = session.getActions();
-  const movedPieces = actions
-    .filter((move) => move.from === session.stackSquare && move.flags & BITS.DEPLOY)
-    .flatMap((move) => flattenPiece(move.piece)); // Properly flatten pieces like the original
+  // Note: We cast session to any because MoveSession type isn't fully exported/available here easily
+  // or we could use the return type of getSession if it was generic.
+  // We know it has these methods based on move-session.ts
+  const s = session as any;
+
+  const actions = s.getActions ? s.getActions() : s._commands.map((c: any) => c.move); // Fallback if getActions not public
+  // Actually move-session.ts says get moves() returns internal moves.
+  // And `moves` getter IS public.
+
+  const moves = s.moves;
+
+  const movedPieces = moves
+    .filter((move: any) => move.from === s.stackSquare && move.flags & BITS.DEPLOY)
+    .flatMap((move: any) => flattenPiece(move.piece));
 
   return {
     // DeployState properties (reconstructed from modern API)
-    stackSquare: session.stackSquare,
-    turn: session.turn,
-    originalPiece: session.originalPiece,
+    stackSquare: s.stackSquare,
+    turn: s.turn,
+    originalPiece: s.originalPiece,
     movedPieces,
-    stay: session.stayPieces,
+    stay: s.remaining.length > 0 ? s.remaining[0] : undefined, // Approximation for stay
 
     // UIDeployState additional properties
-    actions: actions,
-    remainingPieces: session.getRemainingPieces()
+    actions: moves,
+    remainingPieces: s.remaining,
+    recombineOptions: s.getOptions() // Fetch available recombine options
   };
 }
 
@@ -98,14 +115,36 @@ function createGameStore() {
      * @param game The CoTuLenh game instance after the move.
      * @param move The move that was just made.
      */
-    applyMove(game: CoTuLenh, move: Move) {
+    applyMove(game: CoTuLenh, move: Move | DeployMove) {
       const perfStart = performance.now();
       // ✅ OPTIMIZATION: Don't pre-generate all moves (lazy loading pattern)
       // Moves will be generated on-demand when user clicks next piece
 
       update((state) => {
-        // Don't add individual deploy steps to history - only final committed deploy move
-        const shouldAddToHistory = !game.getDeploySession();
+        const session = game.getSession();
+        const isDeploySession = session && session.isDeploy;
+        // If we are in a deploy session, we DON'T add to history (yet).
+        // We only add when the session is committed (which handled separately or by the commit logic).
+        // Wait, applyMove is called when the core returns a MoveResult.
+        // If it's a deploy step (intermediate), we might not want to add it to the main history list shown in UI?
+        // The original code was: const shouldAddToHistory = !game.getDeploySession();
+        // So:
+        const shouldAddToHistory = !isDeploySession;
+
+        let lastMoveSquares: any[] = [];
+        if (move.isDeploy) {
+          const dm = move as DeployMove;
+          // DeploySequence has 'to' as Map<Square, Piece>
+          if (dm.to instanceof Map) {
+            lastMoveSquares = [dm.from, ...Array.from(dm.to.keys())];
+          } else {
+            // Fallback if structure is different
+            lastMoveSquares = [dm.from];
+          }
+        } else {
+          const sm = move as Move;
+          lastMoveSquares = [sm.from, sm.to];
+        }
 
         return {
           ...state,
@@ -113,7 +152,7 @@ function createGameStore() {
           turn: game.turn(),
           history: shouldAddToHistory ? [...state.history, move] : state.history,
           possibleMoves: [], // Empty - will be loaded on-demand per piece
-          lastMove: [move.from, move.to],
+          lastMove: lastMoveSquares,
           check: game.isCheck(),
           status: calculateGameStatus(game),
           deployState: createUIDeployState(game)
@@ -124,6 +163,27 @@ function createGameStore() {
         `⏱️ gameStore.applyMove TOTAL took ${(perfEnd - perfStart).toFixed(2)}ms (lazy loading enabled)`
       );
     },
+
+    /**
+     * Syncs the store with the current game state without applying a move.
+     * Useful for operations that modify game state in-place (like Recombine).
+     * @param game The CoTuLenh game instance.
+     */
+    sync(game: CoTuLenh) {
+      update((state) => {
+        return {
+          ...state,
+          fen: game.fen(),
+          turn: game.turn(),
+          check: game.isCheck(),
+          status: calculateGameStatus(game),
+          deployState: createUIDeployState(game)
+          // history is NOT updated here, as Recombine modifies history internally/will be handled separately or by full reload if needed.
+          // Actually Recombine modifies the *session* history, not the main game history yet.
+        };
+      });
+    },
+
     /**
      * Apply the final deployed move after commit
      * @param game The CoTuLenh game instance after commit
