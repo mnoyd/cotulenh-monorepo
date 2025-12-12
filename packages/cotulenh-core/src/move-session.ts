@@ -6,6 +6,7 @@ import {
   algebraic,
   FLAGS,
   Square,
+  swapColor,
 } from './type.js'
 import {
   flattenPiece,
@@ -633,22 +634,15 @@ export class MoveSession {
         // 3. Commander Safety Check (OPTIMIZED)
         // Only do expensive board manipulation if commander is involved
         if (remainingHasCommander || moveHasCommander) {
-          // Temporarily manipulate board to check safety
-          const originalPieceOnBoard = game.get(move.to)
-          const originalCommanderSq = game['_commanders'][us]
+          // Check if the new combined piece would be under attack
+          // We pass the combined.type as assumeTargetType so getAttackers knows if it's hitting LAND or NAVY
+          const isAttacked = game.getAttackers(
+            move.to,
+            swapColor(us),
+            combined.type,
+          )
 
-          // Place combined piece and update commander cache
-          game['_board'][move.to] = combined
-          game['_commanders'][us] = move.to
-
-          // Check if commander is in danger
-          const inDanger = game.isCommanderInDanger(us)
-
-          // Restore board and commander cache
-          game['_commanders'][us] = originalCommanderSq
-          game['_board'][move.to] = originalPieceOnBoard
-
-          if (inDanger) {
+          if (isAttacked.length > 0) {
             continue
           }
         }

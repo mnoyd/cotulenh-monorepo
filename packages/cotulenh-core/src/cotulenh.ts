@@ -534,6 +534,18 @@ export class CoTuLenh {
       return false
     }
 
+    // If our commander is being carried, it's not exposed.
+    const usPiece = this._board[usCommanderSq]
+    if (!usPiece || usPiece.type !== COMMANDER) {
+      return false
+    }
+
+    // If their commander is being carried, it can't expose ours.
+    const themPiece = this._board[themCommanderSq]
+    if (!themPiece || themPiece.type !== COMMANDER) {
+      return false
+    }
+
     // Check only orthogonal directions
     for (const offset of ORTHOGONAL_OFFSETS) {
       let sq = usCommanderSq + offset
@@ -852,9 +864,21 @@ export class CoTuLenh {
   getAttackers(
     square: number,
     attackerColor: Color,
+    assumeTargetType?: PieceSymbol,
   ): { square: number; type: PieceSymbol }[] {
     const attackers: { square: number; type: PieceSymbol }[] = []
-    const isLandPiece = this.get(square)?.type !== NAVY
+
+    // Use assumed type if provided, otherwise get from board
+    // Note: If assumeTargetType is provided, we treat valid piece types as existing
+    // If assumeTargetType is undefined, we check the board.
+    let isLandPiece = false
+
+    if (assumeTargetType) {
+      isLandPiece = assumeTargetType !== NAVY
+    } else {
+      isLandPiece = this.get(square)?.type !== NAVY
+    }
+
     const isDiagonal = (offset: number) => DIAGONAL_OFFSETS.includes(offset)
 
     // Check in all directions from the target square
