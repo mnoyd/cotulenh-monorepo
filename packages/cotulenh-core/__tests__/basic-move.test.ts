@@ -7,7 +7,7 @@ import {
   MISSILE,
   NAVY,
 } from '../src/type'
-import { CoTuLenh, Move } from '../src/cotulenh'
+import { CoTuLenh, StandardMove } from '../src/cotulenh'
 import { findMove, getDestinationSquares, setupGameBasic } from './test-helpers'
 
 describe('Basic TANK Moves on Empty Board', () => {
@@ -25,7 +25,7 @@ describe('Basic TANK Moves on Empty Board', () => {
     const moves = game.moves({
       square: startSquare,
       verbose: true,
-    }) as Move[]
+    }) as StandardMove[]
 
     //prettier-ignore
     const expectedDestinations: Square[] = [
@@ -56,7 +56,7 @@ describe('Basic TANK Moves on Empty Board', () => {
     const moves = game.moves({
       square: startSquare,
       verbose: true,
-    }) as Move[]
+    }) as StandardMove[]
     const actualDestinations = getDestinationSquares(moves)
 
     expect(actualDestinations).toEqual([])
@@ -71,7 +71,7 @@ describe('Basic TANK Moves on Empty Board', () => {
     const moves = game.moves({
       square: startSquare,
       verbose: true,
-    }) as Move[]
+    }) as StandardMove[]
 
     //prettier-ignore
     const expectedDestinations: Square[] = [
@@ -114,7 +114,7 @@ describe('Basic MISSILE Moves on Empty Board', () => {
     const moves = game.moves({
       square: startSquare,
       verbose: true,
-    }) as Move[]
+    }) as StandardMove[]
     const actualDestinations = getDestinationSquares(moves)
 
     // Missile moves in a circular pattern with radius 2
@@ -164,7 +164,7 @@ describe('Basic MISSILE Moves on Empty Board', () => {
     const moves = game.moves({
       square: startSquare,
       verbose: true,
-    }) as Move[]
+    }) as StandardMove[]
 
     //prettier-ignore
     const expectedDestinations: Square[] = [
@@ -207,7 +207,7 @@ describe('Basic MISSILE Moves on Empty Board', () => {
     const moves = game.moves({
       square: startSquare,
       verbose: true,
-    }) as Move[]
+    }) as StandardMove[]
 
     //prettier-ignore
     const expectedDestinations: Square[] = [
@@ -243,7 +243,7 @@ describe('Basic AIR_FORCE Moves on Empty Board', () => {
     const moves = game.moves({
       square: startSquare,
       verbose: true,
-    }) as Move[]
+    }) as StandardMove[]
     const actualDestinations = getDestinationSquares(moves)
 
     // Air Force moves one square in any direction to land/mixed/air
@@ -277,7 +277,7 @@ describe('Basic AIR_FORCE Moves on Empty Board', () => {
     const moves = game.moves({
       square: startSquare,
       verbose: true,
-    }) as Move[]
+    }) as StandardMove[]
     const actualDestinations = getDestinationSquares(moves)
     //prettier-ignore
     const expectedDestinations: Square[] = [
@@ -309,7 +309,7 @@ describe('Basic AIR_FORCE Moves on Empty Board', () => {
     const moves = game.moves({
       square: startSquare,
       verbose: true,
-    }) as Move[]
+    }) as StandardMove[]
     const airForceMoves = moves.filter((m) => m.piece.type === AIR_FORCE)
     const actualDestinations = getDestinationSquares(airForceMoves)
     // Air Force can move to adjacent land/water/mixed

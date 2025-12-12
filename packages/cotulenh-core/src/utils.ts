@@ -324,7 +324,9 @@ export function extractPieces(
   // Combine request parts to ensure it's a valid stack configuration itself
   const extracted = pieceOps.combine(requestParts)
   if (!extracted) {
-    throw new Error('Failed to combine extracted pieces')
+    throw new Error(
+      `Failed to combine extracted pieces: ${JSON.stringify(requestParts)}`,
+    )
   }
 
   // 3. Calculate the remaining stack using optimized stack operations

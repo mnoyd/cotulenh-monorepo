@@ -1,17 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { CoTuLenh } from '../src/cotulenh'
-import { NormalMoveCommand, RemoveFromStackAction } from '../src/move-apply'
-import {
-  RED,
-  NAVY,
-  AIR_FORCE,
-  Piece,
-  BITS,
-  SQUARE_MAP,
-  COMMANDER,
-  algebraic,
-} from '../src/type'
-import { flattenPiece } from '../src/utils'
+import { RemoveFromStackAction } from '../src/move-apply'
+import { RED, NAVY, AIR_FORCE, Piece, SQUARE_MAP, COMMANDER } from '../src/type'
 
 describe('Debug Standardize RemoveFromStackAction', () => {
   let game: CoTuLenh
@@ -68,14 +58,6 @@ describe('Debug Standardize RemoveFromStackAction', () => {
     // Move AF from a1 to c3
     // Note: c3 is index 2*11 + 2 = 24? Need algebraic to index or use move object
 
-    const move = {
-      from: 'a1',
-      to: 'c3',
-      piece: { type: AIR_FORCE, color: RED },
-      color: RED,
-      flags: 0, // Normal move
-    }
-
     // We need to use internal move with indices.
     // game.move() handles conversion. Let's use game.move() directly if possible,
     // but game.move() runs verifyLegal which we suspect fails.
@@ -86,10 +68,6 @@ describe('Debug Standardize RemoveFromStackAction', () => {
     // Let's assume game.moves() generates valid internal moves.
 
     const moves = game.moves({ square: 'a1', verbose: true }) as any[] // cast to any to avoid complex type checks
-    console.log('Found moves:', moves.length)
-    moves.forEach((m) =>
-      console.log(`Move: ${m.piece?.type} to ${m.to} flags:${m.flags}`),
-    )
     // For partial stack move (AF leaving), it is generated as a DeployMove
     // So 'to' is a Map.
     const afDeployMove = moves.find((m) => {

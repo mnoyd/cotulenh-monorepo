@@ -9,7 +9,7 @@ import {
   BLUE,
   INFANTRY,
 } from '../src/type'
-import { CoTuLenh, Move, DeploySequence } from '../src/cotulenh'
+import { CoTuLenh, StandardMove, DeploySequence } from '../src/cotulenh'
 
 /**
  * Create a Piece object for testing
@@ -59,10 +59,10 @@ export function setupGameBasic(): CoTuLenh {
 // Simplified helper to check if a move exists in the verbose list
 // (We don't need all options of findVerboseMove for these basic tests)
 export const findMove = (
-  moves: (Move | DeploySequence | any)[], // Use any or Import DeployMove to avoid circular deps if needed, casting for now
+  moves: (StandardMove | DeploySequence | any)[], // Use any or Import DeployMove to avoid circular deps if needed, casting for now
   from: Square,
   to: Square,
-): Move | DeploySequence | undefined => {
+): StandardMove | DeploySequence | undefined => {
   return moves.find((m) => {
     let mTo: Square | undefined
     if (m instanceof DeploySequence) {
@@ -71,7 +71,7 @@ export const findMove = (
         mTo = to
       }
     } else {
-      mTo = (m as Move).to
+      mTo = (m as StandardMove).to
     }
     return m.from === from && mTo === to
   })
@@ -79,21 +79,21 @@ export const findMove = (
 
 // Helper to extract just the 'to' squares for simple comparison
 export const getDestinationSquares = (
-  moves: (Move | DeploySequence | any)[],
+  moves: (StandardMove | DeploySequence | any)[],
 ): Square[] => {
   return moves
     .flatMap((m) => {
       if (m instanceof DeploySequence) {
         return Array.from((m as DeploySequence).to.keys()) as Square[]
       }
-      return [(m as Move).to]
+      return [(m as StandardMove).to]
     })
     .sort()
 }
 
 // Helper to find a specific move in the verbose move list
 export const findVerboseMove = (
-  moves: (Move | DeploySequence)[],
+  moves: (StandardMove | DeploySequence)[],
   from: Square,
   to: Square, // Destination or Target
   options: {
@@ -101,7 +101,7 @@ export const findVerboseMove = (
     isDeploy?: boolean
     isStayCapture?: boolean // Option parameter
   } = {},
-): Move | DeploySequence | undefined => {
+): StandardMove | DeploySequence | undefined => {
   return moves.find((m) => {
     const matchFrom = m.from === from
 
@@ -109,7 +109,7 @@ export const findVerboseMove = (
     if (m instanceof DeploySequence) {
       matchTo = (m as DeploySequence).to.has(to)
     } else {
-      matchTo = (m as Move).to === to
+      matchTo = (m as StandardMove).to === to
     }
 
     const matchPieceType =
@@ -118,7 +118,7 @@ export const findVerboseMove = (
       options.isDeploy === undefined || m.isDeploy === options.isDeploy
     const matchStayCapture =
       options.isStayCapture === undefined ||
-      (m instanceof Move &&
+      (m instanceof StandardMove &&
         m.captured !== undefined &&
         m.isStayCapture() === options.isStayCapture)
 

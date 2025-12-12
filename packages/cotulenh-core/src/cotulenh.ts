@@ -734,10 +734,8 @@ export class CoTuLenh {
       // Clear moves cache since board state has changed
       this._movesCache.clear()
 
-      // If the session is now empty, clear it completely
-      if (this._session.isEmpty) {
-        this._session = null
-      }
+      // After undoing, the session might have cleared itself if it became empty.
+      // No further action on the session is needed here.
       return
     }
 
@@ -815,7 +813,7 @@ export class CoTuLenh {
       return { success: false, reason: 'No active session' }
     }
     try {
-      const { command, result, hasCapture } = this._session.commit()
+      const { command, result } = this._session.commit()
 
       // State update is already handled and attached by MoveSession.commit()
       // We just need to store the command in history
