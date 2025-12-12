@@ -7,7 +7,8 @@ import {
 } from '@repo/cotulenh-board';
 import {
   type CoTuLenh,
-  type Move,
+  StandardMove as Move,
+  type MoveResult,
   type Color as CoreColor,
   type Piece as CorePiece,
   type PieceSymbol,
@@ -181,7 +182,7 @@ export function getTurnColorName(turn: CoreColor): string {
   return turn === 'r' ? 'Red' : 'Blue';
 }
 
-export function makeCoreMove(game: CoTuLenh, orig: OrigMove, dest: DestMove): Move | null {
+export function makeCoreMove(game: CoTuLenh, orig: OrigMove, dest: DestMove): MoveResult | null {
   try {
     const pieceAtSquare = game.get(orig.square);
     if (!pieceAtSquare) {
@@ -206,7 +207,7 @@ export function makeCoreMove(game: CoTuLenh, orig: OrigMove, dest: DestMove): Mo
     }
 
     // Check if there's an active deploy session
-    const hasDeploySession = game.getDeploySession() !== null;
+    const hasDeploySession = game.getSession() !== null;
 
     const moveResult = game.move({
       from: orig.square,

@@ -67,9 +67,10 @@ import {
   StandardMove,
   DeploySequence,
   type MoveResult,
+  type RecombineOption,
 } from './move-session.js'
 
-export { StandardMove, DeploySequence, type MoveResult }
+export { StandardMove, DeploySequence, type MoveResult, type RecombineOption }
 
 // Structure for storing history states
 interface History {

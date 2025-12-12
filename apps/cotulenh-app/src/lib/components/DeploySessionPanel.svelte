@@ -2,52 +2,86 @@
   import type { CoTuLenh, Piece } from '@repo/cotulenh-core';
   import { algebraic } from '@repo/cotulenh-core';
   import { gameStore } from '$lib/stores/game';
-  
+
   export let game: CoTuLenh | null;
   export let onCommit: () => void;
   export let onCancel: () => void;
-  
+
   // Helper function to flatten a piece
   function flattenPiece(piece: Piece): Piece[] {
     if (!piece.carrying?.length) return [piece];
     return [{ ...piece, carrying: undefined }, ...piece.carrying];
   }
-  
+
   // Use the reactive store instead of reading directly from game
   $: deployState = $gameStore.deployState;
   $: hasSession = deployState !== null;
-  // Make commitStatus reactive to deployState changes, not just game reference
-  $: commitStatus = deployState && game ? game.canCommitDeploy() : { canCommit: false };
-  $: canCommit = commitStatus.canCommit;
-  $: commitMessage = canCommit 
-    ? 'Finish deployment and add move to history' 
+  // derived from game.canCommitSession() which returns boolean
+  $: canCommit = deployState && game ? game.canCommitSession() : false;
+  $: commitStatus = {
+    canCommit,
+    reason: canCommit
+      ? undefined
+      : deployState?.movedPieces?.length
+        ? 'Safe to commit'
+        : 'Deploy at least one piece',
+    suggestion: undefined // Core no longer provides suggestions
+  };
+  $: commitMessage = canCommit
+    ? 'Finish deployment and add move to history'
     : commitStatus.reason || 'Deploy at least one piece first';
-  
+
   // Get piece candidates (original piece flattened)
-  $: pieceCandidates = deployState 
-    ? flattenPiece(deployState.originalPiece).map((p: Piece) => p.type.toUpperCase()).join(', ')
+  $: pieceCandidates = deployState
+    ? flattenPiece(deployState.originalPiece)
+        .map((p: Piece) => p.type.toUpperCase())
+        .join(', ')
     : '';
-  
+
   // Get moves played
-  $: movesPlayed = deployState 
-    ? deployState.actions.map(move => {
+  $: movesPlayed = deployState
+    ? deployState.actions.map((move) => {
         const pieceType = move.piece.type.toUpperCase();
         const dest = algebraic(move.to);
         const capture = move.flags & 2 ? 'x' : ''; // BITS.CAPTURE = 2
         return `${pieceType}${capture}${dest}`;
       })
     : [];
-  
+
   // Get remaining pieces
-  $: remainingPieces = deployState 
+  $: remainingPieces = deployState
     ? (() => {
         const remaining = deployState.remainingPieces;
         if (!remaining) return 'None';
-        return flattenPiece(remaining).map((p: Piece) => p.type.toUpperCase()).join(', ');
+        if (Array.isArray(remaining)) {
+          return remaining.map((p: Piece) => p.type.toUpperCase()).join(', ');
+        }
+        return flattenPiece(remaining)
+          .map((p: Piece) => p.type.toUpperCase())
+          .join(', ');
       })()
     : '';
-  
+
   $: stackSquare = deployState ? algebraic(deployState.stackSquare) : '';
+
+  // Recombine Handling
+  $: recombineOptions = deployState?.recombineOptions || [];
+
+  function handleRecombine(option: any) {
+    if (!game || !deployState) return;
+    try {
+      console.log('🔄 Recombining:', option);
+      const session = game.getSession();
+      if (session) {
+        session.recombine(option);
+        // Force update UI since history changed in-place
+        gameStore.sync(game);
+      }
+    } catch (e) {
+      console.error('Recombine failed:', e);
+      alert('Recombine failed: ' + (e as any).message);
+    }
+  }
 </script>
 
 {#if true}
@@ -60,14 +94,14 @@
         <p class="stack-info">Select a stack piece to start deploying</p>
       {/if}
     </div>
-    
+
     <div class="panel-content">
       {#if hasSession}
         <div class="info-section">
           <h4>📦 Original Pieces</h4>
           <p class="pieces-list">{pieceCandidates}</p>
         </div>
-        
+
         <div class="info-section">
           <h4>✅ Moves Played ({movesPlayed.length})</h4>
           {#if movesPlayed.length === 0}
@@ -80,12 +114,26 @@
             </ol>
           {/if}
         </div>
-        
+
         <div class="info-section">
           <h4>⏳ Not Yet Moved</h4>
           <p class="pieces-list">{remainingPieces}</p>
         </div>
-        
+
+        <!-- NEW: Recombine Section -->
+        {#if recombineOptions.length > 0}
+          <div class="info-section recombine-section">
+            <h4>🔀 Recombine Options</h4>
+            <div class="recombine-list">
+              {#each recombineOptions as option}
+                <button class="btn-recombine" on:click={() => handleRecombine(option)}>
+                  Combine {option.piece.type.toUpperCase()} into {option.square}
+                </button>
+              {/each}
+            </div>
+          </div>
+        {/if}
+
         {#if !canCommit && commitStatus.suggestion}
           <div class="warning">
             <p>💡 {commitStatus.suggestion}</p>
@@ -100,31 +148,20 @@
         </div>
       {/if}
     </div>
-    
+
     {#if hasSession}
       <div class="panel-actions">
-        <button 
-          class="btn-commit" 
-          on:click={onCommit}
-          disabled={!canCommit}
-          title={commitMessage}
-        >
+        <button class="btn-commit" on:click={onCommit} disabled={!canCommit} title={commitMessage}>
           ✓ Commit Deploy
         </button>
-        
-        <button 
-          class="btn-cancel" 
-          on:click={onCancel}
-          title="Cancel and restore board"
-        >
+
+        <button class="btn-cancel" on:click={onCancel} title="Cancel and restore board">
           ✕ Cancel
         </button>
       </div>
     {:else}
       <div class="panel-actions demo">
-        <button class="btn-demo" disabled>
-          Waiting for deploy session...
-        </button>
+        <button class="btn-demo" disabled> Waiting for deploy session... </button>
       </div>
     {/if}
   </div>
@@ -139,28 +176,35 @@
     box-shadow: var(--shadow-md);
     transition: all var(--transition-slow);
   }
-  
+
   .deploy-session-panel.active {
     border-color: var(--color-primary);
-    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2), var(--shadow-lg);
+    box-shadow:
+      0 0 0 2px rgba(37, 99, 235, 0.2),
+      var(--shadow-lg);
     animation: activePulse 2s ease-in-out infinite;
   }
 
   @keyframes activePulse {
-    0%, 100% {
-      box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2), var(--shadow-lg);
+    0%,
+    100% {
+      box-shadow:
+        0 0 0 2px rgba(37, 99, 235, 0.2),
+        var(--shadow-lg);
     }
     50% {
-      box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.4), var(--shadow-xl);
+      box-shadow:
+        0 0 0 2px rgba(37, 99, 235, 0.4),
+        var(--shadow-xl);
     }
   }
-  
+
   .panel-header {
     padding: var(--spacing-md) var(--spacing-lg);
     background: linear-gradient(135deg, rgba(37, 99, 235, 0.15), rgba(124, 58, 237, 0.1));
     border-bottom: 1px solid var(--color-border);
   }
-  
+
   .panel-header h3 {
     margin: 0 0 var(--spacing-xs) 0;
     font-size: 1.1rem;
@@ -170,7 +214,7 @@
     align-items: center;
     gap: var(--spacing-xs);
   }
-  
+
   .stack-info {
     margin: 0;
     font-size: 0.875rem;
@@ -179,7 +223,7 @@
     align-items: center;
     gap: var(--spacing-xs);
   }
-  
+
   .stack-info strong {
     color: var(--color-primary);
     font-weight: 600;
@@ -187,14 +231,14 @@
     background: rgba(37, 99, 235, 0.1);
     border-radius: var(--radius-sm);
   }
-  
+
   .panel-content {
     padding: var(--spacing-lg);
     display: flex;
     flex-direction: column;
     gap: var(--spacing-md);
   }
-  
+
   .info-section {
     background: var(--color-bg-secondary);
     border: 1px solid var(--color-border);
@@ -206,7 +250,7 @@
   .info-section:hover {
     background: var(--color-bg-tertiary);
   }
-  
+
   .info-section h4 {
     margin: 0 0 var(--spacing-sm) 0;
     font-size: 0.9rem;
@@ -215,7 +259,7 @@
     text-transform: uppercase;
     letter-spacing: 0.05em;
   }
-  
+
   .pieces-list {
     margin: 0;
     font-family: 'Courier New', monospace;
@@ -227,14 +271,14 @@
     border-radius: var(--radius-sm);
     border-left: 3px solid var(--color-primary);
   }
-  
+
   .empty-text {
     margin: 0;
     font-size: 0.875rem;
     color: var(--color-text-tertiary);
     font-style: italic;
   }
-  
+
   .moves-list {
     list-style: none;
     padding: 0;
@@ -245,7 +289,7 @@
     flex-direction: column;
     gap: var(--spacing-xs);
   }
-  
+
   .moves-list li {
     padding: var(--spacing-xs) var(--spacing-sm);
     background: var(--color-bg-tertiary);
@@ -259,7 +303,7 @@
     transform: translateX(4px);
     background: var(--color-surface-overlay);
   }
-  
+
   .warning {
     padding: var(--spacing-md);
     background: rgba(245, 158, 11, 0.1);
@@ -269,21 +313,21 @@
     align-items: flex-start;
     gap: var(--spacing-sm);
   }
-  
+
   .warning p {
     margin: 0;
     font-size: 0.875rem;
     color: var(--color-text-secondary);
     line-height: 1.5;
   }
-  
+
   .panel-actions {
     padding: 0 var(--spacing-lg) var(--spacing-lg);
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: var(--spacing-md);
   }
-  
+
   button {
     padding: var(--spacing-md) var(--spacing-lg);
     border-radius: var(--radius-md);
@@ -295,13 +339,13 @@
     position: relative;
     overflow: hidden;
   }
-  
+
   .btn-commit {
     background: linear-gradient(135deg, var(--color-success), #059669);
     color: white;
     box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.4);
   }
-  
+
   .btn-commit:hover:not(:disabled) {
     transform: translateY(-2px);
     box-shadow: 0 6px 12px -2px rgba(16, 185, 129, 0.5);
@@ -310,7 +354,7 @@
   .btn-commit:active:not(:disabled) {
     transform: translateY(0);
   }
-  
+
   .btn-commit:disabled {
     background: var(--color-bg-tertiary);
     color: var(--color-text-muted);
@@ -318,13 +362,13 @@
     box-shadow: none;
     opacity: 0.6;
   }
-  
+
   .btn-cancel {
     background: linear-gradient(135deg, var(--color-error), #dc2626);
     color: white;
     box-shadow: 0 4px 6px -1px rgba(239, 68, 68, 0.4);
   }
-  
+
   .btn-cancel:hover {
     transform: translateY(-2px);
     box-shadow: 0 6px 12px -2px rgba(239, 68, 68, 0.5);
@@ -333,7 +377,7 @@
   .btn-cancel:active {
     transform: translateY(0);
   }
-  
+
   .btn-demo {
     padding: var(--spacing-md) var(--spacing-lg);
     border-radius: var(--radius-md);
@@ -345,7 +389,7 @@
     color: var(--color-text-tertiary);
     grid-column: 1 / -1;
   }
-  
+
   .demo-text {
     margin: var(--spacing-xs) 0;
     font-size: 0.875rem;
@@ -362,7 +406,7 @@
     color: var(--color-primary);
     font-weight: bold;
   }
-  
+
   .info-section.demo {
     background: transparent;
     border-style: dashed;
@@ -385,5 +429,33 @@
     button {
       font-size: 0.875rem;
     }
+  }
+
+  .recombine-section {
+    border-color: var(--color-primary);
+    background: rgba(37, 99, 235, 0.05);
+  }
+
+  .recombine-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+  }
+
+  .btn-recombine {
+    background: white;
+    border: 1px solid var(--color-primary);
+    color: var(--color-primary);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    font-size: 0.85rem;
+    border-radius: var(--radius-sm);
+    text-align: left;
+    transition: all 0.2s;
+  }
+
+  .btn-recombine:hover {
+    background: var(--color-primary);
+    color: white;
+    transform: translateX(2px);
   }
 </style>
