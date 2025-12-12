@@ -29,15 +29,8 @@
 
   import '@repo/cotulenh-board/assets/commander-chess.base.css';
   import '@repo/cotulenh-board/assets/commander-chess.pieces.css';
-  import '@repo/cotulenh-board/assets/commander-chess.clasic.css';
-  import {
-    boardPieceToCore,
-    convertSetMapToArrayMap,
-    makeCoreMove,
-    typeToRole,
-    roleToType,
-    getMovesForSquare
-  } from '$lib/utils';
+  import '$lib/styles/modern-warfare.css';
+  import { makeCoreMove, typeToRole, roleToType, getMovesForSquare } from '$lib/utils';
 
   let boardContainerElement: HTMLElement | null = null;
   let boardApi = $state<Api | null>(null);
@@ -476,18 +469,47 @@
     flex: 1;
     display: flex;
     flex-direction: column;
+    /* Ensure background covers entire viewport height */
+    min-height: 100vh;
+    background-color: var(--mw-bg-dark);
+    font-family: var(--font-ui);
+    color: #e0e0e0;
   }
 
   .layout-container {
-    max-width: 1600px;
+    max-width: 1800px;
     margin: 0 auto;
     padding: var(--spacing-xl);
     width: 100%;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Scanline overlay effect */
+  .layout-container::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background:
+      linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%),
+      linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+    background-size:
+      100% 2px,
+      3px 100%;
+    pointer-events: none;
+    z-index: 999;
+    opacity: 0.6;
   }
 
   .page-header {
     margin-bottom: var(--spacing-xl);
     text-align: center;
+    position: relative;
+    border-bottom: 1px solid var(--mw-border-color);
+    padding-bottom: var(--spacing-lg);
   }
 
   .header-content {
@@ -496,46 +518,45 @@
   }
 
   h1 {
-    font-size: clamp(2.5rem, 5vw, 4rem);
-    font-weight: 800;
-    letter-spacing: -0.03em;
-    margin-bottom: var(--spacing-sm);
-    background: linear-gradient(
-      135deg,
-      var(--color-primary) 0%,
-      var(--color-secondary) 50%,
-      var(--color-accent) 100%
-    );
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    font-family: var(--font-display);
+    font-size: clamp(2.5rem, 5vw, 5rem);
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: var(--spacing-xs);
+    color: var(--mw-primary);
+    text-shadow: var(--mw-text-glow);
     position: relative;
     display: inline-block;
   }
 
   h1::after {
-    content: '';
+    /* Glitch/Underline effect */
+    content: 'STRATEGIC COMMAND';
     position: absolute;
-    bottom: -8px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 60%;
-    height: 4px;
-    background: linear-gradient(90deg, transparent, var(--color-primary), transparent);
-    border-radius: 2px;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0.5;
+    filter: blur(5px);
+    z-index: -1;
   }
 
   .subtitle {
-    font-size: 1.1rem;
-    color: var(--color-text-secondary);
-    font-weight: 400;
+    font-family: var(--font-mono);
+    font-size: 1rem;
+    color: var(--mw-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
     margin: 0;
-    margin-top: var(--spacing-md);
+    margin-top: var(--spacing-sm);
+    opacity: 0.8;
   }
 
   .game-layout {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 420px;
+    grid-template-columns: minmax(0, 1fr) 450px;
     gap: var(--spacing-xl);
     align-items: start;
   }
@@ -544,31 +565,49 @@
     display: flex;
     justify-content: center;
     align-items: flex-start;
+    padding: var(--spacing-md);
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--mw-border-color);
+    border-radius: 4px; /* Sharp corners */
+    backdrop-filter: blur(5px);
   }
 
   .board-container {
     width: 100%;
-    max-width: 800px;
+    max-width: 900px;
     aspect-ratio: 12 / 13;
     position: relative;
     display: flex;
     justify-content: center;
     align-items: center;
-    background: var(--color-surface);
-    box-shadow: var(--shadow-xl);
-    border-radius: var(--radius-xl);
-    border: 1px solid var(--color-border);
+    /* Transparent bg handled by cg-background */
+    box-shadow: 0 0 50px rgba(0, 0, 0, 0.5);
+    border-radius: 2px;
+    border: 1px solid var(--mw-primary-dim);
     overflow: hidden;
-    transition:
-      transform var(--transition-slow),
-      box-shadow var(--transition-slow);
   }
 
-  .board-container:hover {
-    transform: translateY(-2px);
-    box-shadow:
-      0 24px 38px -8px rgba(0, 0, 0, 0.5),
-      0 12px 16px -8px rgba(0, 0, 0, 0.4);
+  /* Corner accents for board container */
+  .board-section::before,
+  .board-section::after {
+    content: '';
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    border: 2px solid var(--mw-primary);
+    transition: all 0.3s ease;
+  }
+  .board-section::before {
+    top: -2px;
+    left: -2px;
+    border-right: 0;
+    border-bottom: 0;
+  }
+  .board-section::after {
+    bottom: -2px;
+    right: -2px;
+    border-left: 0;
+    border-top: 0;
   }
 
   .loading-state {
@@ -576,16 +615,19 @@
     flex-direction: column;
     align-items: center;
     gap: var(--spacing-md);
-    color: var(--color-text-secondary);
+    color: var(--mw-primary);
+    font-family: var(--font-mono);
   }
 
   .loading-spinner {
-    width: 48px;
-    height: 48px;
-    border: 4px solid var(--color-border);
-    border-top-color: var(--color-primary);
+    width: 64px;
+    height: 64px;
+    border: 2px solid transparent;
+    border-top-color: var(--mw-primary);
+    border-right-color: var(--mw-secondary);
     border-radius: 50%;
     animation: spin 1s linear infinite;
+    box-shadow: 0 0 15px var(--mw-primary-dim);
   }
 
   @keyframes spin {
@@ -594,35 +636,25 @@
     }
   }
 
-  .loading-state p {
-    margin: 0;
-    font-size: 0.95rem;
-    font-weight: 500;
-  }
-
   .controls-section {
     position: sticky;
-    top: calc(70px + var(--spacing-lg));
-    max-height: calc(100vh - 70px - var(--spacing-xl) * 2);
+    top: 20px;
+    max-height: calc(100vh - 40px);
     overflow-y: auto;
-    padding-right: var(--spacing-xs);
+    padding-right: 10px;
+    /* Custom Scrollbar */
+    scrollbar-width: thin;
+    scrollbar-color: var(--mw-primary) var(--mw-bg-dark);
   }
 
   .controls-section::-webkit-scrollbar {
-    width: 6px;
+    width: 4px;
   }
-
   .controls-section::-webkit-scrollbar-track {
-    background: transparent;
+    background: var(--mw-bg-dark);
   }
-
   .controls-section::-webkit-scrollbar-thumb {
-    background: var(--color-border);
-    border-radius: 3px;
-  }
-
-  .controls-section::-webkit-scrollbar-thumb:hover {
-    background: var(--color-border-light);
+    background: var(--mw-primary);
   }
 
   .controls-grid {
@@ -634,22 +666,7 @@
   /* Responsive Design */
   @media (max-width: 1400px) {
     .game-layout {
-      grid-template-columns: minmax(0, 1fr) 380px;
-      gap: var(--spacing-lg);
-    }
-  }
-
-  @media (max-width: 1200px) {
-    .layout-container {
-      padding: var(--spacing-lg);
-    }
-
-    .game-layout {
-      grid-template-columns: minmax(0, 1fr) 340px;
-    }
-
-    .board-container {
-      max-width: 700px;
+      grid-template-columns: minmax(0, 1fr) 400px;
     }
   }
 
@@ -660,7 +677,7 @@
     }
 
     .board-container {
-      max-width: 650px;
+      max-width: 100%;
     }
 
     .controls-section {
@@ -671,53 +688,27 @@
 
     .controls-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
       gap: var(--spacing-lg);
     }
   }
 
   @media (max-width: 768px) {
     .layout-container {
-      padding: var(--spacing-md);
+      padding: var(--spacing-sm);
     }
-
-    .page-header {
-      margin-bottom: var(--spacing-lg);
-    }
-
     h1 {
-      font-size: 2rem;
+      font-size: 2.5rem;
     }
 
-    .subtitle {
-      font-size: 1rem;
-    }
-
-    .game-layout {
-      gap: var(--spacing-lg);
-    }
-
-    .board-container {
-      max-width: 100%;
-      border-radius: var(--radius-lg);
+    .board-section {
+      padding: 0;
+      border: none;
+      background: transparent;
     }
 
     .controls-grid {
       grid-template-columns: 1fr;
-    }
-  }
-
-  @media (max-width: 480px) {
-    .layout-container {
-      padding: var(--spacing-sm);
-    }
-
-    h1 {
-      font-size: 1.75rem;
-    }
-
-    .subtitle {
-      font-size: 0.9rem;
     }
   }
 </style>

@@ -1,0 +1,298 @@
+/* Modern Warfare Theme for CoTuLenh */
+
+/* Import tactical fonts */
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Rajdhani:wght@300;500;700&family=Share+Tech+Mono&display=swap');
+
+:root {
+  /* Color Palette - Tactical HUD */
+  --mw-bg-dark: #050505;
+  --mw-bg-panel: rgba(10, 20, 30, 0.85);
+  --mw-grid-color: rgba(0, 255, 255, 0.1);
+  --mw-border-color: rgba(0, 255, 255, 0.2);
+
+  --mw-primary: #00f3ff;
+  /* Cyan Neon */
+  --mw-primary-dim: rgba(0, 243, 255, 0.2);
+  --mw-secondary: #00ff41;
+  /* Radar Green */
+  --mw-alert: #ff2a2a;
+  /* Warning Red */
+  --mw-warning: #ffae00;
+  /* Caution Orange */
+
+  --mw-water-color: rgba(0, 100, 200, 0.25);
+  /* Distinct Water */
+
+  --mw-text-glow: 0 0 10px rgba(0, 243, 255, 0.5);
+  --mw-border-glow: 0 0 8px rgba(0, 243, 255, 0.3);
+
+  --font-display: 'Orbitron', sans-serif;
+  --font-ui: 'Rajdhani', sans-serif;
+  --font-mono: 'Share Tech Mono', monospace;
+
+  /* --- Legacy Variable Mapping for Components --- */
+  --color-surface: var(--mw-bg-panel);
+  --color-border: var(--mw-border-color);
+
+  --color-text-primary: #e0e0e0;
+  --color-text-secondary: #a0a0a0;
+
+  --color-primary: var(--mw-primary);
+  --color-secondary: var(--mw-secondary);
+  --color-accent: var(--mw-warning);
+  --color-error: var(--mw-alert);
+
+  --color-red-light: #ffaaaa;
+  --color-blue-light: #aaddff;
+
+  --radius-sm: 2px;
+  --radius-md: 4px;
+  --radius-lg: 4px;
+  --radius-xl: 8px;
+
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.5);
+  --shadow-xl: 0 20px 25px rgba(0, 0, 0, 0.5);
+
+  --transition-base: 0.2s ease;
+  --transition-slow: 0.3s ease;
+}
+
+/* Global resets/overrides for the app when this theme is active */
+body {
+  background-color: var(--mw-bg-dark);
+  color: #e0e0e0;
+  font-family: var(--font-ui);
+}
+
+/* --- Board Background --- */
+/* --- Board Background --- */
+cg-background {
+  background-color: #eeedef;
+  background-image: url('data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiIHN0YW5kYWxvbmU9Im5vIj8+CjwhLS0gQ3JlYXRlZCB3aXRoIElua3NjYXBlIChodHRwOi8vd3d3Lmlua3NjYXBlLm9yZy8pIC0tPgoKPHN2ZwogICB3aWR0aD0iNzIwbW0iCiAgIGhlaWdodD0iNzgwbW0iCiAgIHZpZXdCb3g9IjAgMCA3MjAgNzgwIgogICB2ZXJzaW9uPSIxLjEiCiAgIGlkPSJzdmcxIgogICB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciCiAgIHhtbG5zOnN2Zz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgogIDxkZWZzCiAgICAgaWQ9ImRlZnMxIiAvPgogIDxyZWN0CiAgICAgc3R5bGU9Im9wYWNpdHk6MTtmaWxsOm5vbmU7ZmlsbC1vcGFjaXR5OjAuOTk1ODY2O2ZpbGwtcnVsZTpldmVub2RkO3N0cm9rZTojMDAwMDAwO3N0cm9rZS13aWR0aDowO3N0cm9rZS1saW5lY2FwOmJ1dHQ7c3Ryb2tlLWRhc2hhcnJheTpub25lO3N0cm9rZS1kYXNob2Zmc2V0OjA7cGFpbnQtb3JkZXI6bWFya2VycyBmaWxsIHN0cm9rZSIKICAgICBpZD0icmVjdDciCiAgICAgd2lkdGg9IjcyMCIKICAgICBoZWlnaHQ9Ijc4MCIKICAgICB4PSItMi41NDIzNDY3ZS0wNSIKICAgICB5PSItMS45NTY3MzI0ZS0wNyIgLz4KICA8ZwogICAgIGlkPSJsYXllcjQiCiAgICAgc3R5bGU9InN0cm9rZS13aWR0aDowLjU7c3Ryb2tlLWRhc2hhcnJheTpub25lIgogICAgIHRyYW5zZm9ybT0idHJhbnNsYXRlKDg5OS43MjIyNiwzMDAuMDcyNDIpIj4KICAgIDxwYXRoCiAgICAgICBzdHlsZT0iZGlzcGxheTppbmxpbmU7ZmlsbDojMjIyODBiO2ZpbGwtb3BhY2l0eTowLjk5NTg2NjtmaWxsLXJ1bGU6ZXZlbm9kZDtzdHJva2U6IzAwMDAwMDtzdHJva2Utd2lkdGg6MC41O3N0cm9rZS1saW5lY2FwOnJvdW5kO3N0cm9rZS1kYXNoYXJyYXk6bm9uZTtzdHJva2UtZGFzaG9mZnNldDo2LjA1NzM3IgogICAgICAgaWQ9InJlY3QzIgogICAgICAgd2lkdGg9IjU5OS40Mjk2MyIKICAgICAgIGhlaWdodD0iNjU5LjQyOTYzIgogICAgICAgeD0iLTg4Ny44MzU2OSIKICAgICAgIHk9Ii0xNTQuMjQ2NTQiCiAgICAgICBkPSJtIC04ODcuODM1NjksLTE1NC4yNDY1NCBoIDU5OS40Mjk2MiB2IDY1OS40Mjk2MyBoIC01OTkuNDI5NjIgeiIKICAgICAgIHRyYW5zZm9ybT0ibWF0cml4KDEuMDE2Nzg2MiwwLDAsMS4wMTUyNjI2LDU4LjM0Nzg1OCwtODguMzk3NjY4KSIgLz4KICAgIDxwYXRoCiAgICAgICBzdHlsZT0iZmlsbDojMDBhYWQ0O2ZpbGwtb3BhY2l0eTowLjk5NTg2NjtmaWxsLXJ1bGU6ZXZlbm9kZDtzdHJva2U6IzAwMDAwMDtzdHJva2Utd2lkdGg6MC41O3N0cm9rZS1saW5lY2FwOnJvdW5kO3N0cm9rZS1kYXNoYXJyYXk6bm9uZTtzdHJva2UtZGFzaG9mZnNldDo2LjA1NzM3IgogICAgICAgaWQ9InBhdGg2IgogICAgICAgd2lkdGg9IjU5OS40Mjk2MyIKICAgICAgIGhlaWdodD0iNjU5LjQyOTYzIgogICAgICAgeD0iLTg4Ny44MzU2OSIKICAgICAgIHk9Ii0xNTQuMjQ2NTQiCiAgICAgICB0cmFuc2Zvcm09InRyYW5zbGF0ZSg0OC42Mjk0NTQsLTg1LjQ5ODQxOSkiCiAgICAgICBkPSJtIC04ODcuODM1NjksLTE1NC4yNDY1NCBoIDU5OS40Mjk2MiB2IDY1OS40Mjk2MyBoIC01OTkuNDI5NjIgeiIgLz4KICA8L2c+CiAgPGcKICAgICBpZD0ibGF5ZXIyIgogICAgIHN0eWxlPSJzdHJva2Utd2lkdGg6MC41O3N0cm9rZS1kYXNoYXJyYXk6bm9uZSIKICAgICB0cmFuc2Zvcm09InRyYW5zbGF0ZSg4OTkuNzIyMjYsMzAwLjA3MjQyKSI+CiAgICA8cmVjdAogICAgICAgc3R5bGU9ImZpbGw6I2RiZTNlMjtmaWxsLW9wYWNpdHk6MC45OTU4NjY7ZmlsbC1ydWxlOmV2ZW5vZGQ7c3Ryb2tlOiMwMDAwMDA7c3Ryb2tlLXdpZHRoOjAuNTtzdHJva2UtbGluZWNhcDpidXR0O3N0cm9rZS1kYXNoYXJyYXk6bm9uZTtzdHJva2UtZGFzaG9mZnNldDo2LjA1NzM3O3BhaW50LW9yZGVyOm1hcmtlcnMgZmlsbCBzdHJva2UiCiAgICAgICBpZD0icmVjdDIiCiAgICAgICB3aWR0aD0iNDc5LjQxNTU2IgogICAgICAgaGVpZ2h0PSIyOTkuNDE1NTYiCiAgICAgICB4PSItNzE5LjE4MTI3IgogICAgICAgeT0iMTIwLjEyMTA5IiAvPgogICAgPHJlY3QKICAgICAgIHN0eWxlPSJmaWxsOiNkYmUzZTI7ZmlsbC1vcGFjaXR5OjAuOTk1ODY2O2ZpbGwtcnVsZTpldmVub2RkO3N0cm9rZTojMDAwMDAwO3N0cm9rZS13aWR0aDowLjU7c3Ryb2tlLWxpbmVjYXA6cm91bmQ7c3Ryb2tlLWRhc2hhcnJheTpub25lO3N0cm9rZS1kYXNob2Zmc2V0OjYuMDU3MzciCiAgICAgICBpZD0icmVjdDQiCiAgICAgICB3aWR0aD0iNDc5LjQxNTU2IgogICAgICAgaGVpZ2h0PSIyOTkuNDE1NTYiCiAgICAgICB4PSItNzE5LjM3NjI4IgogICAgICAgeT0iLTIzOS41NDI5MiIgLz4KICA8L2c+CiAgPGcKICAgICBpZD0ibGF5ZXIzIgogICAgIHRyYW5zZm9ybT0idHJhbnNsYXRlKDg5OS43MjIyNiwzMDAuMDcyNDIpIj4KICAgIDxyZWN0CiAgICAgICBzdHlsZT0ib3BhY2l0eToxO2ZpbGw6bm9uZTtmaWxsLW9wYWNpdHk6MC45OTU4NjY7ZmlsbC1ydWxlOmV2ZW5vZGQ7c3Ryb2tlOiMwMDAwMDA7c3Ryb2tlLXdpZHRoOjAuNDkzO3N0cm9rZS1saW5lY2FwOnJvdW5kO3N0cm9rZS1kYXNoYXJyYXk6Mi45NTc5OSwgMi45NTc5OTtzdHJva2UtZGFzaG9mZnNldDowIgogICAgICAgaWQ9InJlY3Q1IgogICAgICAgd2lkdGg9IjQuNzk2MzMzMyIKICAgICAgIGhlaWdodD0iNTUuMjU0Mzc5IgogICAgICAgeD0iLTU0MS42OTA4IgogICAgICAgeT0iNjIuMjE1MTgzIiAvPgogICAgPHJlY3QKICAgICAgIHN0eWxlPSJvcGFjaXR5OjE7ZmlsbDpub25lO2ZpbGwtb3BhY2l0eTowLjk5NTg2NjtmaWxsLXJ1bGU6ZXZlbm9kZDtzdHJva2U6IzAwMDAwMDtzdHJva2Utd2lkdGg6MC40OTM7c3Ryb2tlLWxpbmVjYXA6cm91bmQ7c3Ryb2tlLWRhc2hhcnJheToyLjk1Nzk5LCAyLjk1Nzk5O3N0cm9rZS1kYXNob2Zmc2V0OjAiCiAgICAgICBpZD0icmVjdDYiCiAgICAgICB3aWR0aD0iNC43OTYzMzMzIgogICAgICAgaGVpZ2h0PSI1NS4yNTQzNzkiCiAgICAgICB4PSItNDIyLjE5NzYzIgogICAgICAgeT0iNjIuMDk2MjU2IiAvPgogIDwvZz4KICA8ZwogICAgIGlkPSJsYXllcjUiCiAgICAgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoODk5LjcyMjI2LDMwMC4wNzI0MikiPgogICAgPGcKICAgICAgIGlkPSJsYXllcjEiCiAgICAgICB0cmFuc2Zvcm09InRyYW5zbGF0ZSg0OC42Mjk0NTQsLTg2LjAyNzU4NikiPgogICAgICA8cGF0aAogICAgICAgICBzdHlsZT0iZmlsbDojOWQ5ZDlkO2ZpbGwtb3BhY2l0eTowLjk5NTg2NjtmaWxsLXJ1bGU6ZXZlbm9kZDtzdHJva2U6IzAwMDAwMDtzdHJva2Utd2lkdGg6MC40OTc1NjM7c3Ryb2tlLWxpbmVjYXA6cm91bmQ7c3Ryb2tlLWRhc2hhcnJheTpub25lO3N0cm9rZS1kYXNob2Zmc2V0OjYuMDU3MzciCiAgICAgICAgIGlkPSJyZWN0MSIKICAgICAgICAgd2lkdGg9IjU5LjY3NjY5MyIKICAgICAgICAgaGVpZ2h0PSI1OS42NzY2OTMiCiAgICAgICAgIHg9IjYwLjE2MTY1MiIKICAgICAgICAgeT0iNjAuMTYxNjUyIgogICAgICAgICB0cmFuc2Zvcm09Im1hdHJpeCgxLjAwNDg3MzMsMCwwLDEuMDA0OTIzOSwtNDA4Ljc4MjU3LC0yMTQuMjM0OTIpIgogICAgICAgICBkPSJtIDExOS44MzgzNCw2MC4xNjE2NTIgaCAtNTk2Ljc2NjkzIG0gNTk2Ljc2NjkzLDU5LjY3NjY4OCBoIC01OTYuNzY2OTMgbSA1OTYuNzY2OTMsNTkuNjc2NyBoIC01OTYuNzY2OTMgbSA1OTYuNzY2OTMsNTkuNjc2NjkgaCAtNTk2Ljc2NjkzIG0gNTk2Ljc2NjkzLDU5LjY3NjY5IGggLTU5Ni43NjY5MyBtIDU5Ni43NjY5Myw1OS42NzY3IGggLTU5Ni43NjY5MyBtIDU5Ni43NjY5Myw1OS42NzY2OSBoIC01OTYuNzY2OTMgbSA1OTYuNzY2OTMsNTkuNjc2NjkgaCAtNTk2Ljc2NjkzIG0gNTk2Ljc2NjkzLDU5LjY3NjcgaCAtNTk2Ljc2NjkzIG0gNTk2Ljc2NjkzLDU5LjY3NjY5IGggLTU5Ni43NjY5MyBtIDU5Ni43NjY5Myw1OS42NzY2OSBoIC01OTYuNzY2OTMgbSA1OTYuNzY2OTMsNTkuNjc2NjkgSCAtNDc2LjkyODU5IE0gMTE5LjgzODM0LDYwLjE2MTY1MiBWIDcxNi42MDUyNyBNIDYwLjE2MTY1Miw2MC4xNjE2NTIgViA3MTYuNjA1MjcgTSAwLjQ4NDk1ODY1LDYwLjE2MTY1MiBWIDcxNi42MDUyNyBNIC01OS4xOTE3MzQsNjAuMTYxNjUyIFYgNzE2LjYwNTI3IE0gLTExOC44Njg0Myw2MC4xNjE2NTIgViA3MTYuNjA1MjcgTSAtMTc4LjU0NTEyLDYwLjE2MTY1MiBWIDcxNi42MDUyNyBNIC0yMzguMjIxODEsNjAuMTYxNjUyIFYgNzE2LjYwNTI3IE0gLTI5Ny44OTg1MSw2MC4xNjE2NTIgViA3MTYuNjA1MjcgTSAtMzU3LjU3NTIsNjAuMTYxNjUyIFYgNzE2LjYwNTI3IE0gLTQxNy4yNTE4OSw2MC4xNjE2NTIgViA3MTYuNjA1MjcgTSAtNDc2LjkyODU5LDYwLjE2MTY1MiBWIDcxNi42MDUyNyIgLz4KICAgIDwvZz4KICA8L2c+Cjwvc3ZnPgo=');
+
+  background-size: cover;
+
+  /* Modern Warfare Filter: Darken + Cyan Tint */
+  /* This turns the white/grey board into a dark tech board */
+  filter: invert(100%) hue-rotate(180deg) brightness(0.7) contrast(1.2) sepia(50%)
+    hue-rotate(150deg) saturate(200%);
+
+  box-shadow: inset 0 0 100px rgba(0, 0, 0, 0.9);
+  border: none;
+}
+
+/* Add coordinate markers on the grid (simulated) */
+cg-background::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border: 2px solid var(--mw-border-color);
+  box-shadow: 0 0 20px var(--mw-primary-dim);
+  pointer-events: none;
+}
+
+/* --- Interactive Elements --- */
+
+/* Destination Markers */
+cg-board square.move-dest {
+  background: radial-gradient(circle, var(--mw-primary-dim) 10%, transparent 10.5%);
+  background-size: 20% 20%;
+  /* Makes a small dot pattern? No, let's keep it simple first */
+  background:
+    linear-gradient(to right, var(--mw-primary) 2px, transparent 2px) 50% 50% / 10px 2px no-repeat,
+    linear-gradient(to bottom, var(--mw-primary) 2px, transparent 2px) 50% 50% / 2px 10px no-repeat;
+  /* Crosshair style */
+  opacity: 0.6;
+}
+
+cg-board square.move-dest:hover {
+  background: radial-gradient(circle, rgba(0, 243, 255, 0.3) 0%, transparent 70%);
+  box-shadow: inset 0 0 10px var(--mw-primary);
+  opacity: 1;
+}
+
+/* Capture Targets */
+cg-board square.oc.move-dest {
+  background:
+    linear-gradient(45deg, var(--mw-alert) 2px, transparent 2px) 0 0 / 10px 10px,
+    radial-gradient(circle, rgba(255, 42, 42, 0.2) 0%, transparent 70%);
+  /* Danger stripes */
+}
+
+/* Last Move */
+cg-board square.last-move.from {
+  background-color: rgba(0, 243, 255, 0.1);
+  box-shadow: inset 0 0 5px var(--mw-primary);
+}
+
+cg-board square.last-move.to {
+  background-color: rgba(0, 243, 255, 0.15);
+  box-shadow: inset 0 0 10px var(--mw-primary);
+  animation: pulse-glow 2s infinite;
+}
+
+/* Selected Piece */
+cg-board square.selected {
+  background-color: rgba(0, 255, 65, 0.15);
+  box-shadow: inset 0 0 15px var(--mw-secondary);
+  border: 1px solid var(--mw-secondary);
+}
+
+/* Check / Danger */
+cg-board square.check {
+  background: radial-gradient(circle, rgba(255, 0, 0, 0.6) 0%, transparent 70%);
+  animation: alarm-pulse 1s infinite alternate;
+}
+
+/* --- Deploy Mode --- */
+cg-board square.deploy-origin {
+  background-color: rgba(255, 174, 0, 0.1);
+  border: 1px dashed var(--mw-warning);
+}
+
+cg-board square.deploy-dest {
+  background-color: rgba(0, 255, 65, 0.1);
+  border: 1px dashed var(--mw-secondary);
+}
+
+cg-board square.deploy-incomplete {
+  box-shadow: inset 0 0 20px rgba(255, 174, 0, 0.3);
+  animation: pulse-deploy-mw 1.5s ease-in-out infinite;
+}
+
+/* --- Air Defense (Radar Zones) --- */
+cg-board square.air-defense-influence {
+  --mw-radar-color: var(--mw-primary);
+}
+
+cg-board square.air-defense-influence.friendly {
+  --mw-radar-color: #0088ff;
+}
+
+cg-board square.air-defense-influence.opponent {
+  --mw-radar-color: #ff5500;
+}
+
+cg-board square.air-defense-influence::before {
+  /* Simplified radar sweep or cross hatching */
+  transform: none;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  background: repeating-linear-gradient(
+    45deg,
+    transparent,
+    transparent 10px,
+    var(--mw-radar-color) 10px,
+    var(--mw-radar-color) 11px
+  );
+  opacity: 0.1;
+}
+
+cg-board square.air-defense-influence::after {
+  /* Border highlight */
+  transform: none;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  border: 1px solid var(--mw-radar-color);
+  opacity: 0.3;
+  box-shadow: inset 0 0 5px var(--mw-radar-color);
+}
+
+cg-board square.air-defense-influence.overlap::before {
+  opacity: 0.2;
+}
+
+/* --- Piece Styling (Holographic Effect) --- */
+/* We want to give them a "digital" look. */
+.cg-wrap piece {
+  transition:
+    transform 0.2s,
+    filter 0.2s;
+  /* Glow filter */
+  filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.8));
+}
+
+/* Blue Team = Cyan/Blue Hologram */
+.cg-wrap piece[class*='blue'] {
+  /* filter: drop-shadow(0 0 5px #00f3ff) hue-rotate(180deg) saturate(200%); */
+  /* This is tricky with pre-colored SVGs. Let's trust the SVG colors but add glow */
+  filter: drop-shadow(0 0 4px #00aaff) brightness(1.2) contrast(1.2);
+}
+
+/* Red Team = Red/Orange Hologram */
+.cg-wrap piece[class*='red'] {
+  /* filter: drop-shadow(0 0 5px #ff2a2a) saturate(150%); */
+  filter: drop-shadow(0 0 4px #ff2a2a) brightness(1.1);
+}
+
+.cg-wrap piece:hover {
+  transform: translateY(-5px) scale(1.1);
+  filter: brightness(1.3) drop-shadow(0 10px 10px rgba(0, 0, 0, 0.5));
+  z-index: 100;
+}
+
+/* --- Animations --- */
+@keyframes pulse-glow {
+  0% {
+    box-shadow: inset 0 0 5px var(--mw-primary);
+  }
+
+  50% {
+    box-shadow: inset 0 0 15px var(--mw-primary);
+    background-color: rgba(0, 243, 255, 0.25);
+  }
+
+  100% {
+    box-shadow: inset 0 0 5px var(--mw-primary);
+  }
+}
+
+@keyframes alarm-pulse {
+  from {
+    background-color: rgba(255, 0, 0, 0.4);
+  }
+
+  to {
+    background-color: rgba(255, 0, 0, 0.7);
+  }
+}
+
+@keyframes pulse-deploy-mw {
+  0%,
+  100% {
+    border-color: var(--mw-warning);
+  }
+
+  50% {
+    border-color: rgba(255, 255, 255, 0.8);
+    box-shadow: 0 0 15px var(--mw-warning);
+  }
+}
+
+/* --- Action Buttons (Attack/Stay) --- */
+cg-board cg-btn.piece-attack.stay {
+  background-color: var(--mw-secondary);
+  border: 1px solid #fff;
+  box-shadow: 0 0 10px var(--mw-secondary);
+}
+
+cg-board cg-btn.piece-attack.normal {
+  background-color: var(--mw-alert);
+  border: 1px solid #fff;
+  box-shadow: 0 0 10px var(--mw-alert);
+}

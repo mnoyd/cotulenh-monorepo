@@ -443,7 +443,7 @@
   }
 
   .btn-recombine {
-    background: white;
+    background: var(--color-surface);
     border: 1px solid var(--color-primary);
     color: var(--color-primary);
     padding: var(--spacing-xs) var(--spacing-sm);
