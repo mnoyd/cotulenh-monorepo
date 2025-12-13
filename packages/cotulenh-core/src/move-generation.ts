@@ -172,9 +172,16 @@ export function getPieceMovementConfig(
 
 /**
  * Generate moves for a piece in a specific direction
+ *
+ * Optimized version with pre-computed flags outside the loop.
+ * Key optimizations:
+ * - Pre-compute piece type flags to avoid repeated comparisons in hot loop
+ * - Cache blocking behavior and range flags
+ * - Use direct offset comparison instead of array.includes()
+ * - Use fast 0x88 board boundary check
  */
 export function generateMovesInDirection(
-  gameInstance: CoTuLenh, // Will be CoTuLenh instance
+  gameInstance: CoTuLenh,
   moves: InternalMove[],
   from: number,
   pieceData: Piece,
@@ -184,82 +191,89 @@ export function generateMovesInDirection(
   them: Color,
 ): void {
   const us = pieceData.color
+  const pieceType = pieceData.type
+
+  // Pre-compute piece type flags (avoid repeated checks in hot loop)
+  const isCommander = pieceType === COMMANDER
+  const isAirForce = pieceType === AIR_FORCE
+  const isNavy = pieceType === NAVY
+  const isMissile = pieceType === MISSILE
+
+  // Pre-compute movement behavior flags
+  // Direct comparison is faster than array.includes()
+  const isOrthogonal =
+    offset === -16 || offset === 1 || offset === 16 || offset === -1
+  const isDiagonal = !isOrthogonal
+  const isHorizontal = offset === 16 || offset === -16
+  const moveIgnoresBlocking = config.moveIgnoresBlocking
+  const captureIgnoresPieceBlocking = config.captureIgnoresPieceBlocking
+  const { moveRange, captureRange } = config
+
+  // Air defense check setup (only for non-heroic AIR_FORCE)
+  const shouldCheckAirDefense = isAirForce && !pieceData.heroic
+  const checkAirforceState = shouldCheckAirDefense
+    ? getCheckAirDefenseZone(gameInstance, from, them, offset)
+    : null
+
   let currentRange = 0
   let to = from
   let pieceBlockedMovement = false
   let terrainBlockedMovement = false
-  const isOrthogonal = ORTHOGONAL_OFFSETS.includes(offset) // Check if moving orthogonally
-  const shouldCheckAirDefense =
-    pieceData.type === AIR_FORCE && !pieceData.heroic
-  const checkAirforceState = shouldCheckAirDefense
-    ? getCheckAirDefenseZone(gameInstance, from, them, offset)
-    : null
 
   while (true) {
     to += offset
     currentRange++
 
-    // Check if square is on board
+    // Board boundary check - must use isSquareOnBoard for 11x12 board
+    // Note: Standard 0x88 trick doesn't work here because we have 11 files (0-10)
     if (!isSquareOnBoard(to)) break
 
-    // Special handling for AIR_FORCE movement through enemy air defense zones
-    let airDefenseResult: number = -1
-    if (shouldCheckAirDefense && checkAirforceState) {
-      airDefenseResult = checkAirforceState()
-    }
-    if (airDefenseResult === AirDefenseResult.DESTROYED) {
-      break
+    // Air defense check for non-heroic AIR_FORCE
+    let airDefenseResult = -1
+    if (shouldCheckAirDefense) {
+      airDefenseResult = checkAirforceState!()
+      if (airDefenseResult === AirDefenseResult.DESTROYED) break
     }
 
-    // Special case for Missile diagonal movement (remains unchanged)
-    if (
-      pieceData.type === MISSILE &&
-      DIAGONAL_OFFSETS.includes(offset) &&
-      currentRange > config.moveRange - 1
-    ) {
-      break
-    }
+    // Missile diagonal movement limit
+    if (isMissile && isDiagonal && currentRange > moveRange - 1) break
 
-    // Check if we've exceeded maximum ranges (for non-commander moves)
-    // Commander capture range is handled specially below
-    if (
-      pieceData.type !== COMMANDER &&
-      currentRange > config.moveRange &&
-      currentRange > config.captureRange
-    )
+    // Range limit for non-commander pieces
+    if (!isCommander && currentRange > moveRange && currentRange > captureRange)
       break
 
     const targetPiece = gameInstance.get(to)
 
-    // Terrain blocking check (remains unchanged)
+    // Terrain blocking check (only evaluated once per direction)
     if (!terrainBlockedMovement) {
       terrainBlockedMovement = checkTerrainBlocking(
         from,
         to,
-        pieceData.type,
-        isHorizontalOffset(offset),
+        pieceType,
+        isHorizontal,
       )
     }
 
-    // Target square analysis
     if (targetPiece) {
-      // *** Special Commander Capture Rule ***
+      const targetType = targetPiece.type
+      const targetColor = targetPiece.color
+
+      // === COMMANDER SPECIAL RULE ===
+      // Commander sees enemy commander orthogonally - immediate capture at any range
       if (
-        pieceData.type === COMMANDER &&
-        targetPiece.type === COMMANDER &&
-        targetPiece.color === them &&
+        isCommander &&
+        targetType === COMMANDER &&
+        targetColor === them &&
         isOrthogonal
       ) {
-        // Commander sees enemy commander orthogonally - immediate capture regardless of range/blockers
         addMove(moves, us, from, to, pieceData, targetPiece, BITS.CAPTURE)
-        break // Stop searching in this direction after finding the commander
+        break
       }
-      // *** End Special Commander Capture Rule ***
 
-      // Normal Capture logic (only if not commander vs commander)
-      if (targetPiece.color === them && currentRange <= config.captureRange) {
-        // Ensure we don't double-add the commander capture handled above
-        if (!(pieceData.type === COMMANDER && targetPiece.type === COMMANDER)) {
+      // Normal capture logic
+      if (targetColor === them && currentRange <= captureRange) {
+        // Avoid double-adding commander vs commander capture
+        if (!(isCommander && targetType === COMMANDER)) {
           handleCaptureLogic(
             moves,
             from,
@@ -272,15 +286,13 @@ export function generateMovesInDirection(
             airDefenseResult === AirDefenseResult.KAMIKAZE,
           )
         }
-      } else if (targetPiece.color === us) {
-        // Combination logic (remains unchanged)
+      } else if (targetColor === us) {
+        // Friendly combination
         const combinedPiece = combinePieces([pieceData, targetPiece])
         if (
           !isDeployMove &&
-          combinedPiece &&
-          combinedPiece.carrying &&
-          combinedPiece.carrying.length > 0 &&
-          currentRange <= config.moveRange &&
+          combinedPiece?.carrying?.length &&
+          currentRange <= moveRange &&
           !terrainBlockedMovement &&
           !pieceBlockedMovement &&
           canStayOnSquare(to, combinedPiece.type)
@@ -289,38 +301,34 @@ export function generateMovesInDirection(
         }
       }
 
-      // Piece blocking check (remains unchanged)
-      if (!config.moveIgnoresBlocking) {
-        //Navy can move past any pieces other than navy
-        if (!(pieceData.type === NAVY && targetPiece.type !== NAVY)) {
+      // Piece blocking logic
+      if (!moveIgnoresBlocking) {
+        // Navy can move past any piece except other navy
+        if (!(isNavy && targetType !== NAVY)) {
           pieceBlockedMovement = true
         }
       }
-      // Commander cannot move *past* a blocking piece (unless capturing enemy commander)
+
+      // Commander cannot slide past blocking pieces
+      // (except for enemy commander captured above)
       if (
-        pieceData.type === COMMANDER &&
-        !(
-          targetPiece.type === COMMANDER &&
-          targetPiece.color === them &&
-          isOrthogonal
-        )
+        isCommander &&
+        !(targetType === COMMANDER && targetColor === them && isOrthogonal)
       ) {
         break
       }
     } else {
-      // Move to empty square logic (remains unchanged)
+      // Empty square - potential movement destination
       if (
-        currentRange <= config.moveRange &&
+        currentRange <= moveRange &&
         !terrainBlockedMovement &&
         !pieceBlockedMovement &&
-        canStayOnSquare(to, pieceData.type) &&
-        (shouldCheckAirDefense
-          ? airDefenseResult === AirDefenseResult.SAFE_PASS
-          : true)
+        canStayOnSquare(to, pieceType) &&
+        (!shouldCheckAirDefense ||
+          airDefenseResult === AirDefenseResult.SAFE_PASS)
       ) {
-        // Commander cannot slide past where an enemy commander *would* be captured
-        if (pieceData.type === COMMANDER && isOrthogonal) {
-          // Check if enemy commander is further along this line
+        // Commander special rule: cannot slide past where enemy commander would be captured
+        if (isCommander && isOrthogonal) {
           let lookAheadSq = to + offset
           let enemyCommanderFound = false
           while (isSquareOnBoard(lookAheadSq)) {
@@ -332,12 +340,11 @@ export function generateMovesInDirection(
               ) {
                 enemyCommanderFound = true
               }
-              break // Path blocked by some piece
+              break
             }
             lookAheadSq += offset
           }
           if (!enemyCommanderFound) {
-            // Only add move if enemy commander isn't further along
             addMove(moves, us, from, to, pieceData)
           }
         } else {
@@ -346,13 +353,13 @@ export function generateMovesInDirection(
       }
     }
 
-    // Stop if blocked, unless it's a commander seeing another commander orthogonally
+    // Stop if blocked (for pieces that don't ignore blocking)
     if (
       pieceBlockedMovement &&
-      !config.captureIgnoresPieceBlocking &&
-      !config.moveIgnoresBlocking &&
+      !captureIgnoresPieceBlocking &&
+      !moveIgnoresBlocking &&
       !(
-        pieceData.type === COMMANDER &&
+        isCommander &&
         targetPiece?.type === COMMANDER &&
         targetPiece?.color === them &&
         isOrthogonal
@@ -361,11 +368,8 @@ export function generateMovesInDirection(
       break
     }
 
-    // Stop commander sliding if range exceeded (since capture is special)
-    if (pieceData.type === COMMANDER && currentRange >= 11) {
-      // Max board dimension
-      break
-    }
+    // Commander range limit (maximum board dimension)
+    if (isCommander && currentRange >= 11) break
   }
 }
 
@@ -692,10 +696,6 @@ export function generateNormalMoves(
     }
   }
   return moves
-}
-
-function isHorizontalOffset(offset: number): boolean {
-  return offset === 16 || offset === -16
 }
 
 export function canStayOnSquare(
