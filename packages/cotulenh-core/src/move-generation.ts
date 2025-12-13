@@ -291,7 +291,8 @@ export function generateMovesInDirection(
 
       // Piece blocking check (remains unchanged)
       if (!config.moveIgnoresBlocking) {
-        if (!(pieceData.type === NAVY && targetPiece.color === us)) {
+        //Navy can move past any pieces other than navy
+        if (!(pieceData.type === NAVY && targetPiece.type !== NAVY)) {
           pieceBlockedMovement = true
         }
       }
