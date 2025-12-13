@@ -8,11 +8,9 @@ import {
   AIR_FORCE,
   TANK,
   COMMANDER,
-  Square,
   INFANTRY,
   Piece,
   MILITIA,
-  InternalMove,
 } from '../src/type'
 import { combinePieces } from '../src/utils'
 import { findVerboseMove, makePiece, setupGameBasic } from './test-helpers'

@@ -7,6 +7,7 @@ import {
   FLAGS,
   Square,
   swapColor,
+  COMMANDER,
 } from './type.js'
 import {
   flattenPiece,
@@ -15,7 +16,7 @@ import {
   makeSanPiece,
   haveCommander,
 } from './utils.js'
-import { canStayOnSquare } from './move-generation.js'
+import { canStayOnSquare, generateMoves } from './move-generation.js'
 import {
   CTLMoveCommandInteface,
   CTLMoveSequenceCommandInterface,
@@ -373,11 +374,21 @@ export class MoveSession {
   }
 
   /**
-   * Check if deployment is complete (all pieces deployed)
+   * Check if deployment is complete (all pieces deployed or no valid moves left)
    */
   get isComplete(): boolean {
     if (!this.isDeploy) return this._commands.length > 0
-    return this.remaining.length === 0
+    if (this.remaining.length === 0) return true
+
+    // Check if any remaining piece has a valid move using high-level game.moves
+    // This utilizes the standard move generation and legal checks (filtered by game.moves)
+    const moves = this._game.moves({
+      square: algebraic(this.stackSquare),
+      verbose: false, // We only need to know if count > 0
+    })
+
+    // If no moves are possible from this stack, we are complete (stuck or done)
+    return moves.length === 0
   }
 
   /**
@@ -561,7 +572,9 @@ export class MoveSession {
         : undefined,
     )
 
-    const unfinished = this.isComplete ? '' : '...'
+    // Use remaining count to decide on "..." to avoid recursion with isComplete -> game.moves
+    // If there are pieces remaining, we show "..." (even if stuck, ensuring valid FEN state logic)
+    const unfinished = this.remaining.length > 0 ? '...' : ''
     return `${baseFEN} ${lan}${unfinished}`
   }
 
