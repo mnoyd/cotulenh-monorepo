@@ -526,17 +526,18 @@ export class MoveSession {
       )
     }
 
-    // 1. Generate commit data (command and result object)
+    // 1. Create and Execute StateUpdateAction to update turn/counters BEFORE FEN generation
+    const firstMove = this.moves[0]
+    const stateAction = new StateUpdateAction(game, firstMove, undefined)
+    stateAction.execute() // This now calculates the FEN internally with the right state
+
+    // 2. Generate commit data (command and result object) with the correct FEN
     const { command, result } = this._generateCommitData(true)
 
-    // 2. Check if any capture (check all moves in session)
+    // 3. Check if any capture (check all moves in session)
     const hasCapture = this.moves.some((m) => !!(m.flags & BITS.CAPTURE))
 
-    // 3. Create, Execute, and Attach StateUpdateAction
-    // This makes the command atomic: Undo board -> Undo state
-    const firstMove = this.moves[0]
-    const stateAction = new StateUpdateAction(game, firstMove, result.after)
-    stateAction.execute() // Updates turn/counters immediately
+    // 4. Attach the already-executed state action for undo purposes
     command.addPostAction(stateAction) // Will undo AFTER board undo
 
     return {
