@@ -189,13 +189,11 @@ export function generateMovesInDirection(
   let pieceBlockedMovement = false
   let terrainBlockedMovement = false
   const isOrthogonal = ORTHOGONAL_OFFSETS.includes(offset) // Check if moving orthogonally
-  const shouldCheckAirDefense = pieceData.type === AIR_FORCE
-  const checkAirforceState = getCheckAirDefenseZone(
-    gameInstance,
-    from,
-    them,
-    offset,
-  )
+  const shouldCheckAirDefense =
+    pieceData.type === AIR_FORCE && !pieceData.heroic
+  const checkAirforceState = shouldCheckAirDefense
+    ? getCheckAirDefenseZone(gameInstance, from, them, offset)
+    : null
 
   while (true) {
     to += offset
@@ -206,7 +204,7 @@ export function generateMovesInDirection(
 
     // Special handling for AIR_FORCE movement through enemy air defense zones
     let airDefenseResult: number = -1
-    if (shouldCheckAirDefense) {
+    if (shouldCheckAirDefense && checkAirforceState) {
       airDefenseResult = checkAirforceState()
     }
     if (airDefenseResult === AirDefenseResult.DESTROYED) {
