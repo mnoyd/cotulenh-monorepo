@@ -6,11 +6,11 @@ import { CoTuLenh } from '../src/cotulenh'
  * @param depth Number of moves to play
  * @returns The game instance after playing the moves
  */
-export function playRandomGame(game, depth = 20) {
+export function playRandomGame(game: CoTuLenh, depth = 20) {
   let moves: string[] = []
   for (let i = 0; i < depth; i++) {
     const fenBeforeMove = game.fen() // Store FEN before making a move
-    const legalMoves = game.moves()
+    const legalMoves = game.moves() as string[]
     if (legalMoves.length === 0) break
     // Favor capture moves (those with 'x' or '_')
     const captureMoves = legalMoves.filter(
