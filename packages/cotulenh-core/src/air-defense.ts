@@ -15,8 +15,98 @@ import {
   Square,
   algebraic,
   AirDefense,
-  Piece,
 } from './type.js'
+
+// --- Bitboard Constants & Helpers ---
+
+// Map 0x88 square index to packed bit index (0-131)
+// We have 11 files (0-10) and 12 ranks (0-11).
+// Board index = rank * 11 + file
+// Max index = 11 * 11 + 10 = 131
+const SQ_TO_BIT_INDEX: number[] = new Array(256).fill(-1)
+const BIT_INDEX_TO_SQ: number[] = new Array(132).fill(0)
+
+function initBitboardMapping() {
+  let idx = 0
+  for (let sq = 0; sq < 256; sq++) {
+    if (isSquareOnBoard(sq)) {
+      SQ_TO_BIT_INDEX[sq] = idx
+      BIT_INDEX_TO_SQ[idx] = sq
+      idx++
+    }
+  }
+}
+
+initBitboardMapping()
+
+// Lookup Table for Air Defense Masks
+// Indexed by [level][squareIndex]
+// Levels: 0 (not used), 1, 2, 3
+const AIR_DEFENSE_MASKS: bigint[][] = [
+  [], // Level 0
+  [], // Level 1
+  [], // Level 2
+  [], // Level 3
+]
+
+// Initialize the Lookup Table
+function initAirDefenseMasks() {
+  // We allow up to level 3 based on current game rules (Anti-Air is max level 2 usually, but code supported dynamic levels)
+  // Let's precalculate up to level 4 to be safe and future proof, matching the loop structure
+  const MAX_LEVEL = 4
+
+  // Ensure array is big enough
+  for (let l = 0; l <= MAX_LEVEL; l++) {
+    if (!AIR_DEFENSE_MASKS[l]) AIR_DEFENSE_MASKS[l] = []
+  }
+
+  for (let level = 1; level <= MAX_LEVEL; level++) {
+    for (let sq = 0; sq < 256; sq++) {
+      if (!isSquareOnBoard(sq)) continue
+
+      const bitIndex = SQ_TO_BIT_INDEX[sq]
+      let mask = 0n
+
+      // Use the logic from the old implementation to calculate the mask bits
+      for (let i = -level; i <= level; i++) {
+        for (let j = -level; j <= level; j++) {
+          const targetSq = sq + i + j * 16 // 0x88 arithmetic
+
+          if (!isSquareOnBoard(targetSq)) continue
+
+          // Circle distance check
+          if (i * i + j * j <= level * level) {
+            const targetBitIndex = SQ_TO_BIT_INDEX[targetSq]
+            if (targetBitIndex !== -1) {
+              mask |= 1n << BigInt(targetBitIndex)
+            }
+          }
+        }
+      }
+      AIR_DEFENSE_MASKS[level][bitIndex] = mask
+    }
+  }
+}
+
+initAirDefenseMasks()
+
+// Helper to convert Bitboard to square array
+function bitboardToSquares(bitboard: bigint): number[] {
+  const squares: number[] = []
+  let temp = bitboard
+  let i = 0
+
+  // Optimized: shift right and check lowest bit, stop when temp becomes 0
+  // This is O(k) where k = number of set bits, instead of O(132)
+  while (temp !== 0n) {
+    if (temp & 1n) {
+      squares.push(BIT_INDEX_TO_SQ[i])
+    }
+    temp >>= 1n
+    i++
+  }
+  return squares
+}
 
 export const BASE_AIRDEFENSE_CONFIG: Partial<Record<PieceSymbol, number>> = {
   [MISSILE]: 2,
@@ -60,10 +150,21 @@ export function calculateAirDefenseForSquare(
   curSq: number,
   level: number,
 ): number[] {
-  const allInflunceSq: number[] = []
-  if (level === 0) {
-    return allInflunceSq
+  if (level <= 0) {
+    return []
   }
+
+  // Use precalculated bitmasks if available for this level
+  if (level < AIR_DEFENSE_MASKS.length) {
+    const bitIndex = SQ_TO_BIT_INDEX[curSq]
+    if (bitIndex === -1) return [] // Should not happen for valid square
+
+    const mask = AIR_DEFENSE_MASKS[level][bitIndex]
+    return bitboardToSquares(mask)
+  }
+
+  // Fallback for unexpectedly high levels (though unlikely)
+  const allInflunceSq: number[] = []
   for (let i = -level; i <= level; i++) {
     for (let j = -level; j <= level; j++) {
       if (!isSquareOnBoard(curSq + i + j * 16)) continue
