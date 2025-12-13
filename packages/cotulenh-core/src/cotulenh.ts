@@ -41,6 +41,7 @@ import {
   flattenPiece,
   haveCommander,
   moveToSanLan,
+  extractPieces,
 } from './utils.js'
 import {
   generateMoves,
@@ -429,28 +430,59 @@ export class CoTuLenh {
    * Removes a piece from the specified square on the board.
    * Can optionally target a specific piece type within a stack of pieces.
    * @param square - The square to remove the piece from, in algebraic notation (e.g., 'e4')
-   * @returns The removed piece object, or undefined if no piece was found or the specified type was not present
+   * @param pieceToRemove - Optional specific piece to remove from the stack
+   * @returns The removed piece object, or undefined if square is invalid/empty
+   * @throws Error if pieceToRemove is specified but not found in the stack
    */
-  remove(square: Square): Piece | undefined {
-    // this._movesCache.clear()
+  remove(square: Square, pieceToRemove?: Piece): Piece | undefined {
     if (!(square in SQUARE_MAP)) return undefined
     const sq = SQUARE_MAP[square]
-    const piece = this._board[sq]
-    const wasHeroic = piece?.heroic
+    const currentPiece = this._board[sq]
+    if (!currentPiece) return undefined
 
-    if (!piece) return undefined
+    let extracted: Piece
 
-    delete this._board[sq]
+    if (pieceToRemove) {
+      // Partial removal - extractPieces will throw if piece not found
+      const result = extractPieces(currentPiece, pieceToRemove)
+      extracted = result.extracted
 
-    if (haveCommander(piece) && this._commanders[piece.color] === sq) {
-      this._commanders[piece.color] = -1
+      if (result.remaining) {
+        this._board[sq] = result.remaining
+      } else {
+        delete this._board[sq]
+      }
+    } else {
+      // Full removal (legacy behavior)
+      extracted = currentPiece
+      delete this._board[sq]
     }
-    if (BASE_AIRDEFENSE_CONFIG[piece.type]) {
+
+    // Update side effects for removed piece
+    this._updateAfterRemoval(extracted, sq)
+
+    return extracted
+  }
+
+  /**
+   * Updates commander tracking and air defense after piece removal.
+   * @private
+   */
+  private _updateAfterRemoval(removedPiece: Piece, sq: number): void {
+    const { color } = removedPiece
+
+    // Update commander tracking if removed
+    if (haveCommander(removedPiece) && this._commanders[color] === sq) {
+      this._commanders[color] = -1
+    }
+
+    // Update air defense if any removed piece has AD capability
+    if (
+      BASE_AIRDEFENSE_CONFIG[removedPiece.type] ||
+      removedPiece.carrying?.some((p) => BASE_AIRDEFENSE_CONFIG[p.type])
+    ) {
       this._airDefense = updateAirDefensePiecesPosition(this)
     }
-
-    // TODO: Update setup, etc.
-    return { ...piece, heroic: wasHeroic ?? false }
   }
 
   // --- Main Move Generation ---

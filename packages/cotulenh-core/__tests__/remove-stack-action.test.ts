@@ -1,9 +1,9 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { CoTuLenh } from '../src/cotulenh'
-import { RemoveFromStackAction } from '../src/move-apply'
+import { RemovePieceAction } from '../src/move-apply'
 import { RED, NAVY, AIR_FORCE, Piece, SQUARE_MAP, COMMANDER } from '../src/type'
 
-describe('Debug Standardize RemoveFromStackAction', () => {
+describe('Debug Standardize RemovePieceAction', () => {
   let game: CoTuLenh
 
   beforeEach(() => {
@@ -11,7 +11,7 @@ describe('Debug Standardize RemoveFromStackAction', () => {
     game.clear()
   })
 
-  it('should handle RemoveFromStackAction correctly for splitting stack', () => {
+  it('should handle RemovePieceAction correctly for splitting stack', () => {
     // Setup stack N+AF at a1
     const carrier: Piece = {
       type: NAVY,
@@ -23,11 +23,7 @@ describe('Debug Standardize RemoveFromStackAction', () => {
     // Action: Remove AF
     const pieceToRemove: Piece = { type: AIR_FORCE, color: RED }
 
-    const action = new RemoveFromStackAction(
-      game,
-      SQUARE_MAP['a1'],
-      pieceToRemove,
-    )
+    const action = new RemovePieceAction(game, SQUARE_MAP['a1'], pieceToRemove)
     action.execute()
 
     // Expect a1 to contain NAVY
