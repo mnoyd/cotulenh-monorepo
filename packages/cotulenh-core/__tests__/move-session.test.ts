@@ -412,7 +412,7 @@ describe('Deploy Session History Management', () => {
 
     // NOTE: The batch deployMove() API has been removed
     // Use handleMove() instead for incremental deploy moves
-    /* 
+    /*
     const deployMove: DeployMoveRequest = {
       from: 'c3',
       moves: [
@@ -553,5 +553,15 @@ describe('handleDeployMove', () => {
       expect(pieceAtStart?.color).toBe(RED)
       expect(game.get('d4')).toBeUndefined()
     })
+  })
+})
+
+describe('Random finding', () => {
+  it('should deploy move with commander', () => {
+    const game = new CoTuLenh(
+      '11/4+F2(hc)3/11/7i1M1/11/11/11/11/11/5C5/11/11 b - - 3 2',
+    )
+    const moves = game.moves({ square: 'h11' })
+    game.move('C>h12')
   })
 })

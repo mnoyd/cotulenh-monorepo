@@ -2,7 +2,7 @@
 
 import type { Color, CoTuLenh, PieceSymbol } from './cotulenh.js'
 import { swapColor, algebraic, InternalMove, BITS, Piece } from './type.js'
-import { combinePieces, clonePiece, extractPieces } from './utils.js'
+import { combinePieces, clonePiece } from './utils.js'
 
 /**
  * Represents an atomic board action that can be executed and undone
@@ -13,33 +13,41 @@ export interface CTLAtomicMoveAction {
 }
 
 /**
- * Removes a piece from a square
+ * Removes a piece from a square.
+ * Can remove the entire piece or a specific piece from a stack.
  */
 export class RemovePieceAction implements CTLAtomicMoveAction {
-  private removedPiece?: Piece
+  private originalPiece?: Piece
   constructor(
     protected game: CoTuLenh,
     private square: number,
+    private pieceToRemove?: Piece,
   ) {}
 
   execute(): void {
     const piece = this.game.get(this.square)
-    if (piece) {
-      this.removedPiece = { ...piece }
-      this.game.remove(algebraic(this.square))
+    if (!piece) {
+      if (this.pieceToRemove) {
+        throw new Error(`No piece at ${algebraic(this.square)} to remove from`)
+      }
+      return
     }
+
+    // Store original piece for undo
+    this.originalPiece = clonePiece(piece)
+
+    // Remove either the specific piece from stack or the entire piece
+    this.game.remove(algebraic(this.square), this.pieceToRemove)
   }
 
   undo(): void {
-    if (this.removedPiece) {
-      const result = this.game.put(this.removedPiece, algebraic(this.square))
-      if (!result) {
-        throw new Error(
-          'Place piece fail:' +
-            JSON.stringify(this.removedPiece) +
-            algebraic(this.square),
-        )
-      }
+    if (!this.originalPiece) return
+
+    const result = this.game.put(this.originalPiece, algebraic(this.square))
+    if (!result) {
+      throw new Error(
+        `Failed to restore piece at ${algebraic(this.square)}: ${JSON.stringify(this.originalPiece)}`,
+      )
     }
   }
 }
@@ -86,70 +94,6 @@ export class PlacePieceAction implements CTLAtomicMoveAction {
     } else {
       // No existing piece - just remove what we placed
       this.game.remove(algebraic(this.square))
-    }
-  }
-}
-
-/**
- * Removes a piece from a carrier's stack
- */
-export class RemoveFromStackAction implements CTLAtomicMoveAction {
-  private originalCarrier: Piece | null = null
-  constructor(
-    protected game: CoTuLenh,
-    private carrierSquare: number,
-    private piece: Piece,
-  ) {}
-
-  execute(): void {
-    const carrier = this.game.get(this.carrierSquare)
-    if (!carrier) {
-      throw new Error(
-        `No carrier or carrying pieces at ${algebraic(this.carrierSquare)}`,
-      )
-    }
-
-    // Store original carrier for undo
-    this.originalCarrier = clonePiece(carrier) ?? null
-
-    // Remove piece from stack using utility
-    let remainingCarrier: Piece | null = null
-    try {
-      remainingCarrier = extractPieces(carrier, this.piece).remaining
-    } catch (e) {
-      throw new Error(
-        `Failed to remove piece from stack at ${algebraic(this.carrierSquare)}: ${e instanceof Error ? e.message : String(e)}`,
-      )
-    }
-
-    if (!remainingCarrier) {
-      // No pieces remain after removal
-      this.game.remove(algebraic(this.carrierSquare))
-    } else {
-      // Update the carrier with remaining pieces
-      const putResult = this.game.put(
-        remainingCarrier,
-        algebraic(this.carrierSquare),
-      )
-      if (!putResult) {
-        throw new Error(
-          `Failed to update carrier at ${algebraic(this.carrierSquare)}`,
-        )
-      }
-    }
-  }
-
-  undo(): void {
-    if (!this.originalCarrier) return
-
-    const result = this.game.put(
-      this.originalCarrier,
-      algebraic(this.carrierSquare),
-    )
-    if (!result) {
-      throw new Error(
-        `Failed to restore carrier at ${algebraic(this.carrierSquare)}`,
-      )
     }
   }
 }
@@ -300,7 +244,7 @@ export class NormalMoveCommand extends CTLMoveCommand {
 
     // Add actions for the normal move
     this.actions.push(
-      new RemoveFromStackAction(this.game, this.move.from, pieceThatMoved),
+      new RemovePieceAction(this.game, this.move.from, pieceThatMoved),
     )
     this.actions.push(
       new PlacePieceAction(this.game, this.move.to, pieceThatMoved),
@@ -326,7 +270,7 @@ export class CaptureMoveCommand extends CTLMoveCommand {
     // Add actions for the capture move
     this.move.captured = capturedPieceData // Populate captured piece for history
     this.actions.push(
-      new RemoveFromStackAction(this.game, this.move.from, pieceThatMoved),
+      new RemovePieceAction(this.game, this.move.from, pieceThatMoved),
       new RemovePieceAction(this.game, this.move.to),
       new PlacePieceAction(this.game, this.move.to, pieceThatMoved),
     )
@@ -363,7 +307,7 @@ class CombinationMoveCommand extends CTLMoveCommand {
 
     // 1. Remove the moving piece from the 'from' square
     this.actions.push(
-      new RemoveFromStackAction(this.game, this.move.from, movingPieceData),
+      new RemovePieceAction(this.game, this.move.from, movingPieceData),
       new PlacePieceAction(this.game, this.move.to, combinedPiece),
     )
   }
@@ -421,7 +365,7 @@ export class SuicideCaptureMoveCommand extends CTLMoveCommand {
     this.move.captured = capturedPiece
 
     this.actions.push(
-      new RemoveFromStackAction(this.game, this.move.from, pieceAtFrom),
+      new RemovePieceAction(this.game, this.move.from, pieceAtFrom),
       new RemovePieceAction(this.game, targetSq),
     )
   }
