@@ -90,15 +90,14 @@ function createGameStore() {
      */
     initialize(game: CoTuLenh) {
       const perfStart = performance.now();
-      // ✅ OPTIMIZATION: Don't pre-generate all moves (lazy loading pattern)
-      // Moves will be generated on-demand when user clicks a piece
-      console.log('⏱️ Initializing game store with lazy move loading...');
+      const possibleMoves = getPossibleMoves(game);
+      console.log(`⏱️ Generated ${possibleMoves.length} moves in initialize`);
 
       set({
         fen: game.fen(),
         turn: game.turn(),
         history: [],
-        possibleMoves: [], // Empty - will be loaded on-demand per piece
+        possibleMoves,
         check: game.isCheck(),
         status: calculateGameStatus(game),
         lastMove: undefined,
@@ -117,8 +116,7 @@ function createGameStore() {
      */
     applyMove(game: CoTuLenh, move: Move | DeployMove) {
       const perfStart = performance.now();
-      // ✅ OPTIMIZATION: Don't pre-generate all moves (lazy loading pattern)
-      // Moves will be generated on-demand when user clicks next piece
+      const possibleMoves = getPossibleMoves(game);
 
       update((state) => {
         const session = game.getSession();
@@ -151,7 +149,7 @@ function createGameStore() {
           fen: game.fen(),
           turn: game.turn(),
           history: shouldAddToHistory ? [...state.history, move] : state.history,
-          possibleMoves: [], // Empty - will be loaded on-demand per piece
+          possibleMoves, // Full load enabled
           lastMove: lastMoveSquares,
           check: game.isCheck(),
           status: calculateGameStatus(game),
@@ -190,6 +188,8 @@ function createGameStore() {
      * @param deployMoveSan The SAN notation of the complete deploy move
      */
     applyDeployCommit(game: CoTuLenh, deployMoveSan: string) {
+      const possibleMoves = getPossibleMoves(game);
+
       update((state) => {
         // Create a minimal Move object with the deploy SAN for display
         // We only need the san property for history display
@@ -202,7 +202,7 @@ function createGameStore() {
           fen: game.fen(),
           turn: game.turn(),
           history: [...state.history, deployMove],
-          possibleMoves: [],
+          possibleMoves,
           lastMove: undefined,
           check: game.isCheck(),
           status: calculateGameStatus(game),

@@ -4,14 +4,12 @@
   import { CotulenhBoard, origMoveToKey } from '@repo/cotulenh-board';
   import type {
     Api,
-    Role as BoardRole,
     DestMove,
     OrigMove,
     OrigMoveKey,
     Role,
     SingleDeployMove,
-    DeployStepMetadata,
-    MoveMetadata
+    DeployStepMetadata
   } from '@repo/cotulenh-board';
   import { CoTuLenh, BLUE, RED } from '@repo/cotulenh-core';
   import type {
@@ -59,47 +57,7 @@
     };
   }
 
-  // ✅ LAZY LOADING: Generate moves for a specific square on-demand
-  let currentDests = $state<Dests>(new Map());
-
-  function loadMovesForSquare(square: Key): Dests {
-    if (!game) return new Map();
-
-    const perfStart = performance.now();
-    const moves = getMovesForSquare(game, square);
-    const dests = mapPossibleMovesToDests(moves);
-    const perfEnd = performance.now();
-    console.log(
-      `⏱️ Lazy loaded ${moves.length} moves for ${square} in ${(perfEnd - perfStart).toFixed(2)}ms`
-    );
-
-    return dests;
-  }
-
-  function handlePieceSelect(orig: OrigMove) {
-    if (!game) return;
-
-    // Check if the selected square has a piece of the current player
-    const piece = game.get(orig.square);
-    const currentTurn = game.turn();
-
-    // Only load moves if it's a piece belonging to the current player
-    if (piece && piece.color === currentTurn) {
-      // Generate moves only for the selected piece
-      currentDests = loadMovesForSquare(orig.square);
-
-      // Update board with new destinations
-      if (boardApi) {
-        boardApi.set({
-          movable: {
-            dests: currentDests
-          }
-        });
-      }
-    }
-    // If clicking on enemy piece or empty square while a piece is selected,
-    // keep the current dests (don't clear them)
-  }
+  // handlePieceSelect removed (reverted to full load)
 
   function reSetupBoard(): Api | null {
     const perfStart = performance.now();
@@ -111,12 +69,6 @@
         `⏱️ coreToBoardAirDefense took ${(airDefenseEnd - airDefenseStart).toFixed(2)}ms`
       );
 
-      // ✅ OPTIMIZATION: Don't pre-compute dests, they'll be loaded on piece selection
-      console.log('⏱️ Skipping pre-computation of dests (lazy loading enabled)');
-
-      // ✅ FIX: Preserve currentDests during board updates to avoid clearing during ambiguous moves
-      const destsToUse = currentDests.size > 0 ? currentDests : new Map();
-
       boardApi.set({
         fen: $gameStore.fen,
         turnColor: coreToBoardColor($gameStore.turn),
@@ -126,14 +78,11 @@
         movable: {
           free: false,
           color: coreToBoardColor($gameStore.turn),
-          dests: destsToUse, // Use current dests if available, otherwise empty
+          dests: mapPossibleMovesToDests($gameStore.possibleMoves),
           events: {
             after: handleMove,
             afterDeployStep: handleDeployStep
           }
-        },
-        events: {
-          select: handlePieceSelect // ✅ NEW: Load moves when piece is selected
         }
       });
     }
@@ -206,8 +155,6 @@
         gameStore.applyMove(game, moveResult);
         const storeEnd = performance.now();
         console.log(`⏱️ gameStore.applyMove took ${(storeEnd - storeStart).toFixed(2)}ms`);
-        // Clear current dests after successful move
-        currentDests = new Map();
       } else {
         console.warn('Illegal move attempted on board:', orig, '->', dest);
       }
@@ -393,11 +340,8 @@
         movable: {
           free: false,
           color: coreToBoardColor($gameStore.turn),
-          dests: new Map(), // ✅ Empty - will be loaded on piece selection
+          dests: mapPossibleMovesToDests($gameStore.possibleMoves),
           events: { after: handleMove, afterDeployStep: handleDeployStep }
-        },
-        events: {
-          select: handlePieceSelect // ✅ NEW: Load moves when piece is selected
         }
       });
 
