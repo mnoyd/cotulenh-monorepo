@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { algebraic } from '../dist/esm/src/type.js'
+import { algebraic } from '../dist/cotulenh.js'
 
 function main() {
   // Accepts: -d <decimal_number> or -h <hex_number>
