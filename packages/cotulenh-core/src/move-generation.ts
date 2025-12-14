@@ -205,17 +205,12 @@ export function generateMovesInDirection(
   const isOrthogonal =
     offset === -16 || offset === 1 || offset === 16 || offset === -1
   const isDiagonal = !isOrthogonal
-  const isHorizontal = offset === 16 || offset === -16
   const moveIgnoresBlocking = config.moveIgnoresBlocking
   const captureIgnoresPieceBlocking = config.captureIgnoresPieceBlocking
   const { moveRange, captureRange } = config
 
   // Pre-compute terrain mask for canStayOnSquare checks
   const stayMask = getMovementMask(pieceType)
-
-  // Pre-compute file/rank for terrain blocking checks (avoid repeated bitwise ops)
-  const fromFile = file(from)
-  const fromRank = rank(from)
 
   const checkAirforceState = isAirForce
     ? getCheckAirDefenseZone(
@@ -258,14 +253,7 @@ export function generateMovesInDirection(
 
     // Terrain blocking check (only evaluated once per direction)
     if (!terrainBlockedMovement) {
-      terrainBlockedMovement = checkTerrainBlocking(
-        from,
-        to,
-        pieceType,
-        isHorizontal,
-        fromFile,
-        fromRank,
-      )
+      terrainBlockedMovement = checkTerrainBlocking(from, to, pieceType, offset)
     }
 
     if (targetPiece) {
@@ -406,16 +394,12 @@ export function generateMovesInDirection(
 
 /**
  * Check if terrain blocks movement for a piece
- * @param fromFile - Pre-computed file of the from square (avoids redundant bitwise op)
- * @param fromRank - Pre-computed rank of the from square (avoids redundant bitwise op)
  */
 function checkTerrainBlocking(
   from: number,
   to: number,
   pieceDataType: PieceSymbol,
-  isHorizontalOffset: boolean,
-  fromFile: number,
-  fromRank: number,
+  offset: number,
 ): boolean {
   // Check basic terrain validity using mask
   if (!getMovementMask(pieceDataType)[to]) {
@@ -424,8 +408,11 @@ function checkTerrainBlocking(
 
   // Heavy piece river crossing rule
   if (HEAVY_PIECES.has(pieceDataType)) {
+    const fromFile = file(from)
+    const fromRank = rank(from)
     const toFile = file(to)
     const toRank = rank(to)
+    const isHorizontalOffset = offset === 16 || offset === -16
 
     // Determine zones (0 = not in heavy zone, 1 = upper half, 2 = lower half)
     const zoneFrom = fromFile < 2 ? 0 : fromRank <= 5 ? 1 : 2
@@ -435,6 +422,16 @@ function checkTerrainBlocking(
       if (isHorizontalOffset && (fromFile === 5 || toFile === 7)) {
         return false
       }
+      return true
+    }
+  }
+  if (pieceDataType === NAVY) {
+    if (
+      (offset === -15 && to === 0x63) ||
+      (offset === 15 && to === 0x72) ||
+      (offset === -17 && to === 0x42) ||
+      (offset === 17 && to === 0x53)
+    ) {
       return true
     }
   }
