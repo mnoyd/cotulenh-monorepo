@@ -217,10 +217,14 @@ export function generateMovesInDirection(
   const fromFile = file(from)
   const fromRank = rank(from)
 
-  // Air defense check setup (only for non-heroic AIR_FORCE)
-  const shouldCheckAirDefense = isAirForce && !pieceData.heroic
-  const checkAirforceState = shouldCheckAirDefense
-    ? getCheckAirDefenseZone(gameInstance, from, them, offset)
+  const checkAirforceState = isAirForce
+    ? getCheckAirDefenseZone(
+        gameInstance,
+        from,
+        them,
+        offset,
+        !!pieceData.heroic,
+      )
     : null
 
   let currentRange = 0
@@ -236,9 +240,9 @@ export function generateMovesInDirection(
     // Note: Standard 0x88 trick doesn't work here because we have 11 files (0-10)
     if (!isSquareOnBoard(to)) break
 
-    // Air defense check for non-heroic AIR_FORCE
+    // Air defense check
     let airDefenseResult = -1
-    if (shouldCheckAirDefense) {
+    if (isAirForce) {
       airDefenseResult = checkAirforceState!()
       if (airDefenseResult === AirDefenseResult.DESTROYED) break
     }
@@ -352,8 +356,7 @@ export function generateMovesInDirection(
         !terrainBlockedMovement &&
         !pieceBlockedMovement &&
         !!stayMask[to] &&
-        (!shouldCheckAirDefense ||
-          airDefenseResult === AirDefenseResult.SAFE_PASS)
+        (!isAirForce || airDefenseResult === AirDefenseResult.SAFE_PASS)
       ) {
         // Commander special rule: cannot slide past where enemy commander would be captured
         if (isCommander && isOrthogonal) {

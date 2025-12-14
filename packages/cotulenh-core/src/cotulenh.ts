@@ -975,6 +975,7 @@ export class CoTuLenh {
                 currentSquare,
                 swapColor(attackerColor),
                 getOppositeOffset(offset)!,
+                !!singlePiece.heroic,
               )
               let res = -1
               let i = 0

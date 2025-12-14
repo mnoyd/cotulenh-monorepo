@@ -237,13 +237,17 @@ export const AirDefenseResult = {
 } as const
 
 export function getCheckAirDefenseZone(
-  gameInstance: CoTuLenh,
+  game: CoTuLenh,
   fromSquare: number,
   defenseColor: Color,
   offset: number,
+  heroicAirforce: boolean,
 ): () => (typeof AirDefenseResult)[keyof typeof AirDefenseResult] {
+  if (heroicAirforce) {
+    return () => AirDefenseResult.SAFE_PASS
+  }
   let airDefenseResult: (typeof AirDefenseResult)[keyof typeof AirDefenseResult]
-  const airDefense = gameInstance.getAirDefense()
+  const airDefense = game.getAirDefense()
   let to = fromSquare
   let airDefenseZoneEncountered = new Set<number>()
   let movedOutOfTheFirstADZone = false
