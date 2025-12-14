@@ -126,6 +126,13 @@ function initMovementMasks() {
 }
 initMovementMasks()
 
+// Precomputed array of all valid squares on the 11x12 board
+// Used to optimize board iteration in move generation (132 valid squares vs 187 iterations)
+export const VALID_SQUARES: number[] = []
+for (let sq = 0x00; sq <= 0xba; sq++) {
+  if (isSquareOnBoard(sq)) VALID_SQUARES.push(sq)
+}
+
 // --- Helper Functions ---
 
 // Check if a square index is on the 11x12 board within the 16x16 grid
@@ -133,6 +140,12 @@ export function isSquareOnBoard(sq: number): boolean {
   const r = rank(sq)
   const f = file(sq)
   return r >= 0 && r < 12 && f >= 0 && f < 11
+}
+
+// Get the movement mask for a specific piece type
+// Navy uses NAVY_MASK, everyone else uses LAND_MASK
+export function getMovementMask(pieceType: PieceSymbol): Uint8Array {
+  return pieceType === NAVY ? NAVY_MASK : LAND_MASK
 }
 
 // Extracts the zero-based rank (0-11) from a 0x88 square index.
@@ -199,14 +212,16 @@ export type InternalMove = {
   lan?: string
 }
 // DeployState type removed - use DeploySession instead
+// Generic container for Air Defense data (internal or display)
+export type AirDefenseData<T> = {
+  [RED]: Map<T, T[]>
+  [BLUE]: Map<T, T[]>
+}
+
 export type AirDefenseForSide = Map<number, number[]>
-//For generating moves for air_force
-export type AirDefense = {
-  [RED]: AirDefenseForSide
-  [BLUE]: AirDefenseForSide
-}
-//For exporting board display
-export type AirDefenseInfluence = {
-  [RED]: Map<Square, Square[]>
-  [BLUE]: Map<Square, Square[]>
-}
+
+// For generating moves for air_force (uses 0x88 numbers)
+export type AirDefense = AirDefenseData<number>
+
+// For exporting board display (uses algebraic Strings)
+export type AirDefenseInfluence = AirDefenseData<Square>

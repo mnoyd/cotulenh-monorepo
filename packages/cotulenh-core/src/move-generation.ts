@@ -22,13 +22,14 @@ import {
   rank,
   file,
   isSquareOnBoard,
-  NAVY_MASK,
+  getMovementMask,
   LAND_MASK,
   swapColor,
   Square,
   HEAVY_PIECES,
+  VALID_SQUARES,
 } from './type.js'
-import { addMove, combinePieces, flattenPiece } from './utils.js'
+import { flattenPiece, combinePieces, addMove } from './utils.js'
 import { BITS } from './type.js'
 import { CoTuLenh } from './cotulenh.js'
 import { AirDefenseResult, getCheckAirDefenseZone } from './air-defense.js'
@@ -209,6 +210,13 @@ export function generateMovesInDirection(
   const captureIgnoresPieceBlocking = config.captureIgnoresPieceBlocking
   const { moveRange, captureRange } = config
 
+  // Pre-compute terrain mask for canStayOnSquare checks
+  const stayMask = getMovementMask(pieceType)
+
+  // Pre-compute file/rank for terrain blocking checks (avoid repeated bitwise ops)
+  const fromFile = file(from)
+  const fromRank = rank(from)
+
   // Air defense check setup (only for non-heroic AIR_FORCE)
   const shouldCheckAirDefense = isAirForce && !pieceData.heroic
   const checkAirforceState = shouldCheckAirDefense
@@ -251,6 +259,8 @@ export function generateMovesInDirection(
         to,
         pieceType,
         isHorizontal,
+        fromFile,
+        fromRank,
       )
     }
 
@@ -284,20 +294,38 @@ export function generateMovesInDirection(
             config,
             isDeployMove,
             airDefenseResult === AirDefenseResult.KAMIKAZE,
+            isCommander,
+            isNavy,
+            isAirForce,
+            stayMask,
           )
         }
       } else if (targetColor === us) {
         // Friendly combination
         const combinedPiece = combinePieces([pieceData, targetPiece])
-        if (
-          !isDeployMove &&
-          combinedPiece?.carrying?.length &&
-          currentRange <= moveRange &&
-          !terrainBlockedMovement &&
-          !pieceBlockedMovement &&
-          canStayOnSquare(to, combinedPiece.type)
-        ) {
-          addMove(moves, us, from, to, pieceData, targetPiece, BITS.COMBINATION)
+        if (combinedPiece) {
+          // Check if combined piece can stay on this terrain
+          // Note: Must use combinedPiece.type, not moving piece's type
+          const combinedMask = getMovementMask(combinedPiece.type)
+
+          if (
+            !isDeployMove &&
+            combinedPiece?.carrying?.length &&
+            currentRange <= moveRange &&
+            !terrainBlockedMovement &&
+            !pieceBlockedMovement &&
+            combinedMask[to]
+          ) {
+            addMove(
+              moves,
+              us,
+              from,
+              to,
+              pieceData,
+              targetPiece,
+              BITS.COMBINATION,
+            )
+          }
         }
       }
 
@@ -323,7 +351,7 @@ export function generateMovesInDirection(
         currentRange <= moveRange &&
         !terrainBlockedMovement &&
         !pieceBlockedMovement &&
-        canStayOnSquare(to, pieceType) &&
+        !!stayMask[to] &&
         (!shouldCheckAirDefense ||
           airDefenseResult === AirDefenseResult.SAFE_PASS)
       ) {
@@ -375,30 +403,33 @@ export function generateMovesInDirection(
 
 /**
  * Check if terrain blocks movement for a piece
+ * @param fromFile - Pre-computed file of the from square (avoids redundant bitwise op)
+ * @param fromRank - Pre-computed rank of the from square (avoids redundant bitwise op)
  */
 function checkTerrainBlocking(
   from: number,
   to: number,
   pieceDataType: PieceSymbol,
   isHorizontalOffset: boolean,
+  fromFile: number,
+  fromRank: number,
 ): boolean {
-  // Navy can only move on water
-  if (pieceDataType === NAVY) {
-    return !NAVY_MASK[to]
-  }
-
-  // Land pieces can't move on water
-  if (!LAND_MASK[to]) {
+  // Check basic terrain validity using mask
+  if (!getMovementMask(pieceDataType)[to]) {
     return pieceDataType !== AIR_FORCE // Air Force can fly over water
   }
 
   // Heavy piece river crossing rule
   if (HEAVY_PIECES.has(pieceDataType)) {
-    const zoneFrom = isHeavyZone(from)
-    const zoneTo = isHeavyZone(to)
+    const toFile = file(to)
+    const toRank = rank(to)
+
+    // Determine zones (0 = not in heavy zone, 1 = upper half, 2 = lower half)
+    const zoneFrom = fromFile < 2 ? 0 : fromRank <= 5 ? 1 : 2
+    const zoneTo = toFile < 2 ? 0 : toRank <= 5 ? 1 : 2
 
     if (zoneFrom !== 0 && zoneTo !== 0 && zoneFrom !== zoneTo) {
-      if (isHorizontalOffset && (file(from) === 5 || file(to) === 7)) {
+      if (isHorizontalOffset && (fromFile === 5 || toFile === 7)) {
         return false
       }
       return true
@@ -421,6 +452,10 @@ function handleCaptureLogic(
   config: PieceMovementConfig,
   isDeployMove: boolean,
   isSuicideMove: boolean,
+  isCommander: boolean,
+  isNavy: boolean,
+  isAirForce: boolean,
+  stayMask: Uint8Array,
 ): void {
   const us = pieceData.color
 
@@ -434,12 +469,12 @@ function handleCaptureLogic(
   let addStayCapture = false
 
   // Commander captures only adjacent
-  if (pieceData.type === COMMANDER && currentRange > 1) {
+  if (isCommander && currentRange > 1) {
     captureAllowed = false
   }
 
   // Navy attack mechanisms
-  if (pieceData.type === NAVY) {
+  if (isNavy) {
     if (targetPiece.type === NAVY) {
       // Torpedo attack
       if (currentRange > config.captureRange) {
@@ -453,13 +488,13 @@ function handleCaptureLogic(
     }
   }
 
-  const canLand = canStayOnSquare(to, pieceData.type)
+  const canLand = !!stayMask[to]
   if (!canLand) {
     addStayCapture = true
     addNormalCapture = false
   }
   //Air Force is very powerful piece. Add both options whether it can choose to stay captured or move capture
-  if (canLand && pieceData.type === AIR_FORCE) {
+  if (canLand && isAirForce) {
     if (!isDeployMove) {
       addStayCapture = true
     }
@@ -511,14 +546,6 @@ export function generateMovesForPiece(
   }
 
   return moves
-}
-
-function isHeavyZone(sq: number): 0 | 1 | 2 {
-  const f = file(sq)
-  const r = rank(sq)
-  if (f < 2) return 0 // Not in heavy zone
-
-  return r <= 5 ? 1 : 2 // 1 = upper half, 2 = lower half
 }
 
 /**
@@ -638,6 +665,49 @@ export function generateDeployMoves(
 }
 
 /**
+ * Helper to generate moves from a single square
+ * @private
+ */
+function generateMovesFromSquare(
+  gameInstance: CoTuLenh,
+  sq: number,
+  moves: InternalMove[],
+  filterPiece?: PieceSymbol,
+): void {
+  const us = gameInstance.turn()
+  const pieceData = gameInstance.get(sq)
+
+  if (!pieceData || pieceData.color !== us) return
+
+  if (pieceData.carrying && pieceData.carrying.length > 0) {
+    let candidates = flattenPiece(pieceData)
+    if (pieceData.type === NAVY && !LAND_MASK[sq]) {
+      // Remove carrier from the candidates
+      candidates = candidates.filter((p) => p.type !== pieceData.type)
+    }
+    moves.push(
+      ...generateDeployMovesForPieces(
+        gameInstance,
+        sq,
+        candidates,
+        filterPiece,
+      ),
+    )
+  }
+
+  // Always generate moves for the piece itself (carrier or not)
+  if (!filterPiece || pieceData.type === filterPiece) {
+    const singleMoves = generateMovesForPiece(
+      gameInstance,
+      sq,
+      pieceData,
+      false,
+    )
+    moves.push(...singleMoves)
+  }
+}
+
+/**
  * Generate all moves for a side in normal (non-deploy) state
  * Internal function - prefer using generateMoves() which handles session detection
  */
@@ -648,9 +718,8 @@ export function generateNormalMoves(
 ): InternalMove[] {
   const us = gameInstance.turn()
   const moves: InternalMove[] = []
-  let startSq = SQUARE_MAP.a12
-  let endSq = SQUARE_MAP.k1
 
+  // Handle filterSquare case
   if (filterSquare) {
     const sq = SQUARE_MAP[filterSquare]
     if (
@@ -659,48 +728,14 @@ export function generateNormalMoves(
       gameInstance.get(sq)?.color !== us
     )
       return []
-    startSq = endSq = sq
+
+    generateMovesFromSquare(gameInstance, sq, moves, filterPiece)
+    return moves
   }
 
-  for (let from = startSq; from <= endSq; from++) {
-    if (!isSquareOnBoard(from)) continue
-
-    const pieceData = gameInstance.get(from)
-    if (!pieceData || pieceData.color !== us) continue
-
-    if (pieceData.carrying && pieceData.carrying.length > 0) {
-      let candidates = flattenPiece(pieceData)
-      if (pieceData.type === NAVY && !LAND_MASK[from]) {
-        // Remove carrier from the candidates
-        candidates = candidates.filter((p) => p.type !== pieceData.type)
-      }
-      moves.push(
-        ...generateDeployMovesForPieces(
-          gameInstance,
-          from,
-          candidates,
-          filterPiece,
-        ),
-      )
-    }
-
-    // Always generate moves for the piece itself (carrier or not)
-    if (!filterPiece || pieceData.type === filterPiece) {
-      const singleMoves = generateMovesForPiece(
-        gameInstance,
-        from,
-        pieceData,
-        false,
-      )
-      moves.push(...singleMoves)
-    }
+  // Iterate over all valid squares using precomputed array
+  for (const from of VALID_SQUARES) {
+    generateMovesFromSquare(gameInstance, from, moves, filterPiece)
   }
   return moves
-}
-
-export function canStayOnSquare(
-  square: number,
-  pieceType: PieceSymbol,
-): boolean {
-  return pieceType === NAVY ? !!NAVY_MASK[square] : !!LAND_MASK[square]
 }

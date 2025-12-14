@@ -8,6 +8,7 @@ import {
   Square,
   swapColor,
   COMMANDER,
+  getMovementMask,
 } from './type.js'
 import {
   flattenPiece,
@@ -16,7 +17,6 @@ import {
   makeSanPiece,
   haveCommander,
 } from './utils.js'
-import { canStayOnSquare, generateMoves } from './move-generation.js'
 import {
   CTLMoveCommandInteface,
   CTLMoveSequenceCommandInterface,
@@ -613,7 +613,8 @@ export class MoveSession {
         if (!combined) continue
 
         // 2. Strict Terrain Validation for the NEW carrier
-        if (!canStayOnSquare(move.to, combined.type)) {
+        const combinedMask = getMovementMask(combined.type)
+        if (!combinedMask[move.to]) {
           continue
         }
 
