@@ -206,15 +206,17 @@ export function makeCoreMove(game: CoTuLenh, orig: OrigMove, dest: DestMove): Mo
       }
     }
 
-    // Check if there's an active deploy session
-    const hasDeploySession = game.getSession() !== null;
+    // Check if it is a deploy move:
+    // 1. Session is already active (continuation)
+    // 2. OR explicit stack move indicated by board (start of new deploy)
+    const isDeploy = !!game.getSession() || !!orig.stackMove;
 
     const moveResult = game.move({
       from: orig.square,
       to: dest.square,
       piece: pieceToMove.type,
       ...(dest.stay !== undefined && { stay: dest.stay }),
-      deploy: hasDeploySession // Auto-detect deploy mode
+      deploy: isDeploy
     });
     return moveResult;
   } catch (error) {

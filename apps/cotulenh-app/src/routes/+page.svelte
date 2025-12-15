@@ -79,10 +79,7 @@
           free: false,
           color: coreToBoardColor($gameStore.turn),
           dests: mapPossibleMovesToDests($gameStore.possibleMoves),
-          events: {
-            after: handleMove,
-            afterDeployStep: handleDeployStep
-          }
+          events: { after: handleMove }
         }
       });
     }
@@ -173,59 +170,6 @@
     }
     const perfEnd = performance.now();
     console.log(`⏱️ TOTAL handleMove took ${(perfEnd - perfStart).toFixed(2)}ms`);
-  }
-
-  /**
-   * Handle individual deploy step (incremental mode)
-   * Fires immediately when user moves a piece during deployment
-   *
-   * Board now derives deploy state from FEN automatically.
-   * We just send the move to core and let reactive updates handle the rest.
-   */
-  function handleDeployStep(move: SingleDeployMove, metadata: DeployStepMetadata) {
-    console.log('🎯 handleDeployStep:', move);
-
-    if (!game) {
-      console.error('❌ No game instance available');
-      return;
-    }
-
-    if (isUpdatingBoard) {
-      console.warn('Deploy step attempted while board is updating, ignoring');
-      return;
-    }
-
-    try {
-      // Convert board piece type to core piece type
-      const coreType = roleToType(move.piece.role);
-
-      // Send move to core - core will update DeploySession and FEN
-      const result = game.move({
-        from: move.from,
-        to: move.to,
-        piece: coreType,
-        deploy: true
-      });
-
-      if (!result) {
-        console.error('❌ Deploy move rejected by core');
-        return;
-      }
-
-      console.log('✅ Deploy move accepted');
-      console.log('  FEN:', game.fen());
-      console.log('  Deploy session active:', !!game.getSession());
-
-      // Update game store with new FEN
-      // The reactive statement ($: if (boardApi && $gameStore.fen)) will:
-      // 1. Parse deploy state from FEN
-      // 2. Update board highlights automatically
-      // 3. Update valid moves
-      gameStore.applyMove(game, result);
-    } catch (error) {
-      console.error('❌ Deploy step failed:', error);
-      reSetupBoard();
-    }
   }
 
   /**
@@ -341,7 +285,7 @@
           free: false,
           color: coreToBoardColor($gameStore.turn),
           dests: mapPossibleMovesToDests($gameStore.possibleMoves),
-          events: { after: handleMove, afterDeployStep: handleDeployStep }
+          events: { after: handleMove }
         }
       });
 
