@@ -19,10 +19,7 @@
     DeploySequence as DeployMoveRequest
   } from '@repo/cotulenh-core';
   import type { Key, Dests } from '@repo/cotulenh-board';
-  import GameInfo from '$lib/components/GameInfo.svelte';
-  import DeploySessionPanel from '$lib/components/DeploySessionPanel.svelte';
-  import HeroicStatusPanel from '$lib/components/HeroicStatusPanel.svelte';
-  import GameControls from '$lib/components/GameControls.svelte';
+  import SidePanel from '$lib/components/SidePanel.svelte';
   import { gameStore } from '$lib/stores/game';
 
   import '@repo/cotulenh-board/assets/commander-chess.base.css';
@@ -353,12 +350,7 @@
       </div>
 
       <div class="controls-section">
-        <div class="controls-grid">
-          <GameInfo />
-          <DeploySessionPanel {game} onCommit={commitDeploy} onCancel={cancelDeploy} />
-          <GameControls {game} />
-          <HeroicStatusPanel {game} />
-        </div>
+        <SidePanel {game} onCommit={commitDeploy} onCancel={cancelDeploy} />
       </div>
     </div>
   </div>
@@ -539,22 +531,8 @@
   .controls-section {
     position: sticky;
     top: 20px;
-    max-height: calc(100vh - 40px);
-    overflow-y: auto;
-    padding-right: 10px;
-    /* Custom Scrollbar */
-    scrollbar-width: thin;
-    scrollbar-color: var(--mw-primary) var(--mw-bg-dark);
-  }
-
-  .controls-section::-webkit-scrollbar {
-    width: 4px;
-  }
-  .controls-section::-webkit-scrollbar-track {
-    background: var(--mw-bg-dark);
-  }
-  .controls-section::-webkit-scrollbar-thumb {
-    background: var(--mw-primary);
+    height: calc(100vh - 40px);
+    /* SidePanel handles scrolling internally now */
   }
 
   .controls-grid {
