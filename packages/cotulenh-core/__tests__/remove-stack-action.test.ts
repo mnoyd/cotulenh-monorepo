@@ -90,7 +90,7 @@ describe('Debug Standardize RemovePieceAction', () => {
     // Now verify NormalMoveCommand for moving the WHOLE STACK (NAVY+AF)
     // Navy moves a1 -> a2
     const navyMove = moves.find(
-      (m) => m.piece && m.piece.type === NAVY && m.to === 'a2',
+      (m) => m.piece && m.piece.type === NAVY && m.to === 'a2' && !m.isDeploy,
     )
     if (navyMove) {
       console.log('Navy Normal Move FOUND')
@@ -98,6 +98,7 @@ describe('Debug Standardize RemovePieceAction', () => {
         from: navyMove.from,
         to: navyMove.to,
         piece: navyMove.piece.type,
+        deploy: false,
       })
       expect(res).toBeTruthy()
 
