@@ -125,12 +125,6 @@ function baseUserMove(state: HeadlessState, orig: cg.OrigMove, dest: cg.DestMove
         savedDests: state.movable.dests, // Save current dests
       };
       return { moveFinished: false };
-    } else {
-      if (piecesPrepared.updatedPieces.isStackMove) {
-        handleDeployMove(state, piecesPrepared, orig, dest);
-        // Deploy move detected - callback fired, core will handle deploy state
-        return { piecesPrepared, stackMove: true, moveFinished: true } as MoveResult;
-      }
     }
     //Move finished
     return { piecesPrepared, moveFinished: true } as MoveResult;
@@ -150,14 +144,8 @@ export function userMove(state: HeadlessState, origMove: cg.OrigMove, destMove: 
     if (!result.moveFinished) {
       return true;
     }
-    if (result.stackMove) {
-      // Deploy move - callback already fired in handleDeployMove
-      // Just unselect and return success
-      unselect(state);
-      return true;
-    } else {
-      return endUserNormalMove(state, result, origMove, destMove);
-    }
+
+    return endUserNormalMove(state, result, origMove, destMove);
   }
 
   unselect(state);
@@ -489,37 +477,4 @@ function preparePieceThatChanges(
     },
     originalPiece,
   };
-}
-
-function handleDeployMove(
-  state: HeadlessState,
-  piecesPrepared: PreparedPiece,
-  origMove: cg.OrigMove,
-  destMove: cg.DestMove,
-): void {
-  // Board doesn't manage deploy state - just sends move info to core
-  // Core will handle whether this starts, continues, or ends a deploy session
-
-  const movedPieces = flattenPiece(piecesPrepared.originalPiece.pieceThatMoves!);
-  const mainPiece = movedPieces[0];
-
-  const deployMove: cg.SingleDeployMove = {
-    piece: mainPiece,
-    from: origMove.square,
-    to: destMove.square,
-    capture: piecesPrepared.updatedPieces.capture
-      ? piecesPrepared.originalPiece.originalDestPiece
-      : undefined,
-  };
-
-  const metadata: cg.DeployStepMetadata = {
-    holdTime: state.hold.stop(),
-    ctrlKey: state.stats.ctrlKey,
-    ...(piecesPrepared.updatedPieces.capture && {
-      captured: flattenPiece(piecesPrepared.originalPiece.originalDestPiece!),
-    }),
-  };
-
-  // Send to core - core will update deploy state and return new FEN
-  callUserFunction(state.movable.events.afterDeployStep, deployMove, metadata);
 }
