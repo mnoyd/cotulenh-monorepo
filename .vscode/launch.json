@@ -11,8 +11,8 @@
       "userDataDir": "${workspaceFolder}/.vscode/chrome-debug-profile",
       "runtimeArgs": ["--disable-web-security", "--disable-features=VizDisplayCompositor"],
       "sourceMapPathOverrides": {
-        "webpack:///./src/*": "${webRoot}/src/*",
-        "/src/*": "${webRoot}/src/*"
+        "/src/*": "${webRoot}/src/*",
+        "/*": "${webRoot}/*"
       }
     },
     {
@@ -24,6 +24,15 @@
       "cwd": "${workspaceFolder}/apps/cotulenh-app",
       "console": "integratedTerminal",
       "internalConsoleOptions": "neverOpen"
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Full Stack Debug",
+      "configurations": [
+        "Debug SvelteKit (Server with Source Maps)",
+        "Debug SvelteKit Client (Chrome)"
+      ]
     }
   ]
 }
