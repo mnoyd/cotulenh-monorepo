@@ -513,6 +513,19 @@ export class MoveSession {
     const game = this._game
     const us = this.turn
 
+    // Check valid terrain for remaining stack
+    // This prevents scenarios where a carrier (e.g., NAVY) moves off a water square,
+    // leaving behind passengers (e.g., LAND pieces) that cannot exist on water.
+    if (this.isDeploy) {
+      const remainingPiece = game.get(this.stackSquare)
+      if (remainingPiece) {
+        const mask = getMovementMask(remainingPiece.type)
+        if (!mask[this.stackSquare]) {
+          return false
+        }
+      }
+    }
+
     // DELAYED VALIDATION: Check commander safety after all moves
     // This allows deploy sequences to escape check
     return !game.isCommanderInDanger(us)

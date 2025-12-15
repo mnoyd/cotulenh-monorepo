@@ -567,6 +567,15 @@ describe('Random finding', () => {
     const moves = game.moves({ square: 'h11' })
     game.move('C>h12')
   })
+  it('should handle navy deploy move', () => {
+    const game = new CoTuLenh(
+      '6c4/4fh1hf2/1n1a2s2a1/1n2gt1tg2/2ie2m2ei/11/1(NF)9/2IE2M2EI/2N1GT1TG2/3A2S2A1/5H1HF2/6C4 r - - 4 3',
+    )
+    const moves = game.moves({ square: 'b6' })
+    game.move({ from: 'b6', to: 'e9', piece: NAVY, deploy: true })
+    const fen = game.fen()
+    console.log(fen)
+  })
 })
 
 describe('Remaining pieces have no move', () => {

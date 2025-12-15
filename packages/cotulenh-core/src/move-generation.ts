@@ -681,10 +681,7 @@ function generateMovesFromSquare(
 
   if (pieceData.carrying && pieceData.carrying.length > 0) {
     let candidates = flattenPiece(pieceData)
-    if (pieceData.type === NAVY && !LAND_MASK[sq]) {
-      // Remove carrier from the candidates
-      candidates = candidates.filter((p) => p.type !== pieceData.type)
-    }
+
     moves.push(
       ...generateDeployMovesForPieces(
         gameInstance,
