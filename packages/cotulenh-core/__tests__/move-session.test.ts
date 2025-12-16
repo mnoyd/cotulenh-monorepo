@@ -276,6 +276,7 @@ describe('DeploySession', () => {
 
   describe('toFenString', () => {
     it('should generate extended FEN with no moves', () => {
+      const baseFen = game.fen()
       const session = new MoveSession(game, {
         stackSquare: 0x92, // c3
         turn: RED,
@@ -283,9 +284,9 @@ describe('DeploySession', () => {
         isDeploy: true,
       })
 
-      const extendedFEN = session.toFenString('base-fen r - - 0 1')
+      const extendedFEN = session.toFenString()
       // Navy is staying at c3 because no moves made yet
-      expect(extendedFEN).toBe('base-fen r - - 0 1 c3:N<...')
+      expect(extendedFEN).toBe(`${baseFen} c3:N:...`)
     })
 
     it('should generate extended FEN with moves', () => {
@@ -295,6 +296,7 @@ describe('DeploySession', () => {
       ])
       game.put(originalPiece, 'c3')
 
+      const baseFen = game.fen()
       const session = new MoveSession(game, {
         stackSquare: 0x92, // c3
         turn: RED,
@@ -308,10 +310,10 @@ describe('DeploySession', () => {
       const move2 = createMove(0x92, 0x82, createPiece(AIR_FORCE)) // c3 to c4
       session.addMove(move2)
 
-      const extendedFEN = session.toFenString('base-fen r - - 0 1')
+      const extendedFEN = session.toFenString()
       // Tank remains at c3 -> T<
       // Moves are N>c5, F>c4
-      expect(extendedFEN).toBe('base-fen r - - 0 1 c3:T<N>c5,F>c4...')
+      expect(extendedFEN).toBe(`${baseFen} c3:T:N>c5,F>c4...`)
     })
 
     it('should generate extended FEN with capture', () => {
@@ -319,6 +321,7 @@ describe('DeploySession', () => {
       game.put(originalPiece, 'c3')
       game.put(createPiece(INFANTRY, undefined, BLUE), 'c5') // Target for capture
 
+      const baseFen = game.fen()
       const session = new MoveSession(game, {
         stackSquare: 0x92,
         turn: RED,
@@ -334,16 +337,17 @@ describe('DeploySession', () => {
       )
       session.addMove(move)
 
-      const extendedFEN = session.toFenString('base-fen r - - 0 1')
+      const extendedFEN = session.toFenString()
       // Tank remains -> T<
       // Move -> N>xc5
-      expect(extendedFEN).toBe('base-fen r - - 0 1 c3:T<N>xc5...')
+      expect(extendedFEN).toBe(`${baseFen} c3:T:N>xc5...`)
     })
 
     it('should generate extended FEN with combined pieces', () => {
       const combinedPiece = createPiece(NAVY, [createPiece(TANK)])
       game.put(combinedPiece, 'c3')
 
+      const baseFen = game.fen()
       const session = new MoveSession(game, {
         stackSquare: 0x92,
         turn: RED,
@@ -354,16 +358,17 @@ describe('DeploySession', () => {
       const move = createMove(0x92, 0x72, combinedPiece)
       session.addMove(move)
 
-      const extendedFEN = session.toFenString('base-fen r - - 0 1')
+      const extendedFEN = session.toFenString()
       // This is complete because we deployed the entire stack, nothing stays
       // Output: (NT)>c5
-      expect(extendedFEN).toBe('base-fen r - - 0 1 c3:(NT)>c5')
+      expect(extendedFEN).toBe(`${baseFen} c3::(NT)>c5`)
     })
 
     it('should not include ... when complete', () => {
       const originalPiece = createPiece(NAVY, [createPiece(AIR_FORCE)])
       game.put(originalPiece, 'c3')
 
+      const baseFen = game.fen()
       const session = new MoveSession(game, {
         stackSquare: 0x92,
         turn: RED,
@@ -378,9 +383,9 @@ describe('DeploySession', () => {
       const move2 = createMove(0x92, 0x82, createPiece(AIR_FORCE))
       session.addMove(move2)
 
-      const extendedFEN = session.toFenString('base-fen r - - 0 1')
+      const extendedFEN = session.toFenString()
       // Nothing stays -> no < notation
-      expect(extendedFEN).toBe('base-fen r - - 0 1 c3:N>c5,F>c4')
+      expect(extendedFEN).toBe(`${baseFen} c3::N>c5,F>c4`)
     })
   })
 })

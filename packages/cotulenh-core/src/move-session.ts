@@ -241,15 +241,22 @@ export class DeploySequence implements BaseMoveResult {
     stackSquare: number,
     stay: Piece | undefined,
   ): { san: string; lan: string } {
-    // In deploy sessions, only pieces from the same stack can move,
-    // so there's no ambiguity - we can use simplified notation
+    // In deploy sessions, only pieces from the same stack can move
     const allMoveSan = moves.map((m: InternalMove) => {
-      return moveToSanLan(m)[0] // No legal moves needed - no disambiguation
+      // Use moveToSanLan to get consistent "Piece>Dest" format
+      return moveToSanLan(m)[0]
     })
     const movesSan = allMoveSan.join(',')
-    const stayNotation = stay ? `${makeSanPiece(stay)}<` : ''
-    const san = `${stayNotation}${movesSan}`
-    const lan = `${algebraic(stackSquare)}:${san}`
+    const stayNotation = stay ? makeSanPiece(stay) : ''
+
+    // SAN: Simple representation "Stay< Move1, Move2"
+    // This is for UI/Logging, not critical for FEN persistence but good for readability
+    const sanStay = stay ? `${makeSanPiece(stay)}<` : ''
+    const san = `${sanStay}${movesSan}`
+
+    // LAN (FEN part): Origin:Stay:Moves
+    // Example: a1:K(P):N>a2,P>a3
+    const lan = `${algebraic(stackSquare)}:${stayNotation}:${movesSan}`
     return { san, lan }
   }
 
@@ -574,8 +581,8 @@ export class MoveSession {
   /**
    * Generates the FEN string for the current deploy session
    */
-  toFenString(baseFEN: string): string {
-    if (!this.isDeploy) return baseFEN
+  toFenString(): string {
+    if (!this.isDeploy) return this._beforeFEN
 
     const { lan } = DeploySequence.calculateSanLan(
       this.moves,
@@ -585,10 +592,10 @@ export class MoveSession {
         : undefined,
     )
 
-    // Use remaining count to decide on "..." to avoid recursion with isComplete -> game.moves
-    // If there are pieces remaining, we show "..." (even if stuck, ensuring valid FEN state logic)
+    // Append lan which now contains the full logic
+    // Use remaining count to decide on "..."
     const unfinished = this.remaining.length > 0 ? '...' : ''
-    return `${baseFEN} ${lan}${unfinished}`
+    return `${this._beforeFEN} ${lan}${unfinished}`
   }
 
   /**
