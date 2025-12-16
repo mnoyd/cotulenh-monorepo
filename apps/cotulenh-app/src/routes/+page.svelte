@@ -79,7 +79,13 @@
           free: false,
           color: coreToBoardColor($gameStore.turn),
           dests: mapPossibleMovesToDests($gameStore.possibleMoves),
-          events: { after: handleMove }
+          events: {
+            after: handleMove,
+            session: {
+              cancel: cancelDeploy,
+              complete: commitDeploy
+            }
+          }
         }
       });
     }
@@ -285,7 +291,13 @@
           free: false,
           color: coreToBoardColor($gameStore.turn),
           dests: mapPossibleMovesToDests($gameStore.possibleMoves),
-          events: { after: handleMove }
+          events: {
+            after: handleMove,
+            session: {
+              cancel: cancelDeploy,
+              complete: commitDeploy
+            }
+          }
         }
       });
 

@@ -29,6 +29,10 @@ export interface HeadlessState {
     events: {
       after?: (orig: cg.OrigMove, dest: cg.DestMove, metadata: cg.MoveMetadata) => void; // called after the move has been played
       afterNewPiece?: (role: cg.Role, key: cg.Key, metadata: cg.MoveMetadata) => void; // called after a new piece is dropped on the board
+      session?: {
+        cancel?: () => void;
+        complete?: () => void;
+      };
     };
   };
   drawable: Drawable;
