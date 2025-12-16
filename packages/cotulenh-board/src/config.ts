@@ -22,7 +22,10 @@ export interface Config {
     showDests?: boolean; // whether to add the move-dest class on squares
     events?: {
       after?: (orig: cg.OrigMove, dest: cg.DestMove, metadata: cg.MoveMetadata) => void; // called after the move has been played
-      afterDeployStep?: (move: cg.SingleDeployMove, metadata: cg.DeployStepMetadata) => void; // called after each individual deploy step
+      session?: {
+        cancel?: () => void;
+        complete?: () => void;
+      };
       afterNewPiece?: (role: cg.Role, key: cg.Key, metadata: cg.MoveMetadata) => void; // called after a new piece is dropped on the board
     };
   };

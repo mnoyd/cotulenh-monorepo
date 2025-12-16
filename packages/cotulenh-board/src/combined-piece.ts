@@ -13,8 +13,10 @@ import { ambigousMoveRegistry } from './popup/ambigous-move-registry';
 import { createAmbigousModeHandling } from './popup/ambigous-move.js';
 import { userMove } from './board.js';
 
-const END_MOVE = 'end-move';
-type EndMove = typeof END_MOVE;
+export const CANCEL_MOVE = 'cancel-move';
+type CancelMove = typeof CANCEL_MOVE;
+export const COMPLETE_MOVE = 'complete-move';
+type CompleteMove = typeof COMPLETE_MOVE;
 
 // Role to flag mapping for board pieces
 const boardRoleToFlagMap: Record<string, number> = {
@@ -78,12 +80,19 @@ export function removePieceFromStack(stackPiece: cg.Piece, roleToRemove: cg.Piec
 }
 
 export const COMBINED_PIECE_POPUP_TYPE = 'combined-piece';
-const combinedPiecePopup = createPopupFactory<cg.Piece | EndMove>({
+const combinedPiecePopup = createPopupFactory<cg.Piece | CancelMove | CompleteMove>({
   type: COMBINED_PIECE_POPUP_TYPE,
-  renderItem: (s: State, item: cg.Piece | EndMove, index: number) => {
+  renderItem: (s: State, item: cg.Piece | CancelMove | CompleteMove, index: number) => {
     const squareSize = s.dom.bounds().width / 12;
-    if (item === END_MOVE) {
-      const el = createEl('cg-btn', 'end-stack-move');
+    if (item === CANCEL_MOVE) {
+      const el = createEl('cg-btn', 'cancel-stack-move');
+      el.dataset.index = index.toString();
+      el.style.width = squareSize + 'px';
+      el.style.height = squareSize + 'px';
+      return el;
+    }
+    if (item === COMPLETE_MOVE) {
+      const el = createEl('cg-btn', 'complete-stack-move');
       el.dataset.index = index.toString();
       el.style.width = squareSize + 'px';
       el.style.height = squareSize + 'px';
@@ -97,10 +106,16 @@ const combinedPiecePopup = createPopupFactory<cg.Piece | EndMove>({
   },
   onSelect: (s: State, index: number, e?: cg.MouchEvent) => {
     const selectedPiece = s.popup?.items[index];
-    if (selectedPiece === END_MOVE) {
-      // In incremental mode, END_MOVE is not used
+    if (selectedPiece === CANCEL_MOVE) {
+      // In incremental mode, CANCEL_MOVE is not used
       // User must use commit button in app
-      board.unselect(s);
+      console.log('CANCEL_MOVE');
+      s.movable.events.session?.cancel?.();
+    } else if (selectedPiece === COMPLETE_MOVE) {
+      // In incremental mode, CANCEL_MOVE is not used
+      // User must use commit button in app
+      console.log('COMPLETE_MOVE');
+      s.movable.events.session?.complete?.();
     } else {
       if (!e) return;
       const position = util.eventPosition(e)!;
@@ -146,12 +161,10 @@ export function prepareCombinedPopup(
   state: HeadlessState,
   pieces: cg.Piece[],
   key: cg.Key,
-): (cg.Piece | EndMove)[] {
+): (cg.Piece | CancelMove | CompleteMove)[] {
   const movablePieces = pieces.filter(p => board.canSelectStackPiece(state, { square: key, type: p.role }));
-  // In incremental mode, END_MOVE is not used - commit happens via app button
-  if (state.deploySession && movablePieces.length < 2) return movablePieces;
   if (!state.deploySession) return movablePieces;
-  return [...movablePieces, END_MOVE];
+  return [...movablePieces, CANCEL_MOVE, COMPLETE_MOVE];
 }
 
 export const MOVE_WITH_CARRIER_POPUP_TYPE = 'move-with-carrier';
