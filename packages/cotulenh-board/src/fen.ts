@@ -47,10 +47,10 @@ export interface ParsedFEN {
   pieces: cg.Pieces;
   deployState?: {
     originSquare: cg.Key;
+    stay?: cg.Piece;
     moves: Array<{
-      piece: string; // e.g., "N", "F(EI)"
+      piece: cg.Piece;
       to: cg.Key;
-      capture: boolean;
     }>;
     isComplete: boolean; // false if ends with "..."
   };
@@ -89,6 +89,7 @@ export function readWithDeployState(fen: string): ParsedFEN {
   }
 
   const originSquare = sections[0] as cg.Key;
+  const stay = parsePiece(sections[1]);
   const moveStr = sections.slice(2).join(':'); // Everything after stay piece
   const moves = parseDeployMoves(moveStr);
 
@@ -96,99 +97,116 @@ export function readWithDeployState(fen: string): ParsedFEN {
     pieces,
     deployState: {
       originSquare,
+      stay,
       moves,
       isComplete,
     },
   };
 }
 
-function parseDeployMoves(moveStr: string): Array<{ piece: string; to: cg.Key; capture: boolean }> {
+function parseDeployMoves(moveStr: string): Array<{ piece: cg.Piece; to: cg.Key }> {
   if (!moveStr || moveStr.trim() === '') return [];
 
   // Parse format: "T>h6" or "N>xa2,F>b3"
   return moveStr.split(',').map(moveNotation => {
-    const [piece, dest] = moveNotation.split('>');
+    const [pieceStr, dest] = moveNotation.split('>');
     const capture = dest?.startsWith('x') || dest?.startsWith('_');
     const to = (capture ? dest.substring(1) : dest) as cg.Key;
 
-    return { piece, to, capture };
+    return { piece: parsePiece(pieceStr), to };
   });
+}
+
+export function parsePiece(str: string): cg.Piece {
+  let piece: cg.Piece | null = null;
+  let promoteNext = false;
+  let inCombine = false;
+
+  for (let i = 0; i < str.length; i++) {
+    const char = str[i];
+    if (char === '+') {
+      promoteNext = true;
+    } else if (char === '(') {
+      inCombine = true;
+    } else if (char === ')') {
+      inCombine = false;
+    } else {
+      const p = charToPiece(char, promoteNext);
+      promoteNext = false;
+      if (!piece) {
+        piece = p;
+        if (inCombine) piece.carrying = [];
+      } else {
+        if (!piece.carrying) piece.carrying = [];
+        piece.carrying.push(p);
+      }
+    }
+  }
+  if (!piece) throw new Error(`Invalid piece string: ${str}`);
+  return piece;
 }
 
 function parseBaseFEN(fen: string): cg.Pieces {
   const pieces: cg.Pieces = new Map();
   let row = 11;
   let col = 0;
-  let promoteNextPiece = false;
-  let readingCombinedPiece = false;
-  let combinedPiece: cg.Piece | null = null;
 
   const piecePlacement = fen.split(' ')[0]; // Process only the piece placement part
 
-  for (let i = 0; i < piecePlacement.length; i++) {
+  let i = 0;
+  while (i < piecePlacement.length) {
     const char = piecePlacement[i];
 
-    switch (char) {
-      case '/':
-        row--;
-        col = 0;
-        if (row < 0) {
-          // console.warn("FEN parsing warning: row became negative."); // Optional: for debugging
-          return pieces;
-        }
-        break;
-      case '+':
-        promoteNextPiece = true;
-        break;
-      case '(':
-        readingCombinedPiece = true;
-        break;
-      case ')':
-        readingCombinedPiece = false;
-        if (combinedPiece) {
-          pieces.set(pos2key([col, row]), combinedPiece);
-          combinedPiece = null;
-          col++; // A combined piece occupies one square, so advance column
-        }
-        break;
-      default:
-        if (char >= '0' && char <= '9') {
-          let numStr = char;
-          while (
-            i + 1 < piecePlacement.length &&
-            piecePlacement[i + 1] >= '0' &&
-            piecePlacement[i + 1] <= '9'
-          ) {
-            i++; // Consume the digit
-            numStr += piecePlacement[i];
-          }
-          const emptySquares = parseInt(numStr, 10);
-          if (isNaN(emptySquares)) {
-          } else {
-            col += emptySquares;
-          }
-        } else {
-          // It's a piece character
-          const currentPiece = charToPiece(char, promoteNextPiece);
-          promoteNextPiece = false; // Reset promotion flag
-
-          if (readingCombinedPiece) {
-            if (combinedPiece === null) {
-              combinedPiece = currentPiece;
-              combinedPiece.carrying = []; // Initialize for the main carrier piece
-            } else {
-              // combinedPiece exists and its .carrying array is initialized
-              combinedPiece.carrying!.push(currentPiece); // Add to existing array, ! asserts carrying is not null
-            }
-          } else {
-            pieces.set(pos2key([col, row]), currentPiece);
-            col++; // Advance column for a standalone piece
-          }
-        }
-        break;
+    if (char === '/') {
+      row--;
+      col = 0;
+      if (row < 0) {
+        // console.warn("FEN parsing warning: row became negative.");
+        return pieces;
+      }
+      i++;
+    } else if (char >= '0' && char <= '9') {
+      let numStr = char;
+      let j = i + 1;
+      while (j < piecePlacement.length && piecePlacement[j] >= '0' && piecePlacement[j] <= '9') {
+        numStr += piecePlacement[j];
+        j++;
+      }
+      const emptySquares = parseInt(numStr, 10);
+      if (!isNaN(emptySquares)) {
+        col += emptySquares;
+      }
+      i = j;
+    } else {
+      // It's a piece character (or start of one)
+      const { str, nextIndex } = extractPieceString(piecePlacement, i);
+      const piece = parsePiece(str);
+      pieces.set(pos2key([col, row]), piece);
+      col++; // Advance column for a standalone piece (even if combined, it's one square)
+      i = nextIndex;
     }
   }
   return pieces;
+}
+
+function extractPieceString(pl: string, start: number): { str: string; nextIndex: number } {
+  let i = start;
+  // Consume all leading '+' (though typically only one)
+  while (i < pl.length && pl[i] === '+') {
+    i++;
+  }
+
+  if (i < pl.length && pl[i] === '(') {
+    // Find closing ')'
+    while (i < pl.length && pl[i] !== ')') {
+      i++;
+    }
+    if (i < pl.length) i++; // Consume ')'
+  } else {
+    // Single char (piece)
+    if (i < pl.length) i++;
+  }
+  return { str: pl.substring(start, i), nextIndex: i };
 }
 
 function pieceToString(piece: cg.Piece): string {

@@ -83,14 +83,14 @@ export interface HeadlessState {
   selected?: cg.OrigMove;
   deploySession?: {
     originSquare: cg.Key; // Where deployment started
+    stay?: cg.Piece;
     deployedMoves: Array<{
-      piece: string; // e.g., "N", "F(EI)"
+      piece: cg.Piece; // e.g., "N", "F(EI)"
       to: cg.Key;
-      capture: boolean;
     }>;
     isComplete: boolean; // false if deployment is ongoing (ends with "...")
     recombineOptions?: Array<{
-      piece: string;
+      piece: cg.Piece;
       targetSquare: cg.Key;
       isSafe: boolean;
     }>;

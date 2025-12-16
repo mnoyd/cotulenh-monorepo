@@ -100,6 +100,7 @@ export function configure(state: HeadlessState, config: Config): void {
     if (parsed.deployState) {
       state.deploySession = {
         originSquare: parsed.deployState.originSquare,
+        stay: parsed.deployState.stay,
         deployedMoves: parsed.deployState.moves,
         isComplete: parsed.deployState.isComplete,
       };
