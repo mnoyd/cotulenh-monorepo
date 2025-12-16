@@ -2,33 +2,21 @@
   import { onMount } from 'svelte';
   import { page } from '$app/stores';
   import { CotulenhBoard, origMoveToKey } from '@repo/cotulenh-board';
-  import type {
-    Api,
-    DestMove,
-    OrigMove,
-    OrigMoveKey,
-    Role,
-    SingleDeployMove,
-    DeployStepMetadata
-  } from '@repo/cotulenh-board';
+  import type { Api, DestMove, OrigMove, OrigMoveKey, Role } from '@repo/cotulenh-board';
   import { CoTuLenh, BLUE, RED } from '@repo/cotulenh-core';
-  import type {
-    Square,
-    Color,
-    StandardMove as Move,
-    DeploySequence as DeployMoveRequest
-  } from '@repo/cotulenh-core';
+  import type { Square, Color, StandardMove as Move } from '@repo/cotulenh-core';
   import type { Key, Dests } from '@repo/cotulenh-board';
   import GameInfo from '$lib/components/GameInfo.svelte';
   import DeploySessionPanel from '$lib/components/DeploySessionPanel.svelte';
-  import HeroicStatusPanel from '$lib/components/HeroicStatusPanel.svelte';
+  import MoveHistory from '$lib/components/MoveHistory.svelte';
+
   import GameControls from '$lib/components/GameControls.svelte';
   import { gameStore } from '$lib/stores/game';
 
   import '@repo/cotulenh-board/assets/commander-chess.base.css';
   import '@repo/cotulenh-board/assets/commander-chess.pieces.css';
   import '$lib/styles/modern-warfare.css';
-  import { makeCoreMove, typeToRole, roleToType, getMovesForSquare } from '$lib/utils';
+  import { makeCoreMove, typeToRole } from '$lib/utils';
 
   let boardContainerElement: HTMLElement | null = null;
   let boardApi = $state<Api | null>(null);
@@ -333,31 +321,29 @@
 
 <main>
   <div class="layout-container">
-    <div class="page-header">
-      <div class="header-content">
-        <h1>Strategic Command</h1>
-        <p class="subtitle">Master the art of tactical warfare in CoTuLenh</p>
-      </div>
-    </div>
-
     <div class="game-layout">
+      <!-- Board Section -->
       <div class="board-section">
         <div bind:this={boardContainerElement} class="board-container">
           {#if !boardApi}
             <div class="loading-state">
               <div class="loading-spinner"></div>
-              <p>Initializing battlefield...</p>
             </div>
           {/if}
         </div>
       </div>
 
+      <!-- Controls Section (Side Panel) -->
       <div class="controls-section">
+        <header class="mw-header">
+          <h1>WARFARE <span class="highlight">COMMAND</span></h1>
+        </header>
+
         <div class="controls-grid">
           <GameInfo />
           <DeploySessionPanel {game} onCommit={commitDeploy} onCancel={cancelDeploy} />
           <GameControls {game} />
-          <HeroicStatusPanel {game} />
+          <MoveHistory history={$gameStore.history} />
         </div>
       </div>
     </div>
@@ -365,250 +351,198 @@
 </main>
 
 <style>
+  :global(body) {
+    margin: 0;
+    padding: 0;
+    background-color: #0a0a0a;
+    color: #e5e5e5;
+    font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  }
+
   main {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    /* Ensure background covers entire viewport height */
     min-height: 100vh;
-    background-color: var(--mw-bg-dark);
-    font-family: var(--font-ui);
-    color: #e0e0e0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-image:
+      linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)),
+      url('/assets/bg-warfare.jpg'); /* Hypothetical background */
+    background-size: cover;
+    background-position: center;
   }
 
   .layout-container {
-    max-width: 1800px;
-    margin: 0 auto;
-    padding: var(--spacing-xl);
     width: 100%;
-    position: relative;
-    z-index: 1;
-  }
-
-  /* Scanline overlay effect */
-  .layout-container::before {
-    content: '';
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background:
-      linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%),
-      linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
-    background-size:
-      100% 2px,
-      3px 100%;
-    pointer-events: none;
-    z-index: 999;
-    opacity: 0.6;
-  }
-
-  .page-header {
-    margin-bottom: var(--spacing-xl);
-    text-align: center;
-    position: relative;
-    border-bottom: 1px solid var(--mw-border-color);
-    padding-bottom: var(--spacing-lg);
-  }
-
-  .header-content {
-    display: inline-block;
-    position: relative;
-  }
-
-  h1 {
-    font-family: var(--font-display);
-    font-size: clamp(2.5rem, 5vw, 5rem);
-    font-weight: 900;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    margin-bottom: var(--spacing-xs);
-    color: var(--mw-primary);
-    text-shadow: var(--mw-text-glow);
-    position: relative;
-    display: inline-block;
-  }
-
-  h1::after {
-    /* Glitch/Underline effect */
-    content: 'STRATEGIC COMMAND';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    opacity: 0.5;
-    filter: blur(5px);
-    z-index: -1;
-  }
-
-  .subtitle {
-    font-family: var(--font-mono);
-    font-size: 1rem;
-    color: var(--mw-secondary);
-    text-transform: uppercase;
-    letter-spacing: 0.2em;
-    margin: 0;
-    margin-top: var(--spacing-sm);
-    opacity: 0.8;
+    max-width: 1400px;
+    padding: 20px;
   }
 
   .game-layout {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) 450px;
-    gap: var(--spacing-xl);
-    align-items: start;
+    display: flex;
+    gap: 20px;
+    align-items: stretch; /* Stretch to match heights */
+    justify-content: center;
   }
 
   .board-section {
-    display: flex;
-    justify-content: center;
-    align-items: flex-start;
-    padding: var(--spacing-md);
-    background: rgba(0, 0, 0, 0.3);
-    border: 1px solid var(--mw-border-color);
-    border-radius: 4px; /* Sharp corners */
-    backdrop-filter: blur(5px);
+    flex: 0 0 auto;
+    border: 1px solid #333;
+    padding: 4px;
+    background: rgba(20, 20, 20, 0.8);
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+    /* Ensure board section doesn't collapse horizontally */
+    width: min(700px, 100%); 
   }
 
   .board-container {
     width: 100%;
-    max-width: 900px;
-    aspect-ratio: 12 / 13;
+    /* Maintain board ratio */
+    aspect-ratio: 700 / 758;
     position: relative;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    /* Transparent bg handled by cg-background */
-    box-shadow: 0 0 50px rgba(0, 0, 0, 0.5);
-    border-radius: 2px;
-    border: 1px solid var(--mw-primary-dim);
-    overflow: hidden;
-  }
-
-  /* Corner accents for board container */
-  .board-section::before,
-  .board-section::after {
-    content: '';
-    position: absolute;
-    width: 20px;
-    height: 20px;
-    border: 2px solid var(--mw-primary);
-    transition: all 0.3s ease;
-  }
-  .board-section::before {
-    top: -2px;
-    left: -2px;
-    border-right: 0;
-    border-bottom: 0;
-  }
-  .board-section::after {
-    bottom: -2px;
-    right: -2px;
-    border-left: 0;
-    border-top: 0;
+    background: #111;
   }
 
   .loading-state {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: var(--spacing-md);
-    color: var(--mw-primary);
-    font-family: var(--font-mono);
-  }
-
-  .loading-spinner {
-    width: 64px;
-    height: 64px;
-    border: 2px solid transparent;
-    border-top-color: var(--mw-primary);
-    border-right-color: var(--mw-secondary);
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-    box-shadow: 0 0 15px var(--mw-primary-dim);
-  }
-
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #059669;
   }
 
   .controls-section {
-    position: sticky;
-    top: 20px;
-    max-height: calc(100vh - 40px);
-    overflow-y: auto;
-    padding-right: 10px;
-    /* Custom Scrollbar */
-    scrollbar-width: thin;
-    scrollbar-color: var(--mw-primary) var(--mw-bg-dark);
+    width: 300px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    /* Ensure it takes full height of parent (which is stretched) */
+    background: rgba(20, 20, 20, 0.5); /* Optional: add subtle bg to see full height if needed */
   }
 
-  .controls-section::-webkit-scrollbar {
-    width: 4px;
+  .mw-header {
+    border-bottom: 2px solid #059669;
+    padding-bottom: 8px;
+    margin-bottom: 8px;
   }
-  .controls-section::-webkit-scrollbar-track {
-    background: var(--mw-bg-dark);
+
+  .mw-header h1 {
+    font-size: 1.5rem;
+    margin: 0;
+    font-weight: 800;
+    letter-spacing: 1px;
+    color: #e5e5e5;
   }
-  .controls-section::-webkit-scrollbar-thumb {
-    background: var(--mw-primary);
+
+  .mw-header .highlight {
+    color: #059669;
   }
 
   .controls-grid {
     display: flex;
     flex-direction: column;
-    gap: var(--spacing-lg);
+    gap: 12px;
+    flex: 1; /* Fill the remaining height of controls-section */
+  }
+
+  /* Make the last item (MoveHistory) take up remaining space */
+  .controls-grid > :global(:last-child) {
+    flex: 1;
+    min-height: 0; /* Crucial for scrolling inside flex items */
+    overflow: hidden; /* Ensure it contains the scrollable history */
   }
 
   /* Responsive Design */
-  @media (max-width: 1400px) {
-    .game-layout {
-      grid-template-columns: minmax(0, 1fr) 400px;
-    }
-  }
-
   @media (max-width: 1024px) {
+    main {
+      padding: 0;
+      align-items: flex-start;
+      height: 100vh;
+      overflow: hidden; /* Prevent scrolling if we want a fixed app feel */
+    }
+
+    .layout-container {
+      padding: 0;
+      max-width: 100%;
+      height: 100%;
+    }
+
     .game-layout {
-      grid-template-columns: 1fr;
-      gap: var(--spacing-xl);
+      flex-direction: column;
+      gap: 0;
+      height: 100%;
+      align-items: stretch;
+      justify-content: flex-start;
+    }
+
+    .board-section {
+      flex: 1; /* Take remaining space */
+      border: none;
+      background: #000;
+      box-shadow: none;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
     }
 
     .board-container {
-      max-width: 100%;
+      width: 100%;
+      height: auto;
+      aspect-ratio: 700 / 758;
+      max-height: 100%;
+      /* Important: Center the board if max-height restricts it, though on typical mobile portrait width is the limiter */
+      margin: 0 auto;
+    }
+
+    /* Target the cg-board element to ensure it scales correctly */
+    :global(.board-container cg-board) {
+      width: 100% !important;
+      height: 100% !important;
+      max-height: 100vh;
+      max-width: 100vw;
     }
 
     .controls-section {
-      position: static;
-      max-height: none;
-      padding-right: 0;
+      width: 100%;
+      flex: 0 0 auto; /* Fixed height based on content */
+      background: rgba(20, 20, 20, 0.95);
+      border-top: 2px solid #059669;
+      padding: 10px;
+      gap: 10px;
+      z-index: 10;
+    }
+
+    .mw-header {
+      display: none; /* Hide header on mobile to save space */
     }
 
     .controls-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-      gap: var(--spacing-lg);
-    }
-  }
-
-  @media (max-width: 768px) {
-    .layout-container {
-      padding: var(--spacing-sm);
-    }
-    h1 {
-      font-size: 2.5rem;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
     }
 
-    .board-section {
-      padding: 0;
-      border: none;
-      background: transparent;
+    /* Explicitly target child components if possible or assume order */
+    /* We can't target Svelte components by tag name easily in scoped CSS unless wrapped or global */
+    /* Assuming Order: GameInfo, Deploy, GameControls, MoveHistory */
+    
+    /* Using nth-child is risky if order changes, but effective for now */
+    .controls-grid > :global(:nth-child(1)) { /* GameInfo */
+      grid-column: 1;
     }
-
-    .controls-grid {
-      grid-template-columns: 1fr;
+    .controls-grid > :global(:nth-child(3)) { /* GameControls */
+      grid-column: 2;
+      /* Align GameControls height with GameInfo if needed */
+    }
+    .controls-grid > :global(:nth-child(2)) { /* DeploySessionPanel */
+      grid-column: 1 / -1;
+      order: 3; /* Move visual order below header row */
+    }
+    .controls-grid > :global(:nth-child(4)) { /* MoveHistory */
+      grid-column: 1 / -1;
+      order: 4;
+      height: 120px; /* Shorten history on mobile */
     }
   }
 </style>

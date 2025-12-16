@@ -1,12 +1,10 @@
 <script lang="ts">
   import { afterUpdate } from 'svelte';
 
-  // Prop received from parent component - using any to avoid type issues for now
   export let history: any[] = [];
 
   let historyContainer: HTMLDivElement;
 
-  // Scroll to the bottom whenever the history updates
   afterUpdate(() => {
     if (historyContainer) {
       historyContainer.scrollTop = historyContainer.scrollHeight;
@@ -14,45 +12,24 @@
   });
 </script>
 
-<div class="move-history-wrapper">
-  <div class="history-header">
-    <svg class="history-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path
-        d="M9 5H7C5.89543 5 5 5.89543 5 7V19C5 20.1046 5.89543 21 7 21H17C18.1046 21 19 20.1046 19 19V7C19 5.89543 18.1046 5 17 5H15"
-        stroke="currentColor"
-        stroke-width="2"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-      />
-      <rect x="9" y="3" width="6" height="4" rx="1" stroke="currentColor" stroke-width="2" />
-      <path d="M9 12H15M9 16H15" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-    </svg>
-    <h4>Move History</h4>
+<div class="history-mini">
+  <div class="header">
+    <span class="label">MISSION LOG</span>
   </div>
 
   <div class="history-content" bind:this={historyContainer}>
     {#if history.length === 0}
-      <div class="empty-state">
-        <svg class="empty-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" />
-          <path d="M12 8V12L15 15" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
-        </svg>
-        <p>No moves yet</p>
-      </div>
+      <div class="empty-state">NO MOVES RECORDED</div>
     {:else}
-      <div class="moves-grid">
+      <div class="moves-list">
         {#each history as move, index}
           {#if index % 2 === 0}
             <div class="move-row">
-              <div class="move-number">{Math.floor(index / 2) + 1}</div>
-              <div class="move-pair">
-                <div class="move-cell red">{move.san}</div>
-                {#if history[index + 1]}
-                  <div class="move-cell blue">{history[index + 1].san}</div>
-                {:else}
-                  <div class="move-cell empty">—</div>
-                {/if}
-              </div>
+              <span class="move-num">{(index / 2 + 1).toString().padStart(2, '0')}</span>
+              <span class="move-san red">{move.san}</span>
+              {#if history[index + 1]}
+                <span class="move-san blue">{history[index + 1].san}</span>
+              {/if}
             </div>
           {/if}
         {/each}
@@ -62,173 +39,74 @@
 </div>
 
 <style>
-  .move-history-wrapper {
-    background: var(--color-surface);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-lg);
-    overflow: hidden;
-    box-shadow: var(--shadow-md);
+  .history-mini {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid #333;
     display: flex;
     flex-direction: column;
+    height: 100%; /* Fill available space */
+    min-height: 150px; /* Minimum useful height */
   }
 
-  .history-header {
-    display: flex;
-    align-items: center;
-    gap: var(--spacing-sm);
-    padding: var(--spacing-md) var(--spacing-lg);
-    background: linear-gradient(135deg, rgba(37, 99, 235, 0.1), rgba(124, 58, 237, 0.1));
-    border-bottom: 1px solid var(--color-border);
+  .header {
+    background: #111;
+    padding: 4px 8px;
+    border-bottom: 1px solid #333;
   }
 
-  .history-icon {
-    width: 20px;
-    height: 20px;
-    color: var(--color-primary);
-    stroke-width: 2;
-  }
-
-  .history-header h4 {
-    font-size: 1.1rem;
-    font-weight: 600;
-    color: var(--color-text-primary);
-    margin: 0;
+  .label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #059669;
+    letter-spacing: 1px;
   }
 
   .history-content {
-    padding: var(--spacing-sm);
-    max-height: 400px;
+    flex: 1;
     overflow-y: auto;
+    padding: 4px;
+    font-family: 'Share Tech Mono', monospace;
   }
 
-  .history-content::-webkit-scrollbar {
-    width: 6px;
-  }
-
-  .history-content::-webkit-scrollbar-track {
-    background: var(--color-bg-secondary);
-    border-radius: 3px;
-  }
-
-  .history-content::-webkit-scrollbar-thumb {
-    background: var(--color-border);
-    border-radius: 3px;
-  }
-
-  .history-content::-webkit-scrollbar-thumb:hover {
-    background: var(--color-border-light);
-  }
+  /* Custom scrollbar */
+  .history-content::-webkit-scrollbar { width: 4px; }
+  .history-content::-webkit-scrollbar-track { background: #000; }
+  .history-content::-webkit-scrollbar-thumb { background: #333; }
 
   .empty-state {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: var(--spacing-sm);
-    padding: var(--spacing-xl) var(--spacing-md);
-    color: var(--color-text-tertiary);
-  }
-
-  .empty-icon {
-    width: 48px;
-    height: 48px;
-    opacity: 0.5;
-    stroke-width: 1.5;
-  }
-
-  .empty-state p {
-    margin: 0;
-    font-size: 0.9rem;
+    color: #444;
+    font-size: 0.7rem;
+    text-align: center;
+    padding-top: 20px;
     font-style: italic;
   }
 
-  .moves-grid {
+  .moves-list {
     display: flex;
-    flex-wrap: wrap; /* Allow wrapping */
-    align-items: center; /* Vertically align items */
-    column-gap: 12px; /* Space between move pairs */
-    row-gap: 6px; /* Space between lines */
-    padding: 4px;
+    flex-direction: column;
+    gap: 2px;
   }
 
   .move-row {
-    display: flex; /* Change from grid to flex */
-    align-items: center;
-    padding: 2px 0;
-    /* Removed border-bottom as it looks weird in flow layout */
-  }
-
-  .move-number {
-    font-family: 'Courier New', monospace;
-    font-size: 0.8rem;
-    font-weight: 600;
-    color: var(--color-text-tertiary);
-    margin-right: 4px; /* separation */
-  }
-
-  .move-pair {
     display: flex;
-    gap: 6px;
-    align-items: center;
+    gap: 8px;
+    font-size: 0.8rem;
+    padding: 2px 4px;
   }
 
-  .move-cell {
-    font-family: 'Courier New', monospace;
-    font-size: 0.85rem;
-    font-weight: 600;
-    padding: 2px 5px; /* Slightly tighter padding */
-    border-radius: var(--radius-sm);
-    transition: all var(--transition-fast);
-    white-space: nowrap;
-    display: inline-block;
-    min-width: fit-content;
+  .move-row:hover {
+    background: rgba(255, 255, 255, 0.05);
   }
 
-  .move-cell.red {
-    background: rgba(220, 38, 38, 0.15);
-    color: var(--color-red-light);
-    border: 1px solid rgba(220, 38, 38, 0.3);
+  .move-num {
+    color: #555;
+    width: 20px;
   }
 
-  .move-cell.blue {
-    background: rgba(59, 130, 246, 0.2);
-    color: var(--color-blue-light);
-    border: 1px solid rgba(59, 130, 246, 0.4);
+  .move-san {
+    width: 60px;
   }
 
-  .move-cell.empty {
-    background: transparent;
-    color: var(--color-text-muted);
-    border: 1px solid transparent;
-    opacity: 0.5;
-  }
-
-  .move-cell.red:hover,
-  .move-cell.blue:hover {
-    transform: translateY(-1px);
-    box-shadow: var(--shadow-sm);
-  }
-
-  @media (max-width: 768px) {
-    .history-header {
-      padding: var(--spacing-sm) var(--spacing-md);
-    }
-
-    .history-content {
-      padding: var(--spacing-sm);
-    }
-
-    /* On mobile, we might want fewer gaps or smaller text */
-    .moves-grid {
-      column-gap: 8px;
-    }
-
-    .move-number {
-      font-size: 0.85rem;
-    }
-
-    .move-cell {
-      font-size: 0.875rem;
-      padding: 2px 4px;
-    }
-  }
+  .move-san.red { color: #ef4444; }
+  .move-san.blue { color: #3b82f6; }
 </style>
