@@ -74,7 +74,7 @@
             />
           </g>
         </svg>
-        <h2 class="nav-title">Cờ Tư Lệnh Việt Nam 🇻🇳</h2>
+        <h2 class="nav-title">Cờ Tư Lệnh Việt Nam</h2>
       </div>
       <div class="nav-links">
         <a href="/" class="nav-link" class:active={$page.url.pathname === '/'}>
@@ -260,6 +260,7 @@
   }
 
   .nav-title {
+    font-family: var(--font-ui);
     font-size: 1.75rem;
     font-weight: 800;
     color: var(--nav-text, var(--color-text-primary));
