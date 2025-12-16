@@ -1,6 +1,6 @@
 import { HeadlessState } from './state.js';
 import * as cg from './types.js';
-import { readWithDeployState } from './fen.js';
+import { read } from './fen.js';
 import { DrawShape, DrawBrushes } from './draw.js';
 import { setCheck, setSelected } from './board.js';
 
@@ -92,7 +92,7 @@ export function configure(state: HeadlessState, config: Config): void {
 
   // if a fen was provided, replace the pieces and parse deploy state
   if (config.fen) {
-    const parsed = readWithDeployState(config.fen);
+    const parsed = read(config.fen);
     state.pieces = parsed.pieces;
     state.drawable.shapes = config.drawable?.shapes || [];
 
