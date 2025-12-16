@@ -1,6 +1,8 @@
 <script lang="ts">
   import { CoTuLenh } from '@repo/cotulenh-core';
   import { gameStore } from '$lib/stores/game';
+  import { goto } from '$app/navigation';
+  import { get } from 'svelte/store';
 
   export let game: CoTuLenh | null = null;
 
@@ -17,8 +19,19 @@
   }
 
   function reportIssue() {
-    console.log('Report issue clicked');
-    alert('Issue reported (simulated)');
+    if (!game) return;
+
+    const currentState = get(gameStore);
+    localStorage.setItem('report_fen', game.fen());
+    // Safe stringify to handle circular references if any (though gameStore shouldn't have many)
+    try {
+      localStorage.setItem('report_state', JSON.stringify(currentState, null, 2));
+    } catch (e) {
+      console.error('Failed to serialize game state', e);
+      localStorage.setItem('report_state', 'Error serializing state');
+    }
+
+    goto('/report-issue');
   }
 </script>
 
