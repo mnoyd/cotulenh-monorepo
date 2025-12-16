@@ -1,329 +1,134 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { page } from '$app/stores';
-  import { CotulenhBoard, origMoveToKey } from '@repo/cotulenh-board';
-  import type {
-    Api,
-    DestMove,
-    OrigMove,
-    OrigMoveKey,
-    Role,
-    SingleDeployMove,
-    DeployStepMetadata
-  } from '@repo/cotulenh-board';
-  import { CoTuLenh, BLUE, RED } from '@repo/cotulenh-core';
-  import type {
-    Square,
-    Color,
-    StandardMove as Move,
-    DeploySequence as DeployMoveRequest
-  } from '@repo/cotulenh-core';
-  import type { Key, Dests } from '@repo/cotulenh-board';
+  import { CotulenhBoard } from '@repo/cotulenh-board';
+  import type { Api, DestMove, OrigMove } from '@repo/cotulenh-board';
+  import { CoTuLenh } from '@repo/cotulenh-core';
   import SidePanel from '$lib/components/SidePanel.svelte';
   import { gameStore } from '$lib/stores/game';
+  import { makeMove, commitDeploySession, cancelDeploySession } from '$lib/game-actions';
+  import { createBoardConfig, getAirDefenseZones } from '$lib/board-sync';
 
   import '@repo/cotulenh-board/assets/commander-chess.base.css';
   import '@repo/cotulenh-board/assets/commander-chess.pieces.css';
   import '$lib/styles/modern-warfare.css';
-  import { makeCoreMove, typeToRole, roleToType, getMovesForSquare } from '$lib/utils';
 
   let boardContainerElement: HTMLElement | null = null;
   let boardApi = $state<Api | null>(null);
   let game = $state<CoTuLenh | null>(null);
 
-  function coreToBoardColor(coreColor: Color | null): 'red' | 'blue' | undefined {
-    return coreColor ? (coreColor === 'r' ? 'red' : 'blue') : undefined;
-  }
+  // ============================================================================
+  // BOARD SYNCHRONIZATION
+  // ============================================================================
 
-  function coreToBoardCheck(check: boolean, coreColor: Color | null): 'red' | 'blue' | undefined {
-    return check ? coreToBoardColor(coreColor) : undefined;
-  }
-  function coreToBoardAirDefense(): {
-    red: Map<Key, Key[]>;
-    blue: Map<Key, Key[]>;
-  } {
-    if (!game)
-      return {
-        red: new Map(),
-        blue: new Map()
-      };
-    const airDefense = game.getAirDefenseInfluence();
-    return {
-      red: airDefense[RED],
-      blue: airDefense[BLUE]
-    };
-  }
+  function syncBoardWithGameState() {
+    if (!boardApi || !game) return;
 
-  // handlePieceSelect removed (reverted to full load)
-
-  function reSetupBoard(): Api | null {
-    const perfStart = performance.now();
-    if (boardApi) {
-      const airDefenseStart = performance.now();
-      const airDefense = coreToBoardAirDefense();
-      const airDefenseEnd = performance.now();
-      console.log(
-        `⏱️ coreToBoardAirDefense took ${(airDefenseEnd - airDefenseStart).toFixed(2)}ms`
-      );
-
-      boardApi.set({
-        fen: $gameStore.fen,
-        turnColor: coreToBoardColor($gameStore.turn),
-        lastMove: mapLastMoveToBoardFormat($gameStore.lastMove),
-        check: coreToBoardCheck($gameStore.check, $gameStore.turn),
-        airDefense: { influenceZone: airDefense },
-        movable: {
-          free: false,
-          color: coreToBoardColor($gameStore.turn),
-          dests: mapPossibleMovesToDests($gameStore.possibleMoves),
-          events: {
-            after: handleMove,
-            session: {
-              cancel: cancelDeploy,
-              complete: commitDeploy
-            }
-          }
-        }
-      });
-    }
-    const perfEnd = performance.now();
-    console.log(`⏱️ TOTAL reSetupBoard took ${(perfEnd - perfStart).toFixed(2)}ms`);
-    return boardApi;
-  }
-
-  function mapPossibleMovesToDests(possibleMoves: Move[]): Dests {
-    const perfStart = performance.now();
-    const dests = new Map<OrigMoveKey, DestMove[]>();
-
-    for (const move of possibleMoves) {
-      const moveOrig: OrigMove = {
-        square: move.from,
-        type: typeToRole(move.piece.type) as Role
-      };
-      const moveDest: DestMove = {
-        square: move.to,
-        stay: move.isStayCapture()
-      };
-      const key = origMoveToKey(moveOrig);
-      if (!dests.has(key)) {
-        dests.set(key, []);
-      }
-      dests.get(key)!.push(moveDest);
-    }
-    const perfEnd = performance.now();
-    console.log(
-      `⏱️ mapPossibleMovesToDests took ${(perfEnd - perfStart).toFixed(2)}ms for ${possibleMoves.length} moves`
-    );
-    console.log('Mapped possible moves to dests:', dests);
-    return dests;
-  }
-
-  function mapLastMoveToBoardFormat(lastMove: Square[] | undefined): Key[] | undefined {
-    if (!lastMove) return undefined;
-    return lastMove.map((square) => square);
-  }
-
-  function handleMove(orig: OrigMove, dest: DestMove) {
-    const perfStart = performance.now();
-    if (!game) {
-      console.warn('handleMove called but game is null');
-      return;
-    }
-
-    if (isUpdatingBoard) {
-      console.warn('Move attempted while board is updating, ignoring');
-      return;
-    }
-
-    console.log('Board move attempt:', orig, '->', dest);
-    console.log('Game state at move time:', {
-      turn: game.turn(),
-      fen: game.fen(),
-      hasDeploySession: !!game.getSession()
+    const config = createBoardConfig($gameStore, {
+      onMove: handleMove,
+      onCommit: handleCommitDeploy,
+      onCancel: handleCancelDeploy
     });
 
-    try {
-      const moveStart = performance.now();
-      const moveResult = makeCoreMove(game, orig, dest);
-      const moveEnd = performance.now();
-      console.log(`⏱️ makeCoreMove took ${(moveEnd - moveStart).toFixed(2)}ms`);
-      console.log('Move result:', moveResult); // Log the result for diagnostic
-
-      if (moveResult) {
-        console.log('Game move successful:', moveResult);
-        const storeStart = performance.now();
-        gameStore.applyMove(game, moveResult);
-        const storeEnd = performance.now();
-        console.log(`⏱️ gameStore.applyMove took ${(storeEnd - storeStart).toFixed(2)}ms`);
-      } else {
-        console.warn('Illegal move attempted on board:', orig, '->', dest);
-      }
-    } catch (error) {
-      console.error('Error making move in game engine:', error);
-      console.log('Error details:', {
-        message: (error as Error).message,
-        stack: (error as Error).stack,
-        gameState: {
-          turn: game?.turn(),
-          fen: game?.fen(),
-          hasDeploySession: !!game?.getSession()
-        }
-      });
-      reSetupBoard();
-    }
-    const perfEnd = performance.now();
-    console.log(`⏱️ TOTAL handleMove took ${(perfEnd - perfStart).toFixed(2)}ms`);
+    boardApi.set({
+      ...config,
+      airDefense: { influenceZone: getAirDefenseZones(game) }
+    });
   }
 
-  /**
-   * Manually commit the active deploy session
-   *
-   * Core commits the session and updates FEN (removes DEPLOY marker).
-   * Get the SAN notation and add it to history.
-   */
-  function commitDeploy() {
-    console.log('🏁 commitDeploy');
+  // ============================================================================
+  // MOVE HANDLERS
+  // ============================================================================
 
-    if (!game) {
-      console.error('❌ No game instance');
-      return;
-    }
+  function handleMove(orig: OrigMove, dest: DestMove) {
+    if (!game) return;
 
     try {
-      // Get SAN notation before commit
-      const session = game.getSession();
-      if (!session || !session.isDeploy) {
-        console.error('❌ No deploy session active');
-        return;
+      const moveResult = makeMove(game, orig, dest);
+      
+      if (moveResult) {
+        gameStore.afterMove(game, moveResult);
+      } else {
+        console.warn('Illegal move attempted:', orig, '->', dest);
       }
+    } catch (error) {
+      console.error('Error making move:', error);
+      syncBoardWithGameState();
+    }
+  }
 
-      // Get the deploy move SAN by accessing the last history entry after commit
+  function handleCommitDeploy() {
+    if (!game) return;
 
-      // Get the deploy move SAN by accessing the last history entry after commit
-      // const historyBefore = game.history();
-      const result = game.commitSession();
+    try {
+      const result = commitDeploySession(game);
 
       if (!result.success) {
-        console.error('❌ Failed to commit:', result.reason);
         alert(`Cannot finish deployment: ${result.reason}`);
         return;
       }
 
-      // Get the SAN from history (last entry added by commit)
-      const historyAfter = game.history();
-      const deployMoveSan = historyAfter[historyAfter.length - 1] || 'Deploy';
-
-      console.log('✅ Deploy session committed');
-      console.log('  Deploy SAN:', deployMoveSan);
-      console.log('  FEN:', game.fen());
-      console.log('  Turn:', game.turn());
-
-      // Update game store with the deploy move SAN
-      gameStore.applyDeployCommit(game, deployMoveSan);
+      gameStore.afterDeployCommit(game, result.san!);
     } catch (error) {
-      console.error('❌ Failed to commit deploy session:', error);
-      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-      alert(`Cannot finish deployment: ${errorMsg}`);
+      console.error('Failed to commit deploy:', error);
+      alert(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
-  /**
-   * Cancel the active deploy session
-   *
-   * Core cancels the session and restores FEN to pre-deploy state.
-   * Refresh the game store to reflect the restored state.
-   */
-  function cancelDeploy() {
-    console.log('🚫 cancelDeploy');
-
+  function handleCancelDeploy() {
     if (!game) return;
 
     try {
-      game.cancelSession();
-      console.log('✅ Deploy session cancelled');
-      console.log('  FEN:', game.fen());
-      console.log('  Turn:', game.turn());
-
-      // Reinitialize game store with restored state
+      cancelDeploySession(game);
       gameStore.initialize(game);
     } catch (error) {
-      console.error('❌ Failed to cancel deploy:', error);
-      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-      alert(`Error cancelling deployment: ${errorMsg}`);
+      console.error('Failed to cancel deploy:', error);
+      alert(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
+  // ============================================================================
+  // LIFECYCLE
+  // ============================================================================
+
   onMount(() => {
-    if (boardContainerElement) {
-      console.log('Initializing game logic and board...');
+    if (!boardContainerElement) return;
 
-      // Check for FEN in URL parameters
-      const urlFen = $page.url.searchParams.get('fen');
-      let initialFen: string | undefined = undefined;
+    // Load FEN from URL if provided
+    const urlFen = $page.url.searchParams.get('fen');
+    const initialFen = urlFen ? decodeURIComponent(urlFen) : undefined;
 
-      if (urlFen) {
-        try {
-          initialFen = decodeURIComponent(urlFen);
-          console.log('Loading game with custom FEN:', initialFen);
-        } catch (error) {
-          console.error('Error decoding FEN from URL:', error);
-        }
-      }
+    // Initialize game
+    game = initialFen ? new CoTuLenh(initialFen) : new CoTuLenh();
+    gameStore.initialize(game);
 
-      // Initialize game with custom FEN or default position
-      game = initialFen ? new CoTuLenh(initialFen) : new CoTuLenh();
-      gameStore.initialize(game);
+    // Initialize board
+    const config = createBoardConfig($gameStore, {
+      onMove: handleMove,
+      onCommit: handleCommitDeploy,
+      onCancel: handleCancelDeploy
+    });
 
-      const unsubscribe = gameStore.subscribe((state) => {
-        // console.log('Game state updated in store:', state);
-      });
+    boardApi = CotulenhBoard(boardContainerElement, {
+      ...config,
+      airDefense: { influenceZone: getAirDefenseZones(game) }
+    });
 
-      boardApi = CotulenhBoard(boardContainerElement, {
-        fen: $gameStore.fen,
-        turnColor: coreToBoardColor($gameStore.turn),
-        lastMove: mapLastMoveToBoardFormat($gameStore.lastMove),
-        check: coreToBoardCheck($gameStore.check, $gameStore.turn),
-        airDefense: { influenceZone: coreToBoardAirDefense() },
-        movable: {
-          free: false,
-          color: coreToBoardColor($gameStore.turn),
-          dests: mapPossibleMovesToDests($gameStore.possibleMoves),
-          events: {
-            after: handleMove,
-            session: {
-              cancel: cancelDeploy,
-              complete: commitDeploy
-            }
-          }
-        }
-      });
-
-      return () => {
-        console.log('Cleaning up board and game subscription.');
-        boardApi?.destroy();
-        unsubscribe();
-      };
-    }
+    return () => {
+      boardApi?.destroy();
+    };
   });
 
-  let isUpdatingBoard = $state(false);
+  // ============================================================================
+  // REACTIVITY
+  // ============================================================================
+
   let lastProcessedFen = '';
 
   $effect(() => {
     if (boardApi && $gameStore.fen && $gameStore.fen !== lastProcessedFen) {
-      const reactiveStart = performance.now();
-      console.log('🔄 Effect triggered by FEN change');
       lastProcessedFen = $gameStore.fen;
-      isUpdatingBoard = true;
-      reSetupBoard();
-      // Use setTimeout to ensure the board update completes before allowing new moves
-      setTimeout(() => {
-        isUpdatingBoard = false;
-        const reactiveEnd = performance.now();
-        console.log(
-          `⏱️ REACTIVE update completed in ${(reactiveEnd - reactiveStart).toFixed(2)}ms`
-        );
-      }, 0);
+      syncBoardWithGameState();
     }
   });
 </script>
@@ -350,7 +155,7 @@
       </div>
 
       <div class="controls-section">
-        <SidePanel {game} onCommit={commitDeploy} onCancel={cancelDeploy} />
+        <SidePanel {game} onCommit={handleCommitDeploy} onCancel={handleCancelDeploy} />
       </div>
     </div>
   </div>
@@ -361,7 +166,6 @@
     flex: 1;
     display: flex;
     flex-direction: column;
-    /* Ensure background covers entire viewport height */
     min-height: 100vh;
     background-color: var(--mw-bg-dark);
     font-family: var(--font-ui);
@@ -377,7 +181,6 @@
     z-index: 1;
   }
 
-  /* Scanline overlay effect */
   .layout-container::before {
     content: '';
     position: fixed;
@@ -423,7 +226,6 @@
   }
 
   h1::after {
-    /* Glitch/Underline effect */
     content: 'STRATEGIC COMMAND';
     position: absolute;
     top: 0;
@@ -460,7 +262,7 @@
     padding: var(--spacing-md);
     background: rgba(0, 0, 0, 0.3);
     border: 1px solid var(--mw-border-color);
-    border-radius: 4px; /* Sharp corners */
+    border-radius: 4px;
     backdrop-filter: blur(5px);
   }
 
@@ -472,14 +274,12 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    /* Transparent bg handled by cg-background */
     box-shadow: 0 0 50px rgba(0, 0, 0, 0.5);
     border-radius: 2px;
     border: 1px solid var(--mw-primary-dim);
     overflow: hidden;
   }
 
-  /* Corner accents for board container */
   .board-section::before,
   .board-section::after {
     content: '';
@@ -532,16 +332,8 @@
     position: sticky;
     top: 20px;
     height: calc(100vh - 40px);
-    /* SidePanel handles scrolling internally now */
   }
 
-  .controls-grid {
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-lg);
-  }
-
-  /* Responsive Design */
   @media (max-width: 1400px) {
     .game-layout {
       grid-template-columns: minmax(0, 1fr) 400px;
@@ -563,12 +355,6 @@
       max-height: none;
       padding-right: 0;
     }
-
-    .controls-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-      gap: var(--spacing-lg);
-    }
   }
 
   @media (max-width: 768px) {
@@ -583,10 +369,6 @@
       padding: 0;
       border: none;
       background: transparent;
-    }
-
-    .controls-grid {
-      grid-template-columns: 1fr;
     }
   }
 </style>
