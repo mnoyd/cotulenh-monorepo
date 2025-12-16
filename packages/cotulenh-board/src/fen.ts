@@ -64,29 +64,38 @@ export function read(fen: string): cg.Pieces {
 export function readWithDeployState(fen: string): ParsedFEN {
   if (fen === 'start') fen = initial;
 
-  // Check for DEPLOY marker in extended FEN format
-  // Format: "base-fen DEPLOY c3:Nc5,Fd4..."
-  const deployMatch = fen.match(/^(.+)\s+DEPLOY\s+([a-k](?:1[0-2]|[1-9])):(.*)$/);
+  // Split FEN string by whitespace
+  const parts = fen.trim().split(/\s+/);
+  const lastPart = parts[parts.length - 1];
 
-  if (!deployMatch) {
-    // Normal FEN without deploy state
-    const pieces = parseBaseFEN(fen);
+  // Check if last part has deploy session format (contains ':')
+  if (!lastPart.includes(':')) {
+    // No deploy session, just parse base FEN
+    return { pieces: parseBaseFEN(fen.trim()) };
+  }
+
+  // Extract base FEN (everything except last part) and deploy session
+  const baseFEN = parts.slice(0, -1).join(' ');
+  const pieces = parseBaseFEN(baseFEN);
+
+  // Parse deploy session: "h4:M:T>h6..."
+  const isComplete = !lastPart.endsWith('...');
+  const cleanDeployPart = lastPart.replace(/\.\.\.$/, '');
+  const sections = cleanDeployPart.split(':');
+
+  if (sections.length < 2) {
+    // Invalid format, return just pieces
     return { pieces };
   }
 
-  // Extended FEN with deploy state
-  const [_, baseFEN, square, moveStr] = deployMatch;
-  const pieces = parseBaseFEN(baseFEN);
-
-  // Parse deploy moves
-  const isComplete = !moveStr.endsWith('...');
-  const cleanMoveStr = moveStr.replace(/\.\.\.$/, '');
-  const moves = parseDeployMoves(cleanMoveStr);
+  const originSquare = sections[0] as cg.Key;
+  const moveStr = sections.slice(2).join(':'); // Everything after stay piece
+  const moves = parseDeployMoves(moveStr);
 
   return {
     pieces,
     deployState: {
-      originSquare: square as cg.Key,
+      originSquare,
       moves,
       isComplete,
     },
@@ -96,19 +105,13 @@ export function readWithDeployState(fen: string): ParsedFEN {
 function parseDeployMoves(moveStr: string): Array<{ piece: string; to: cg.Key; capture: boolean }> {
   if (!moveStr || moveStr.trim() === '') return [];
 
-  // Parse format: "Nc5,F(EI)xd4,Te5"
+  // Parse format: "T>h6" or "N>xa2,F>b3"
   return moveStr.split(',').map(moveNotation => {
-    const captureMatch = moveNotation.match(/([A-Z])(\([A-Z]+\))?(x)?([a-k](?:1[0-2]|[1-9]))/);
-    if (!captureMatch) {
-      throw new Error(`Invalid deploy move notation: ${moveNotation}`);
-    }
+    const [piece, dest] = moveNotation.split('>');
+    const capture = dest?.startsWith('x') || dest?.startsWith('_');
+    const to = (capture ? dest.substring(1) : dest) as cg.Key;
 
-    const [__, piece, carrying, capture, to] = captureMatch;
-    return {
-      piece: carrying ? `${piece}${carrying}` : piece,
-      to: to as cg.Key,
-      capture: !!capture,
-    };
+    return { piece, to, capture };
   });
 }
 
