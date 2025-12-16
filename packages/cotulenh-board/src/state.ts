@@ -85,7 +85,7 @@ export interface HeadlessState {
     originSquare: cg.Key; // Where deployment started
     stay?: cg.Piece;
     deployedMoves: Array<{
-      piece: cg.Piece; // e.g., "N", "F(EI)"
+      piece: cg.Piece;
       to: cg.Key;
     }>;
     isComplete: boolean; // false if deployment is ongoing (ends with "...")
@@ -129,7 +129,7 @@ export function defaults(): HeadlessState {
     },
     addPieceZIndex: false,
     viewOnly: false,
-    pieces: fen.read(fen.initial),
+    pieces: fen.read(fen.initial).pieces,
     orientation: 'red',
     turnColor: 'red',
     numericCoordinates: false, // Default to true as per user's request for number-based coordinates initially
