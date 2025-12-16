@@ -6,30 +6,75 @@
   <nav class="app-nav">
     <div class="nav-content">
       <div class="nav-brand">
-        <svg class="logo-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path
-            d="M12 2L2 7V17L12 22L22 17V7L12 2Z"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          />
-          <path
-            d="M12 22V12"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          />
-          <path
-            d="M2 7L12 12L22 7"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          />
+        <svg class="logo-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+          <g transform="translate(-128, -170) scale(1.5)">
+            <!-- Chin Strap (behind helmet brim) -->
+            <path
+              d="M 176 340 C 176 420 336 420 336 340"
+              fill="none"
+              stroke="#2a4d36"
+              stroke-width="8"
+              stroke-linecap="round"
+            />
+            <!-- Chin Strap Buckle -->
+            <rect
+              x="241"
+              y="395"
+              width="30"
+              height="14"
+              rx="4"
+              fill="#6b7c4b"
+              stroke="#2a4d36"
+              stroke-width="2"
+            />
+
+            <!-- HELMET -->
+            <!-- Main Dome (Green) -->
+            <path d="M 160 300 C 160 140 352 140 352 300 Z" fill="#3c7a46" />
+
+            <!-- Ribs/Segments on the dome (Dark Green Lines) -->
+            <!-- Center Vertical Line -->
+            <line x1="256" y1="180" x2="256" y2="300" stroke="#204526" stroke-width="4" />
+            <!-- Left Curve -->
+            <path d="M 256 182 Q 200 180 196 300" fill="none" stroke="#204526" stroke-width="4" />
+            <!-- Right Curve -->
+            <path d="M 256 182 Q 312 180 316 300" fill="none" stroke="#204526" stroke-width="4" />
+
+            <!-- Horizontal Band around dome (just above brim) -->
+            <path
+              d="M 160 280 Q 256 260 352 280 L 352 300 Q 256 280 160 300 Z"
+              fill="#33683b"
+              stroke="#204526"
+              stroke-width="3"
+            />
+
+            <!-- Brim (projecting front/sides) -->
+            <path
+              d="M 130 310 Q 256 270 382 310 L 370 345 Q 256 315 142 345 Z"
+              fill="#3c7a46"
+              stroke="#204526"
+              stroke-width="4"
+              stroke-linejoin="round"
+            />
+
+            <!-- Yellow Circle with Red Star Emblem -->
+            <circle cx="256" cy="245" r="28" fill="#fdd835" stroke="#e65100" stroke-width="2" />
+            <!-- Red Star -->
+            <polygon
+              points="256,227 263,243 280,243 266,254 271,270 256,260 241,270 246,254 232,243 249,243"
+              fill="#d32f2f"
+            />
+
+            <!-- Little knob on top -->
+            <path
+              d="M 246 180 Q 256 170 266 180 Z"
+              fill="#3c7a46"
+              stroke="#204526"
+              stroke-width="3"
+            />
+          </g>
         </svg>
-        <h2 class="nav-title">CoTuLenh</h2>
+        <h2 class="nav-title">Cờ Tư Lệnh Việt Nam 🇻🇳</h2>
       </div>
       <div class="nav-links">
         <a href="/" class="nav-link" class:active={$page.url.pathname === '/'}>
@@ -208,8 +253,8 @@
   }
 
   .logo-icon {
-    width: 32px;
-    height: 32px;
+    width: 48px;
+    height: 48px;
     color: var(--color-primary);
     filter: drop-shadow(0 0 8px rgba(37, 99, 235, 0.5));
   }
@@ -290,8 +335,8 @@
     }
 
     .logo-icon {
-      width: 28px;
-      height: 28px;
+      width: 40px;
+      height: 40px;
     }
 
     .nav-title {

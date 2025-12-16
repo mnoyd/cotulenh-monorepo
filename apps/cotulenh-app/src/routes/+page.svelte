@@ -365,8 +365,7 @@
     justify-content: center;
     align-items: center;
     background-image:
-      linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)),
-      url('/assets/bg-warfare.jpg'); /* Hypothetical background */
+      linear-gradient(rgba(0, 0, 0, 0.7), rgba(102, 177, 102, 0.71)), url('/assets/bg-warfare.jpg'); /* Hypothetical background */
     background-size: cover;
     background-position: center;
   }
@@ -391,7 +390,7 @@
     background: rgba(20, 20, 20, 0.8);
     box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
     /* Ensure board section doesn't collapse horizontally */
-    width: min(700px, 100%); 
+    width: min(700px, 100%);
   }
 
   .board-container {
@@ -526,20 +525,24 @@
     /* Explicitly target child components if possible or assume order */
     /* We can't target Svelte components by tag name easily in scoped CSS unless wrapped or global */
     /* Assuming Order: GameInfo, Deploy, GameControls, MoveHistory */
-    
+
     /* Using nth-child is risky if order changes, but effective for now */
-    .controls-grid > :global(:nth-child(1)) { /* GameInfo */
+    .controls-grid > :global(:nth-child(1)) {
+      /* GameInfo */
       grid-column: 1;
     }
-    .controls-grid > :global(:nth-child(3)) { /* GameControls */
+    .controls-grid > :global(:nth-child(3)) {
+      /* GameControls */
       grid-column: 2;
       /* Align GameControls height with GameInfo if needed */
     }
-    .controls-grid > :global(:nth-child(2)) { /* DeploySessionPanel */
+    .controls-grid > :global(:nth-child(2)) {
+      /* DeploySessionPanel */
       grid-column: 1 / -1;
       order: 3; /* Move visual order below header row */
     }
-    .controls-grid > :global(:nth-child(4)) { /* MoveHistory */
+    .controls-grid > :global(:nth-child(4)) {
+      /* MoveHistory */
       grid-column: 1 / -1;
       order: 4;
       height: 120px; /* Shorten history on mobile */
