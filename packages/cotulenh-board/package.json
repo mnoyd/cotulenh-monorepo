@@ -41,6 +41,7 @@
     "assets/**/*"
   ],
   "dependencies": {
-    "@repo/cotulenh-combine-piece": "workspace:^"
+    "@repo/cotulenh-combine-piece": "workspace:^",
+    "@repo/cotulenh-common": "workspace:^"
   }
 }

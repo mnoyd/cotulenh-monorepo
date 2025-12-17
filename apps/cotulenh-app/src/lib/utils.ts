@@ -24,6 +24,7 @@ import {
   NAVY,
   HEADQUARTER
 } from '@repo/cotulenh-core';
+import { createError, ErrorCode, logger } from '@repo/cotulenh-common';
 
 // ============================================================================
 // MAPPING LAYER: Translates between Core (game logic) and Board (UI) packages
@@ -186,7 +187,9 @@ export function makeCoreMove(game: CoTuLenh, orig: OrigMove, dest: DestMove): Mo
   try {
     const pieceAtSquare = game.get(orig.square);
     if (!pieceAtSquare) {
-      throw new Error(`No piece at ${orig.square}`);
+      throw createError(ErrorCode.MOVE_PIECE_NOT_FOUND, `No piece at ${orig.square}`, {
+        square: orig.square
+      });
     }
 
     // For combined pieces, we need to determine which piece is actually moving
@@ -220,7 +223,7 @@ export function makeCoreMove(game: CoTuLenh, orig: OrigMove, dest: DestMove): Mo
     });
     return moveResult;
   } catch (error) {
-    console.error('Error in makeCoreMove:', error);
+    logger.error(error, 'Error in makeCoreMove:');
     throw error;
   }
 }

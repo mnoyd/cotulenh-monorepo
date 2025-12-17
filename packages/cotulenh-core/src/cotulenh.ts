@@ -70,6 +70,7 @@ import {
   type MoveResult,
   type RecombineOption,
 } from './move-session.js'
+import { createError, ErrorCode, logger } from '@repo/cotulenh-common'
 
 export { StandardMove, DeploySequence, type MoveResult, type RecombineOption }
 
@@ -152,7 +153,11 @@ export class CoTuLenh {
     // Parse board position
     const ranks = position.split('/')
     if (ranks.length !== 12) {
-      throw new Error(`Invalid FEN: expected 12 ranks, got ${ranks.length}`)
+      const msg = `Invalid FEN: expected 12 ranks, got ${ranks.length}`
+      throw createError(ErrorCode.FEN_INVALID_RANK_COUNT, msg, {
+        expected: 12,
+        actual: ranks.length,
+      })
     }
     let parsingStack = false
     let nextHeroic = false
@@ -163,9 +168,11 @@ export class CoTuLenh {
         if (isDigit(char)) {
           col += parseInt(char)
           if (col > 11) {
-            throw new Error(
-              `Invalid FEN: rank ${12 - r} has too many squares (${ranks[r]})`,
-            )
+            const msg = `Invalid FEN: rank ${12 - r} has too many squares (${ranks[r]})`
+            throw createError(ErrorCode.FEN_INVALID_FILE_COUNT, msg, {
+              rankIndex: 12 - r,
+              rankContent: ranks[r],
+            })
           }
         } else if (char === '+') {
           nextHeroic = true
@@ -173,8 +180,10 @@ export class CoTuLenh {
           parsingStack = true
         } else if (char === ')') {
           if (parsingStack === false) {
-            throw new Error(
+            throw createError(
+              ErrorCode.FEN_MISMATCH_PARENTHESES,
               `Invalid FEN: ) without matching ( in rank ${12 - r}`,
+              { rankIndex: 12 - r },
             )
           }
           parsingStack = false
@@ -194,10 +203,18 @@ export class CoTuLenh {
         }
       }
       if (parsingStack) {
-        throw new Error(`Invalid FEN: ) without matching ( in rank ${12 - r}`)
+        throw createError(
+          ErrorCode.FEN_MISMATCH_PARENTHESES,
+          `Invalid FEN: ) without matching ( in rank ${12 - r}`,
+          { rankIndex: 12 - r },
+        )
       }
       if (nextHeroic) {
-        throw new Error(`Invalid FEN: + without matching ( in rank ${12 - r}`)
+        throw createError(
+          ErrorCode.FEN_INVALID_FORMAT,
+          `Invalid FEN: + without matching ( in rank ${12 - r}`,
+          { rankIndex: 12 - r },
+        )
       }
     }
 
@@ -281,7 +298,7 @@ export class CoTuLenh {
 
     // If there's an active move session, return extended FEN with CURRENT board state
     if (this._session) {
-      return this._session.toFenString(baseFEN)
+      return this._session.toFenString()
     }
 
     return baseFEN
@@ -335,7 +352,11 @@ export class CoTuLenh {
     allowCombine = false,
   ): boolean {
     if (!(square in SQUARE_MAP)) {
-      throw new Error(`Invalid square: ${square}`)
+      throw createError(
+        ErrorCode.BOARD_INVALID_SQUARE,
+        `Invalid square: ${square}`,
+        { square },
+      )
     }
     const sq = SQUARE_MAP[square]
 
@@ -344,13 +365,17 @@ export class CoTuLenh {
     if (!allowCombine) {
       if (type === NAVY) {
         if (!NAVY_MASK[sq]) {
-          throw new Error(
+          throw createError(
+            ErrorCode.BOARD_INVALID_TERRAIN,
             `Invalid terrain: Navy cannot be placed on ${algebraic(sq)}`,
+            { square: algebraic(sq), type: NAVY },
           )
         }
       } else if (!LAND_MASK[sq]) {
-        throw new Error(
+        throw createError(
+          ErrorCode.BOARD_INVALID_TERRAIN,
           `Invalid terrain: ${type} cannot be placed on ${algebraic(sq)}`,
+          { square: algebraic(sq), type },
         )
       }
     }
@@ -371,7 +396,11 @@ export class CoTuLenh {
         ]
         const combinedPiece = combinePieces(allPieces)
         if (!combinedPiece) {
-          throw new Error(`Failed to combine pieces at ${algebraic(sq)}`)
+          throw createError(
+            ErrorCode.COMBINATION_FAILED,
+            `Failed to combine pieces at ${algebraic(sq)}`,
+            { square: algebraic(sq) },
+          )
         }
         newPiece = combinedPiece
       }
@@ -379,13 +408,17 @@ export class CoTuLenh {
       // Validate terrain for the FINAL combined piece type
       if (newPiece.type === NAVY) {
         if (!NAVY_MASK[sq]) {
-          throw new Error(
+          throw createError(
+            ErrorCode.BOARD_INVALID_TERRAIN,
             `Invalid terrain: Navy cannot be placed on ${algebraic(sq)}`,
+            { square: algebraic(sq), type: NAVY },
           )
         }
       } else if (!LAND_MASK[sq]) {
-        throw new Error(
+        throw createError(
+          ErrorCode.BOARD_INVALID_TERRAIN,
           `Invalid terrain: ${newPiece.type} cannot be placed on ${algebraic(sq)}`,
+          { square: algebraic(sq), type: newPiece.type },
         )
       }
     }
@@ -399,7 +432,11 @@ export class CoTuLenh {
       this._commanders[color] !== -1 &&
       this._commanders[color] !== sq
     ) {
-      throw new Error(`Commander limit reached for ${color}`)
+      throw createError(
+        ErrorCode.COMMANDER_LIMIT_EXCEEDED,
+        `Commander limit reached for ${color}`,
+        { color },
+      )
     }
 
     // Handle replacing enemy commander
@@ -519,7 +556,10 @@ export class CoTuLenh {
   } = {}): InternalMove[] {
     if (deploy) {
       if (!filterSquare)
-        throw new Error('Deploy move error: square is required')
+        throw createError(
+          ErrorCode.MOVE_INVALID_DESTINATION,
+          'Deploy move error: square is required',
+        )
     }
     const cacheKey = this._getMovesCacheKey({
       legal,
@@ -641,7 +681,8 @@ export class CoTuLenh {
         this._movesCache.clear()
       } catch (error) {
         // Log the error for debugging
-        console.error('Error during move validation, restoring state:', error)
+        // Log the error for debugging
+        logger.error(error, 'Error during move validation, restoring state')
         // If there's an error, restore the initial state and continue
         this._session = null
       }

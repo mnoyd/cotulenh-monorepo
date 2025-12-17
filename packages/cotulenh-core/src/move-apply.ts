@@ -3,6 +3,7 @@
 import type { Color, CoTuLenh, PieceSymbol } from './cotulenh.js'
 import { swapColor, algebraic, InternalMove, BITS, Piece } from './type.js'
 import { combinePieces, clonePiece } from './utils.js'
+import { createError, ErrorCode } from '@repo/cotulenh-common'
 
 /**
  * Represents an atomic board action that can be executed and undone
@@ -28,7 +29,10 @@ export class RemovePieceAction implements CTLAtomicMoveAction {
     const piece = this.game.get(this.square)
     if (!piece) {
       if (this.pieceToRemove) {
-        throw new Error(`No piece at ${algebraic(this.square)} to remove from`)
+        const msg = `No piece at ${algebraic(this.square)} to remove from`
+        throw createError(ErrorCode.MOVE_PIECE_NOT_FOUND, msg, {
+          square: algebraic(this.square),
+        })
       }
       return
     }
@@ -45,9 +49,11 @@ export class RemovePieceAction implements CTLAtomicMoveAction {
 
     const result = this.game.put(this.originalPiece, algebraic(this.square))
     if (!result) {
-      throw new Error(
-        `Failed to restore piece at ${algebraic(this.square)}: ${JSON.stringify(this.originalPiece)}`,
-      )
+      const msg = `Failed to restore piece at ${algebraic(this.square)}`
+      throw createError(ErrorCode.INTERNAL_INCONSISTENCY, msg, {
+        square: algebraic(this.square),
+        piece: this.originalPiece,
+      })
     }
   }
 }
@@ -70,10 +76,13 @@ export class PlacePieceAction implements CTLAtomicMoveAction {
     }
     const result = this.game.put(this.piece, algebraic(this.square))
     if (!result) {
-      throw new Error(
-        'Place piece fail:' +
-          JSON.stringify(this.piece) +
-          algebraic(this.square),
+      throw createError(
+        ErrorCode.BOARD_INVALID_SQUARE,
+        'Place piece fail:' + algebraic(this.square),
+        {
+          piece: this.piece,
+          square: algebraic(this.square),
+        },
       )
     }
   }
@@ -85,10 +94,13 @@ export class PlacePieceAction implements CTLAtomicMoveAction {
       this.game.remove(algebraic(this.square))
       const result = this.game.put(this.existingPiece, algebraic(this.square))
       if (!result) {
-        throw new Error(
-          'Place piece fail:' +
-            JSON.stringify(this.existingPiece) +
-            algebraic(this.square),
+        throw createError(
+          ErrorCode.BOARD_INVALID_SQUARE,
+          'Place piece fail (undo):' + algebraic(this.square),
+          {
+            piece: this.existingPiece,
+            square: algebraic(this.square),
+          },
         )
       }
     } else {
@@ -260,10 +272,10 @@ export class CaptureMoveCommand extends CTLMoveCommand {
 
     const capturedPieceData = this.game.get(this.move.to)
     if (!capturedPieceData || capturedPieceData.color !== them) {
-      throw new Error(
-        `Build CaptureMove Error: Capture target invalid ${algebraic(
-          this.move.to,
-        )}`,
+      throw createError(
+        ErrorCode.CAPTURE_INVALID_TARGET,
+        `Build CaptureMove Error: Capture target invalid ${algebraic(this.move.to)}`,
+        { move: this.move },
       )
     }
 
@@ -291,16 +303,20 @@ class CombinationMoveCommand extends CTLMoveCommand {
       !(this.move.flags & BITS.COMBINATION) ||
       !this.move.combined // Sanity check
     ) {
-      throw new Error(
-        `Invalid state for combination move: ${JSON.stringify(this.move)}`,
+      throw createError(
+        ErrorCode.SESSION_INVALID_OPERATION,
+        `Invalid state for combination move`,
+        { move: this.move },
       )
     }
 
     // Create the combined piece
     const combinedPiece = combinePieces([movingPieceData, targetPieceData])
     if (!combinedPiece) {
-      throw new Error(
-        `Failed to create combined piece: ${JSON.stringify(this.move)}`,
+      throw createError(
+        ErrorCode.COMBINATION_FAILED,
+        `Failed to create combined piece`,
+        { move: this.move },
       )
     }
     this.move.combined = combinedPiece // Populate combined piece
@@ -320,15 +336,19 @@ export class StayCaptureMoveCommand extends CTLMoveCommand {
     const targetSq = this.move.to
     const pieceAtFrom = this.game.get(this.move.from)
     if (!pieceAtFrom) {
-      throw new Error(
+      throw createError(
+        ErrorCode.MOVE_PIECE_NOT_FOUND,
         `Build StayCapture Error: No piece to move at ${algebraic(this.move.from)}`,
+        { move: this.move },
       )
     }
 
     const capturedPiece = this.game.get(targetSq)
     if (!capturedPiece || capturedPiece.color !== them) {
-      throw new Error(
+      throw createError(
+        ErrorCode.CAPTURE_INVALID_TARGET,
         `Build StayCapture Error: Target invalid ${algebraic(targetSq)}`,
+        { move: this.move, targetSq: algebraic(targetSq) },
       )
     }
 
@@ -350,15 +370,19 @@ export class SuicideCaptureMoveCommand extends CTLMoveCommand {
     const targetSq = this.move.to
     const pieceAtFrom = clonePiece(this.move.piece) as Piece
     if (!pieceAtFrom) {
-      throw new Error(
-        `Build StayCapture Error: No piece to move at ${algebraic(this.move.from)}`,
+      throw createError(
+        ErrorCode.MOVE_PIECE_NOT_FOUND,
+        `Build SuicideCapture Error: No piece to move at ${algebraic(this.move.from)}`,
+        { move: this.move },
       )
     }
 
     const capturedPiece = this.game.get(targetSq)
     if (!capturedPiece || capturedPiece.color !== them) {
-      throw new Error(
-        `Build StayCapture Error: Target invalid ${algebraic(targetSq)}`,
+      throw createError(
+        ErrorCode.CAPTURE_INVALID_TARGET,
+        `Build SuicideCapture Error: Target invalid ${algebraic(targetSq)}`,
+        { move: this.move, targetSq: algebraic(targetSq) },
       )
     }
 
@@ -375,9 +399,7 @@ export class SuicideCaptureMoveCommand extends CTLMoveCommand {
  * Represents a sequence of moves that make up a full deployment
  * Used for history management to treat the entire sequence as one atomic operation
  */
-export class DeployMoveSequenceCommand
-  implements CTLMoveSequenceCommandInterface
-{
+export class DeployMoveSequenceCommand implements CTLMoveSequenceCommandInterface {
   public readonly moves: InternalMove[]
   private readonly commands: CTLAtomicMoveAction[] = []
 

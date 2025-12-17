@@ -13,6 +13,7 @@ import {
 import * as cg from './types.js';
 import { AMBIGOUS_STACK_MOVE_STAY_PIECES_CANT_COMBINE, tryCombinePieces } from './combined-piece.js';
 import { AMBIGOUS_CAPTURE_STAY_BACK } from './piece-attack';
+import { createError, ErrorCode } from '@repo/cotulenh-common';
 
 export function toggleOrientation(state: HeadlessState): void {
   state.orientation = opposite(state.orientation);
@@ -161,7 +162,7 @@ export function endUserNormalMove(
   const holdTime = state.hold.stop();
   unselect(state);
   if (!result.piecesPrepared) {
-    throw new Error('piecesPrepared is undefined in endUserNormalMove');
+    throw createError(ErrorCode.INTERNAL_INCONSISTENCY, 'piecesPrepared is undefined in endUserNormalMove');
   }
   const metadata: cg.MoveMetadata = {
     ctrlKey: state.stats.ctrlKey,
@@ -440,7 +441,9 @@ function preparePieceThatChanges(
   const captureMoveStay = pieceAtDestBeforeMove ? isStayCaptureMove(orig, dest, dests) : false;
   const { piece: pieceThatMoves, stackMove } = getPieceFromOrigMove(state, orig);
   if (!pieceThatMoves) {
-    throw new Error('No piece that moves');
+    throw createError(ErrorCode.MOVE_PIECE_NOT_FOUND, 'No piece that moves', {
+      orig: orig,
+    });
   }
   const originalOrigPiece = state.pieces.get(orig.square);
   const originalPiece = {

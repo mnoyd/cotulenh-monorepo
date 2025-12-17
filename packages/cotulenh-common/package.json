@@ -1,20 +1,22 @@
 {
-  "name": "@repo/cotulenh-core",
+  "name": "@repo/cotulenh-common",
   "version": "0.0.0",
-  "description": "A Javascript library for managing commander chess game",
+  "description": "Common utilities, error handling, and logging for CoTuLenh",
   "license": "BSD-2-Clause",
   "type": "module",
-  "main": "./dist/cotulenh.cjs",
-  "module": "./dist/cotulenh.js",
-  "types": "./dist/cotulenh.d.ts",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/cotulenh.d.ts",
-      "import": "./dist/cotulenh.js",
-      "require": "./dist/cotulenh.cjs"
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
     }
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "vite build",
     "check": "npm run format:check && npm run lint && npm run test && npm run build",
@@ -37,9 +39,5 @@
     "vite-plugin-dts": "^4.3.0",
     "vitest": "^1.2.0"
   },
-  "dependencies": {
-    "@repo/cotulenh-combine-piece": "workspace:^",
-    "@repo/cotulenh-common": "workspace:^",
-    "quick-lru": "^7.0.1"
-  }
+  "dependencies": {}
 }
