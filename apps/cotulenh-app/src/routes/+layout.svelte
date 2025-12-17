@@ -1,5 +1,13 @@
 <script lang="ts">
   import { page } from '$app/stores';
+  import { logger } from '@repo/cotulenh-common';
+  import { onMount } from 'svelte';
+
+  onMount(() => {
+    logger.info('CoTuLenh App Initialized');
+    // Future: Register Sentry processor here
+    // logger.registerProcessor(new SentryProcessor());
+  });
 </script>
 
 <div class="app-container">

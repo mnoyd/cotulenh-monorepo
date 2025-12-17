@@ -4,6 +4,7 @@
 
 import * as cg from './types.js';
 import { invRanks, pos2key } from './util.js';
+import { createError, ErrorCode } from '@repo/cotulenh-common';
 
 export const initial_no_engineer: string =
   '6c4/1n2fh1hf2/3a2s2a1/2n1gt1tg2/2i3m3i/11/11/2I3M3I/2N1GT1TG2/3A2S2A1/1N2FH1HF2/6C4';
@@ -171,7 +172,11 @@ export function parsePiece(str: string): cg.Piece {
       }
     }
   }
-  if (!piece) throw new Error(`Invalid piece string: ${str}`);
+  if (!piece) {
+    throw createError(ErrorCode.FEN_INVALID_PIECE, `Invalid piece string: ${str}`, {
+      pieceString: str,
+    });
+  }
   return piece;
 }
 
