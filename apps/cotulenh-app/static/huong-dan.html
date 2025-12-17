@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Hướng dẫn Báo Lỗi & Test Game Cờ Tư Lệnh</title>
+    <style>
+      :root {
+        --bg-color: #0f172a;
+        --card-bg: #1e293b;
+        --text-main: #e2e8f0;
+        --text-muted: #94a3b8;
+        --accent: #06b6d4; /* Màu Cyan giống game */
+        --accent-hover: #0891b2;
+        --border: #334155;
+      }
+
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        background-color: var(--bg-color);
+        color: var(--text-main);
+        margin: 0;
+        padding: 0;
+        line-height: 1.6;
+      }
+
+      .container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 40px 20px;
+      }
+
+      header {
+        text-align: center;
+        margin-bottom: 50px;
+        border-bottom: 1px solid var(--border);
+        padding-bottom: 30px;
+      }
+
+      h1 {
+        color: var(--accent);
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        margin-bottom: 10px;
+      }
+
+      .intro {
+        font-size: 1.1rem;
+        color: var(--text-muted);
+        margin-bottom: 30px;
+        text-align: center;
+      }
+
+      .btn {
+        display: inline-block;
+        background-color: var(--accent);
+        color: #fff;
+        padding: 12px 24px;
+        border-radius: 6px;
+        text-decoration: none;
+        font-weight: bold;
+        transition: background 0.3s;
+        margin: 5px;
+      }
+
+      .btn:hover {
+        background-color: var(--accent-hover);
+      }
+
+      .btn-outline {
+        background-color: transparent;
+        border: 2px solid var(--accent);
+        color: var(--accent);
+      }
+
+      .btn-outline:hover {
+        background-color: var(--accent);
+        color: #fff;
+      }
+
+      .step {
+        background-color: var(--card-bg);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 25px;
+        margin-bottom: 30px;
+      }
+
+      .step-title {
+        font-size: 1.3rem;
+        font-weight: bold;
+        margin-bottom: 15px;
+        color: #fff;
+        display: flex;
+        align-items: center;
+      }
+
+      .step-number {
+        background-color: var(--accent);
+        color: #fff;
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 15px;
+        font-size: 0.9rem;
+      }
+
+      .step img {
+        max-width: 100%;
+        height: auto;
+        border-radius: 8px;
+        margin-top: 15px;
+        border: 2px solid var(--border);
+      }
+
+      .support-section {
+        text-align: center;
+        margin-top: 60px;
+        padding: 40px;
+        background: linear-gradient(180deg, var(--card-bg) 0%, var(--bg-color) 100%);
+        border-radius: 12px;
+        border: 1px dashed var(--accent);
+      }
+
+      code {
+        background-color: #000;
+        padding: 2px 6px;
+        border-radius: 4px;
+        color: #4ade80;
+        font-family: monospace;
+      }
+
+      footer {
+        text-align: center;
+        margin-top: 50px;
+        color: var(--text-muted);
+        font-size: 0.9rem;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <h1>Thông Báo Update & Hướng Dẫn</h1>
+        <p class="intro">
+          Phiên bản <strong>Cờ Tư Lệnh (MVP)</strong> đã được cập nhật sửa lỗi và thêm tính năng báo
+          cáo bug.
+        </p>
+        <div>
+          <a href="https://cotulenh-app-demo.netlify.app" target="_blank" class="btn"
+            >🎮 Vào Chơi Ngay</a
+          >
+          <a
+            href="https://github.com/mnoyd/cotulenh-monorepo"
+            target="_blank"
+            class="btn btn-outline"
+            >⭐ GitHub Repo</a
+          >
+        </div>
+      </header>
+
+      <section>
+        <h2 style="text-align: center; margin-bottom: 30px">Quy Trình Báo Lỗi (Bug Report)</h2>
+
+        <div class="step">
+          <div class="step-title"><span class="step-number">1</span>Bấm nút REPORT</div>
+          <p>
+            Trong quá trình chơi (cả trên Mobile và PC), nếu bạn gặp lỗi (đi sai luật, lag, hiển thị
+            sai...), hãy bấm vào nút <strong>REPORT</strong> ở menu.
+          </p>
+          <img src="step1.jpg" alt="Nút Report trên màn hình game" />
+        </div>
+
+        <div class="step">
+          <div class="step-title"><span class="step-number">2</span>Mô tả lỗi & Copy Data</div>
+          <p>
+            Một bảng thông báo sẽ hiện ra. Bạn hãy điền mô tả ngắn gọn lỗi gặp phải vào ô trống.
+          </p>
+          <p>Sau đó bấm nút lớn: <strong>COPY DATA & CREATE GITHUB ISSUE</strong>.</p>
+          <img src="step2.jpg" alt="Bảng điền thông tin lỗi" />
+        </div>
+
+        <div class="step">
+          <div class="step-title"><span class="step-number">3</span>Dán và Gửi trên GitHub</div>
+          <p>
+            Trình duyệt sẽ tự mở trang GitHub Issue. Bạn chỉ cần nhấn <code>Ctrl + V</code> (Paste)
+            vào ô nội dung.
+          </p>
+          <p>Hệ thống đã tự copy sẵn trạng thái bàn cờ (FEN) và log game để tác giả dễ debug.</p>
+          <p><em>Lưu ý: Bạn cần đăng nhập tài khoản GitHub (miễn phí) để gửi báo cáo.</em></p>
+        </div>
+      </section>
+
+      <div class="support-section">
+        <h2>🌟 Ủng hộ dự án Open Source</h2>
+        <p>
+          Dự án được phát triển miễn phí vì cộng đồng. Nếu thấy thú vị, hãy tặng mình một
+          <strong>Star</strong> trên GitHub nhé!
+        </p>
+        <img
+          src="step3.jpg"
+          alt="Nút Star trên Github"
+          style="max-width: 100%; margin: 20px 0; border-radius: 8px"
+        />
+        <br />
+        <a href="https://github.com/mnoyd/cotulenh-monorepo" target="_blank" class="btn"
+          >⭐️ Star Repository</a
+        >
+      </div>
+
+      <footer>
+        <p>© 2024 - 2025 Co Tu Lenh Project. Developed by mnoyd.</p>
+      </footer>
+    </div>
+  </body>
+</html>
