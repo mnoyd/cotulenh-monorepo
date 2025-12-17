@@ -26,7 +26,6 @@
   },
   "author": "Hoang Manh",
   "devDependencies": {
-    "@repo/vitest-config": "*",
     "@types/node": "^22.13.11",
     "@vitest/coverage-v8": "^1.6.1",
     "prettier": "^3.5.3",
@@ -35,7 +34,7 @@
     "typescript": "^5.8.2",
     "vite": "^5.4.11",
     "vite-plugin-dts": "^4.3.0",
-    "vitest": "^1.2.0"
+    "vitest": "^1.6.1"
   },
   "dependencies": {
     "@repo/cotulenh-combine-piece": "workspace:^",

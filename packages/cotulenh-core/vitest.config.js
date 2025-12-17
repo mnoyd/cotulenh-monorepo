@@ -1,5 +1,5 @@
 import { defineConfig } from 'vitest/config'
-import { createVitestConfig } from '@repo/vitest-config/vitest.setup.js'
+import { createVitestConfig } from '@repo/cotulenh-common/vitest-config'
 
 export default defineConfig(
   createVitestConfig({
