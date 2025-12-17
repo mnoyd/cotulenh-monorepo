@@ -89,9 +89,14 @@ export function read(fen: string): ParsedFEN {
   }
 
   const originSquare = sections[0] as cg.Key;
+  const originPiece = pieces.get(originSquare);
+  const color = originPiece?.color;
+
   const stay = parsePiece(sections[1]);
+  if (color) setPieceColor(stay, color);
+
   const moveStr = sections.slice(2).join(':'); // Everything after stay piece
-  const moves = parseDeployMoves(moveStr);
+  const moves = parseDeployMoves(moveStr, color);
 
   const deployState = {
     originSquare,
@@ -210,6 +215,13 @@ function extractPieceString(pl: string, start: number): { str: string; nextIndex
   return { str: pl.substring(start, i), nextIndex: i };
 }
 
+function setPieceColor(piece: cg.Piece, color: cg.Color) {
+  piece.color = color;
+  if (piece.carrying) {
+    piece.carrying.forEach(p => setPieceColor(p, color));
+  }
+}
+
 // ============================================================================
 // HELPER FUNCTIONS - FEN PARSING
 // ============================================================================
@@ -256,7 +268,7 @@ function parseBaseFEN(fen: string): cg.Pieces {
   return pieces;
 }
 
-function parseDeployMoves(moveStr: string): Array<{ piece: cg.Piece; to: cg.Key }> {
+function parseDeployMoves(moveStr: string, color?: cg.Color): Array<{ piece: cg.Piece; to: cg.Key }> {
   if (!moveStr || moveStr.trim() === '') return [];
 
   // Parse format: "T>h6" or "N>xa2,F>b3"
@@ -265,7 +277,9 @@ function parseDeployMoves(moveStr: string): Array<{ piece: cg.Piece; to: cg.Key 
     const capture = dest?.startsWith('x') || dest?.startsWith('_');
     const to = (capture ? dest.substring(1) : dest) as cg.Key;
 
-    return { piece: parsePiece(pieceStr), to };
+    const piece = parsePiece(pieceStr);
+    if (color) setPieceColor(piece, color);
+    return { piece, to };
   });
 }
 
