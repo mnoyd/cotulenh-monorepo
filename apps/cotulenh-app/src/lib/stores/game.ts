@@ -1,4 +1,4 @@
-import { writable } from 'svelte/store';
+import { writable, type Readable } from 'svelte/store';
 import type { GameState, GameStatus, UIDeployState } from '$lib/types/game';
 import {
   CoTuLenh,
@@ -58,9 +58,21 @@ function createUIDeployState(game: CoTuLenh): UIDeployState | null {
 }
 
 /**
+ * Interface for the GameStore, explicitly defining the store contract and custom methods.
+ * This fixes the issue where $gameStore is typed as 'unknown' in components.
+ */
+export interface GameStore extends Readable<GameState> {
+  initialize(game: CoTuLenh): void;
+  applyMove(game: CoTuLenh, move: Move | DeployMove): void;
+  sync(game: CoTuLenh): void;
+  applyDeployCommit(game: CoTuLenh, deployMoveSan: string): void;
+  reset(): void;
+}
+
+/**
  * Creates a Svelte store to manage the game state.
  */
-function createGameStore() {
+function createGameStore(): GameStore {
   const initialState: GameState = {
     fen: '',
     turn: null,

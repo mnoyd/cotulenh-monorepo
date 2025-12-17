@@ -342,7 +342,7 @@
         <div class="controls-grid">
           <GameInfo />
           <DeploySessionPanel {game} onCommit={commitDeploy} onCancel={cancelDeploy} />
-          <GameControls {game} />
+          <GameControls bind:game />
           <MoveHistory history={$gameStore.history} />
         </div>
       </div>
