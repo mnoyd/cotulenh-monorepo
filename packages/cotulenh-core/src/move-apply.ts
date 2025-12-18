@@ -1,7 +1,15 @@
 // src/move.ts
 
-import type { Color, CoTuLenh, PieceSymbol } from './cotulenh.js'
-import { swapColor, algebraic, InternalMove, BITS, Piece } from './type.js'
+import { BLUE, Color, CoTuLenh, PieceSymbol, RED } from './cotulenh.js'
+import {
+  swapColor,
+  algebraic,
+  InternalMove,
+  BITS,
+  Piece,
+  VALID_SQUARES,
+  COMMANDER,
+} from './type.js'
 import { combinePieces, clonePiece } from './utils.js'
 import { createError, ErrorCode } from '@repo/cotulenh-common'
 
@@ -225,6 +233,7 @@ export abstract class CTLMoveCommand implements CTLMoveCommandInteface {
     this.buildActions()
     const defaultPostMoveActions = [
       new LazyAction(() => checkAndPromoteAttackers(this.game, this.move)),
+      new LazyAction(() => checkAndPromoteLastGuard(this.game)),
     ]
     this.actions.push(...defaultPostMoveActions)
   }
@@ -535,6 +544,58 @@ function checkAndPromoteAttackers(
     if (!isHeroic) {
       const promoteAction = new SetHeroicAction(game, square, type, true)
       actions.push(promoteAction)
+    }
+  }
+
+  return actions
+}
+
+/**
+ * Last Guard rule: When a side is reduced to Commander + 1 piece, promote that piece to Heroic
+ */
+/**
+ * Last Guard rule: When a side is reduced to Commander + 1 piece, promote that piece to Heroic
+ */
+function checkAndPromoteLastGuard(game: CoTuLenh): CTLAtomicMoveAction[] {
+  const actions: CTLAtomicMoveAction[] = []
+
+  type GuardInfo = { square: number; type: PieceSymbol; heroic?: boolean }
+  const guards: Record<Color, GuardInfo | null> = { [RED]: null, [BLUE]: null }
+  const skips: Record<Color, boolean> = { [RED]: false, [BLUE]: false }
+
+  for (const i of VALID_SQUARES) {
+    if (skips[RED] && skips[BLUE]) break
+
+    const piece = game.get(i)
+    if (!piece) continue
+
+    const color = piece.color as Color
+    if (skips[color]) continue
+
+    // Optimization: If carrying, assume > 1 piece -> SKIP
+    if (piece.carrying && piece.carrying.length > 0) {
+      skips[color] = true
+      continue
+    }
+
+    // Single piece logic
+    if (piece.type !== COMMANDER) {
+      if (guards[color] === null) {
+        guards[color] = {
+          square: i,
+          type: piece.type,
+          heroic: piece.heroic,
+        }
+      } else {
+        skips[color] = true
+      }
+    }
+  }
+
+  for (const color of [RED, BLUE] as Color[]) {
+    const g = guards[color]
+    if (!skips[color] && g && !g.heroic) {
+      actions.push(new SetHeroicAction(game, g.square, g.type, true))
     }
   }
 

@@ -219,6 +219,7 @@ describe('Move makes piece heroic test', () => {
 
   it('Piece does NOT become heroic if move does not result in check', () => {
     game.put({ type: INFANTRY, color: BLUE }, 'd11')
+    game.put({ type: INFANTRY, color: BLUE }, 'd12')
     game['_turn'] = BLUE
 
     // Move infantry to d10 (does not attack commander)
