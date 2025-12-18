@@ -23,7 +23,6 @@ import {
   file,
   isSquareOnBoard,
   getMovementMask,
-  LAND_MASK,
   swapColor,
   Square,
   HEAVY_PIECES,

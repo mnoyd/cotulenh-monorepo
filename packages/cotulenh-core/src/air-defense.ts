@@ -2,7 +2,6 @@ import { CoTuLenh } from './cotulenh.js'
 import {
   AirDefenseForSide,
   ANTI_AIR,
-  AIR_FORCE,
   BLUE,
   isSquareOnBoard,
   MISSILE,
