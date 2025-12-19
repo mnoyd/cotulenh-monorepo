@@ -466,3 +466,24 @@ describe('CoTuLenh.FEN', () => {
     })
   })
 })
+
+describe('Stalemate Reproduction', () => {
+  it('should verify stalemate for the specific FEN', () => {
+    const fen = '11/11/11/11/11/11/11/11/3C7/4+M6/2c8/11 b - - 7 4'
+    const game = new CoTuLenh(fen)
+
+    console.log('--- Debug Info ---')
+    console.log('Loaded FEN:', game.fen())
+    console.log('Turn:', game.turn())
+
+    const isCheck = game.isCheck()
+    console.log('Is Check:', isCheck)
+
+    const moves = game.moves()
+    console.log('Available Moves:', moves)
+
+    const isStalemate = game.isStalemate()
+    console.log('Is Stalemate:', isStalemate)
+    console.log('------------------')
+  })
+})
