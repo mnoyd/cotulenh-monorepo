@@ -1096,13 +1096,21 @@ export class CoTuLenh {
     return this._positionCount[this.fen()] >= 3
   }
 
+  isStalemate(): boolean {
+    return !this.isCheck() && this._moves().length === 0
+  }
+
   /**
    * Determines whether the current game state constitutes a draw.
    * Checks for all possible draw conditions including fifty-move rule and threefold repetition.
    * @returns True if the game is a draw by any applicable rule, false otherwise
    */
   isDraw(): boolean {
-    return this.isDrawByFiftyMoves() || this.isThreefoldRepetition() // Add other draw conditions later (insufficient material)
+    return (
+      this.isDrawByFiftyMoves() ||
+      this.isThreefoldRepetition() ||
+      this.isStalemate()
+    )
   }
 
   /**

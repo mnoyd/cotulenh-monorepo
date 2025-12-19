@@ -32,10 +32,6 @@ function createUIDeployState(game: CoTuLenh): UIDeployState | null {
   // We know it has these methods based on move-session.ts
   const s = session as any;
 
-  const actions = s.getActions ? s.getActions() : s._commands.map((c: any) => c.move); // Fallback if getActions not public
-  // Actually move-session.ts says get moves() returns internal moves.
-  // And `moves` getter IS public.
-
   const moves = s.moves;
 
   const movedPieces = moves
@@ -91,7 +87,15 @@ function createGameStore(): GameStore {
    * Calculates the current game status based on the CoTuLenh instance.
    */
   function calculateGameStatus(game: CoTuLenh): GameStatus {
-    if (game.isCheckmate()) return 'checkmate';
+    // Cast to any to verify new methods that might not be in the build types yet
+    const g = game as any;
+
+    if (g.isGameOver()) {
+      if (game.isCheckmate()) return 'checkmate';
+      if (g.isStalemate && g.isStalemate()) return 'stalemate';
+      if (g.isDraw && g.isDraw()) return 'draw';
+      return 'checkmate'; // Commander captured or generic loss
+    }
     return 'playing';
   }
 
