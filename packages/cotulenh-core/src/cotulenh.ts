@@ -50,6 +50,7 @@ import {
   DIAGONAL_OFFSETS,
   getPieceMovementConfig,
   getOppositeOffset,
+  getCommanderExposureConstraints,
 } from './move-generation.js'
 import {
   createMoveCommand,
@@ -607,37 +608,24 @@ export class CoTuLenh {
       return false
     }
 
-    // If our commander is being carried, it's not exposed.
-    const usPiece = this._board[usCommanderSq]
-    if (!usPiece || usPiece.type !== COMMANDER) {
-      return false
-    }
+    const constraints = getCommanderExposureConstraints(
+      this,
+      usCommanderSq,
+      themCommanderSq,
+    )
 
-    // If their commander is being carried, it can't expose ours.
-    const themPiece = this._board[themCommanderSq]
-    if (!themPiece || themPiece.type !== COMMANDER) {
-      return false
-    }
+    // If getCommanderExposureConstraints returns a set containing the current square,
+    // it means the current square is exposed.
+    return !!constraints && constraints.has(usCommanderSq)
+  }
 
-    // Check only orthogonal directions
-    for (const offset of ORTHOGONAL_OFFSETS) {
-      let sq = usCommanderSq + offset
-      while (isSquareOnBoard(sq)) {
-        const piece = this._board[sq]
-        if (piece) {
-          // If the first piece encountered is the enemy commander, we are exposed
-          if (sq === themCommanderSq) {
-            return true
-          }
-          // If it's any other piece, the line of sight is blocked in this direction
-          break
-        }
-        sq += offset
-      }
-    }
-
-    // Not exposed in any orthogonal direction
-    return false
+  /**
+   * Get the square of the commander of the given color.
+   * @param color The color of the commander.
+   * @returns The square index of the commander, or -1 if not on board.
+   */
+  public getCommanderSquare(color: Color): number {
+    return this._commanders[color]
   }
 
   // Helper method to filter legal moves
@@ -672,15 +660,27 @@ export class CoTuLenh {
         const command = this._executeTemporarily(move)
 
         // A move is legal if it doesn't leave the commander attacked AND doesn't expose the commander
-        if (!this.isCommanderInDanger(us)) {
-          legalMoves.push(move)
+        // Optimization: If it's a Commander move, we trusted generating logic to handle exposure.
+        // We only need to check if it's attacked.
+        const movingPiece = this.get(move.from)
+        const isCommanderMove =
+          movingPiece && movingPiece.type === COMMANDER && !isDeploy
+
+        if (isCommanderMove) {
+          if (!this._isCommanderAttacked(us)) {
+            legalMoves.push(move)
+          }
+        } else {
+          // Normal check for other pieces (uncovering commander)
+          if (!this.isCommanderInDanger(us)) {
+            legalMoves.push(move)
+          }
         }
 
         // Undo the test move
         command.undo()
         this._movesCache.clear()
       } catch (error) {
-        // Log the error for debugging
         // Log the error for debugging
         logger.error(error, 'Error during move validation, restoring state')
         // If there's an error, restore the initial state and continue
@@ -883,9 +883,6 @@ export class CoTuLenh {
       }
     }
 
-    if (!this._session) {
-      return { success: false, reason: 'No active session' }
-    }
     try {
       const { command, result } = this._session.commit()
 
@@ -914,16 +911,6 @@ export class CoTuLenh {
     if (!this._session) return false
     if (this._session.isEmpty) return false
     return this._session.canCommit()
-  }
-
-  /**
-   * Retrieves the current square position of the commander (king) for the specified color.
-   * Used for check detection and game state evaluation.
-   * @param color - The color of the commander to locate
-   * @returns The square index in internal coordinates, or -1 if the commander has been captured
-   */
-  getCommanderSquare(color: Color): number {
-    return this._commanders[color]
   }
 
   /**
@@ -1053,6 +1040,7 @@ export class CoTuLenh {
    * @returns True if the commander is in danger, false otherwise.
    */
   public isCommanderInDanger(color: Color): boolean {
+    // A commander is in danger if strictly attacked OR is exposed to enemy commander
     return this._isCommanderAttacked(color) || this._isCommanderExposed(color)
   }
 
