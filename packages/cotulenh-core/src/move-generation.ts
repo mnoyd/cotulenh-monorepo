@@ -171,15 +171,78 @@ export function getPieceMovementConfig(
 }
 
 /**
- * Generate moves for a piece in a specific direction
- *
- * Optimized version with pre-computed flags outside the loop.
- * Key optimizations:
- * - Pre-compute piece type flags to avoid repeated comparisons in hot loop
- * - Cache blocking behavior and range flags
- * - Use direct offset comparison instead of array.includes()
- * - Use fast 0x88 board boundary check
+ * Constraints for Commander movement to avoid "Flying General" exposure.
+ * A bitmask-like object or set of invalid squares.
+ * For efficiency, we can use an array of booleans or a Set.
+ * Since we only check specific squares, a simple Set<number> is clean.
  */
+export type CommanderConstraints = Set<number>
+
+/**
+ * Calculates squares that the Commander cannot step into because they are
+ * exposed to the Enemy Commander (Flying General Sight Block).
+ *
+ * @param gameInstance The game instance to check board state.
+ * @param usCommanderSq The current square of our Commander (moving piece).
+ * @param themCommanderSq The square of the enemy Commander.
+ * @returns A Set of invalid squares (Danger Zone), or null if no restrictions.
+ */
+export function getCommanderExposureConstraints(
+  gameInstance: CoTuLenh,
+  usCommanderSq: number,
+  themCommanderSq: number,
+): CommanderConstraints | null {
+  if (themCommanderSq === -1) return null
+
+  const usRank = rank(usCommanderSq)
+  const usFile = file(usCommanderSq)
+  const themRank = rank(themCommanderSq)
+  const themFile = file(themCommanderSq)
+
+  const constraints: CommanderConstraints = new Set()
+
+  // Vertical Direction from Enemy to Us
+  let vOffset = 0
+  if (usRank > themRank)
+    vOffset = 16 // Us is "north" (higher rank index? Wait, rank 0 is top usually? Let's check type.ts)
+  else if (usRank < themRank) vOffset = -16
+  else vOffset = 16 // Same rank? Pick one, or both? If same rank, we check Horizontal primarily. But technically vertical is not exposed?
+
+  if (usRank < themRank) vOffset = -16
+  else if (usRank > themRank) vOffset = 16
+
+  let hOffset = 0
+  if (usFile < themFile) hOffset = -1
+  else if (usFile > themFile) hOffset = 1
+
+  const rays = []
+  if (vOffset !== 0) rays.push(vOffset)
+  if (hOffset !== 0) rays.push(hOffset)
+
+  for (const offset of rays) {
+    let sq = themCommanderSq + offset
+    while (isSquareOnBoard(sq)) {
+      if (sq === usCommanderSq) {
+        // We found ourselves. Treating as empty means we continue scan.
+        // And 'sq' itself is strictly exposed (we are standing on it).
+        constraints.add(sq)
+      } else {
+        const piece = gameInstance.get(sq)
+        if (piece) {
+          // Obstruction found BEFORE hitting us (or after passing us)
+          // Since we scan FROM enemy, an obstruction here blocks the rest of the ray.
+          break
+        }
+        // Empty square, exposed.
+        constraints.add(sq)
+      }
+      sq += offset
+    }
+  }
+
+  return constraints
+}
+
 export function generateMovesInDirection(
   gameInstance: CoTuLenh,
   moves: InternalMove[],
@@ -189,6 +252,7 @@ export function generateMovesInDirection(
   offset: number,
   isDeployMove: boolean,
   them: Color,
+  constraints?: CommanderConstraints | null,
 ): void {
   const us = pieceData.color
   const pieceType = pieceData.type
@@ -233,6 +297,12 @@ export function generateMovesInDirection(
     // Board boundary check - must use isSquareOnBoard for 11x12 board
     // Note: Standard 0x88 trick doesn't work here because we have 11 files (0-10)
     if (!isSquareOnBoard(to)) break
+
+    // === COMMANDER SIGHT BLOCK ===
+    // If scanning commander moves, check constraints
+    if (isCommander && constraints && constraints.has(to)) {
+      break // Cannot enter or pass through exposed square
+    }
 
     // Air defense check
     let airDefenseResult = -1
@@ -530,6 +600,17 @@ export function generateMovesForPiece(
   // Get appropriate offsets
   const offsets = config.canMoveDiagonal ? ALL_OFFSETS : ORTHOGONAL_OFFSETS
 
+  // Optimization: Pre-calculate exposure constraints for Commander
+  let exposureConstraints: CommanderConstraints | null = null
+  if (pieceData.type === COMMANDER) {
+    const themCommanderSq = gameInstance.getCommanderSquare(them)
+    exposureConstraints = getCommanderExposureConstraints(
+      gameInstance,
+      from,
+      themCommanderSq,
+    )
+  }
+
   // Generate moves for each direction
   for (const offset of offsets) {
     generateMovesInDirection(
@@ -541,6 +622,7 @@ export function generateMovesForPiece(
       offset,
       isDeployMove,
       them,
+      exposureConstraints,
     )
   }
 
