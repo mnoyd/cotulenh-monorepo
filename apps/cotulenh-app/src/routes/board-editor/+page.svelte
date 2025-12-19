@@ -9,7 +9,7 @@
 
   import '@repo/cotulenh-board/assets/commander-chess.base.css';
   import '@repo/cotulenh-board/assets/commander-chess.pieces.css';
-  import '@repo/cotulenh-board/assets/commander-chess.clasic.css';
+  import '$lib/styles/modern-warfare.css';
 
   // Mode system: 'hand' | 'drop' | 'delete'
   type EditorMode = 'hand' | 'drop' | 'delete';
