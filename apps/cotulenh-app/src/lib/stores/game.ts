@@ -66,6 +66,7 @@ export interface GameStore extends Readable<GameState> {
   applyMove(game: CoTuLenh, move: Move | DeployMove): void;
   sync(game: CoTuLenh): void;
   applyDeployCommit(game: CoTuLenh, deployMoveSan: string): void;
+  handleUndo(game: CoTuLenh): void;
   reset(): void;
 }
 
@@ -221,6 +222,57 @@ function createGameStore(): GameStore {
           deployState: null
         };
       });
+    },
+
+    /**
+     * Updates the store after an undo operation.
+     * Syncs the entire state including history from the game instance.
+     * @param game The CoTuLenh game instance after undo.
+     */
+    handleUndo(game: CoTuLenh) {
+      const perfStart = performance.now();
+      const possibleMoves = getPossibleMoves(game);
+      const history = game.history({ verbose: true });
+
+      update((state) => {
+        // Recalculate lastMove based on the new last item in history
+        let lastMoveSquares: any[] | undefined = undefined;
+        if (history.length > 0) {
+          const lastMove = history[history.length - 1];
+          if ((lastMove as any).isDeploy) {
+            // Check for deploy flag or type
+            // Checking 'flags' for 'd' or 'isDeploy' property if available on verified object
+            // But StandardMove/DeploySequence might not have isDeploy directly depending on type definition
+            // Let's use the explicit checks similar to applyMove or type guards if possible.
+            // We can check if 'san' starts with specific chars or property existence.
+            // DeploySequence has 'stackSquare' etc.
+            const dm = lastMove as DeployMove;
+            if (dm.to instanceof Map) {
+              lastMoveSquares = [dm.from, ...Array.from(dm.to.keys())];
+            } else {
+              lastMoveSquares = [dm.from, (dm as any).to].filter(Boolean);
+            }
+          } else {
+            const sm = lastMove as Move;
+            lastMoveSquares = [sm.from, sm.to];
+          }
+        }
+
+        return {
+          ...state,
+          fen: game.fen(),
+          turn: game.turn(),
+          history: history,
+          possibleMoves,
+          lastMove: lastMoveSquares,
+          check: game.isCheck(),
+          status: calculateGameStatus(game),
+          deployState: createUIDeployState(game)
+        };
+      });
+
+      const perfEnd = performance.now();
+      console.log(`⏱️ gameStore.handleUndo took ${(perfEnd - perfStart).toFixed(2)}ms`);
     },
 
     /**

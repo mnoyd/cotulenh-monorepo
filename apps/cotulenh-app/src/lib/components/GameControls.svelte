@@ -12,6 +12,12 @@
     gameStore.initialize(game);
   }
 
+  function undoLastMove() {
+    if (!game) return;
+    game.undo();
+    gameStore.handleUndo(game);
+  }
+
   function printFen() {
     if (!game) return;
     console.log('Current FEN:', game.fen());
@@ -36,6 +42,7 @@
 </script>
 
 <div class="controls-mini">
+  <button class="control-btn" on:click={undoLastMove} title="Undo Last Move"> UNDO </button>
   <button class="control-btn" on:click={resetGame} title="Reset Game"> RESET </button>
   <button class="control-btn" on:click={printFen} title="Print FEN to Console"> FEN </button>
   <button class="control-btn" on:click={reportIssue} title="Report Issue"> REPORT </button>
