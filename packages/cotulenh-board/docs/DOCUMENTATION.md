@@ -196,7 +196,7 @@ Configure influence zones for air defense pieces:
 ```typescript
 const config: Config = {
   airDefense: {
-    showInfluceZone: true,
+    showInfluenceZone: true,
     influenceZone: {
       red: new Map([['e5', ['d4', 'd5', 'd6', 'e4', 'e6', 'f4', 'f5', 'f6']]]),
       blue: new Map([['e7', ['d6', 'd7', 'd8', 'e6', 'e8', 'f6', 'f7', 'f8']]]),

@@ -258,7 +258,7 @@ cg-board piece-ambigous-stack::before {
   animation: pulse 1.5s infinite;
 }
 
-.cg-wrap piece.promoted {
+/* .cg-wrap piece.promoted {
   filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.8));
 }
 
@@ -270,17 +270,19 @@ cg-board piece-ambigous-stack::before {
   font-size: 30%;
   z-index: 10;
   text-shadow: 0 0 4px rgba(255, 215, 0, 1);
-}
+} */
 
 @keyframes pulse {
   0% {
     transform: scale(1);
     opacity: 0.3;
   }
+
   50% {
     transform: scale(1.1);
     opacity: 0.5;
   }
+
   100% {
     transform: scale(1);
     opacity: 0.3;
@@ -389,6 +391,7 @@ cg-board square.deploy-incomplete {
   100% {
     box-shadow: inset 0 0 0 2px rgba(255, 215, 0, 0.6);
   }
+
   50% {
     box-shadow: inset 0 0 0 3px rgba(255, 215, 0, 0.9);
   }
@@ -414,6 +417,7 @@ cg-board square.recombine-unsafe {
     opacity: 0.6;
     transform: scale(1);
   }
+
   50% {
     opacity: 1;
     transform: scale(1.02);

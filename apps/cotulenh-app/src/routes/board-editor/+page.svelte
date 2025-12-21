@@ -671,7 +671,7 @@
   .validation-error {
     margin-top: 1rem;
     padding: 0.75rem 1.25rem;
-    background: rgba(255, 80, 0, 0.2);
+    background: rgba(255, 171, 0, 0.2); /* Semi-transparent Amber */
     border: 1px solid var(--mw-alert);
     color: var(--mw-alert);
     border-radius: var(--radius-sm);
@@ -679,7 +679,7 @@
     font-size: 0.95rem;
     font-weight: 600;
     display: inline-block;
-    box-shadow: 0 0 15px rgba(255, 80, 0, 0.3);
+    box-shadow: 0 0 15px rgba(255, 171, 0, 0.3);
     animation: shake 0.5s;
     backdrop-filter: blur(4px);
   }
@@ -859,17 +859,9 @@
     }
   }
 
-  /* Fallback for browsers without aspect-ratio support */
-  @supports not (aspect-ratio: 1) {
-    .board-container {
-      height: 600px; /* Fallback fixed height */
-      width: calc(600px * 12 / 13);
-    }
-  }
-
   .board-container.delete-mode {
     cursor: not-allowed !important;
-    box-shadow: 0 0 20px rgba(255, 80, 0, 0.4);
+    box-shadow: 0 0 20px rgba(255, 171, 0, 0.4);
     border: 2px solid var(--mw-alert);
   }
 
@@ -938,14 +930,14 @@
   }
 
   .btn-turn-red {
-    background: rgba(255, 80, 0, 0.15);
+    background: rgba(255, 171, 0, 0.15); /* Amber/Orange */
     border-color: var(--mw-alert);
     color: var(--mw-alert);
   }
 
   .btn-turn-red:hover {
-    background: rgba(255, 80, 0, 0.3);
-    box-shadow: 0 0 15px rgba(255, 80, 0, 0.4);
+    background: rgba(255, 171, 0, 0.3);
+    box-shadow: 0 0 15px rgba(255, 171, 0, 0.4);
     color: #fff;
   }
 
@@ -1003,7 +995,7 @@
 
   .fen-input:focus {
     outline: none;
-    border-color: #007bff;
+    border-color: var(--mw-primary);
   }
 
   .info-section {

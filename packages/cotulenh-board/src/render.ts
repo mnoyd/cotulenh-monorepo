@@ -65,6 +65,7 @@ export function createSinglePieceElement(piece: cg.Piece): cg.PieceNode {
   const pieceNode = createEl('piece', pieceName) as cg.PieceNode;
 
   if (piece.promoted) {
+    pieceNode.classList.add('heroic');
     const pieceStar = createEl('cg-piece-star') as HTMLElement;
     pieceNode.appendChild(pieceStar);
     pieceStar.style.zIndex = '3';
@@ -398,8 +399,8 @@ function computeSquareClasses(s: State): cg.SquareClasses {
           }
         }
     }
-    if (s.airDefense?.showInfluceZone) {
-      const side = s.airDefense?.showInfluceZone;
+    if (s.airDefense?.showInfluenceZone) {
+      const side = s.airDefense?.showInfluenceZone;
       if (s.airDefense?.influenceZone) {
         const zone = s.airDefense.influenceZone[side];
         if (zone) {
