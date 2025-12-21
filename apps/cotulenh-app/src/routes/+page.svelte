@@ -121,6 +121,29 @@
     }
 
     try {
+      // Check if we are viewing history. If so, and we make a move, we need to rollback to that state
+      // effectively truncating the future history.
+      const viewIndex = $gameStore.historyViewIndex;
+      if (viewIndex !== -1 && viewIndex < $gameStore.history.length - 1) {
+        // Calculate how many moves to undo
+        // We want to keep (viewIndex + 1) moves.
+        // Current length is gameStore.history.length (which should match game.history().length if sync)
+        const targetLength = viewIndex + 1;
+        const currentLength = $gameStore.history.length;
+        const undoCount = currentLength - targetLength;
+
+        if (undoCount > 0) {
+          for (let i = 0; i < undoCount; i++) {
+            game.undo();
+          }
+          // Sync the store with the rolled-back game state, including truncating history.
+          gameStore.handleUndo(game);
+        }
+      } else if (viewIndex === $gameStore.history.length - 1) {
+        // We are viewing the last move, which is effectively HEAD. Just cancel preview to be safe.
+        gameStore.cancelPreview(game);
+      }
+
       const moveResult = makeCoreMove(game, orig, dest);
 
       if (moveResult) {
@@ -320,7 +343,7 @@
           <div
             class="flex-1 min-h-0 overflow-hidden max-lg:col-span-full max-lg:order-4 max-lg:h-[120px]"
           >
-            <MoveHistory history={$gameStore.history} />
+            <MoveHistory />
           </div>
         </div>
       </div>

@@ -63,6 +63,8 @@ export interface GameStore extends Readable<GameState> {
   sync(game: CoTuLenh): void;
   applyDeployCommit(game: CoTuLenh, deployMoveSan: string): void;
   handleUndo(game: CoTuLenh): void;
+  previewMove(index: number): void;
+  cancelPreview(game: CoTuLenh): void;
   reset(): void;
 }
 
@@ -78,7 +80,8 @@ function createGameStore(): GameStore {
     status: 'playing',
     check: false,
     lastMove: undefined,
-    deployState: null
+    deployState: null,
+    historyViewIndex: -1
   };
 
   const { subscribe, set, update } = writable<GameState>(initialState);
@@ -118,12 +121,67 @@ function createGameStore(): GameStore {
         check: game.isCheck(),
         status: calculateGameStatus(game),
         lastMove: undefined,
-        deployState: createUIDeployState(game)
+        deployState: createUIDeployState(game),
+        historyViewIndex: -1
       });
       const perfEnd = performance.now();
       console.log(
         `⏱️ gameStore.initialize took ${(perfEnd - perfStart).toFixed(2)}ms (lazy loading enabled)`
       );
+    },
+
+    /**
+     * Previews the game state at a specific history index.
+     * Creates a temporary game instance to generate valid moves for that state.
+     * @param index The history index to view (0-based)
+     */
+    previewMove(index: number) {
+      update((state) => {
+        if (index < 0 || index >= state.history.length) return state;
+
+        const move = state.history[index];
+        // Ensure we have an 'after' FEN. Both StandardMove and DeploySequence should have it.
+        const fen = (move as any).after;
+
+        if (!fen) {
+          console.error('No FEN found in history move', move);
+          return state;
+        }
+
+        // Create temporary game to get state details
+        // We use try-catch to be safe
+        try {
+          // Use 'any' to bypass strict type checking if needed for basic usage
+          const tempGame = new CoTuLenh(fen);
+
+          return {
+            ...state,
+            historyViewIndex: index,
+            fen: fen,
+            turn: tempGame.turn(),
+            check: tempGame.isCheck(),
+            // We can calculate status but 'playing' is likely fine for history
+            // status: calculateGameStatus(tempGame),
+            possibleMoves: getPossibleMoves(tempGame),
+            lastMove: GameStoreUtils.extractLastMoveSquares(move),
+            deployState: null // Deploy state usually irrelevant when viewing history?
+            // Or we might need to reconstruct if we viewed a deploy step?
+            // Since history items are "Committed" moves, deploy sessions are done.
+          };
+        } catch (e) {
+          console.error('Failed to preview move', e);
+          return state;
+        }
+      });
+    },
+
+    /**
+     * Cancels the history preview and returns to the live game state.
+     * @param game The current live CoTuLenh game instance (needed to restore state)
+     */
+    cancelPreview(game: CoTuLenh) {
+      // Just sync with the current live game
+      this.sync(game);
     },
 
     /**
@@ -138,28 +196,9 @@ function createGameStore(): GameStore {
       update((state) => {
         const session = game.getSession();
         const isDeploySession = session && session.isDeploy;
-        // If we are in a deploy session, we DON'T add to history (yet).
-        // We only add when the session is committed (which handled separately or by the commit logic).
-        // Wait, applyMove is called when the core returns a MoveResult.
-        // If it's a deploy step (intermediate), we might not want to add it to the main history list shown in UI?
-        // The original code was: const shouldAddToHistory = !game.getDeploySession();
-        // So:
         const shouldAddToHistory = !isDeploySession;
 
-        let lastMoveSquares: any[] = [];
-        if (move.isDeploy) {
-          const dm = move as DeployMove;
-          // DeploySequence has 'to' as Map<Square, Piece>
-          if (dm.to instanceof Map) {
-            lastMoveSquares = [dm.from, ...Array.from(dm.to.keys())];
-          } else {
-            // Fallback if structure is different
-            lastMoveSquares = [dm.from];
-          }
-        } else {
-          const sm = move as Move;
-          lastMoveSquares = [sm.from, sm.to];
-        }
+        let lastMoveSquares: any[] = GameStoreUtils.extractLastMoveSquares(move);
 
         return {
           ...state,
@@ -170,7 +209,8 @@ function createGameStore(): GameStore {
           lastMove: lastMoveSquares,
           check: game.isCheck(),
           status: calculateGameStatus(game),
-          deployState: createUIDeployState(game)
+          deployState: createUIDeployState(game),
+          historyViewIndex: -1 // Reset preview on new move
         };
       });
       const perfEnd = performance.now();
@@ -191,10 +231,10 @@ function createGameStore(): GameStore {
           fen: game.fen(),
           turn: game.turn(),
           check: game.isCheck(),
+          possibleMoves: getPossibleMoves(game), // Ensure moves are up to date (e.g. after cancelPreview)
           status: calculateGameStatus(game),
-          deployState: createUIDeployState(game)
-          // history is NOT updated here, as Recombine modifies history internally/will be handled separately or by full reload if needed.
-          // Actually Recombine modifies the *session* history, not the main game history yet.
+          deployState: createUIDeployState(game),
+          historyViewIndex: -1
         };
       });
     },
@@ -223,7 +263,8 @@ function createGameStore(): GameStore {
           lastMove: undefined,
           check: game.isCheck(),
           status: calculateGameStatus(game),
-          deployState: null
+          deployState: null,
+          historyViewIndex: -1
         };
       });
     },
@@ -243,23 +284,7 @@ function createGameStore(): GameStore {
         let lastMoveSquares: any[] | undefined = undefined;
         if (history.length > 0) {
           const lastMove = history[history.length - 1];
-          if ((lastMove as any).isDeploy) {
-            // Check for deploy flag or type
-            // Checking 'flags' for 'd' or 'isDeploy' property if available on verified object
-            // But StandardMove/DeploySequence might not have isDeploy directly depending on type definition
-            // Let's use the explicit checks similar to applyMove or type guards if possible.
-            // We can check if 'san' starts with specific chars or property existence.
-            // DeploySequence has 'stackSquare' etc.
-            const dm = lastMove as DeployMove;
-            if (dm.to instanceof Map) {
-              lastMoveSquares = [dm.from, ...Array.from(dm.to.keys())];
-            } else {
-              lastMoveSquares = [dm.from, (dm as any).to].filter(Boolean);
-            }
-          } else {
-            const sm = lastMove as Move;
-            lastMoveSquares = [sm.from, sm.to];
-          }
+          lastMoveSquares = GameStoreUtils.extractLastMoveSquares(lastMove);
         }
 
         return {
@@ -271,7 +296,8 @@ function createGameStore(): GameStore {
           lastMove: lastMoveSquares,
           check: game.isCheck(),
           status: calculateGameStatus(game),
-          deployState: createUIDeployState(game)
+          deployState: createUIDeployState(game),
+          historyViewIndex: -1 // Reset preview on undo
         };
       });
 
@@ -287,6 +313,31 @@ function createGameStore(): GameStore {
     }
   };
 }
+
+// Helper utilities for GameStore to avoid code duplication
+const GameStoreUtils = {
+  extractLastMoveSquares(move: Move | DeployMove | any): any[] {
+    if (!move) return [];
+
+    // Check if it's a DeployMove/Sequence
+    if (
+      (move as any).isDeploy ||
+      (move as any).flags?.includes('d') ||
+      (move as DeployMove).to instanceof Map
+    ) {
+      const dm = move as DeployMove;
+      if (dm.to instanceof Map) {
+        return [dm.from, ...Array.from(dm.to.keys())];
+      } else {
+        // Fallback/Legacy
+        return [dm.from, (dm as any).to].filter(Boolean);
+      }
+    } else {
+      const sm = move as Move;
+      return [sm.from, sm.to];
+    }
+  }
+};
 
 // Export a singleton instance of the store
 export const gameStore = createGameStore();

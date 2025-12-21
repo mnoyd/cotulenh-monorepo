@@ -40,4 +40,5 @@ export interface GameState {
   status: GameStatus; // Current status of the game
   check: boolean; // Is the current player in check?
   deployState: UIDeployState | null; // Current deployment state with UI helpers
+  historyViewIndex: number; // Index of the history item currently being viewed (-1 if viewing live game)
 }
