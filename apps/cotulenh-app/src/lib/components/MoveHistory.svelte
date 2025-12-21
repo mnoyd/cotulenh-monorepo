@@ -23,15 +23,12 @@
     {:else}
       <div class="moves-list">
         {#each history as move, index}
-          {#if index % 2 === 0}
-            <div class="move-row">
-              <span class="move-num">{(index / 2 + 1).toString().padStart(2, '0')}</span>
-              <span class="move-san red">{move.san}</span>
-              {#if history[index + 1]}
-                <span class="move-san blue">{history[index + 1].san}</span>
-              {/if}
-            </div>
-          {/if}
+          <div class="move-chip {index % 2 === 0 ? 'red-move' : 'blue-move'}">
+            <span class="move-index">
+              {(Math.floor(index / 2) + 1).toString().padStart(2, '0')}
+            </span>
+            <span class="move-san">{move.san}</span>
+          </div>
         {/each}
       </div>
     {/if}
@@ -40,73 +37,129 @@
 
 <style>
   .history-mini {
-    background: rgba(0, 0, 0, 0.3);
+    background: rgba(0, 0, 0, 0.4);
     border: 1px solid #333;
     display: flex;
     flex-direction: column;
     height: 100%; /* Fill available space */
     min-height: 150px; /* Minimum useful height */
+    overflow: hidden; /* Prevent container-level scroll */
+    box-shadow:
+      0 4px 6px -1px rgba(0, 0, 0, 0.1),
+      0 2px 4px -1px rgba(0, 0, 0, 0.06);
   }
 
   .header {
-    background: #111;
-    padding: 4px 8px;
+    background: #0f172a; /* Darker slate */
+    padding: 6px 8px;
     border-bottom: 1px solid #333;
+    display: flex;
+    align-items: center;
   }
 
   .label {
-    font-size: 0.7rem;
+    font-size: 0.65rem;
     font-weight: 700;
-    color: #059669;
-    letter-spacing: 1px;
+    color: #059669; /* Modern Warfare Green */
+    letter-spacing: 2px;
+    text-transform: uppercase;
   }
 
   .history-content {
     flex: 1;
     overflow-y: auto;
-    padding: 4px;
+    padding: 8px;
+    background: rgba(0, 0, 0, 0.2);
     font-family: 'Share Tech Mono', monospace;
   }
 
   /* Custom scrollbar */
-  .history-content::-webkit-scrollbar { width: 4px; }
-  .history-content::-webkit-scrollbar-track { background: #000; }
-  .history-content::-webkit-scrollbar-thumb { background: #333; }
+  .history-content::-webkit-scrollbar {
+    width: 4px;
+  }
+  .history-content::-webkit-scrollbar-track {
+    background: #000;
+  }
+  .history-content::-webkit-scrollbar-thumb {
+    background: #333;
+    border-radius: 2px;
+  }
 
   .empty-state {
-    color: #444;
+    color: #555;
     font-size: 0.7rem;
     text-align: center;
     padding-top: 20px;
     font-style: italic;
+    opacity: 0.7;
+    letter-spacing: 0.5px;
   }
 
   .moves-list {
     display: flex;
-    flex-direction: column;
-    gap: 2px;
+    flex-wrap: wrap;
+    align-content: flex-start;
+    gap: 6px;
   }
 
-  .move-row {
-    display: flex;
-    gap: 8px;
-    font-size: 0.8rem;
-    padding: 2px 4px;
+  .move-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 2px 6px;
+    background: rgba(20, 20, 20, 0.8);
+    border: 1px solid #333;
+    font-size: 0.75rem;
+    transition: all 0.2s ease;
+    cursor: default;
+    user-select: none;
+    position: relative;
+    overflow: hidden;
   }
 
-  .move-row:hover {
-    background: rgba(255, 255, 255, 0.05);
+  .move-chip::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 2px;
   }
 
-  .move-num {
+  .move-chip:hover {
+    background: rgba(40, 40, 40, 0.9);
+    border-color: #555;
+  }
+
+  .move-index {
     color: #555;
-    width: 20px;
+    font-size: 0.6rem;
+    letter-spacing: 0.5px;
   }
 
   .move-san {
-    width: 60px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
   }
 
-  .move-san.red { color: #ef4444; }
-  .move-san.blue { color: #3b82f6; }
+  /* Red Theme */
+  .red-move {
+    /* Subtle red tint border or background can be added if desired, keeping it clean for now */
+  }
+  .red-move::before {
+    background-color: #ef4444;
+  }
+  .red-move .move-san {
+    color: #fca5a5; /* Lighter red for text readability */
+  }
+
+  /* Blue Theme */
+  .blue-move {
+  }
+  .blue-move::before {
+    background-color: #3b82f6;
+  }
+  .blue-move .move-san {
+    color: #93c5fd; /* Lighter blue for text readability */
+  }
 </style>
