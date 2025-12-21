@@ -167,7 +167,16 @@ export class CoTuLenh {
       for (let i = 0; i < ranks[r].length; i++) {
         const char = ranks[r].charAt(i)
         if (isDigit(char)) {
-          col += parseInt(char)
+          let num = char
+          // Max rank width is 11, so we only need to check for a 2nd digit if the first is '1'
+          if (
+            char === '1' &&
+            i + 1 < ranks[r].length &&
+            isDigit(ranks[r].charAt(i + 1))
+          ) {
+            num += ranks[r].charAt(++i)
+          }
+          col += parseInt(num, 10)
           if (col > 11) {
             const msg = `Invalid FEN: rank ${12 - r} has too many squares (${ranks[r]})`
             throw createError(ErrorCode.FEN_INVALID_FILE_COUNT, msg, {
