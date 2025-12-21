@@ -1,7 +1,6 @@
 <script lang="ts">
   import { afterUpdate } from 'svelte';
-
-  export let history: any[] = [];
+  import { gameStore } from '$lib/stores/game';
 
   let historyContainer: HTMLDivElement;
 
@@ -18,17 +17,21 @@
   </div>
 
   <div class="history-content" bind:this={historyContainer}>
-    {#if history.length === 0}
+    {#if $gameStore.history.length === 0}
       <div class="empty-state">NO MOVES RECORDED</div>
     {:else}
       <div class="moves-list">
-        {#each history as move, index}
-          <div class="move-chip {index % 2 === 0 ? 'red-move' : 'blue-move'}">
+        {#each $gameStore.history as move, index}
+          <button
+            class="move-chip {index % 2 === 0 ? 'red-move' : 'blue-move'}"
+            class:active={index === $gameStore.historyViewIndex}
+            on:click={() => gameStore.previewMove(index)}
+          >
             <span class="move-index">
               {(Math.floor(index / 2) + 1).toString().padStart(2, '0')}
             </span>
             <span class="move-san">{move.san}</span>
-          </div>
+          </button>
         {/each}
       </div>
     {/if}
@@ -161,5 +164,11 @@
   }
   .blue-move .move-san {
     color: #93c5fd; /* Lighter blue for text readability */
+  }
+
+  .move-chip.active {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: #e5e5e5;
+    box-shadow: 0 0 8px rgba(255, 255, 255, 0.2);
   }
 </style>

@@ -307,7 +307,7 @@ export class CoTuLenh {
     ].join(' ')
 
     // If there's an active move session, return extended FEN with CURRENT board state
-    if (this._session) {
+    if (this._session && this._session.isDeploy) {
       return this._session.toFenString()
     }
 
