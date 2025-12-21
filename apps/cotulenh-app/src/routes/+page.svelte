@@ -59,6 +59,7 @@
 
       boardApi.set({
         fen: $gameStore.fen,
+        viewOnly: $gameStore.status !== 'playing',
         turnColor: coreToBoardColor($gameStore.turn),
         lastMove: mapLastMoveToBoardFormat($gameStore.lastMove),
         check: coreToBoardCheck($gameStore.check, $gameStore.turn),
@@ -250,6 +251,7 @@
 
       boardApi = CotulenhBoard(boardContainerElement, {
         fen: $gameStore.fen,
+        viewOnly: $gameStore.status !== 'playing',
         turnColor: coreToBoardColor($gameStore.turn),
         lastMove: mapLastMoveToBoardFormat($gameStore.lastMove),
         check: coreToBoardCheck($gameStore.check, $gameStore.turn),

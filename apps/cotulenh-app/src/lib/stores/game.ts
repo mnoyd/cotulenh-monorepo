@@ -113,13 +113,16 @@ function createGameStore(): GameStore {
       const possibleMoves = getPossibleMoves(game);
       console.log(`⏱️ Generated ${possibleMoves.length} moves in initialize`);
 
+      const status = calculateGameStatus(game);
+      const isPlaying = status === 'playing';
+
       set({
         fen: game.fen(),
-        turn: game.turn(),
+        turn: isPlaying ? game.turn() : null,
         history: [],
-        possibleMoves,
+        possibleMoves: isPlaying ? possibleMoves : [],
         check: game.isCheck(),
-        status: calculateGameStatus(game),
+        status,
         lastMove: undefined,
         deployState: createUIDeployState(game),
         historyViewIndex: -1
@@ -199,16 +202,18 @@ function createGameStore(): GameStore {
         const shouldAddToHistory = !isDeploySession;
 
         let lastMoveSquares: any[] = GameStoreUtils.extractLastMoveSquares(move);
+        const status = calculateGameStatus(game);
+        const isPlaying = status === 'playing';
 
         return {
           ...state,
           fen: game.fen(),
-          turn: game.turn(),
+          turn: isPlaying ? game.turn() : null,
           history: shouldAddToHistory ? [...state.history, move] : state.history,
-          possibleMoves, // Full load enabled
+          possibleMoves: isPlaying ? possibleMoves : [], // Full load enabled
           lastMove: lastMoveSquares,
           check: game.isCheck(),
-          status: calculateGameStatus(game),
+          status,
           deployState: createUIDeployState(game),
           historyViewIndex: -1 // Reset preview on new move
         };
@@ -226,13 +231,15 @@ function createGameStore(): GameStore {
      */
     sync(game: CoTuLenh) {
       update((state) => {
+        const status = calculateGameStatus(game);
+        const isPlaying = status === 'playing';
         return {
           ...state,
           fen: game.fen(),
-          turn: game.turn(),
+          turn: isPlaying ? game.turn() : null,
           check: game.isCheck(),
-          possibleMoves: getPossibleMoves(game), // Ensure moves are up to date (e.g. after cancelPreview)
-          status: calculateGameStatus(game),
+          possibleMoves: isPlaying ? getPossibleMoves(game) : [], // Ensure moves are up to date (e.g. after cancelPreview)
+          status,
           deployState: createUIDeployState(game),
           historyViewIndex: -1
         };
@@ -254,15 +261,18 @@ function createGameStore(): GameStore {
           san: deployMoveSan
         } as Move;
 
+        const status = calculateGameStatus(game);
+        const isPlaying = status === 'playing';
+
         return {
           ...state,
           fen: game.fen(),
-          turn: game.turn(),
+          turn: isPlaying ? game.turn() : null,
           history: [...state.history, deployMove],
-          possibleMoves,
+          possibleMoves: isPlaying ? possibleMoves : [],
           lastMove: undefined,
           check: game.isCheck(),
-          status: calculateGameStatus(game),
+          status,
           deployState: null,
           historyViewIndex: -1
         };
@@ -287,15 +297,18 @@ function createGameStore(): GameStore {
           lastMoveSquares = GameStoreUtils.extractLastMoveSquares(lastMove);
         }
 
+        const status = calculateGameStatus(game);
+        const isPlaying = status === 'playing';
+
         return {
           ...state,
           fen: game.fen(),
-          turn: game.turn(),
+          turn: isPlaying ? game.turn() : null,
           history: history,
-          possibleMoves,
+          possibleMoves: isPlaying ? possibleMoves : [],
           lastMove: lastMoveSquares,
           check: game.isCheck(),
-          status: calculateGameStatus(game),
+          status,
           deployState: createUIDeployState(game),
           historyViewIndex: -1 // Reset preview on undo
         };

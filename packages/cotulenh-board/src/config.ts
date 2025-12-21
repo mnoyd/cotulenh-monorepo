@@ -57,6 +57,7 @@ export interface Config {
       blue: Map<cg.Key, cg.Key[]>;
     };
   };
+  viewOnly?: boolean;
 }
 export function applyAnimation(state: HeadlessState, config: Config): void {
   if (config.animation) {
