@@ -1,0 +1,23 @@
+@import 'tailwindcss';
+
+@theme {
+  /* Colors */
+  --color-mw-primary: #00f3ff;
+  --color-mw-secondary: #00ff41;
+  --color-mw-bg-dark: #050a14;
+  --color-mw-bg-panel: rgba(15, 23, 42, 0.8);
+  --color-mw-border: rgba(0, 243, 255, 0.3);
+  --color-mw-alert: #ffab00;
+
+  /* Fonts */
+  --font-display: 'Orbitron', sans-serif;
+  --font-ui: 'Rajdhani', sans-serif;
+  --font-mono: 'Share Tech Mono', monospace;
+}
+
+/* Custom base styles */
+body {
+  background-color: var(--color-mw-bg-dark);
+  color: white;
+  font-family: var(--font-ui);
+}
