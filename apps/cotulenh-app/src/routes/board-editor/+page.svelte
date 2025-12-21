@@ -430,6 +430,8 @@
       // Ensure proper sizing after initialization
       setTimeout(ensureBoardSize, 50);
       setTimeout(ensureBoardSize, 200);
+      // Extra safety check for layout shifts
+      setTimeout(ensureBoardSize, 500);
 
       updateFEN();
 
@@ -465,14 +467,28 @@
 <svelte:body on:mousemove={handleMouseMove} on:click={cancelSelection} />
 
 <main>
-  <div class="editor-container">
-    <h1>CoTuLenh Board Editor</h1>
+  <div
+    class="editor-container max-w-[1600px] mx-auto p-6 bg-mw-bg-dark min-h-[calc(100vh-70px)] w-full"
+  >
+    <h1
+      class="text-center mb-8 font-display text-mw-primary uppercase tracking-[4px] relative inline-block left-1/2 -translate-x-1/2 pb-4 border-b-2 border-mw-border after:content-[''] after:absolute after:bottom-[-2px] after:left-0 after:w-full after:h-[2px] after:bg-gradient-to-r after:from-transparent after:to-mw-primary after:end-transparent"
+    >
+      CoTuLenh Board Editor
+    </h1>
 
-    <div class="editor-layout">
-      <div class="board-and-palettes">
-        <!-- Left Palette (Blue when red orientation, Red when blue orientation) -->
-        <div class="palette-section left-palette">
-          <h3>{boardOrientation === 'red' ? 'Blue' : 'Red'} Pieces</h3>
+    <div class="editor-layout flex flex-col gap-6 mb-8">
+      <div
+        class="board-and-palettes flex gap-4 items-stretch justify-center w-full max-w-fit mx-auto bg-mw-bg-panel p-4 border border-mw-border rounded-lg backdrop-blur-md flex-col lg:flex-row"
+      >
+        <!-- Left Palette -->
+        <div
+          class="palette-section bg-mw-bg-panel p-4 flex flex-col w-[240px] min-w-[200px] shrink-0 border border-mw-border relative max-h-[80vh] overflow-y-auto lg:rounded-l-lg lg:border-r-0 lg:w-[240px] w-full rounded-t-lg border-b lg:border-b-0"
+        >
+          <h3
+            class="font-display font-semibold text-mw-primary text-center uppercase tracking-wider border-b border-dashed border-mw-border pb-2 mb-4"
+          >
+            {boardOrientation === 'red' ? 'Blue' : 'Red'} Pieces
+          </h3>
           <PiecePalette
             {boardApi}
             color={boardOrientation === 'red' ? 'blue' : 'red'}
@@ -487,20 +503,34 @@
         </div>
 
         <!-- Board Container -->
-        <div class="board-section">
+        <div
+          class="board-section flex justify-center items-center grow min-w-0 p-1 bg-mw-bg-panel border-y lg:border-y border-mw-border overflow-hidden lg:w-auto w-full"
+        >
           <div
             bind:this={boardContainerElement}
-            class="board-container"
-            class:delete-mode={editorMode === 'delete'}
-            class:place-mode={selectedPiece !== null}
+            class="board-container relative flex justify-center items-center bg-black border-none transition-all
+                   aspect-[11/12] w-[calc(85vh*11/12)] max-w-full mx-auto
+                   {editorMode === 'delete'
+              ? 'cursor-not-allowed ring-2 ring-mw-alert shadow-[0_0_20px_rgba(255,171,0,0.4)]'
+              : ''}
+                   {selectedPiece !== null && editorMode !== 'delete'
+              ? 'cursor-crosshair ring-2 ring-mw-secondary shadow-[0_0_20px_rgba(0,255,65,0.4)]'
+              : ''}
+                   {!editorMode && !selectedPiece ? 'shadow-[0_0_50px_rgba(0,243,255,0.1)]' : ''}"
           >
-            {#if !boardApi}<p>Loading board...</p>{/if}
+            {#if !boardApi}<p class="text-mw-primary">Loading board...</p>{/if}
           </div>
         </div>
 
-        <!-- Right Palette (Red when red orientation, Blue when blue orientation) -->
-        <div class="palette-section right-palette">
-          <h3>{boardOrientation === 'red' ? 'Red' : 'Blue'} Pieces</h3>
+        <!-- Right Palette -->
+        <div
+          class="palette-section bg-mw-bg-panel p-4 flex flex-col w-[240px] min-w-[200px] shrink-0 border border-mw-border relative max-h-[80vh] overflow-y-auto lg:rounded-r-lg lg:border-l-0 lg:w-[240px] w-full rounded-b-lg border-t lg:border-t-0"
+        >
+          <h3
+            class="font-display font-semibold text-mw-primary text-center uppercase tracking-wider border-b border-dashed border-mw-border pb-2 mb-4"
+          >
+            {boardOrientation === 'red' ? 'Red' : 'Blue'} Pieces
+          </h3>
           <PiecePalette
             {boardApi}
             color={boardOrientation === 'red' ? 'red' : 'blue'}
@@ -534,55 +564,104 @@
     {/if}
 
     <!-- Special Play Button -->
-    <div class="play-button-container">
-      <button class="btn-play" on:click={validateAndPlay}>
-        <span class="play-icon">▶</span>
-        <span class="play-text">Play This Position</span>
+    <div class="play-button-container max-w-[1200px] mx-auto my-8 text-center">
+      <button
+        class="btn-play group relative inline-flex items-center gap-3 overflow-hidden rounded px-12 py-5 font-display text-2xl font-bold uppercase tracking-widest text-black shadow-[0_0_20px_rgba(0,243,255,0.3)] transition-all duration-300 hover:scale-105 hover:shadow-[0_0_40px_rgba(0,243,255,0.5)] active:scale-95 bg-gradient-to-br from-mw-primary to-[#00aaff] border border-mw-primary"
+        on:click={validateAndPlay}
+      >
+        <span
+          class="absolute top-0 left-[-100%] z-10 h-full w-full bg-linear-to-r from-transparent via-[rgba(255,255,255,0.5)] to-transparent transition-[left] duration-500 group-hover:left-full"
+        ></span>
+        <span class="play-icon animate-pulse text-lg">▶</span>
+        <span class="play-text drop-shadow-[0_0_2px_rgba(255,255,255,0.5)]">Play This Position</span
+        >
       </button>
       {#if validationError}
-        <div class="validation-error">
+        <div
+          class="validation-error mt-4 inline-block rounded border border-mw-alert bg-[rgba(255,171,0,0.2)] px-5 py-3 font-ui font-semibold text-mw-alert shadow-[0_0_15px_rgba(255,171,0,0.3)] backdrop-blur-sm animate-[shake_0.5s]"
+        >
           ⚠️ {validationError}
         </div>
       {/if}
     </div>
 
     <!-- Controls Section at Bottom -->
-    <div class="controls-container">
-      <div class="button-row">
-        <button class="btn btn-primary" on:click={loadStartingPosition}> Starting Position </button>
-        <button class="btn btn-secondary" on:click={clearBoard}> Clear Board </button>
-        <button class="btn btn-secondary" on:click={flipBoard}> Flip Board </button>
+    <div
+      class="controls-container bg-mw-bg-panel border border-mw-border rounded-lg p-8 max-w-[1200px] mx-auto w-full shadow-2xl relative mt-8 before:content-['SYSTEM_CONTROLS'] before:absolute before:-top-3 before:left-5 before:bg-mw-bg-dark before:px-2 before:text-sm before:text-mw-border before:font-mono before:tracking-widest"
+    >
+      <div
+        class="button-row flex gap-4 flex-wrap justify-center border-b border-mw-border pb-6 mb-8"
+      >
         <button
-          class="btn"
-          class:btn-turn-red={currentTurn === 'red'}
-          class:btn-turn-blue={currentTurn === 'blue'}
+          class="btn bg-mw-primary/5 border border-mw-border text-mw-primary px-6 py-2 rounded font-ui uppercase tracking-widest transition-all hover:bg-mw-primary/20 hover:shadow-[0_0_10px_var(--color-mw-border)] hover:text-white"
+          on:click={loadStartingPosition}
+        >
+          Starting Position
+        </button>
+        <button
+          class="btn bg-mw-primary/5 border border-mw-border text-mw-primary px-6 py-2 rounded font-ui uppercase tracking-widest transition-all hover:bg-mw-primary/20 hover:shadow-[0_0_10px_var(--color-mw-border)] hover:text-white"
+          on:click={clearBoard}
+        >
+          Clear Board
+        </button>
+        <button
+          class="btn bg-mw-primary/5 border border-mw-border text-mw-primary px-6 py-2 rounded font-ui uppercase tracking-widest transition-all hover:bg-mw-primary/20 hover:shadow-[0_0_10px_var(--color-mw-border)] hover:text-white"
+          on:click={flipBoard}
+        >
+          Flip Board
+        </button>
+        <button
+          class="btn px-6 py-2 rounded font-ui uppercase tracking-widest transition-all border
+                 {currentTurn === 'red'
+            ? 'bg-amber-500/15 border-mw-alert text-mw-alert hover:bg-mw-alert/30 hover:shadow-[0_0_15px_rgba(255,171,0,0.4)] hover:text-white'
+            : 'bg-blue-500/15 border-blue-500 text-blue-500 hover:bg-blue-500/30 hover:shadow-[0_0_15px_rgba(0,150,255,0.4)] hover:text-white'}"
           on:click={toggleTurn}
         >
           Turn: {currentTurn === 'red' ? '🔴 Red' : '🔵 Blue'}
         </button>
-        <button class="btn btn-secondary" on:click={screenshot} disabled> Screenshot </button>
+        <button
+          class="btn disabled:opacity-50 disabled:cursor-not-allowed bg-mw-primary/5 border border-mw-border text-mw-primary px-6 py-2 rounded font-ui uppercase tracking-widest"
+          on:click={screenshot}
+          disabled
+        >
+          Screenshot
+        </button>
       </div>
 
-      <div class="fen-section">
-        <label for="fen-input">FEN Position:</label>
-        <div class="fen-input-group">
+      <div
+        class="fen-section max-w-[800px] mx-auto bg-black/20 p-4 border border-mw-border rounded"
+      >
+        <label for="fen-input" class="block mb-2 font-display text-mw-primary text-sm font-semibold"
+          >FEN Position:</label
+        >
+        <div class="fen-input-group flex gap-2 flex-col md:flex-row">
           <input
             id="fen-input"
             type="text"
             bind:value={fenInput}
             placeholder="Enter FEN string..."
-            class="fen-input"
+            class="fen-input flex-1 bg-black/40 border border-mw-border text-mw-primary p-2 font-mono rounded text-sm focus:outline-none focus:border-mw-primary"
           />
-          <button class="btn btn-small" on:click={applyFEN}> Apply </button>
-          <button class="btn btn-small" on:click={copyFEN}>
+          <button
+            class="btn btn-small bg-mw-primary/5 border border-mw-border text-mw-primary px-4 py-2 rounded font-ui uppercase hover:bg-mw-primary/20 hover:text-white transition-colors"
+            on:click={applyFEN}
+          >
+            Apply
+          </button>
+          <button
+            class="btn btn-small bg-mw-primary/5 border border-mw-border text-mw-primary px-4 py-2 rounded font-ui uppercase hover:bg-mw-primary/20 hover:text-white transition-colors"
+            on:click={copyFEN}
+          >
             {copyButtonText}
           </button>
         </div>
       </div>
 
-      <div class="info-section">
-        <h4>Instructions</h4>
-        <ul>
+      <div class="info-section pt-4 border-t border-slate-700 mt-4">
+        <h4 class="mb-2 text-sm font-semibold text-slate-300">Instructions</h4>
+        <ul
+          class="text-xs text-slate-400 leading-relaxed grid grid-cols-1 md:grid-cols-2 gap-1 list-none pl-0"
+        >
           <li><strong>Hand Mode (✋):</strong> Drag pieces on board to move them</li>
           <li>
             <strong>Drop Mode:</strong> Click piece in palette to select, then click squares to place
@@ -598,629 +677,32 @@
 </main>
 
 <style>
-  .editor-container {
-    max-width: 1600px;
-    margin: 0 auto;
-    padding: var(--spacing-lg);
-    background-color: var(--mw-bg-dark);
-    min-height: calc(100vh - 70px);
-    width: 100%;
-  }
-
-  /* Special Play Button */
-  .play-button-container {
-    max-width: 1200px;
-    margin: var(--spacing-xl) auto var(--spacing-lg);
-    text-align: center;
-  }
-
-  .btn-play {
-    background: linear-gradient(135deg, var(--mw-primary) 0%, #00aaff 100%);
-    color: #000;
-    border: 1px solid var(--mw-primary);
-    border-radius: var(--radius-sm);
-    padding: 1.25rem 3rem;
-    font-family: var(--font-display);
-    font-size: 1.5rem;
-    font-weight: 700;
-    cursor: pointer;
-    box-shadow: 0 0 20px rgba(0, 243, 255, 0.3);
-    transition: all 0.3s ease;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.75rem;
-    position: relative;
-    overflow: hidden;
-    text-transform: uppercase;
-    letter-spacing: 2px;
-    text-shadow: 0 0 2px rgba(255, 255, 255, 0.5);
-    clip-path: polygon(10% 0, 100% 0, 100% 80%, 90% 100%, 0 100%, 0 20%);
-  }
-
-  .btn-play::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.5), transparent);
-    transition: left 0.5s;
-    z-index: 10;
-  }
-
-  .btn-play:hover::before {
-    left: 100%;
-  }
-
-  .btn-play:hover {
-    transform: scale(1.05);
-    box-shadow: 0 0 40px rgba(0, 243, 255, 0.5);
-    background: linear-gradient(135deg, #fff 0%, var(--mw-primary) 100%);
-  }
-
-  .btn-play:active {
-    transform: scale(0.98);
-  }
-
-  .play-icon {
-    font-size: 1.2rem;
-    animation: pulse 2s infinite;
-  }
-
-  .validation-error {
-    margin-top: 1rem;
-    padding: 0.75rem 1.25rem;
-    background: rgba(255, 171, 0, 0.2); /* Semi-transparent Amber */
-    border: 1px solid var(--mw-alert);
-    color: var(--mw-alert);
-    border-radius: var(--radius-sm);
-    font-family: var(--font-ui);
-    font-size: 0.95rem;
-    font-weight: 600;
-    display: inline-block;
-    box-shadow: 0 0 15px rgba(255, 171, 0, 0.3);
-    animation: shake 0.5s;
-    backdrop-filter: blur(4px);
-  }
-
-  h1 {
-    text-align: center;
-    margin-bottom: var(--spacing-xl);
-    font-family: var(--font-display);
-    color: var(--mw-primary);
-    text-transform: uppercase;
-    letter-spacing: 4px;
-    text-shadow: 0 0 10px rgba(0, 243, 255, 0.5);
-    border-bottom: 2px solid var(--mw-border-color);
-    padding-bottom: var(--spacing-md);
-    position: relative;
-    display: inline-block;
-    left: 50%;
-    transform: translateX(-50%);
-  }
-
-  h1::after {
-    content: '';
-    position: absolute;
-    bottom: -2px;
-    left: 0;
-    width: 100%;
-    height: 2px;
-    background: linear-gradient(90deg, transparent, var(--mw-primary), transparent);
-  }
-
-  .editor-layout {
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-lg);
-    margin-bottom: var(--spacing-xl);
-  }
-
-  .board-and-palettes {
-    display: flex;
-    gap: var(--spacing-md);
-    align-items: stretch;
-    justify-content: center;
-    width: 100%;
-    max-width: fit-content;
-    margin: 0 auto;
-    background: rgba(15, 23, 42, 0.6);
-    padding: var(--spacing-md);
-    border: 1px solid var(--mw-border-color);
-    border-radius: var(--radius-md);
-    backdrop-filter: blur(10px);
-  }
-
-  .palette-section {
-    background: var(--mw-bg-panel);
-    padding: var(--spacing-md);
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-start;
-    width: 240px;
-    min-width: 200px;
-    flex-shrink: 0;
-    border: 1px solid var(--mw-border-color);
-    align-self: stretch;
-    box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.5);
-    position: relative;
-    max-height: 80vh;
-    overflow-y: auto;
-  }
-
-  /* Corner markers for palette */
-  .palette-section::before {
-    content: '';
-    position: absolute;
-    top: -1px;
-    left: -1px;
-    width: 10px;
-    height: 10px;
-    border-top: 2px solid var(--mw-primary-dim);
-    border-left: 2px solid var(--mw-primary-dim);
-    pointer-events: none;
-  }
-
-  .palette-section::after {
-    content: '';
-    position: absolute;
-    bottom: -1px;
-    right: -1px;
-    width: 10px;
-    height: 10px;
-    border-bottom: 2px solid var(--mw-primary-dim);
-    border-right: 2px solid var(--mw-primary-dim);
-    pointer-events: none;
-  }
-
-  .left-palette {
-    border-radius: var(--radius-sm) 0 0 var(--radius-sm);
-    border-right: none;
-  }
-
-  .right-palette {
-    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
-    border-left: none;
-  }
-
-  .palette-section h3 {
-    margin: 0 0 1rem 0;
-    font-family: var(--font-display);
-    font-size: 0.9rem;
-    font-weight: 600;
-    color: var(--mw-primary);
-    text-align: center;
-    flex-shrink: 0;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    border-bottom: 1px dashed var(--mw-border-color);
-    padding-bottom: 0.5rem;
-  }
-
-  .controls-container {
-    background: var(--mw-bg-panel);
-    border: 1px solid var(--mw-border-color);
-    border-radius: var(--radius-md);
-    padding: var(--spacing-xl);
-    max-width: 1200px;
-    margin: 0 auto;
-    width: 100%;
-    box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
-    position: relative;
-  }
-
-  .controls-container::before {
-    content: 'SYSTEM CONTROLS';
-    position: absolute;
-    top: -10px;
-    left: 20px;
-    background: var(--mw-bg-dark);
-    padding: 0 10px;
-    color: var(--mw-primary-dim);
-    font-family: var(--font-mono);
-    font-size: 0.8rem;
-    letter-spacing: 2px;
-  }
-
-  .board-section {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    flex-shrink: 1; /* Allow shrinking */
-    margin: 0;
-    padding: 0 4px;
-    background: var(--mw-bg-panel);
-    border-top: 1px solid var(--mw-border-color);
-    border-bottom: 1px solid var(--mw-border-color);
-    overflow: hidden; /* Prevent overflow */
-  }
-
-  .board-container {
-    /* Use responsive sizing */
-    height: min(75vh, 700px);
-    width: auto;
-    aspect-ratio: 12 / 13;
-    max-width: 100%;
-
-    position: relative;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    background: #000;
-    border: none;
-    box-shadow: 0 0 50px rgba(0, 243, 255, 0.1);
-  }
-
-  /* Ensure minimum size for board rendering */
-  @supports (aspect-ratio: 12 / 13) {
-    .board-container {
-      min-height: 300px;
-    }
-  }
-
-  .board-container.delete-mode {
-    cursor: not-allowed !important;
-    box-shadow: 0 0 20px rgba(255, 171, 0, 0.4);
-    border: 2px solid var(--mw-alert);
-  }
-
-  .board-container.place-mode {
-    cursor: crosshair !important;
-    box-shadow: 0 0 20px rgba(0, 255, 65, 0.4);
-    border: 2px solid var(--mw-secondary);
-  }
+  /* Local styles for complex animations or specific overrides not easily handled by Tailwind */
+  @reference "../../app.css";
 
   .ghost-piece {
-    position: fixed;
-    pointer-events: none;
-    z-index: 1000;
-    width: 60px;
-    height: 60px;
+    @apply fixed z-50 w-[60px] h-[60px] opacity-80 pointer-events-none;
     transform: translate(-50%, -50%);
-    opacity: 0.8;
-    filter: drop-shadow(0 0 10px var(--mw-primary));
+    filter: drop-shadow(0 0 10px var(--color-mw-primary));
   }
 
   .ghost-recycle-bin {
-    position: fixed;
-    pointer-events: none;
-    z-index: 1000;
+    @apply fixed z-50 text-4xl pointer-events-none;
     transform: translate(-50%, -50%);
-    font-size: 2rem;
-    filter: drop-shadow(0 0 10px var(--mw-alert));
+    filter: drop-shadow(0 0 10px var(--color-mw-alert));
   }
 
-  /* Updated Control Buttons */
-  .button-row {
-    display: flex;
-    gap: var(--spacing-md);
-    flex-wrap: wrap;
-    justify-content: center;
-    margin-bottom: var(--spacing-xl);
-    padding-bottom: var(--spacing-lg);
-    border-bottom: 1px solid var(--mw-border-color);
-  }
-
-  .btn {
-    background: rgba(0, 243, 255, 0.05);
-    border: 1px solid var(--mw-border-color);
-    color: var(--mw-primary);
-    padding: var(--spacing-sm) var(--spacing-lg);
-    border-radius: var(--radius-sm);
-    font-family: var(--font-ui);
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-
-  .btn:hover:not(:disabled) {
-    background: rgba(0, 243, 255, 0.2);
-    box-shadow: 0 0 10px var(--mw-primary-dim);
-    border-color: var(--mw-primary);
-    color: #fff;
-  }
-
-  .btn-primary {
-    background: rgba(0, 243, 255, 0.15);
-    border-color: var(--mw-primary);
-    color: #fff;
-    font-weight: 700;
-  }
-
-  .btn-turn-red {
-    background: rgba(255, 171, 0, 0.15); /* Amber/Orange */
-    border-color: var(--mw-alert);
-    color: var(--mw-alert);
-  }
-
-  .btn-turn-red:hover {
-    background: rgba(255, 171, 0, 0.3);
-    box-shadow: 0 0 15px rgba(255, 171, 0, 0.4);
-    color: #fff;
-  }
-
-  .btn-turn-blue {
-    background: rgba(0, 150, 255, 0.15);
-    border-color: #0096ff;
-    color: #0096ff;
-  }
-
-  .btn-turn-blue:hover {
-    background: rgba(0, 150, 255, 0.3);
-    box-shadow: 0 0 15px rgba(0, 150, 255, 0.4);
-    color: #fff;
-  }
-
-  .btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-    border-color: var(--color-text-muted);
-  }
-
-  /* Input Section */
-  .fen-section {
-    max-width: 800px;
-    margin: 0 auto;
-    background: rgba(0, 0, 0, 0.2);
-    padding: var(--spacing-md);
-    border: 1px solid var(--mw-border-color);
-    border-radius: var(--radius-sm);
-  }
-
-  .fen-section label {
-    display: block;
-    margin-bottom: var(--spacing-xs);
-    font-family: var(--font-display);
-    color: var(--mw-primary);
-    font-size: 0.9rem;
-  }
-
-  .fen-input-group {
-    display: flex;
-    gap: var(--spacing-sm);
-  }
-
-  .fen-input {
-    flex: 1;
-    background: rgba(0, 0, 0, 0.4);
-    border: 1px solid var(--mw-border-color);
-    color: var(--mw-primary);
-    padding: var(--spacing-sm);
-    font-family: var(--font-mono);
-    border-radius: var(--radius-sm);
-    font-size: 0.9rem;
-  }
-
-  .fen-input:focus {
-    outline: none;
-    border-color: var(--mw-primary);
-  }
-
-  .info-section {
-    padding-top: 1rem;
-    border-top: 1px solid #ddd;
-    margin-top: 1rem;
-  }
-
-  .info-section h4 {
-    margin: 0 0 0.5rem 0;
-    font-size: 0.9rem;
-    font-weight: 600;
-    color: var(--text-primary, #333);
-  }
-
-  .info-section ul {
-    margin: 0;
-    padding-left: 1.25rem;
-    font-size: 0.8rem;
-    color: var(--text-secondary, #666);
-    line-height: 1.5;
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 0.25rem;
-  }
-
-  .info-section li {
-    margin-bottom: 0.25rem;
-  }
-
-  /* Tablet and below - stack palettes above/below board */
-  @media (max-width: 1000px) {
-    .board-and-palettes {
-      flex-direction: column;
-      align-items: stretch;
-      gap: 0;
-      width: 100%;
-      max-width: min(600px, calc(100vw - 2rem));
+  @keyframes pulse {
+    0%,
+    100% {
+      opacity: 1;
     }
-
-    .left-palette {
-      width: 100%;
-      border-radius: 8px 8px 0 0 !important;
-      border: 2px solid #ddd !important;
-      border-bottom: 1px solid #ddd !important;
-      order: 1;
-    }
-
-    .board-section {
-      width: 100%;
-      order: 2;
-      align-items: center;
-    }
-
-    .board-container {
-      width: 100% !important;
-      max-width: 100%;
-      border-radius: 0 !important;
-      border-left: 2px solid #ddd;
-      border-right: 2px solid #ddd;
-      border-top: none;
-      border-bottom: none;
-      min-height: 300px;
-      box-shadow: none;
-    }
-
-    .right-palette {
-      width: 100%;
-      border-radius: 0 0 8px 8px !important;
-      border: 2px solid #ddd !important;
-      border-top: 1px solid #ddd !important;
-      order: 3;
-    }
-
-    .controls-container {
-      max-width: min(600px, calc(100vw - 2rem));
-      margin-top: 1rem;
-    }
-
-    .info-section ul {
-      grid-template-columns: 1fr;
+    50% {
+      opacity: 0.5;
     }
   }
 
-  /* Mobile landscape and smaller tablets */
-  @media (max-width: 768px) {
-    .editor-container {
-      padding: 0.75rem;
-    }
-
-    .board-and-palettes {
-      max-width: calc(100vw - 1.5rem);
-    }
-
-    .board-container {
-      min-height: 280px;
-    }
-
-    .controls-container {
-      max-width: calc(100vw - 1.5rem);
-    }
-
-    .button-row {
-      flex-direction: column;
-    }
-
-    .button-row .btn {
-      width: 100%;
-    }
-
-    .fen-input-group {
-      flex-direction: column;
-    }
-
-    .btn-small {
-      width: 100%;
-    }
-
-    .btn-play {
-      padding: 1rem 2rem;
-      font-size: 1.1rem;
-    }
-
-    .play-icon {
-      font-size: 1.25rem;
-    }
-  }
-
-  /* Small mobile devices */
-  @media (max-width: 480px) {
-    .editor-container {
-      padding: 0.5rem;
-      margin: 0.5rem auto;
-    }
-
-    h1 {
-      font-size: 1.3rem;
-      margin-bottom: 0.75rem;
-    }
-
-    .board-and-palettes {
-      max-width: calc(100vw - 1rem);
-    }
-
-    .board-container {
-      min-height: 260px;
-    }
-
-    .left-palette,
-    .right-palette {
-      padding: 0.75rem 0.5rem;
-    }
-
-    .palette-section h3 {
-      font-size: 0.75rem;
-      margin-bottom: 0.5rem;
-    }
-
-    .controls-container {
-      padding: 0.75rem;
-      max-width: calc(100vw - 1rem);
-    }
-
-    .info-section ul {
-      font-size: 0.7rem;
-    }
-
-    .btn {
-      padding: 0.6rem 0.8rem;
-      font-size: 0.85rem;
-    }
-
-    .fen-input {
-      font-size: 0.75rem;
-    }
-
-    .btn-play {
-      padding: 0.9rem 1.75rem;
-      font-size: 1rem;
-    }
-
-    .play-icon {
-      font-size: 1.1rem;
-    }
-
-    .validation-error {
-      font-size: 0.85rem;
-      padding: 0.65rem 1rem;
-    }
-  }
-
-  /* Very small screens */
-  @media (max-width: 360px) {
-    .editor-container {
-      padding: 0.25rem;
-    }
-
-    h1 {
-      font-size: 1.1rem;
-      margin-bottom: 0.5rem;
-    }
-
-    .board-and-palettes {
-      max-width: calc(100vw - 0.5rem);
-    }
-
-    .board-container {
-      min-height: 240px;
-      border-width: 1px;
-    }
-
-    .left-palette,
-    .right-palette {
-      padding: 0.5rem 0.25rem;
-      border-width: 1px !important;
-    }
-
-    .controls-container {
-      padding: 0.5rem;
-      max-width: calc(100vw - 0.5rem);
-    }
-
-    .btn {
-      padding: 0.5rem 0.6rem;
-      font-size: 0.8rem;
-    }
+  .animate-pulse {
+    animation: pulse 2s infinite;
   }
 </style>

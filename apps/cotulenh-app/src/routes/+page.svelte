@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, tick } from 'svelte';
   import { page } from '$app/stores';
   import { CotulenhBoard, origMoveToKey } from '@repo/cotulenh-board';
   import type { Api, DestMove, OrigMove, OrigMoveKey, Role } from '@repo/cotulenh-board';
@@ -38,6 +38,10 @@
         red: new Map(),
         blue: new Map()
       };
+
+    // Optimize: Only calculate if needed or if game state changed significantly
+    // But since this is called during reSetupBoard which is triggered by FEN change,
+    // it's already scoped.
     const airDefense = game.getAirDefenseInfluence();
     return {
       red: airDefense[RED],
@@ -48,14 +52,10 @@
   // handlePieceSelect removed (reverted to full load)
 
   function reSetupBoard(): Api | null {
-    const perfStart = performance.now();
     if (boardApi) {
-      const airDefenseStart = performance.now();
+      // Memoize air defense if game hasn't changed?
+      // Current usage is fine as reSetupBoard is driven by reactive FEN change
       const airDefense = coreToBoardAirDefense();
-      const airDefenseEnd = performance.now();
-      console.log(
-        `⏱️ coreToBoardAirDefense took ${(airDefenseEnd - airDefenseStart).toFixed(2)}ms`
-      );
 
       boardApi.set({
         fen: $gameStore.fen,
@@ -77,13 +77,13 @@
         }
       });
     }
-    const perfEnd = performance.now();
-    console.log(`⏱️ TOTAL reSetupBoard took ${(perfEnd - perfStart).toFixed(2)}ms`);
     return boardApi;
   }
 
   function mapPossibleMovesToDests(possibleMoves: Move[]): Dests {
-    const perfStart = performance.now();
+    // Optimization: This functional approach is fine, but we could avoid recreating objects if performance was critical.
+    // Given the number of moves (usually < 100), this is negligible.
+    // Removed logging for performance.
     const dests = new Map<OrigMoveKey, DestMove[]>();
 
     for (const move of possibleMoves) {
@@ -101,11 +101,6 @@
       }
       dests.get(key)!.push(moveDest);
     }
-    const perfEnd = performance.now();
-    console.log(
-      `⏱️ mapPossibleMovesToDests took ${(perfEnd - perfStart).toFixed(2)}ms for ${possibleMoves.length} moves`
-    );
-    console.log('Mapped possible moves to dests:', dests);
     return dests;
   }
 
@@ -115,7 +110,6 @@
   }
 
   function handleMove(orig: OrigMove, dest: DestMove) {
-    const perfStart = performance.now();
     if (!game) {
       console.warn('handleMove called but game is null');
       return;
@@ -126,44 +120,19 @@
       return;
     }
 
-    console.log('Board move attempt:', orig, '->', dest);
-    console.log('Game state at move time:', {
-      turn: game.turn(),
-      fen: game.fen(),
-      hasDeploySession: !!game.getSession()
-    });
-
     try {
-      const moveStart = performance.now();
       const moveResult = makeCoreMove(game, orig, dest);
-      const moveEnd = performance.now();
-      console.log(`⏱️ makeCoreMove took ${(moveEnd - moveStart).toFixed(2)}ms`);
-      console.log('Move result:', moveResult); // Log the result for diagnostic
 
       if (moveResult) {
-        console.log('Game move successful:', moveResult);
-        const storeStart = performance.now();
+        // console.log('Game move successful:', moveResult);
         gameStore.applyMove(game, moveResult);
-        const storeEnd = performance.now();
-        console.log(`⏱️ gameStore.applyMove took ${(storeEnd - storeStart).toFixed(2)}ms`);
       } else {
         console.warn('Illegal move attempted on board:', orig, '->', dest);
       }
     } catch (error) {
       console.error('Error making move in game engine:', error);
-      console.log('Error details:', {
-        message: (error as Error).message,
-        stack: (error as Error).stack,
-        gameState: {
-          turn: game?.turn(),
-          fen: game?.fen(),
-          hasDeploySession: !!game?.getSession()
-        }
-      });
       reSetupBoard();
     }
-    const perfEnd = performance.now();
-    console.log(`⏱️ TOTAL handleMove took ${(perfEnd - perfStart).toFixed(2)}ms`);
   }
 
   /**
@@ -188,10 +157,6 @@
         return;
       }
 
-      // Get the deploy move SAN by accessing the last history entry after commit
-
-      // Get the deploy move SAN by accessing the last history entry after commit
-      // const historyBefore = game.history();
       const result = game.commitSession();
 
       if (!result.success) {
@@ -203,11 +168,6 @@
       // Get the SAN from history (last entry added by commit)
       const historyAfter = game.history();
       const deployMoveSan = historyAfter[historyAfter.length - 1] || 'Deploy';
-
-      console.log('✅ Deploy session committed');
-      console.log('  Deploy SAN:', deployMoveSan);
-      console.log('  FEN:', game.fen());
-      console.log('  Turn:', game.turn());
 
       // Update game store with the deploy move SAN
       gameStore.applyDeployCommit(game, deployMoveSan);
@@ -231,10 +191,6 @@
 
     try {
       game.cancelSession();
-      console.log('✅ Deploy session cancelled');
-      console.log('  FEN:', game.fen());
-      console.log('  Turn:', game.turn());
-
       // Reinitialize game store with restored state
       gameStore.initialize(game);
     } catch (error) {
@@ -302,31 +258,39 @@
 
   $effect(() => {
     if (boardApi && $gameStore.fen && $gameStore.fen !== lastProcessedFen) {
-      const reactiveStart = performance.now();
-      console.log('🔄 Effect triggered by FEN change');
+      // console.log('🔄 Effect triggered by FEN change');
       lastProcessedFen = $gameStore.fen;
       isUpdatingBoard = true;
       reSetupBoard();
-      // Use setTimeout to ensure the board update completes before allowing new moves
-      setTimeout(() => {
+
+      // Use tick() to wait for DOM updates if needed, though setTimeout is effectively yielding to next tick
+      // Removing explicit lag.
+      tick().then(() => {
         isUpdatingBoard = false;
-        const reactiveEnd = performance.now();
-        console.log(
-          `⏱️ REACTIVE update completed in ${(reactiveEnd - reactiveStart).toFixed(2)}ms`
-        );
-      }, 0);
+      });
     }
   });
 </script>
 
-<main>
-  <div class="layout-container">
-    <div class="game-layout">
+<main
+  class="min-h-screen flex justify-center items-center bg-cover bg-center bg-[image:linear-gradient(rgba(0,0,0,0.7),rgba(102,177,102,0.71)),url('/assets/bg-warfare.jpg')] bg-mw-bg-dark text-[#e5e5e5] font-ui max-lg:p-0 max-lg:items-start max-lg:h-screen max-lg:overflow-hidden"
+>
+  <div class="w-full max-w-[1400px] p-5 max-lg:p-0 max-lg:max-w-full max-lg:h-full">
+    <div
+      class="flex gap-5 items-stretch justify-center max-lg:flex-col max-lg:gap-0 max-lg:h-full max-lg:justify-start"
+    >
       <!-- Board Section -->
-      <div class="board-section">
-        <div bind:this={boardContainerElement} class="board-container">
+      <div
+        class="flex-none border border-[#333] p-1 bg-[rgba(20,20,20,0.8)] shadow-[0_0_20px_rgba(0,0,0,0.5)] w-[min(700px,100%)] max-lg:flex-1 max-lg:border-none max-lg:bg-black max-lg:shadow-none max-lg:p-0 max-lg:flex max-lg:items-center max-lg:justify-center max-lg:overflow-hidden"
+      >
+        <div
+          bind:this={boardContainerElement}
+          class="w-full aspect-[11/12] relative bg-[#111] max-lg:h-auto max-lg:max-h-full max-lg:aspect-[11/12] max-lg:m-auto [&_cg-board]:!w-full [&_cg-board]:!h-full [&_cg-board]:max-h-screen [&_cg-board]:max-w-[100vw]"
+        >
           {#if !boardApi}
-            <div class="loading-state">
+            <div
+              class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-mw-secondary"
+            >
               <div class="loading-spinner"></div>
             </div>
           {/if}
@@ -334,218 +298,32 @@
       </div>
 
       <!-- Controls Section (Side Panel) -->
-      <div class="controls-section">
-        <header class="mw-header">
-          <h1>WARFARE <span class="highlight">COMMAND</span></h1>
+      <div
+        class="w-[300px] flex flex-col gap-4 bg-[rgba(20,20,20,0.5)] max-lg:w-full max-lg:flex-none max-lg:bg-[rgba(20,20,20,0.95)] max-lg:border-t-2 max-lg:border-mw-secondary max-lg:p-[10px] max-lg:gap-[10px] max-lg:z-10"
+      >
+        <header class="border-b-2 border-mw-secondary pb-2 mb-2 max-lg:hidden">
+          <h1 class="text-2xl m-0 font-extrabold tracking-wide text-[#e5e5e5] font-display">
+            WARFARE <span class="text-mw-secondary">COMMAND</span>
+          </h1>
         </header>
 
-        <div class="controls-grid">
-          <GameInfo />
-          <DeploySessionPanel {game} onCommit={commitDeploy} onCancel={cancelDeploy} />
-          <GameControls bind:game />
-          <MoveHistory history={$gameStore.history} />
+        <div class="flex flex-col gap-3 flex-1 max-lg:grid max-lg:grid-cols-2 max-lg:gap-2">
+          <div class="max-lg:col-start-1">
+            <GameInfo />
+          </div>
+          <div class="max-lg:col-span-full max-lg:order-3">
+            <DeploySessionPanel {game} onCommit={commitDeploy} onCancel={cancelDeploy} />
+          </div>
+          <div class="max-lg:col-start-2">
+            <GameControls bind:game />
+          </div>
+          <div
+            class="flex-1 min-h-0 overflow-hidden max-lg:col-span-full max-lg:order-4 max-lg:h-[120px]"
+          >
+            <MoveHistory history={$gameStore.history} />
+          </div>
         </div>
       </div>
     </div>
   </div>
 </main>
-
-<style>
-  :global(body) {
-    margin: 0;
-    padding: 0;
-    background-color: #0a0a0a;
-    color: #e5e5e5;
-    font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-  }
-
-  main {
-    min-height: 100vh;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    background-image:
-      linear-gradient(rgba(0, 0, 0, 0.7), rgba(102, 177, 102, 0.71)), url('/assets/bg-warfare.jpg'); /* Hypothetical background */
-    background-size: cover;
-    background-position: center;
-  }
-
-  .layout-container {
-    width: 100%;
-    max-width: 1400px;
-    padding: 20px;
-  }
-
-  .game-layout {
-    display: flex;
-    gap: 20px;
-    align-items: stretch; /* Stretch to match heights */
-    justify-content: center;
-  }
-
-  .board-section {
-    flex: 0 0 auto;
-    border: 1px solid #333;
-    padding: 4px;
-    background: rgba(20, 20, 20, 0.8);
-    box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
-    /* Ensure board section doesn't collapse horizontally */
-    width: min(700px, 100%);
-  }
-
-  .board-container {
-    width: 100%;
-    /* Maintain board ratio */
-    aspect-ratio: 700 / 758;
-    position: relative;
-    background: #111;
-  }
-
-  .loading-state {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    color: #059669;
-  }
-
-  .controls-section {
-    width: 300px;
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    /* Ensure it takes full height of parent (which is stretched) */
-    background: rgba(20, 20, 20, 0.5); /* Optional: add subtle bg to see full height if needed */
-  }
-
-  .mw-header {
-    border-bottom: 2px solid #059669;
-    padding-bottom: 8px;
-    margin-bottom: 8px;
-  }
-
-  .mw-header h1 {
-    font-size: 1.5rem;
-    margin: 0;
-    font-weight: 800;
-    letter-spacing: 1px;
-    color: #e5e5e5;
-  }
-
-  .mw-header .highlight {
-    color: #059669;
-  }
-
-  .controls-grid {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    flex: 1; /* Fill the remaining height of controls-section */
-  }
-
-  /* Make the last item (MoveHistory) take up remaining space */
-  .controls-grid > :global(:last-child) {
-    flex: 1;
-    min-height: 0; /* Crucial for scrolling inside flex items */
-    overflow: hidden; /* Ensure it contains the scrollable history */
-  }
-
-  /* Responsive Design */
-  @media (max-width: 1024px) {
-    main {
-      padding: 0;
-      align-items: flex-start;
-      height: 100vh;
-      overflow: hidden; /* Prevent scrolling if we want a fixed app feel */
-    }
-
-    .layout-container {
-      padding: 0;
-      max-width: 100%;
-      height: 100%;
-    }
-
-    .game-layout {
-      flex-direction: column;
-      gap: 0;
-      height: 100%;
-      align-items: stretch;
-      justify-content: flex-start;
-    }
-
-    .board-section {
-      flex: 1; /* Take remaining space */
-      border: none;
-      background: #000;
-      box-shadow: none;
-      padding: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      overflow: hidden;
-    }
-
-    .board-container {
-      width: 100%;
-      height: auto;
-      aspect-ratio: 700 / 758;
-      max-height: 100%;
-      /* Important: Center the board if max-height restricts it, though on typical mobile portrait width is the limiter */
-      margin: 0 auto;
-    }
-
-    /* Target the cg-board element to ensure it scales correctly */
-    :global(.board-container cg-board) {
-      width: 100% !important;
-      height: 100% !important;
-      max-height: 100vh;
-      max-width: 100vw;
-    }
-
-    .controls-section {
-      width: 100%;
-      flex: 0 0 auto; /* Fixed height based on content */
-      background: rgba(20, 20, 20, 0.95);
-      border-top: 2px solid #059669;
-      padding: 10px;
-      gap: 10px;
-      z-index: 10;
-    }
-
-    .mw-header {
-      display: none; /* Hide header on mobile to save space */
-    }
-
-    .controls-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-    }
-
-    /* Explicitly target child components if possible or assume order */
-    /* We can't target Svelte components by tag name easily in scoped CSS unless wrapped or global */
-    /* Assuming Order: GameInfo, Deploy, GameControls, MoveHistory */
-
-    /* Using nth-child is risky if order changes, but effective for now */
-    .controls-grid > :global(:nth-child(1)) {
-      /* GameInfo */
-      grid-column: 1;
-    }
-    .controls-grid > :global(:nth-child(3)) {
-      /* GameControls */
-      grid-column: 2;
-      /* Align GameControls height with GameInfo if needed */
-    }
-    .controls-grid > :global(:nth-child(2)) {
-      /* DeploySessionPanel */
-      grid-column: 1 / -1;
-      order: 3; /* Move visual order below header row */
-    }
-    .controls-grid > :global(:nth-child(4)) {
-      /* MoveHistory */
-      grid-column: 1 / -1;
-      order: 4;
-      height: 120px; /* Shorten history on mobile */
-    }
-  }
-</style>

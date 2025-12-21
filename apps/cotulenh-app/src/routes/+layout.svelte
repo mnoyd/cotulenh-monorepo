@@ -2,6 +2,7 @@
   import { page } from '$app/stores';
   import { logger } from '@repo/cotulenh-common';
   import { onMount } from 'svelte';
+  import '../app.css';
 
   onMount(() => {
     logger.info('CoTuLenh App Initialized');
