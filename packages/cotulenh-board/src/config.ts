@@ -51,7 +51,7 @@ export interface Config {
     onChange?: (shapes: DrawShape[]) => void; // called after drawable shapes change
   };
   airDefense?: {
-    showInfluceZone?: boolean;
+    showInfluenceZone?: boolean;
     influenceZone?: {
       red: Map<cg.Key, cg.Key[]>;
       blue: Map<cg.Key, cg.Key[]>;

@@ -7,7 +7,6 @@ import {
   FLAGS,
   Square,
   swapColor,
-  COMMANDER,
   getMovementMask,
 } from './type.js'
 import {

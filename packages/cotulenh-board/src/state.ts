@@ -41,7 +41,7 @@ export interface HeadlessState {
     enabled: boolean;
   };
   airDefense?: {
-    showInfluceZone: cg.Color | undefined;
+    showInfluenceZone: cg.Color | undefined;
     influenceZone?: {
       red: Map<cg.Key, cg.Key[]>;
       blue: Map<cg.Key, cg.Key[]>;

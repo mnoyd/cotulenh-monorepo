@@ -1113,19 +1113,12 @@ export class CoTuLenh {
     )
   }
 
-  /**
-   * Determines whether the game has ended due to any terminal condition.
-   * Checks for checkmate, draw conditions, or commander capture.
-   * @returns True if the game is over by any condition, false if the game can continue
-   */
+  isCommanderCaptured(): boolean {
+    return this._commanders[RED] === -1 || this._commanders[BLUE] === -1
+  }
+
   isGameOver(): boolean {
-    // Game over if checkmate, stalemate, draw, or commander captured
-    return (
-      this.isCheckmate() ||
-      this.isDraw() ||
-      this._commanders[RED] === -1 ||
-      this._commanders[BLUE] === -1
-    )
+    return this.isCheckmate() || this.isDraw() || this.isCommanderCaptured()
   }
 
   // --- SAN Parsing/Generation (Updated for Stay Capture & Deploy) ---

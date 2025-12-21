@@ -38,13 +38,13 @@ export function setCheck(state: HeadlessState, color: cg.Color | boolean): void 
 
 export function setSelected(state: HeadlessState, origMove: cg.OrigMove): void {
   if (origMove.type === 'air_force') {
-    if (state.airDefense) state.airDefense.showInfluceZone = opposite(state.turnColor);
+    if (state.airDefense) state.airDefense.showInfluenceZone = opposite(state.turnColor);
   }
   state.selected = origMove;
 }
 
 export function unselect(state: HeadlessState): void {
-  if (state.airDefense) state.airDefense.showInfluceZone = undefined;
+  if (state.airDefense) state.airDefense.showInfluenceZone = undefined;
   state.selected = undefined;
   state.hold.cancel();
 }
