@@ -129,6 +129,7 @@ export class CoTuLenh {
     }
     delete this._header['SetUp']
     delete this._header['FEN']
+    this._session = null
   }
 
   /**
@@ -263,7 +264,13 @@ export class CoTuLenh {
    * The FEN includes piece placement, active color, and move counters in a standardized format.
    * @returns The FEN string for the current position
    */
-  fen(): string {
+  fen(deployMode = false): string {
+    // If there's an active move session, return extended FEN with CURRENT board state
+    // Check this FIRST to avoid unnecessary board calculation
+    if (deployMode && this._session) {
+      return this._session.toFenString()
+    }
+
     let fen = ''
     let empty = 0
 
@@ -308,11 +315,6 @@ export class CoTuLenh {
       this._halfMoves,
       this._moveNumber,
     ].join(' ')
-
-    // If there's an active move session, return extended FEN with CURRENT board state
-    if (this._session && this._session.isDeploy) {
-      return this._session.toFenString()
-    }
 
     return baseFEN
   }

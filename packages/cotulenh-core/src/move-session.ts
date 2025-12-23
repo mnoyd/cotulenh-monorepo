@@ -198,7 +198,7 @@ export class DeploySequence implements BaseMoveResult {
     beforeFEN: string,
     completed: boolean,
   ): DeploySequence {
-    const afterFEN = game.fen()
+    const afterFEN = game.fen(!completed)
     const stay =
       remaining.length > 0 ? (combinePieces(remaining) ?? undefined) : undefined
 
