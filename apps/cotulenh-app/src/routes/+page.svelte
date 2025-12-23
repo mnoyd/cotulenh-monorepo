@@ -298,15 +298,16 @@
 </script>
 
 <main
-  class="min-h-screen flex justify-center items-center bg-cover bg-center bg-[image:linear-gradient(rgba(0,0,0,0.7),rgba(102,177,102,0.71)),url('/assets/bg-warfare.jpg')] bg-mw-bg-dark text-[#e5e5e5] font-ui max-lg:p-0 max-lg:items-start max-lg:h-screen max-lg:overflow-hidden"
+  class="min-h-screen flex justify-center items-center bg-black bg-center bg-fixed text-[#e5e5e5] font-ui max-lg:p-0 max-lg:items-start max-lg:h-screen max-lg:overflow-hidden"
+  style="background-image: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.8)), url('/assets/bg-warfare.jpg'); background-size: cover;"
 >
-  <div class="w-full max-w-[1400px] p-5 max-lg:p-0 max-lg:max-w-full max-lg:h-full">
+  <div class="w-full max-w-[1600px] p-6 max-lg:p-0 max-lg:max-w-full max-lg:h-full">
     <div
-      class="flex gap-5 items-stretch justify-center max-lg:flex-col max-lg:gap-0 max-lg:h-full max-lg:justify-start"
+      class="flex gap-6 items-stretch justify-center max-lg:flex-col max-lg:gap-0 max-lg:h-full max-lg:justify-start"
     >
       <!-- Board Section -->
       <div
-        class="flex-none border border-[#333] p-1 bg-[rgba(20,20,20,0.8)] shadow-[0_0_20px_rgba(0,0,0,0.5)] w-[min(700px,100%)] max-lg:flex-1 max-lg:border-none max-lg:bg-black max-lg:shadow-none max-lg:p-0 max-lg:flex max-lg:items-center max-lg:justify-center max-lg:overflow-hidden"
+        class="flex-none border border-mw-border p-1 bg-mw-bg-panel shadow-2xl rounded-sm w-[min(760px,100%)] max-lg:flex-1 max-lg:border-none max-lg:bg-black max-lg:shadow-none max-lg:p-0 max-lg:flex max-lg:items-center max-lg:justify-center max-lg:overflow-hidden"
       >
         <div
           bind:this={boardContainerElement}
@@ -324,15 +325,18 @@
 
       <!-- Controls Section (Side Panel) -->
       <div
-        class="w-[300px] flex flex-col gap-4 bg-[rgba(20,20,20,0.5)] max-lg:w-full max-lg:flex-none max-lg:bg-[rgba(20,20,20,0.95)] max-lg:border-t-2 max-lg:border-mw-secondary max-lg:p-[10px] max-lg:gap-[10px] max-lg:z-10"
+        class="w-[340px] flex flex-col gap-4 bg-mw-bg-panel border border-mw-border backdrop-blur-md rounded-sm p-4 max-lg:w-full max-lg:flex-none max-lg:bg-black/95 max-lg:border-t-2 max-lg:border-mw-secondary max-lg:p-3 max-lg:gap-3 max-lg:z-10"
       >
-        <header class="border-b-2 border-mw-secondary pb-2 mb-2 max-lg:hidden">
-          <h1 class="text-2xl m-0 font-extrabold tracking-wide text-[#e5e5e5] font-display">
-            WARFARE <span class="text-mw-secondary">COMMAND</span>
+        <header class="border-b border-mw-border pb-3 mb-2 max-lg:hidden">
+          <h1
+            class="text-2xl m-0 font-extrabold tracking-wide text-white font-display uppercase flex items-center gap-2"
+          >
+            <span class="text-mw-secondary">Cotulenh</span>
+            <span class="text-mw-primary font-light">Online</span>
           </h1>
         </header>
 
-        <div class="flex flex-col gap-3 flex-1 max-lg:grid max-lg:grid-cols-2 max-lg:gap-2">
+        <div class="flex flex-col gap-4 flex-1 max-lg:grid max-lg:grid-cols-2 max-lg:gap-2">
           <div class="max-lg:col-start-1">
             <GameInfo />
           </div>

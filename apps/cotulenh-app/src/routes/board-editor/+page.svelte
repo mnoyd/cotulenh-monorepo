@@ -467,25 +467,24 @@
 <svelte:body on:mousemove={handleMouseMove} on:click={cancelSelection} />
 
 <main>
-  <div
-    class="editor-container max-w-[1600px] mx-auto p-6 bg-mw-bg-dark min-h-[calc(100vh-70px)] w-full"
-  >
+  <div class="editor-container max-w-[1600px] mx-auto p-6 min-h-[calc(100vh-70px)] w-full">
     <h1
-      class="text-center mb-8 font-display text-mw-primary uppercase tracking-[4px] relative inline-block left-1/2 -translate-x-1/2 pb-4 border-b-2 border-mw-border after:content-[''] after:absolute after:bottom-[-2px] after:left-0 after:w-full after:h-[2px] after:bg-gradient-to-r after:from-transparent after:to-mw-primary after:end-transparent"
+      class="text-center mb-8 font-display text-white text-3xl font-bold uppercase tracking-[4px] relative inline-block left-1/2 -translate-x-1/2 pb-4 border-b border-mw-border"
     >
-      CoTuLenh Board Editor
+      <span class="text-mw-secondary">Board</span>
+      <span class="text-mw-primary font-light">Editor</span>
     </h1>
 
     <div class="editor-layout flex flex-col gap-6 mb-8">
       <div
-        class="board-and-palettes flex gap-4 items-stretch justify-center w-full max-w-fit mx-auto bg-mw-bg-panel p-4 border border-mw-border rounded-lg backdrop-blur-md flex-col lg:flex-row"
+        class="board-and-palettes flex gap-4 items-stretch justify-center w-full max-w-fit mx-auto bg-mw-bg-panel p-4 border border-mw-border rounded-sm backdrop-blur-md flex-col lg:flex-row shadow-2xl"
       >
         <!-- Left Palette -->
         <div
-          class="palette-section bg-mw-bg-panel p-4 flex flex-col w-[240px] min-w-[200px] shrink-0 border border-mw-border relative max-h-[80vh] overflow-y-auto lg:rounded-l-lg lg:border-r-0 lg:w-[240px] w-full rounded-t-lg border-b lg:border-b-0"
+          class="palette-section bg-black/40 p-4 flex flex-col w-[240px] min-w-[200px] shrink-0 border border-mw-border/50 relative max-h-[80vh] overflow-y-auto lg:w-[240px] w-full rounded-sm"
         >
           <h3
-            class="font-display font-semibold text-mw-primary text-center uppercase tracking-wider border-b border-dashed border-mw-border pb-2 mb-4"
+            class="font-display font-semibold text-mw-primary text-center uppercase tracking-wider border-b border-mw-border/50 pb-2 mb-4 text-sm"
           >
             {boardOrientation === 'red' ? 'Blue' : 'Red'} Pieces
           </h3>
@@ -504,7 +503,7 @@
 
         <!-- Board Container -->
         <div
-          class="board-section flex justify-center items-center grow min-w-0 p-1 bg-mw-bg-panel border-y lg:border-y border-mw-border overflow-hidden lg:w-auto w-full"
+          class="board-section flex justify-center items-center grow min-w-0 p-1 bg-black/60 border border-mw-border/50 rounded-sm overflow-hidden lg:w-auto w-full"
         >
           <div
             bind:this={boardContainerElement}
@@ -516,7 +515,7 @@
                    {selectedPiece !== null && editorMode !== 'delete'
               ? 'cursor-crosshair ring-2 ring-mw-secondary shadow-[0_0_20px_rgba(0,255,65,0.4)]'
               : ''}
-                   {!editorMode && !selectedPiece ? 'shadow-[0_0_50px_rgba(0,243,255,0.1)]' : ''}"
+                   {!editorMode && !selectedPiece ? 'shadow-[0_0_30px_rgba(0,243,255,0.05)]' : ''}"
           >
             {#if !boardApi}<p class="text-mw-primary">Loading board...</p>{/if}
           </div>
@@ -524,10 +523,10 @@
 
         <!-- Right Palette -->
         <div
-          class="palette-section bg-mw-bg-panel p-4 flex flex-col w-[240px] min-w-[200px] shrink-0 border border-mw-border relative max-h-[80vh] overflow-y-auto lg:rounded-r-lg lg:border-l-0 lg:w-[240px] w-full rounded-b-lg border-t lg:border-t-0"
+          class="palette-section bg-black/40 p-4 flex flex-col w-[240px] min-w-[200px] shrink-0 border border-mw-border/50 relative max-h-[80vh] overflow-y-auto lg:w-[240px] w-full rounded-sm"
         >
           <h3
-            class="font-display font-semibold text-mw-primary text-center uppercase tracking-wider border-b border-dashed border-mw-border pb-2 mb-4"
+            class="font-display font-semibold text-mw-primary text-center uppercase tracking-wider border-b border-mw-border/50 pb-2 mb-4 text-sm"
           >
             {boardOrientation === 'red' ? 'Red' : 'Blue'} Pieces
           </h3>
@@ -566,19 +565,18 @@
     <!-- Special Play Button -->
     <div class="play-button-container max-w-[1200px] mx-auto my-8 text-center">
       <button
-        class="btn-play group relative inline-flex items-center gap-3 overflow-hidden rounded px-12 py-5 font-display text-2xl font-bold uppercase tracking-widest text-black shadow-[0_0_20px_rgba(0,243,255,0.3)] transition-all duration-300 hover:scale-105 hover:shadow-[0_0_40px_rgba(0,243,255,0.5)] active:scale-95 bg-gradient-to-br from-mw-primary to-[#00aaff] border border-mw-primary"
+        class="group relative inline-flex items-center gap-3 overflow-hidden rounded-sm px-10 py-4 font-display text-xl font-bold uppercase tracking-widest text-black shadow-[0_0_20px_rgba(0,243,255,0.3)] transition-all duration-300 hover:scale-105 hover:shadow-[0_0_30px_rgba(0,243,255,0.5)] active:scale-95 bg-gradient-to-br from-mw-primary to-[#00aaff] border border-mw-primary"
         on:click={validateAndPlay}
       >
         <span
           class="absolute top-0 left-[-100%] z-10 h-full w-full bg-linear-to-r from-transparent via-[rgba(255,255,255,0.5)] to-transparent transition-[left] duration-500 group-hover:left-full"
         ></span>
-        <span class="play-icon animate-pulse text-lg">▶</span>
-        <span class="play-text drop-shadow-[0_0_2px_rgba(255,255,255,0.5)]">Play This Position</span
-        >
+        <span class="animate-pulse">▶</span>
+        <span class="drop-shadow-sm">Play This Position</span>
       </button>
       {#if validationError}
         <div
-          class="validation-error mt-4 inline-block rounded border border-mw-alert bg-[rgba(255,171,0,0.2)] px-5 py-3 font-ui font-semibold text-mw-alert shadow-[0_0_15px_rgba(255,171,0,0.3)] backdrop-blur-sm animate-[shake_0.5s]"
+          class="validation-error mt-4 inline-block rounded-sm border border-mw-alert bg-mw-alert/10 px-5 py-3 font-ui font-semibold text-mw-alert shadow-[0_0_15px_rgba(255,171,0,0.2)] backdrop-blur-sm animate-[shake_0.5s]"
         >
           ⚠️ {validationError}
         </div>
@@ -587,40 +585,46 @@
 
     <!-- Controls Section at Bottom -->
     <div
-      class="controls-container bg-mw-bg-panel border border-mw-border rounded-lg p-8 max-w-[1200px] mx-auto w-full shadow-2xl relative mt-8 before:content-['SYSTEM_CONTROLS'] before:absolute before:-top-3 before:left-5 before:bg-mw-bg-dark before:px-2 before:text-sm before:text-mw-border before:font-mono before:tracking-widest"
+      class="controls-container bg-mw-bg-panel border border-mw-border rounded-sm p-8 max-w-[1200px] mx-auto w-full shadow-2xl relative mt-8"
     >
       <div
-        class="button-row flex gap-4 flex-wrap justify-center border-b border-mw-border pb-6 mb-8"
+        class="absolute -top-3 left-6 px-3 bg-black text-mw-border text-xs font-mono tracking-widest uppercase"
+      >
+        System_Controls
+      </div>
+
+      <div
+        class="button-row flex gap-4 flex-wrap justify-center border-b border-mw-border/50 pb-6 mb-8"
       >
         <button
-          class="btn bg-mw-primary/5 border border-mw-border text-mw-primary px-6 py-2 rounded font-ui uppercase tracking-widest transition-all hover:bg-mw-primary/20 hover:shadow-[0_0_10px_var(--color-mw-border)] hover:text-white"
+          class="px-6 py-2 rounded-sm font-ui uppercase tracking-widest transition-all bg-mw-primary/5 border border-mw-border text-mw-primary hover:bg-mw-primary/20 hover:text-white"
           on:click={loadStartingPosition}
         >
           Starting Position
         </button>
         <button
-          class="btn bg-mw-primary/5 border border-mw-border text-mw-primary px-6 py-2 rounded font-ui uppercase tracking-widest transition-all hover:bg-mw-primary/20 hover:shadow-[0_0_10px_var(--color-mw-border)] hover:text-white"
+          class="px-6 py-2 rounded-sm font-ui uppercase tracking-widest transition-all bg-mw-primary/5 border border-mw-border text-mw-primary hover:bg-mw-primary/20 hover:text-white"
           on:click={clearBoard}
         >
           Clear Board
         </button>
         <button
-          class="btn bg-mw-primary/5 border border-mw-border text-mw-primary px-6 py-2 rounded font-ui uppercase tracking-widest transition-all hover:bg-mw-primary/20 hover:shadow-[0_0_10px_var(--color-mw-border)] hover:text-white"
+          class="px-6 py-2 rounded-sm font-ui uppercase tracking-widest transition-all bg-mw-primary/5 border border-mw-border text-mw-primary hover:bg-mw-primary/20 hover:text-white"
           on:click={flipBoard}
         >
           Flip Board
         </button>
         <button
-          class="btn px-6 py-2 rounded font-ui uppercase tracking-widest transition-all border
+          class="px-6 py-2 rounded-sm font-ui uppercase tracking-widest transition-all border
                  {currentTurn === 'red'
-            ? 'bg-amber-500/15 border-mw-alert text-mw-alert hover:bg-mw-alert/30 hover:shadow-[0_0_15px_rgba(255,171,0,0.4)] hover:text-white'
-            : 'bg-blue-500/15 border-blue-500 text-blue-500 hover:bg-blue-500/30 hover:shadow-[0_0_15px_rgba(0,150,255,0.4)] hover:text-white'}"
+            ? 'bg-amber-500/10 border-mw-alert text-mw-alert hover:bg-mw-alert/20 hover:text-white'
+            : 'bg-blue-500/10 border-blue-500 text-blue-500 hover:bg-blue-500/20 hover:text-white'}"
           on:click={toggleTurn}
         >
           Turn: {currentTurn === 'red' ? '🔴 Red' : '🔵 Blue'}
         </button>
         <button
-          class="btn disabled:opacity-50 disabled:cursor-not-allowed bg-mw-primary/5 border border-mw-border text-mw-primary px-6 py-2 rounded font-ui uppercase tracking-widest"
+          class="px-6 py-2 rounded-sm font-ui uppercase tracking-widest transition-all bg-mw-primary/5 border border-mw-border text-mw-primary opacity-50 cursor-not-allowed"
           on:click={screenshot}
           disabled
         >
@@ -629,7 +633,7 @@
       </div>
 
       <div
-        class="fen-section max-w-[800px] mx-auto bg-black/20 p-4 border border-mw-border rounded"
+        class="fen-section max-w-[800px] mx-auto bg-black/30 p-4 border border-mw-border/50 rounded-sm"
       >
         <label for="fen-input" class="block mb-2 font-display text-mw-primary text-sm font-semibold"
           >FEN Position:</label
@@ -640,16 +644,16 @@
             type="text"
             bind:value={fenInput}
             placeholder="Enter FEN string..."
-            class="fen-input flex-1 bg-black/40 border border-mw-border text-mw-primary p-2 font-mono rounded text-sm focus:outline-none focus:border-mw-primary"
+            class="fen-input flex-1 bg-black/50 border border-mw-border text-mw-primary p-2 font-mono rounded-sm text-sm focus:outline-none focus:border-mw-secondary transition-colors"
           />
           <button
-            class="btn btn-small bg-mw-primary/5 border border-mw-border text-mw-primary px-4 py-2 rounded font-ui uppercase hover:bg-mw-primary/20 hover:text-white transition-colors"
+            class="px-4 py-2 rounded-sm font-ui uppercase text-sm bg-mw-primary/10 border border-mw-border text-mw-primary hover:bg-mw-primary/20 hover:text-white transition-colors"
             on:click={applyFEN}
           >
             Apply
           </button>
           <button
-            class="btn btn-small bg-mw-primary/5 border border-mw-border text-mw-primary px-4 py-2 rounded font-ui uppercase hover:bg-mw-primary/20 hover:text-white transition-colors"
+            class="px-4 py-2 rounded-sm font-ui uppercase text-sm bg-mw-primary/10 border border-mw-border text-mw-primary hover:bg-mw-primary/20 hover:text-white transition-colors"
             on:click={copyFEN}
           >
             {copyButtonText}
@@ -657,10 +661,12 @@
         </div>
       </div>
 
-      <div class="info-section pt-4 border-t border-slate-700 mt-4">
-        <h4 class="mb-2 text-sm font-semibold text-slate-300">Instructions</h4>
+      <div class="info-section pt-4 border-t border-mw-border/30 mt-6">
+        <h4 class="mb-2 text-sm font-semibold text-slate-400 font-display uppercase tracking-wider">
+          Instructions
+        </h4>
         <ul
-          class="text-xs text-slate-400 leading-relaxed grid grid-cols-1 md:grid-cols-2 gap-1 list-none pl-0"
+          class="text-xs text-slate-500 leading-relaxed grid grid-cols-1 md:grid-cols-2 gap-2 list-disc pl-4"
         >
           <li><strong>Hand Mode (✋):</strong> Drag pieces on board to move them</li>
           <li>
