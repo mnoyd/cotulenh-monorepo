@@ -57,7 +57,9 @@ cg-board square {
 }
 
 /* Pieces */
-.cg-wrap piece {
+.cg-wrap piece,
+piece.dragging,
+.ghost-piece piece {
   position: absolute;
   z-index: 2;
   will-change: transform;
@@ -70,7 +72,9 @@ cg-board square {
   height: 7.69%;
 }
 
-.cg-wrap piece svg {
+.cg-wrap piece svg,
+piece.dragging svg,
+.ghost-piece piece svg {
   position: relative;
   top: 0;
   left: 0;
@@ -107,8 +111,8 @@ piece.fading {
 
 /* Auto-pieces, shapes and SVGs */
 .cg-wrap cg-auto-pieces,
-.cg-wrap .cg-shapes,
-.cg-wrap .cg-custom-svgs {
+.cg-shapes,
+.cg-custom-svgs {
   position: absolute;
   top: 0;
   left: 0;
@@ -169,7 +173,7 @@ piece.fading {
 }
 
 /* Blue orientation */
-.cg-wrap .board-orientation-blue {
+.board-orientation-blue {
   transform: rotate(180deg);
 }
 
@@ -186,7 +190,7 @@ piece.fading {
 }
 
 /* --- Combined Stack Styles --- */
-.cg-wrap piece.combined-stack {
+piece.combined-stack {
   pointer-events: auto;
   background: none;
   overflow: visible;
@@ -195,7 +199,7 @@ piece.fading {
 /* --- Stack Pieces Styles --- */
 
 /* Individual pieces within the stack */
-.cg-wrap piece.combined-stack > piece {
+piece.combined-stack > piece {
   position: absolute;
   top: 0;
   left: 0;
@@ -258,11 +262,11 @@ cg-board piece-ambigous-stack::before {
   animation: pulse 1.5s infinite;
 }
 
-/* .cg-wrap piece.promoted {
+/* piece.promoted {
   filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.8));
 }
 
-.cg-wrap piece.promoted::before {
+piece.promoted::before {
   content: '⭐';
   position: absolute;
   top: -8%;
@@ -353,7 +357,7 @@ cg-board .popup-container piece.selected {
   cursor: grabbing !important;
 }
 
-.cg-wrap piece.ghost {
+piece.ghost {
   opacity: 0.3;
 }
 

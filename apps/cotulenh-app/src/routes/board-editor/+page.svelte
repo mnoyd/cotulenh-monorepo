@@ -508,7 +508,7 @@
         >
           <div
             bind:this={boardContainerElement}
-            class="board-container relative flex justify-center items-center bg-black border-none transition-all
+            class="board-container cg-wrap relative flex justify-center items-center bg-black border-none transition-all
                    aspect-[11/12] w-[calc(85vh*11/12)] max-w-full mx-auto
                    {editorMode === 'delete'
               ? 'cursor-not-allowed ring-2 ring-mw-alert shadow-[0_0_20px_rgba(255,171,0,0.4)]'
