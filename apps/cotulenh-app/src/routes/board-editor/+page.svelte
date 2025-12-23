@@ -468,7 +468,9 @@
 <svelte:body on:mousemove={handleMouseMove} on:click={cancelSelection} />
 
 <main>
-  <div class="editor-container max-w-[1600px] mx-auto p-6 min-h-[calc(100vh-70px)] w-full">
+  <div
+    class="editor-container max-w-[1600px] mx-auto p-0 sm:p-2 lg:p-6 min-h-[calc(100vh-70px)] w-full"
+  >
     <h1
       class="text-center lg:mb-8 mb-4 font-display text-white lg:text-3xl text-xl font-bold uppercase tracking-[4px] relative inline-block left-1/2 -translate-x-1/2 pb-4 border-b border-mw-border"
     >
@@ -478,7 +480,7 @@
 
     <div class="editor-layout flex flex-col gap-4 lg:gap-6 mb-8">
       <div
-        class="board-and-palettes flex flex-col lg:flex-row gap-4 items-stretch justify-center w-full max-w-fit mx-auto bg-mw-bg-panel p-2 lg:p-4 border border-mw-border rounded-sm backdrop-blur-md shadow-2xl"
+        class="board-and-palettes flex flex-col lg:flex-row gap-4 items-stretch justify-center w-full lg:max-w-fit mx-auto bg-mw-bg-panel p-0 sm:p-2 lg:p-4 border border-mw-border rounded-sm backdrop-blur-md shadow-2xl"
       >
         <!-- Left Palette (Desktop Only) -->
         <div
@@ -504,7 +506,7 @@
 
         <!-- Board Container -->
         <div
-          class="board-section flex justify-center items-center grow min-w-0 p-1 bg-black/60 border border-mw-border/50 rounded-sm overflow-hidden lg:w-auto w-full order-first lg:order-none"
+          class="board-section flex justify-center items-center grow min-w-0 p-0 lg:p-1 bg-black/60 border border-mw-border/50 rounded-sm overflow-hidden lg:w-auto w-full order-first lg:order-none"
         >
           <div
             bind:this={boardContainerElement}

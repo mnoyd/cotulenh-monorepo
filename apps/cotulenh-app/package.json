@@ -26,7 +26,8 @@
     "svelte-check": "^4.0.0",
     "tailwindcss": "^4",
     "typescript": "^5.0.0",
-    "vite": "^6.2.5"
+    "vite": "^6.2.5",
+    "vite-plugin-devtools-json": "^1.0.0"
   },
   "dependencies": {
     "@repo/cotulenh-board": "workspace:^",
