@@ -27,6 +27,7 @@
   let heroicMode = false;
   let validationError = '';
   let currentTurn: 'red' | 'blue' = 'red';
+  let mobileTab: 'red' | 'blue' = 'red';
 
   // Special marker for delete mode
   const DELETE_MARKER: Piece = { role: 'commander', color: 'red' };
@@ -469,19 +470,19 @@
 <main>
   <div class="editor-container max-w-[1600px] mx-auto p-6 min-h-[calc(100vh-70px)] w-full">
     <h1
-      class="text-center mb-8 font-display text-white text-3xl font-bold uppercase tracking-[4px] relative inline-block left-1/2 -translate-x-1/2 pb-4 border-b border-mw-border"
+      class="text-center lg:mb-8 mb-4 font-display text-white lg:text-3xl text-xl font-bold uppercase tracking-[4px] relative inline-block left-1/2 -translate-x-1/2 pb-4 border-b border-mw-border"
     >
       <span class="text-mw-secondary">Board</span>
       <span class="text-mw-primary font-light">Editor</span>
     </h1>
 
-    <div class="editor-layout flex flex-col gap-6 mb-8">
+    <div class="editor-layout flex flex-col gap-4 lg:gap-6 mb-8">
       <div
-        class="board-and-palettes flex gap-4 items-stretch justify-center w-full max-w-fit mx-auto bg-mw-bg-panel p-4 border border-mw-border rounded-sm backdrop-blur-md flex-col lg:flex-row shadow-2xl"
+        class="board-and-palettes flex flex-col lg:flex-row gap-4 items-stretch justify-center w-full max-w-fit mx-auto bg-mw-bg-panel p-2 lg:p-4 border border-mw-border rounded-sm backdrop-blur-md shadow-2xl"
       >
-        <!-- Left Palette -->
+        <!-- Left Palette (Desktop Only) -->
         <div
-          class="palette-section bg-black/40 p-4 flex flex-col w-[240px] min-w-[200px] shrink-0 border border-mw-border/50 relative max-h-[80vh] overflow-y-auto lg:w-[240px] w-full rounded-sm"
+          class="palette-section hidden lg:flex bg-black/40 p-4 flex-col w-[240px] min-w-[200px] shrink-0 border border-mw-border/50 relative max-h-[80vh] overflow-y-auto rounded-sm"
         >
           <h3
             class="font-display font-semibold text-mw-primary text-center uppercase tracking-wider border-b border-mw-border/50 pb-2 mb-4 text-sm"
@@ -503,12 +504,12 @@
 
         <!-- Board Container -->
         <div
-          class="board-section flex justify-center items-center grow min-w-0 p-1 bg-black/60 border border-mw-border/50 rounded-sm overflow-hidden lg:w-auto w-full"
+          class="board-section flex justify-center items-center grow min-w-0 p-1 bg-black/60 border border-mw-border/50 rounded-sm overflow-hidden lg:w-auto w-full order-first lg:order-none"
         >
           <div
             bind:this={boardContainerElement}
             class="board-container cg-wrap relative flex justify-center items-center bg-black border-none transition-all
-                   aspect-[11/12] w-[calc(85vh*11/12)] max-w-full mx-auto
+                   aspect-[11/12] h-auto w-full lg:w-[calc(85vh*11/12)] lg:max-w-[calc(100vw-500px)]
                    {editorMode === 'delete'
               ? 'cursor-not-allowed ring-2 ring-mw-alert shadow-[0_0_20px_rgba(255,171,0,0.4)]'
               : ''}
@@ -521,9 +522,9 @@
           </div>
         </div>
 
-        <!-- Right Palette -->
+        <!-- Right Palette (Desktop Only) -->
         <div
-          class="palette-section bg-black/40 p-4 flex flex-col w-[240px] min-w-[200px] shrink-0 border border-mw-border/50 relative max-h-[80vh] overflow-y-auto lg:w-[240px] w-full rounded-sm"
+          class="palette-section hidden lg:flex bg-black/40 p-4 flex-col w-[240px] min-w-[200px] shrink-0 border border-mw-border/50 relative max-h-[80vh] overflow-y-auto rounded-sm"
         >
           <h3
             class="font-display font-semibold text-mw-primary text-center uppercase tracking-wider border-b border-mw-border/50 pb-2 mb-4 text-sm"
@@ -542,6 +543,48 @@
             onHeroicToggle={toggleHeroicMode}
           />
         </div>
+
+        <!-- Mobile Palette (Mobile Only) -->
+        <div class="mobile-palette-section flex lg:hidden flex-col w-full">
+          <!-- Mobile Tabs -->
+          <div class="flex w-full mb-2 border border-mw-border rounded-sm overflow-hidden">
+            <button
+              class="flex-1 py-3 text-sm font-display uppercase tracking-wider transition-all
+                     {mobileTab === 'red'
+                ? 'bg-mw-primary/20 text-white font-bold border-b-2 border-mw-primary'
+                : 'bg-black/40 text-mw-primary/60 hover:bg-mw-primary/10'}"
+              on:click={() => (mobileTab = 'red')}
+            >
+              🔴 Red Army
+            </button>
+            <button
+              class="flex-1 py-3 text-sm font-display uppercase tracking-wider transition-all
+                     {mobileTab === 'blue'
+                ? 'bg-blue-500/20 text-white font-bold border-b-2 border-blue-500'
+                : 'bg-black/40 text-blue-400/60 hover:bg-blue-500/10'}"
+              on:click={() => (mobileTab = 'blue')}
+            >
+              🔵 Blue Army
+            </button>
+          </div>
+
+          <!-- Mobile Content -->
+          <div
+            class="bg-black/40 p-2 border border-mw-border/50 rounded-sm overflow-x-auto overflow-y-hidden"
+          >
+            <PiecePalette
+              {boardApi}
+              color={mobileTab}
+              onPieceSelect={handlePieceSelect}
+              {selectedPiece}
+              {heroicMode}
+              {editorMode}
+              onHandModeToggle={toggleHandMode}
+              onDeleteModeToggle={toggleDeleteMode}
+              onHeroicToggle={toggleHeroicMode}
+            />
+          </div>
+        </div>
       </div>
     </div>
 
@@ -550,7 +593,7 @@
       <div class="ghost-piece cg-wrap" style="left: {ghostPosition.x}px; top: {ghostPosition.y}px;">
         <piece
           class="{selectedPiece.role} {selectedPiece.color}"
-          class:promoted={selectedPiece.promoted}
+          class:heroic={selectedPiece.promoted}
         ></piece>
       </div>
     {/if}
@@ -585,7 +628,7 @@
 
     <!-- Controls Section at Bottom -->
     <div
-      class="controls-container bg-mw-bg-panel border border-mw-border rounded-sm p-8 max-w-[1200px] mx-auto w-full shadow-2xl relative mt-8"
+      class="controls-container bg-mw-bg-panel border border-mw-border rounded-sm p-4 lg:p-8 max-w-[1200px] mx-auto w-full shadow-2xl relative mt-8"
     >
       <div
         class="absolute -top-3 left-6 px-3 bg-black text-mw-border text-xs font-mono tracking-widest uppercase"
@@ -594,41 +637,43 @@
       </div>
 
       <div
-        class="button-row flex gap-4 flex-wrap justify-center border-b border-mw-border/50 pb-6 mb-8"
+        class="button-row grid grid-cols-2 md:grid-cols-3 lg:flex lg:flex-wrap gap-2 lg:gap-4 justify-center border-b border-mw-border/50 pb-6 mb-8"
       >
         <button
-          class="px-6 py-2 rounded-sm font-ui uppercase tracking-widest transition-all bg-mw-primary/5 border border-mw-border text-mw-primary hover:bg-mw-primary/20 hover:text-white"
+          class="px-3 py-3 lg:px-6 lg:py-2 rounded-sm font-ui uppercase text-xs lg:text-sm tracking-wider transition-all bg-mw-primary/5 border border-mw-border text-mw-primary hover:bg-mw-primary/20 hover:text-white flex items-center justify-center gap-2"
           on:click={loadStartingPosition}
         >
-          Starting Position
+          <span class="text-lg">↺</span> <span class="hidden sm:inline">Reset</span> Board
         </button>
         <button
-          class="px-6 py-2 rounded-sm font-ui uppercase tracking-widest transition-all bg-mw-primary/5 border border-mw-border text-mw-primary hover:bg-mw-primary/20 hover:text-white"
+          class="px-3 py-3 lg:px-6 lg:py-2 rounded-sm font-ui uppercase text-xs lg:text-sm tracking-wider transition-all bg-mw-primary/5 border border-mw-border text-mw-primary hover:bg-mw-primary/20 hover:text-white flex items-center justify-center gap-2"
           on:click={clearBoard}
         >
-          Clear Board
+          <span class="text-lg">🧹</span> Clear
         </button>
         <button
-          class="px-6 py-2 rounded-sm font-ui uppercase tracking-widest transition-all bg-mw-primary/5 border border-mw-border text-mw-primary hover:bg-mw-primary/20 hover:text-white"
+          class="px-3 py-3 lg:px-6 lg:py-2 rounded-sm font-ui uppercase text-xs lg:text-sm tracking-wider transition-all bg-mw-primary/5 border border-mw-border text-mw-primary hover:bg-mw-primary/20 hover:text-white flex items-center justify-center gap-2"
           on:click={flipBoard}
         >
-          Flip Board
+          <span class="text-lg">⇅</span> Flip
         </button>
         <button
-          class="px-6 py-2 rounded-sm font-ui uppercase tracking-widest transition-all border
+          class="px-3 py-3 lg:px-6 lg:py-2 rounded-sm font-ui uppercase text-xs lg:text-sm tracking-wider transition-all border flex items-center justify-center gap-2
                  {currentTurn === 'red'
             ? 'bg-amber-500/10 border-mw-alert text-mw-alert hover:bg-mw-alert/20 hover:text-white'
             : 'bg-blue-500/10 border-blue-500 text-blue-500 hover:bg-blue-500/20 hover:text-white'}"
           on:click={toggleTurn}
         >
-          Turn: {currentTurn === 'red' ? '🔴 Red' : '🔵 Blue'}
+          <span class="w-3 h-3 rounded-full {currentTurn === 'red' ? 'bg-red-500' : 'bg-blue-500'}"
+          ></span>
+          Turn: {currentTurn === 'red' ? 'Red' : 'Blue'}
         </button>
         <button
-          class="px-6 py-2 rounded-sm font-ui uppercase tracking-widest transition-all bg-mw-primary/5 border border-mw-border text-mw-primary opacity-50 cursor-not-allowed"
+          class="px-3 py-3 lg:px-6 lg:py-2 rounded-sm font-ui uppercase text-xs lg:text-sm tracking-wider transition-all bg-mw-primary/5 border border-mw-border text-mw-primary opacity-50 cursor-not-allowed col-span-2 md:col-span-1 lg:w-auto flex items-center justify-center gap-2"
           on:click={screenshot}
           disabled
         >
-          Screenshot
+          <span>📷</span> Screenshot
         </button>
       </div>
 

@@ -161,21 +161,19 @@
           selectedPiece?.color === piece.color &&
           selectedPiece?.promoted === piece.promoted}
         title={formatRoleName(piece.role)}
+        role="button"
+        tabindex="0"
+        on:mousedown={(e) => handlePieceDragStart(piece, e)}
+        on:touchstart={(e) => handlePieceDragStart(piece, e)}
+        on:keydown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            onPieceSelect(piece.role, piece.color);
+          }
+        }}
       >
-        <div
-          class="cg-wrap palette-piece-container"
-          role="button"
-          tabindex="0"
-          on:mousedown={(e) => handlePieceDragStart(piece, e)}
-          on:touchstart={(e) => handlePieceDragStart(piece, e)}
-          on:keydown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              e.preventDefault();
-              onPieceSelect(piece.role, piece.color);
-            }
-          }}
-        >
-          <piece class="{piece.role} {piece.color}" class:promoted={piece.promoted}>
+        <div class="cg-wrap palette-piece-container">
+          <piece class="{piece.role} {piece.color}" class:heroic={piece.promoted}>
             <!-- Piece will be rendered via CSS background from commander-chess.pieces.css -->
             <!-- Heroic (promoted) pieces get golden glow and star indicator -->
           </piece>
@@ -373,36 +371,55 @@
   }
 
   /* When palettes are stacked horizontally/responsive */
-  @media (max-width: 1000px) {
+  /* When palettes are stacked horizontally/responsive */
+  @media (max-width: 1024px) {
     .control-buttons {
       gap: 0.25rem;
-      margin-bottom: 0.5rem;
+      margin-bottom: 0.25rem;
+      padding-bottom: 0.25rem;
     }
 
     .pieces-grid {
+      /* Fit all 11 pieces in 2 rows (6 columns) */
       grid-template-columns: repeat(6, 1fr);
       gap: 0.25rem;
+      padding: 0;
     }
 
     .palette-piece-wrapper {
-      padding: 0.25rem;
-      gap: 0.1rem;
+      padding: 0.15rem;
+      gap: 0;
+      background: transparent; /* Remove heavy background to look cleaner */
+    }
+
+    .palette-piece-wrapper.selected {
+      background-color: rgba(0, 243, 255, 0.15);
     }
 
     .palette-piece-container {
-      width: clamp(35px, 8vw, 45px);
-      height: clamp(35px, 8vw, 45px);
-    }
-  }
-
-  @media (max-width: 768px) {
-    .pieces-grid {
-      grid-template-columns: repeat(5, 1fr);
+      width: clamp(30px, 7vw, 40px);
+      height: clamp(30px, 7vw, 40px);
     }
 
+    /* Hide labels on mobile to save massive separate vert space */
     .piece-label {
-      font-size: 0.6rem;
-      max-width: 100%;
+      display: none;
+    }
+
+    /* Show label only for selected item if needed, or just rely on icon */
+    .palette-piece-wrapper.selected .piece-label {
+      display: block;
+      font-size: 0.5rem;
+      position: absolute;
+      bottom: -10px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.8);
+      padding: 1px 4px;
+      z-index: 10;
+      border-radius: 2px;
+      width: auto;
+      max-width: none;
     }
   }
 </style>
