@@ -45,7 +45,7 @@
     display: flex;
     flex-direction: column;
     height: 100%; /* Fill available space */
-    min-height: 150px; /* Minimum useful height */
+    min-height: 0; /* Allow shrinking */
     overflow: hidden; /* Prevent container-level scroll */
     box-shadow:
       0 4px 6px -1px rgba(0, 0, 0, 0.1),
