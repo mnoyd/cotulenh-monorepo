@@ -99,14 +99,18 @@ cg-background {
 }
 
 /* Heroic Piece Branding */
-.cg-wrap piece.heroic {
+.cg-wrap piece.heroic,
+piece.dragging.heroic,
+.ghost-piece piece.heroic {
   /* Heroic Gold/Solar Aura */
   filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.6)) brightness(1.2) contrast(1.1);
   /* Do NOT override z-index here, let render.ts handle depth sorting */
 }
 
 /* Red Team Heroic Override */
-.cg-wrap piece.heroic[class*='red'] {
+.cg-wrap piece.heroic[class*='red'],
+piece.dragging.heroic[class*='red'],
+.ghost-piece piece.heroic[class*='red'] {
   filter: drop-shadow(0 0 10px rgba(255, 171, 0, 0.7)) hue-rotate(45deg) brightness(1.3);
 }
 
@@ -381,7 +385,7 @@ cg-board square.air-defense-influence.opponent.overlap {
 
 /* --- Piece Styling (Holographic Effect) --- */
 /* We want to give them a "digital" look. */
-.cg-wrap piece {
+piece {
   transition:
     transform 0.2s,
     filter 0.2s;
@@ -390,26 +394,26 @@ cg-board square.air-defense-influence.opponent.overlap {
 }
 
 /* Blue Team = Cyan/Blue Hologram */
-.cg-wrap piece[class*='blue'] {
+piece[class*='blue'] {
   /* filter: drop-shadow(0 0 5px #00f3ff) hue-rotate(180deg) saturate(200%); */
   /* This is tricky with pre-colored SVGs. Let's trust the SVG colors but add glow */
   filter: drop-shadow(0 0 4px #00aaff) brightness(1.2) contrast(1.2);
 }
 
 /* Red Team becomes Amber Team visually */
-.cg-wrap piece[class*='red'] {
+piece[class*='red'] {
   /* Hue rotate Red (0deg) to Amber (~45deg) */
   filter: drop-shadow(0 0 4px #ffab00) hue-rotate(45deg) brightness(1.2) contrast(1.1);
 }
 
-.cg-wrap piece:hover {
+piece:hover {
   transform: translateY(-5px) scale(1.1);
   filter: brightness(1.3) drop-shadow(0 10px 10px rgba(0, 0, 0, 0.5));
   z-index: 100;
 }
 
 /* FIX: Disable transitions during drag to prevent lag/floaty feel */
-.cg-wrap piece.dragging {
+piece.dragging {
   transition: none !important;
   transform: scale(1.1);
   filter: brightness(1.3) drop-shadow(0 15px 15px rgba(0, 0, 0, 0.6)) !important;

@@ -40,9 +40,16 @@
   }
 
   function handlePieceDragStart(piece: Piece, event: MouseEvent | TouchEvent) {
-    event.preventDefault();
+    // Prevent default to avoid unwanted browser behaviors (text selection etc)
+    if (event.cancelable) event.preventDefault();
+    event.stopPropagation(); // Stop propagation to prevent body handlers (cancelSelection)
 
     if (!boardApi) return;
+
+    // INTERACTION FIX: Select the piece immediately on mousedown/touch
+    // This allows "Drop Mode" (click to select) and "Drag Mode" to coexist.
+    // If we just click, this selects. If we drag, this selects AND drags.
+    onPieceSelect(piece.role, piece.color);
 
     try {
       // Use the board's built-in dragNewPiece method with the actual piece object
@@ -161,10 +168,6 @@
           tabindex="0"
           on:mousedown={(e) => handlePieceDragStart(piece, e)}
           on:touchstart={(e) => handlePieceDragStart(piece, e)}
-          on:click={(e) => {
-            e.stopPropagation();
-            onPieceSelect(piece.role, piece.color);
-          }}
           on:keydown={(e) => {
             if (e.key === 'Enter' || e.key === ' ') {
               e.preventDefault();
