@@ -30,6 +30,8 @@ import {
   AirDefense,
   AIR_FORCE,
   COMMANDER,
+  VALID_SQUARES,
+  rank,
 } from './type.js'
 import {
   printBoard,
@@ -262,36 +264,37 @@ export class CoTuLenh {
    * @returns The FEN string for the current position
    */
   fen(): string {
-    let empty = 0
     let fen = ''
-    for (let i = SQUARE_MAP.a12; i <= SQUARE_MAP.k1 + 1; i++) {
-      if (isSquareOnBoard(i)) {
-        if (this._board[i]) {
-          if (empty > 0) {
-            fen += empty
-            empty = 0
-          }
-          const piece = this._board[i]!
+    let empty = 0
 
-          const san = makeSanPiece(piece, false)
-          const toCorrectCase = piece.color === RED ? san : san.toLowerCase()
-          fen += toCorrectCase
-        } else {
-          empty++
-        }
-      } else {
-        if (file(i) === 11) {
-          if (empty > 0) {
-            fen += empty
-          }
+    for (let i = 0; i < VALID_SQUARES.length; i++) {
+      const sq = VALID_SQUARES[i]
+      const piece = this._board[sq]
+
+      if (piece) {
+        if (empty > 0) {
+          fen += empty
           empty = 0
-          if (i !== SQUARE_MAP.k1 + 1) {
-            fen += '/'
-          }
-        } else {
-          continue
         }
+        const san = makeSanPiece(piece, false)
+        const toCorrectCase = piece.color === RED ? san : san.toLowerCase()
+        fen += toCorrectCase
+      } else {
+        empty++
       }
+
+      const nextSq = VALID_SQUARES[i + 1]
+      if (nextSq !== undefined && rank(nextSq) !== rank(sq)) {
+        if (empty > 0) {
+          fen += empty
+          empty = 0
+        }
+        fen += '/'
+      }
+    }
+
+    if (empty > 0) {
+      fen += empty
     }
 
     const castling = '-' // No castling
@@ -640,9 +643,6 @@ export class CoTuLenh {
   // Helper method to filter legal moves
   private _filterLegalMoves(moves: InternalMove[], us: Color): InternalMove[] {
     const legalMoves: InternalMove[] = []
-
-    // Save the initial deploy session to restore if corrupted
-    const initialDeploySession = null
 
     for (const move of moves) {
       try {
