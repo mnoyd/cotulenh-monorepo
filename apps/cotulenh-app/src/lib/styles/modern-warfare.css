@@ -1,35 +1,26 @@
 /* Modern Warfare Theme for CoTuLenh */
 
-/* Import tactical fonts */
-@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Rajdhani:wght@300;500;700&family=Share+Tech+Mono&display=swap');
+/* Fonts are now handled globally in app.css / app.html */
 
 :root {
   /* Color Palette - Tactical HUD (Amber/Teal Variant) */
   --mw-bg-dark: #0f172a;
-  /* Deep Slate/Navy */
   --mw-bg-panel: rgba(15, 23, 42, 0.9);
   --mw-grid-color: rgba(0, 255, 255, 0.08);
   --mw-border-color: rgba(0, 255, 255, 0.15);
 
   --mw-primary: #00f3ff;
-  /* Cyan Neon */
   --mw-primary-dim: rgba(0, 243, 255, 0.15);
   --mw-secondary: #00ff41;
-  /* Radar Green */
   --mw-alert: #ffab00;
-  /* Amber / Orange (Was Red) */
   --mw-warning: #ffd700;
-  /* Gold (Was Orange) */
 
   --mw-water-color: rgba(0, 100, 200, 0.25);
-  /* Distinct Water */
 
   --mw-text-glow: 0 0 10px rgba(0, 243, 255, 0.5);
   --mw-border-glow: 0 0 8px rgba(0, 243, 255, 0.3);
 
-  --font-display: 'Orbitron', sans-serif;
-  --font-ui: 'Rajdhani', sans-serif;
-  --font-mono: 'Share Tech Mono', monospace;
+  /* Fonts are inherited from global theme */
 
   /* --- Legacy Variable Mapping for Components --- */
   --color-surface: var(--mw-bg-panel);
