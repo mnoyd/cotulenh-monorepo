@@ -109,10 +109,16 @@ export const SQUARE_MAP: Record<Square, number> = {
 export const NAVY_MASK = new Uint8Array(256) // 1 = navigable by navy
 export const LAND_MASK = new Uint8Array(256) // 1 = accessible by light pieces
 
+// Precomputed array of all valid squares on the 11x12 board
+// Used to optimize board iteration in move generation (132 valid squares vs 187 iterations)
+export const VALID_SQUARES: number[] = []
+for (let sq = SQUARE_MAP.a12; sq <= SQUARE_MAP.k1; sq++) {
+  if (isSquareOnBoard(sq)) VALID_SQUARES.push(sq)
+}
+
 // Initialize movement masks
 function initMovementMasks() {
-  for (let sq = 0; sq < 256; sq++) {
-    if (!isSquareOnBoard(sq)) continue // Add validity check
+  for (const sq of VALID_SQUARES) {
     const f = file(sq)
     const r = rank(sq)
 
@@ -125,13 +131,6 @@ function initMovementMasks() {
   }
 }
 initMovementMasks()
-
-// Precomputed array of all valid squares on the 11x12 board
-// Used to optimize board iteration in move generation (132 valid squares vs 187 iterations)
-export const VALID_SQUARES: number[] = []
-for (let sq = 0x00; sq <= 0xba; sq++) {
-  if (isSquareOnBoard(sq)) VALID_SQUARES.push(sq)
-}
 
 // --- Helper Functions ---
 

@@ -14,6 +14,7 @@ import {
   Square,
   algebraic,
   AirDefense,
+  VALID_SQUARES,
 } from './type.js'
 
 // --- Bitboard Constants & Helpers ---
@@ -26,13 +27,10 @@ const SQ_TO_BIT_INDEX: number[] = new Array(256).fill(-1)
 const BIT_INDEX_TO_SQ: number[] = new Array(132).fill(0)
 
 function initBitboardMapping() {
-  let idx = 0
-  for (let sq = 0; sq < 256; sq++) {
-    if (isSquareOnBoard(sq)) {
-      SQ_TO_BIT_INDEX[sq] = idx
-      BIT_INDEX_TO_SQ[idx] = sq
-      idx++
-    }
+  for (let idx = 0; idx < VALID_SQUARES.length; idx++) {
+    const sq = VALID_SQUARES[idx]
+    SQ_TO_BIT_INDEX[sq] = idx
+    BIT_INDEX_TO_SQ[idx] = sq
   }
 }
 
@@ -60,9 +58,7 @@ function initAirDefenseMasks() {
   }
 
   for (let level = 1; level <= MAX_LEVEL; level++) {
-    for (let sq = 0; sq < 256; sq++) {
-      if (!isSquareOnBoard(sq)) continue
-
+    for (const sq of VALID_SQUARES) {
       const bitIndex = SQ_TO_BIT_INDEX[sq]
       let mask = 0n
 
@@ -185,8 +181,7 @@ export function updateAirDefensePiecesPosition(game: CoTuLenh): AirDefense {
     [RED]: [],
     [BLUE]: [],
   }
-  for (let sq = SQUARE_MAP.a12; sq <= SQUARE_MAP.k1; sq++) {
-    if (!isSquareOnBoard(sq)) continue
+  for (const sq of VALID_SQUARES) {
     const piece = game.get(sq)
     if (!piece) continue
     if (BASE_AIRDEFENSE_CONFIG[piece.type]) {
