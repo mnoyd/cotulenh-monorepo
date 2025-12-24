@@ -190,11 +190,16 @@
       }
 
       // Get the SAN from history (last entry added by commit)
-      const historyAfter = game.history();
-      const deployMoveSan = historyAfter[historyAfter.length - 1] || 'Deploy';
+      const historyAfter = game.history({ verbose: true });
+      const deployMove = historyAfter[historyAfter.length - 1];
+
+      if (!deployMove) {
+        console.error('❌ No move found in history after commit');
+        return;
+      }
 
       // Update game store with the deploy move SAN
-      gameStore.applyDeployCommit(game, deployMoveSan);
+      gameStore.applyDeployCommit(game, deployMove);
     } catch (error) {
       console.error('❌ Failed to commit deploy session:', error);
       const errorMsg = error instanceof Error ? error.message : 'Unknown error';

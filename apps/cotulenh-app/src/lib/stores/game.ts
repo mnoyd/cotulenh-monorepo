@@ -61,7 +61,7 @@ export interface GameStore extends Readable<GameState> {
   initialize(game: CoTuLenh): void;
   applyMove(game: CoTuLenh, move: Move | DeployMove): void;
   sync(game: CoTuLenh): void;
-  applyDeployCommit(game: CoTuLenh, deployMoveSan: string): void;
+  applyDeployCommit(game: CoTuLenh, move: Move | DeployMove): void;
   handleUndo(game: CoTuLenh): void;
   previewMove(index: number): void;
   cancelPreview(game: CoTuLenh): void;
@@ -249,18 +249,12 @@ function createGameStore(): GameStore {
     /**
      * Apply the final deployed move after commit
      * @param game The CoTuLenh game instance after commit
-     * @param deployMoveSan The SAN notation of the complete deploy move
+     * @param move The complete move object (StandardMove or DeploySequence)
      */
-    applyDeployCommit(game: CoTuLenh, deployMoveSan: string) {
+    applyDeployCommit(game: CoTuLenh, move: Move | DeployMove) {
       const possibleMoves = getPossibleMoves(game);
 
       update((state) => {
-        // Create a minimal Move object with the deploy SAN for display
-        // We only need the san property for history display
-        const deployMove = {
-          san: deployMoveSan
-        } as Move;
-
         const status = calculateGameStatus(game);
         const isPlaying = status === 'playing';
 
@@ -268,7 +262,7 @@ function createGameStore(): GameStore {
           ...state,
           fen: game.fen(),
           turn: isPlaying ? game.turn() : null,
-          history: [...state.history, deployMove],
+          history: [...state.history, move], // Use the full move object
           possibleMoves: isPlaying ? possibleMoves : [],
           lastMove: undefined,
           check: game.isCheck(),
