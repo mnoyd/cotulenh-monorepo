@@ -11,7 +11,7 @@
   import MoveHistory from '$lib/components/MoveHistory.svelte';
 
   import GameControls from '$lib/components/GameControls.svelte';
-  import { gameStore } from '$lib/stores/game';
+  import { gameStore, getDeployState } from '$lib/stores/game';
 
   import '@repo/cotulenh-board/assets/commander-chess.base.css';
   import '@repo/cotulenh-board/assets/commander-chess.pieces.css';

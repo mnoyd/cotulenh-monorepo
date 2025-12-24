@@ -18,38 +18,39 @@ function flattenPiece(piece: Piece): Piece[] {
 }
 
 /**
- * Convert DeploySession to UIDeployState using modern API
+ * Get the current deploy state directly from the game instance.
+ * This reads from core (source of truth) instead of a cached copy.
+ * Always returns fresh data - no stale sync issues.
  */
-function createUIDeployState(game: CoTuLenh): UIDeployState | null {
+export function getDeployState(game: CoTuLenh | null): UIDeployState | null {
+  if (!game) return null;
+
   const session = game.getSession();
-  // Ensure it is a deploy session (check isDeploy property if available, or just check fields)
   if (!session || !session.isDeploy) return null;
 
-  // Use modern DeploySession API instead of deprecated toLegacyDeployState()
-  // Reconstruct the DeployState properties manually
-  // Note: We cast session to any because MoveSession type isn't fully exported/available here easily
-  // or we could use the return type of getSession if it was generic.
-  // We know it has these methods based on move-session.ts
+  // Cast to any to access internal properties safely
   const s = session as any;
 
-  const moves = s.moves;
+  const moves = s.moves || [];
 
+  // Get pieces that were moved FROM the stack in this deploy session
   const movedPieces = moves
     .filter((move: any) => move.from === s.stackSquare && move.flags & BITS.DEPLOY)
     .flatMap((move: any) => flattenPiece(move.piece));
 
+  // The "stay" piece is the first remaining piece (what stayed on the stack)
+  const remainingPieces = s.remaining || [];
+  const stayPiece = remainingPieces.length > 0 ? remainingPieces[0] : undefined;
+
   return {
-    // DeployState properties (reconstructed from modern API)
     stackSquare: s.stackSquare,
     turn: s.turn,
     originalPiece: s.originalPiece,
     movedPieces,
-    stay: s.remaining.length > 0 ? s.remaining[0] : undefined, // Approximation for stay
-
-    // UIDeployState additional properties
+    stay: stayPiece,
     actions: moves,
-    remainingPieces: s.remaining,
-    recombineOptions: s.getOptions() // Fetch available recombine options
+    remainingPieces,
+    recombineOptions: s.getOptions?.() || []
   };
 }
 
@@ -124,7 +125,7 @@ function createGameStore(): GameStore {
         check: game.isCheck(),
         status,
         lastMove: undefined,
-        deployState: createUIDeployState(game),
+        deployState: null, // deployState is now read directly from game in components
         historyViewIndex: -1
       });
       const perfEnd = performance.now();
@@ -214,7 +215,7 @@ function createGameStore(): GameStore {
           lastMove: lastMoveSquares,
           check: game.isCheck(),
           status,
-          deployState: createUIDeployState(game),
+          deployState: null, // deployState is now read directly from game in components
           historyViewIndex: -1 // Reset preview on new move
         };
       });
@@ -240,7 +241,7 @@ function createGameStore(): GameStore {
           check: game.isCheck(),
           possibleMoves: isPlaying ? getPossibleMoves(game) : [], // Ensure moves are up to date (e.g. after cancelPreview)
           status,
-          deployState: createUIDeployState(game),
+          deployState: null, // deployState is now read directly from game in components
           historyViewIndex: -1
         };
       });
@@ -303,7 +304,7 @@ function createGameStore(): GameStore {
           lastMove: lastMoveSquares,
           check: game.isCheck(),
           status,
-          deployState: createUIDeployState(game),
+          deployState: null, // deployState is now read directly from game in components
           historyViewIndex: -1 // Reset preview on undo
         };
       });

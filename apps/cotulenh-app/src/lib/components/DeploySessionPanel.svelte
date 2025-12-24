@@ -1,12 +1,13 @@
 <script lang="ts">
   import type { CoTuLenh } from '@repo/cotulenh-core';
-  import { gameStore } from '$lib/stores/game';
+  import { getDeployState } from '$lib/stores/game';
 
   export let game: CoTuLenh | null;
   export let onCommit: () => void;
   export let onCancel: () => void;
 
-  $: deployState = $gameStore.deployState;
+  // Read deploy state directly from game (fresh from source of truth)
+  $: deployState = getDeployState(game);
   $: hasSession = deployState !== null;
   $: canCommit = deployState && game ? game.canCommitSession() : false;
 </script>
