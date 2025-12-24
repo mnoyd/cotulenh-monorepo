@@ -370,7 +370,6 @@ export function generateMovesInDirection(
           const combinedMask = getMovementMask(combinedPiece.type)
 
           if (
-            !isDeployMove &&
             combinedPiece?.carrying?.length &&
             currentRange <= moveRange &&
             !terrainBlockedMovement &&
