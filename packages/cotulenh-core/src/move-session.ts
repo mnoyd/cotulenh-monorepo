@@ -603,60 +603,47 @@ export class MoveSession {
    * with a piece that was already deployed in this session.
    */
   getOptions(): RecombineOption[] {
-    // Only available during deployment
-    if (!this.isDeploy) return []
-    // Need at least one move to recombine with
-    if (this._commands.length === 0) return []
-    // Need pieces remaining to be used for recombination
-    if (this.remaining.length === 0) return []
+    // Early exits: only available during deployment with moves and remaining pieces
+    if (
+      !this.isDeploy ||
+      this._commands.length === 0 ||
+      this.remaining.length === 0
+    ) {
+      return []
+    }
 
-    const remaining = this.remaining
-    const moves = this.moves
     const options: RecombineOption[] = []
-    const game = this._game
     const us = this.turn
 
-    // Pre-compute data for each move (one-time per move, not per remaining piece)
-    const moveData = moves.map((move) => ({
+    // Pre-compute move data once (avoid repeated algebraic() and haveCommander() calls)
+    const moveData = this.moves.map((move) => ({
       move,
       square: algebraic(move.to),
       hasCommander: haveCommander(move.piece),
     }))
 
-    for (const remainingPiece of remaining) {
+    for (const remainingPiece of this.remaining) {
       const remainingHasCommander = haveCommander(remainingPiece)
 
       for (const { move, square, hasCommander: moveHasCommander } of moveData) {
-        // 1. Attempt combination logic
+        // Attempt combination
         const combined = combinePieces([move.piece, remainingPiece])
         if (!combined) continue
 
-        // 2. Strict Terrain Validation for the NEW carrier
-        const combinedMask = getMovementMask(combined.type)
-        if (!combinedMask[move.to]) {
-          continue
-        }
+        // Validate terrain for combined piece
+        if (!getMovementMask(combined.type)[move.to]) continue
 
-        // 3. Commander Safety Check (OPTIMIZED)
-        // Only do expensive board manipulation if commander is involved
+        // Commander safety check (only if commander involved)
         if (remainingHasCommander || moveHasCommander) {
-          // Check if the new combined piece would be under attack
-          // We pass the combined.type as assumeTargetType so getAttackers knows if it's hitting LAND or NAVY
-          const isAttacked = game.getAttackers(
+          const isAttacked = this._game.getAttackers(
             move.to,
             swapColor(us),
             combined.type,
           )
-
-          if (isAttacked.length > 0) {
-            continue
-          }
+          if (isAttacked.length > 0) continue
         }
 
-        options.push({
-          square,
-          piece: remainingPiece,
-        })
+        options.push({ square, piece: remainingPiece })
       }
     }
 
@@ -668,6 +655,7 @@ export class MoveSession {
    * Modifies the session history to include the recombining piece in an earlier move.
    */
   recombine(option: RecombineOption): void {
+    // Find target move index
     const moveIndex = this.moves.findIndex(
       (m) => algebraic(m.to) === option.square,
     )
@@ -678,59 +666,42 @@ export class MoveSession {
       )
     }
 
-    // Verify piece is actually in remaining
-    const remaining = this.remaining
-    const pieceIndex = remaining.findIndex((p) => p.type === option.piece.type)
-    if (pieceIndex === -1) {
+    // Verify piece exists in remaining stack
+    if (!this.remaining.some((p) => p.type === option.piece.type)) {
       throw new Error(
         `Invalid recombine piece: ${option.piece.type} not found in remaining stack`,
       )
     }
 
-    // Store the moves we are about to undo (in reverse order, so we can re-apply them correctly)
+    // Undo moves from end back to (and including) target move
     const movesToReplay: InternalMove[] = []
-
-    // Commands to undo: from End down to moveIndex
-    // We undo them and collect the moves to replay (EXCEPT the updated one, which we reconstruct)
-    // Note: undoLastMove() pops from _commands.
-    const initialCommandCount = this._commands.length
-    const commandsToUndo = initialCommandCount - moveIndex
+    const commandsToUndo = this._commands.length - moveIndex
 
     for (let i = 0; i < commandsToUndo; i++) {
-      // undoLastMove pops the command and undoes it
       const undoneMove = this.undoLastMove()
       if (undoneMove) {
-        movesToReplay.unshift(undoneMove) // Add to front to keep original order [Target, Next, Next...]
+        movesToReplay.push(undoneMove)
       }
     }
 
-    // Now movesToReplay has [TargetMove, SubsequentMove1, SubsequentMove2...]
-    // And board state is reverted to BEFORE TargetMove.
+    movesToReplay.reverse() // [TargetMove, SubsequentMove1, ...]
 
-    const targetMove = movesToReplay[0]
-    const subsequentMoves = movesToReplay.slice(1)
+    if (movesToReplay.length === 0) {
+      throw new Error('No moves to replay after undo')
+    }
 
-    // Modify Target Move
+    // Modify and re-execute target move with combined piece
+    const [targetMove, ...subsequentMoves] = movesToReplay
     const combinedPiece = combinePieces([targetMove.piece, option.piece])
+
     if (!combinedPiece) {
       throw new Error('Failed to combine pieces during recombine execution')
     }
 
-    // Construct the new modified move
-    // We must ensure the 'piece' property is updated. we reuse other properties.
-    const modifiedTargetMove: InternalMove = {
-      ...targetMove,
-      piece: combinedPiece,
-    }
+    this.addMove({ ...targetMove, piece: combinedPiece })
 
-    // Execute Modified Target Move
-    this.addMove(modifiedTargetMove)
-
-    // Re-execute Subsequent Moves
-    // Strictly re-apply.
-    for (const subMove of subsequentMoves) {
-      this.addMove(subMove)
-    }
+    // Re-execute subsequent moves
+    subsequentMoves.forEach((move) => this.addMove(move))
   }
 }
 
