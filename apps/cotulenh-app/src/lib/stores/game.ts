@@ -208,7 +208,7 @@ function createGameStore(): GameStore {
 
         return {
           ...state,
-          fen: game.fen(),
+          fen: move.after,
           turn: isPlaying ? game.turn() : null,
           history: shouldAddToHistory ? [...state.history, move] : state.history,
           possibleMoves: isPlaying ? possibleMoves : [], // Full load enabled
