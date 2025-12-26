@@ -12,8 +12,8 @@ interface TestPiece {
   carrying?: TestPiece[];
 }
 
-// Create a stacker instance for tests using the new role mapping system
-const testStacker = PieceStacker.withRoleMapping<TestPiece>(
+// Create a stacker instance for tests using role mapping
+const testStacker = new PieceStacker<TestPiece>(
   (piece: TestPiece) => piece.role,
   DEFAULT_ROLE_MAPPING
 );
@@ -61,8 +61,8 @@ describe('PieceStacker - Integration Tests', () => {
     });
 
     it('should work with new role mapping system using default mapping', () => {
-      // NEW WAY - Using default mapping
-      const newStacker = PieceStacker.withRoleMapping<TestPiece>(
+      // NEW WAY - Using default mapping with constructor overloads
+      const newStacker = new PieceStacker<TestPiece>(
         (piece: TestPiece) => piece.role,
         DEFAULT_ROLE_MAPPING
       );
@@ -82,7 +82,7 @@ describe('PieceStacker - Integration Tests', () => {
         return ROLE_FLAGS[roleKey] || 0;
       });
 
-      const newStacker = PieceStacker.withRoleMapping<TestPiece>(
+      const newStacker = new PieceStacker<TestPiece>(
         (piece: TestPiece) => piece.role,
         DEFAULT_ROLE_MAPPING
       );
@@ -110,7 +110,7 @@ describe('PieceStacker - Integration Tests', () => {
       } as const;
 
       // Create stacker with custom role mapping
-      const customStacker = PieceStacker.withRoleMapping<TestPiece>(
+      const customStacker = new PieceStacker<TestPiece>(
         (piece: TestPiece) => piece.role,
         customRoleMapping
       );
@@ -142,7 +142,7 @@ describe('PieceStacker - Integration Tests', () => {
         Navy: 'NAVY'
       } as const;
 
-      const customStacker = PieceStacker.withRoleMapping<TestPiece>(
+      const customStacker = new PieceStacker<TestPiece>(
         (piece: TestPiece) => piece.role,
         customRoleMapping
       );

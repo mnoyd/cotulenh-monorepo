@@ -13,6 +13,6 @@
     "sourceMap": true,
     "types": ["vitest/globals"]
   },
-  "include": ["src", "__tests__"],
-  "exclude": ["node_modules", "dist"]
+  "include": ["src"],
+  "exclude": ["node_modules", "dist", "__tests__", "helpers"]
 }

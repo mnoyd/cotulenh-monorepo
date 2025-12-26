@@ -1,12 +1,21 @@
-// Build script: Generate predefined-stacks.ts from blueprints.yaml
-// Handles file I/O and parsing, feeds pure data to generate-stacks
+/**
+ * Build script: Generate predefined-stacks.ts from blueprints.yaml
+ *
+ * Workflow:
+ * 1. Read blueprints.yaml
+ * 2. Parse YAML and convert role names to numbers
+ * 3. Generate all valid combinations
+ * 4. Output as TypeScript code
+ *
+ * Note: ROLE_FLAGS duplicated here to avoid circular import during build
+ */
 
-import { generatePredefinedStacks } from './generate-stacks';
+import { generatePredefinedStacks } from './generate-stacks.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import yaml from 'js-yaml';
 
-// Role flags - duplicated here to avoid circular import during build
+/** Role flags from src/index.ts (duplicated for build-time access) */
 const ROLE_FLAGS = {
   COMMANDER: 1,
   INFANTRY: 2,
@@ -21,10 +30,12 @@ const ROLE_FLAGS = {
   HEADQUARTER: 1024
 } as const;
 
+/** Parsed YAML blueprint format (role names as strings) */
 interface BlueprintYaml {
   blueprints: { [carrierName: string]: string[][] };
 }
 
+/** Numeric blueprint format used by generator (role flags as numbers) */
 interface Blueprint {
   [carrierRole: number]: number[][];
 }
@@ -33,7 +44,10 @@ const OUTPUT_FILE = 'src/predefined-stacks.ts';
 const YAML_FILE = 'blueprints.yaml';
 
 /**
- * Parse YAML and convert to numeric blueprint
+ * Parse YAML blueprint file and convert role names to numeric flags
+ * @param yamlPath Path to blueprints.yaml
+ * @returns Blueprint with numeric role flags
+ * @throws Error if YAML is missing, invalid, or contains unknown roles
  */
 function parseBlueprint(yamlPath: string): Blueprint {
   if (!fs.existsSync(yamlPath)) {
@@ -43,28 +57,21 @@ function parseBlueprint(yamlPath: string): Blueprint {
   try {
     const yamlContent = fs.readFileSync(yamlPath, 'utf8');
     const data = yaml.load(yamlContent) as BlueprintYaml;
-
     const blueprint: Blueprint = {};
 
-    // Convert role names to numbers using local ROLE_FLAGS
     for (const [carrierName, slots] of Object.entries(data.blueprints)) {
       const carrierRole = ROLE_FLAGS[carrierName as keyof typeof ROLE_FLAGS];
       if (!carrierRole) {
         throw new Error(`Unknown carrier role: ${carrierName}`);
       }
 
-      const numericSlots: number[][] = [];
-      for (const slot of slots) {
-        const numericSlot: number[] = [];
-        for (const roleName of slot) {
+      const numericSlots = slots.map((slot) =>
+        slot.map((roleName) => {
           const roleNumber = ROLE_FLAGS[roleName as keyof typeof ROLE_FLAGS];
-          if (!roleNumber) {
-            throw new Error(`Unknown role: ${roleName}`);
-          }
-          numericSlot.push(roleNumber);
-        }
-        numericSlots.push(numericSlot);
-      }
+          if (!roleNumber) throw new Error(`Unknown role: ${roleName}`);
+          return roleNumber;
+        })
+      );
 
       blueprint[carrierRole] = numericSlots;
     }
@@ -77,6 +84,8 @@ function parseBlueprint(yamlPath: string): Blueprint {
 
 /**
  * Generate TypeScript code for the predefined stacks Map
+ * @param stacks Pre-calculated valid stack combinations
+ * @returns TypeScript code as string
  */
 function generateStacksCode(stacks: Map<number, bigint>): string {
   let code = '// Auto-generated from blueprints.yaml - DO NOT EDIT MANUALLY\n';
@@ -85,7 +94,6 @@ function generateStacksCode(stacks: Map<number, bigint>): string {
   code += '// Key: role mask, Value: BigInt state\n';
   code += 'export const PREDEFINED_STACKS = new Map<number, bigint>([\n';
 
-  // Sort by key for consistent output
   const sortedEntries = Array.from(stacks.entries()).sort((a, b) => a[0] - b[0]);
 
   for (const [mask, state] of sortedEntries) {
@@ -93,12 +101,13 @@ function generateStacksCode(stacks: Map<number, bigint>): string {
   }
 
   code += ']);\n';
-
   return code;
 }
 
 /**
- * Check if predefined-stacks.ts needs to be generated
+ * Check if predefined-stacks.ts needs to be regenerated
+ * Compares modification times of YAML vs generated file
+ * @returns true if generation is needed, false otherwise
  */
 function needsGeneration(): boolean {
   if (!fs.existsSync(OUTPUT_FILE)) {
@@ -108,7 +117,7 @@ function needsGeneration(): boolean {
 
   if (!fs.existsSync(YAML_FILE)) {
     console.log(`⚠️  ${YAML_FILE} not found, but ${OUTPUT_FILE} exists`);
-    return false; // Don't regenerate if YAML is missing
+    return false;
   }
 
   const yamlStats = fs.statSync(YAML_FILE);
@@ -123,7 +132,8 @@ function needsGeneration(): boolean {
 }
 
 /**
- * Main build function
+ * Main build function - generates predefined stacks from blueprints.yaml
+ * @param force Skip timestamp check and always regenerate
  */
 function buildStacks(force: boolean = false): void {
   try {
@@ -134,28 +144,21 @@ function buildStacks(force: boolean = false): void {
 
     console.log('🔨 Building predefined stacks from blueprints.yaml...');
 
-    // Check if YAML exists
     if (!fs.existsSync(YAML_FILE)) {
       throw new Error(`Blueprint file not found: ${YAML_FILE}`);
     }
 
-    // Parse YAML to numeric blueprint
     const blueprint = parseBlueprint(YAML_FILE);
-
-    // Generate stacks from numeric blueprint
     const stacks = generatePredefinedStacks(blueprint);
     console.log(`✅ Generated ${stacks.size} stack combinations`);
 
-    // Generate TypeScript code
     const code = generateStacksCode(stacks);
-
-    // Ensure output directory exists
     const outputDir = path.dirname(OUTPUT_FILE);
+
     if (!fs.existsSync(outputDir)) {
       fs.mkdirSync(outputDir, { recursive: true });
     }
 
-    // Write output file
     fs.writeFileSync(OUTPUT_FILE, code, 'utf8');
     console.log(`✅ Generated ${OUTPUT_FILE}`);
   } catch (error) {
@@ -165,7 +168,7 @@ function buildStacks(force: boolean = false): void {
 }
 
 /**
- * Ensure predefined stacks exist (auto-generate if missing)
+ * Ensure predefined stacks exist - auto-generates if missing
  */
 function ensurePredefinedStacks(): void {
   if (!fs.existsSync(OUTPUT_FILE)) {
@@ -174,7 +177,7 @@ function ensurePredefinedStacks(): void {
   }
 }
 
-// Run if called directly
+// Run if invoked directly (not imported)
 if (import.meta.url === `file://${process.argv[1]}`) {
   const force = process.argv.includes('--force');
   buildStacks(force);
