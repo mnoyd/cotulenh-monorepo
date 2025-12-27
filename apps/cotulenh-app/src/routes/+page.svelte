@@ -22,14 +22,15 @@
   import '@repo/cotulenh-board/assets/commander-chess.base.css';
   import '@repo/cotulenh-board/assets/commander-chess.pieces.css';
   import '$lib/styles/modern-warfare.css';
-  import { makeCoreMove, typeToRole, roleToType } from '$lib/utils';
+  import { makeCoreMove } from '$lib/utils';
+  import { typeToRole, roleToType, coreColorToBoard } from '$lib/types/translations';
 
   let boardContainerElement: HTMLElement | null = null;
   let boardApi = $state<Api | null>(null);
   let game = $state<CoTuLenh | null>(null);
 
   function coreToBoardColor(coreColor: Color | null): 'red' | 'blue' | undefined {
-    return coreColor ? (coreColor === 'r' ? 'red' : 'blue') : undefined;
+    return coreColor ? coreColorToBoard(coreColor) : undefined;
   }
 
   function coreToBoardCheck(check: boolean, coreColor: Color | null): 'red' | 'blue' | undefined {
