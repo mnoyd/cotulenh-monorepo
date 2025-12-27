@@ -24,6 +24,7 @@ import {
   createMoveCommand,
   StateUpdateAction,
 } from './move-apply.js'
+import { createError, ErrorCode } from '@repo/cotulenh-common'
 import type { CoTuLenh } from './cotulenh.js'
 
 /**
@@ -552,7 +553,8 @@ export class MoveSession {
     const game = this._game
 
     if (!this.canCommit()) {
-      throw new Error(
+      throw createError(
+        ErrorCode.SESSION_INVALID_OPERATION,
         'Move sequence does not escape check. Commander still in danger.',
       )
     }
@@ -653,7 +655,8 @@ export class MoveSession {
 
   /**
    * Validate that a recombine operation is possible and return data for execution.
-   * Throws if the target move or piece is invalid.
+   * Performs full validation including terrain and commander safety checks.
+   * Throws if the recombine is invalid for any reason.
    * @returns moveIndex and combinedPiece for use by executeRecombine()
    */
   validateRecombine(option: RecombineOption): {
@@ -664,30 +667,52 @@ export class MoveSession {
     const moveIndex = this.moves.findIndex(
       (m) => algebraic(m.to) === option.square,
     )
-
     if (moveIndex === -1) {
-      throw new Error(
+      throw createError(
+        ErrorCode.MOVE_INVALID_DESTINATION,
         `Invalid recombine target: No move found to square ${option.square}`,
       )
     }
 
-    // Verify piece exists in remaining stack and get full piece object
-    // Note: option.piece is just the symbol (type) now
-    const stackPieceIndex = this.remaining.findIndex(
-      (p) => p.type === option.piece,
-    )
-    if (stackPieceIndex === -1) {
-      throw new Error(
+    // Verify piece exists in remaining stack
+    const stackPiece = this.remaining.find((p) => p.type === option.piece)
+    if (!stackPiece) {
+      throw createError(
+        ErrorCode.MOVE_PIECE_NOT_FOUND,
         `Invalid recombine piece: ${option.piece} not found in remaining stack`,
       )
     }
-    const stackPiece = this.remaining[stackPieceIndex]
 
     // Verify the pieces can actually combine
     const targetMove = this.moves[moveIndex]
     const combinedPiece = combinePieces([targetMove.piece, stackPiece])
     if (!combinedPiece) {
-      throw new Error('Failed to combine pieces during recombine')
+      throw createError(ErrorCode.COMBINATION_FAILED, 'Pieces cannot combine')
+    }
+
+    // Verify terrain validity for combined piece (mirrors getOptions check)
+    if (!getMovementMask(combinedPiece.type)[targetMove.to]) {
+      throw createError(
+        ErrorCode.BOARD_INVALID_TERRAIN,
+        `Combined piece cannot exist on square ${option.square}`,
+      )
+    }
+
+    // Verify commander safety (mirrors getOptions check)
+    const hasCommander =
+      haveCommander(targetMove.piece) || haveCommander(stackPiece)
+    if (hasCommander) {
+      const attackers = this._game.getAttackers(
+        targetMove.to,
+        swapColor(this.turn),
+        combinedPiece.type,
+      )
+      if (attackers.length > 0) {
+        throw createError(
+          ErrorCode.SESSION_INVALID_OPERATION,
+          'Recombine would leave commander in danger',
+        )
+      }
     }
 
     return { moveIndex, combinedPiece }
@@ -728,7 +753,8 @@ export function handleMove(
     const originalPiece = game.get(stackSquare)
 
     if (!originalPiece) {
-      throw new Error(
+      throw createError(
+        ErrorCode.MOVE_NO_PIECE_TO_MOVE,
         `No piece at ${algebraic(stackSquare)} to start move session`,
       )
     }
@@ -761,15 +787,10 @@ export function handleMove(
 }
 
 /**
- * Execute a recombine operation by canceling the current session and replaying moves.
+ * Execute a recombine operation safely.
  *
- * The recombine workflow:
- * 1. Validate the recombine is legal via session.validateRecombine()
- * 2. Extract the target move and subsequent moves from the session
- * 3. Cancel the session (clears all moves and removes session from game)
- * 4. Replay the target move with the combined piece via handleMove
- * 5. Replay subsequent moves via handleMove
- * 6. Return result from final handleMove call
+ * Strategy: Deep clone all move data upfront, cancel session, then replay
+ * ALL moves with the target move modified to use the combined piece.
  *
  * @param game - The game instance with an active deploy session
  * @param option - The recombine option containing the square and piece to combine
@@ -782,41 +803,45 @@ export function executeRecombine(
   const session = game.getSession()
 
   if (!session || !session.isDeploy) {
-    throw new Error('No active deploy session for recombine')
+    throw createError(
+      ErrorCode.SESSION_INVALID_OPERATION,
+      'No active deploy session for recombine',
+    )
   }
 
   // Validate and get computed data (throws if invalid)
   const { moveIndex, combinedPiece } = session.validateRecombine(option)
 
-  // Extract moves from the session before canceling
-  // Ensure moves have DEPLOY flag to maintain deploy session behavior
-  const allMoves = session.moves
-  const targetMove = {
-    ...allMoves[moveIndex],
-    flags: allMoves[moveIndex].flags | BITS.DEPLOY,
-  }
-  const subsequentMoves = allMoves.slice(moveIndex + 1).map((m) => ({
+  // Deep clone ALL moves before any mutation to prevent stale data issues
+  const allMoves: InternalMove[] = session.moves.map((m) => ({
     ...m,
-    flags: m.flags | BITS.DEPLOY,
+    piece: { ...m.piece },
+    captured: m.captured ? { ...m.captured } : undefined,
+    flags: m.flags | BITS.DEPLOY, // Ensure deploy flag
   }))
 
-  // Cancel session (clears all moves and removes from game)
-  session.cancel()
-
-  // Replay the target move with combined piece
-  const targetMoveWithCombined: InternalMove = {
-    ...targetMove,
+  // Modify the target move with combined piece
+  allMoves[moveIndex] = {
+    ...allMoves[moveIndex],
     piece: combinedPiece,
   }
 
-  // Replay moves and return the final result
-  const hasSubsequentMoves = subsequentMoves.length > 0
-  let result = handleMove(game, targetMoveWithCombined, !hasSubsequentMoves)
+  // Cancel session (undoes all moves on board, clears session from game)
+  session.cancel()
 
-  // Replay subsequent moves
-  for (let i = 0; i < subsequentMoves.length; i++) {
-    const isLastMove = i === subsequentMoves.length - 1
-    result = handleMove(game, subsequentMoves[i], isLastMove)
+  // Replay ALL moves in order
+  let result: MoveResult | undefined
+  for (let i = 0; i < allMoves.length; i++) {
+    const isLast = i === allMoves.length - 1
+    result = handleMove(game, allMoves[i], isLast)
+  }
+
+  // Safety check: should never be undefined since we validated moves exist
+  if (!result) {
+    throw createError(
+      ErrorCode.INTERNAL_INCONSISTENCY,
+      'executeRecombine: No moves to replay',
+    )
   }
 
   return result
