@@ -62,41 +62,57 @@
   // we need to react to store updates (like FEN change) to re-evaluate it.
   let uiDeployState = $derived($gameStore.fen ? getDeployState(game) : null);
 
+  function buildDeploySession() {
+    if (!uiDeployState) return undefined;
+    return {
+      originSquare: algebraic(uiDeployState.stackSquare),
+      stay: uiDeployState.stay,
+      isComplete: false,
+      deployedMoves: (uiDeployState.actions || [])
+        .filter((m: any) => m.flags & BITS.DEPLOY)
+        .map((m: any) => ({
+          piece: m.piece,
+          to: algebraic(m.to)
+        }))
+    };
+  }
+
+  function createBoardConfig() {
+    return {
+      fen: $gameStore.fen,
+      viewOnly: $gameStore.status !== 'playing',
+      turnColor: coreToBoardColor($gameStore.turn),
+      lastMove: mapLastMoveToBoardFormat($gameStore.lastMove),
+      check: coreToBoardCheck($gameStore.check, $gameStore.turn),
+      airDefense: { influenceZone: coreToBoardAirDefense() },
+      movable: {
+        free: false,
+        color: coreToBoardColor($gameStore.turn),
+        dests: mapPossibleMovesToDests($gameStore.possibleMoves),
+        events: {
+          after: handleMove,
+          session: {
+            cancel: cancelDeploy,
+            complete: commitDeploy,
+            recombine: handleRecombine
+          }
+        },
+        session: {
+          options: uiDeployState?.recombineOptions
+            ? uiDeployState.recombineOptions.map((opt) => ({
+                square: opt.square,
+                piece: typeToRole(opt.piece as unknown as PieceSymbol) as Role
+              }))
+            : undefined
+        }
+      },
+      deploySession: buildDeploySession()
+    } as any;
+  }
+
   function reSetupBoard(): Api | null {
     if (boardApi) {
-      // Memoize air defense if game hasn't changed?
-      // Current usage is fine as reSetupBoard is driven by reactive FEN change
-      const airDefense = coreToBoardAirDefense();
-
-      boardApi.set({
-        fen: $gameStore.fen,
-        viewOnly: $gameStore.status !== 'playing',
-        turnColor: coreToBoardColor($gameStore.turn),
-        lastMove: mapLastMoveToBoardFormat($gameStore.lastMove),
-        check: coreToBoardCheck($gameStore.check, $gameStore.turn),
-        airDefense: { influenceZone: airDefense },
-        movable: {
-          free: false,
-          color: coreToBoardColor($gameStore.turn),
-          dests: mapPossibleMovesToDests($gameStore.possibleMoves),
-          events: {
-            after: handleMove,
-            session: {
-              cancel: cancelDeploy,
-              complete: commitDeploy,
-              recombine: handleRecombine
-            }
-          },
-          session: {
-            options: uiDeployState?.recombineOptions
-              ? uiDeployState.recombineOptions.map((opt) => ({
-                  square: opt.square,
-                  piece: typeToRole(opt.piece as unknown as PieceSymbol) as Role
-                }))
-              : undefined
-          }
-        }
-      } as any);
+      boardApi.set(createBoardConfig());
     }
     return boardApi;
   }
@@ -250,8 +266,8 @@
         // Recombine completed the session, add to history
         gameStore.applyDeployCommit(game, result);
       } else {
-        // Session still active, sync to update UI
-        gameStore.sync(game);
+        // Session still active, treat as a move update to refresh options and state
+        gameStore.applyMove(game, result);
       }
     } catch (error) {
       console.error('Failed to recombine:', error);
@@ -281,79 +297,38 @@
   }
 
   onMount(() => {
-    if (boardContainerElement) {
-      console.log('Initializing game logic and board...');
+    if (!boardContainerElement) return;
 
-      // Check for FEN in URL parameters
-      const urlFen = $page.url.searchParams.get('fen');
-      let initialFen: string | undefined = undefined;
+    console.log('Initializing game logic and board...');
 
-      if (urlFen) {
-        try {
-          initialFen = decodeURIComponent(urlFen);
-          console.log('Loading game with custom FEN:', initialFen);
-        } catch (error) {
-          console.error('Error decoding FEN from URL:', error);
-        }
+    // Check for FEN in URL parameters
+    const urlFen = $page.url.searchParams.get('fen');
+    let initialFen: string | undefined = undefined;
+
+    if (urlFen) {
+      try {
+        initialFen = decodeURIComponent(urlFen);
+        console.log('Loading game with custom FEN:', initialFen);
+      } catch (error) {
+        console.error('Error decoding FEN from URL:', error);
       }
-
-      // Initialize game with custom FEN or default position
-      game = initialFen ? new CoTuLenh(initialFen) : new CoTuLenh();
-      gameStore.initialize(game);
-
-      const unsubscribe = gameStore.subscribe((state) => {
-        // console.log('Game state updated in store:', state);
-      });
-
-      boardApi = CotulenhBoard(boardContainerElement, {
-        fen: $gameStore.fen,
-        viewOnly: $gameStore.status !== 'playing',
-        turnColor: coreToBoardColor($gameStore.turn),
-        lastMove: mapLastMoveToBoardFormat($gameStore.lastMove),
-        check: coreToBoardCheck($gameStore.check, $gameStore.turn),
-        airDefense: { influenceZone: coreToBoardAirDefense() },
-        movable: {
-          free: false,
-          color: coreToBoardColor($gameStore.turn),
-          dests: mapPossibleMovesToDests($gameStore.possibleMoves),
-          events: {
-            after: handleMove,
-            session: {
-              cancel: cancelDeploy,
-              complete: commitDeploy,
-              recombine: handleRecombine
-            }
-          },
-          session: {
-            options: uiDeployState?.recombineOptions
-              ? uiDeployState.recombineOptions.map((opt) => ({
-                  square: opt.square,
-                  piece: typeToRole(opt.piece) as Role
-                }))
-              : undefined
-          }
-        },
-        deploySession: uiDeployState
-          ? {
-              originSquare: algebraic(uiDeployState.stackSquare),
-              stay: uiDeployState.stay,
-              isComplete: false,
-              deployedMoves: (uiDeployState.actions || [])
-                .filter((m: any) => m.flags & BITS.DEPLOY)
-                .map((m: any) => ({
-                  piece: m.piece,
-                  to: algebraic(m.to)
-                }))
-            }
-          : undefined
-      } as any);
-
-      return () => {
-        console.log('Cleaning up board and game subscription.');
-        boardApi?.destroy();
-        unsubscribe();
-      };
     }
+
+    // Initialize game with custom FEN or default position
+    game = initialFen ? new CoTuLenh(initialFen) : new CoTuLenh();
+    gameStore.initialize(game);
+
+    const unsubscribe = gameStore.subscribe((state) => {
+      // console.log('Game state updated in store:', state);
+    });
+
+    boardApi = CotulenhBoard(boardContainerElement, createBoardConfig());
+
+    return () => {
+      console.log('Cleaning up board and game subscription.');
+      boardApi?.destroy();
+      unsubscribe();
+    };
   });
 
   let isUpdatingBoard = $state(false);
