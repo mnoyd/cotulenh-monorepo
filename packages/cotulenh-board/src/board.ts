@@ -249,11 +249,28 @@ export function selectSquare(
   force?: boolean,
 ): void {
   const origMove = { square: selectedSquare, type: selectedPiece, stackMove } as cg.OrigMove;
+  console.log('origMove', origMove);
   callUserFunction(state.events.select, origMove);
 
   if (state.selected) {
     // If a piece from a stack is selected and we're clicking on a destination
     if (isPieceFromStack(state, state.selected)) {
+      if (state.movable.session?.options) {
+        const options = state.movable.session.options;
+        console.log('options', options);
+        console.log('selectedSquare', selectedSquare);
+        console.log('selectedPiece', selectedPiece);
+        const option = options.find(o => o.square === selectedSquare && o.piece === state.selected!.type);
+
+        console.log('option', option);
+        if (option && state.movable.events.session?.recombine) {
+          state.movable.events.session.recombine(option);
+          // Don't return here if we want to allow standard selection logic to proceed?
+          // No, recombine is a distinct action. We should stop here.
+          unselect(state); // Ensure no piece remains selected
+          return;
+        }
+      }
       if (userMove(state, state.selected, { square: selectedSquare } as cg.DestMove)) {
         state.stats.dragged = false;
         return;

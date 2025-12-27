@@ -3,6 +3,7 @@ import * as cg from './types.js';
 import { read } from './fen.js';
 import { DrawShape, DrawBrushes } from './draw.js';
 import { setCheck, setSelected } from './board.js';
+import { RecombineOption } from './types.js';
 
 export interface Config {
   orientation?: cg.Color;
@@ -20,11 +21,15 @@ export interface Config {
     color?: cg.Color | 'both'; // color that can move. white | black | both | undefined
     dests?: cg.Dests; // valid moves. {"a2" ["a3" "a4"] "b1" ["a3" "c3"]}
     showDests?: boolean; // whether to add the move-dest class on squares
+    session?: {
+      options?: RecombineOption[]; // Recombine options
+    };
     events?: {
       after?: (orig: cg.OrigMove, dest: cg.DestMove, metadata: cg.MoveMetadata) => void; // called after the move has been played
       session?: {
         cancel?: () => void;
         complete?: () => void;
+        recombine?: (option: RecombineOption) => void;
       };
       afterNewPiece?: (role: cg.Role, key: cg.Key, metadata: cg.MoveMetadata) => void; // called after a new piece is dropped on the board
     };

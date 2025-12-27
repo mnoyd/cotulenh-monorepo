@@ -26,12 +26,16 @@ export interface HeadlessState {
     color?: cg.Color | 'both'; // color that can move. white | black | both
     dests?: cg.Dests; // valid moves. {"a2" ["a3" "a4"] "b1" ["a3" "c3"]}
     showDests: boolean; // whether to add the move-dest class on squares
+    session?: {
+      options?: cg.RecombineOption[]; // Recombine options as a flat array
+    };
     events: {
       after?: (orig: cg.OrigMove, dest: cg.DestMove, metadata: cg.MoveMetadata) => void; // called after the move has been played
       afterNewPiece?: (role: cg.Role, key: cg.Key, metadata: cg.MoveMetadata) => void; // called after a new piece is dropped on the board
       session?: {
         cancel?: () => void;
         complete?: () => void;
+        recombine?: (option: cg.RecombineOption) => void;
       };
     };
   };
@@ -93,11 +97,6 @@ export interface HeadlessState {
       to: cg.Key;
     }>;
     isComplete: boolean; // false if deployment is ongoing (ends with "...")
-    recombineOptions?: Array<{
-      piece: cg.Piece;
-      targetSquare: cg.Key;
-      isSafe: boolean;
-    }>;
   };
   ambigousMove?: {
     type: string;

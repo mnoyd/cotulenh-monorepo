@@ -68,6 +68,7 @@ import {
 import {
   MoveSession,
   handleMove,
+  executeRecombine,
   StandardMove,
   DeploySequence,
   type MoveResult,
@@ -75,7 +76,14 @@ import {
 } from './move-session.js'
 import { createError, ErrorCode, logger } from '@repo/cotulenh-common'
 
-export { StandardMove, DeploySequence, type MoveResult, type RecombineOption }
+export {
+  StandardMove,
+  DeploySequence,
+  handleMove,
+  executeRecombine,
+  type MoveResult,
+  type RecombineOption,
+}
 
 // Structure for storing history states
 interface History {

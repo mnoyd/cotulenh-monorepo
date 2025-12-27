@@ -146,6 +146,11 @@ export interface SingleMove {
   capturedPiece?: Piece;
 }
 
+export interface RecombineOption {
+  piece: Role;
+  square: Key;
+}
+
 export type AirDefenseInfluenceZoneType = 'friendly' | 'opponent';
 export type AirDefenseColorFriendly = [
   '0044aaff',

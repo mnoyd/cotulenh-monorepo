@@ -3,8 +3,14 @@
   import { page } from '$app/stores';
   import { CotulenhBoard, origMoveToKey } from '@repo/cotulenh-board';
   import type { Api, DestMove, OrigMove, OrigMoveKey, Role } from '@repo/cotulenh-board';
-  import { CoTuLenh, BLUE, RED } from '@repo/cotulenh-core';
-  import type { Square, Color, StandardMove as Move } from '@repo/cotulenh-core';
+  import { CoTuLenh, BLUE, RED, algebraic, BITS, executeRecombine } from '@repo/cotulenh-core';
+  import type {
+    Square,
+    Color,
+    StandardMove as Move,
+    RecombineOption,
+    PieceSymbol
+  } from '@repo/cotulenh-core';
   import type { Key, Dests } from '@repo/cotulenh-board';
   import GameInfo from '$lib/components/GameInfo.svelte';
   import DeploySessionPanel from '$lib/components/DeploySessionPanel.svelte';
@@ -16,7 +22,7 @@
   import '@repo/cotulenh-board/assets/commander-chess.base.css';
   import '@repo/cotulenh-board/assets/commander-chess.pieces.css';
   import '$lib/styles/modern-warfare.css';
-  import { makeCoreMove, typeToRole } from '$lib/utils';
+  import { makeCoreMove, typeToRole, roleToType } from '$lib/utils';
 
   let boardContainerElement: HTMLElement | null = null;
   let boardApi = $state<Api | null>(null);
@@ -51,6 +57,10 @@
 
   // handlePieceSelect removed (reverted to full load)
 
+  // uiDeployState depends on game state. Since game is a class instance,
+  // we need to react to store updates (like FEN change) to re-evaluate it.
+  let uiDeployState = $derived($gameStore.fen ? getDeployState(game) : null);
+
   function reSetupBoard(): Api | null {
     if (boardApi) {
       // Memoize air defense if game hasn't changed?
@@ -72,11 +82,20 @@
             after: handleMove,
             session: {
               cancel: cancelDeploy,
-              complete: commitDeploy
+              complete: commitDeploy,
+              recombine: handleRecombine
             }
+          },
+          session: {
+            options: uiDeployState?.recombineOptions
+              ? uiDeployState.recombineOptions.map((opt) => ({
+                  square: opt.square,
+                  piece: typeToRole(opt.piece as unknown as PieceSymbol) as Role
+                }))
+              : undefined
           }
         }
-      });
+      } as any);
     }
     return boardApi;
   }
@@ -166,8 +185,6 @@
    * Get the SAN notation and add it to history.
    */
   function commitDeploy() {
-    console.log('🏁 commitDeploy');
-
     if (!game) {
       console.error('❌ No game instance');
       return;
@@ -208,14 +225,47 @@
   }
 
   /**
+   * Handle recombine action from the board
+   * @param option The recombine option object passed from the board
+   */
+  function handleRecombine(option: RecombineOption) {
+    if (!game) return;
+
+    try {
+      const session = game.getSession();
+      if (!session || !session.isDeploy) {
+        return;
+      }
+
+      // Convert board Role (e.g. 'tank') to core PieceSymbol (e.g. 't')
+      const coreOption: RecombineOption = {
+        square: option.square,
+        piece: roleToType(option.piece as unknown as Role)
+      };
+
+      const result = executeRecombine(game, coreOption);
+
+      if (result.completed) {
+        // Recombine completed the session, add to history
+        gameStore.applyDeployCommit(game, result);
+      } else {
+        // Session still active, sync to update UI
+        gameStore.sync(game);
+      }
+    } catch (error) {
+      console.error('Failed to recombine:', error);
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+      alert(`Error executing recombine: ${errorMsg}`);
+    }
+  }
+
+  /**
    * Cancel the active deploy session
    *
    * Core cancels the session and restores FEN to pre-deploy state.
    * Refresh the game store to reflect the restored state.
    */
   function cancelDeploy() {
-    console.log('🚫 cancelDeploy');
-
     if (!game) return;
 
     try {
@@ -269,11 +319,33 @@
             after: handleMove,
             session: {
               cancel: cancelDeploy,
-              complete: commitDeploy
+              complete: commitDeploy,
+              recombine: handleRecombine
             }
+          },
+          session: {
+            options: uiDeployState?.recombineOptions
+              ? uiDeployState.recombineOptions.map((opt) => ({
+                  square: opt.square,
+                  piece: typeToRole(opt.piece) as Role
+                }))
+              : undefined
           }
-        }
-      });
+        },
+        deploySession: uiDeployState
+          ? {
+              originSquare: algebraic(uiDeployState.stackSquare),
+              stay: uiDeployState.stay,
+              isComplete: false,
+              deployedMoves: (uiDeployState.actions || [])
+                .filter((m: any) => m.flags & BITS.DEPLOY)
+                .map((m: any) => ({
+                  piece: m.piece,
+                  to: algebraic(m.to)
+                }))
+            }
+          : undefined
+      } as any);
 
       return () => {
         console.log('Cleaning up board and game subscription.');
@@ -285,11 +357,18 @@
 
   let isUpdatingBoard = $state(false);
   let lastProcessedFen = '';
+  // Simple equality check might not work for complex objects, but references change on update
+  let lastProcessedDeployState: any = null;
 
   $effect(() => {
-    if (boardApi && $gameStore.fen && $gameStore.fen !== lastProcessedFen) {
-      // console.log('🔄 Effect triggered by FEN change');
+    // Check if FEN OR DeployState has changed
+    const fenChanged = $gameStore.fen && $gameStore.fen !== lastProcessedFen;
+    const deployStateChanged = uiDeployState !== lastProcessedDeployState;
+
+    if (boardApi && (fenChanged || deployStateChanged)) {
+      // console.log('🔄 Effect triggered', { fenChanged, deployStateChanged });
       lastProcessedFen = $gameStore.fen;
+      lastProcessedDeployState = uiDeployState;
       isUpdatingBoard = true;
       reSetupBoard();
 

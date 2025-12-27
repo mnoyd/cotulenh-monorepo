@@ -1,5 +1,9 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { MoveSession } from '../src/move-session.js'
+import {
+  MoveSession,
+  executeRecombine,
+  DeploySequence,
+} from '../src/move-session.js'
 import {
   BITS,
   RED,
@@ -11,6 +15,7 @@ import {
   ANTI_AIR,
   AIR_FORCE,
   algebraic,
+  SQUARE_MAP,
 } from '../src/type.js'
 import { CoTuLenh } from '../src/cotulenh.js'
 
@@ -48,7 +53,7 @@ describe('Recombine Option', () => {
       const options = session.getOptions()
       expect(options).toHaveLength(1)
       expect(options[0].square).toBe('c5')
-      expect(options[0].piece.type).toBe(TANK)
+      expect(options[0].piece).toBe(TANK)
     })
 
     it('should filter out terrain-invalid recombinations', () => {
@@ -131,53 +136,49 @@ describe('Recombine Option', () => {
   })
 
   describe('recombine execution', () => {
-    it('should successfully recombine', () => {
+    it('should successfully recombine and commit', () => {
       const originalPiece = makePiece(NAVY, RED, false, [makePiece(TANK)])
       game.put(originalPiece, 'c3')
 
       const session = new MoveSession(game, {
-        stackSquare: 0x92,
+        stackSquare: SQUARE_MAP.c3,
         turn: RED,
         originalPiece,
         isDeploy: true,
       })
 
-      // Deploy Navy to c5
-      const move = makeMove({ from: 0x92, to: 0x72, piece: makePiece(NAVY) })
-      session.addMove(move) // Index 0
+      const move = makeMove({
+        from: SQUARE_MAP.c3,
+        to: SQUARE_MAP.c5,
+        piece: makePiece(NAVY),
+      })
+      session.addMove(move)
 
-      // Recombine Tank to c5
+      game.setSession(session)
       const options = session.getOptions()
-      session.recombine(options[0])
+      const result = executeRecombine(game, options[0])
 
-      // Assertions
-      // 1. Session should have only 1 move now (the combined one)
-      expect(session.moves).toHaveLength(1)
+      expect(result).toBeDefined()
+      if (!result) return
 
-      const rMove = session.moves[0]
-      expect(algebraic(rMove.to)).toBe('c5')
-      // Piece should be Navy carrying Tank
-      expect(rMove.piece.type).toBe(NAVY)
-      expect(rMove.piece.carrying).toHaveLength(1)
-      expect(rMove.piece.carrying?.[0].type).toBe(TANK)
+      const rMove = result as DeploySequence
+      expect(rMove.completed).toBe(true)
+      expect(rMove.to.size).toBe(1)
+      const deployedPiece = rMove.to.get('c5')
+      expect(deployedPiece).toBeDefined()
+      expect(deployedPiece?.type).toBe(NAVY)
+      expect(deployedPiece?.carrying).toHaveLength(1)
+      expect(deployedPiece?.carrying?.[0].type).toBe(TANK)
+      expect(rMove.stay).toBeUndefined()
 
-      // 2. Remaining should be empty
-      expect(session.remaining).toHaveLength(0)
-
-      // 3. Board should have combined piece at c5
       const boardPiece = game.get('c5')
       expect(boardPiece).toBeDefined()
       expect(boardPiece?.type).toBe(NAVY)
       expect(boardPiece?.carrying).toHaveLength(1)
+      expect(game.getSession()).toBeNull()
     })
 
-    it('should handle sequential re-execution', () => {
-      // Stack: Navy, Tank, Infantry
-      // 1. Deploy Navy to c5
-      // 2. Deploy Infantry to c4
-      // 3. Recombine Tank to Navy (at c5)
-      // Expect: Move 1 becomes Navy+Tank. Move 2 remains Infantry.
-
+    it('should handle sequential re-execution and commit', () => {
       const originalPiece = makePiece(NAVY, RED, false, [
         makePiece(TANK),
         makePiece(INFANTRY),
@@ -191,129 +192,87 @@ describe('Recombine Option', () => {
         isDeploy: true,
       })
 
-      // 1
       session.addMove(
         makeMove({ from: 0x92, to: 0x72, piece: makePiece(NAVY) }),
-      ) // to c5
-      // 2
+      )
       session.addMove(
         makeMove({ from: 0x92, to: 0x82, piece: makePiece(INFANTRY) }),
-      ) // to c4
+      )
 
-      expect(session.moves).toHaveLength(2)
-
-      // 3. Recombine Tank -> Navy at c5
+      game.setSession(session)
       const options = session.getOptions()
       const tankOption = options.find(
-        (o) => o.square === 'c5' && o.piece.type === TANK,
+        (o) => o.square === 'c5' && o.piece === TANK,
       )
       expect(tankOption).toBeDefined()
 
-      session.recombine(tankOption!)
+      const result = executeRecombine(game, tankOption!)
+      expect(result).toBeDefined()
+      if (!result) return
 
-      // Verify
-      expect(session.moves).toHaveLength(2)
-      // Move 0: Navy+Tank to c5
-      expect(session.moves[0].piece.type).toBe(NAVY)
-      expect(session.moves[0].piece.carrying).toHaveLength(1)
-      expect(session.moves[0].piece.carrying?.[0].type).toBe(TANK)
+      const rMove = result as DeploySequence
+      expect(rMove.to.size).toBe(2)
 
-      // Move 1: Infantry to c4 (preserved)
-      expect(session.moves[1].piece.type).toBe(INFANTRY)
-      expect(algebraic(session.moves[1].to)).toBe('c4')
+      const move1 = rMove.to.get('c5')
+      expect(move1?.type).toBe(NAVY)
+      expect(move1?.carrying).toHaveLength(1)
+      expect(move1?.carrying?.[0].type).toBe(TANK)
 
-      // Board state
+      const move2 = rMove.to.get('c4')
+      expect(move2?.type).toBe(INFANTRY)
+
       expect(game.get('c5')?.carrying).toHaveLength(1)
       expect(game.get('c4')?.type).toBe(INFANTRY)
+      expect(game.getSession()).toBeNull()
     })
 
-    it('should preserve move execution order (Tank clears Anti-Air for Fighter)', () => {
-      // Setup:
-      // Stack: Fighter (F), Tank (T), Infantry (I) at c3 (0x92)
-      // Enemy Anti-Air (G) at c5 (0x72).
-      // Fighter wants to move to c7 (0x52).
-      // Fighter blocked by Anti-Air if attempting to fly over c5.
-
-      // Sequence:
-      // 1. Tank (carrying Infantry) moves to c5 and captures Anti-Air.
-      //    Stack remaining: Fighter.
-      // 2. Fighter flies to c7. (Valid because AA is gone).
-      // 3. Recombine Infantry into Tank (Move 1).
-      //    The effective Move 1 becomes Tank+Infantry.
-      //    Move 2 (Fighter) must be re-executed AFTER Move 1.
-
-      // If order was messed up and Fighter tried to move first, it would be blocked by AA.
-
+    it('should preserve move execution order and commit', () => {
       const originalPiece = makePiece(TANK, RED, false, [
         makePiece(INFANTRY),
         makePiece(AIR_FORCE),
       ])
       game.put(originalPiece, 'c3')
-
-      // Enemy Anti-Air at c5 blocking the path
       game.put(makePiece(ANTI_AIR, BLUE), 'c5')
 
       const session = new MoveSession(game, {
-        stackSquare: 0x92, // c3
+        stackSquare: 0x92,
         turn: RED,
         originalPiece,
         isDeploy: true,
       })
 
-      // 1. Tank moves to c5, capturing AA
-      // Note: Tank range is 2? a1->a3 is dist 2. Let's verify Tank movement capability.
-      // Tank moves 2 squares line. Yes.
       const move1 = makeMove({
         from: 0x92,
-        to: 0x72, // c5
+        to: 0x72,
         piece: makePiece(TANK),
         captured: makePiece(ANTI_AIR, BLUE),
         flags: BITS.DEPLOY | BITS.CAPTURE,
       })
       session.addMove(move1)
 
-      // 2. Fighter moves to c7
-      // Fighter flies straight. Range > 4. a1->a5 is dist 4.
       const move2 = makeMove({
         from: 0x92,
-        to: 0x52, // c7
+        to: 0x52,
         piece: makePiece(AIR_FORCE),
       })
       session.addMove(move2)
 
-      // Verify intermediate state
-      expect(session.moves).toHaveLength(2)
-      // Expect AA is gone (captured)
-      // Expect F at a5.
-
-      // 3. Recombine Infantry -> Tank at c5
-      // Stack has Infantry? Wait, in setup I put T carrying I, F.
-      // Move 1 used T. Remaining: I, F.
-      // Move 2 used F. Remaining: I.
-      // Correct.
-
+      game.setSession(session)
       const options = session.getOptions()
       const infantryOption = options.find(
-        (o) => o.square === 'c5' && o.piece.type === INFANTRY,
+        (o) => o.square === 'c5' && o.piece === INFANTRY,
       )
       expect(infantryOption).toBeDefined()
 
-      // Execute Recombine
-      session.recombine(infantryOption!)
+      const result = executeRecombine(game, infantryOption!)
+      expect(result).toBeDefined()
+      if (!result) return
 
-      // Assertions
-      // If the re-execution order was [Fighter Move, Tank Move], Fighter move would fail
-      // because AA implies blocked path?
-      // Actually, `addMove` re-executes logic. If invalid, it might throw or not add?
-      // `createMoveCommand` creates a command. `command.execute()` performs validation?
-      // Usually `MoveCommand` validates pseudo-legality but `MoveSession` assumes validity for `addMove`?
-      // Wait, `addMove` calls `command.execute()`.
-      // If `execute()` relies on `game.move()` or internal validation, it might throw if blocked.
-
-      // Assuming strict validation is active during execution.
-      expect(session.moves).toHaveLength(2)
-      expect(session.moves[0].piece.carrying?.[0].type).toBe(INFANTRY)
-      expect(algebraic(session.moves[1].to)).toBe('c7')
+      const rMove = result as DeploySequence
+      expect(rMove.to.size).toBe(2)
+      expect(rMove.to.get('c5')?.carrying?.[0].type).toBe(INFANTRY)
+      expect(rMove.to.has('c7')).toBe(true)
+      expect(game.getSession()).toBeNull()
     })
   })
 })
