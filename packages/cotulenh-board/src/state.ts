@@ -116,6 +116,7 @@ export interface HeadlessState {
     items: any[];
     type: string;
     containerEl: HTMLElement;
+    isDeployPopup?: boolean; // Flag to identify deploy session popups
   };
 }
 

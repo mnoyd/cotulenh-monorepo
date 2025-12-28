@@ -14,9 +14,12 @@ import { createAmbigousModeHandling } from './popup/ambigous-move.js';
 import { userMove } from './board.js';
 
 export const CANCEL_MOVE = 'cancel-move';
-type CancelMove = typeof CANCEL_MOVE;
 export const COMPLETE_MOVE = 'complete-move';
-type CompleteMove = typeof COMPLETE_MOVE;
+
+// Discriminated union for combined piece popup items
+type CombinedPiecePopupItem =
+  | { type: 'piece'; piece: cg.Piece }
+  | { type: 'action'; action: 'cancel' | 'complete' };
 
 // Role to flag mapping for board pieces
 const boardRoleToFlagMap: Record<string, number> = {
@@ -79,48 +82,56 @@ export function removePieceFromStack(stackPiece: cg.Piece, roleToRemove: cg.Piec
   return pieceStacker.remove(stackPiece, roleToRemove);
 }
 
+/**
+ * Renders an action button (cancel or complete) with consistent styling
+ */
+function renderActionButton(action: 'cancel' | 'complete', squareSize: number): HTMLElement {
+  const className = action === 'cancel' ? 'cancel-stack-move' : 'complete-stack-move';
+  const el = createEl('cg-btn', className);
+  el.style.width = squareSize + 'px';
+  el.style.height = squareSize + 'px';
+  return el;
+}
+
+/**
+ * Handles action button selection (cancel or complete move)
+ */
+function handleAction(s: State, action: 'cancel' | 'complete'): void {
+  if (action === 'cancel') {
+    s.movable.events.session?.cancel?.();
+  } else {
+    s.movable.events.session?.complete?.();
+  }
+}
+
 export const COMBINED_PIECE_POPUP_TYPE = 'combined-piece';
-const combinedPiecePopup = createPopupFactory<cg.Piece | CancelMove | CompleteMove>({
+const combinedPiecePopup = createPopupFactory<CombinedPiecePopupItem>({
   type: COMBINED_PIECE_POPUP_TYPE,
-  renderItem: (s: State, item: cg.Piece | CancelMove | CompleteMove, index: number) => {
+  renderItem: (s: State, item: CombinedPiecePopupItem, index: number) => {
     const squareSize = s.dom.bounds().width / 12;
-    if (item === CANCEL_MOVE) {
-      const el = createEl('cg-btn', 'cancel-stack-move');
-      el.dataset.index = index.toString();
-      el.style.width = squareSize + 'px';
-      el.style.height = squareSize + 'px';
-      return el;
-    }
-    if (item === COMPLETE_MOVE) {
-      const el = createEl('cg-btn', 'complete-stack-move');
-      el.dataset.index = index.toString();
-      el.style.width = squareSize + 'px';
-      el.style.height = squareSize + 'px';
-      return el;
-    }
-    const piece = createSinglePieceElement(item);
-    piece.dataset.index = index.toString();
-    piece.style.width = squareSize + 'px';
-    piece.style.height = squareSize + 'px';
-    return piece;
+    const el =
+      item.type === 'action'
+        ? renderActionButton(item.action, squareSize)
+        : createSinglePieceElement(item.piece);
+
+    el.dataset.index = index.toString();
+    el.style.width = squareSize + 'px';
+    el.style.height = squareSize + 'px';
+    return el;
   },
   onSelect: (s: State, index: number, e?: cg.MouchEvent) => {
-    const selectedPiece = s.popup?.items[index];
-    if (selectedPiece === CANCEL_MOVE) {
-      // In incremental mode, CANCEL_MOVE is not used
-      // User must use commit button in app
-      console.log('CANCEL_MOVE');
-      s.movable.events.session?.cancel?.();
-    } else if (selectedPiece === COMPLETE_MOVE) {
-      // In incremental mode, CANCEL_MOVE is not used
-      // User must use commit button in app
-      console.log('COMPLETE_MOVE');
-      s.movable.events.session?.complete?.();
+    const item = s.popup?.items[index] as CombinedPiecePopupItem | undefined;
+    if (!item) return;
+
+    if (item.type === 'action') {
+      handleAction(s, item.action);
     } else {
+      // Piece selection and drag initialization
       if (!e) return;
       const position = util.eventPosition(e)!;
 
-      if (!s.popup?.square || !selectedPiece) return;
+      if (!s.popup?.square) return;
+      const selectedPiece = item.piece;
       board.selectSquare(s, s.popup.square, selectedPiece.role, true);
 
       // Create temporary piece for dragging
@@ -161,10 +172,28 @@ export function prepareCombinedPopup(
   state: HeadlessState,
   pieces: cg.Piece[],
   key: cg.Key,
-): (cg.Piece | CancelMove | CompleteMove)[] {
-  const movablePieces = pieces.filter(p => board.canSelectStackPiece(state, { square: key, type: p.role }));
+): CombinedPiecePopupItem[] {
+  const movablePieces = pieces
+    .filter(p => board.canSelectStackPiece(state, { square: key, type: p.role }))
+    .map(p => ({ type: 'piece' as const, piece: p }));
+
   if (!state.deploySession) return movablePieces;
-  return [...movablePieces, CANCEL_MOVE, COMPLETE_MOVE];
+
+  return [
+    ...movablePieces,
+    { type: 'action' as const, action: 'cancel' as const },
+    { type: 'action' as const, action: 'complete' as const },
+  ];
+}
+
+/**
+ * Helper function to set the deploy popup flag when creating a combined piece popup
+ * during an active deploy session
+ */
+export function markPopupAsDeployPopup(s: State): void {
+  if (s.popup && s.deploySession) {
+    s.popup.isDeployPopup = true;
+  }
 }
 
 export const MOVE_WITH_CARRIER_POPUP_TYPE = 'move-with-carrier';

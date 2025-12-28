@@ -249,20 +249,22 @@ export function selectSquare(
   force?: boolean,
 ): void {
   const origMove = { square: selectedSquare, type: selectedPiece, stackMove } as cg.OrigMove;
-  console.log('origMove', origMove);
   callUserFunction(state.events.select, origMove);
 
   if (state.selected) {
     // If a piece from a stack is selected and we're clicking on a destination
-    if (isPieceFromStack(state, state.selected)) {
+    const fromStack = isPieceFromStack(state, state.selected);
+    const isOrigin = state.deploySession && state.selected.square === state.deploySession.originSquare;
+
+    if (fromStack || isOrigin) {
       if (state.movable.session?.options) {
         const options = state.movable.session.options;
-        console.log('options', options);
-        console.log('selectedSquare', selectedSquare);
-        console.log('selectedPiece', selectedPiece);
-        const option = options.find(o => o.square === selectedSquare && o.piece === state.selected!.type);
+        const option = options.find(o => {
+          const sqMatch = o.square === selectedSquare;
+          const typeMatch = o.piece === state.selected!.type;
+          return sqMatch && typeMatch;
+        });
 
-        console.log('option', option);
         if (option && state.movable.events.session?.recombine) {
           state.movable.events.session.recombine(option);
           // Don't return here if we want to allow standard selection logic to proceed?

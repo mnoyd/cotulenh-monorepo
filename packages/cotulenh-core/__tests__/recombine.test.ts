@@ -274,5 +274,49 @@ describe('Recombine Option', () => {
       expect(rMove.to.has('c7')).toBe(true)
       expect(game.getSession()).toBeNull()
     })
+
+    it('should handle user specific scenario from FEN', () => {
+      // FEN: 2c8/3i3h3/11/11/11/8(FTC)2/11/11/11/11/7H3/11 r - - 0 1
+      const fen = '2c8/3i3h3/11/11/11/8(FTC)2/11/11/11/11/7H3/11 r - - 0 1'
+      const game = new CoTuLenh(fen)
+
+      // Find the stack square
+      // User confirmed stack is at i7
+      const stackSquare = SQUARE_MAP.i7
+
+      expect(stackSquare).toBeDefined()
+      if (!stackSquare) return
+
+      const originalPiece = game.get('i7')!
+      // Expect F (AirForce) on top?
+      expect(originalPiece.type).toBe(AIR_FORCE)
+
+      const session = new MoveSession(game, {
+        stackSquare: stackSquare,
+        turn: RED,
+        originalPiece,
+        isDeploy: true,
+      })
+
+      // Deploy F (AirForce) to e3
+      const fPiece = makePiece(AIR_FORCE, RED)
+      session.addMove(
+        makeMove({ from: stackSquare, to: SQUARE_MAP.e3, piece: fPiece }),
+      )
+
+      // Deploy T (Tank) to i5
+      const tPiece = makePiece(TANK, RED)
+      session.addMove(
+        makeMove({ from: stackSquare, to: SQUARE_MAP.i5, piece: tPiece }),
+      )
+
+      game.setSession(session)
+
+      const options = session.getOptions()
+      console.log('User Scenario Options Count:', options.length)
+      options.forEach((o) => console.log(`Option: ${o.piece} at ${o.square}`))
+
+      expect(options).toHaveLength(2)
+    })
   })
 })

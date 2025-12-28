@@ -1,13 +1,7 @@
 import { AnimCurrent, AnimFadings, AnimVector, AnimVectors } from './anim.js';
 import { redPov } from './board.js';
 import { DragCurrent } from './drag.js';
-import {
-  combinedPiecePopup,
-  prepareCombinedPopup,
-  COMBINED_PIECE_POPUP_TYPE,
-  CANCEL_MOVE,
-  COMPLETE_MOVE,
-} from './combined-piece.js';
+import { combinedPiecePopup, prepareCombinedPopup, markPopupAsDeployPopup } from './combined-piece.js';
 import { getAmbigousMoveHandling } from './popup/ambigous-move.js';
 import { clearPopup } from './popup/popup-factory.js';
 import { HeadlessState, State } from './state.js';
@@ -328,12 +322,8 @@ export function render(s: State): void {
   for (const nodes of movedSquares.values()) removeNodes(s, nodes);
 
   // Clean up deploy session popup if deploy session is gone
-  if (!s.deploySession && s.popup && s.popup.type === COMBINED_PIECE_POPUP_TYPE) {
-    const items = s.popup.items as (cg.Piece | string)[];
-    const isDeployPopup = items.includes(CANCEL_MOVE) || items.includes(COMPLETE_MOVE);
-    if (isDeployPopup) {
-      clearPopup(s);
-    }
+  if (!s.deploySession && s.popup?.isDeployPopup) {
+    clearPopup(s);
   }
 
   // Render deploy session staying piece popup if needed
@@ -343,6 +333,7 @@ export function render(s: State): void {
       prepareCombinedPopup(s, flattenPiece(s.deploySession.stay), s.deploySession.originSquare),
       s.deploySession.originSquare,
     );
+    markPopupAsDeployPopup(s);
   }
 }
 
