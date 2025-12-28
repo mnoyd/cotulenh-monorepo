@@ -1,0 +1,270 @@
+import { logger } from '@cotulenh/common';
+import * as cg from './types.js';
+import { clearPopup, createPopupFactory, CTLPopup } from './popup/popup-factory';
+import { createAmbigousPiecesStackElement, createSinglePieceElement } from './render';
+import { HeadlessState, State } from './state';
+import * as board from './board.js';
+import * as util from './util.js';
+import * as drag from './drag.js';
+
+import { PieceStacker, ROLE_FLAGS } from '@cotulenh/combine-piece';
+import { createEl } from './util.js';
+import { popupRegistry } from './popup/popup-registry';
+import { ambigousMoveRegistry } from './popup/ambigous-move-registry';
+import { createAmbigousModeHandling } from './popup/ambigous-move.js';
+import { userMove } from './board.js';
+
+export const CANCEL_MOVE = 'cancel-move';
+export const COMPLETE_MOVE = 'complete-move';
+
+// Discriminated union for combined piece popup items
+type CombinedPiecePopupItem =
+  | { type: 'piece'; piece: cg.Piece }
+  | { type: 'action'; action: 'cancel' | 'complete' };
+
+// Role to flag mapping for board pieces
+const boardRoleToFlagMap: Record<string, number> = {
+  commander: ROLE_FLAGS.COMMANDER,
+  infantry: ROLE_FLAGS.INFANTRY,
+  tank: ROLE_FLAGS.TANK,
+  militia: ROLE_FLAGS.MILITIA,
+  engineer: ROLE_FLAGS.ENGINEER,
+  artillery: ROLE_FLAGS.ARTILLERY,
+  anti_air: ROLE_FLAGS.ANTI_AIR,
+  missile: ROLE_FLAGS.MISSILE,
+  air_force: ROLE_FLAGS.AIR_FORCE,
+  navy: ROLE_FLAGS.NAVY,
+  headquarter: ROLE_FLAGS.HEADQUARTER,
+};
+
+// Create PieceStacker instance for board pieces
+const pieceStacker = new PieceStacker<cg.Piece>(piece => boardRoleToFlagMap[piece.role] || 0);
+/**
+ * Attempts to combine two pieces into a stack
+ * @param origPiece The piece being moved/dragged
+ * @param destPiece The destination piece
+ * @returns The combined piece if successful, undefined otherwise
+ */
+export function tryCombinePieces(origPiece: cg.Piece, destPiece: cg.Piece): cg.Piece | undefined {
+  if (!origPiece || !destPiece) return undefined;
+
+  try {
+    const combined = pieceStacker.combine([origPiece, destPiece]);
+    return combined ?? undefined;
+  } catch (error) {
+    logger.error(error, 'Error combining pieces');
+    return undefined;
+  }
+}
+
+export function createCombineStackFromPieces(pieces: cg.Piece[]): {
+  combined: cg.Piece | undefined;
+  uncombined: cg.Piece[] | undefined;
+} {
+  // Try to combine all pieces using PieceStacker
+  const combined = pieceStacker.combine(pieces);
+
+  if (combined) {
+    // All pieces were successfully combined
+    return { combined, uncombined: undefined };
+  }
+
+  // If combination failed, return all pieces as uncombined
+  return { combined: undefined, uncombined: pieces };
+}
+
+/**
+ * Remove a piece with specific role from a stack
+ * @param stackPiece - The stack piece to remove from
+ * @param roleToRemove - The role to remove (e.g., 'infantry', 'tank')
+ * @returns The remaining stack/piece after removal, or null if no pieces remain
+ */
+export function removePieceFromStack(stackPiece: cg.Piece, roleToRemove: cg.Piece): cg.Piece | null {
+  return pieceStacker.remove(stackPiece, roleToRemove);
+}
+
+/**
+ * Renders an action button (cancel or complete) with consistent styling
+ */
+function renderActionButton(action: 'cancel' | 'complete', squareSize: number): HTMLElement {
+  const className = action === 'cancel' ? 'cancel-stack-move' : 'complete-stack-move';
+  const el = createEl('cg-btn', className);
+  el.style.width = squareSize + 'px';
+  el.style.height = squareSize + 'px';
+  return el;
+}
+
+/**
+ * Handles action button selection (cancel or complete move)
+ */
+function handleAction(s: State, action: 'cancel' | 'complete'): void {
+  if (action === 'cancel') {
+    s.movable.events.session?.cancel?.();
+  } else {
+    s.movable.events.session?.complete?.();
+  }
+}
+
+export const COMBINED_PIECE_POPUP_TYPE = 'combined-piece';
+const combinedPiecePopup = createPopupFactory<CombinedPiecePopupItem>({
+  type: COMBINED_PIECE_POPUP_TYPE,
+  renderItem: (s: State, item: CombinedPiecePopupItem, index: number) => {
+    const squareSize = s.dom.bounds().width / 12;
+    const el =
+      item.type === 'action'
+        ? renderActionButton(item.action, squareSize)
+        : createSinglePieceElement(item.piece);
+
+    el.dataset.index = index.toString();
+    el.style.width = squareSize + 'px';
+    el.style.height = squareSize + 'px';
+    return el;
+  },
+  onSelect: (s: State, index: number, e?: cg.MouchEvent) => {
+    const item = s.popup?.items[index] as CombinedPiecePopupItem | undefined;
+    if (!item) return;
+
+    if (item.type === 'action') {
+      handleAction(s, item.action);
+    } else {
+      // Piece selection and drag initialization
+      if (!e) return;
+      const position = util.eventPosition(e)!;
+
+      if (!s.popup?.square) return;
+      const selectedPiece = item.piece;
+      board.selectSquare(s, s.popup.square, selectedPiece.role, true);
+
+      // Create temporary piece for dragging
+      const tempKey = cg.TEMP_KEY;
+      s.pieces.set(tempKey, selectedPiece);
+
+      // Initialize drag
+      //TODO: add drag support for stack pieces on touch screens
+      if (!e.touches) {
+        s.draggable.current = {
+          orig: tempKey,
+          piece: selectedPiece,
+          origPos: position,
+          pos: position,
+          started: false,
+          element: () => drag.pieceElementByKey(s, tempKey),
+          originTarget: e.target,
+          newPiece: true,
+          keyHasChanged: false,
+          fromStack: true,
+        };
+        drag.processDrag(s);
+      }
+    }
+    // Clean up and redraw
+    clearPopup(s);
+    s.dom.redraw();
+    return true;
+  },
+});
+
+// Register the popup in the registry to avoid circular dependencies
+popupRegistry.register(COMBINED_PIECE_POPUP_TYPE, combinedPiecePopup);
+
+export { combinedPiecePopup };
+
+export function prepareCombinedPopup(
+  state: HeadlessState,
+  pieces: cg.Piece[],
+  key: cg.Key,
+): CombinedPiecePopupItem[] {
+  const movablePieces = pieces
+    .filter(p => board.canSelectStackPiece(state, { square: key, type: p.role }))
+    .map(p => ({ type: 'piece' as const, piece: p }));
+
+  if (!state.deploySession) return movablePieces;
+
+  return [
+    ...movablePieces,
+    { type: 'action' as const, action: 'cancel' as const },
+    { type: 'action' as const, action: 'complete' as const },
+  ];
+}
+
+/**
+ * Helper function to set the deploy popup flag when creating a combined piece popup
+ * during an active deploy session
+ */
+export function markPopupAsDeployPopup(s: State): void {
+  if (s.popup && s.deploySession) {
+    s.popup.isDeployPopup = true;
+  }
+}
+
+export const MOVE_WITH_CARRIER_POPUP_TYPE = 'move-with-carrier';
+const moveWithCarrierPopup = createPopupFactory<cg.Piece>({
+  type: MOVE_WITH_CARRIER_POPUP_TYPE,
+  renderItem: (s: State, item: cg.Piece, index: number) => {
+    const piece = createSinglePieceElement(item);
+    const squareSize = s.dom.bounds().width / 12;
+    piece.dataset.index = index.toString();
+    piece.style.width = squareSize + 'px';
+    piece.style.height = squareSize + 'px';
+    return piece;
+  },
+  onSelect: (s: State, index: number) => {
+    const selectedPiece = s.popup?.items[index];
+    if (!selectedPiece || !s.ambigousMove) return;
+    const origMove = {
+      square: s.ambigousMove.origKey,
+      type: s.ambigousMove.pieceThatMoves.role,
+      stackMove: true,
+      carrying: [selectedPiece.role],
+    };
+    const destMove = {
+      square: s.ambigousMove.destKey,
+    };
+    userMove(s, origMove, destMove);
+    // board.selectSquare(s, s.popup.square, selectedPiece.role, true);
+    s.ambigousMove = undefined;
+    clearPopup(s);
+    s.dom.redraw();
+  },
+  onClose: (s: State) => {
+    // Restore saved dests if move was cancelled
+    if (s.ambigousMove?.savedDests) {
+      s.movable.dests = s.ambigousMove.savedDests;
+    }
+    s.ambigousMove = undefined;
+    board.unselect(s);
+  },
+});
+
+// Register the popup in the registry to avoid circular dependencies
+popupRegistry.register(MOVE_WITH_CARRIER_POPUP_TYPE, moveWithCarrierPopup);
+
+const AMBIGOUS_STACK_MOVE_STAY_PIECES_CANT_COMBINE = 'ambigous-stack-move-stay-pieces-cant-combine';
+const ambigousStackMoveStayPiecesCantCombineHandling = createAmbigousModeHandling<cg.Piece>({
+  type: AMBIGOUS_STACK_MOVE_STAY_PIECES_CANT_COMBINE,
+  popup: moveWithCarrierPopup,
+  renderAmbigousMoveElements: (s: State, popup: CTLPopup<cg.Piece>) => {
+    if (!s.ambigousMove) return;
+    const carrying = s.ambigousMove.pieceAtOrig.carrying;
+    if (!carrying) return;
+    popup.setPopup(s, carrying, s.ambigousMove.destKey);
+    const ambigousStackEl = createAmbigousPiecesStackElement(carrying);
+    const squareSize = s.dom.bounds().width / 12;
+    ambigousStackEl.cgKey = s.ambigousMove.destKey;
+    ambigousStackEl.style.width = squareSize + 'px';
+    ambigousStackEl.style.height = squareSize + 'px';
+    s.ambigousMove.renderGuide = {
+      atOrig: ambigousStackEl,
+      atDest: createSinglePieceElement(s.ambigousMove.pieceThatMoves),
+    };
+    s.dom.redraw();
+  },
+});
+
+// Register the ambiguous move handler in the registry to avoid circular dependencies
+ambigousMoveRegistry.register(
+  AMBIGOUS_STACK_MOVE_STAY_PIECES_CANT_COMBINE,
+  ambigousStackMoveStayPiecesCantCombineHandling,
+);
+
+export { ambigousStackMoveStayPiecesCantCombineHandling, AMBIGOUS_STACK_MOVE_STAY_PIECES_CANT_COMBINE };
