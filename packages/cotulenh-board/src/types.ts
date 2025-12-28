@@ -1,5 +1,5 @@
 export type Color = (typeof colors)[number];
-export type Role = (typeof roles)[number];
+export type Role = CommonRole;
 export type File = (typeof files)[number];
 export type Rank = (typeof ranks)[number];
 export type Key = 'a0' | `${File}${Rank}`;
@@ -8,20 +8,10 @@ export type Pos = [number, number];
 
 export const TEMP_KEY = 'a0';
 
+import { ROLES, Role as CommonRole } from '@repo/cotulenh-common';
+
 export const colors = ['red', 'blue'] as const;
-export const roles = [
-  'commander',
-  'infantry',
-  'tank',
-  'militia',
-  'engineer',
-  'artillery',
-  'anti_air',
-  'missile',
-  'air_force',
-  'navy',
-  'headquarter',
-] as const;
+export const roles = ROLES;
 
 export const files: readonly string[] = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k'];
 export const ranks: readonly string[] = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'];

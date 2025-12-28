@@ -2,50 +2,32 @@
 export const RED = 'r'
 export const BLUE = 'b'
 
-// Piece Symbols based on user input
-export const COMMANDER = 'c'
-export const INFANTRY = 'i'
-export const TANK = 't'
-export const MILITIA = 'm'
-export const ENGINEER = 'e'
-export const ARTILLERY = 'a'
-export const ANTI_AIR = 'g'
-export const MISSILE = 's'
-export const AIR_FORCE = 'f'
-export const NAVY = 'n'
-export const HEADQUARTER = 'h'
+import {
+  ARTILLERY,
+  ANTI_AIR,
+  MISSILE,
+  NAVY,
+  PIECE_SYMBOLS,
+  PieceSymbol,
+  INITIAL_BOARD_FEN,
+} from '@repo/cotulenh-common'
+
+export * from '@repo/cotulenh-common'
 
 // Centralized valid piece types set for validation
-export const VALID_PIECE_TYPES: Record<string, true> = {
-  [COMMANDER]: true,
-  [INFANTRY]: true,
-  [TANK]: true,
-  [MILITIA]: true,
-  [ENGINEER]: true,
-  [ARTILLERY]: true,
-  [ANTI_AIR]: true,
-  [MISSILE]: true,
-  [AIR_FORCE]: true,
-  [NAVY]: true,
-  [HEADQUARTER]: true,
-}
+export const VALID_PIECE_TYPES: Record<string, true> = PIECE_SYMBOLS.reduce(
+  (acc, type) => ({ ...acc, [type]: true }),
+  {} as Record<string, true>,
+)
 
-export const HEAVY_PIECES = new Set([ARTILLERY, ANTI_AIR, MISSILE])
+export const HEAVY_PIECES: Set<PieceSymbol> = new Set([
+  ARTILLERY,
+  ANTI_AIR,
+  MISSILE,
+])
 
 // --- Types ---
 export type Color = 'r' | 'b' // Updated Color type
-export type PieceSymbol =
-  | 'c'
-  | 'i'
-  | 't'
-  | 'm'
-  | 'e'
-  | 'a'
-  | 'g'
-  | 's'
-  | 'f'
-  | 'n'
-  | 'h' // Updated PieceSymbol
 
 // Generate Square type for 11x12 board (a1 to k12)
 const FILES = 'abcdefghijk'.split('') // 11 files
@@ -60,9 +42,7 @@ type SquareTuple = {
 export type Square = SquareTuple
 
 // Corrected FEN based on user input and standard additions, updated turn to RED
-// NOTE: Engineer 'e' is not in this FEN. Needs clarification if it should be.
-export const DEFAULT_POSITION =
-  '6c4/1n2fh1hf2/3a2s2a1/2n1gt1tg2/2ie2m2ei/11/11/2IE2M2EI/2N1GT1TG2/3A2S2A1/1N2FH1HF2/6C4 r - - 0 1'
+export const DEFAULT_POSITION = `${INITIAL_BOARD_FEN} r - - 0 1`
 
 export type Piece = {
   color: Color

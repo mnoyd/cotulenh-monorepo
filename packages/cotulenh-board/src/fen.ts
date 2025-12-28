@@ -8,36 +8,9 @@ import { createError, ErrorCode } from '@repo/cotulenh-common';
 
 export const initial_no_engineer: string =
   '6c4/1n2fh1hf2/3a2s2a1/2n1gt1tg2/2i3m3i/11/11/2I3M3I/2N1GT1TG2/3A2S2A1/1N2FH1HF2/6C4';
-export const initial: string =
-  '6c4/1n2fh1hf2/3a2s2a1/2n1gt1tg2/2ie2m2ei/11/11/2IE2M2EI/2N1GT1TG2/3A2S2A1/1N2FH1HF2/6C4';
+export const initial: string = INITIAL_BOARD_FEN;
 
-const roles: { [letter: string]: cg.Role } = {
-  c: 'commander',
-  i: 'infantry',
-  t: 'tank',
-  m: 'militia',
-  e: 'engineer',
-  a: 'artillery',
-  g: 'anti_air',
-  s: 'missile',
-  f: 'air_force',
-  n: 'navy',
-  h: 'headquarter',
-};
-
-const letters: { [role in cg.Role]: string } = {
-  commander: 'c',
-  infantry: 'i',
-  tank: 't',
-  militia: 'm',
-  engineer: 'e',
-  artillery: 'a',
-  anti_air: 'g',
-  missile: 's',
-  air_force: 'f',
-  navy: 'n',
-  headquarter: 'h',
-};
+import { SYMBOL_TO_ROLE, ROLE_TO_SYMBOL, PieceSymbol, INITIAL_BOARD_FEN } from '@repo/cotulenh-common';
 
 export interface ParsedFEN {
   pieces: cg.Pieces;
@@ -185,7 +158,7 @@ export function parsePiece(str: string): cg.Piece {
 // ============================================================================
 
 function charToPiece(c: string, promoted: boolean): cg.Piece {
-  const role = roles[c.toLowerCase()];
+  const role = SYMBOL_TO_ROLE[c.toLowerCase() as PieceSymbol];
   return {
     role: role,
     color: c === c.toLowerCase() ? 'blue' : 'red',
@@ -194,7 +167,7 @@ function charToPiece(c: string, promoted: boolean): cg.Piece {
 }
 
 function pieceToString(piece: cg.Piece): string {
-  let p = letters[piece.role];
+  let p: string = ROLE_TO_SYMBOL[piece.role];
   if (piece.color === 'red') p = p.toUpperCase();
   if (piece.promoted) p = '+' + p;
   return p;
