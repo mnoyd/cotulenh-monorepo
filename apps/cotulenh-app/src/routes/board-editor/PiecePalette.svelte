@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { logger } from '@repo/cotulenh-common';
   import type { Api, Piece, Role, Color } from '@repo/cotulenh-board';
 
   type EditorMode = 'hand' | 'drop' | 'delete';
@@ -55,11 +56,11 @@
       // Use the board's built-in dragNewPiece method with the actual piece object
       // force=true allows replacing existing pieces
       boardApi.dragNewPiece(piece, event as any, true);
-      console.log(
+      logger.debug(
         `Started dragging ${piece.color} ${piece.role}${piece.promoted ? ' (heroic)' : ''}`
       );
     } catch (error) {
-      console.error('Error starting drag:', error);
+      logger.error('Error starting drag:', error);
     }
   }
 

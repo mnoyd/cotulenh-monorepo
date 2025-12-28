@@ -1,3 +1,4 @@
+import { logger } from '@repo/cotulenh-common'
 import {
   algebraic,
   file,
@@ -159,7 +160,7 @@ export function printBoard(board: Record<number, Piece | undefined>) {
     ranks[displayRank].push(alg)
   }
 
-  console.log('\nCurrent Board:')
+  logger.info('\nCurrent Board:')
 
   // Print from rank 12 (top) to 1 (bottom)
   for (let dr = 12; dr >= 1; dr--) {
@@ -204,14 +205,14 @@ export function printBoard(board: Record<number, Piece | undefined>) {
         line += piece ? `${fgCode}${symbol}\x1b[0m ` : `${symbol} `
       }
     }
-    console.log(line)
+    logger.info(line)
     // Add a separator line between rank 7 (dr=7) and rank 6 (dr=6)
     if (dr === 7) {
-      console.log('   ---------------------------------') // Adjust length as needed
+      logger.info('   ---------------------------------') // Adjust length as needed
     }
   }
   // Update the file labels to align with the 2-character piece display
-  console.log('    a  b  c  d  e  f  g  h  i  j  k')
+  logger.info('    a  b  c  d  e  f  g  h  i  j  k')
 }
 // Helper function to add a move to the list
 // Updated for Stay Capture logic
@@ -258,7 +259,7 @@ export function validateFenFormat(tokens: string[]): void {
  * @throws Error if the FEN is invalid
  */
 export function validateFen(fen: string): void {
-  console.warn('Validating FEN not implmented', fen)
+  logger.warn('Validating FEN not implemented', { fen })
 }
 export function makeSanSinglePiece(piece: Piece): string {
   const symbol = piece.type.toUpperCase()

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { logger } from '@repo/cotulenh-common';
   import { CoTuLenh } from '@repo/cotulenh-core';
   import { gameStore } from '$lib/stores/game';
   import { goto } from '$app/navigation';
@@ -20,7 +21,7 @@
 
   function printFen() {
     if (!game) return;
-    console.log('Current FEN:', game.fen());
+    logger.info('Current FEN:', { fen: game.fen() });
     alert('FEN logged to console');
   }
 
@@ -33,7 +34,7 @@
     try {
       localStorage.setItem('report_state', JSON.stringify(currentState, null, 2));
     } catch (e) {
-      console.error('Failed to serialize game state', e);
+      logger.error('Failed to serialize game state', e);
       localStorage.setItem('report_state', 'Error serializing state');
     }
 

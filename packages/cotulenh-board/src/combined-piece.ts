@@ -1,3 +1,4 @@
+import { logger } from '@repo/cotulenh-common';
 import * as cg from './types.js';
 import { clearPopup, createPopupFactory, CTLPopup } from './popup/popup-factory';
 import { createAmbigousPiecesStackElement, createSinglePieceElement } from './render';
@@ -51,7 +52,7 @@ export function tryCombinePieces(origPiece: cg.Piece, destPiece: cg.Piece): cg.P
     const combined = pieceStacker.combine([origPiece, destPiece]);
     return combined ?? undefined;
   } catch (error) {
-    console.error('Error combining pieces:', error);
+    logger.error('Error combining pieces:', error);
     return undefined;
   }
 }

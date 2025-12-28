@@ -1,3 +1,4 @@
+import { logger } from '@repo/cotulenh-common';
 import { State } from '../state.js';
 import * as board from '../board.js';
 import * as util from '../util.js';
@@ -52,7 +53,7 @@ export function clearPopup(s: State): void {
       // Remove the element from DOM
       s.popup.containerEl.remove();
     } catch (error) {
-      console.error('Error removing popup:', error);
+      logger.error('Error removing popup:', error);
     }
   }
   // Clear the state reference
@@ -115,7 +116,7 @@ export function isPositionInPopup(
           return { inPopup: true }; // In popup but not on a piece
         }
       } catch (error) {
-        console.error('Error checking position in popup:', error);
+        logger.error('Error checking position in popup:', error);
       }
     }
   }

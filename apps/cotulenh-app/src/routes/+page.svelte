@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount, tick } from 'svelte';
   import { page } from '$app/stores';
+  import { logger } from '@repo/cotulenh-common';
   import { CotulenhBoard, origMoveToKey } from '@repo/cotulenh-board';
   import type { Api, DestMove, OrigMove, OrigMoveKey, Role } from '@repo/cotulenh-board';
   import { CoTuLenh, BLUE, RED, executeRecombine } from '@repo/cotulenh-core';
@@ -132,12 +133,12 @@
 
   function handleMove(orig: OrigMove, dest: DestMove) {
     if (!game) {
-      console.warn('handleMove called but game is null');
+      logger.warn('handleMove called but game is null');
       return;
     }
 
     if (isUpdatingBoard) {
-      console.warn('Move attempted while board is updating, ignoring');
+      logger.warn('Move attempted while board is updating, ignoring');
       return;
     }
 
@@ -168,13 +169,13 @@
       const moveResult = makeCoreMove(game, orig, dest);
 
       if (moveResult) {
-        // console.log('Game move successful:', moveResult);
+        // logger.debug('Game move successful:', moveResult);
         gameStore.applyMove(game, moveResult);
       } else {
-        console.warn('Illegal move attempted on board:', orig, '->', dest);
+        logger.warn('Illegal move attempted on board:', orig, '->', dest);
       }
     } catch (error) {
-      console.error('Error making move in game engine:', error);
+      logger.error('Error making move in game engine:', error);
       reSetupBoard();
     }
   }
@@ -187,7 +188,7 @@
    */
   function commitDeploy() {
     if (!game) {
-      console.error('❌ No game instance');
+      logger.error('❌ No game instance');
       return;
     }
 
@@ -195,14 +196,14 @@
       // Get SAN notation before commit
       const session = game.getSession();
       if (!session || !session.isDeploy) {
-        console.error('❌ No deploy session active');
+        logger.error('❌ No deploy session active');
         return;
       }
 
       const result = game.commitSession();
 
       if (!result.success) {
-        console.error('❌ Failed to commit:', result.reason);
+        logger.error('❌ Failed to commit:', result.reason);
         alert(`Cannot finish deployment: ${result.reason}`);
         return;
       }
@@ -212,14 +213,14 @@
       const deployMove = historyAfter[historyAfter.length - 1];
 
       if (!deployMove) {
-        console.error('❌ No move found in history after commit');
+        logger.error('❌ No move found in history after commit');
         return;
       }
 
       // Update game store with the deploy move SAN
       gameStore.applyDeployCommit(game, deployMove);
     } catch (error) {
-      console.error('❌ Failed to commit deploy session:', error);
+      logger.error('❌ Failed to commit deploy session:', error);
       const errorMsg = error instanceof Error ? error.message : 'Unknown error';
       alert(`Cannot finish deployment: ${errorMsg}`);
     }
@@ -254,7 +255,7 @@
         gameStore.applyMove(game, result);
       }
     } catch (error) {
-      console.error('Failed to recombine:', error);
+      logger.error('Failed to recombine:', error);
       const errorMsg = error instanceof Error ? error.message : 'Unknown error';
       alert(`Error executing recombine: ${errorMsg}`);
     }
@@ -274,7 +275,7 @@
       // Reinitialize game store with restored state
       gameStore.initialize(game);
     } catch (error) {
-      console.error('❌ Failed to cancel deploy:', error);
+      logger.error('❌ Failed to cancel deploy:', error);
       const errorMsg = error instanceof Error ? error.message : 'Unknown error';
       alert(`Error cancelling deployment: ${errorMsg}`);
     }
@@ -283,7 +284,7 @@
   onMount(() => {
     if (!boardContainerElement) return;
 
-    console.log('Initializing game logic and board...');
+    logger.debug('Initializing game logic and board...');
 
     // Check for FEN in URL parameters
     const urlFen = $page.url.searchParams.get('fen');
@@ -292,9 +293,9 @@
     if (urlFen) {
       try {
         initialFen = decodeURIComponent(urlFen);
-        console.log('Loading game with custom FEN:', initialFen);
+        logger.debug('Loading game with custom FEN:', initialFen);
       } catch (error) {
-        console.error('Error decoding FEN from URL:', error);
+        logger.error('Error decoding FEN from URL:', error);
       }
     }
 
@@ -303,13 +304,13 @@
     gameStore.initialize(game);
 
     const unsubscribe = gameStore.subscribe((state) => {
-      // console.log('Game state updated in store:', state);
+      // logger.debug('Game state updated in store:', state);
     });
 
     boardApi = CotulenhBoard(boardContainerElement, createBoardConfig());
 
     return () => {
-      console.log('Cleaning up board and game subscription.');
+      logger.debug('Cleaning up board and game subscription.');
       boardApi?.destroy();
       unsubscribe();
     };

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { page } from '$app/stores';
+  import { logger } from '@repo/cotulenh-common';
   import { CotulenhBoard } from '@repo/cotulenh-board';
   import type { Api, Piece, Role, Color } from '@repo/cotulenh-board';
   import { validateFenString } from '@repo/cotulenh-core';
@@ -111,7 +112,7 @@
   function setMode(mode: EditorMode) {
     if (!boardApi) return;
 
-    console.log('Setting mode to:', mode);
+    logger.debug('Setting mode to:', mode);
     editorMode = mode;
 
     if (mode === 'hand') {
@@ -206,11 +207,11 @@
   function handleAfterNewPiece(role: Role, key: string) {
     if (!boardApi) return;
 
-    console.log('afterNewPiece:', role, 'at', key, 'mode:', editorMode);
+    logger.debug('afterNewPiece:', role, 'at', key, 'mode:', editorMode);
 
     // Check if this was a delete action (using our marker)
     if (editorMode === 'delete' && role === DELETE_MARKER.role) {
-      console.log('Delete mode detected! Removing piece at', key);
+      logger.debug('Delete mode detected! Removing piece at', key);
       // Use the proper API to remove the piece
       boardApi.setPieces(new Map([[key, undefined]]));
       boardApi.state.lastMove = undefined; // Clear last move highlight
@@ -218,7 +219,7 @@
       // Keep delete mode active for multiple deletions
     } else {
       // Normal piece placement in drop mode
-      console.log('Normal placement:', role, 'at', key);
+      logger.debug('Normal placement:', role, 'at', key);
       boardApi.state.lastMove = undefined; // Don't highlight in editor
       updateFEN();
       // Keep selection active for multiple placements (stay in drop mode)
@@ -296,7 +297,7 @@
             lastMove: undefined
           });
         } catch (error) {
-          console.error('Error updating turn:', error);
+          logger.error('Error updating turn:', error);
         }
       }
     }
@@ -348,7 +349,7 @@
         link.click();
       }
     } catch (error) {
-      console.error('Screenshot failed:', error);
+      logger.error('Screenshot failed:', error);
       alert(
         'Screenshot feature requires html2canvas library.\n\nInstall it with: pnpm add html2canvas --filter cotulenh-app'
       );
@@ -377,13 +378,13 @@
         initialFen = `${boardPart} ${turnChar} - - 0 1`;
         fenInput = initialFen;
       } catch (error) {
-        console.error('Error decoding FEN from URL:', error);
+        logger.error('Error decoding FEN from URL:', error);
         initialFen = EMPTY_FEN;
       }
     }
 
     if (boardContainerElement) {
-      console.log('Initializing board editor...');
+      logger.debug('Initializing board editor...');
 
       // Force proper sizing before and after board initialization
       const ensureBoardSize = () => {
@@ -450,7 +451,7 @@
       window.addEventListener('resize', handleResize);
 
       return () => {
-        console.log('Cleaning up board editor.');
+        logger.debug('Cleaning up board editor.');
         document.body.style.cursor = 'default';
         if (boardApi) {
           boardApi.state.dropmode = { active: false };

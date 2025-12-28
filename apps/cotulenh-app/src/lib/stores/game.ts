@@ -1,4 +1,5 @@
 import { writable, type Readable } from 'svelte/store';
+import { logger } from '@repo/cotulenh-common';
 import type { GameState, GameStatus, UIDeployState } from '$lib/types/game';
 import {
   CoTuLenh,
@@ -112,7 +113,7 @@ function createGameStore(): GameStore {
     initialize(game: CoTuLenh) {
       const perfStart = performance.now();
       const possibleMoves = getPossibleMoves(game);
-      console.log(`⏱️ Generated ${possibleMoves.length} moves in initialize`);
+      logger.debug(`⏱️ Generated ${possibleMoves.length} moves in initialize`);
 
       const status = calculateGameStatus(game);
       const isPlaying = status === 'playing';
@@ -129,7 +130,7 @@ function createGameStore(): GameStore {
         historyViewIndex: -1
       });
       const perfEnd = performance.now();
-      console.log(
+      logger.debug(
         `⏱️ gameStore.initialize took ${(perfEnd - perfStart).toFixed(2)}ms (lazy loading enabled)`
       );
     },
@@ -148,7 +149,7 @@ function createGameStore(): GameStore {
         const fen = (move as any).after;
 
         if (!fen) {
-          console.error('No FEN found in history move', move);
+          logger.error('No FEN found in history move', move);
           return state;
         }
 
@@ -173,7 +174,7 @@ function createGameStore(): GameStore {
             // Since history items are "Committed" moves, deploy sessions are done.
           };
         } catch (e) {
-          console.error('Failed to preview move', e);
+          logger.error('Failed to preview move', e);
           return state;
         }
       });
@@ -220,7 +221,7 @@ function createGameStore(): GameStore {
         };
       });
       const perfEnd = performance.now();
-      console.log(
+      logger.debug(
         `⏱️ gameStore.applyMove TOTAL took ${(perfEnd - perfStart).toFixed(2)}ms (lazy loading enabled)`
       );
     },
@@ -310,7 +311,7 @@ function createGameStore(): GameStore {
       });
 
       const perfEnd = performance.now();
-      console.log(`⏱️ gameStore.handleUndo took ${(perfEnd - perfStart).toFixed(2)}ms`);
+      logger.debug(`⏱️ gameStore.handleUndo took ${(perfEnd - perfStart).toFixed(2)}ms`);
     },
 
     /**
