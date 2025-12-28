@@ -3,7 +3,7 @@
   import { page } from '$app/stores';
   import { CotulenhBoard, origMoveToKey } from '@repo/cotulenh-board';
   import type { Api, DestMove, OrigMove, OrigMoveKey, Role } from '@repo/cotulenh-board';
-  import { CoTuLenh, BLUE, RED, algebraic, BITS, executeRecombine } from '@repo/cotulenh-core';
+  import { CoTuLenh, BLUE, RED, executeRecombine } from '@repo/cotulenh-core';
   import type {
     Square,
     Color,
@@ -62,21 +62,6 @@
   // we need to react to store updates (like FEN change) to re-evaluate it.
   let uiDeployState = $derived($gameStore.fen ? getDeployState(game) : null);
 
-  function buildDeploySession() {
-    if (!uiDeployState) return undefined;
-    return {
-      originSquare: algebraic(uiDeployState.stackSquare),
-      stay: uiDeployState.stay,
-      isComplete: false,
-      deployedMoves: (uiDeployState.actions || [])
-        .filter((m: any) => m.flags & BITS.DEPLOY)
-        .map((m: any) => ({
-          piece: m.piece,
-          to: algebraic(m.to)
-        }))
-    };
-  }
-
   function createBoardConfig() {
     return {
       fen: $gameStore.fen,
@@ -105,8 +90,7 @@
               }))
             : undefined
         }
-      },
-      deploySession: buildDeploySession()
+      }
     } as any;
   }
 

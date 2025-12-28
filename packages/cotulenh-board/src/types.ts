@@ -101,16 +101,6 @@ export interface MoveMetadata {
 }
 
 /**
- * A single deploy move in incremental mode
- */
-export interface SingleDeployMove {
-  piece: Piece; // The piece being deployed (may have carrying)
-  from: Key; // Origin square (stack location)
-  to: Key; // Destination square
-  capture?: Piece; // Captured piece if any
-}
-
-/**
  * Metadata for a single deploy step
  */
 export interface DeployStepMetadata extends MoveMetadata {}
@@ -150,21 +140,3 @@ export interface RecombineOption {
   piece: Role;
   square: Key;
 }
-
-export type AirDefenseInfluenceZoneType = 'friendly' | 'opponent';
-export type AirDefenseColorFriendly = [
-  '0044aaff',
-  '0055d4ff',
-  '0066ffff',
-  '2a7fffff',
-  '5599ffff',
-  '5599ffff',
-];
-export type AirDefenseColorOpponent = [
-  '800000ff',
-  'aa0000ff',
-  'd40000ff',
-  'ff0000ff',
-  'ff2a2aff',
-  'ff5555ff',
-];
