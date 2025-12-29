@@ -1249,9 +1249,129 @@ export class CoTuLenh {
   }
 
   /**
-   * Executes a move on the board, accepting either algebraic notation or move object format.
+   * Converts a move object or validates an InternalMove by finding the matching legal move.
+   * @param move - Either a move object with from/to squares, or an InternalMove to validate
+   * @returns The matching InternalMove with SAN/LAN notation populated
+   * @throws Error if no matching legal move is found or if multiple matches exist
+   * @private
+   */
+  private _moveFromObject(
+    move:
+      | {
+          from: string
+          to: string
+          piece?: PieceSymbol
+          stay?: boolean
+          deploy?: boolean
+        }
+      | InternalMove,
+  ): InternalMove {
+    // Check if this is an InternalMove (has numeric from/to properties)
+    const isInternalMove =
+      typeof (move as InternalMove).from === 'number' &&
+      typeof (move as InternalMove).to === 'number'
+
+    let fromSq: number
+    let toSq: number
+    let pieceType: PieceSymbol | undefined
+    let stayFilter: boolean | undefined
+    let deployFilter: boolean | undefined
+    let inputInternalMove: InternalMove | undefined
+
+    if (isInternalMove) {
+      // InternalMove validation path
+      const internalMove = move as InternalMove
+      inputInternalMove = internalMove
+      fromSq = internalMove.from
+      toSq = internalMove.to
+      pieceType = internalMove.piece.type
+      stayFilter = (internalMove.flags & BITS.STAY_CAPTURE) !== 0
+      deployFilter = (internalMove.flags & BITS.DEPLOY) !== 0
+    } else {
+      // Move object parsing path
+      const moveObj = move as {
+        from: string
+        to: string
+        piece?: PieceSymbol
+        stay?: boolean
+        deploy?: boolean
+      }
+      const fromSqMapped = SQUARE_MAP[moveObj.from]
+      const toSqMapped = SQUARE_MAP[moveObj.to]
+
+      if (fromSqMapped === undefined || toSqMapped === undefined) {
+        throw new Error(
+          `Invalid square in move object: ${JSON.stringify(move)}`,
+        )
+      }
+
+      fromSq = fromSqMapped
+      toSq = toSqMapped
+      pieceType = moveObj.piece
+      stayFilter = moveObj.stay
+      deployFilter = moveObj.deploy
+    }
+
+    // Find matching move in legal moves
+    const legalMoves = this._moves({
+      legal: true,
+      square: algebraic(fromSq),
+      ...(pieceType && { pieceType }),
+    })
+
+    const foundMoves: InternalMove[] = []
+    for (const m of legalMoves) {
+      const isStayMove = (m.flags & BITS.STAY_CAPTURE) !== 0
+      const isDeployMove = (m.flags & BITS.DEPLOY) !== 0
+
+      if (
+        m.from === fromSq &&
+        m.to === toSq &&
+        (pieceType === undefined || m.piece.type === pieceType) &&
+        (stayFilter === undefined || stayFilter === isStayMove) &&
+        (deployFilter === undefined || deployFilter === isDeployMove)
+      ) {
+        // Generate SAN/LAN for the move
+        const [san, lan] = moveToSanLan(m, legalMoves)
+        m.san = san
+        m.lan = lan
+        foundMoves.push(m)
+      }
+    }
+
+    if (foundMoves.length === 0) {
+      throw new Error(`No matching legal move found: ${JSON.stringify(move)}`)
+    }
+    if (foundMoves.length > 1) {
+      throw new Error(
+        `Multiple matching legal moves found: ${JSON.stringify(move)}`,
+      )
+    }
+
+    const foundMove = foundMoves[0]
+
+    // If input was an InternalMove and everything matches, preserve the input's piece
+    // This is important for recombine operations where the piece may have specific
+    // carrying information that differs from the freshly generated legal move
+    if (inputInternalMove) {
+      // Verify flags match (this is a safety check)
+      if (inputInternalMove.flags === foundMove.flags) {
+        // Return a move with the input's piece but the generated SAN/LAN
+        return {
+          ...inputInternalMove,
+          san: foundMove.san,
+          lan: foundMove.lan,
+        }
+      }
+    }
+
+    return foundMove
+  }
+
+  /**
+   * Executes a move on the board, accepting algebraic notation, move object, or InternalMove format.
    * Validates the move legality before execution and updates the game state accordingly.
-   * @param move - The move to execute, either as SAN string (e.g., 'Nf3') or move object with from/to squares
+   * @param move - The move to execute: SAN string (e.g., 'Nf3'), move object with from/to squares, or InternalMove to validate
    * @param options - Configuration options for move execution
    * @param options.strict - Whether to use strict parsing rules for algebraic notation moves
    * @returns MoveResult indicating completion status and the move object
@@ -1266,7 +1386,8 @@ export class CoTuLenh {
           piece?: PieceSymbol
           stay?: boolean
           deploy?: boolean
-        },
+        }
+      | InternalMove,
     { strict = false }: { strict?: boolean } = {},
   ): MoveResult | null {
     let internalMove: InternalMove | null = null
@@ -1275,53 +1396,7 @@ export class CoTuLenh {
     if (typeof move === 'string') {
       internalMove = this._moveFromSan(move, strict)
     } else if (typeof move === 'object') {
-      const fromSq = SQUARE_MAP[move.from]
-      const toSq = SQUARE_MAP[move.to]
-
-      if (fromSq === undefined || toSq === undefined) {
-        throw new Error(
-          `Invalid square in move object: ${JSON.stringify(move)}`,
-        )
-      }
-
-      // Find matching move in legal moves
-      const legalMoves = this._moves({
-        legal: true,
-        square: move.from,
-        ...(move.piece && { pieceType: move.piece }),
-      })
-      const foundMoves: InternalMove[] = []
-      for (const m of legalMoves) {
-        const isStayMove = (m.flags & BITS.STAY_CAPTURE) !== 0
-        const targetSquareInternal = m.to
-
-        const isDeployMove = (m.flags & BITS.DEPLOY) !== 0
-
-        if (
-          m.from === fromSq &&
-          targetSquareInternal === toSq &&
-          (move.piece === undefined || m.piece.type === move.piece) &&
-          (move.stay === undefined || move.stay === isStayMove) &&
-          (move.deploy === undefined || move.deploy === isDeployMove)
-        ) {
-          // Generate SAN/LAN for the move
-          const [san, lan] = moveToSanLan(m, legalMoves)
-          m.san = san
-          m.lan = lan
-          foundMoves.push(m)
-        }
-      }
-
-      if (foundMoves.length === 0) {
-        throw new Error(`No matching legal move found: ${JSON.stringify(move)}`)
-      }
-      if (foundMoves.length > 1) {
-        throw new Error(
-          `Multiple matching legal moves found: ${JSON.stringify(move)}`,
-        )
-      }
-
-      internalMove = foundMoves[0]
+      internalMove = this._moveFromObject(move)
     }
 
     // 2. Validate move
@@ -1428,39 +1503,29 @@ export class CoTuLenh {
 
     const results: (StandardMove | DeploySequence)[] = []
 
-    // Replay history using handleMove to verify/reconstruct
-    // Note: This MODIFIES this._history with NEW command instances
+    // Replay history using move() to verify/reconstruct
+    // This allows re-using all the validation and session logic within move()
+    // but we pass the InternalMove directly so we don't have to re-parse SAN.
 
     for (let i = 0; i < allMoves.length; i++) {
       const move = allMoves[i]
       const isDeploy = (move.flags & BITS.DEPLOY) !== 0
 
-      // Execute move (add to session)
-      // We use handleMove with autoCommit=false to manually control grouping
-      handleMove(this, move, false)
+      // Execute move using the public move API with the InternalMove object
+      // This ensures all proper validation and session handling logic is used
+      // We don't need to manually handle commits here because handleMove (called by move)
+      // will auto-commit normal moves, and we can check result for deploy moves.
 
-      const nextMove = allMoves[i + 1]
-      const nextIsDeploy = nextMove
-        ? (nextMove.flags & BITS.DEPLOY) !== 0
-        : false
+      const result = this.move(move)
 
-      // Determine if we should commit the session
-      let shouldCommit = false
+      if (result) {
+        // For deploy moves, we might get intermediate results (incomplete session)
+        // or a completed DeploySequence.
+        // For standard moves, we get a StandardMove.
 
-      if (isDeploy) {
-        // Deploy move: Commit if sequence ends (next is not deploy or no next)
-        if (!nextMove || !nextIsDeploy) {
-          shouldCommit = true
-        }
-      } else {
-        // Normal move: Always commit (it's atomic)
-        shouldCommit = true
-      }
-
-      if (shouldCommit) {
-        const commitResult = this.commitSession()
-        if (commitResult.success && commitResult.result) {
-          results.push(commitResult.result)
+        // If it's a completed move (StandardMove or fully committed DeploySequence), add to results
+        if (result.completed) {
+          results.push(result)
         }
       }
     }

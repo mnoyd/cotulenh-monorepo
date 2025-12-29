@@ -490,10 +490,6 @@ class SetHeroicAction implements CTLAtomicMoveAction {
 }
 
 /**
- * Checks if the opponent's commander is attacked after a move
- * and promotes the attacking pieces to heroic.
- */
-/**
  * A generic action that executes other actions generated on demand.
  */
 class LazyAction implements CTLAtomicMoveAction {
