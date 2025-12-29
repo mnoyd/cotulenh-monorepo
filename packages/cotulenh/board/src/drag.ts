@@ -291,6 +291,13 @@ export function end(s: State, e: cg.MouchEvent): void {
 function handlePieceMove(s: State, cur: DragCurrent, dest: cg.Key): void {
   // Handle piece from stack being dragged
   if (s.selected) {
+    // Check for recombine option first (for pieces dragged from stack/origin)
+    if (board.tryUserRecombine(s, s.selected, dest)) {
+      s.pieces.delete(TEMP_KEY);
+      s.stats.dragged = true;
+      return;
+    }
+
     // Treat this as a move from the original position to the destination
     board.userMove(s, s.selected, { square: dest } as cg.DestMove);
     s.pieces.delete(TEMP_KEY);
