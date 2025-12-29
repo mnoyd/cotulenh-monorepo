@@ -21,11 +21,6 @@
   import GameControls from '$lib/components/GameControls.svelte';
   import { gameStore, getDeployState } from '$lib/stores/game';
 
-  // Only import CSS in browser environment to avoid SSR issues
-  if (browser) {
-    import('@cotulenh/board/assets/commander-chess.base.css');
-    import('@cotulenh/board/assets/commander-chess.pieces.css');
-  }
   import '$lib/styles/modern-warfare.css';
   import { makeCoreMove } from '$lib/utils';
   import { typeToRole, roleToType, coreColorToBoard } from '$lib/types/translations';
@@ -176,10 +171,10 @@
         // logger.debug('Game move successful:', moveResult);
         gameStore.applyMove(game, moveResult);
       } else {
-        logger.warn('Illegal move attempted on board:', orig, '->', dest);
+        logger.warn('Illegal move attempted on board', { orig, dest });
       }
     } catch (error) {
-      logger.error('Error making move in game engine:', error);
+      logger.error('Error making move in game engine:', { error });
       reSetupBoard();
     }
   }
@@ -224,7 +219,7 @@
       // Update game store with the deploy move SAN
       gameStore.applyDeployCommit(game, deployMove);
     } catch (error) {
-      logger.error('❌ Failed to commit deploy session:', error);
+      logger.error('❌ Failed to commit deploy session:', { error });
       const errorMsg = error instanceof Error ? error.message : 'Unknown error';
       alert(`Cannot finish deployment: ${errorMsg}`);
     }
@@ -259,7 +254,7 @@
         gameStore.applyMove(game, result);
       }
     } catch (error) {
-      logger.error('Failed to recombine:', error);
+      logger.error('Failed to recombine:', { error });
       const errorMsg = error instanceof Error ? error.message : 'Unknown error';
       alert(`Error executing recombine: ${errorMsg}`);
     }
@@ -279,46 +274,62 @@
       // Reinitialize game store with restored state
       gameStore.initialize(game);
     } catch (error) {
-      logger.error('❌ Failed to cancel deploy:', error);
+      logger.error('❌ Failed to cancel deploy:', { error });
       const errorMsg = error instanceof Error ? error.message : 'Unknown error';
       alert(`Error cancelling deployment: ${errorMsg}`);
     }
   }
 
   onMount(() => {
-    if (!boardContainerElement) return;
+    (async () => {
+      if (!boardContainerElement) return;
 
-    logger.debug('Initializing game logic and board...');
-
-    // Check for FEN in URL parameters
-    const urlFen = $page.url.searchParams.get('fen');
-    let initialFen: string | undefined = undefined;
-
-    if (urlFen) {
-      try {
-        initialFen = decodeURIComponent(urlFen);
-        logger.debug('Loading game with custom FEN:', initialFen);
-      } catch (error) {
-        logger.error('Error decoding FEN from URL:', error);
+      // Load CSS before initializing board to prevent 0-size layout issues
+      if (browser) {
+        await Promise.all([
+          import('@cotulenh/board/assets/commander-chess.base.css'),
+          import('@cotulenh/board/assets/commander-chess.pieces.css')
+        ]);
       }
-    }
 
-    // Initialize game with custom FEN or default position
-    game = initialFen ? new CoTuLenh(initialFen) : new CoTuLenh();
-    gameStore.initialize(game);
+      logger.debug('Initializing game logic and board...');
 
-    const unsubscribe = gameStore.subscribe((state) => {
-      // logger.debug('Game state updated in store:', state);
-    });
+      // Check for FEN in URL parameters
+      const urlFen = $page.url.searchParams.get('fen');
+      let initialFen: string | undefined = undefined;
 
-    boardApi = CotulenhBoard(boardContainerElement, createBoardConfig());
+      if (urlFen) {
+        try {
+          initialFen = decodeURIComponent(urlFen);
+          logger.debug('Loading game with custom FEN:', { fen: initialFen });
+        } catch (error) {
+          logger.error(error, 'Error decoding FEN from URL:');
+        }
+      }
+
+      // Initialize game with custom FEN or default position
+      game = initialFen ? new CoTuLenh(initialFen) : new CoTuLenh();
+      gameStore.initialize(game);
+
+      const unsubscribe = gameStore.subscribe((state) => {
+        // logger.debug('Game state updated in store:', state);
+      });
+
+      boardApi = CotulenhBoard(boardContainerElement, createBoardConfig());
+
+      cleanup = () => {
+        logger.debug('Cleaning up board and game subscription.');
+        boardApi?.destroy();
+        unsubscribe();
+      };
+    })();
 
     return () => {
-      logger.debug('Cleaning up board and game subscription.');
-      boardApi?.destroy();
-      unsubscribe();
+      if (cleanup) cleanup();
     };
   });
+
+  let cleanup: (() => void) | null = null;
 
   let isUpdatingBoard = $state(false);
   let lastProcessedFen = '';

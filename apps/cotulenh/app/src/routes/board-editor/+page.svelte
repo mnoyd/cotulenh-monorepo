@@ -116,7 +116,7 @@
   function setMode(mode: EditorMode) {
     if (!boardApi) return;
 
-    logger.debug('Setting mode to:', mode);
+    logger.debug('Setting mode to:', { mode });
     editorMode = mode;
 
     if (mode === 'hand') {
@@ -211,11 +211,11 @@
   function handleAfterNewPiece(role: Role, key: string) {
     if (!boardApi) return;
 
-    logger.debug('afterNewPiece:', role, 'at', key, 'mode:', editorMode);
+    logger.debug('afterNewPiece:', { role, at: key, mode: editorMode });
 
     // Check if this was a delete action (using our marker)
     if (editorMode === 'delete' && role === DELETE_MARKER.role) {
-      logger.debug('Delete mode detected! Removing piece at', key);
+      logger.debug('Delete mode detected! Removing piece at', { key });
       // Use the proper API to remove the piece
       boardApi.setPieces(new Map([[key, undefined]]));
       boardApi.state.lastMove = undefined; // Clear last move highlight
@@ -223,7 +223,7 @@
       // Keep delete mode active for multiple deletions
     } else {
       // Normal piece placement in drop mode
-      logger.debug('Normal placement:', role, 'at', key);
+      logger.debug('Normal placement:', { role, at: key });
       boardApi.state.lastMove = undefined; // Don't highlight in editor
       updateFEN();
       // Keep selection active for multiple placements (stay in drop mode)
@@ -301,7 +301,7 @@
             lastMove: undefined
           });
         } catch (error) {
-          logger.error('Error updating turn:', error);
+          logger.error(error, 'Error updating turn:');
         }
       }
     }
@@ -353,7 +353,7 @@
         link.click();
       }
     } catch (error) {
-      logger.error('Screenshot failed:', error);
+      logger.error(error, 'Screenshot failed:');
       alert(
         'Screenshot feature requires html2canvas library.\n\nInstall it with: pnpm add html2canvas --filter cotulenh-app'
       );
@@ -382,7 +382,7 @@
         initialFen = `${boardPart} ${turnChar} - - 0 1`;
         fenInput = initialFen;
       } catch (error) {
-        logger.error('Error decoding FEN from URL:', error);
+        logger.error(error, 'Error decoding FEN from URL:');
         initialFen = EMPTY_FEN;
       }
     }

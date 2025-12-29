@@ -34,7 +34,7 @@
     try {
       localStorage.setItem('report_state', JSON.stringify(currentState, null, 2));
     } catch (e) {
-      logger.error('Failed to serialize game state', e);
+      logger.error(e, 'Failed to serialize game state');
       localStorage.setItem('report_state', 'Error serializing state');
     }
 

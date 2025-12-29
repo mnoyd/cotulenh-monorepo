@@ -169,7 +169,7 @@ function createGameStore(): GameStore {
             // Since history items are "Committed" moves, deploy sessions are done.
           };
         } catch (e) {
-          logger.error('Failed to preview move', e);
+          logger.error(e, 'Failed to preview move');
           return state;
         }
       });

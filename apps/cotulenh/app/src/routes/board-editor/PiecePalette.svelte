@@ -60,7 +60,7 @@
         `Started dragging ${piece.color} ${piece.role}${piece.promoted ? ' (heroic)' : ''}`
       );
     } catch (error) {
-      logger.error('Error starting drag:', error);
+      logger.error(error, 'Error starting drag:');
     }
   }
 
