@@ -1,3 +1,32 @@
+/**
+ * Air Defense System for CoTuLenh Chess Variant
+ *
+ * ORGANIZATION BY DOMAIN:
+ *
+ * 1. BITBOARD INFRASTRUCTURE
+ *    - Mapping between 0x88 squares and bit indices
+ *    - Precomputed influence zone masks for performance
+ *    - Bitboard conversion utilities
+ *
+ * 2. AIR DEFENSE RULES & CONFIGURATION
+ *    - Which pieces provide air defense
+ *    - Defense level calculations (base + heroic)
+ *    - Piece scanning on the board
+ *
+ * 3. INFLUENCE ZONE CALCULATION
+ *    - Pure geometry: circular radius calculations
+ *    - Zone computation for individual pieces
+ *    - Zone aggregation for entire side
+ *
+ * 4. BOARD STATE MANAGEMENT
+ *    - Building complete air defense maps
+ *    - Converting to algebraic notation
+ *
+ * 5. MOVEMENT VALIDATION
+ *    - Air Force movement checking through defense zones
+ *    - Kamikaze vs destroyed detection
+ */
+
 import { CoTuLenh } from './cotulenh.js'
 import {
   AirDefenseForSide,
@@ -8,7 +37,6 @@ import {
   NAVY,
   PieceSymbol,
   RED,
-  SQUARE_MAP,
   Color,
   AirDefenseInfluence,
   Square,
@@ -17,16 +45,30 @@ import {
   VALID_SQUARES,
 } from './type.js'
 
-// --- Bitboard Constants & Helpers ---
+// ========================================================================
+// BITBOARD INFRASTRUCTURE - Fast Lookup Tables
+// ========================================================================
 
-// Map 0x88 square index to packed bit index (0-131)
-// We have 11 files (0-10) and 12 ranks (0-11).
-// Board index = rank * 11 + file
-// Max index = 11 * 11 + 10 = 131
+/**
+ * Board dimensions for bitboard calculations
+ * We use a packed bitboard representation for the 11x12 board
+ */
+const BOARD_WIDTH = 11
+const BOARD_HEIGHT = 12
+const MAX_BIT_INDEX = BOARD_WIDTH * BOARD_HEIGHT - 1 // 131
+
+/**
+ * Mapping tables between 0x88 square indices and packed bit indices
+ * - 0x88 format: used by the game engine (256 elements, some invalid)
+ * - Bit index: compact 0-131 range for bitboard operations
+ */
 const SQ_TO_BIT_INDEX: number[] = new Array(256).fill(-1)
-const BIT_INDEX_TO_SQ: number[] = new Array(132).fill(0)
+const BIT_INDEX_TO_SQ: number[] = new Array(MAX_BIT_INDEX + 1).fill(0)
 
-function initBitboardMapping() {
+/**
+ * Initialize bidirectional mapping between square formats
+ */
+function initBitboardMapping(): void {
   for (let idx = 0; idx < VALID_SQUARES.length; idx++) {
     const sq = VALID_SQUARES[idx]
     SQ_TO_BIT_INDEX[sq] = idx
@@ -36,41 +78,37 @@ function initBitboardMapping() {
 
 initBitboardMapping()
 
-// Lookup Table for Air Defense Masks
-// Indexed by [level][squareIndex]
-// Levels: 0 (not used), 1, 2, 3
-const AIR_DEFENSE_MASKS: bigint[][] = [
-  [], // Level 0
-  [], // Level 1
-  [], // Level 2
-  [], // Level 3
-]
+/**
+ * Precomputed air defense zone masks for fast lookups
+ * Indexed by [level][bitIndex] → bitboard mask
+ *
+ * Example: AIR_DEFENSE_MASKS[2][50] = mask for level-2 defense at bit index 50
+ */
+const MAX_DEFENSE_LEVEL = 4
+const AIR_DEFENSE_MASKS: bigint[][] = Array.from(
+  { length: MAX_DEFENSE_LEVEL + 1 },
+  () => [],
+)
 
-// Initialize the Lookup Table
-function initAirDefenseMasks() {
-  // We allow up to level 3 based on current game rules (Anti-Air is max level 2 usually, but code supported dynamic levels)
-  // Let's precalculate up to level 4 to be safe and future proof, matching the loop structure
-  const MAX_LEVEL = 4
-
-  // Ensure array is big enough
-  for (let l = 0; l <= MAX_LEVEL; l++) {
-    if (!AIR_DEFENSE_MASKS[l]) AIR_DEFENSE_MASKS[l] = []
-  }
-
-  for (let level = 1; level <= MAX_LEVEL; level++) {
+/**
+ * Precompute all air defense zone masks for fast lookups
+ * Uses circular distance formula: x² + y² ≤ level²
+ */
+function initAirDefenseMasks(): void {
+  for (let level = 1; level <= MAX_DEFENSE_LEVEL; level++) {
     for (const sq of VALID_SQUARES) {
       const bitIndex = SQ_TO_BIT_INDEX[sq]
       let mask = 0n
 
-      // Use the logic from the old implementation to calculate the mask bits
-      for (let i = -level; i <= level; i++) {
-        for (let j = -level; j <= level; j++) {
-          const targetSq = sq + i + j * 16 // 0x88 arithmetic
+      // Check all squares within bounding box
+      for (let dx = -level; dx <= level; dx++) {
+        for (let dy = -level; dy <= level; dy++) {
+          const targetSq = sq + dx + dy * 16 // 0x88 offset arithmetic
 
           if (!isSquareOnBoard(targetSq)) continue
 
-          // Circle distance check
-          if (i * i + j * j <= level * level) {
+          // Circular distance check
+          if (dx * dx + dy * dy <= level * level) {
             const targetBitIndex = SQ_TO_BIT_INDEX[targetSq]
             if (targetBitIndex !== -1) {
               mask |= 1n << BigInt(targetBitIndex)
@@ -78,6 +116,7 @@ function initAirDefenseMasks() {
           }
         }
       }
+
       AIR_DEFENSE_MASKS[level][bitIndex] = mask
     }
   }
@@ -85,189 +124,335 @@ function initAirDefenseMasks() {
 
 initAirDefenseMasks()
 
-// Helper to convert Bitboard to square array
+/**
+ * Convert bitboard to array of 0x88 square indices
+ * Optimized: O(k) where k = number of set bits
+ */
 function bitboardToSquares(bitboard: bigint): number[] {
   const squares: number[] = []
   let temp = bitboard
-  let i = 0
+  let bitIndex = 0
 
-  // Optimized: shift right and check lowest bit, stop when temp becomes 0
-  // This is O(k) where k = number of set bits, instead of O(132)
   while (temp !== 0n) {
     if (temp & 1n) {
-      squares.push(BIT_INDEX_TO_SQ[i])
+      squares.push(BIT_INDEX_TO_SQ[bitIndex])
     }
     temp >>= 1n
-    i++
+    bitIndex++
   }
+
   return squares
 }
 
+// ========================================================================
+// AIR DEFENSE RULES & CONFIGURATION
+// ========================================================================
+
+/**
+ * Base air defense levels for each piece type
+ * - Missile: level 2 (long range)
+ * - Navy: level 1 (short range)
+ * - Anti-Air: level 1 (short range)
+ */
 export const BASE_AIRDEFENSE_CONFIG: Partial<Record<PieceSymbol, number>> = {
   [MISSILE]: 2,
   [NAVY]: 1,
   [ANTI_AIR]: 1,
 }
+
+/**
+ * Calculate air defense level for a piece
+ * Heroic pieces get +1 level bonus
+ */
 function getAirDefenseLevel(piece: PieceSymbol, isHero: boolean): number {
-  const base = BASE_AIRDEFENSE_CONFIG[piece]
-  if (!base) return 0
-  if (isHero) {
-    return base + 1
-  }
-  return base
+  const baseLevel = BASE_AIRDEFENSE_CONFIG[piece]
+  if (!baseLevel) return 0
+
+  return isHero ? baseLevel + 1 : baseLevel
 }
 
-export function calculateAirDefense(
-  game: CoTuLenh,
-  color: Color,
-  airDefensePiecesPosition: AirDefensePiecesPosition,
-): AirDefenseForSide {
-  const airDefenseForSide: AirDefenseForSide = new Map<number, number[]>()
-  for (const sqNum of airDefensePiecesPosition[color]) {
-    const piece = game.get(sqNum)
-    if (!piece)
-      throw new Error(`Air defense piece not found at square ${sqNum}`)
-    const level = getAirDefenseLevel(piece.type, piece.heroic ?? false)
-    if (level > 0) {
-      const influnceSq = calculateAirDefenseForSquare(sqNum, level)
-      for (const sq of influnceSq) {
-        if (!airDefenseForSide.has(sq)) {
-          airDefenseForSide.set(sq, [])
-        }
-        airDefenseForSide.get(sq)!.push(sqNum)
-      }
-    }
-  }
-  return airDefenseForSide
-}
-
-export function calculateAirDefenseForSquare(
-  curSq: number,
-  level: number,
-): number[] {
-  if (level <= 0) {
-    return []
-  }
-
-  // Use precalculated bitmasks if available for this level
-  if (level < AIR_DEFENSE_MASKS.length) {
-    const bitIndex = SQ_TO_BIT_INDEX[curSq]
-    if (bitIndex === -1) return [] // Should not happen for valid square
-
-    const mask = AIR_DEFENSE_MASKS[level][bitIndex]
-    return bitboardToSquares(mask)
-  }
-
-  // Fallback for unexpectedly high levels (though unlikely)
-  const allInflunceSq: number[] = []
-  for (let i = -level; i <= level; i++) {
-    for (let j = -level; j <= level; j++) {
-      if (!isSquareOnBoard(curSq + i + j * 16)) continue
-      if (i * i + j * j <= level * level) {
-        allInflunceSq.push(curSq + i + j * 16)
-      }
-    }
-  }
-  return allInflunceSq
-}
-
-export type AirDefensePiecesPosition = {
+/**
+ * Internal type for tracking air defense piece positions by color
+ */
+type AirDefensePiecesPosition = {
   [RED]: number[]
   [BLUE]: number[]
 }
 
-export function updateAirDefensePiecesPosition(game: CoTuLenh): AirDefense {
-  const airDefensePieces: AirDefensePiecesPosition = {
+/**
+ * Scan board and collect all air defense piece positions by color
+ */
+function scanAirDefensePieces(game: CoTuLenh): AirDefensePiecesPosition {
+  const positions: AirDefensePiecesPosition = {
     [RED]: [],
     [BLUE]: [],
   }
+
   for (const sq of VALID_SQUARES) {
     const piece = game.get(sq)
     if (!piece) continue
+
     if (BASE_AIRDEFENSE_CONFIG[piece.type]) {
-      if (!airDefensePieces[piece.color]) {
-        airDefensePieces[piece.color] = []
-      }
-      airDefensePieces[piece.color].push(sq)
+      positions[piece.color].push(sq)
     }
   }
+
+  return positions
+}
+
+// ========================================================================
+// INFLUENCE ZONE CALCULATION - Pure Geometry
+// ========================================================================
+
+/**
+ * Calculate influence zone for a single square at given defense level
+ * Uses precomputed bitboard masks for O(1) lookup
+ *
+ * @param square - 0x88 square index of the air defense piece
+ * @param level - Defense level (1-4, max 3 in practice)
+ * @returns Array of protected square indices
+ */
+export function calculateAirDefenseForSquare(
+  square: number,
+  level: number,
+): number[] {
+  if (level <= 0 || level > MAX_DEFENSE_LEVEL) {
+    return []
+  }
+
+  const bitIndex = SQ_TO_BIT_INDEX[square]
+  if (bitIndex === -1) return [] // Invalid square
+
+  // Fast bitboard lookup - O(k) where k = number of protected squares
+  const mask = AIR_DEFENSE_MASKS[level][bitIndex]
+  return bitboardToSquares(mask)
+}
+
+/**
+ * Calculate complete air defense map for one side
+ * Maps each protected square to the list of pieces protecting it
+ *
+ * @param game - Game instance
+ * @param color - Side to calculate defense for
+ * @param positions - Positions of air defense pieces
+ * @returns Map: protected square → array of defender positions
+ */
+function calculateAirDefenseForSide(
+  game: CoTuLenh,
+  color: Color,
+  positions: AirDefensePiecesPosition,
+): AirDefenseForSide {
+  const defenseMap: AirDefenseForSide = new Map<number, number[]>()
+
+  for (const squareIndex of positions[color]) {
+    const piece = game.get(squareIndex)
+    if (!piece) {
+      throw new Error(`Air defense piece not found at square ${squareIndex}`)
+    }
+
+    const level = getAirDefenseLevel(piece.type, piece.heroic ?? false)
+    if (level <= 0) continue
+
+    const influenceSquares = calculateAirDefenseForSquare(squareIndex, level)
+
+    // For each influenced square, record this defender
+    for (const protectedSquare of influenceSquares) {
+      if (!defenseMap.has(protectedSquare)) {
+        defenseMap.set(protectedSquare, [])
+      }
+      defenseMap.get(protectedSquare)!.push(squareIndex)
+    }
+  }
+
+  return defenseMap
+}
+
+// ========================================================================
+// BOARD STATE MANAGEMENT - Building Defense Maps
+// ========================================================================
+
+/**
+ * Build complete air defense map for both sides from current board state
+ * This is the main entry point for updating air defense state
+ *
+ * @param game - Current game instance
+ * @returns Complete air defense map for both RED and BLUE
+ */
+export function updateAirDefensePiecesPosition(game: CoTuLenh): AirDefense {
+  // Step 1: Scan board for air defense pieces
+  const positions = scanAirDefensePieces(game)
+
+  // Step 2: Calculate influence zones for each side
   const airDefense: AirDefense = {
-    [RED]: new Map<number, number[]>(),
-    [BLUE]: new Map<number, number[]>(),
+    [RED]: calculateAirDefenseForSide(game, RED, positions),
+    [BLUE]: calculateAirDefenseForSide(game, BLUE, positions),
   }
-  for (const color of [RED, BLUE]) {
-    airDefense[color as Color] = calculateAirDefense(
-      game,
-      color as Color,
-      airDefensePieces,
-    )
-  }
+
   return airDefense
 }
 
+/**
+ * Convert air defense map to algebraic notation for display/debugging
+ *
+ * @param game - Game instance with air defense data
+ * @returns Map using algebraic square names (e.g., "e4")
+ */
 export function getAirDefenseInfluence(game: CoTuLenh): AirDefenseInfluence {
   const airDefenseInfluence: AirDefenseInfluence = {
     [RED]: new Map<Square, Square[]>(),
     [BLUE]: new Map<Square, Square[]>(),
   }
+
   const airDefense = game.getAirDefense()
+
   for (const color of Object.keys(airDefense) as Color[]) {
-    for (const [sqNum, influencedSquares] of airDefense[color]) {
-      const square = algebraic(sqNum)
-      if (!square) throw new Error('Square not found')
-      airDefenseInfluence[color].set(square, influencedSquares.map(algebraic))
+    for (const [squareIndex, defenderIndices] of airDefense[color]) {
+      const square = algebraic(squareIndex)
+      if (!square) throw new Error(`Invalid square index: ${squareIndex}`)
+
+      airDefenseInfluence[color].set(
+        square,
+        defenderIndices.map(algebraic) as Square[],
+      )
     }
   }
+
   return airDefenseInfluence
 }
 
+// ========================================================================
+// MOVEMENT VALIDATION - Air Force Movement Through Defense Zones
+// ========================================================================
+
 /**
- * Enum-like constants for air defense movement results
+ * Air defense zone penetration results
+ *
+ * SAFE_PASS: No defense encountered, move freely
+ * KAMIKAZE: First defense zone - can sacrifice to capture
+ * DESTROYED: Multiple zones or re-entering - movement blocked
  */
 export const AirDefenseResult = {
-  SAFE_PASS: 0, // Can safely pass through this square
-  KAMIKAZE: 1, // Can pass but will be destroyed (suicide move)
-  DESTROYED: 2, // Cannot pass, movement stops
+  SAFE_PASS: 0,
+  KAMIKAZE: 1,
+  DESTROYED: 2,
 } as const
 
+export type AirDefenseResultType =
+  (typeof AirDefenseResult)[keyof typeof AirDefenseResult]
+
+/**
+ * Air Force movement validator
+ * Tracks cumulative defense zone encounters during ray-casting
+ *
+ * Rules:
+ * - No defense zones: SAFE_PASS
+ * - Single defense zone (first encounter): KAMIKAZE (suicide capture allowed)
+ * - Multiple defense zones OR exiting then re-entering: DESTROYED (blocked)
+ */
+class AirForceMovementChecker {
+  private currentSquare: number
+  private readonly offset: number
+  private readonly airDefense: AirDefenseForSide
+  private readonly encounterredDefenseZones: Set<number>
+  private movedOutOfFirstZone: boolean
+  private result: AirDefenseResultType
+
+  constructor(
+    fromSquare: number,
+    offset: number,
+    airDefense: AirDefenseForSide,
+  ) {
+    this.currentSquare = fromSquare
+    this.offset = offset
+    this.airDefense = airDefense
+    this.encounterredDefenseZones = new Set<number>()
+    this.movedOutOfFirstZone = false
+    this.result = AirDefenseResult.SAFE_PASS
+  }
+
+  /**
+   * Check next square in the ray
+   * Call this for each square along the Air Force's movement path
+   *
+   * @returns Current air defense result for this square
+   */
+  check(): AirDefenseResultType {
+    // Once destroyed, stay destroyed
+    if (this.result === AirDefenseResult.DESTROYED) {
+      return this.result
+    }
+
+    // Move to next square
+    this.currentSquare += this.offset
+
+    // Get defenders protecting this square
+    const defenders = this.airDefense.get(this.currentSquare) || []
+
+    if (defenders.length > 0) {
+      // Track all defense zones we've encountered
+      defenders.forEach((defenderSq) =>
+        this.encounterredDefenseZones.add(defenderSq),
+      )
+    } else {
+      // Empty square - check if we left a defense zone
+      if (this.encounterredDefenseZones.size > 0) {
+        this.movedOutOfFirstZone = true
+      }
+    }
+
+    // Determine result based on zone history
+    this.result = this.calculateResult()
+    return this.result
+  }
+
+  /**
+   * Calculate movement result based on defense zone encounters
+   */
+  private calculateResult(): AirDefenseResultType {
+    const zoneCount = this.encounterredDefenseZones.size
+
+    if (zoneCount === 0) {
+      return AirDefenseResult.SAFE_PASS
+    }
+
+    if (zoneCount === 1 && !this.movedOutOfFirstZone) {
+      // Still in first defense zone - kamikaze allowed
+      return AirDefenseResult.KAMIKAZE
+    }
+
+    // Multiple zones or re-entering after exit
+    return AirDefenseResult.DESTROYED
+  }
+}
+
+/**
+ * Create air defense checker for Air Force movement
+ *
+ * @param game - Current game instance
+ * @param fromSquare - Starting square (0x88 index)
+ * @param defenseColor - Color of defending side
+ * @param offset - Movement direction offset
+ * @param heroicAirforce - Whether Air Force is heroic (ignores defense)
+ * @returns Function to check each square along movement path
+ */
 export function getCheckAirDefenseZone(
   game: CoTuLenh,
   fromSquare: number,
   defenseColor: Color,
   offset: number,
   heroicAirforce: boolean,
-): () => (typeof AirDefenseResult)[keyof typeof AirDefenseResult] {
+): () => AirDefenseResultType {
+  // Heroic Air Force ignores all air defense
   if (heroicAirforce) {
     return () => AirDefenseResult.SAFE_PASS
   }
-  let airDefenseResult: (typeof AirDefenseResult)[keyof typeof AirDefenseResult]
+
   const airDefense = game.getAirDefense()
-  let to = fromSquare
-  let airDefenseZoneEncountered = new Set<number>()
-  let movedOutOfTheFirstADZone = false
-  return () => {
-    if (airDefenseResult === AirDefenseResult.DESTROYED) return airDefenseResult
-    to += offset
-    const influenceZoneOfSquare = airDefense[defenseColor].get(to) as number[]
-    if (influenceZoneOfSquare && influenceZoneOfSquare.length > 0) {
-      influenceZoneOfSquare.forEach((value) =>
-        airDefenseZoneEncountered.add(value),
-      )
-    } else {
-      if (airDefenseZoneEncountered.size > 0) {
-        movedOutOfTheFirstADZone = true
-      }
-    }
-    if (airDefenseZoneEncountered.size === 0) {
-      airDefenseResult = AirDefenseResult.SAFE_PASS
-    } else if (
-      airDefenseZoneEncountered.size === 1 &&
-      !movedOutOfTheFirstADZone
-    ) {
-      airDefenseResult = AirDefenseResult.KAMIKAZE
-    } else {
-      airDefenseResult = AirDefenseResult.DESTROYED
-    }
-    return airDefenseResult
-  }
+  const checker = new AirForceMovementChecker(
+    fromSquare,
+    offset,
+    airDefense[defenseColor],
+  )
+
+  return () => checker.check()
 }
