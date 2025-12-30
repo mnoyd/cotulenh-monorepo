@@ -1,5 +1,34 @@
 /**
  * Piece movement configuration and logic for CoTuLenh chess variant
+ *
+ * ORGANIZATION BY DOMAIN:
+ *
+ * 1. CONFIGURATION & TYPES
+ *    - Movement offsets, piece configs, heroic modifications
+ *
+ * 2. COMMANDER RULES
+ *    - Flying General constraints & sight blocking
+ *    - Commander-specific capture/movement rules
+ *
+ * 3. TERRAIN & BLOCKING
+ *    - Water/land terrain validation
+ *    - Heavy piece river crossing
+ *    - Navy diagonal obstacles
+ *
+ * 4. PIECE-SPECIFIC CAPTURE RULES
+ *    - Navy torpedo vs naval gun attacks
+ *    - Air Force dual capture options
+ *    - Capture validation logic
+ *
+ * 5. MOVEMENT & BLOCKING LOGIC
+ *    - Ray casting helpers
+ *    - Range limit checks
+ *    - Piece blocking behavior
+ *
+ * 6. CORE MOVE GENERATION
+ *    - Main ray-casting loop (generateMovesInDirection)
+ *    - Per-piece move generation
+ *    - Deploy and normal move orchestration
  */
 
 import {
@@ -170,22 +199,18 @@ export function getPieceMovementConfig(
   return baseConfig
 }
 
+// ========================================================================
+// COMMANDER RULES - Flying General & Special Movement
+// ========================================================================
+
 /**
  * Constraints for Commander movement to avoid "Flying General" exposure.
- * A bitmask-like object or set of invalid squares.
- * For efficiency, we can use an array of booleans or a Set.
- * Since we only check specific squares, a simple Set<number> is clean.
  */
 export type CommanderConstraints = Set<number>
 
 /**
  * Calculates squares that the Commander cannot step into because they are
  * exposed to the Enemy Commander (Flying General Sight Block).
- *
- * @param gameInstance The game instance to check board state.
- * @param usCommanderSq The current square of our Commander (moving piece).
- * @param themCommanderSq The square of the enemy Commander.
- * @returns A Set of invalid squares (Danger Zone), or null if no restrictions.
  */
 export function getCommanderExposureConstraints(
   gameInstance: CoTuLenh,
@@ -243,6 +268,146 @@ export function getCommanderExposureConstraints(
   return constraints
 }
 
+/**
+ * Check if Commander can see enemy Commander orthogonally for immediate capture
+ */
+function canCommanderCaptureEnemyCommander(
+  isCommander: boolean,
+  targetPiece: Piece | null,
+  them: Color,
+  isOrthogonal: boolean,
+): boolean {
+  return (
+    isCommander &&
+    targetPiece !== null &&
+    targetPiece.type === COMMANDER &&
+    targetPiece.color === them &&
+    isOrthogonal
+  )
+}
+
+/**
+ * Check if Commander can capture at given range
+ */
+function canCommanderCaptureAt(currentRange: number): boolean {
+  return currentRange <= 1 // Adjacent only
+}
+
+/**
+ * Check if Commander should be blocked from sliding past enemy commander
+ * Returns true if enemy commander is found ahead (should NOT add this move)
+ */
+function shouldBlockCommanderSlide(
+  gameInstance: CoTuLenh,
+  from: number,
+  to: number,
+  offset: number,
+  them: Color,
+  isCommander: boolean,
+  isOrthogonal: boolean,
+): boolean {
+  if (!isCommander || !isOrthogonal) return false
+
+  // Look ahead to see if enemy commander is in line of sight
+  let lookAheadSq = to + offset
+  while (isSquareOnBoard(lookAheadSq)) {
+    const lookAheadPiece = gameInstance.get(lookAheadSq)
+    if (lookAheadPiece) {
+      return lookAheadPiece.type === COMMANDER && lookAheadPiece.color === them
+    }
+    lookAheadSq += offset
+  }
+  return false
+}
+
+// ========================================================================
+// TERRAIN & BLOCKING - Water, Heavy Pieces, Navy Obstacles
+// ========================================================================
+
+/**
+ * Determine if a piece blocks further movement in this direction
+ */
+function isPieceBlocking(
+  targetPiece: Piece,
+  pieceType: PieceSymbol,
+  moveIgnoresBlocking: boolean,
+): boolean {
+  if (moveIgnoresBlocking) return false
+
+  // Navy can move past any piece except other navy
+  if (pieceType === NAVY && targetPiece.type !== NAVY) {
+    return false
+  }
+
+  return true
+}
+
+/**
+ * Check if ray should stop after encountering a piece
+ * This is checked AFTER move/capture generation to handle Artillery correctly
+ */
+function shouldStopRayAtPiece(
+  targetPiece: Piece,
+  pieceType: PieceSymbol,
+  them: Color,
+  isOrthogonal: boolean,
+  pieceBlockedMovement: boolean,
+  captureIgnoresPieceBlocking: boolean,
+  moveIgnoresBlocking: boolean,
+): boolean {
+  // Commander stops at any piece except enemy commander on orthogonal
+  if (pieceType === COMMANDER) {
+    const canCaptureEnemyCommander =
+      targetPiece.type === COMMANDER &&
+      targetPiece.color === them &&
+      isOrthogonal
+    return !canCaptureEnemyCommander
+  }
+
+  // Stop if movement is blocked and piece doesn't ignore blocking
+  if (
+    pieceBlockedMovement &&
+    !captureIgnoresPieceBlocking &&
+    !moveIgnoresBlocking
+  ) {
+    return true
+  }
+
+  return false
+}
+
+/**
+ * Check if current range exceeds piece's movement/capture capabilities
+ */
+function isRangeExceeded(
+  currentRange: number,
+  pieceType: PieceSymbol,
+  isDiagonal: boolean,
+  moveRange: number,
+  captureRange: number,
+): boolean {
+  // Missile has special diagonal range limit
+  if (pieceType === MISSILE && isDiagonal && currentRange > moveRange - 1) {
+    return true
+  }
+
+  // Non-commander pieces have finite ranges
+  if (pieceType !== COMMANDER) {
+    return currentRange > moveRange && currentRange > captureRange
+  }
+
+  // Commander has board-limited range
+  return currentRange >= 11
+}
+
+// ========================================================================
+// CORE MOVE GENERATION - Main Ray-Casting Logic
+// ========================================================================
+
+/**
+ * Generate moves in a single direction from a square
+ * Refactored for clarity - delegates to specialized helper functions
+ */
 export function generateMovesInDirection(
   gameInstance: CoTuLenh,
   moves: InternalMove[],
@@ -257,24 +422,26 @@ export function generateMovesInDirection(
   const us = pieceData.color
   const pieceType = pieceData.type
 
-  // Pre-compute piece type flags (avoid repeated checks in hot loop)
+  // Pre-compute piece type flags for performance
   const isCommander = pieceType === COMMANDER
   const isAirForce = pieceType === AIR_FORCE
   const isNavy = pieceType === NAVY
-  const isMissile = pieceType === MISSILE
 
   // Pre-compute movement behavior flags
-  // Direct comparison is faster than array.includes()
   const isOrthogonal =
     offset === -16 || offset === 1 || offset === 16 || offset === -1
   const isDiagonal = !isOrthogonal
-  const moveIgnoresBlocking = config.moveIgnoresBlocking
-  const captureIgnoresPieceBlocking = config.captureIgnoresPieceBlocking
-  const { moveRange, captureRange } = config
+  const {
+    moveRange,
+    captureRange,
+    moveIgnoresBlocking,
+    captureIgnoresPieceBlocking,
+  } = config
 
-  // Pre-compute terrain mask for canStayOnSquare checks
+  // Pre-compute terrain mask
   const stayMask = getMovementMask(pieceType)
 
+  // Initialize air defense for air force
   const checkAirforceState = isAirForce
     ? getCheckAirDefenseZone(
         gameInstance,
@@ -290,19 +457,16 @@ export function generateMovesInDirection(
   let pieceBlockedMovement = false
   let terrainBlockedMovement = false
 
+  // Ray-casting loop
   while (true) {
     to += offset
     currentRange++
 
-    // Board boundary check - must use isSquareOnBoard for 11x12 board
-    // Note: Standard 0x88 trick doesn't work here because we have 11 files (0-10)
+    // ===== BOUNDARY & CONSTRAINT CHECKS =====
     if (!isSquareOnBoard(to)) break
 
-    // === COMMANDER SIGHT BLOCK ===
-    // If scanning commander moves, check constraints
-    if (isCommander && constraints && constraints.has(to)) {
-      break // Cannot enter or pass through exposed square
-    }
+    // Commander sight block constraints
+    if (isCommander && constraints?.has(to)) break
 
     // Air defense check
     let airDefenseResult = -1
@@ -311,40 +475,47 @@ export function generateMovesInDirection(
       if (airDefenseResult === AirDefenseResult.DESTROYED) break
     }
 
-    // Missile diagonal movement limit
-    if (isMissile && isDiagonal && currentRange > moveRange - 1) break
-
-    // Range limit for non-commander pieces
-    if (!isCommander && currentRange > moveRange && currentRange > captureRange)
+    // Range limits
+    if (
+      isRangeExceeded(
+        currentRange,
+        pieceType,
+        isDiagonal,
+        moveRange,
+        captureRange,
+      )
+    ) {
       break
+    }
 
     const targetPiece = gameInstance.get(to)
 
-    // Terrain blocking check (only evaluated once per direction)
+    // Terrain blocking (evaluated once per direction)
     if (!terrainBlockedMovement) {
       terrainBlockedMovement = checkTerrainBlocking(from, to, pieceType, offset)
     }
 
+    // ===== PIECE INTERACTION =====
     if (targetPiece) {
-      const targetType = targetPiece.type
       const targetColor = targetPiece.color
 
-      // === COMMANDER SPECIAL RULE ===
-      // Commander sees enemy commander orthogonally - immediate capture at any range
+      // Commander special rule: immediate capture of enemy commander
       if (
-        isCommander &&
-        targetType === COMMANDER &&
-        targetColor === them &&
-        isOrthogonal
+        canCommanderCaptureEnemyCommander(
+          isCommander,
+          targetPiece,
+          them,
+          isOrthogonal,
+        )
       ) {
         addMove(moves, us, from, to, pieceData, targetPiece, BITS.CAPTURE)
         break
       }
 
-      // Normal capture logic
+      // Enemy piece - attempt capture
       if (targetColor === them && currentRange <= captureRange) {
-        // Avoid double-adding commander vs commander capture
-        if (!(isCommander && targetType === COMMANDER)) {
+        // Avoid double-adding commander vs commander
+        if (!(isCommander && targetPiece.type === COMMANDER)) {
           handleCaptureLogic(
             moves,
             from,
@@ -361,16 +532,14 @@ export function generateMovesInDirection(
             stayMask,
           )
         }
-      } else if (targetColor === us) {
-        // Friendly combination
-        const combinedPiece = combinePieces([pieceData, targetPiece])
-        if (combinedPiece) {
-          // Check if combined piece can stay on this terrain
-          // Note: Must use combinedPiece.type, not moving piece's type
-          const combinedMask = getMovementMask(combinedPiece.type)
+      }
 
+      // Friendly piece - potential combination
+      if (targetColor === us) {
+        const combinedPiece = combinePieces([pieceData, targetPiece])
+        if (combinedPiece?.carrying?.length) {
+          const combinedMask = getMovementMask(combinedPiece.type)
           if (
-            combinedPiece?.carrying?.length &&
             currentRange <= moveRange &&
             !terrainBlockedMovement &&
             !pieceBlockedMovement &&
@@ -389,75 +558,97 @@ export function generateMovesInDirection(
         }
       }
 
-      // Piece blocking logic
-      if (!moveIgnoresBlocking) {
-        // Navy can move past any piece except other navy
-        if (!(isNavy && targetType !== NAVY)) {
-          pieceBlockedMovement = true
-        }
+      // Update blocking state
+      if (isPieceBlocking(targetPiece, pieceType, moveIgnoresBlocking)) {
+        pieceBlockedMovement = true
       }
 
-      // Commander cannot slide past blocking pieces
-      // (except for enemy commander captured above)
+      // Determine if ray should stop
       if (
-        isCommander &&
-        !(targetType === COMMANDER && targetColor === them && isOrthogonal)
+        shouldStopRayAtPiece(
+          targetPiece,
+          pieceType,
+          them,
+          isOrthogonal,
+          pieceBlockedMovement,
+          captureIgnoresPieceBlocking,
+          moveIgnoresBlocking,
+        )
       ) {
         break
       }
     } else {
-      // Empty square - potential movement destination
-      if (
+      // ===== EMPTY SQUARE - MOVEMENT =====
+      const canMove =
         currentRange <= moveRange &&
         !terrainBlockedMovement &&
         !pieceBlockedMovement &&
         !!stayMask[to] &&
         (!isAirForce || airDefenseResult === AirDefenseResult.SAFE_PASS)
-      ) {
-        // Commander special rule: cannot slide past where enemy commander would be captured
-        if (isCommander && isOrthogonal) {
-          let lookAheadSq = to + offset
-          let enemyCommanderFound = false
-          while (isSquareOnBoard(lookAheadSq)) {
-            const lookAheadPiece = gameInstance.get(lookAheadSq)
-            if (lookAheadPiece) {
-              if (
-                lookAheadPiece.type === COMMANDER &&
-                lookAheadPiece.color === them
-              ) {
-                enemyCommanderFound = true
-              }
-              break
-            }
-            lookAheadSq += offset
-          }
-          if (!enemyCommanderFound) {
-            addMove(moves, us, from, to, pieceData)
-          }
-        } else {
+
+      if (canMove) {
+        // Commander cannot slide past enemy commander
+        if (
+          !shouldBlockCommanderSlide(
+            gameInstance,
+            from,
+            to,
+            offset,
+            them,
+            isCommander,
+            isOrthogonal,
+          )
+        ) {
           addMove(moves, us, from, to, pieceData)
         }
       }
     }
-
-    // Stop if blocked (for pieces that don't ignore blocking)
-    if (
-      pieceBlockedMovement &&
-      !captureIgnoresPieceBlocking &&
-      !moveIgnoresBlocking &&
-      !(
-        isCommander &&
-        targetPiece?.type === COMMANDER &&
-        targetPiece?.color === them &&
-        isOrthogonal
-      )
-    ) {
-      break
-    }
-
-    // Commander range limit (maximum board dimension)
-    if (isCommander && currentRange >= 11) break
   }
+}
+
+/**
+ * Navy-specific diagonal blocking squares
+ * These represent hard-coded terrain obstacles for navy diagonal movement
+ */
+const NAVY_DIAGONAL_BLOCKS = new Map<number, Set<number>>([
+  [-15, new Set([0x63])],
+  [15, new Set([0x72])],
+  [-17, new Set([0x42])],
+  [17, new Set([0x53])],
+])
+
+/**
+ * Check if Navy is blocked on specific diagonal moves
+ */
+function isNavyBlockedDiagonal(offset: number, to: number): boolean {
+  return NAVY_DIAGONAL_BLOCKS.get(offset)?.has(to) ?? false
+}
+
+/**
+ * Check if heavy piece can cross river between zones
+ */
+function isHeavyPieceCrossingBlocked(
+  from: number,
+  to: number,
+  offset: number,
+): boolean {
+  const fromFile = file(from)
+  const fromRank = rank(from)
+  const toFile = file(to)
+  const toRank = rank(to)
+  const isHorizontalOffset = offset === 16 || offset === -16
+
+  // Determine zones (0 = not in heavy zone, 1 = upper half, 2 = lower half)
+  const zoneFrom = fromFile < 2 ? 0 : fromRank <= 5 ? 1 : 2
+  const zoneTo = toFile < 2 ? 0 : toRank <= 5 ? 1 : 2
+
+  if (zoneFrom !== 0 && zoneTo !== 0 && zoneFrom !== zoneTo) {
+    if (isHorizontalOffset && (fromFile === 5 || toFile === 7)) {
+      return false // Bridge crossing allowed
+    }
+    return true // Crossing blocked
+  }
+  return false
 }
 
 /**
@@ -476,35 +667,70 @@ function checkTerrainBlocking(
 
   // Heavy piece river crossing rule
   if (HEAVY_PIECES.has(pieceDataType)) {
-    const fromFile = file(from)
-    const fromRank = rank(from)
-    const toFile = file(to)
-    const toRank = rank(to)
-    const isHorizontalOffset = offset === 16 || offset === -16
-
-    // Determine zones (0 = not in heavy zone, 1 = upper half, 2 = lower half)
-    const zoneFrom = fromFile < 2 ? 0 : fromRank <= 5 ? 1 : 2
-    const zoneTo = toFile < 2 ? 0 : toRank <= 5 ? 1 : 2
-
-    if (zoneFrom !== 0 && zoneTo !== 0 && zoneFrom !== zoneTo) {
-      if (isHorizontalOffset && (fromFile === 5 || toFile === 7)) {
-        return false
-      }
+    if (isHeavyPieceCrossingBlocked(from, to, offset)) {
       return true
     }
   }
+
+  // Navy diagonal blocking
   if (pieceDataType === NAVY) {
-    if (
-      (offset === -15 && to === 0x63) ||
-      (offset === 15 && to === 0x72) ||
-      (offset === -17 && to === 0x42) ||
-      (offset === 17 && to === 0x53)
-    ) {
+    if (isNavyBlockedDiagonal(offset, to)) {
       return true
     }
   }
 
   return false
+}
+
+// ========================================================================
+// PIECE-SPECIFIC CAPTURE RULES - Navy, Air Force Mechanics
+// ========================================================================
+
+/**
+ * Check if Navy can capture target at given range
+ */
+function canNavyCaptureAt(
+  currentRange: number,
+  targetType: PieceSymbol,
+  captureRange: number,
+): boolean {
+  if (targetType === NAVY) {
+    // Torpedo attack - full range
+    return currentRange <= captureRange
+  } else {
+    // Naval Gun attack - reduced range
+    return currentRange <= captureRange - 1
+  }
+}
+
+/**
+ * Determine capture move types for a piece
+ */
+interface CaptureOptions {
+  addNormalCapture: boolean
+  addStayCapture: boolean
+}
+
+function determineCaptureOptions(
+  pieceType: PieceSymbol,
+  to: number,
+  stayMask: Uint8Array,
+  isDeployMove: boolean,
+): CaptureOptions {
+  const canLand = !!stayMask[to]
+
+  if (!canLand) {
+    // Must use stay capture if can't land
+    return { addNormalCapture: false, addStayCapture: true }
+  }
+
+  // Air Force gets both options (very powerful)
+  if (pieceType === AIR_FORCE && !isDeployMove) {
+    return { addNormalCapture: true, addStayCapture: true }
+  }
+
+  // Normal pieces - standard capture
+  return { addNormalCapture: true, addStayCapture: false }
 }
 
 /**
@@ -527,57 +753,47 @@ function handleCaptureLogic(
 ): void {
   const us = pieceData.color
 
+  // Suicide moves are handled immediately
   if (isSuicideMove) {
     addMove(moves, us, from, to, pieceData, targetPiece, BITS.SUICIDE_CAPTURE)
     return
   }
 
+  // Validate if capture is allowed based on piece-specific rules
   let captureAllowed = true
-  let addNormalCapture = true
-  let addStayCapture = false
 
-  // Commander captures only adjacent
-  if (isCommander && currentRange > 1) {
+  if (isCommander && !canCommanderCaptureAt(currentRange)) {
     captureAllowed = false
   }
 
-  // Navy attack mechanisms
-  if (isNavy) {
-    if (targetPiece.type === NAVY) {
-      // Torpedo attack
-      if (currentRange > config.captureRange) {
-        captureAllowed = false
-      }
-    } else {
-      // Naval Gun attack
-      if (currentRange > config.captureRange - 1) {
-        captureAllowed = false
-      }
-    }
+  if (
+    isNavy &&
+    !canNavyCaptureAt(currentRange, targetPiece.type, config.captureRange)
+  ) {
+    captureAllowed = false
   }
 
-  const canLand = !!stayMask[to]
-  if (!canLand) {
-    addStayCapture = true
-    addNormalCapture = false
-  }
-  //Air Force is very powerful piece. Add both options whether it can choose to stay captured or move capture
-  if (canLand && isAirForce) {
-    if (!isDeployMove) {
-      addStayCapture = true
-    }
-    addNormalCapture = true
-  }
+  if (!captureAllowed) return
 
-  if (captureAllowed) {
-    if (addNormalCapture) {
-      addMove(moves, us, from, to, pieceData, targetPiece, BITS.CAPTURE)
-    }
-    if (addStayCapture) {
-      addMove(moves, us, from, to, pieceData, targetPiece, BITS.STAY_CAPTURE)
-    }
+  // Determine which capture types to add
+  const { addNormalCapture, addStayCapture } = determineCaptureOptions(
+    pieceData.type,
+    to,
+    stayMask,
+    isDeployMove,
+  )
+
+  if (addNormalCapture) {
+    addMove(moves, us, from, to, pieceData, targetPiece, BITS.CAPTURE)
+  }
+  if (addStayCapture) {
+    addMove(moves, us, from, to, pieceData, targetPiece, BITS.STAY_CAPTURE)
   }
 }
+
+// ========================================================================
+// CORE MOVE GENERATION - Main Ray-Casting Logic
+// ========================================================================
 
 /**
  * Generate all possible moves for a piece
@@ -799,12 +1015,10 @@ export function generateNormalMoves(
   // Handle filterSquare case
   if (filterSquare) {
     const sq = SQUARE_MAP[filterSquare]
-    if (
-      sq === undefined ||
-      !gameInstance.get(sq) ||
-      gameInstance.get(sq)?.color !== us
-    )
-      return []
+    if (sq === undefined) return []
+
+    const piece = gameInstance.get(sq)
+    if (!piece || piece.color !== us) return []
 
     generateMovesFromSquare(gameInstance, sq, moves, filterPiece)
     return moves
