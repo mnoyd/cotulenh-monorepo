@@ -616,37 +616,25 @@ export class MoveSession {
     }
 
     const options: RecombineOption[] = []
-    const us = this.turn
 
-    // Pre-compute move data once (avoid repeated algebraic() and haveCommander() calls)
-    const moveData = this.moves.map((move) => ({
-      move,
-      square: algebraic(move.to),
-      hasCommander: haveCommander(move.piece),
-    }))
-
+    // Part 1: Generate all possible combinations
+    // ----------------------------------------
     for (const remainingPiece of this.remaining) {
-      const remainingHasCommander = haveCommander(remainingPiece)
-
-      for (const { move, square, hasCommander: moveHasCommander } of moveData) {
-        // Attempt combination
-        const combined = combinePieces([move.piece, remainingPiece])
-        if (!combined) continue
-
-        // Validate terrain for combined piece
-        if (!getMovementMask(combined.type)[move.to]) continue
-
-        // Commander safety check (only if commander involved)
-        if (remainingHasCommander || moveHasCommander) {
-          const isAttacked = this._game.getAttackers(
-            move.to,
-            swapColor(us),
-            combined.type,
-          )
-          if (isAttacked.length > 0) continue
+      for (const move of this.moves) {
+        const option: RecombineOption = {
+          square: algebraic(move.to),
+          piece: remainingPiece.type,
         }
 
-        options.push({ square, piece: remainingPiece.type })
+        // Part 2: Validate candidates
+        // ---------------------------
+        try {
+          // Delegate to existing validation logic
+          this.validateRecombine(option)
+          options.push(option)
+        } catch {
+          // Ignore invalid options
+        }
       }
     }
 
