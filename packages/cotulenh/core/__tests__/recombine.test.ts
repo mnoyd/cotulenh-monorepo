@@ -1,9 +1,5 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
-import {
-  MoveSession,
-  executeRecombine,
-  DeploySequence,
-} from '../src/move-session.js'
+import { describe, it, expect, beforeEach } from 'vitest'
+import { MoveSession, DeploySequence } from '../src/move-session.js'
 import {
   BITS,
   RED,
@@ -156,7 +152,7 @@ describe('Recombine Option', () => {
 
       game.setSession(session)
       const options = session.getOptions()
-      const result = executeRecombine(game, options[0])
+      const result = game.recombine(options[0])
 
       expect(result).toBeDefined()
       if (!result) return
@@ -206,7 +202,7 @@ describe('Recombine Option', () => {
       )
       expect(tankOption).toBeDefined()
 
-      const result = executeRecombine(game, tankOption!)
+      const result = game.recombine(tankOption!)
       expect(result).toBeDefined()
       if (!result) return
 
@@ -264,7 +260,7 @@ describe('Recombine Option', () => {
       )
       expect(infantryOption).toBeDefined()
 
-      const result = executeRecombine(game, infantryOption!)
+      const result = game.recombine(infantryOption!)
       expect(result).toBeDefined()
       if (!result) return
 

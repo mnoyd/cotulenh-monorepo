@@ -5,7 +5,7 @@
   import { logger } from '@cotulenh/common';
   import { CotulenhBoard, origMoveToKey } from '@cotulenh/board';
   import type { Api, DestMove, OrigMove, OrigMoveKey, Role } from '@cotulenh/board';
-  import { CoTuLenh, BLUE, RED, executeRecombine } from '@cotulenh/core';
+  import { CoTuLenh, BLUE, RED } from '@cotulenh/core';
   import type {
     Square,
     Color,
@@ -244,7 +244,7 @@
         piece: roleToType(option.piece as unknown as Role)
       };
 
-      const result = executeRecombine(game, coreOption);
+      const result = game.recombine(coreOption);
 
       if (result.completed) {
         // Recombine completed the session, add to history

@@ -76,14 +76,7 @@ import {
 } from './move-session.js'
 import { createError, ErrorCode, logger } from '@cotulenh/common'
 
-export {
-  StandardMove,
-  DeploySequence,
-  handleMove,
-  executeRecombine,
-  type MoveResult,
-  type RecombineOption,
-}
+export { StandardMove, DeploySequence, type MoveResult, type RecombineOption }
 
 // Structure for storing history states
 interface History {
@@ -777,18 +770,6 @@ export class CoTuLenh {
     return command
   }
 
-  /**
-   * Unified move handler for both standard and deploy moves.
-   * Delegates to handleDeployMove for deploy moves, or executes standard move logic.
-   * @param move - The internal move to execute
-   * @returns MoveResult indicating completion status and move object
-   */
-  private _handleMove(move: InternalMove): MoveResult {
-    // Unified handling: Delegate everything to handleMove
-    // handleMove will create a session (if needed), add the move, and commit if auto-commit is true
-    return handleMove(this, move)
-  }
-
   private _undoMove(): InternalMove | InternalMove[] | null {
     const old = this._history.pop()
     if (!old) return null
@@ -1405,10 +1386,19 @@ export class CoTuLenh {
     }
 
     // 4. Execute move
-    return this._handleMove(internalMove)
+    return handleMove(this, internalMove)
   }
   // deployMove() method removed - use handleDeployMove() from move-session.ts instead
   // The new architecture uses MoveSession for unified move handling
+
+  /**
+   * Executes a recombine operation safely.
+   * @param option - The recombine option containing the square and piece to combine
+   * @returns MoveResult when complete, or intermediate result if session needs more moves
+   */
+  public recombine(option: RecombineOption): MoveResult {
+    return executeRecombine(this, option)
+  }
 
   /**
    * Retrieves the color of the player who has the current turn to move.
