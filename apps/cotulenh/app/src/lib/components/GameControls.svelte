@@ -6,10 +6,12 @@
   import { get } from 'svelte/store';
 
   export let game: CoTuLenh | null = null;
+  export let originalFen: string | undefined = undefined;
 
   function resetGame() {
     if (!game) return;
-    game = new CoTuLenh();
+    // Reset to the original FEN from URL or default starting position
+    game = originalFen ? new CoTuLenh(originalFen) : new CoTuLenh();
     gameStore.initialize(game);
   }
 
@@ -19,10 +21,15 @@
     gameStore.handleUndo(game);
   }
 
-  function printFen() {
+  async function copyFen() {
     if (!game) return;
-    logger.info('Current FEN:', { fen: game.fen() });
-    alert('FEN logged to console');
+    const fen = game.fen();
+    try {
+      await navigator.clipboard.writeText(fen);
+      logger.info('FEN copied to clipboard:', { fen });
+    } catch (err) {
+      logger.error(err, 'Failed to copy FEN to clipboard');
+    }
   }
 
   function reportIssue() {
@@ -43,10 +50,10 @@
 </script>
 
 <div class="controls-mini">
-  <button class="control-btn" on:click={undoLastMove} title="Undo Last Move"> UNDO </button>
-  <button class="control-btn" on:click={resetGame} title="Reset Game"> RESET </button>
-  <button class="control-btn" on:click={printFen} title="Print FEN to Console"> FEN </button>
-  <button class="control-btn" on:click={reportIssue} title="Report Issue"> REPORT </button>
+  <button class="control-btn undo-btn" on:click={undoLastMove} title="Undo Last Move"> UNDO </button>
+  <button class="control-btn reset-btn" on:click={resetGame} title="Reset Game"> RESET </button>
+  <button class="control-btn fen-btn" on:click={copyFen} title="Copy FEN to Clipboard"> FEN </button>
+  <button class="control-btn report-btn" on:click={reportIssue} title="Report Issue"> REPORT </button>
 </div>
 
 <style>
@@ -58,25 +65,91 @@
 
   .control-btn {
     flex: 1;
-    background: #333;
-    border: 1px solid #444;
-    color: #aeaeae;
+    background: rgba(15, 23, 42, 0.9);
+    border: 1px solid rgba(0, 255, 255, 0.15);
+    color: #e0e0e0;
     font-size: 0.7rem;
     font-weight: 700;
     padding: 6px 4px;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.2s ease;
     border-radius: 2px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .control-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, transparent 40%, rgba(255, 255, 255, 0.05) 50%, transparent 60%);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  .control-btn:hover::before {
+    opacity: 1;
   }
 
   .control-btn:hover {
-    background: #444;
     color: #fff;
-    border-color: #555;
+    transform: translateY(-1px);
   }
 
   .control-btn:active {
-    background: #222;
     transform: translateY(1px);
+  }
+
+  /* UNDO - Cyan (primary color) */
+  .undo-btn {
+    border-color: rgba(0, 243, 255, 0.4);
+    box-shadow: 0 0 8px rgba(0, 243, 255, 0.1), inset 0 0 10px rgba(0, 243, 255, 0.05);
+  }
+  .undo-btn:hover {
+    background: rgba(0, 243, 255, 0.15);
+    border-color: rgba(0, 243, 255, 0.8);
+    box-shadow: 0 0 15px rgba(0, 243, 255, 0.3), inset 0 0 15px rgba(0, 243, 255, 0.1);
+    text-shadow: 0 0 8px rgba(0, 243, 255, 0.8);
+  }
+
+  /* RESET - Amber/Orange (alert color) */
+  .reset-btn {
+    border-color: rgba(255, 171, 0, 0.4);
+    box-shadow: 0 0 8px rgba(255, 171, 0, 0.1), inset 0 0 10px rgba(255, 171, 0, 0.05);
+  }
+  .reset-btn:hover {
+    background: rgba(255, 171, 0, 0.15);
+    border-color: rgba(255, 171, 0, 0.8);
+    box-shadow: 0 0 15px rgba(255, 171, 0, 0.3), inset 0 0 15px rgba(255, 171, 0, 0.1);
+    text-shadow: 0 0 8px rgba(255, 171, 0, 0.8);
+  }
+
+  /* FEN - Green (secondary color) */
+  .fen-btn {
+    border-color: rgba(0, 255, 65, 0.4);
+    box-shadow: 0 0 8px rgba(0, 255, 65, 0.1), inset 0 0 10px rgba(0, 255, 65, 0.05);
+  }
+  .fen-btn:hover {
+    background: rgba(0, 255, 65, 0.15);
+    border-color: rgba(0, 255, 65, 0.8);
+    box-shadow: 0 0 15px rgba(0, 255, 65, 0.3), inset 0 0 15px rgba(0, 255, 65, 0.1);
+    text-shadow: 0 0 8px rgba(0, 255, 65, 0.8);
+  }
+
+  /* REPORT - Gold/Warning color */
+  .report-btn {
+    border-color: rgba(255, 215, 0, 0.4);
+    box-shadow: 0 0 8px rgba(255, 215, 0, 0.1), inset 0 0 10px rgba(255, 215, 0, 0.05);
+  }
+  .report-btn:hover {
+    background: rgba(255, 215, 0, 0.15);
+    border-color: rgba(255, 215, 0, 0.8);
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.3), inset 0 0 15px rgba(255, 215, 0, 0.1);
+    text-shadow: 0 0 8px rgba(255, 215, 0, 0.8);
   }
 </style>

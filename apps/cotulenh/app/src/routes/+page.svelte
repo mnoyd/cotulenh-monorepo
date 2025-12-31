@@ -28,6 +28,7 @@
   let boardContainerElement: HTMLElement | null = null;
   let boardApi = $state<Api | null>(null);
   let game = $state<CoTuLenh | null>(null);
+  let originalFen = $state<string | undefined>(undefined);
 
   function coreToBoardColor(coreColor: Color | null): 'red' | 'blue' | undefined {
     return coreColor ? coreColorToBoard(coreColor) : undefined;
@@ -296,19 +297,18 @@
 
       // Check for FEN in URL parameters
       const urlFen = $page.url.searchParams.get('fen');
-      let initialFen: string | undefined = undefined;
 
       if (urlFen) {
         try {
-          initialFen = decodeURIComponent(urlFen);
-          logger.debug('Loading game with custom FEN:', { fen: initialFen });
+          originalFen = decodeURIComponent(urlFen);
+          logger.debug('Loading game with custom FEN:', { fen: originalFen });
         } catch (error) {
           logger.error(error, 'Error decoding FEN from URL:');
         }
       }
 
       // Initialize game with custom FEN or default position
-      game = initialFen ? new CoTuLenh(initialFen) : new CoTuLenh();
+      game = originalFen ? new CoTuLenh(originalFen) : new CoTuLenh();
       gameStore.initialize(game);
 
       const unsubscribe = gameStore.subscribe((state) => {
@@ -404,7 +404,7 @@
             <DeploySessionPanel {game} onCommit={commitDeploy} onCancel={cancelDeploy} />
           </div>
           <div class="max-lg:col-start-2">
-            <GameControls bind:game />
+            <GameControls bind:game {originalFen} />
           </div>
           <div
             class="flex-1 min-h-0 overflow-hidden max-lg:col-span-full max-lg:order-4 max-lg:h-[120px]"
