@@ -41,6 +41,20 @@ describe('Stack Movement and Deployment', () => {
 
     const moves = game.moves({ verbose: true, square: 'c1' }) as StandardMove[]
 
+    console.log('DEBUG: moves length', moves.length)
+    if (moves.length > 0) {
+      console.log(
+        'DEBUG: first move',
+        moves[0].constructor.name,
+        JSON.stringify(moves[0], null, 2),
+      )
+      moves.forEach((m, i) =>
+        console.log(
+          `DEBUG: move ${i}: ${m.constructor.name} from:${m.from} to:${m.to} piece:${m.piece?.type} deploy:${m.isDeploy}`,
+        ),
+      )
+    }
+
     // Expect deploy moves for F and T, plus carrier moves for N
     const deployI_c2 = findVerboseMove(moves, 'c1', 'c2', {
       piece: INFANTRY,

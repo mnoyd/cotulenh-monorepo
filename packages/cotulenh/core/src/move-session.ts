@@ -115,7 +115,7 @@ export class StandardMove extends AbstractMoveResult {
   }
 
   get isDeploy(): boolean {
-    return false
+    return this.flags.indexOf(FLAGS.DEPLOY) > -1
   }
 
   // Old constructor removed - use StandardMove.fromExecutedMove() instead
