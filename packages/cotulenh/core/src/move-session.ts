@@ -51,20 +51,72 @@ export interface RecombineOption {
   piece: PieceSymbol // The piece from the stack we are adding
 }
 
+export abstract class AbstractMoveResult implements BaseMoveResult {
+  constructor(
+    public readonly color: Color,
+    public readonly from: Square,
+    public readonly piece: Piece,
+    public readonly flags: string,
+    public readonly before: string,
+    public readonly after: string,
+    public readonly san?: string,
+    public readonly lan?: string,
+    public readonly captured?: Piece[],
+    public readonly completed: boolean = true,
+  ) {}
+
+  abstract get isDeploy(): boolean
+  abstract get to(): Square | Map<Square, Piece>
+
+  isCapture(): boolean {
+    return this.flags.indexOf(FLAGS.CAPTURE) > -1
+  }
+
+  isStayCapture(): boolean {
+    return this.flags.indexOf(FLAGS.STAY_CAPTURE) > -1
+  }
+
+  isCombination(): boolean {
+    return this.flags.indexOf(FLAGS.COMBINATION) > -1
+  }
+
+  isSuicideCapture(): boolean {
+    return this.flags.indexOf(FLAGS.SUICIDE_CAPTURE) > -1
+  }
+}
+
 // Public StandardMove class (formerly Move)
-export class StandardMove implements BaseMoveResult {
-  color!: Color
-  from!: Square
-  to!: Square // Destination square (piece's final location)
-  piece!: Piece
-  captured?: Piece[]
-  flags!: string // String representation of flags
-  san?: string // Standard Algebraic Notation (needs implementation)
-  lan?: string // Long Algebraic Notation (needs implementation)
-  before!: string // FEN before move
-  after!: string // FEN after move
-  completed: boolean = true // Default to true for normal moves
-  isDeploy: boolean = false
+export class StandardMove extends AbstractMoveResult {
+  public readonly toSquare: Square
+
+  constructor(
+    data: BaseMoveResult & {
+      to: Square
+      flags: string
+    },
+  ) {
+    super(
+      data.color,
+      data.from,
+      data.piece,
+      data.flags,
+      data.before,
+      data.after,
+      data.san,
+      data.lan,
+      data.captured,
+      data.completed,
+    )
+    this.toSquare = data.to
+  }
+
+  get to(): Square {
+    return this.toSquare
+  }
+
+  get isDeploy(): boolean {
+    return false
+  }
 
   // Old constructor removed - use StandardMove.fromExecutedMove() instead
 
@@ -88,65 +140,66 @@ export class StandardMove implements BaseMoveResult {
     lan: string
     completed?: boolean
   }): StandardMove {
-    const move = Object.create(StandardMove.prototype)
-    // console.log('StandardMove created:', move, 'Prototype:', Object.getPrototypeOf(move), 'Has method:', typeof move.isSuicideCapture)
-    move.color = data.color
-    move.from = data.from
-    move.to = data.to
-    move.piece = data.piece
     // Flatten captured piece(s) to ensure consistent Piece[] type
+    let captured: Piece[] | undefined
     if (data.captured) {
-      move.captured = Array.isArray(data.captured)
+      captured = Array.isArray(data.captured)
         ? data.captured
         : flattenPiece(data.captured)
-    } else {
-      move.captured = undefined
     }
-    move.flags = data.flags
-    move.before = data.before
-    move.after = data.after
-    move.san = data.san
-    move.lan = data.lan
-    move.completed = data.completed ?? true
-    move.isDeploy = move.flags.includes(FLAGS.DEPLOY)
-    return move
-  }
 
-  // Add helper methods like isCapture(), isPromotion() etc. if needed
-  isCapture(): boolean {
-    return this.flags.indexOf(FLAGS.CAPTURE) > -1
-  }
-
-  isStayCapture(): boolean {
-    return this.flags.indexOf(FLAGS.STAY_CAPTURE) > -1
-  }
-
-  // isDeploy(): boolean { return false } // Removed, use property instead
-
-  isCombination(): boolean {
-    return this.flags.indexOf(FLAGS.COMBINATION) > -1
-  }
-
-  isSuicideCapture(): boolean {
-    return this.flags.indexOf(FLAGS.SUICIDE_CAPTURE) > -1
+    return new StandardMove({
+      color: data.color,
+      from: data.from,
+      to: data.to,
+      piece: data.piece,
+      captured,
+      flags: data.flags,
+      before: data.before,
+      after: data.after,
+      san: data.san,
+      lan: data.lan,
+      completed: data.completed ?? true,
+      isDeploy: false,
+    })
   }
 }
 
 // Public DeploySequence class (formerly DeployMove)
-export class DeploySequence implements BaseMoveResult {
-  color!: Color
-  from!: Square
-  to!: Map<Square, Piece> // Destination square (piece's final location)
-  piece!: Piece // The main piece being deployed
-  stay: Piece | undefined
-  captured?: Piece[]
-  flags!: string // String representation of flags (e.g., 'd' for deploy, 'c' for capture)
-  san?: string // Standard Algebraic Notation (needs implementation)
-  lan?: string // Long Algebraic Notation (needs implementation)
-  before!: string // FEN before move
-  after!: string // FEN after move
-  completed: boolean = true
-  isDeploy = true as const
+export class DeploySequence extends AbstractMoveResult {
+  public readonly toMap: Map<Square, Piece>
+  public readonly stay: Piece | undefined
+
+  constructor(
+    data: BaseMoveResult & {
+      to: Map<Square, Piece>
+      stay?: Piece
+      flags: string
+    },
+  ) {
+    super(
+      data.color,
+      data.from,
+      data.piece,
+      data.flags,
+      data.before,
+      data.after,
+      data.san,
+      data.lan,
+      data.captured,
+      data.completed,
+    )
+    this.toMap = data.to
+    this.stay = data.stay
+  }
+
+  get to(): Map<Square, Piece> {
+    return this.toMap
+  }
+
+  get isDeploy(): boolean {
+    return true
+  }
 
   /**
    * Create DeploySequence from session data (preferred method).
@@ -169,21 +222,21 @@ export class DeploySequence implements BaseMoveResult {
     lan: string
     completed?: boolean
   }): DeploySequence {
-    const move = Object.create(DeploySequence.prototype)
-    move.color = data.color
-    move.from = data.from
-    move.to = data.to
-    move.piece = data.piece
-    move.stay = data.stay
-    move.captured = data.captured
-    move.flags = data.flags
-    move.before = data.before
-    move.after = data.after
-    move.san = data.san
-    move.lan = data.lan
-    move.completed = data.completed ?? true
-    move.isDeploy = true
-    return move
+    return new DeploySequence({
+      color: data.color,
+      from: data.from,
+      to: data.to,
+      piece: data.piece,
+      stay: data.stay,
+      captured: data.captured,
+      flags: data.flags,
+      before: data.before,
+      after: data.after,
+      san: data.san,
+      lan: data.lan,
+      completed: data.completed ?? true,
+      isDeploy: true,
+    })
   }
 
   /**
@@ -302,6 +355,60 @@ export class MoveSession {
       if (BITS[flag] & move.flags) out += FLAGS[flag]
     }
     return out
+  }
+
+  /**
+   * Static factory to ensure a session exists for the given move.
+   * If a session exists, it returns it.
+   * If not, it validates the move start and creates a new session.
+   */
+  static ensure(game: CoTuLenh, move: InternalMove): MoveSession {
+    const existing = game.getSession()
+    if (existing) return existing
+
+    const stackSquare = move.from
+    const originalPiece = game.get(stackSquare)
+
+    if (!originalPiece) {
+      throw createError(
+        ErrorCode.MOVE_NO_PIECE_TO_MOVE,
+        `No piece at ${algebraic(stackSquare)} to start move session`,
+      )
+    }
+
+    const session = new MoveSession(game, {
+      stackSquare,
+      turn: game.turn(),
+      originalPiece: structuredClone(originalPiece),
+      isDeploy: (move.flags & BITS.DEPLOY) !== 0,
+    })
+    game.setSession(session)
+    return session
+  }
+
+  /**
+   * Creates a plan for a recombine operation.
+   * Validates the option and returns the full list of moves to replay.
+   */
+  createReplayPlan(option: RecombineOption): InternalMove[] {
+    // 1. Validate and get target index
+    const { moveIndex, combinedPiece } = this.validateRecombine(option)
+
+    // 2. Clone ALL moves before any mutation to prevent stale data issues
+    const newMoves = this.moves.map((m) => ({
+      ...m,
+      piece: { ...m.piece },
+      captured: m.captured ? { ...m.captured } : undefined,
+      flags: m.flags | BITS.DEPLOY, // Ensure deploy flag
+    }))
+
+    // 3. Modify the target move with combined piece
+    newMoves[moveIndex] = {
+      ...newMoves[moveIndex],
+      piece: combinedPiece,
+    }
+
+    return newMoves
   }
 
   constructor(
@@ -732,45 +839,22 @@ export function handleMove(
   move: InternalMove,
   autoCommit: boolean = true,
 ): MoveResult {
-  const isDeploy = (move.flags & BITS.DEPLOY) !== 0
-  let session = game.getSession()
+  // 1. Ensure Session
+  const session = MoveSession.ensure(game, move)
 
-  if (!session) {
-    // Start new session
-    const stackSquare = move.from
-    const originalPiece = game.get(stackSquare)
-
-    if (!originalPiece) {
-      throw createError(
-        ErrorCode.MOVE_NO_PIECE_TO_MOVE,
-        `No piece at ${algebraic(stackSquare)} to start move session`,
-      )
-    }
-
-    session = new MoveSession(game, {
-      stackSquare,
-      turn: game.turn(),
-      originalPiece: structuredClone(originalPiece),
-      isDeploy,
-    })
-    game.setSession(session)
-  }
-
-  // Add move to session (executes immediately)
+  // 2. Add move to session (executes immediately)
   session.addMove(move)
 
-  // Check if complete and should auto-commit
+  // 3. Check if complete and should auto-commit
   if (session.isComplete && autoCommit) {
     // Commit and return completed result via game method
     const commitResult = game.commitSession()
     if (commitResult.success && commitResult.result) {
       return commitResult.result
     }
-    // If commit failed (validation), return intermediate
-    return session.getCurrentResult()
   }
 
-  // Return intermediate result (not complete yet)
+  // Return intermediate result (not complete yet) or fallthrough from failed commit
   return session.getCurrentResult()
 }
 
@@ -797,26 +881,14 @@ export function executeRecombine(
     )
   }
 
-  // Validate and get computed data (throws if invalid)
-  const { moveIndex, combinedPiece } = session.validateRecombine(option)
+  // 1. Get the plan (State calculation)
+  const allMoves = session.createReplayPlan(option)
 
-  // Deep clone ALL moves before any mutation to prevent stale data issues
-  const allMoves: InternalMove[] = session.moves.map((m) => ({
-    ...m,
-    piece: { ...m.piece },
-    captured: m.captured ? { ...m.captured } : undefined,
-    flags: m.flags | BITS.DEPLOY, // Ensure deploy flag
-  }))
-
-  // Modify the target move with combined piece
-  allMoves[moveIndex] = {
-    ...allMoves[moveIndex],
-    piece: combinedPiece,
-  }
-
+  // 2. Reset State (Execution)
   // Cancel session (undoes all moves on board, clears session from game)
   session.cancel()
 
+  // 3. Replay (Execution)
   // Replay ALL moves in order
   let result: MoveResult | null | undefined
   for (let i = 0; i < allMoves.length; i++) {
