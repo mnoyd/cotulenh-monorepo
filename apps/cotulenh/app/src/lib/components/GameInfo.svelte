@@ -1,39 +1,40 @@
 <script lang="ts">
   import { getTurnColorName } from '$lib/utils';
-  import { gameStore } from '$lib/stores/game';
+  import { gameState } from '$lib/stores/game.svelte';
   import * as Alert from '$lib/components/ui/alert';
   import AlertDescription from '$lib/components/ui/alert/alert-description.svelte';
   import AlertTitle from '$lib/components/ui/alert/alert-title.svelte';
+
+  // Use $derived to create reactive values from gameState
+  let turn = $derived(gameState.turn);
+  let check = $derived(gameState.check);
+  let status = $derived(gameState.status);
 </script>
 
 <div class="game-info-mini">
   <div class="status-row">
-    <div
-      class="turn-badge"
-      class:red={$gameStore.turn === 'r'}
-      class:blue={$gameStore.turn === 'b'}
-    >
+    <div class="turn-badge" class:red={turn === 'r'} class:blue={turn === 'b'}>
       <span class="label">TURN</span>
-      <span class="value">{$gameStore.turn ? getTurnColorName($gameStore.turn) : '...'}</span>
+      <span class="value">{turn ? getTurnColorName(turn) : '...'}</span>
     </div>
   </div>
 
-  {#if $gameStore.check}
+  {#if check}
     <Alert.Root variant="destructive" class="check-alert">
       <AlertTitle>⚠️ CHECK!</AlertTitle>
       <AlertDescription>
-        {$gameStore.turn ? getTurnColorName($gameStore.turn) : 'Enemy'}'s commander is under attack
+        {turn ? getTurnColorName(turn) : 'Enemy'}'s commander is under attack
       </AlertDescription>
     </Alert.Root>
   {/if}
 
-  {#if $gameStore.status !== 'playing'}
+  {#if status !== 'playing'}
     <Alert.Root class="game-over-alert">
       <AlertTitle>
-        {$gameStore.status === 'checkmate' ? '🏆 CHECKMATE!' : $gameStore.status.toUpperCase()}
+        {status === 'checkmate' ? '🏆 CHECKMATE!' : status.toUpperCase()}
       </AlertTitle>
       <AlertDescription>
-        Game over. {$gameStore.status === 'checkmate' ? 'Victory!' : 'Draw.'}
+        Game over. {status === 'checkmate' ? 'Victory!' : 'Draw.'}
       </AlertDescription>
     </Alert.Root>
   {/if}

@@ -19,7 +19,7 @@
   import MoveHistory from '$lib/components/MoveHistory.svelte';
 
   import GameControls from '$lib/components/GameControls.svelte';
-  import { gameStore, getDeployState } from '$lib/stores/game';
+  import { gameStore, gameState, getDeployState } from '$lib/stores/game.svelte';
 
   import '$lib/styles/modern-warfare.css';
   import { makeCoreMove } from '$lib/utils';
@@ -30,6 +30,14 @@
   let boardApi = $state<Api | null>(null);
   let game = $state<CoTuLenh | null>(null);
   let originalFen = $state<string | undefined>(undefined);
+
+  // Use $derived to create reactive values from gameState
+  let gameFen = $derived(gameState.fen);
+  let gameTurn = $derived(gameState.turn);
+  let gameStatus = $derived(gameState.status);
+  let gameCheck = $derived(gameState.check);
+  let gameLastMove = $derived(gameState.lastMove);
+  let gamePossibleMoves = $derived(gameState.possibleMoves);
 
   function coreToBoardColor(coreColor: Color | null): 'red' | 'blue' | undefined {
     return coreColor ? coreColorToBoard(coreColor) : undefined;
@@ -70,21 +78,21 @@
   let uiDeployState = $derived.by(() => {
     // Read deployVersion to track it as a dependency
     void deployVersion;
-    return $gameStore.fen ? getDeployState(game) : null;
+    return gameFen ? getDeployState(game) : null;
   });
 
   function createBoardConfig() {
     return {
-      fen: $gameStore.fen,
-      viewOnly: $gameStore.status !== 'playing',
-      turnColor: coreToBoardColor($gameStore.turn),
-      lastMove: mapLastMoveToBoardFormat($gameStore.lastMove),
-      check: coreToBoardCheck($gameStore.check, $gameStore.turn),
+      fen: gameFen,
+      viewOnly: gameStatus !== 'playing',
+      turnColor: coreToBoardColor(gameTurn),
+      lastMove: mapLastMoveToBoardFormat(gameLastMove),
+      check: coreToBoardCheck(gameCheck, gameTurn),
       airDefense: { influenceZone: coreToBoardAirDefense() },
       movable: {
         free: false,
-        color: coreToBoardColor($gameStore.turn),
-        dests: mapPossibleMovesToDests($gameStore.possibleMoves),
+        color: coreToBoardColor(gameTurn),
+        dests: mapPossibleMovesToDests(gamePossibleMoves),
         events: {
           after: handleMove,
           session: {
@@ -95,7 +103,7 @@
         },
         session: {
           options: uiDeployState?.recombineOptions
-            ? uiDeployState.recombineOptions.map((opt) => ({
+            ? uiDeployState.recombineOptions.map((opt: any) => ({
                 square: opt.square,
                 piece: typeToRole(opt.piece as unknown as PieceSymbol) as Role
               }))
@@ -162,32 +170,31 @@
     try {
       // Check if we are viewing history. If so, and we make a move, we need to rollback to that state
       // effectively truncating the future history.
-      const viewIndex = $gameStore.historyViewIndex;
-      if (viewIndex !== -1 && viewIndex < $gameStore.history.length - 1) {
+      const viewIndex = gameState.historyViewIndex;
+      const historyLength = gameState.history.length;
+      if (viewIndex !== -1 && viewIndex < historyLength - 1) {
         // Calculate how many moves to undo
         // We want to keep (viewIndex + 1) moves.
-        // Current length is gameStore.history.length (which should match game.history().length if sync)
         const targetLength = viewIndex + 1;
-        const currentLength = $gameStore.history.length;
-        const undoCount = currentLength - targetLength;
+        const undoCount = historyLength - targetLength;
 
         if (undoCount > 0) {
           for (let i = 0; i < undoCount; i++) {
             game.undo();
           }
           // Sync the store with the rolled-back game state, including truncating history.
-          gameStore.handleUndo(game);
+          gameState.handleUndo(game);
         }
-      } else if (viewIndex === $gameStore.history.length - 1) {
+      } else if (viewIndex === historyLength - 1) {
         // We are viewing the last move, which is effectively HEAD. Just cancel preview to be safe.
-        gameStore.cancelPreview(game);
+        gameState.cancelPreview(game);
       }
 
       const moveResult = makeCoreMove(game, orig, dest);
 
       if (moveResult) {
         // logger.debug('Game move successful:', moveResult);
-        gameStore.applyMove(game, moveResult);
+        gameState.applyMove(game, moveResult);
         // Increment deployVersion to trigger uiDeployState recalculation
         deployVersion++;
       } else {
@@ -231,7 +238,7 @@
       deployVersion++;
 
       // 2. Use the result directly instead of querying history (which can cause replay issues)
-      gameStore.applyDeployCommit(game, result.result);
+      gameState.applyDeployCommit(game, result.result);
     } catch (error) {
       logger.error('❌ Failed to commit deploy session:', { error });
       const errorMsg = error instanceof Error ? error.message : 'Unknown error';
@@ -262,11 +269,11 @@
 
       if (result.completed) {
         // Recombine completed the session, add to history
-        gameStore.applyDeployCommit(game, result);
+        gameState.applyDeployCommit(game, result);
         deployVersion++; // Clear deploy state since session is complete
       } else {
         // Session still active, treat as a move update to refresh options and state
-        gameStore.applyMove(game, result);
+        gameState.applyMove(game, result);
         deployVersion++; // Update deploy state to refresh recombine options
       }
     } catch (error) {
@@ -288,7 +295,7 @@
     try {
       game.cancelSession();
       // Reinitialize game store with restored state
-      gameStore.initialize(game);
+      gameState.initialize(game);
       // Clear deploy state
       deployVersion++;
     } catch (error) {
@@ -326,18 +333,13 @@
 
       // Initialize game with custom FEN or default position
       game = originalFen ? new CoTuLenh(originalFen) : new CoTuLenh();
-      gameStore.initialize(game);
-
-      const unsubscribe = gameStore.subscribe((state) => {
-        // logger.debug('Game state updated in store:', state);
-      });
+      gameState.initialize(game);
 
       boardApi = CotulenhBoard(boardContainerElement, createBoardConfig());
 
       cleanup = () => {
         logger.debug('Cleaning up board and game subscription.');
         boardApi?.destroy();
-        unsubscribe();
       };
     })();
 
@@ -358,13 +360,17 @@
   let lastProcessedDeployState: any = null;
 
   $effect(() => {
+    // Track dependencies
+    void gameFen;
+    void uiDeployState;
+
     // Check if FEN OR DeployState has changed
-    const fenChanged = $gameStore.fen && $gameStore.fen !== lastProcessedFen;
+    const fenChanged = gameFen && gameFen !== lastProcessedFen;
     const deployStateChanged = uiDeployState !== lastProcessedDeployState;
 
     if (boardApi && (fenChanged || deployStateChanged)) {
       // console.log('🔄 Effect triggered', { fenChanged, deployStateChanged });
-      lastProcessedFen = $gameStore.fen;
+      lastProcessedFen = gameFen;
       lastProcessedDeployState = uiDeployState;
       isUpdatingBoard = true;
       reSetupBoard();
@@ -380,7 +386,7 @@
   function undoLastMove() {
     if (!game) return;
     game.undo();
-    gameStore.handleUndo(game);
+    gameState.handleUndo(game);
     // If we undo while viewing history (not head), we are now at a new head
     // so logic inside handleUndo should take care of history truncation if implemented correctly
     // or we just rely on game state.
@@ -391,7 +397,7 @@
     if (!game) return;
     if (confirm('Are you sure you want to reset the game?')) {
       game = originalFen ? new CoTuLenh(originalFen) : new CoTuLenh();
-      gameStore.initialize(game);
+      gameState.initialize(game);
       toast.success('Game reset');
     }
   }
@@ -431,11 +437,11 @@
         break;
       case 'ArrowLeft':
         e.preventDefault();
-        gameStore.previewMove($gameStore.historyViewIndex - 1);
+        gameState.previewMove(gameState.historyViewIndex - 1);
         break;
       case 'ArrowRight':
         e.preventDefault();
-        gameStore.previewMove($gameStore.historyViewIndex + 1);
+        gameState.previewMove(gameState.historyViewIndex + 1);
         break;
       case '?':
         e.preventDefault();

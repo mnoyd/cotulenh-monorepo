@@ -1,7 +1,7 @@
 <script lang="ts">
   import { logger } from '@cotulenh/common';
   import { CoTuLenh } from '@cotulenh/core';
-  import { gameState } from '$lib/stores/game';
+  import { gameState } from '$lib/stores/game.svelte';
   import { goto } from '$app/navigation';
   import { Button } from '$lib/components/ui/button';
   import { toast } from 'svelte-sonner';
@@ -73,7 +73,8 @@
 
 <div class="controls-mini">
   <Button variant="default" size="sm" onclick={resetGame} title="Reset Game">RESET</Button>
-  <Button variant="destructive" size="sm" onclick={undoLastMove} title="Undo Last Move">UNDO</Button>
+  <Button variant="destructive" size="sm" onclick={undoLastMove} title="Undo Last Move">UNDO</Button
+  >
   <Button variant="secondary" size="sm" onclick={copyFen} title="Copy FEN to Clipboard">FEN</Button>
   <Button variant="outline" size="sm" onclick={openShare} title="Share Game">SHARE</Button>
   <Button variant="ghost" size="sm" onclick={reportIssue} title="Report Issue">REPORT</Button>

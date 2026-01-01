@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { gameState } from '$lib/stores/game';
+  import { gameState } from '$lib/stores/game.svelte';
 
   let historyContainer: HTMLDivElement;
 
