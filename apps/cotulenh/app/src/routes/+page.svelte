@@ -401,7 +401,7 @@
             <GameInfo />
           </div>
           <div class="max-lg:col-span-full max-lg:order-3">
-            <DeploySessionPanel {game} onCommit={commitDeploy} onCancel={cancelDeploy} />
+            <DeploySessionPanel {game} deployState={uiDeployState} onCommit={commitDeploy} onCancel={cancelDeploy} />
           </div>
           <div class="max-lg:col-start-2">
             <GameControls bind:game {originalFen} />

@@ -1,13 +1,12 @@
 <script lang="ts">
   import type { CoTuLenh } from '@cotulenh/core';
-  import { getDeployState } from '$lib/stores/game';
+  import type { UIDeployState } from '$lib/types/game';
 
   export let game: CoTuLenh | null;
+  export let deployState: UIDeployState | null;
   export let onCommit: () => void;
   export let onCancel: () => void;
 
-  // Read deploy state directly from game (fresh from source of truth)
-  $: deployState = getDeployState(game);
   $: hasSession = deployState !== null;
   $: canCommit = deployState && game ? game.canCommitSession() : false;
 </script>
@@ -30,16 +29,19 @@
     margin-top: 8px;
     padding: 8px;
     background: rgba(0, 0, 0, 0.4);
-    border-left: 2px solid #555;
+    border-left: 2px solid rgba(0, 255, 255, 0.15);
     min-height: 40px;
     display: flex;
     align-items: center;
+    box-shadow: inset 0 0 10px rgba(0, 243, 255, 0.05);
   }
 
   .hint-text {
     font-size: 0.7rem;
     color: #666;
     font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
   }
 
   .actions {
@@ -50,31 +52,70 @@
 
   .action-btn {
     flex: 1;
-    border: none;
+    border: 1px solid;
     font-weight: 700;
-    font-size: 0.75rem;
-    padding: 8px;
+    font-size: 0.7rem;
+    padding: 10px 8px;
     cursor: pointer;
     border-radius: 2px;
-    transition: all 0.2s;
+    transition: all 0.2s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .action-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+    transform: translateX(-100%);
+    transition: transform 0.5s;
+  }
+
+  .action-btn:hover::before {
+    transform: translateX(100%);
   }
 
   .action-btn.commit {
-    background: #059669;
-    color: #fff;
+    background: rgba(0, 255, 65, 0.15);
+    border-color: #00ff41;
+    color: #00ff41;
+    box-shadow: inset 0 0 10px rgba(0, 255, 65, 0.1), 0 0 5px rgba(0, 255, 65, 0.2);
   }
+
+  .action-btn.commit:hover:not(:disabled) {
+    background: rgba(0, 255, 65, 0.25);
+    box-shadow: 0 0 15px #00ff41, inset 0 0 10px rgba(0, 255, 65, 0.2);
+    transform: translateY(-1px);
+  }
+
   .action-btn.commit:disabled {
-    background: #333;
-    color: #555;
+    background: rgba(50, 50, 50, 0.3);
+    border-color: #333;
+    color: #444;
     cursor: not-allowed;
+    box-shadow: none;
   }
 
   .action-btn.cancel {
-    background: #dc2626;
-    color: #fff;
+    background: rgba(255, 80, 0, 0.15);
+    border-color: #ffab00;
+    color: #ffab00;
+    box-shadow: inset 0 0 10px rgba(255, 80, 0, 0.1), 0 0 5px rgba(255, 171, 0, 0.2);
   }
 
-  .action-btn:hover:not(:disabled) {
-    filter: brightness(1.2);
+  .action-btn.cancel:hover:not(:disabled) {
+    background: rgba(255, 80, 0, 0.25);
+    box-shadow: 0 0 15px #ffab00, inset 0 0 10px rgba(255, 80, 0, 0.2);
+    transform: translateY(-1px);
+  }
+
+  .action-btn:active:not(:disabled) {
+    transform: translateY(0);
   }
 </style>
