@@ -2,22 +2,29 @@
   import type { CoTuLenh } from '@cotulenh/core';
   import type { UIDeployState } from '$lib/types/game';
 
-  export let game: CoTuLenh | null;
-  export let deployState: UIDeployState | null;
-  export let onCommit: () => void;
-  export let onCancel: () => void;
+  let {
+    game,
+    deployState,
+    onCommit,
+    onCancel
+  }: {
+    game: CoTuLenh | null;
+    deployState: UIDeployState | null;
+    onCommit: () => void;
+    onCancel: () => void;
+  } = $props();
 
-  $: hasSession = deployState !== null;
-  $: canCommit = deployState && game ? game.canCommitSession() : false;
+  let hasSession = $derived(deployState !== null);
+  let canCommit = $derived(deployState && game ? game.canCommitSession() : false);
 </script>
 
 <div class="deploy-panel-mini">
   {#if hasSession}
     <div class="actions">
-      <button class="action-btn commit" on:click={onCommit} disabled={!canCommit}>
+      <button class="action-btn commit" onclick={onCommit} disabled={!canCommit}>
         COMMIT DEPLOY
       </button>
-      <button class="action-btn cancel" on:click={onCancel}> ABORT </button>
+      <button class="action-btn cancel" onclick={onCancel}> ABORT </button>
     </div>
   {:else}
     <div class="hint-text">RIGHT CLICK ON PIECE TO OPEN DEPLOY</div>
@@ -85,12 +92,16 @@
     background: rgba(0, 255, 65, 0.15);
     border-color: #00ff41;
     color: #00ff41;
-    box-shadow: inset 0 0 10px rgba(0, 255, 65, 0.1), 0 0 5px rgba(0, 255, 65, 0.2);
+    box-shadow:
+      inset 0 0 10px rgba(0, 255, 65, 0.1),
+      0 0 5px rgba(0, 255, 65, 0.2);
   }
 
   .action-btn.commit:hover:not(:disabled) {
     background: rgba(0, 255, 65, 0.25);
-    box-shadow: 0 0 15px #00ff41, inset 0 0 10px rgba(0, 255, 65, 0.2);
+    box-shadow:
+      0 0 15px #00ff41,
+      inset 0 0 10px rgba(0, 255, 65, 0.2);
     transform: translateY(-1px);
   }
 
@@ -106,12 +117,16 @@
     background: rgba(255, 80, 0, 0.15);
     border-color: #ffab00;
     color: #ffab00;
-    box-shadow: inset 0 0 10px rgba(255, 80, 0, 0.1), 0 0 5px rgba(255, 171, 0, 0.2);
+    box-shadow:
+      inset 0 0 10px rgba(255, 80, 0, 0.1),
+      0 0 5px rgba(255, 171, 0, 0.2);
   }
 
   .action-btn.cancel:hover:not(:disabled) {
     background: rgba(255, 80, 0, 0.25);
-    box-shadow: 0 0 15px #ffab00, inset 0 0 10px rgba(255, 80, 0, 0.2);
+    box-shadow:
+      0 0 15px #ffab00,
+      inset 0 0 10px rgba(255, 80, 0, 0.2);
     transform: translateY(-1px);
   }
 

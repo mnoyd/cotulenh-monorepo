@@ -60,9 +60,18 @@
 
   // handlePieceSelect removed (reverted to full load)
 
+  // Reactive trigger for deploy state changes.
+  // This counter is incremented when deploy session starts/ends to force uiDeployState to recompute.
+  let deployVersion = $state(0);
+
   // uiDeployState depends on game state. Since game is a class instance,
   // we need to react to store updates (like FEN change) to re-evaluate it.
-  let uiDeployState = $derived($gameStore.fen ? getDeployState(game) : null);
+  // We also depend on deployVersion to trigger re-evaluation when deploy session changes.
+  let uiDeployState = $derived.by(() => {
+    // Read deployVersion to track it as a dependency
+    void deployVersion;
+    return $gameStore.fen ? getDeployState(game) : null;
+  });
 
   function createBoardConfig() {
     return {
@@ -179,6 +188,8 @@
       if (moveResult) {
         // logger.debug('Game move successful:', moveResult);
         gameStore.applyMove(game, moveResult);
+        // Increment deployVersion to trigger uiDeployState recalculation
+        deployVersion++;
       } else {
         logger.warn('Illegal move attempted on board', { orig, dest });
       }
@@ -201,7 +212,6 @@
     }
 
     try {
-      // Get SAN notation before commit
       const session = game.getSession();
       if (!session || !session.isDeploy) {
         logger.error('❌ No deploy session active');
@@ -210,23 +220,18 @@
 
       const result = game.commitSession();
 
-      if (!result.success) {
-        logger.error('❌ Failed to commit:', result.reason);
-        toast.error(`Cannot finish deployment: ${result.reason}`);
+      if (!result.success || !result.result) {
+        const reason = result.reason || 'Unknown error';
+        logger.error('❌ Failed to commit:', reason);
+        toast.error(`Cannot finish deployment: ${reason}`);
         return;
       }
 
-      // Get the SAN from history (last entry added by commit)
-      const historyAfter = game.history({ verbose: true });
-      const deployMove = historyAfter[historyAfter.length - 1];
+      // 1. Force UI update immediately to remove the deploy panel
+      deployVersion++;
 
-      if (!deployMove) {
-        logger.error('❌ No move found in history after commit');
-        return;
-      }
-
-      // Update game store with the deploy move SAN
-      gameStore.applyDeployCommit(game, deployMove);
+      // 2. Use the result directly instead of querying history (which can cause replay issues)
+      gameStore.applyDeployCommit(game, result.result);
     } catch (error) {
       logger.error('❌ Failed to commit deploy session:', { error });
       const errorMsg = error instanceof Error ? error.message : 'Unknown error';
@@ -258,9 +263,11 @@
       if (result.completed) {
         // Recombine completed the session, add to history
         gameStore.applyDeployCommit(game, result);
+        deployVersion++; // Clear deploy state since session is complete
       } else {
         // Session still active, treat as a move update to refresh options and state
         gameStore.applyMove(game, result);
+        deployVersion++; // Update deploy state to refresh recombine options
       }
     } catch (error) {
       logger.error('Failed to recombine:', { error });
@@ -282,6 +289,8 @@
       game.cancelSession();
       // Reinitialize game store with restored state
       gameStore.initialize(game);
+      // Clear deploy state
+      deployVersion++;
     } catch (error) {
       logger.error('❌ Failed to cancel deploy:', { error });
       const errorMsg = error instanceof Error ? error.message : 'Unknown error';

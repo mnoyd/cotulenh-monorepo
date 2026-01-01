@@ -12,7 +12,8 @@ import {
 export type GameStatus = 'playing' | 'checkmate' | 'stalemate' | 'draw';
 
 /**
- * Extended deploy state for UI with additional computed properties
+ * Extended deploy state for UI with additional computed properties.
+ * This is computed directly from the game instance, not stored in the store.
  */
 export interface UIDeployState {
   stackSquare: number; // Internal square index
@@ -37,6 +38,5 @@ export interface GameState {
   lastMove?: Square[]; // The last move made [from, to]
   status: GameStatus; // Current status of the game
   check: boolean; // Is the current player in check?
-  deployState: UIDeployState | null; // Current deployment state with UI helpers
   historyViewIndex: number; // Index of the history item currently being viewed (-1 if viewing live game)
 }
