@@ -29,8 +29,8 @@
   --color-primary-foreground: #000;
   --color-secondary: var(--color-mw-secondary);
   --color-secondary-foreground: #000;
-  --color-accent: var(--color-mw-alert);
-  --color-accent-foreground: #000;
+  --color-accent: rgba(0, 243, 255, 0.15);
+  --color-accent-foreground: var(--color-mw-primary);
   --color-destructive: #ef4444;
   --color-destructive-foreground: #fff;
   --color-ring: var(--color-mw-primary);

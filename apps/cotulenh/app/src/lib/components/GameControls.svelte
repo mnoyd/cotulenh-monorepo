@@ -4,15 +4,25 @@
   import { gameStore } from '$lib/stores/game';
   import { goto } from '$app/navigation';
   import { get } from 'svelte/store';
+  import { Button } from '$lib/components/ui/button';
+  import { toast } from 'svelte-sonner';
+  import ShareDialog from './ShareDialog.svelte';
 
-  export let game: CoTuLenh | null = null;
-  export let originalFen: string | undefined = undefined;
+  interface Props {
+    game: CoTuLenh | null;
+    originalFen: string | undefined;
+  }
+
+  let { game = $bindable(), originalFen }: Props = $props();
+
+  let shareOpen = $state(false);
 
   function resetGame() {
     if (!game) return;
     // Reset to the original FEN from URL or default starting position
     game = originalFen ? new CoTuLenh(originalFen) : new CoTuLenh();
     gameStore.initialize(game);
+    toast.success('Game reset');
   }
 
   function undoLastMove() {
@@ -26,10 +36,15 @@
     const fen = game.fen();
     try {
       await navigator.clipboard.writeText(fen);
-      logger.info('FEN copied to clipboard:', { fen });
+      toast.success('FEN copied to clipboard');
     } catch (err) {
-      logger.error(err, 'Failed to copy FEN to clipboard');
+      toast.error('Failed to copy FEN');
     }
+  }
+
+  function openShare() {
+    if (!game) return;
+    shareOpen = true;
   }
 
   function reportIssue() {
@@ -50,11 +65,14 @@
 </script>
 
 <div class="controls-mini">
-  <button class="control-btn undo-btn" on:click={undoLastMove} title="Undo Last Move"> UNDO </button>
-  <button class="control-btn reset-btn" on:click={resetGame} title="Reset Game"> RESET </button>
-  <button class="control-btn fen-btn" on:click={copyFen} title="Copy FEN to Clipboard"> FEN </button>
-  <button class="control-btn report-btn" on:click={reportIssue} title="Report Issue"> REPORT </button>
+  <Button variant="default" size="sm" onclick={undoLastMove} title="Undo Last Move">UNDO</Button>
+  <Button variant="destructive" size="sm" onclick={resetGame} title="Reset Game">RESET</Button>
+  <Button variant="secondary" size="sm" onclick={copyFen} title="Copy FEN to Clipboard">FEN</Button>
+  <Button variant="outline" size="sm" onclick={openShare} title="Share Game">SHARE</Button>
+  <Button variant="ghost" size="sm" onclick={reportIssue} title="Report Issue">REPORT</Button>
 </div>
+
+<ShareDialog bind:open={shareOpen} fen={game ? game.fen() : ''} />
 
 <style>
   .controls-mini {
@@ -63,93 +81,101 @@
     margin-top: 8px;
   }
 
-  .control-btn {
-    flex: 1;
-    background: rgba(15, 23, 42, 0.9);
-    border: 1px solid rgba(0, 255, 255, 0.15);
-    color: #e0e0e0;
-    font-size: 0.7rem;
+  /* Override button styles for Modern Warfare theme */
+  .controls-mini :global(button) {
+    font-size: 0.65rem;
     font-weight: 700;
-    padding: 6px 4px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    border-radius: 2px;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    position: relative;
-    overflow: hidden;
+    padding: 0.5rem 0.25rem;
+    min-height: 32px;
+    flex: 1;
+    border-radius: 2px;
+    transition: all 0.2s ease;
   }
 
-  .control-btn::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(135deg, transparent 40%, rgba(255, 255, 255, 0.05) 50%, transparent 60%);
-    opacity: 0;
-    transition: opacity 0.3s;
-  }
-
-  .control-btn:hover::before {
-    opacity: 1;
-  }
-
-  .control-btn:hover {
-    color: #fff;
-    transform: translateY(-1px);
-  }
-
-  .control-btn:active {
-    transform: translateY(1px);
-  }
-
-  /* UNDO - Cyan (primary color) */
-  .undo-btn {
-    border-color: rgba(0, 243, 255, 0.4);
-    box-shadow: 0 0 8px rgba(0, 243, 255, 0.1), inset 0 0 10px rgba(0, 243, 255, 0.05);
-  }
-  .undo-btn:hover {
+  /* Cyan primary (UNDO) */
+  .controls-mini :global(button[data-variant='default']) {
     background: rgba(0, 243, 255, 0.15);
+    border-color: rgba(0, 243, 255, 0.4);
+    color: #00f3ff;
+    box-shadow:
+      0 0 8px rgba(0, 243, 255, 0.1),
+      inset 0 0 10px rgba(0, 243, 255, 0.05);
+  }
+
+  .controls-mini :global(button[data-variant='default']:hover) {
+    background: rgba(0, 243, 255, 0.25);
     border-color: rgba(0, 243, 255, 0.8);
-    box-shadow: 0 0 15px rgba(0, 243, 255, 0.3), inset 0 0 15px rgba(0, 243, 255, 0.1);
+    box-shadow:
+      0 0 15px rgba(0, 243, 255, 0.3),
+      inset 0 0 15px rgba(0, 243, 255, 0.1);
     text-shadow: 0 0 8px rgba(0, 243, 255, 0.8);
   }
 
-  /* RESET - Amber/Orange (alert color) */
-  .reset-btn {
-    border-color: rgba(255, 171, 0, 0.4);
-    box-shadow: 0 0 8px rgba(255, 171, 0, 0.1), inset 0 0 10px rgba(255, 171, 0, 0.05);
-  }
-  .reset-btn:hover {
+  /* Destructive/Amber (RESET) */
+  .controls-mini :global(button[data-variant='destructive']) {
     background: rgba(255, 171, 0, 0.15);
+    border-color: rgba(255, 171, 0, 0.4);
+    color: #ffab00;
+    box-shadow:
+      0 0 8px rgba(255, 171, 0, 0.1),
+      inset 0 0 10px rgba(255, 171, 0, 0.05);
+  }
+
+  .controls-mini :global(button[data-variant='destructive']:hover) {
+    background: rgba(255, 171, 0, 0.25);
     border-color: rgba(255, 171, 0, 0.8);
-    box-shadow: 0 0 15px rgba(255, 171, 0, 0.3), inset 0 0 15px rgba(255, 171, 0, 0.1);
+    box-shadow:
+      0 0 15px rgba(255, 171, 0, 0.3),
+      inset 0 0 15px rgba(255, 171, 0, 0.1);
     text-shadow: 0 0 8px rgba(255, 171, 0, 0.8);
   }
 
-  /* FEN - Green (secondary color) */
-  .fen-btn {
-    border-color: rgba(0, 255, 65, 0.4);
-    box-shadow: 0 0 8px rgba(0, 255, 65, 0.1), inset 0 0 10px rgba(0, 255, 65, 0.05);
-  }
-  .fen-btn:hover {
+  /* Secondary/Green (FEN) */
+  .controls-mini :global(button[data-variant='secondary']) {
     background: rgba(0, 255, 65, 0.15);
+    border-color: rgba(0, 255, 65, 0.4);
+    color: #00ff41;
+    box-shadow:
+      0 0 8px rgba(0, 255, 65, 0.1),
+      inset 0 0 10px rgba(0, 255, 65, 0.05);
+  }
+
+  .controls-mini :global(button[data-variant='secondary']:hover) {
+    background: rgba(0, 255, 65, 0.25);
     border-color: rgba(0, 255, 65, 0.8);
-    box-shadow: 0 0 15px rgba(0, 255, 65, 0.3), inset 0 0 15px rgba(0, 255, 65, 0.1);
+    box-shadow:
+      0 0 15px rgba(0, 255, 65, 0.3),
+      inset 0 0 15px rgba(0, 255, 65, 0.1);
     text-shadow: 0 0 8px rgba(0, 255, 65, 0.8);
   }
 
-  /* REPORT - Gold/Warning color */
-  .report-btn {
-    border-color: rgba(255, 215, 0, 0.4);
-    box-shadow: 0 0 8px rgba(255, 215, 0, 0.1), inset 0 0 10px rgba(255, 215, 0, 0.05);
+  /* Outline (SHARE) */
+  .controls-mini :global(button[data-variant='outline']) {
+    background: rgba(139, 92, 246, 0.15);
+    border-color: rgba(139, 92, 246, 0.4);
+    color: #a78bfa;
+    box-shadow: 0 0 8px rgba(139, 92, 246, 0.1);
   }
-  .report-btn:hover {
-    background: rgba(255, 215, 0, 0.15);
-    border-color: rgba(255, 215, 0, 0.8);
-    box-shadow: 0 0 15px rgba(255, 215, 0, 0.3), inset 0 0 15px rgba(255, 215, 0, 0.1);
-    text-shadow: 0 0 8px rgba(255, 215, 0, 0.8);
+
+  .controls-mini :global(button[data-variant='outline']:hover) {
+    background: rgba(139, 92, 246, 0.25);
+    border-color: rgba(139, 92, 246, 0.8);
+    box-shadow: 0 0 15px rgba(139, 92, 246, 0.3);
+    text-shadow: 0 0 8px rgba(139, 92, 246, 0.8);
+  }
+
+  /* Ghost (REPORT) */
+  .controls-mini :global(button[data-variant='ghost']) {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.2);
+    color: rgba(255, 255, 255, 0.6);
+  }
+
+  .controls-mini :global(button[data-variant='ghost']:hover) {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.4);
+    color: #fff;
   }
 </style>
