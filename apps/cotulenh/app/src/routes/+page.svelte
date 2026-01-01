@@ -433,6 +433,8 @@
         e.preventDefault();
         if (game && game.getSession()) {
           cancelDeploy();
+        } else if (gameState.historyViewIndex !== -1) {
+          gameState.cancelPreview(game!);
         }
         break;
       case 'ArrowLeft':
@@ -441,7 +443,17 @@
         break;
       case 'ArrowRight':
         e.preventDefault();
-        gameState.previewMove(gameState.historyViewIndex + 1);
+        {
+          const nextIndex = gameState.historyViewIndex + 1;
+          if (gameState.historyViewIndex === -1) {
+            // Already at live, do nothing or maybe just ensure we are at bottom
+          } else if (nextIndex >= gameState.history.length) {
+            // Past the end, exit preview
+            if (game) gameState.cancelPreview(game);
+          } else {
+            gameState.previewMove(nextIndex);
+          }
+        }
         break;
       case '?':
         e.preventDefault();
@@ -508,7 +520,7 @@
           <div
             class="flex-1 min-h-0 overflow-hidden max-lg:col-span-full max-lg:order-4 max-lg:h-[120px]"
           >
-            <MoveHistory />
+            <MoveHistory {game} />
           </div>
         </div>
       </div>

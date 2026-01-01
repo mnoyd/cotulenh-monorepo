@@ -30,10 +30,17 @@ export interface UIDeployState {
 /**
  * Defines the structure for the game's state.
  */
+export interface HistoryMove extends MoveResult {
+  cachedMoves?: MoveResult[];
+}
+
+/**
+ * Defines the structure for the game's state.
+ */
 export interface GameState {
   fen: string; // Forsyth–Edwards Notation of the board
   turn: Color | null; // Current player's turn ('r' or 'b')
-  history: MoveResult[]; // History of moves made
+  history: HistoryMove[]; // History of moves made
   possibleMoves: MoveResult[]; // Possible moves for the current turn
   lastMove?: Square[]; // The last move made [from, to]
   status: GameStatus; // Current status of the game

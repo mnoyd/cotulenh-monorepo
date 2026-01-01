@@ -1,5 +1,5 @@
 import { logger } from '@cotulenh/common';
-import type { GameState, GameStatus, UIDeployState } from '$lib/types/game';
+import type { GameState, GameStatus, UIDeployState, HistoryMove } from '$lib/types/game';
 import { CoTuLenh, BITS, MoveResult } from '@cotulenh/core';
 import type { Square, Piece } from '@cotulenh/core';
 import { getPossibleMoves } from '$lib/utils';
@@ -197,10 +197,15 @@ export const gameState = {
     const isDeploySession = session && session.isDeploy;
     const shouldAddToHistory = !isDeploySession;
 
+    // Cast and attach cached moves directly to preserve prototype chain/getters if any
+    if (shouldAddToHistory) {
+      (move as HistoryMove).cachedMoves = state.possibleMoves;
+    }
+
     updateStateFromGame(game, {
       fen: move.after,
       lastMove: extractLastMoveSquares(move),
-      history: shouldAddToHistory ? [...state.history, move] : state.history,
+      history: shouldAddToHistory ? [...state.history, move as HistoryMove] : state.history,
       historyViewIndex: -1
     });
 
@@ -240,8 +245,16 @@ export const gameState = {
       lastMoveSquares = extractLastMoveSquares(lastMove);
     }
 
+    // Preserve cached moves by merging with existing state history
+    const mergedHistory: HistoryMove[] = history.map((h, i) => {
+      if (i < state.history.length && state.history[i].san === h.san) {
+        return state.history[i];
+      }
+      return h;
+    });
+
     updateStateFromGame(game, {
-      history,
+      history: mergedHistory,
       lastMove: lastMoveSquares,
       historyViewIndex: -1
     });
@@ -265,14 +278,29 @@ export const gameState = {
     }
 
     try {
-      const tempGame = new CoTuLenh(fen);
-
       state.historyViewIndex = index;
       state.fen = fen;
-      state.turn = tempGame.turn();
-      state.check = tempGame.isCheck();
-      state.possibleMoves = getPossibleMoves(tempGame);
       state.lastMove = extractLastMoveSquares(move);
+
+      // Check cache first
+      if (move.cachedMoves) {
+        state.possibleMoves = move.cachedMoves;
+        // Turn/Check might need partial parsing or we can trust the move to carry enough info?
+        // MoveResult usually doesn't have check status or turn. We still need rudimentary game state.
+        // But for pure "preview" we can skip expensive move gen.
+        // We still need 'turn' and 'check' for UI.
+        const tempGame = new CoTuLenh(fen);
+        state.turn = tempGame.turn();
+        state.check = tempGame.isCheck();
+      } else {
+        const tempGame = new CoTuLenh(fen);
+        state.turn = tempGame.turn();
+        state.check = tempGame.isCheck();
+        const moves = getPossibleMoves(tempGame);
+        // Cache it for next time
+        (state.history[index] as HistoryMove).cachedMoves = moves;
+        state.possibleMoves = moves;
+      }
     } catch (e) {
       logger.error(e, 'Failed to preview move');
     }
@@ -282,7 +310,17 @@ export const gameState = {
    * Cancel history preview and return to live game.
    */
   cancelPreview(game: CoTuLenh) {
-    this.sync(game);
+    // Find the last move from the live history to restore highlighting
+    let lastMoveSquares: Square[] | undefined = undefined;
+    if (state.history.length > 0) {
+      const lastMove = state.history[state.history.length - 1];
+      lastMoveSquares = extractLastMoveSquares(lastMove);
+    }
+
+    updateStateFromGame(game, {
+      historyViewIndex: -1,
+      lastMove: lastMoveSquares
+    });
   },
 
   /**

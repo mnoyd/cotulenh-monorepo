@@ -1,5 +1,8 @@
 <script lang="ts">
   import { gameState } from '$lib/stores/game.svelte';
+  import type { CoTuLenh } from '@cotulenh/core';
+
+  let { game } = $props<{ game: CoTuLenh | null }>();
 
   let historyContainer: HTMLDivElement;
 
@@ -10,12 +13,27 @@
   // Use $effect to auto-scroll when history changes
   $effect(() => {
     // Track history length and view index as dependencies
-    void history.length;
-    void historyViewIndex;
+    const len = history.length;
+    const idx = historyViewIndex;
 
-    // Scroll to bottom when history changes
+    // Scroll logic
     if (historyContainer) {
-      historyContainer.scrollTop = historyContainer.scrollHeight;
+      if (idx === -1) {
+        // Live mode: Scroll to bottom to show latest move
+        // Use timeout to ensure DOM is updated if length changed
+        setTimeout(() => {
+          historyContainer.scrollTop = historyContainer.scrollHeight;
+        }, 0);
+      } else {
+        // History mode: Ensure active item is visible
+        // We can find the button by index since they are rendered in order
+        // Note: querySelectorAll might be slow if list is huge, but typically < 200 moves.
+        const buttons = historyContainer.querySelectorAll('.move-chip');
+        const activeBtn = buttons[idx] as HTMLElement;
+        if (activeBtn) {
+          activeBtn.scrollIntoView({ block: 'nearest', behavior: 'auto' });
+        }
+      }
     }
   });
 </script>
@@ -23,6 +41,16 @@
 <div class="history-mini">
   <div class="header">
     <span class="label">MISSION LOG</span>
+    {#if historyViewIndex !== -1}
+      <button
+        class="resume-btn"
+        onclick={() => {
+          if (game) gameState.cancelPreview(game);
+        }}
+      >
+        LIVE
+      </button>
+    {/if}
   </div>
 
   <div class="history-content" bind:this={historyContainer}>
@@ -33,7 +61,8 @@
         {#each history as move, index}
           <button
             class="move-chip {index % 2 === 0 ? 'red-move' : 'blue-move'}"
-            class:active={index === historyViewIndex}
+            class:active={index === historyViewIndex ||
+              (historyViewIndex === -1 && index === history.length - 1)}
             onclick={() => gameState.previewMove(index)}
           >
             <span class="move-index">
@@ -179,5 +208,35 @@
     background: rgba(255, 255, 255, 0.15);
     border-color: #e5e5e5;
     box-shadow: 0 0 8px rgba(255, 255, 255, 0.2);
+  }
+
+  .resume-btn {
+    margin-left: auto;
+    background: #059669;
+    color: white;
+    border: none;
+    padding: 2px 6px;
+    font-size: 0.6rem;
+    font-weight: 700;
+    cursor: pointer;
+    border-radius: 2px;
+    letter-spacing: 0.5px;
+    animation: pulse 2s infinite;
+  }
+
+  .resume-btn:hover {
+    background: #10b981;
+  }
+
+  @keyframes pulse {
+    0% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.7;
+    }
+    100% {
+      opacity: 1;
+    }
   }
 </style>
