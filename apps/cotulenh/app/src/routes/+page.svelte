@@ -24,6 +24,7 @@
   import '$lib/styles/modern-warfare.css';
   import { makeCoreMove } from '$lib/utils';
   import { typeToRole, roleToType, coreColorToBoard } from '$lib/types/translations';
+  import { toast } from 'svelte-sonner';
 
   let boardContainerElement: HTMLElement | null = null;
   let boardApi = $state<Api | null>(null);
@@ -211,7 +212,7 @@
 
       if (!result.success) {
         logger.error('❌ Failed to commit:', result.reason);
-        alert(`Cannot finish deployment: ${result.reason}`);
+        toast.error(`Cannot finish deployment: ${result.reason}`);
         return;
       }
 
@@ -229,7 +230,7 @@
     } catch (error) {
       logger.error('❌ Failed to commit deploy session:', { error });
       const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-      alert(`Cannot finish deployment: ${errorMsg}`);
+      toast.error(`Cannot finish deployment: ${errorMsg}`);
     }
   }
 
@@ -264,7 +265,7 @@
     } catch (error) {
       logger.error('Failed to recombine:', { error });
       const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-      alert(`Error executing recombine: ${errorMsg}`);
+      toast.error(`Error executing recombine: ${errorMsg}`);
     }
   }
 
@@ -284,7 +285,7 @@
     } catch (error) {
       logger.error('❌ Failed to cancel deploy:', { error });
       const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-      alert(`Error cancelling deployment: ${errorMsg}`);
+      toast.error(`Error cancelling deployment: ${errorMsg}`);
     }
   }
 
@@ -331,8 +332,12 @@
       };
     })();
 
+    // Add keyboard event listener
+    window.addEventListener('keydown', handleKeydown);
+
     return () => {
       if (cleanup) cleanup();
+      window.removeEventListener('keydown', handleKeydown);
     };
   });
 
@@ -362,6 +367,73 @@
       });
     }
   });
+
+  function undoLastMove() {
+    if (!game) return;
+    game.undo();
+    gameStore.handleUndo(game);
+    // If we undo while viewing history (not head), we are now at a new head
+    // so logic inside handleUndo should take care of history truncation if implemented correctly
+    // or we just rely on game state.
+    toast.info('Undo successful');
+  }
+
+  function resetGame() {
+    if (!game) return;
+    if (confirm('Are you sure you want to reset the game?')) {
+      game = originalFen ? new CoTuLenh(originalFen) : new CoTuLenh();
+      gameStore.initialize(game);
+      toast.success('Game reset');
+    }
+  }
+
+  // Keyboard shortcuts
+  function handleKeydown(e: KeyboardEvent) {
+    // Don't trigger if typing in an input
+    if ((e.target as HTMLElement).tagName === 'INPUT') return;
+
+    // Ignore if modifier keys are pressed
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+
+    switch (e.key) {
+      case 'z':
+      case 'Z':
+        e.preventDefault();
+        if (game && game.history().length > 0) {
+          undoLastMove();
+        }
+        break;
+      case 'y':
+      case 'Y':
+        e.preventDefault();
+        // TODO: Implement redo
+        toast.info('Redo coming soon');
+        break;
+      case 'r':
+      case 'R':
+        e.preventDefault();
+        resetGame();
+        break;
+      case 'Escape':
+        e.preventDefault();
+        if (game && game.getSession()) {
+          cancelDeploy();
+        }
+        break;
+      case 'ArrowLeft':
+        e.preventDefault();
+        gameStore.previewMove($gameStore.historyViewIndex - 1);
+        break;
+      case 'ArrowRight':
+        e.preventDefault();
+        gameStore.previewMove($gameStore.historyViewIndex + 1);
+        break;
+      case '?':
+        e.preventDefault();
+        // Could open shortcuts dialog here
+        break;
+    }
+  }
 </script>
 
 <main

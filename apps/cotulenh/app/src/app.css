@@ -1,7 +1,7 @@
 @import 'tailwindcss';
 
 @theme {
-  /* Colors */
+  /* Modern Warfare Theme Colors */
   --color-mw-primary: #00f3ff;
   --color-mw-secondary: #00ff41;
   --color-mw-bg-dark: #050a14;
@@ -13,6 +13,30 @@
   --font-display: 'Be Vietnam Pro', sans-serif;
   --font-ui: 'Be Vietnam Pro', sans-serif;
   --font-mono: 'Share Tech Mono', monospace;
+
+  /* Shadcn-compatible variables (mapped to Modern Warfare theme) */
+  --color-background: var(--color-mw-bg-dark);
+  --color-foreground: #e5e5e5;
+  --color-muted: rgba(30, 41, 59, 0.8);
+  --color-muted-foreground: #94a3b8;
+  --color-popover: var(--color-mw-bg-panel);
+  --color-popover-foreground: #e5e5e5;
+  --color-card: var(--color-mw-bg-panel);
+  --color-card-foreground: #e5e5e5;
+  --color-border: var(--color-mw-border);
+  --color-input: rgba(0, 243, 255, 0.2);
+  --color-primary: var(--color-mw-primary);
+  --color-primary-foreground: #000;
+  --color-secondary: var(--color-mw-secondary);
+  --color-secondary-foreground: #000;
+  --color-accent: rgba(0, 243, 255, 0.15);
+  --color-accent-foreground: var(--color-mw-primary);
+  --color-destructive: #ef4444;
+  --color-destructive-foreground: #fff;
+  --color-ring: var(--color-mw-primary);
+
+  /* Radius */
+  --color-radius: 0.25rem;
 }
 
 /* Custom base styles */

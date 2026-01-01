@@ -3,6 +3,13 @@
   import { logger } from '@cotulenh/common';
   import { onMount } from 'svelte';
   import '../app.css';
+  import Sonner from '$lib/components/ui/sonner/sonner.svelte';
+  import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
+  import SettingsDialog from '$lib/components/SettingsDialog.svelte';
+  import ShortcutsDialog from '$lib/components/ShortcutsDialog.svelte';
+
+  let settingsOpen = $state(false);
+  let shortcutsOpen = $state(false);
 
   onMount(() => {
     logger.info('CoTuLenh App Initialized');
@@ -12,6 +19,7 @@
 </script>
 
 <div class="app-container">
+  <Sonner />
   <nav class="app-nav">
     <div class="nav-content">
       <div class="nav-brand">
@@ -121,9 +129,54 @@
           </svg>
           <span>Editor</span>
         </a>
+
+        <DropdownMenu.Root>
+          <DropdownMenu.Trigger>
+            <button class="nav-link settings-trigger" aria-label="Settings" title="Settings">
+              <svg
+                class="nav-icon"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1-1.73V4a2 2 0 0 0-2-2z"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+                <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2" />
+                <path
+                  d="M12 17v5m0-5a5 5 0 0 1 5 5m-10 0a5 5 0 0 1 5-5"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </button>
+          </DropdownMenu.Trigger>
+          <DropdownMenu.Content>
+            <DropdownMenu.Item onclick={() => (settingsOpen = true)}>Settings</DropdownMenu.Item>
+            <DropdownMenu.Item onclick={() => (shortcutsOpen = true)}>
+              Keyboard Shortcuts
+            </DropdownMenu.Item>
+            <DropdownMenu.Separator />
+            <DropdownMenu.Item>
+              {#snippet child({ props })}
+                <a href="/board-editor" {...props}>Board Editor</a>
+              {/snippet}
+            </DropdownMenu.Item>
+          </DropdownMenu.Content>
+        </DropdownMenu.Root>
       </div>
     </div>
   </nav>
+
+  <!-- Dialogs -->
+  <SettingsDialog bind:open={settingsOpen} />
+  <ShortcutsDialog bind:open={shortcutsOpen} />
 
   <div class="app-content">
     <slot />

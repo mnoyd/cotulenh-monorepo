@@ -1,4 +1,4 @@
-import { DEFAULT_POSITION, StandardMove as Move, RED } from '@cotulenh/core';
+import { DEFAULT_POSITION, MoveResult as Move, RED } from '@cotulenh/core';
 // import type { DrawShape } from '@cotulenh/board'; (Not exported)
 import type { Annotation } from './annotation';
 import type { Outcome } from './types';
