@@ -4,15 +4,27 @@
 
   type EditorMode = 'hand' | 'drop' | 'delete';
 
-  export let boardApi: Api | null = null;
-  export let color: Color = 'red'; // Which color pieces to show
-  export let onPieceSelect: (role: Role, color: Color) => void = () => {};
-  export let selectedPiece: { role: Role; color: Color; promoted?: boolean } | null = null;
-  export let heroicMode: boolean = false; // Whether pieces should be heroic (promoted)
-  export let editorMode: EditorMode = 'hand'; // Current editor mode
-  export let onHandModeToggle: () => void = () => {}; // Callback to toggle hand mode
-  export let onDeleteModeToggle: () => void = () => {}; // Callback to toggle delete mode
-  export let onHeroicToggle: () => void = () => {}; // Callback to toggle heroic mode
+  let {
+    boardApi,
+    color = 'red', // Which color pieces to show
+    onPieceSelect = () => {}, // Callback when piece is selected
+    selectedPiece = null,
+    heroicMode = false, // Whether pieces should be heroic (promoted)
+    editorMode = 'hand', // Current editor mode
+    onHandModeToggle = () => {}, // Callback to toggle hand mode
+    onDeleteModeToggle = () => {}, // Callback to toggle delete mode
+    onHeroicToggle = () => {} // Callback to toggle heroic mode
+  }: {
+    boardApi: Api | null;
+    color: Color;
+    onPieceSelect: (role: Role, color: Color) => void;
+    selectedPiece: { role: Role; color: Color; promoted?: boolean } | null;
+    heroicMode: boolean;
+    editorMode: EditorMode;
+    onHandModeToggle: () => void;
+    onDeleteModeToggle: () => void;
+    onHeroicToggle: () => void;
+  } = $props();
 
   const roles: Role[] = [
     'commander',
@@ -29,16 +41,13 @@
   ];
 
   // Create piece objects with proper state - promoted represents heroic in board terminology
-  let pieces: Piece[] = [];
-
-  // Initialize or update pieces based on color and heroicMode
-  $: {
-    pieces = roles.map((role) => ({
+  let pieces = $derived(
+    roles.map((role) => ({
       role,
       color,
       promoted: heroicMode && role !== 'commander' ? true : undefined
-    }));
-  }
+    }))
+  );
 
   function handlePieceDragStart(piece: Piece, event: MouseEvent | TouchEvent) {
     // Prevent default to avoid unwanted browser behaviors (text selection etc)
@@ -85,11 +94,11 @@
         class="palette-piece-container control-icon"
         role="button"
         tabindex="0"
-        on:click={(e) => {
+        onclick={(e) => {
           e.stopPropagation();
           onHeroicToggle();
         }}
-        on:keydown={(e) => {
+        onkeydown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
             onHeroicToggle();
@@ -111,11 +120,11 @@
         class="palette-piece-container control-icon"
         role="button"
         tabindex="0"
-        on:click={(e) => {
+        onclick={(e) => {
           e.stopPropagation();
           onHandModeToggle();
         }}
-        on:keydown={(e) => {
+        onkeydown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
             onHandModeToggle();
@@ -137,11 +146,11 @@
         class="palette-piece-container control-icon delete-icon"
         role="button"
         tabindex="0"
-        on:click={(e) => {
+        onclick={(e) => {
           e.stopPropagation();
           onDeleteModeToggle();
         }}
-        on:keydown={(e) => {
+        onkeydown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
             onDeleteModeToggle();
@@ -164,9 +173,9 @@
         title={formatRoleName(piece.role)}
         role="button"
         tabindex="0"
-        on:mousedown={(e) => handlePieceDragStart(piece, e)}
-        on:touchstart={(e) => handlePieceDragStart(piece, e)}
-        on:keydown={(e) => {
+        onmousedown={(e) => handlePieceDragStart(piece, e)}
+        ontouchstart={(e) => handlePieceDragStart(piece, e)}
+        onkeydown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
             onPieceSelect(piece.role, piece.color);

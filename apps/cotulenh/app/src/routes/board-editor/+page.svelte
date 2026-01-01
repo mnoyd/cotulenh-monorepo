@@ -1,6 +1,4 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
-  import { page } from '$app/stores';
   import { browser } from '$app/environment';
   import { logger } from '@cotulenh/common';
   import { CotulenhBoard } from '@cotulenh/board';
@@ -20,20 +18,20 @@
   // Mode system: 'hand' | 'drop' | 'delete'
   type EditorMode = 'hand' | 'drop' | 'delete';
 
-  let boardContainerElement: HTMLElement | null = null;
-  let boardApi: Api | null = null;
-  let fenInput = '';
-  let copyButtonText = 'Copy FEN';
-  let boardOrientation: 'red' | 'blue' = 'red';
-  let editorMode: EditorMode = 'hand';
-  let selectedPiece: { role: Role; color: Color; promoted?: boolean } | null = null;
-  let ghostPosition = { x: 0, y: 0 };
-  let showGhost = false;
-  let isOverRelevantArea = false;
-  let heroicMode = false;
-  let validationError = '';
-  let currentTurn: 'red' | 'blue' = 'red';
-  let mobileTab: 'red' | 'blue' = 'red';
+  let boardContainerElement = $state<HTMLElement | null>(null);
+  let boardApi = $state<Api | null>(null);
+  let fenInput = $state('');
+  let copyButtonText = $state('Copy FEN');
+  let boardOrientation = $state<'red' | 'blue'>('red');
+  let editorMode = $state<EditorMode>('hand');
+  let selectedPiece = $state<{ role: Role; color: Color; promoted?: boolean } | null>(null);
+  let ghostPosition = $state({ x: 0, y: 0 });
+  let showGhost = $state(false);
+  let isOverRelevantArea = $state(false);
+  let heroicMode = $state(false);
+  let validationError = $state('');
+  let currentTurn = $state<'red' | 'blue'>('red');
+  let mobileTab = $state<'red' | 'blue'>('red');
 
   // Special marker for delete mode
   const DELETE_MARKER: Piece = { role: 'commander', color: 'red' };
@@ -361,9 +359,13 @@
     }
   }
 
-  onMount(() => {
-    // Check for FEN in URL parameters
-    const urlFen = $page.url.searchParams.get('fen');
+  // Initialize board after mount
+  $effect(() => {
+    if (!boardContainerElement || boardApi || !browser) return;
+
+    // Get initial FEN from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlFen = urlParams.get('fen');
     let initialFen = EMPTY_FEN;
 
     if (urlFen) {
@@ -388,90 +390,92 @@
       }
     }
 
-    if (boardContainerElement) {
-      logger.debug('Initializing board editor...');
+    logger.debug('Initializing board editor...');
 
-      // Force proper sizing before and after board initialization
-      const ensureBoardSize = () => {
-        if (!boardContainerElement) return;
+    // Force proper sizing before and after board initialization
+    const ensureBoardSize = () => {
+      if (!boardContainerElement) return;
 
-        const container = boardContainerElement.querySelector('cg-container') as HTMLElement;
-        if (container) {
-          const rect = boardContainerElement.getBoundingClientRect();
-          // Only set size if the container has proper dimensions
-          if (rect.width > 0 && rect.height > 0) {
-            container.style.width = rect.width + 'px';
-            container.style.height = rect.height + 'px';
-          }
+      const container = boardContainerElement.querySelector('cg-container') as HTMLElement;
+      if (container) {
+        const rect = boardContainerElement.getBoundingClientRect();
+        // Only set size if the container has proper dimensions
+        if (rect.width > 0 && rect.height > 0) {
+          container.style.width = rect.width + 'px';
+          container.style.height = rect.height + 'px';
         }
-      };
-
-      boardApi = CotulenhBoard(boardContainerElement, {
-        fen: initialFen,
-        orientation: 'red',
-        turnColor: currentTurn,
-        movable: {
-          free: true, // Allow any move - editor mode
-          color: 'both', // Allow moving both colors
-          showDests: false, // Don't show move destinations
-          events: {
-            after: (orig, dest) => {
-              // Clear last move highlight after moves
-              if (boardApi) {
-                boardApi.state.lastMove = undefined;
-              }
-              updateFEN();
-            },
-            afterNewPiece: handleAfterNewPiece
-          }
-        },
-        events: {
-          change: updateFEN
-        }
-      });
-
-      // Disable highlighting after initialization
-      boardApi.state.highlight.lastMove = false;
-      boardApi.state.highlight.check = false;
-
-      // Ensure proper sizing after initialization
-      setTimeout(ensureBoardSize, 50);
-      setTimeout(ensureBoardSize, 200);
-      // Extra safety check for layout shifts
-      setTimeout(ensureBoardSize, 500);
-
-      updateFEN();
-
-      // Add resize observer for better cross-browser compatibility
-      let resizeObserver: ResizeObserver | undefined;
-      if (window.ResizeObserver) {
-        resizeObserver = new ResizeObserver(() => {
-          ensureBoardSize();
-        });
-        resizeObserver.observe(boardContainerElement);
       }
+    };
 
-      // Fallback resize handler
-      const handleResize = () => ensureBoardSize();
-      window.addEventListener('resize', handleResize);
+    const api = CotulenhBoard(boardContainerElement, {
+      fen: initialFen,
+      orientation: 'red',
+      turnColor: currentTurn,
+      movable: {
+        free: true, // Allow any move - editor mode
+        color: 'both', // Allow moving both colors
+        showDests: false, // Don't show move destinations
+        events: {
+          after: (orig, dest) => {
+            // Clear last move highlight after moves
+            if (api) {
+              api.state.lastMove = undefined;
+            }
+            updateFEN();
+          },
+          afterNewPiece: handleAfterNewPiece
+        }
+      },
+      events: {
+        change: updateFEN
+      }
+    });
 
-      return () => {
-        logger.debug('Cleaning up board editor.');
-        document.body.style.cursor = 'default';
-        if (boardApi) {
-          boardApi.state.dropmode = { active: false };
-        }
-        if (resizeObserver) {
-          resizeObserver.disconnect();
-        }
-        window.removeEventListener('resize', handleResize);
-        boardApi?.destroy();
-      };
+    // Store the API
+    boardApi = api;
+
+    // Disable highlighting after initialization
+    api.state.highlight.lastMove = false;
+    api.state.highlight.check = false;
+
+    // Ensure proper sizing after initialization
+    setTimeout(ensureBoardSize, 50);
+    setTimeout(ensureBoardSize, 200);
+    // Extra safety check for layout shifts
+    setTimeout(ensureBoardSize, 500);
+
+    updateFEN();
+
+    // Add resize observer for better cross-browser compatibility
+    let resizeObserver: ResizeObserver | undefined;
+    if (window.ResizeObserver) {
+      resizeObserver = new ResizeObserver(() => {
+        ensureBoardSize();
+      });
+      resizeObserver.observe(boardContainerElement);
     }
+
+    // Fallback resize handler
+    const handleResize = () => ensureBoardSize();
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      logger.debug('Cleaning up board editor.');
+      document.body.style.cursor = 'default';
+      if (api) {
+        api.state.dropmode = { active: false };
+      }
+      if (resizeObserver) {
+        resizeObserver.disconnect();
+      }
+      window.removeEventListener('resize', handleResize);
+      api?.destroy();
+      boardApi = null;
+    };
   });
 </script>
 
-<svelte:body on:mousemove={handleMouseMove} on:click={cancelSelection} />
+<svelte:body onmousemove={handleMouseMove} onclick={cancelSelection} />
 
 <main>
   <div
@@ -561,7 +565,7 @@
                      {mobileTab === 'red'
                 ? 'bg-mw-primary/20 text-white font-bold border-b-2 border-mw-primary'
                 : 'bg-black/40 text-mw-primary/60 hover:bg-mw-primary/10'}"
-              on:click={() => (mobileTab = 'red')}
+              onclick={() => (mobileTab = 'red')}
             >
               🔴 Red Army
             </button>
@@ -570,7 +574,7 @@
                      {mobileTab === 'blue'
                 ? 'bg-blue-500/20 text-white font-bold border-b-2 border-blue-500'
                 : 'bg-black/40 text-blue-400/60 hover:bg-blue-500/10'}"
-              on:click={() => (mobileTab = 'blue')}
+              onclick={() => (mobileTab = 'blue')}
             >
               🔵 Blue Army
             </button>
@@ -617,7 +621,7 @@
     <div class="play-button-container max-w-[1200px] mx-auto my-8 text-center">
       <button
         class="group relative inline-flex items-center gap-3 overflow-hidden rounded-sm px-10 py-4 font-display text-xl font-bold uppercase tracking-widest text-black shadow-[0_0_20px_rgba(0,243,255,0.3)] transition-all duration-300 hover:scale-105 hover:shadow-[0_0_30px_rgba(0,243,255,0.5)] active:scale-95 bg-gradient-to-br from-mw-primary to-[#00aaff] border border-mw-primary"
-        on:click={validateAndPlay}
+        onclick={validateAndPlay}
       >
         <span
           class="absolute top-0 left-[-100%] z-10 h-full w-full bg-linear-to-r from-transparent via-[rgba(255,255,255,0.5)] to-transparent transition-[left] duration-500 group-hover:left-full"
@@ -649,19 +653,19 @@
       >
         <button
           class="px-3 py-3 lg:px-6 lg:py-2 rounded-sm font-ui uppercase text-xs lg:text-sm tracking-wider transition-all bg-mw-primary/5 border border-mw-border text-mw-primary hover:bg-mw-primary/20 hover:text-white flex items-center justify-center gap-2"
-          on:click={loadStartingPosition}
+          onclick={loadStartingPosition}
         >
           <span class="text-lg">↺</span> <span class="hidden sm:inline">Reset</span> Board
         </button>
         <button
           class="px-3 py-3 lg:px-6 lg:py-2 rounded-sm font-ui uppercase text-xs lg:text-sm tracking-wider transition-all bg-mw-primary/5 border border-mw-border text-mw-primary hover:bg-mw-primary/20 hover:text-white flex items-center justify-center gap-2"
-          on:click={clearBoard}
+          onclick={clearBoard}
         >
           <span class="text-lg">🧹</span> Clear
         </button>
         <button
           class="px-3 py-3 lg:px-6 lg:py-2 rounded-sm font-ui uppercase text-xs lg:text-sm tracking-wider transition-all bg-mw-primary/5 border border-mw-border text-mw-primary hover:bg-mw-primary/20 hover:text-white flex items-center justify-center gap-2"
-          on:click={flipBoard}
+          onclick={flipBoard}
         >
           <span class="text-lg">⇅</span> Flip
         </button>
@@ -670,7 +674,7 @@
                  {currentTurn === 'red'
             ? 'bg-amber-500/10 border-mw-alert text-mw-alert hover:bg-mw-alert/20 hover:text-white'
             : 'bg-blue-500/10 border-blue-500 text-blue-500 hover:bg-blue-500/20 hover:text-white'}"
-          on:click={toggleTurn}
+          onclick={toggleTurn}
         >
           <span class="w-3 h-3 rounded-full {currentTurn === 'red' ? 'bg-red-500' : 'bg-blue-500'}"
           ></span>
@@ -678,7 +682,7 @@
         </button>
         <button
           class="px-3 py-3 lg:px-6 lg:py-2 rounded-sm font-ui uppercase text-xs lg:text-sm tracking-wider transition-all bg-mw-primary/5 border border-mw-border text-mw-primary opacity-50 cursor-not-allowed col-span-2 md:col-span-1 lg:w-auto flex items-center justify-center gap-2"
-          on:click={screenshot}
+          onclick={screenshot}
           disabled
         >
           <span>📷</span> Screenshot
@@ -701,13 +705,13 @@
           />
           <button
             class="px-4 py-2 rounded-sm font-ui uppercase text-sm bg-mw-primary/10 border border-mw-border text-mw-primary hover:bg-mw-primary/20 hover:text-white transition-colors"
-            on:click={applyFEN}
+            onclick={applyFEN}
           >
             Apply
           </button>
           <button
             class="px-4 py-2 rounded-sm font-ui uppercase text-sm bg-mw-primary/10 border border-mw-border text-mw-primary hover:bg-mw-primary/20 hover:text-white transition-colors"
-            on:click={copyFEN}
+            onclick={copyFEN}
           >
             {copyButtonText}
           </button>

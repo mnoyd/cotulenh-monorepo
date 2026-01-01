@@ -1,10 +1,19 @@
 <script lang="ts">
-  import { afterUpdate } from 'svelte';
-  import { gameStore } from '$lib/stores/game';
+  import { gameState } from '$lib/stores/game';
 
   let historyContainer: HTMLDivElement;
 
-  afterUpdate(() => {
+  // Use $derived to create reactive values from gameState
+  let history = $derived(gameState.history);
+  let historyViewIndex = $derived(gameState.historyViewIndex);
+
+  // Use $effect to auto-scroll when history changes
+  $effect(() => {
+    // Track history length and view index as dependencies
+    void history.length;
+    void historyViewIndex;
+
+    // Scroll to bottom when history changes
     if (historyContainer) {
       historyContainer.scrollTop = historyContainer.scrollHeight;
     }
@@ -17,15 +26,15 @@
   </div>
 
   <div class="history-content" bind:this={historyContainer}>
-    {#if $gameStore.history.length === 0}
+    {#if history.length === 0}
       <div class="empty-state">NO MOVES RECORDED</div>
     {:else}
       <div class="moves-list">
-        {#each $gameStore.history as move, index}
+        {#each history as move, index}
           <button
             class="move-chip {index % 2 === 0 ? 'red-move' : 'blue-move'}"
-            class:active={index === $gameStore.historyViewIndex}
-            on:click={() => gameStore.previewMove(index)}
+            class:active={index === historyViewIndex}
+            onclick={() => gameState.previewMove(index)}
           >
             <span class="move-index">
               {(Math.floor(index / 2) + 1).toString().padStart(2, '0')}

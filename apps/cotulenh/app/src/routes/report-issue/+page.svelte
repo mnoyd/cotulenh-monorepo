@@ -1,16 +1,19 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { browser } from '$app/environment';
   import { fade } from 'svelte/transition';
 
-  let fen = '';
-  let gameState = '';
-  let issueDescription = '';
-  let title = 'Bug Report';
-  let copied = false;
+  let fen = $state('');
+  let gameState = $state('');
+  let issueDescription = $state('');
+  let title = $state('Bug Report');
+  let copied = $state(false);
 
-  onMount(() => {
-    fen = localStorage.getItem('report_fen') || '';
-    gameState = localStorage.getItem('report_state') || '';
+  // Load data from localStorage on mount (browser only)
+  $effect(() => {
+    if (browser) {
+      fen = localStorage.getItem('report_fen') || '';
+      gameState = localStorage.getItem('report_state') || '';
+    }
   });
 
   function createGithubIssue() {
@@ -82,7 +85,7 @@ ${gameState}
     </div>
 
     <div class="actions">
-      <button class="submit-btn" on:click={createGithubIssue} disabled={!issueDescription}>
+      <button class="submit-btn" onclick={createGithubIssue} disabled={!issueDescription}>
         {#if copied}
           Copied to Clipboard & Opening GitHub...
         {:else}
