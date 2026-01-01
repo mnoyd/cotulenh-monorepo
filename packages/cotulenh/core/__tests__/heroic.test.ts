@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { CoTuLenh, StandardMove } from '../src/cotulenh'
+import { CoTuLenh, MoveResult } from '../src/cotulenh'
 import {
   BLUE,
   RED,
@@ -40,11 +40,12 @@ describe('Heroic Piece Functionality', () => {
     const movesBefore = game.moves({
       verbose: true,
       square: 'd5',
-    }) as StandardMove[]
+    }) as MoveResult[]
 
     // Check for diagonal moves
     const diagonalMovesBefore = movesBefore.filter(
-      (m) => m.from === 'd5' && ['c4', 'c6', 'e4', 'e6'].includes(m.to),
+      (m) =>
+        typeof m.to === 'string' && ['c4', 'c6', 'e4', 'e6'].includes(m.to),
     )
 
     // Regular infantry shouldn't have diagonal moves
@@ -57,11 +58,12 @@ describe('Heroic Piece Functionality', () => {
     const movesAfter = game.moves({
       verbose: true,
       square: 'd5',
-    }) as StandardMove[]
+    }) as MoveResult[]
 
     // Check for diagonal moves again
     const diagonalMovesAfter = movesAfter.filter(
-      (m) => m.from === 'd5' && ['c4', 'c6', 'e4', 'e6'].includes(m.to),
+      (m) =>
+        typeof m.to === 'string' && ['c4', 'c6', 'e4', 'e6'].includes(m.to),
     )
 
     // Heroic infantry should have diagonal moves
@@ -77,7 +79,7 @@ describe('Heroic Piece Functionality', () => {
     const movesBeforeHeroic = game.moves({
       verbose: true,
       square: 'e5',
-    }) as StandardMove[]
+    }) as MoveResult[]
 
     // Check if it can reach e3 (2 spaces away) but not e2 (3 spaces away)
     const canReachE3 = movesBeforeHeroic.some((m) => m.to === 'e3')
@@ -93,7 +95,7 @@ describe('Heroic Piece Functionality', () => {
     const movesAfterHeroic = game.moves({
       verbose: true,
       square: 'e5',
-    }) as StandardMove[]
+    }) as MoveResult[]
 
     // Now check if it can reach e2 (3 spaces away)
     const canReachE2After = movesAfterHeroic.some((m) => m.to === 'e2')
@@ -108,7 +110,7 @@ describe('Heroic Piece Functionality', () => {
     const movesBefore = game.moves({
       verbose: true,
       square: 'd5',
-    }) as StandardMove[]
+    }) as MoveResult[]
     expect(movesBefore.length).toBe(0) // Shouldn't be able to move
 
     // Make HQ heroic
@@ -118,20 +120,22 @@ describe('Heroic Piece Functionality', () => {
     const movesAfter = game.moves({
       verbose: true,
       square: 'd5',
-    }) as StandardMove[]
+    }) as MoveResult[]
 
     // Now HQ should move like militia (1 square in any direction)
     expect(movesAfter.length).toBeGreaterThan(0)
 
     // Check for orthogonal moves
-    const orthogonalMoves = movesAfter.filter((m) =>
-      ['d4', 'd6', 'c5', 'e5'].includes(m.to),
+    const orthogonalMoves = movesAfter.filter(
+      (m) =>
+        typeof m.to === 'string' && ['d4', 'd6', 'c5', 'e5'].includes(m.to),
     )
     expect(orthogonalMoves.length).toBeGreaterThan(0)
 
     // Check for diagonal moves
-    const diagonalMoves = movesAfter.filter((m) =>
-      ['c4', 'c6', 'e4', 'e6'].includes(m.to),
+    const diagonalMoves = movesAfter.filter(
+      (m) =>
+        typeof m.to === 'string' && ['c4', 'c6', 'e4', 'e6'].includes(m.to),
     )
     expect(diagonalMoves.length).toBeGreaterThan(0)
   })
@@ -146,7 +150,7 @@ describe('Heroic Piece Functionality', () => {
     const moves = game.moves({
       verbose: true,
       square: 'e4',
-    }) as StandardMove[]
+    }) as MoveResult[]
 
     expect(moves.length).toBeGreaterThan(0)
 

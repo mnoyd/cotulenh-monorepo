@@ -28,30 +28,17 @@ import { createError, ErrorCode } from '@cotulenh/common'
 import type { CoTuLenh } from './cotulenh.js'
 
 /**
- * Result of a move operation
- * Indicates whether the move sequence is complete and provides the move object
+ * Result of a move operation - unified for both standard and deploy moves
  */
-export type MoveResult = StandardMove | DeploySequence
-
-export interface BaseMoveResult {
-  color: Color
-  from: Square
-  piece: Piece
-  captured?: Piece[]
-  san?: string
-  lan?: string
-  before: string
-  after: string
-  completed: boolean
-  isDeploy: boolean
-}
-
 export interface RecombineOption {
   square: Square // The square of the deployed piece we want to recombine with
   piece: PieceSymbol // The piece from the stack we are adding
 }
 
-export abstract class AbstractMoveResult implements BaseMoveResult {
+export class MoveResult {
+  private _san?: string
+  private _lan?: string
+
   constructor(
     public readonly color: Color,
     public readonly from: Square,
@@ -59,73 +46,60 @@ export abstract class AbstractMoveResult implements BaseMoveResult {
     public readonly flags: string,
     public readonly before: string,
     public readonly after: string,
-    public readonly san?: string,
-    public readonly lan?: string,
+    public readonly to: Square | Map<Square, Piece>,
     public readonly captured?: Piece[],
     public readonly completed: boolean = true,
+    public readonly stay?: Piece,
   ) {}
-
-  abstract get isDeploy(): boolean
-  abstract get to(): Square | Map<Square, Piece>
-
-  isCapture(): boolean {
-    return this.flags.indexOf(FLAGS.CAPTURE) > -1
-  }
-
-  isStayCapture(): boolean {
-    return this.flags.indexOf(FLAGS.STAY_CAPTURE) > -1
-  }
-
-  isCombination(): boolean {
-    return this.flags.indexOf(FLAGS.COMBINATION) > -1
-  }
-
-  isSuicideCapture(): boolean {
-    return this.flags.indexOf(FLAGS.SUICIDE_CAPTURE) > -1
-  }
-}
-
-// Public StandardMove class (formerly Move)
-export class StandardMove extends AbstractMoveResult {
-  public readonly toSquare: Square
-
-  constructor(
-    data: BaseMoveResult & {
-      to: Square
-      flags: string
-    },
-  ) {
-    super(
-      data.color,
-      data.from,
-      data.piece,
-      data.flags,
-      data.before,
-      data.after,
-      data.san,
-      data.lan,
-      data.captured,
-      data.completed,
-    )
-    this.toSquare = data.to
-  }
-
-  get to(): Square {
-    return this.toSquare
-  }
 
   get isDeploy(): boolean {
     return this.flags.indexOf(FLAGS.DEPLOY) > -1
   }
 
-  // Old constructor removed - use StandardMove.fromExecutedMove() instead
+  get isCapture(): boolean {
+    return this.flags.indexOf(FLAGS.CAPTURE) > -1
+  }
+
+  get isStayCapture(): boolean {
+    return this.flags.indexOf(FLAGS.STAY_CAPTURE) > -1
+  }
+
+  get isCombination(): boolean {
+    return this.flags.indexOf(FLAGS.COMBINATION) > -1
+  }
+
+  get isSuicideCapture(): boolean {
+    return this.flags.indexOf(FLAGS.SUICIDE_CAPTURE) > -1
+  }
+
+  get san(): string {
+    if (!this._san) {
+      throw new Error('SAN not set for this move result')
+    }
+    return this._san
+  }
+
+  get lan(): string {
+    if (!this._lan) {
+      throw new Error('LAN not set for this move result')
+    }
+    return this._lan
+  }
+
+  setSan(san: string): void {
+    this._san = san
+  }
+
+  setLan(lan: string): void {
+    this._lan = lan
+  }
+
+  hasNotation(): boolean {
+    return !!this._san && !!this._lan
+  }
 
   /**
-   * Create StandardMove from already-executed move data (preferred for deploy session moves).
-   * No game state manipulation required - all data provided directly.
-   *
-   * @param data - Complete move data
-   * @returns StandardMove instance
+   * Create MoveResult from already-executed move data (standard moves).
    */
   static fromExecutedMove(data: {
     color: Color
@@ -139,7 +113,7 @@ export class StandardMove extends AbstractMoveResult {
     san: string
     lan: string
     completed?: boolean
-  }): StandardMove {
+  }): MoveResult {
     // Flatten captured piece(s) to ensure consistent Piece[] type
     let captured: Piece[] | undefined
     if (data.captured) {
@@ -148,67 +122,26 @@ export class StandardMove extends AbstractMoveResult {
         : flattenPiece(data.captured)
     }
 
-    return new StandardMove({
-      color: data.color,
-      from: data.from,
-      to: data.to,
-      piece: data.piece,
-      captured,
-      flags: data.flags,
-      before: data.before,
-      after: data.after,
-      san: data.san,
-      lan: data.lan,
-      completed: data.completed ?? true,
-      isDeploy: false,
-    })
-  }
-}
-
-// Public DeploySequence class (formerly DeployMove)
-export class DeploySequence extends AbstractMoveResult {
-  public readonly toMap: Map<Square, Piece>
-  public readonly stay: Piece | undefined
-
-  constructor(
-    data: BaseMoveResult & {
-      to: Map<Square, Piece>
-      stay?: Piece
-      flags: string
-    },
-  ) {
-    super(
+    const result = new MoveResult(
       data.color,
       data.from,
       data.piece,
       data.flags,
       data.before,
       data.after,
-      data.san,
-      data.lan,
-      data.captured,
-      data.completed,
+      data.to, // to: Square
+      captured,
+      data.completed ?? true,
     )
-    this.toMap = data.to
-    this.stay = data.stay
-  }
-
-  get to(): Map<Square, Piece> {
-    return this.toMap
-  }
-
-  get isDeploy(): boolean {
-    return true
+    result.setSan(data.san)
+    result.setLan(data.lan)
+    return result
   }
 
   /**
-   * Create DeploySequence from session data (preferred method).
-   * No game state manipulation required - all data provided by session.
-   *
-   * @param data - Complete move data from DeploySession
-   * @returns DeploySequence instance
+   * Create MoveResult from deploy session data.
    */
-  static fromSession(data: {
+  static fromDeploySession(data: {
     color: Color
     from: Square
     to: Map<Square, Piece>
@@ -221,29 +154,28 @@ export class DeploySequence extends AbstractMoveResult {
     san: string
     lan: string
     completed?: boolean
-  }): DeploySequence {
-    return new DeploySequence({
-      color: data.color,
-      from: data.from,
-      to: data.to,
-      piece: data.piece,
-      stay: data.stay,
-      captured: data.captured,
-      flags: data.flags,
-      before: data.before,
-      after: data.after,
-      san: data.san,
-      lan: data.lan,
-      completed: data.completed ?? true,
-      isDeploy: true,
-    })
+  }): MoveResult {
+    const result = new MoveResult(
+      data.color,
+      data.from,
+      data.piece,
+      data.flags,
+      data.before,
+      data.after,
+      data.to, // to: Map<Square, Piece>
+      data.captured,
+      data.completed ?? true,
+      data.stay,
+    )
+    result.setSan(data.san)
+    result.setLan(data.lan)
+    return result
   }
 
   /**
-   * Create DeploySequence from raw session data.
-   * Centralizes the logic for creating the DeploySequence result object.
+   * Create MoveResult from raw session data.
    */
-  static create(
+  static createDeploy(
     game: CoTuLenh,
     moves: InternalMove[],
     remaining: Piece[],
@@ -252,7 +184,7 @@ export class DeploySequence extends AbstractMoveResult {
     originalPiece: Piece,
     beforeFEN: string,
     completed: boolean,
-  ): DeploySequence {
+  ): MoveResult {
     const afterFEN = game.fen(!completed)
     const stay =
       remaining.length > 0 ? (combinePieces(remaining) ?? undefined) : undefined
@@ -267,14 +199,14 @@ export class DeploySequence extends AbstractMoveResult {
       toMap.set(algebraic(move.to), move.piece)
     }
 
-    const { san, lan } = DeploySequence.calculateSanLan(
+    const { san, lan } = MoveResult.calculateDeploySanLan(
       moves,
       stackSquare,
       stay,
     )
-    const flagsStr = DeploySequence.calculateFlags(moves)
+    const flagsStr = MoveResult.calculateDeployFlags(moves)
 
-    return DeploySequence.fromSession({
+    return MoveResult.fromDeploySession({
       color: turn,
       from: algebraic(stackSquare),
       to: toMap,
@@ -290,7 +222,7 @@ export class DeploySequence extends AbstractMoveResult {
     })
   }
 
-  public static calculateSanLan(
+  static calculateDeploySanLan(
     moves: InternalMove[],
     stackSquare: number,
     stay: Piece | undefined,
@@ -304,17 +236,15 @@ export class DeploySequence extends AbstractMoveResult {
     const stayNotation = stay ? makeSanPiece(stay) : ''
 
     // SAN: Simple representation "Stay< Move1, Move2"
-    // This is for UI/Logging, not critical for FEN persistence but good for readability
     const sanStay = stay ? `${makeSanPiece(stay)}<` : ''
     const san = `${sanStay}${movesSan}`
 
     // LAN (FEN part): Origin:Stay:Moves
-    // Example: a1:K(P):N>a2,P>a3
     const lan = `${algebraic(stackSquare)}:${stayNotation}:${movesSan}`
     return { san, lan }
   }
 
-  private static calculateFlags(moves: InternalMove[]): string {
+  static calculateDeployFlags(moves: InternalMove[]): string {
     const set = new Set<string>()
     for (const m of moves) {
       for (const flag in BITS) {
@@ -557,13 +487,13 @@ export class MoveSession {
    */
   private _generateDeployCommitData(completed: boolean): {
     command: CTLMoveSequenceCommandInterface
-    result: DeploySequence
+    result: MoveResult
   } {
     const deployCommand = DeployMoveSequenceCommand.create(
       this._commands,
       this.moves,
     )
-    const deployMove = DeploySequence.create(
+    const deployMove = MoveResult.createDeploy(
       this._game,
       this.moves,
       this.remaining,
@@ -583,7 +513,7 @@ export class MoveSession {
    */
   private _generateStandardCommitData(completed: boolean): {
     command: CTLMoveCommandInteface
-    result: StandardMove
+    result: MoveResult
   } {
     const command = this._commands[0]
     const move = command.move
@@ -594,7 +524,7 @@ export class MoveSession {
         : moveToSanLan(move, this._game['_moves']({ legal: true }))
     const flagsStr = this._flagsFromMove(move)
 
-    const moveObj = StandardMove.fromExecutedMove({
+    const moveObj = MoveResult.fromExecutedMove({
       color: move.color,
       from: algebraic(move.from),
       to: algebraic(move.to),
@@ -693,7 +623,7 @@ export class MoveSession {
   toFenString(): string {
     if (!this.isDeploy) return this._beforeFEN
 
-    const { lan } = DeploySequence.calculateSanLan(
+    const { lan } = MoveResult.calculateDeploySanLan(
       this.moves,
       this.stackSquare,
       this.remaining.length > 0

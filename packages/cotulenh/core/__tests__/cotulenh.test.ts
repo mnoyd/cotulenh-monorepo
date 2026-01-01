@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { CoTuLenh } from '../src/cotulenh'
-import { StandardMove } from '../src/move-session.js'
+import { MoveResult } from '../src/move-session.js'
 import {
   AIR_FORCE,
   BLUE,
@@ -281,7 +281,7 @@ describe('CoTuLenh Commander Rules', () => {
       const moves = blockingGame.moves({
         square: 'g10',
         verbose: true,
-      }) as StandardMove[] // Move Infantry OFF the file
+      }) as MoveResult[] // Move Infantry OFF the file
       expect(findMove(moves, 'g10', 'f10')).toBeUndefined() // Should be illegal as it exposes Red Commander
     })
 
@@ -293,7 +293,7 @@ describe('CoTuLenh Commander Rules', () => {
       const moves = blockingGame.moves({
         square: 'e7',
         verbose: true,
-      }) as StandardMove[] // Move Infantry OFF the rank
+      }) as MoveResult[] // Move Infantry OFF the rank
       expect(findMove(moves, 'e7', 'e8')).toBeUndefined() // Should be illegal as it exposes Red Commander
     })
 
@@ -305,7 +305,7 @@ describe('CoTuLenh Commander Rules', () => {
       const commanderMove = game.moves({
         square: 'g7',
         verbose: true,
-      }) as StandardMove[] // Move commander one step off the file
+      }) as MoveResult[] // Move commander one step off the file
       // g7 -> f7 (change file)
       expect(findMove(commanderMove, 'g7', 'f7')).toBeDefined() // Should be legal as path is blocked
     })
@@ -318,7 +318,7 @@ describe('CoTuLenh Commander Rules', () => {
       const commanderMove = game.moves({
         square: 'j7',
         verbose: true,
-      }) as StandardMove[] // Move commander one step off the rank
+      }) as MoveResult[] // Move commander one step off the rank
       // j7 -> j8 (change rank)
       expect(findMove(commanderMove, 'j7', 'j8')).toBeDefined() // Should be legal as path is blocked
     })
@@ -330,7 +330,7 @@ describe('CoTuLenh Commander Rules', () => {
       const commanderMove = game.moves({
         square: 'h7',
         verbose: true,
-      }) as StandardMove[]
+      }) as MoveResult[]
       expect(findMove(commanderMove, 'h7', 'd7')).toBeUndefined() // Should be illegal as it exposes Red Commander
       // h7 -> h8 (blocked by blue Infantry at h8? No, h12 is where c is. h8 is empty?)
       // Wait, fen: 3c1i5/11/11/5I5/11/7C3/11/11/11/11/11/11

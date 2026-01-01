@@ -32,6 +32,7 @@ import {
   COMMANDER,
   VALID_SQUARES,
   rank,
+  GameStateMetadata,
 } from './type.js'
 import {
   printBoard,
@@ -47,7 +48,6 @@ import {
 } from './utils.js'
 import {
   generateMoves,
-  ORTHOGONAL_OFFSETS,
   ALL_OFFSETS,
   DIAGONAL_OFFSETS,
   getPieceMovementConfig,
@@ -69,14 +69,12 @@ import {
   MoveSession,
   handleMove,
   executeRecombine,
-  StandardMove,
-  DeploySequence,
-  type MoveResult,
+  MoveResult,
   type RecombineOption,
 } from './move-session.js'
 import { createError, ErrorCode, logger } from '@cotulenh/common'
 
-export { StandardMove, DeploySequence, type MoveResult, type RecombineOption }
+export { MoveResult, type RecombineOption }
 
 // Structure for storing history states
 interface History {
@@ -105,6 +103,56 @@ export class CoTuLenh {
 
   constructor(fen = DEFAULT_POSITION) {
     this.load(fen)
+  }
+
+  /**
+   * Retrieves current game metadata
+   */
+  getMetadata(): GameStateMetadata {
+    return {
+      turn: this._turn,
+      halfMoves: this._halfMoves,
+      moveNumber: this._moveNumber,
+      fen: this.fen(),
+    }
+  }
+
+  /**
+   * Updates game metadata
+   */
+  setMetadata(metadata: Partial<GameStateMetadata>): void {
+    if (metadata.turn !== undefined) this._turn = metadata.turn
+    if (metadata.halfMoves !== undefined) this._halfMoves = metadata.halfMoves
+    if (metadata.moveNumber !== undefined)
+      this._moveNumber = metadata.moveNumber
+
+    if (metadata.fen !== undefined) {
+      this._header['SetUp'] = '1'
+      this._header['FEN'] = metadata.fen
+    }
+    this._movesCache.clear()
+  }
+
+  /**
+   * Increments the count for a specific position (FEN)
+   */
+  incrementPositionCount(fen: string): void {
+    if (!this._positionCount[fen]) {
+      this._positionCount[fen] = 0
+    }
+    this._positionCount[fen]++
+  }
+
+  /**
+   * Decrements the count for a specific position (FEN)
+   */
+  decrementPositionCount(fen: string): void {
+    if (this._positionCount[fen] > 0) {
+      this._positionCount[fen]--
+      if (this._positionCount[fen] === 0) {
+        delete this._positionCount[fen]
+      }
+    }
   }
 
   /**
@@ -723,7 +771,7 @@ export class CoTuLenh {
     verbose?: boolean
     square?: Square
     pieceType?: PieceSymbol
-  } = {}): string[] | StandardMove[] {
+  } = {}): string[] | MoveResult[] {
     const internalMoves = this._moves({
       square,
       pieceType,
@@ -733,22 +781,24 @@ export class CoTuLenh {
     if (verbose) {
       return internalMoves.map((move) => {
         const [san, lan] = moveToSanLan(move, internalMoves)
+        const flagsStr = Object.keys(BITS)
+          .filter((flag) => BITS[flag] & move.flags)
+          .map((flag) => FLAGS[flag])
+          .join('')
 
-        return StandardMove.fromExecutedMove({
+        const result = MoveResult.fromExecutedMove({
           color: move.color,
           from: algebraic(move.from),
           to: algebraic(move.to),
           piece: move.piece,
           captured: move.captured,
-          flags: Object.keys(BITS)
-            .filter((flag) => BITS[flag] & move.flags)
-            .map((flag) => FLAGS[flag])
-            .join(''),
+          flags: flagsStr,
           before: this.fen(),
           after: '?',
           san,
           lan,
         })
+        return result
       })
     } else {
       // Generate SAN strings (simple, no temp execute)
@@ -1455,14 +1505,10 @@ export class CoTuLenh {
    * @returns An array containing all moves made in the game, in chronological order
    */
   history(): string[]
-  history(options: { verbose: true }): (StandardMove | DeploySequence)[]
+  history(options: { verbose: true }): MoveResult[]
   history(options: { verbose: false }): string[]
-  history(options?: {
-    verbose?: boolean
-  }): string[] | (StandardMove | DeploySequence)[]
-  history(
-    options: { verbose?: boolean } = {},
-  ): string[] | (StandardMove | DeploySequence)[] {
+  history(options?: { verbose?: boolean }): string[] | MoveResult[]
+  history(options: { verbose?: boolean } = {}): string[] | MoveResult[] {
     const { verbose = false } = options
 
     // Undo all moves to get back to initial state
@@ -1491,7 +1537,7 @@ export class CoTuLenh {
       }
     }
 
-    const results: (StandardMove | DeploySequence)[] = []
+    const results: MoveResult[] = []
 
     // Replay history using move() to verify/reconstruct
     // This allows re-using all the validation and session logic within move()

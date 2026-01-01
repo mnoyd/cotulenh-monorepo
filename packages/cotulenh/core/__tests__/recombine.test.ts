@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { MoveSession, DeploySequence } from '../src/move-session.js'
+import { MoveSession, MoveResult } from '../src/move-session.js'
 import {
   BITS,
   RED,
@@ -12,6 +12,8 @@ import {
   AIR_FORCE,
   algebraic,
   SQUARE_MAP,
+  Square,
+  Piece,
 } from '../src/type.js'
 import { CoTuLenh } from '../src/cotulenh.js'
 
@@ -157,15 +159,15 @@ describe('Recombine Option', () => {
       expect(result).toBeDefined()
       if (!result) return
 
-      const rMove = result as DeploySequence
-      expect(rMove.completed).toBe(true)
-      expect(rMove.to.size).toBe(1)
-      const deployedPiece = rMove.to.get('c5')
+      expect(result.completed).toBe(true)
+      const toMap = result.to as Map<Square, Piece>
+      expect(toMap.size).toBe(1)
+      const deployedPiece = toMap.get('c5')
       expect(deployedPiece).toBeDefined()
       expect(deployedPiece?.type).toBe(NAVY)
       expect(deployedPiece?.carrying).toHaveLength(1)
       expect(deployedPiece?.carrying?.[0].type).toBe(TANK)
-      expect(rMove.stay).toBeUndefined()
+      expect(result.stay).toBeUndefined()
 
       const boardPiece = game.get('c5')
       expect(boardPiece).toBeDefined()
@@ -206,15 +208,15 @@ describe('Recombine Option', () => {
       expect(result).toBeDefined()
       if (!result) return
 
-      const rMove = result as DeploySequence
-      expect(rMove.to.size).toBe(2)
+      const toMap = result.to as Map<Square, Piece>
+      expect(toMap.size).toBe(2)
 
-      const move1 = rMove.to.get('c5')
+      const move1 = toMap.get('c5')
       expect(move1?.type).toBe(NAVY)
       expect(move1?.carrying).toHaveLength(1)
       expect(move1?.carrying?.[0].type).toBe(TANK)
 
-      const move2 = rMove.to.get('c4')
+      const move2 = toMap.get('c4')
       expect(move2?.type).toBe(INFANTRY)
 
       expect(game.get('c5')?.carrying).toHaveLength(1)
@@ -264,10 +266,10 @@ describe('Recombine Option', () => {
       expect(result).toBeDefined()
       if (!result) return
 
-      const rMove = result as DeploySequence
-      expect(rMove.to.size).toBe(2)
-      expect(rMove.to.get('c5')?.carrying?.[0].type).toBe(INFANTRY)
-      expect(rMove.to.has('c7')).toBe(true)
+      const toMap = result.to as Map<Square, Piece>
+      expect(toMap.size).toBe(2)
+      expect(toMap.get('c5')?.carrying?.[0].type).toBe(INFANTRY)
+      expect(toMap.has('c7')).toBe(true)
       expect(game.getSession()).toBeNull()
     })
 

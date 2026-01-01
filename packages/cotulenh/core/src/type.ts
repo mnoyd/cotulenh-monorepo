@@ -190,6 +190,13 @@ export type InternalMove = {
   san?: string
   lan?: string
 }
+
+export interface GameStateMetadata {
+  turn: Color
+  halfMoves: number
+  moveNumber: number
+  fen: string
+}
 // DeployState type removed - use DeploySession instead
 // Generic container for Air Defense data (internal or display)
 export type AirDefenseData<T> = {

@@ -3,15 +3,7 @@
 
 import { describe, it, expect, beforeEach } from 'vitest'
 import { CoTuLenh } from '../src/cotulenh.js'
-import {
-  RED,
-  BLUE,
-  TANK,
-  MILITIA,
-  INFANTRY,
-  NAVY,
-  AIR_FORCE,
-} from '../src/type.js'
+import { RED, BLUE, TANK, MILITIA, INFANTRY, AIR_FORCE } from '../src/type.js'
 import { setupGameBasic } from './test-helpers.js'
 
 describe('Deploy Integration Tests', () => {

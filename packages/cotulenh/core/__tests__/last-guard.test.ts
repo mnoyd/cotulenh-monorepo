@@ -1,17 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { CoTuLenh } from '../src/cotulenh'
-import {
-  BLUE,
-  RED,
-  INFANTRY,
-  TANK,
-  HEADQUARTER,
-  COMMANDER,
-  NAVY,
-  MISSILE,
-  AIR_FORCE,
-} from '../src/type'
-import { setupGameBasic } from './test-helpers'
+import { BLUE, RED, INFANTRY, TANK, HEADQUARTER, COMMANDER } from '../src/type'
 
 describe('Last Guard Promotion', () => {
   let game: CoTuLenh

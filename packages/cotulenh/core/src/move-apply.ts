@@ -9,6 +9,7 @@ import {
   Piece,
   VALID_SQUARES,
   COMMANDER,
+  GameStateMetadata,
 } from './type.js'
 import { combinePieces, clonePiece } from './utils.js'
 import { createError, ErrorCode } from '@cotulenh/common'
@@ -123,9 +124,7 @@ export class PlacePieceAction implements CTLAtomicMoveAction {
  * This action encapsulates state changes so they can be executed/undone atomically.
  */
 export class StateUpdateAction implements CTLAtomicMoveAction {
-  private readonly oldTurn: Color
-  private readonly oldHalfMoves: number
-  private readonly oldMoveNumber: number
+  private readonly oldState: GameStateMetadata
   private addedFen: string | null = null
 
   constructor(
@@ -133,72 +132,37 @@ export class StateUpdateAction implements CTLAtomicMoveAction {
     private readonly move: InternalMove,
     private readonly preCalculatedFen?: string,
   ) {
-    // Capture current state before execution (or before update)
-    // Note: StateUpdateAction is usually created AFTER move execution but BEFORE flag update.
-    this.oldTurn = game.turn()
-    this.oldHalfMoves = game['_halfMoves']
-    this.oldMoveNumber = game['_moveNumber']
+    this.oldState = game.getMetadata()
   }
 
   execute(): void {
-    const us = this.oldTurn
+    const us = this.oldState.turn
     const them = swapColor(us)
     const hasCapture = !!(this.move.flags & BITS.CAPTURE)
 
-    // Update game state
-    this.game['_halfMoves'] = hasCapture ? 0 : this.oldHalfMoves + 1
-    this.game['_turn'] = them
-    if (us === 'b') {
-      this.game['_moveNumber']++
-    }
-    this.game['_movesCache'].clear()
-
-    // Update position counts
     // Optimization: Cache FEN to avoid re-calculation on redo
-    // and avoid double calculation (once in _updatePositionCounts, once for storage)
-    if (this.addedFen) {
-      // Redo path: Use cached FEN
-      const fen = this.addedFen
-      if (!this.game['_positionCount'][fen]) {
-        this.game['_positionCount'][fen] = 0
-      }
-      this.game['_positionCount'][fen]++
-      this.game['_header']['SetUp'] = '1'
-      this.game['_header']['FEN'] = fen
-    } else {
-      // First execution: Generate FEN once (or use provided)
-      const fen = this.preCalculatedFen ?? this.game.fen()
-      this.addedFen = fen
+    const fen = this.addedFen ?? this.preCalculatedFen ?? this.game.fen()
+    this.addedFen = fen
 
-      if (!this.game['_positionCount'][fen]) {
-        this.game['_positionCount'][fen] = 0
-      }
-      this.game['_positionCount'][fen]++
-      this.game['_header']['SetUp'] = '1'
-      this.game['_header']['FEN'] = fen
-    }
+    // Update game state via memento
+    this.game.setMetadata({
+      halfMoves: hasCapture ? 0 : this.oldState.halfMoves + 1,
+      turn: them,
+      moveNumber:
+        us === 'b' ? this.oldState.moveNumber + 1 : this.oldState.moveNumber,
+      fen: fen,
+    })
+
+    this.game.incrementPositionCount(fen)
   }
 
   undo(): void {
-    // Decrement position count for the state we are leaving
     if (this.addedFen) {
-      if (this.game['_positionCount'][this.addedFen] > 0) {
-        this.game['_positionCount'][this.addedFen]--
-        if (this.game['_positionCount'][this.addedFen] === 0) {
-          delete this.game['_positionCount'][this.addedFen]
-        }
-      }
+      this.game.decrementPositionCount(this.addedFen)
     }
 
     // Restore previous state
-    this.game['_turn'] = this.oldTurn
-    this.game['_halfMoves'] = this.oldHalfMoves
-    this.game['_moveNumber'] = this.oldMoveNumber
-
-    // Setup/FEN header updates handled by _updatePositionCounts usually,
-    // but on undo we might just clear cache. Headers will be fixed next forward move.
-
-    this.game['_movesCache'].clear()
+    this.game.setMetadata(this.oldState)
   }
 }
 
@@ -230,15 +194,33 @@ export abstract class CTLMoveCommand implements CTLMoveCommandInteface {
     moveData: InternalMove,
   ) {
     this.move = { ...moveData }
+    this.validate()
     this.buildActions()
+    this.injectDefaultPostActions()
+  }
+
+  /**
+   * Optional validation step before building actions
+   */
+  protected validate(): void {
+    if (!this.game.get(this.move.from)) {
+      throw createError(
+        ErrorCode.MOVE_PIECE_NOT_FOUND,
+        `Build Move Error: No piece to move at ${algebraic(this.move.from)}`,
+        { move: this.move },
+      )
+    }
+  }
+
+  protected abstract buildActions(): void
+
+  private injectDefaultPostActions(): void {
     const defaultPostMoveActions = [
       new LazyAction(() => checkAndPromoteAttackers(this.game, this.move)),
       new LazyAction(() => checkAndPromoteLastGuard(this.game)),
     ]
     this.actions.push(...defaultPostMoveActions)
   }
-
-  protected abstract buildActions(): void
 
   execute(): void {
     for (const action of this.actions) {
@@ -343,14 +325,6 @@ export class StayCaptureMoveCommand extends CTLMoveCommand {
     const us = this.move.color
     const them = swapColor(us)
     const targetSq = this.move.to
-    const pieceAtFrom = this.game.get(this.move.from)
-    if (!pieceAtFrom) {
-      throw createError(
-        ErrorCode.MOVE_PIECE_NOT_FOUND,
-        `Build StayCapture Error: No piece to move at ${algebraic(this.move.from)}`,
-        { move: this.move },
-      )
-    }
 
     const capturedPiece = this.game.get(targetSq)
     if (!capturedPiece || capturedPiece.color !== them) {
@@ -378,13 +352,6 @@ export class SuicideCaptureMoveCommand extends CTLMoveCommand {
     const them = swapColor(us)
     const targetSq = this.move.to
     const pieceAtFrom = clonePiece(this.move.piece) as Piece
-    if (!pieceAtFrom) {
-      throw createError(
-        ErrorCode.MOVE_PIECE_NOT_FOUND,
-        `Build SuicideCapture Error: No piece to move at ${algebraic(this.move.from)}`,
-        { move: this.move },
-      )
-    }
 
     const capturedPiece = this.game.get(targetSq)
     if (!capturedPiece || capturedPiece.color !== them) {
@@ -553,47 +520,52 @@ function checkAndPromoteAttackers(
  * Last Guard rule: When a side is reduced to Commander + 1 piece, promote that piece to Heroic
  */
 function checkAndPromoteLastGuard(game: CoTuLenh): CTLAtomicMoveAction[] {
-  const actions: CTLAtomicMoveAction[] = []
+  return ([RED, BLUE] as Color[])
+    .filter((color) => isEligibleForLastGuard(game, color))
+    .map((color) => {
+      const guard = findLastGuard(game, color)
+      // findLastGuard returns null if no guard found or multiple guards exist (though filter should catch it)
+      return guard && !guard.heroic
+        ? new SetHeroicAction(game, guard.square, guard.type, true)
+        : null
+    })
+    .filter((action): action is SetHeroicAction => action !== null)
+}
 
-  type GuardInfo = { square: number; type: PieceSymbol; heroic?: boolean }
-  const guards: Record<Color, GuardInfo | null> = { [RED]: null, [BLUE]: null }
-  const skips: Record<Color, boolean> = { [RED]: false, [BLUE]: false }
-
+/**
+ * Checks if a side has exactly one non-commander piece (and no carrying stacks)
+ */
+function isEligibleForLastGuard(game: CoTuLenh, color: Color): boolean {
+  let nonCommanderCount = 0
   for (const i of VALID_SQUARES) {
-    if (skips[RED] && skips[BLUE]) break
-
     const piece = game.get(i)
-    if (!piece) continue
+    if (!piece || piece.color !== color || piece.type === COMMANDER) continue
 
-    const color = piece.color as Color
-    if (skips[color]) continue
+    // If any piece is carrying others, it's definitely > 1 piece
+    if (piece.carrying && piece.carrying.length > 0) return false
 
-    // Optimization: If carrying, assume > 1 piece -> SKIP
-    if (piece.carrying && piece.carrying.length > 0) {
-      skips[color] = true
-      continue
-    }
+    nonCommanderCount++
+    if (nonCommanderCount > 1) return false
+  }
+  return nonCommanderCount === 1
+}
 
-    // Single piece logic
-    if (piece.type !== COMMANDER) {
-      if (guards[color] === null) {
-        guards[color] = {
-          square: i,
-          type: piece.type,
-          heroic: piece.heroic,
-        }
-      } else {
-        skips[color] = true
+/**
+ * Finds the single non-commander piece for a side
+ */
+function findLastGuard(
+  game: CoTuLenh,
+  color: Color,
+): { square: number; type: PieceSymbol; heroic?: boolean } | null {
+  for (const i of VALID_SQUARES) {
+    const piece = game.get(i)
+    if (piece && piece.color === color && piece.type !== COMMANDER) {
+      return {
+        square: i,
+        type: piece.type,
+        heroic: piece.heroic,
       }
     }
   }
-
-  for (const color of [RED, BLUE] as Color[]) {
-    const g = guards[color]
-    if (!skips[color] && g && !g.heroic) {
-      actions.push(new SetHeroicAction(game, g.square, g.type, true))
-    }
-  }
-
-  return actions
+  return null
 }

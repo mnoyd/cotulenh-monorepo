@@ -9,7 +9,7 @@ import {
   Piece,
   RED,
   SQUARE_MAP,
-  StandardMove,
+  MoveResult,
   TANK,
 } from '../src/cotulenh'
 import { findMove, setupGameBasic } from './test-helpers'
@@ -24,7 +24,7 @@ describe('CoTuLenh', () => {
       const moves = game.moves({
         square: 'd5',
         verbose: true,
-      }) as StandardMove[] // Assuming Infantry at e5 can move to e6
+      }) as MoveResult[] // Assuming Infantry at e5 can move to e6
       const move = findMove(moves, 'd5', 'd6')
       expect(move?.san).toBe('Ed6') // Or just 'e5-e6' if Infantry is implicit
     })
@@ -36,7 +36,7 @@ describe('CoTuLenh', () => {
       const moves = game.moves({
         square: 'e4',
         verbose: true,
-      }) as StandardMove[]
+      }) as MoveResult[]
       const move = findMove(moves, 'e4', 'e5')
       // Need to access the internal method for testing, or use the public Move object
       // This assumes the Move constructor correctly calls _moveToSan
@@ -50,7 +50,7 @@ describe('CoTuLenh', () => {
       const moves = game.moves({
         square: 'e5',
         verbose: true,
-      }) as StandardMove[]
+      }) as MoveResult[]
       const move = findMove(moves, 'e5', 'e6')
       expect(move?.san).toBe('T&e6') // Tank at e5 combines with Infantry at e6
     })
@@ -62,7 +62,7 @@ describe('CoTuLenh', () => {
       const moves = game.moves({
         square: 'e5',
         verbose: true,
-      }) as StandardMove[]
+      }) as MoveResult[]
       const move = findMove(moves, 'e5', 'e6')
       expect(move?.san).toBe('+T&e6') // Heroic Tank at e5 combines with Infantry at e6
     })
@@ -74,7 +74,7 @@ describe('CoTuLenh', () => {
       const moves = game.moves({
         square: 'e2',
         verbose: true,
-      }) as StandardMove[]
+      }) as MoveResult[]
       const move = findMove(moves, 'e2', 'd2')
       // expect(move?.san).toBe('Td2^')
       expect(move?.san).toBe('Td2')
