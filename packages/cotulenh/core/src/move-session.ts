@@ -36,9 +36,6 @@ export interface RecombineOption {
 }
 
 export class MoveResult {
-  private _san?: string
-  private _lan?: string
-
   constructor(
     public readonly color: Color,
     public readonly from: Square,
@@ -50,176 +47,71 @@ export class MoveResult {
     public readonly captured?: Piece[],
     public readonly completed: boolean = true,
     public readonly stay?: Piece,
+    public readonly san: string = '',
+    public readonly lan: string = '',
   ) {}
 
   get isDeploy(): boolean {
-    return this.flags.indexOf(FLAGS.DEPLOY) > -1
+    return this.flags.includes(FLAGS.DEPLOY)
   }
 
   get isCapture(): boolean {
-    return this.flags.indexOf(FLAGS.CAPTURE) > -1
+    return this.flags.includes(FLAGS.CAPTURE)
   }
 
   get isStayCapture(): boolean {
-    return this.flags.indexOf(FLAGS.STAY_CAPTURE) > -1
+    return this.flags.includes(FLAGS.STAY_CAPTURE)
   }
 
   get isCombination(): boolean {
-    return this.flags.indexOf(FLAGS.COMBINATION) > -1
+    return this.flags.includes(FLAGS.COMBINATION)
   }
 
   get isSuicideCapture(): boolean {
-    return this.flags.indexOf(FLAGS.SUICIDE_CAPTURE) > -1
-  }
-
-  get san(): string {
-    if (!this._san) {
-      throw new Error('SAN not set for this move result')
-    }
-    return this._san
-  }
-
-  get lan(): string {
-    if (!this._lan) {
-      throw new Error('LAN not set for this move result')
-    }
-    return this._lan
-  }
-
-  setSan(san: string): void {
-    this._san = san
-  }
-
-  setLan(lan: string): void {
-    this._lan = lan
+    return this.flags.includes(FLAGS.SUICIDE_CAPTURE)
   }
 
   hasNotation(): boolean {
-    return !!this._san && !!this._lan
+    return !!this.san && !!this.lan
   }
 
   /**
-   * Create MoveResult from already-executed move data (standard moves).
+   * Universal factory for MoveResult
    */
-  static fromExecutedMove(data: {
+  static create(data: {
     color: Color
     from: Square
-    to: Square
+    to: Square | Map<Square, Piece>
     piece: Piece
-    captured?: Piece | Piece[]
     flags: string
     before: string
     after: string
     san: string
     lan: string
+    captured?: Piece | Piece[]
+    stay?: Piece
     completed?: boolean
   }): MoveResult {
-    // Flatten captured piece(s) to ensure consistent Piece[] type
-    let captured: Piece[] | undefined
-    if (data.captured) {
-      captured = Array.isArray(data.captured)
-        ? data.captured
-        : flattenPiece(data.captured)
-    }
+    const captured = Array.isArray(data.captured)
+      ? data.captured
+      : data.captured
+        ? flattenPiece(data.captured)
+        : undefined
 
-    const result = new MoveResult(
+    return new MoveResult(
       data.color,
       data.from,
       data.piece,
       data.flags,
       data.before,
       data.after,
-      data.to, // to: Square
+      data.to,
       captured,
       data.completed ?? true,
-    )
-    result.setSan(data.san)
-    result.setLan(data.lan)
-    return result
-  }
-
-  /**
-   * Create MoveResult from deploy session data.
-   */
-  static fromDeploySession(data: {
-    color: Color
-    from: Square
-    to: Map<Square, Piece>
-    piece: Piece
-    stay?: Piece
-    captured?: Piece[]
-    flags: string
-    before: string
-    after: string
-    san: string
-    lan: string
-    completed?: boolean
-  }): MoveResult {
-    const result = new MoveResult(
-      data.color,
-      data.from,
-      data.piece,
-      data.flags,
-      data.before,
-      data.after,
-      data.to, // to: Map<Square, Piece>
-      data.captured,
-      data.completed ?? true,
       data.stay,
+      data.san,
+      data.lan,
     )
-    result.setSan(data.san)
-    result.setLan(data.lan)
-    return result
-  }
-
-  /**
-   * Create MoveResult from raw session data.
-   */
-  static createDeploy(
-    game: CoTuLenh,
-    moves: InternalMove[],
-    remaining: Piece[],
-    stackSquare: number,
-    turn: Color,
-    originalPiece: Piece,
-    beforeFEN: string,
-    completed: boolean,
-  ): MoveResult {
-    const afterFEN = game.fen(!completed)
-    const stay =
-      remaining.length > 0 ? (combinePieces(remaining) ?? undefined) : undefined
-
-    const captured: Piece[] = []
-    for (const move of moves) {
-      if (move.captured) captured.push(move.captured)
-    }
-
-    const toMap = new Map<string, Piece>()
-    for (const move of moves) {
-      toMap.set(algebraic(move.to), move.piece)
-    }
-
-    const { san, lan } = MoveResult.calculateDeploySanLan(
-      moves,
-      stackSquare,
-      stay,
-    )
-    const flagsStr = MoveResult.calculateDeployFlags(moves)
-
-    return MoveResult.fromDeploySession({
-      color: turn,
-      from: algebraic(stackSquare),
-      to: toMap,
-      piece: originalPiece,
-      stay: stay ?? undefined,
-      captured: captured.length > 0 ? captured : undefined,
-      flags: flagsStr,
-      before: beforeFEN,
-      after: afterFEN,
-      san,
-      lan,
-      completed,
-    })
   }
 
   static calculateDeploySanLan(
@@ -371,6 +263,7 @@ export class MoveSession {
     const command = createMoveCommand(this._game, move)
     command.execute()
     this._commands.push(command)
+    this._game['_movesCache'].clear()
   }
 
   /**
@@ -489,20 +382,46 @@ export class MoveSession {
     command: CTLMoveSequenceCommandInterface
     result: MoveResult
   } {
+    const afterFEN = this._game.fen(!completed)
+    const remaining = this.remaining
+    const stay =
+      remaining.length > 0 ? (combinePieces(remaining) ?? undefined) : undefined
+
+    const captured: Piece[] = []
+    for (const move of this.moves) {
+      if (move.captured) captured.push(move.captured)
+    }
+
+    const toMap = new Map<string, Piece>()
+    for (const move of this.moves) {
+      toMap.set(algebraic(move.to), move.piece)
+    }
+
+    const { san, lan } = MoveResult.calculateDeploySanLan(
+      this.moves,
+      this.stackSquare,
+      stay,
+    )
+    const flagsStr = MoveResult.calculateDeployFlags(this.moves)
+
     const deployCommand = DeployMoveSequenceCommand.create(
       this._commands,
       this.moves,
     )
-    const deployMove = MoveResult.createDeploy(
-      this._game,
-      this.moves,
-      this.remaining,
-      this.stackSquare,
-      this.turn,
-      this.originalPiece,
-      this._beforeFEN,
+    const deployMove = MoveResult.create({
+      color: this.turn,
+      from: algebraic(this.stackSquare),
+      to: toMap,
+      piece: this.originalPiece,
+      stay,
+      captured: captured.length > 0 ? captured : undefined,
+      flags: flagsStr,
+      before: this._beforeFEN,
+      after: afterFEN,
+      san,
+      lan,
       completed,
-    )
+    })
 
     return { command: deployCommand, result: deployMove }
   }
@@ -517,14 +436,13 @@ export class MoveSession {
   } {
     const command = this._commands[0]
     const move = command.move
-    // Use cached legal moves from session start for disambiguation
     const [san, lan] =
       move.san && move.lan
         ? [move.san, move.lan]
         : moveToSanLan(move, this._game['_moves']({ legal: true }))
     const flagsStr = this._flagsFromMove(move)
 
-    const moveObj = MoveResult.fromExecutedMove({
+    const moveObj = MoveResult.create({
       color: move.color,
       from: algebraic(move.from),
       to: algebraic(move.to),
@@ -639,42 +557,27 @@ export class MoveSession {
 
   /**
    * Get available Recombine options only.
-   * This allows a piece remaining in the stack to "catch up" and combine
-   * with a piece that was already deployed in this session.
    */
   getOptions(): RecombineOption[] {
-    // Early exits: only available during deployment with moves and remaining pieces
-    if (
-      !this.isDeploy ||
-      this._commands.length === 0 ||
-      this.remaining.length === 0
-    ) {
+    if (!this.isDeploy || this.isEmpty || this.remaining.length === 0) {
       return []
     }
 
     const options: RecombineOption[] = []
-
-    // Part 1: Generate all possible combinations
-    // ----------------------------------------
     for (const remainingPiece of this.remaining) {
       for (const move of this.moves) {
         const option: RecombineOption = {
           square: algebraic(move.to),
           piece: remainingPiece.type,
         }
-
-        // Part 2: Validate candidates
-        // ---------------------------
         try {
-          // Delegate to existing validation logic
           this.validateRecombine(option)
           options.push(option)
         } catch {
-          // Ignore invalid options
+          // Skip invalid options
         }
       }
     }
-
     return options
   }
 

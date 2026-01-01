@@ -25,7 +25,6 @@ import {
   NAVY_MASK,
   LAND_MASK,
   isSquareOnBoard,
-  file,
   AirDefenseInfluence,
   AirDefense,
   AIR_FORCE,
@@ -786,7 +785,7 @@ export class CoTuLenh {
           .map((flag) => FLAGS[flag])
           .join('')
 
-        const result = MoveResult.fromExecutedMove({
+        const result = MoveResult.create({
           color: move.color,
           from: algebraic(move.from),
           to: algebraic(move.to),
