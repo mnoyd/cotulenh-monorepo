@@ -735,7 +735,7 @@
   </div>
 </main>
 
-<style>
+<style lang="postcss">
   /* Local styles for complex animations or specific overrides not easily handled by Tailwind */
   @reference "../../app.css";
 

@@ -49,12 +49,12 @@
     <span class="label">MISSION LOG</span>
     {#if historyViewIndex !== -1}
       <button
-        class="resume-btn"
+        class="resume-btn view-mode-active"
         onclick={() => {
           if (game) gameState.cancelPreview(game);
         }}
       >
-        LIVE
+        VIEW MODE
       </button>
     {/if}
   </div>
@@ -218,9 +218,9 @@
 
   .resume-btn {
     margin-left: auto;
-    background: #059669;
-    color: white;
-    border: none;
+    background: transparent;
+    color: #f59e0b; /* Amber text */
+    border: 1px solid #f59e0b;
     padding: 2px 6px;
     font-size: 0.6rem;
     font-weight: 700;
@@ -228,10 +228,17 @@
     border-radius: 2px;
     letter-spacing: 0.5px;
     animation: pulse 2s infinite;
+    transition: all 0.2s;
   }
 
   .resume-btn:hover {
-    background: #10b981;
+    background: rgba(245, 158, 11, 0.1);
+    box-shadow: 0 0 8px rgba(245, 158, 11, 0.2);
+  }
+
+  /* Optional: Active state style override if needed */
+  .view-mode-active {
+    /* Kept for specificity if we need to toggle styles later */
   }
 
   @keyframes pulse {

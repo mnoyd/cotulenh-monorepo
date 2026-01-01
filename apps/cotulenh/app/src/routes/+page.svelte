@@ -38,6 +38,7 @@
   let gameCheck = $derived(gameState.check);
   let gameLastMove = $derived(gameState.lastMove);
   let gamePossibleMoves = $derived(gameState.possibleMoves);
+  let historyViewIndex = $derived(gameState.historyViewIndex);
 
   function coreToBoardColor(coreColor: Color | null): 'red' | 'blue' | undefined {
     return coreColor ? coreColorToBoard(coreColor) : undefined;
@@ -84,7 +85,7 @@
   function createBoardConfig() {
     return {
       fen: gameFen,
-      viewOnly: gameStatus !== 'playing',
+      viewOnly: gameStatus !== 'playing' || historyViewIndex !== -1,
       turnColor: coreToBoardColor(gameTurn),
       lastMove: mapLastMoveToBoardFormat(gameLastMove),
       check: coreToBoardCheck(gameCheck, gameTurn),
@@ -358,20 +359,24 @@
   let lastProcessedFen = '';
   // Simple equality check might not work for complex objects, but references change on update
   let lastProcessedDeployState: any = null;
+  let lastProcessedViewIndex = -1;
 
   $effect(() => {
     // Track dependencies
     void gameFen;
     void uiDeployState;
+    void historyViewIndex;
 
     // Check if FEN OR DeployState has changed
     const fenChanged = gameFen && gameFen !== lastProcessedFen;
     const deployStateChanged = uiDeployState !== lastProcessedDeployState;
+    const viewModeChanged = (historyViewIndex !== -1) !== (lastProcessedViewIndex !== -1);
 
-    if (boardApi && (fenChanged || deployStateChanged)) {
-      // console.log('🔄 Effect triggered', { fenChanged, deployStateChanged });
+    if (boardApi && (fenChanged || deployStateChanged || viewModeChanged)) {
+      // console.log('🔄 Effect triggered', { fenChanged, deployStateChanged, viewModeChanged });
       lastProcessedFen = gameFen;
       lastProcessedDeployState = uiDeployState;
+      lastProcessedViewIndex = historyViewIndex;
       isUpdatingBoard = true;
       reSetupBoard();
 

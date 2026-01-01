@@ -30,17 +30,6 @@
     gameState.handleUndo(game);
   }
 
-  async function copyFen() {
-    if (!game) return;
-    const fen = game.fen();
-    try {
-      await navigator.clipboard.writeText(fen);
-      toast.success('FEN copied to clipboard');
-    } catch (err) {
-      toast.error('Failed to copy FEN');
-    }
-  }
-
   function openShare() {
     if (!game) return;
     shareOpen = true;
@@ -75,7 +64,6 @@
   <Button variant="default" size="sm" onclick={resetGame} title="Reset Game">RESET</Button>
   <Button variant="destructive" size="sm" onclick={undoLastMove} title="Undo Last Move">UNDO</Button
   >
-  <Button variant="secondary" size="sm" onclick={copyFen} title="Copy FEN to Clipboard">FEN</Button>
   <Button variant="outline" size="sm" onclick={openShare} title="Share Game">SHARE</Button>
   <Button variant="ghost" size="sm" onclick={reportIssue} title="Report Issue">REPORT</Button>
 </div>
