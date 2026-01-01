@@ -19,7 +19,7 @@
   import MoveHistory from '$lib/components/MoveHistory.svelte';
 
   import GameControls from '$lib/components/GameControls.svelte';
-  import { gameStore, gameState, getDeployState } from '$lib/stores/game.svelte';
+  import { gameState, getDeployState } from '$lib/stores/game.svelte';
 
   import '$lib/styles/modern-warfare.css';
   import { makeCoreMove } from '$lib/utils';

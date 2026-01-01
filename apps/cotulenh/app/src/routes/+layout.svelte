@@ -8,6 +8,12 @@
   import SettingsDialog from '$lib/components/SettingsDialog.svelte';
   import ShortcutsDialog from '$lib/components/ShortcutsDialog.svelte';
 
+  interface Props {
+    children: import('svelte').Snippet;
+  }
+
+  let { children }: Props = $props();
+
   let settingsOpen = $state(false);
   let shortcutsOpen = $state(false);
 
@@ -209,7 +215,7 @@
   <ShortcutsDialog bind:open={shortcutsOpen} />
 
   <div class="app-content">
-    <slot />
+    {@render children()}
   </div>
 </div>
 

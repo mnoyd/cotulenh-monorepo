@@ -1,4 +1,3 @@
-import { writable } from 'svelte/store';
 import { logger } from '@cotulenh/common';
 import type { GameState, GameStatus, UIDeployState } from '$lib/types/game';
 import { CoTuLenh, BITS, MoveResult } from '@cotulenh/core';
@@ -102,11 +101,6 @@ let state = $state<GameState>({
 });
 
 /**
- * Notifier for store subscribers (backward compatibility).
- */
-let notifyStore = $state(0);
-
-/**
  * Update state from game instance with optional overrides.
  */
 function updateStateFromGame(game: CoTuLenh, overrides?: Partial<GameState>) {
@@ -123,19 +117,16 @@ function updateStateFromGame(game: CoTuLenh, overrides?: Partial<GameState>) {
   if (overrides) {
     Object.assign(state, overrides);
   }
-
-  // Notify store subscribers
-  notifyStore++;
 }
 
 /**
- * Game state API - use this object directly in components for Svelte 5.
+ * Game state API - use this object directly in components.
  * All properties are reactive getters that update automatically when state changes.
  *
  * Usage in components:
  * ```svelte
  * <script>
- *   import { gameState } from '$lib/stores/game';
+ *   import { gameState } from '$lib/stores/game.svelte';
  *
  *   // Access reactively via $derived
  *   let currentTurn = $derived(gameState.turn);
@@ -282,7 +273,6 @@ export const gameState = {
       state.check = tempGame.isCheck();
       state.possibleMoves = getPossibleMoves(tempGame);
       state.lastMove = extractLastMoveSquares(move);
-      notifyStore++;
     } catch (e) {
       logger.error(e, 'Failed to preview move');
     }
@@ -307,37 +297,5 @@ export const gameState = {
     state.check = false;
     state.lastMove = undefined;
     state.historyViewIndex = -1;
-    notifyStore++;
   }
 };
-
-/**
- * Legacy store compatibility for components still using $gameStore syntax.
- * This provides a seamless migration path.
- *
- * Modified for Svelte 5 .svelte.ts usage:
- * We use $effect.root to create a persistent effect that syncs `state` -> `backStore`.
- */
-const backStore = writable<GameState>(state);
-
-$effect.root(() => {
-  $effect(() => {
-    // Track notifyStore to trigger updates
-    void notifyStore;
-    backStore.set(state);
-  });
-});
-
-export const gameStore = {
-  subscribe: backStore.subscribe,
-  initialize: (game: CoTuLenh) => gameState.initialize(game),
-  applyMove: (game: CoTuLenh, move: MoveResult) => gameState.applyMove(game, move),
-  sync: (game: CoTuLenh) => gameState.sync(game),
-  applyDeployCommit: (game: CoTuLenh, move: MoveResult) => gameState.applyDeployCommit(game, move),
-  handleUndo: (game: CoTuLenh) => gameState.handleUndo(game),
-  previewMove: (index: number) => gameState.previewMove(index),
-  cancelPreview: (game: CoTuLenh) => gameState.cancelPreview(game),
-  reset: () => gameState.reset()
-};
-
-export type GameStore = typeof gameStore;
