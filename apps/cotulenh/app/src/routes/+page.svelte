@@ -9,7 +9,7 @@
   import type {
     Square,
     Color,
-    StandardMove as Move,
+    MoveResult as Move,
     RecombineOption,
     PieceSymbol
   } from '@cotulenh/core';
@@ -109,13 +109,20 @@
     const dests = new Map<OrigMoveKey, DestMove[]>();
 
     for (const move of possibleMoves) {
+      // Cast 'from' and 'to' to Square (string) since we are mapping STANDARD moves for UI highlighting
+      // Deploy/Complex moves might be handled differently or filtered out here if not relevant for basic picking
+      const fromSq = move.from as Square;
+      const toSq = (move.to instanceof Map ? undefined : move.to) as Square | undefined;
+
+      if (!toSq) continue; // Skip complex moves for simple dest highlighting if needed
+
       const moveOrig: OrigMove = {
-        square: move.from,
+        square: fromSq,
         type: typeToRole(move.piece.type) as Role
       };
       const moveDest: DestMove = {
-        square: move.to,
-        stay: move.isStayCapture()
+        square: toSq,
+        stay: move.isStayCapture
       };
       const key = origMoveToKey(moveOrig);
       if (!dests.has(key)) {
@@ -401,7 +408,12 @@
             <GameInfo />
           </div>
           <div class="max-lg:col-span-full max-lg:order-3">
-            <DeploySessionPanel {game} deployState={uiDeployState} onCommit={commitDeploy} onCancel={cancelDeploy} />
+            <DeploySessionPanel
+              {game}
+              deployState={uiDeployState}
+              onCommit={commitDeploy}
+              onCancel={cancelDeploy}
+            />
           </div>
           <div class="max-lg:col-start-2">
             <GameControls bind:game {originalFen} />

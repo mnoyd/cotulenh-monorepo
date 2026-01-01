@@ -1,7 +1,7 @@
 import { writable, type Readable } from 'svelte/store';
 import { logger } from '@cotulenh/common';
 import type { GameState, GameStatus, UIDeployState } from '$lib/types/game';
-import { CoTuLenh, DeploySequence as DeployMove, BITS, StandardMove as Move } from '@cotulenh/core';
+import { CoTuLenh, BITS, MoveResult } from '@cotulenh/core';
 import type { Square, Piece } from '@cotulenh/core';
 import { getPossibleMoves } from '$lib/utils';
 
@@ -56,9 +56,9 @@ export function getDeployState(game: CoTuLenh | null): UIDeployState | null {
  */
 export interface GameStore extends Readable<GameState> {
   initialize(game: CoTuLenh): void;
-  applyMove(game: CoTuLenh, move: Move | DeployMove): void;
+  applyMove(game: CoTuLenh, move: MoveResult): void;
   sync(game: CoTuLenh): void;
-  applyDeployCommit(game: CoTuLenh, move: Move | DeployMove): void;
+  applyDeployCommit(game: CoTuLenh, move: MoveResult): void;
   handleUndo(game: CoTuLenh): void;
   previewMove(index: number): void;
   cancelPreview(game: CoTuLenh): void;
@@ -189,7 +189,7 @@ function createGameStore(): GameStore {
      * @param game The CoTuLenh game instance after the move.
      * @param move The move that was just made.
      */
-    applyMove(game: CoTuLenh, move: Move | DeployMove) {
+    applyMove(game: CoTuLenh, move: MoveResult) {
       const perfStart = performance.now();
       const possibleMoves = getPossibleMoves(game);
 
@@ -246,9 +246,9 @@ function createGameStore(): GameStore {
     /**
      * Apply the final deployed move after commit
      * @param game The CoTuLenh game instance after commit
-     * @param move The complete move object (StandardMove or DeploySequence)
+     * @param move The complete move result object
      */
-    applyDeployCommit(game: CoTuLenh, move: Move | DeployMove) {
+    applyDeployCommit(game: CoTuLenh, move: MoveResult) {
       const possibleMoves = getPossibleMoves(game);
 
       update((state) => {
@@ -320,25 +320,20 @@ function createGameStore(): GameStore {
 
 // Helper utilities for GameStore to avoid code duplication
 const GameStoreUtils = {
-  extractLastMoveSquares(move: Move | DeployMove | any): any[] {
+  extractLastMoveSquares(move: MoveResult | any): any[] {
     if (!move) return [];
 
-    // Check if it's a DeployMove/Sequence
-    if (
-      (move as any).isDeploy ||
-      (move as any).flags?.includes('d') ||
-      (move as DeployMove).to instanceof Map
-    ) {
-      const dm = move as DeployMove;
-      if (dm.to instanceof Map) {
-        return [dm.from, ...Array.from(dm.to.keys())];
+    // Check if it's a Deploy/Recombine move (which might have multiple destinations or map)
+    if (move.isDeploy || move.flags?.includes('d') || move.to instanceof Map) {
+      if (move.to instanceof Map) {
+        return [move.from, ...Array.from(move.to.keys())];
       } else {
-        // Fallback/Legacy
-        return [dm.from, (dm as any).to].filter(Boolean);
+        // Fallback/Legacy or single deploy
+        return [move.from, move.to].filter(Boolean);
       }
     } else {
-      const sm = move as Move;
-      return [sm.from, sm.to];
+      // Standard move
+      return [move.from, move.to];
     }
   }
 };

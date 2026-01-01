@@ -6,7 +6,7 @@ import {
 } from '@cotulenh/board';
 import {
   type CoTuLenh,
-  StandardMove as Move,
+  MoveResult as Move,
   type MoveResult,
   type Color as CoreColor,
   type Piece as CorePiece,

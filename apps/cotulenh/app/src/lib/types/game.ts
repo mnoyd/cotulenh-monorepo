@@ -1,8 +1,6 @@
 import {
-  StandardMove as Move,
-  DeploySequence as DeployMove,
+  MoveResult,
   type Color,
-  type DeploySequence,
   type RecombineOption,
   type Square,
   type Piece
@@ -34,8 +32,8 @@ export interface UIDeployState {
 export interface GameState {
   fen: string; // Forsyth–Edwards Notation of the board
   turn: Color | null; // Current player's turn ('r' or 'b')
-  history: (Move | DeployMove)[]; // History of moves made
-  possibleMoves: Move[]; // Possible moves for the current turn
+  history: MoveResult[]; // History of moves made
+  possibleMoves: MoveResult[]; // Possible moves for the current turn
   lastMove?: Square[]; // The last move made [from, to]
   status: GameStatus; // Current status of the game
   check: boolean; // Is the current player in check?
