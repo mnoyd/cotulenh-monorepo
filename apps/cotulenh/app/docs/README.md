@@ -29,11 +29,10 @@ This directory contains documentation specific to the CoTuLenh web application.
 
 ### Core Library Performance
 
-See `packages/cotulenh-core/docs/performance/` for:
+See `packages/cotulenh/core/` for core game logic and testing:
 
-- Verbose mode performance analysis
-- Move generation optimization
-- Core library benchmarks
+- Run `pnpm test` in packages/cotulenh/core for benchmarks
+- Run `pnpm bench` for performance analysis
 
 ### Architecture & Standards
 
@@ -56,5 +55,5 @@ See `docs/performance/` for:
 ## Quick Links
 
 - [Main README](../../../README.md)
-- [Core Library Docs](../../../packages/cotulenh-core/docs/)
+- [Core Library](../../../packages/cotulenh/core/)
 - [Architecture Docs](../../../docs/architecture/)

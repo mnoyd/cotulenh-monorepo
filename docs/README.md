@@ -29,20 +29,18 @@ High-level performance documentation and optimization strategies.
 
 ### Package-Specific Documentation
 
-- **[Core Library](../packages/cotulenh-core/docs/)** - Game engine documentation
-
+- **[Core Library](../packages/cotulenh/core/README.md)** - Game engine documentation
   - Game rules and mechanics
   - Deploy system architecture
   - Performance analysis
   - Porting guides
 
-- **[CoTuLenh App](../apps/cotulenh-app/docs/)** - Web application documentation
-
+- **[CoTuLenh App](../apps/cotulenh/app/docs/)** - Web application documentation
   - Lazy loading implementation
   - Performance fixes
   - UI optimizations
 
-- **[CoTuLenh Board](../packages/cotulenh-board/docs/)** - Board component documentation
+- **[CoTuLenh Board](../packages/cotulenh/board/docs/)** - Board component documentation
   - Board API reference
   - Visualization guides
   - Deploy UI patterns
@@ -86,7 +84,7 @@ See `docs/ai-agent-guide/` for:
 ## Quick Links
 
 - [Main README](../README.md)
-- [Core Library Docs](../packages/cotulenh-core/docs/)
-- [App Docs](../apps/cotulenh-app/docs/)
-- [Board Component Docs](../packages/cotulenh-board/docs/)
+- [Core Library Docs](../packages/cotulenh/core/docs/)
+- [App Docs](../apps/cotulenh/app/docs/)
+- [Board Component Docs](../packages/cotulenh/board/docs/)
 - [AI Agent Guide](./ai-agent-guide/)

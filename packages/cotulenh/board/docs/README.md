@@ -14,7 +14,7 @@ Welcome to the Cotulenh Board documentation. This library provides a complete in
 ## Quick Start
 
 ```typescript
-import { CotulenhBoard } from '@repo/cotulenh-board';
+import { CotulenhBoard } from '@cotulenh/board';
 
 const board = CotulenhBoard(document.getElementById('board'), {
   orientation: 'red',
