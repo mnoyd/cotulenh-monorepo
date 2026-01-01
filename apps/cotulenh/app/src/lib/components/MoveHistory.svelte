@@ -13,17 +13,21 @@
   // Use $effect to auto-scroll when history changes
   $effect(() => {
     // Track history length and view index as dependencies
-    const len = history.length;
     const idx = historyViewIndex;
+
+    // Track cleanup for async operations
+    let cleanup: (() => void) | undefined;
 
     // Scroll logic
     if (historyContainer) {
       if (idx === -1) {
         // Live mode: Scroll to bottom to show latest move
         // Use timeout to ensure DOM is updated if length changed
-        setTimeout(() => {
+        const timeoutId = setTimeout(() => {
           historyContainer.scrollTop = historyContainer.scrollHeight;
         }, 0);
+        // Cleanup: cancel pending timeout if effect re-runs
+        cleanup = () => clearTimeout(timeoutId);
       } else {
         // History mode: Ensure active item is visible
         // We can find the button by index since they are rendered in order
@@ -35,6 +39,8 @@
         }
       }
     }
+
+    return cleanup;
   });
 </script>
 
