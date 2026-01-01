@@ -1,9 +1,8 @@
 <script lang="ts">
   import { logger } from '@cotulenh/common';
   import { CoTuLenh } from '@cotulenh/core';
-  import { gameStore } from '$lib/stores/game';
+  import { gameState } from '$lib/stores/game.svelte';
   import { goto } from '$app/navigation';
-  import { get } from 'svelte/store';
   import { Button } from '$lib/components/ui/button';
   import { toast } from 'svelte-sonner';
   import ShareDialog from './ShareDialog.svelte';
@@ -21,14 +20,14 @@
     if (!game) return;
     // Reset to the original FEN from URL or default starting position
     game = originalFen ? new CoTuLenh(originalFen) : new CoTuLenh();
-    gameStore.initialize(game);
+    gameState.initialize(game);
     toast.success('Game reset');
   }
 
   function undoLastMove() {
     if (!game) return;
     game.undo();
-    gameStore.handleUndo(game);
+    gameState.handleUndo(game);
   }
 
   async function copyFen() {
@@ -50,9 +49,17 @@
   function reportIssue() {
     if (!game) return;
 
-    const currentState = get(gameStore);
+    // Capture current state for report
+    const currentState = {
+      fen: gameState.fen,
+      turn: gameState.turn,
+      history: gameState.history,
+      status: gameState.status,
+      check: gameState.check
+    };
+
     localStorage.setItem('report_fen', game.fen());
-    // Safe stringify to handle circular references if any (though gameStore shouldn't have many)
+    // Safe stringify to handle circular references if any
     try {
       localStorage.setItem('report_state', JSON.stringify(currentState, null, 2));
     } catch (e) {
@@ -65,8 +72,9 @@
 </script>
 
 <div class="controls-mini">
-  <Button variant="default" size="sm" onclick={undoLastMove} title="Undo Last Move">UNDO</Button>
-  <Button variant="destructive" size="sm" onclick={resetGame} title="Reset Game">RESET</Button>
+  <Button variant="default" size="sm" onclick={resetGame} title="Reset Game">RESET</Button>
+  <Button variant="destructive" size="sm" onclick={undoLastMove} title="Undo Last Move">UNDO</Button
+  >
   <Button variant="secondary" size="sm" onclick={copyFen} title="Copy FEN to Clipboard">FEN</Button>
   <Button variant="outline" size="sm" onclick={openShare} title="Share Game">SHARE</Button>
   <Button variant="ghost" size="sm" onclick={reportIssue} title="Report Issue">REPORT</Button>

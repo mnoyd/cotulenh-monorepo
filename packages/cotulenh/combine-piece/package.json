@@ -16,7 +16,6 @@
     "prebuild": "tsx helpers/build-stacks.ts",
     "build": "vite build",
     "build:stacks": "tsx helpers/build-stacks.ts",
-    "dev": "vite build --watch",
     "test": "vitest run"
   },
   "devDependencies": {

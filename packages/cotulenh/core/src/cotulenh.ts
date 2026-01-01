@@ -1512,54 +1512,45 @@ export class CoTuLenh {
 
     // Undo all moves to get back to initial state
     // We assume the game was constructed with the correct initial FEN/state
-    const allMoves: InternalMove[] = []
+
+    // Undo all moves to get back to initial state
+    // We preserve the structure (single move vs sequence) to correctly replay manual commits
+    const replayQueue: (InternalMove | InternalMove[])[] = []
     while (this._history.length > 0) {
       const moves = this._undoMove()
       if (moves) {
-        if (Array.isArray(moves)) {
-          // Flatten array of moves (reverse order because unchecked unshift reverses order later?
-          // No, undoMove returns them in forward order for the specific command?
-          // Let's assume command.moves is [move1, move2].
-          // We are undoing from end.
-          // History: [Sequence(m1, m2), Standard(m3)]
-          // Pop Standard(m3) -> returns m3. Unshift -> [m3]
-          // Pop Sequence(m1, m2) -> returns [m1, m2]. Unshift -> [m1, m2, m3] ??
-          // We need [m1, m2, m3].
-          // Array.prototype.unshift adds items to the beginning.
-          // array.unshift(item) -> [item, ...]
-          // array.unshift(...items) -> [item1, item2, ...] if unshift arguments order is preserved.
-          // Yes: [a].unshift(b, c) -> [b, c, a].
-          allMoves.unshift(...moves)
-        } else {
-          allMoves.unshift(moves)
-        }
+        replayQueue.unshift(moves)
       }
     }
 
     const results: MoveResult[] = []
 
-    // Replay history using move() to verify/reconstruct
-    // This allows re-using all the validation and session logic within move()
-    // but we pass the InternalMove directly so we don't have to re-parse SAN.
+    // Replay history
+    for (const item of replayQueue) {
+      if (Array.isArray(item)) {
+        // Handle sequence (Deploy/Recombine)
+        // These moves were stored as a single history entry, so they must be committed as a block
+        let lastResult: MoveResult | null = null
+        for (const move of item) {
+          lastResult = this.move(move)
+        }
 
-    for (let i = 0; i < allMoves.length; i++) {
-      const move = allMoves[i]
-      const isDeploy = (move.flags & BITS.DEPLOY) !== 0
+        // If the session is still open (e.g. manual commit was used originaly), force commit it now
+        // to match the original history structure
+        if (this._session) {
+          const commitRes = this.commitSession()
+          if (commitRes.success && commitRes.result) {
+            lastResult = commitRes.result
+          }
+        }
 
-      // Execute move using the public move API with the InternalMove object
-      // This ensures all proper validation and session handling logic is used
-      // We don't need to manually handle commits here because handleMove (called by move)
-      // will auto-commit normal moves, and we can check result for deploy moves.
-
-      const result = this.move(move)
-
-      if (result) {
-        // For deploy moves, we might get intermediate results (incomplete session)
-        // or a completed DeploySequence.
-        // For standard moves, we get a StandardMove.
-
-        // If it's a completed move (StandardMove or fully committed DeploySequence), add to results
-        if (result.completed) {
+        if (lastResult && lastResult.completed) {
+          results.push(lastResult)
+        }
+      } else {
+        // Handle standard single move
+        const result = this.move(item)
+        if (result && result.completed) {
           results.push(result)
         }
       }

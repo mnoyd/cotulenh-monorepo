@@ -1,9 +1,9 @@
 <script lang="ts">
+  import { browser } from '$app/environment';
   import * as Dialog from '$lib/components/ui/dialog';
   import { Button } from '$lib/components/ui/button';
   import { Separator } from '$lib/components/ui/separator';
   import { toast } from 'svelte-sonner';
-  import { onMount } from 'svelte';
 
   interface Props {
     open: boolean;
@@ -17,6 +17,7 @@
   let confirmReset = $state(true);
 
   function loadSettings() {
+    if (!browser) return;
     const saved = localStorage.getItem('cotulenh_settings');
     if (saved) {
       try {
@@ -31,6 +32,7 @@
   }
 
   function saveSettings() {
+    if (!browser) return;
     const settings = {
       soundsEnabled,
       showMoveHints,
@@ -41,7 +43,8 @@
     open = false;
   }
 
-  onMount(() => {
+  // Load settings when component mounts (browser only)
+  $effect(() => {
     loadSettings();
   });
 </script>

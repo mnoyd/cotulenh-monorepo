@@ -1,31 +1,75 @@
 <script lang="ts">
-  import { afterUpdate } from 'svelte';
-  import { gameStore } from '$lib/stores/game';
+  import { gameState } from '$lib/stores/game.svelte';
+  import type { CoTuLenh } from '@cotulenh/core';
+
+  let { game } = $props<{ game: CoTuLenh | null }>();
 
   let historyContainer: HTMLDivElement;
 
-  afterUpdate(() => {
+  // Use $derived to create reactive values from gameState
+  let history = $derived(gameState.history);
+  let historyViewIndex = $derived(gameState.historyViewIndex);
+
+  // Use $effect to auto-scroll when history changes
+  $effect(() => {
+    // Track history length and view index as dependencies
+    const idx = historyViewIndex;
+
+    // Track cleanup for async operations
+    let cleanup: (() => void) | undefined;
+
+    // Scroll logic
     if (historyContainer) {
-      historyContainer.scrollTop = historyContainer.scrollHeight;
+      if (idx === -1) {
+        // Live mode: Scroll to bottom to show latest move
+        // Use timeout to ensure DOM is updated if length changed
+        const timeoutId = setTimeout(() => {
+          historyContainer.scrollTop = historyContainer.scrollHeight;
+        }, 0);
+        // Cleanup: cancel pending timeout if effect re-runs
+        cleanup = () => clearTimeout(timeoutId);
+      } else {
+        // History mode: Ensure active item is visible
+        // We can find the button by index since they are rendered in order
+        // Note: querySelectorAll might be slow if list is huge, but typically < 200 moves.
+        const buttons = historyContainer.querySelectorAll('.move-chip');
+        const activeBtn = buttons[idx] as HTMLElement;
+        if (activeBtn) {
+          activeBtn.scrollIntoView({ block: 'nearest', behavior: 'auto' });
+        }
+      }
     }
+
+    return cleanup;
   });
 </script>
 
 <div class="history-mini">
   <div class="header">
     <span class="label">MISSION LOG</span>
+    {#if historyViewIndex !== -1}
+      <button
+        class="resume-btn"
+        onclick={() => {
+          if (game) gameState.cancelPreview(game);
+        }}
+      >
+        LIVE
+      </button>
+    {/if}
   </div>
 
   <div class="history-content" bind:this={historyContainer}>
-    {#if $gameStore.history.length === 0}
+    {#if history.length === 0}
       <div class="empty-state">NO MOVES RECORDED</div>
     {:else}
       <div class="moves-list">
-        {#each $gameStore.history as move, index}
+        {#each history as move, index}
           <button
             class="move-chip {index % 2 === 0 ? 'red-move' : 'blue-move'}"
-            class:active={index === $gameStore.historyViewIndex}
-            on:click={() => gameStore.previewMove(index)}
+            class:active={index === historyViewIndex ||
+              (historyViewIndex === -1 && index === history.length - 1)}
+            onclick={() => gameState.previewMove(index)}
           >
             <span class="move-index">
               {(Math.floor(index / 2) + 1).toString().padStart(2, '0')}
@@ -170,5 +214,35 @@
     background: rgba(255, 255, 255, 0.15);
     border-color: #e5e5e5;
     box-shadow: 0 0 8px rgba(255, 255, 255, 0.2);
+  }
+
+  .resume-btn {
+    margin-left: auto;
+    background: #059669;
+    color: white;
+    border: none;
+    padding: 2px 6px;
+    font-size: 0.6rem;
+    font-weight: 700;
+    cursor: pointer;
+    border-radius: 2px;
+    letter-spacing: 0.5px;
+    animation: pulse 2s infinite;
+  }
+
+  .resume-btn:hover {
+    background: #10b981;
+  }
+
+  @keyframes pulse {
+    0% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.7;
+    }
+    100% {
+      opacity: 1;
+    }
   }
 </style>
