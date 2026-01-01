@@ -579,7 +579,7 @@ describe('Random finding', () => {
     const moves = game.moves({ square: 'b6' })
     game.move({ from: 'b6', to: 'e9', piece: NAVY, deploy: true })
     const fen = game.fen()
-    console.log(fen)
+    // console.log(fen)
   })
 })
 

@@ -168,6 +168,7 @@ export class MoveSession {
   private readonly _game: CoTuLenh
   private readonly _beforeFEN: string
   private readonly _commands: CTLMoveCommandInteface[] = []
+  private _validRecombineOptions: RecombineOption[] | null = null // null = needs recomputation
 
   // === Small helpers to avoid duplication ===
   /** Build flag string for a single move */
@@ -264,6 +265,9 @@ export class MoveSession {
     command.execute()
     this._commands.push(command)
     this._game['_movesCache'].clear()
+
+    // Invalidate recombine options cache
+    this._validRecombineOptions = null
   }
 
   /**
@@ -287,6 +291,9 @@ export class MoveSession {
 
     if (this.isEmpty) {
       this._game.setSession(null)
+    } else {
+      // Invalidate recombine options cache
+      this._validRecombineOptions = null
     }
 
     return command.move
@@ -556,101 +563,138 @@ export class MoveSession {
   }
 
   /**
-   * Get available Recombine options only.
+   * Get available Recombine options (computes lazily and caches).
    */
   getOptions(): RecombineOption[] {
-    if (!this.isDeploy || this.isEmpty || this.remaining.length === 0) {
-      return []
+    if (this._validRecombineOptions === null) {
+      this._validRecombineOptions = this._computeValidRecombineOptions()
+    }
+    return [...this._validRecombineOptions]
+  }
+
+  /**
+   * Compute valid recombine options based on current session state.
+   * Called lazily from getOptions().
+   */
+  private _computeValidRecombineOptions(): RecombineOption[] {
+    const options: RecombineOption[] = []
+
+    if (!this.isDeploy || this.isEmpty) {
+      return options
     }
 
-    const options: RecombineOption[] = []
-    for (const remainingPiece of this.remaining) {
-      for (const move of this.moves) {
+    // Cache remaining pieces to avoid recalculating during validation
+    const remainingPieces = this.remaining
+    if (remainingPieces.length === 0) {
+      return options
+    }
+
+    // Cache moves to avoid accessing during validation
+    const moves = this.moves
+
+    // Generate all candidate combinations
+    for (const remainingPiece of remainingPieces) {
+      for (const move of moves) {
         const option: RecombineOption = {
           square: algebraic(move.to),
           piece: remainingPiece.type,
         }
-        try {
-          this.validateRecombine(option)
+
+        if (this._isRecombineOptionValid(option, remainingPieces)) {
           options.push(option)
-        } catch {
-          // Skip invalid options
         }
       }
     }
+
     return options
   }
 
   /**
-   * Validate that a recombine operation is possible and return data for execution.
-   * Performs full validation including terrain and commander safety checks.
-   * Throws if the recombine is invalid for any reason.
-   * @returns moveIndex and combinedPiece for use by executeRecombine()
+   * Test if a recombine option is valid WITHOUT mutating game state.
+   * @param option - The recombine option to test
+   * @param remainingPieces - Pre-cached remaining pieces to avoid recalculation
+   * @returns true if option is valid, false otherwise
+   */
+  private _isRecombineOptionValid(
+    option: RecombineOption,
+    remainingPieces: Piece[],
+  ): boolean {
+    try {
+      // Find target move index
+      const moveIndex = this.moves.findIndex(
+        (m) => algebraic(m.to) === option.square,
+      )
+      if (moveIndex === -1) return false
+
+      // Find piece in remaining stack (use cached list)
+      const stackPiece = remainingPieces.find((p) => p.type === option.piece)
+      if (!stackPiece) return false
+
+      // Combine pieces
+      const targetMove = this.moves[moveIndex]
+      const combinedPiece = combinePieces([targetMove.piece, stackPiece])
+      if (!combinedPiece) return false
+
+      // Check terrain validity WITHOUT mutating state
+      const terrainMask = getMovementMask(combinedPiece.type)
+      if (!terrainMask[targetMove.to]) {
+        return false
+      }
+
+      // Check commander safety WITHOUT mutating state
+      const hasCommander = haveCommander(combinedPiece)
+      if (hasCommander) {
+        // Use getAttackers directly - checks if square is attackable by piece type
+        const attackers = this._game.getAttackers(
+          targetMove.to,
+          swapColor(this.turn),
+          combinedPiece.type,
+        )
+        if (attackers.length > 0) {
+          return false
+        }
+      }
+
+      return true
+    } catch {
+      return false
+    }
+  }
+
+  /**
+   * Validate and execute a recombine operation.
+   * Checks if the option is in the cached valid options list.
+   * @returns moveIndex and combinedPiece for use by caller
+   * @throws if option is not valid
    */
   validateRecombine(option: RecombineOption): {
     moveIndex: number
     combinedPiece: Piece
   } {
-    // Find target move index
+    // Ensure cache is populated
+    const validOptions = this.getOptions()
+
+    // Check if option is in valid list
+    const isValid = validOptions.some(
+      (opt) => opt.square === option.square && opt.piece === option.piece,
+    )
+
+    if (!isValid) {
+      throw createError(
+        ErrorCode.SESSION_INVALID_OPERATION,
+        `Recombine option not allowed: ${option.piece} to ${option.square}`,
+      )
+    }
+
+    // If valid, compute the result (we know it will succeed)
     const moveIndex = this.moves.findIndex(
       (m) => algebraic(m.to) === option.square,
     )
-    if (moveIndex === -1) {
-      throw createError(
-        ErrorCode.MOVE_INVALID_DESTINATION,
-        `Invalid recombine target: No move found to square ${option.square}`,
-      )
-    }
-
-    // Verify piece exists in remaining stack
-    const stackPiece = this.remaining.find((p) => p.type === option.piece)
-    if (!stackPiece) {
-      throw createError(
-        ErrorCode.MOVE_PIECE_NOT_FOUND,
-        `Invalid recombine piece: ${option.piece} not found in remaining stack`,
-      )
-    }
-
-    // Verify the pieces can actually combine
+    const stackPiece = this.remaining.find((p) => p.type === option.piece)!
     const targetMove = this.moves[moveIndex]
-    const combinedPiece = combinePieces([targetMove.piece, stackPiece])
-    if (!combinedPiece) {
-      throw createError(ErrorCode.COMBINATION_FAILED, 'Pieces cannot combine')
-    }
-
-    // Verify terrain validity for combined piece (mirrors getOptions check)
-    if (!getMovementMask(combinedPiece.type)[targetMove.to]) {
-      throw createError(
-        ErrorCode.BOARD_INVALID_TERRAIN,
-        `Combined piece cannot exist on square ${option.square}`,
-      )
-    }
-
-    // Verify commander safety (mirrors getOptions check)
-    const hasCommander =
-      haveCommander(targetMove.piece) || haveCommander(stackPiece)
-    if (hasCommander) {
-      const attackers = this._game.getAttackers(
-        targetMove.to,
-        swapColor(this.turn),
-        combinedPiece.type,
-      )
-      if (attackers.length > 0) {
-        throw createError(
-          ErrorCode.SESSION_INVALID_OPERATION,
-          'Recombine would leave commander in danger',
-        )
-      }
-    }
+    const combinedPiece = combinePieces([targetMove.piece, stackPiece])!
 
     return { moveIndex, combinedPiece }
-  }
-
-  /**
-   * @deprecated Use validateRecombine() instead. Kept for backwards compatibility.
-   */
-  recombine(option: RecombineOption): void {
-    this.validateRecombine(option)
   }
 }
 

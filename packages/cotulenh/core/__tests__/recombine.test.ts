@@ -131,6 +131,117 @@ describe('Recombine Option', () => {
       // Should be empty because recombining puts Cmdr in check
       expect(options).toHaveLength(0)
     })
+
+    it('should filter out recombine that puts commander under attack', () => {
+      // Clear default commander
+      game.remove('f1')
+
+      // Stack: AirForce carrying Commander at c3
+      // AirForce + Commander -> AirForce is carrier (role flag: 128 vs 1)
+      const originalPiece = makePiece(AIR_FORCE, RED, false, [
+        makePiece(COMMANDER),
+      ])
+      game.put(originalPiece, 'c3')
+
+      // Enemy Tank at f4 that can attack d4 (diagonal distance sqrt(8) ~2.83, but Tank range is 2 orthogonal only)
+      // Actually Tank can only attack orthogonally, distance 2
+      // So enemy Tank at d6 can attack d4 (distance 2, same file)
+      game.put(makePiece(TANK, BLUE), 'd6')
+
+      const session = new MoveSession(game, {
+        stackSquare: SQUARE_MAP.c3,
+        turn: RED,
+        originalPiece,
+        isDeploy: true,
+      })
+
+      // Deploy AirForce to d4 (safe for AirForce alone)
+      session.addMove(
+        makeMove({
+          from: SQUARE_MAP.c3,
+          to: SQUARE_MAP.d4,
+          piece: makePiece(AIR_FORCE),
+        }),
+      )
+
+      // Remaining: Commander
+      // If Commander recombines to d4 with AirForce:
+      // - Combined piece will be AirForce(Commander)
+      // - Square d4 is attacked by enemy Tank at d6 (distance 2, orthogonal)
+      // - Commander would be in danger
+
+      const options = session.getOptions()
+      // Should filter out the d4 option due to commander danger
+      expect(options).toHaveLength(0)
+    })
+
+    it('should filter out recombine when carrier cannot exist on terrain', () => {
+      // Stack: Navy carrying AirForce at c3 (water square)
+      // Navy + AirForce -> Navy is carrier (role flag: 512 vs 128)
+      const originalPiece = makePiece(NAVY, RED, false, [makePiece(AIR_FORCE)])
+      game.put(originalPiece, 'c3')
+
+      const session = new MoveSession(game, {
+        stackSquare: SQUARE_MAP.c3,
+        turn: RED,
+        originalPiece,
+        isDeploy: true,
+      })
+
+      // Deploy AirForce to f4 (pure land - AirForce can go anywhere)
+      session.addMove(
+        makeMove({
+          from: SQUARE_MAP.c3,
+          to: SQUARE_MAP.f4,
+          piece: makePiece(AIR_FORCE),
+        }),
+      )
+
+      // Remaining: Navy
+      // If Navy recombines with AirForce at f4:
+      // - Combined piece will be Navy(AirForce)
+      // - Navy is the carrier
+      // - f4 is pure land (files d-k, not c or river)
+      // - Navy cannot exist on pure land terrain
+
+      const options = session.getOptions()
+      // Should filter out the f4 option due to Navy terrain restriction
+      expect(options).toHaveLength(0)
+    })
+
+    it('should filter out recombine when new carrier has different terrain restrictions', () => {
+      // Stack: Navy carrying Tank at c3 (file c is mixed zone)
+      // Navy + Tank -> Navy is carrier (role 512 vs 64)
+      const originalPiece = makePiece(NAVY, RED, false, [makePiece(TANK)])
+      game.put(originalPiece, 'c3')
+
+      const session = new MoveSession(game, {
+        stackSquare: SQUARE_MAP.c3,
+        turn: RED,
+        originalPiece,
+        isDeploy: true,
+      })
+
+      // Deploy Tank to d3 (pure land, Tank can go there)
+      session.addMove(
+        makeMove({
+          from: SQUARE_MAP.c3,
+          to: SQUARE_MAP.d3,
+          piece: makePiece(TANK),
+        }),
+      )
+
+      // Remaining: Navy
+      // If Navy recombines with Tank at d3:
+      // - Combined piece will be Navy(Tank)
+      // - Navy is carrier (role 512 vs 64)
+      // - d3 is pure land (file d)
+      // - Navy cannot exist on pure land terrain
+
+      const options = session.getOptions()
+      // Should filter out the d3 option due to Navy terrain restriction
+      expect(options).toHaveLength(0)
+    })
   })
 
   describe('recombine execution', () => {
@@ -177,9 +288,10 @@ describe('Recombine Option', () => {
     })
 
     it('should handle sequential re-execution and commit', () => {
+      // Use valid stack: Navy carrying [AirForce, Tank]
       const originalPiece = makePiece(NAVY, RED, false, [
+        makePiece(AIR_FORCE),
         makePiece(TANK),
-        makePiece(INFANTRY),
       ])
       game.put(originalPiece, 'c3')
 
@@ -194,33 +306,33 @@ describe('Recombine Option', () => {
         makeMove({ from: 0x92, to: 0x72, piece: makePiece(NAVY) }),
       )
       session.addMove(
-        makeMove({ from: 0x92, to: 0x82, piece: makePiece(INFANTRY) }),
+        makeMove({ from: 0x92, to: 0x82, piece: makePiece(TANK) }),
       )
 
       game.setSession(session)
       const options = session.getOptions()
-      const tankOption = options.find(
-        (o) => o.square === 'c5' && o.piece === TANK,
+      const airForceOption = options.find(
+        (o) => o.square === 'c5' && o.piece === AIR_FORCE,
       )
-      expect(tankOption).toBeDefined()
+      expect(airForceOption).toBeDefined()
 
-      const result = game.recombine(tankOption!)
+      const result = game.recombine(airForceOption!)
       expect(result).toBeDefined()
       if (!result) return
 
       const toMap = result.to as Map<Square, Piece>
       expect(toMap.size).toBe(2)
 
-      const move1 = toMap.get('c5')
-      expect(move1?.type).toBe(NAVY)
-      expect(move1?.carrying).toHaveLength(1)
-      expect(move1?.carrying?.[0].type).toBe(TANK)
+      const resultMove1 = toMap.get('c5')
+      expect(resultMove1?.type).toBe(NAVY)
+      expect(resultMove1?.carrying).toHaveLength(1)
+      expect(resultMove1?.carrying?.[0].type).toBe(AIR_FORCE)
 
-      const move2 = toMap.get('c4')
-      expect(move2?.type).toBe(INFANTRY)
+      const resultMove2 = toMap.get('c4')
+      expect(resultMove2?.type).toBe(TANK)
 
       expect(game.get('c5')?.carrying).toHaveLength(1)
-      expect(game.get('c4')?.type).toBe(INFANTRY)
+      expect(game.get('c4')?.type).toBe(TANK)
       expect(game.getSession()).toBeNull()
     })
 
@@ -311,8 +423,8 @@ describe('Recombine Option', () => {
       game.setSession(session)
 
       const options = session.getOptions()
-      console.log('User Scenario Options Count:', options.length)
-      options.forEach((o) => console.log(`Option: ${o.piece} at ${o.square}`))
+      // console.log('User Scenario Options Count:', options.length)
+      // options.forEach((o) => console.log(`Option: ${o.piece} at ${o.square}`))
 
       expect(options).toHaveLength(2)
     })
