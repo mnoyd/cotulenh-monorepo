@@ -8,6 +8,7 @@
   import { validateFenString } from '@cotulenh/core';
   import { goto } from '$app/navigation';
   import PiecePalette from './PiecePalette.svelte';
+  import { toast } from 'svelte-sonner';
 
   // Only import CSS in browser environment to avoid SSR issues
   if (browser) {
@@ -87,7 +88,7 @@
         // Update fenInput with normalized FEN
         fenInput = normalizedFen;
       } catch (error) {
-        alert('Invalid FEN: ' + error);
+        toast.error('Invalid FEN: ' + error);
       }
     }
   }
@@ -354,8 +355,8 @@
       }
     } catch (error) {
       logger.error(error, 'Screenshot failed:');
-      alert(
-        'Screenshot feature requires html2canvas library.\n\nInstall it with: pnpm add html2canvas --filter cotulenh-app'
+      toast.error(
+        'Screenshot feature requires html2canvas library. Install it with: pnpm add html2canvas --filter cotulenh-app'
       );
     }
   }

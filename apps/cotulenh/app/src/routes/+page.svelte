@@ -24,6 +24,7 @@
   import '$lib/styles/modern-warfare.css';
   import { makeCoreMove } from '$lib/utils';
   import { typeToRole, roleToType, coreColorToBoard } from '$lib/types/translations';
+  import { toast } from 'svelte-sonner';
 
   let boardContainerElement: HTMLElement | null = null;
   let boardApi = $state<Api | null>(null);
@@ -211,7 +212,7 @@
 
       if (!result.success) {
         logger.error('❌ Failed to commit:', result.reason);
-        alert(`Cannot finish deployment: ${result.reason}`);
+        toast.error(`Cannot finish deployment: ${result.reason}`);
         return;
       }
 
@@ -229,7 +230,7 @@
     } catch (error) {
       logger.error('❌ Failed to commit deploy session:', { error });
       const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-      alert(`Cannot finish deployment: ${errorMsg}`);
+      toast.error(`Cannot finish deployment: ${errorMsg}`);
     }
   }
 
@@ -264,7 +265,7 @@
     } catch (error) {
       logger.error('Failed to recombine:', { error });
       const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-      alert(`Error executing recombine: ${errorMsg}`);
+      toast.error(`Error executing recombine: ${errorMsg}`);
     }
   }
 
@@ -284,7 +285,7 @@
     } catch (error) {
       logger.error('❌ Failed to cancel deploy:', { error });
       const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-      alert(`Error cancelling deployment: ${errorMsg}`);
+      toast.error(`Error cancelling deployment: ${errorMsg}`);
     }
   }
 

@@ -3,6 +3,7 @@
   import { logger } from '@cotulenh/common';
   import { onMount } from 'svelte';
   import '../app.css';
+  import Sonner from '$lib/components/ui/sonner/sonner.svelte';
 
   onMount(() => {
     logger.info('CoTuLenh App Initialized');
@@ -12,6 +13,7 @@
 </script>
 
 <div class="app-container">
+  <Sonner />
   <nav class="app-nav">
     <div class="nav-content">
       <div class="nav-brand">
