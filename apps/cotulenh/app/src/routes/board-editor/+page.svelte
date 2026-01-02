@@ -7,8 +7,7 @@
   import type { Api, Piece, Role, Color } from '@cotulenh/board';
   import { validateFenString } from '@cotulenh/core';
   import { goto } from '$app/navigation';
-  import PiecePalette from './PiecePalette.svelte';
-  import PaletteControls from './PaletteControls.svelte';
+  import PiecePalettesContainer from './PiecePalettesContainer.svelte';
   import { toast } from 'svelte-sonner';
 
   // Only import CSS in browser environment to avoid SSR issues
@@ -483,40 +482,17 @@
 
     <!-- Sidebar (Right) -->
     <aside class="sidebar">
-      <!-- Red Pieces Palette -->
-      <div class="palette-section">
-        <h3 class="palette-title red">🔴 Red Army</h3>
-        <PiecePalette
-          {boardApi}
-          color="red"
-          onPieceSelect={handlePieceSelect}
-          {selectedPiece}
-          {heroicMode}
-          compact={true}
-        />
-      </div>
-
-      <!-- Shared Controls -->
-      <PaletteControls
+      <!-- Palettes Container -->
+      <PiecePalettesContainer
+        {boardApi}
+        {selectedPiece}
         {heroicMode}
         {editorMode}
+        onPieceSelect={handlePieceSelect}
         onHandModeToggle={toggleHandMode}
         onDeleteModeToggle={toggleDeleteMode}
         onHeroicToggle={toggleHeroicMode}
       />
-
-      <!-- Blue Pieces Palette -->
-      <div class="palette-section">
-        <h3 class="palette-title blue">🔵 Blue Army</h3>
-        <PiecePalette
-          {boardApi}
-          color="blue"
-          onPieceSelect={handlePieceSelect}
-          {selectedPiece}
-          {heroicMode}
-          compact={true}
-        />
-      </div>
 
       <!-- Controls Section -->
       <div class="controls-section">
@@ -634,6 +610,14 @@
     gap: 0;
     min-height: 0;
     overflow: hidden;
+  }
+
+  @media (max-width: 1024px) {
+    .editor-layout {
+      grid-template-columns: 1fr;
+      grid-template-rows: 1fr auto;
+      overflow-y: auto; /* Allow scrolling on mobile */
+    }
   }
 
   /* Board Section */
