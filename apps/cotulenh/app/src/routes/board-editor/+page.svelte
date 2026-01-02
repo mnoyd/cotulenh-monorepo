@@ -24,7 +24,7 @@
   let boardApi: Api | null = null;
   // State that needs reactivity for child components or template bindings
   let fenInput = $state('');
-  let copyButtonText = $state('Copy FEN');
+  let copyButtonText = $state('Copy');
   let boardOrientation: 'red' | 'blue' = $state('red');
   let editorMode: EditorMode = $state('hand');
   let selectedPiece: { role: Role; color: Color; promoted?: boolean } | null = $state(null);
@@ -34,7 +34,6 @@
   let heroicMode = $state(false);
   let validationError = $state('');
   let currentTurn: 'red' | 'blue' = $state('red');
-  let mobileTab: 'red' | 'blue' = $state('red');
 
   // Special marker for delete mode
   const DELETE_MARKER: Piece = { role: 'commander', color: 'red' };
@@ -153,6 +152,16 @@
     setMode(editorMode === 'delete' ? 'hand' : 'delete');
   }
 
+  function scrollToBoard() {
+    if (boardContainerElement && browser) {
+      boardContainerElement.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+        inline: 'center'
+      });
+    }
+  }
+
   function handlePieceSelect(role: Role, color: Color) {
     if (!boardApi) return;
 
@@ -172,6 +181,7 @@
       selectedPiece = { role, color, promoted: isPromoted ? true : undefined };
       editorMode = 'drop';
       showGhost = true;
+      scrollToBoard();
 
       // Enable dropmode with the selected piece (including promoted/heroic status)
       const piece: Piece = { role, color };
@@ -240,7 +250,7 @@
     if (
       target.closest('.board-container') ||
       target.closest('.palette-section') ||
-      target.closest('.controls-container')
+      target.closest('.sidebar')
     ) {
       return;
     }
@@ -266,7 +276,7 @@
       await navigator.clipboard.writeText(fenInput);
       copyButtonText = 'Copied!';
       setTimeout(() => {
-        copyButtonText = 'Copy FEN';
+        copyButtonText = 'Copy';
       }, 2000);
     } catch (error) {
       // Fallback for older browsers
@@ -278,7 +288,7 @@
       document.body.removeChild(textArea);
       copyButtonText = 'Copied!';
       setTimeout(() => {
-        copyButtonText = 'Copy FEN';
+        copyButtonText = 'Copy';
       }, 2000);
     }
   }
@@ -474,280 +484,481 @@
 
 <svelte:body onmousemove={handleMouseMove} onclick={cancelSelection} />
 
-<main>
-  <div
-    class="editor-container max-w-[1600px] mx-auto p-0 sm:p-2 lg:p-6 min-h-[calc(100vh-70px)] w-full"
-  >
-    <h1
-      class="text-center lg:mb-8 mb-4 font-display text-white lg:text-3xl text-xl font-bold uppercase tracking-[4px] relative inline-block left-1/2 -translate-x-1/2 pb-4 border-b border-mw-border"
-    >
+<main class="editor-page">
+  <!-- Header -->
+  <header class="editor-header">
+    <h1>
       <span class="text-mw-secondary">Board</span>
       <span class="text-mw-primary font-light">Editor</span>
     </h1>
+  </header>
 
-    <div class="editor-layout flex flex-col gap-4 lg:gap-6 mb-8">
+  <div class="editor-layout">
+    <!-- Board Section (Left) -->
+    <section class="board-section">
       <div
-        class="board-and-palettes flex flex-col lg:flex-row gap-4 items-stretch justify-center w-full lg:max-w-fit mx-auto bg-mw-bg-panel p-0 sm:p-2 lg:p-4 border border-mw-border rounded-sm backdrop-blur-md shadow-2xl"
+        bind:this={boardContainerElement}
+        class="board-container cg-wrap
+               {editorMode === 'delete' ? 'mode-delete' : ''}
+               {selectedPiece !== null && editorMode !== 'delete' ? 'mode-drop' : ''}"
       >
-        <!-- Left Palette (Desktop Only) -->
-        <div
-          class="palette-section hidden lg:flex bg-black/40 p-4 flex-col w-[240px] min-w-[200px] shrink-0 border border-mw-border/50 relative max-h-[80vh] overflow-y-auto rounded-sm"
-        >
-          <h3
-            class="font-display font-semibold text-mw-primary text-center uppercase tracking-wider border-b border-mw-border/50 pb-2 mb-4 text-sm"
+        {#if !boardApi}<p class="text-mw-primary">Loading board...</p>{/if}
+      </div>
+    </section>
+
+    <!-- Sidebar (Right) -->
+    <aside class="sidebar">
+      <!-- Red Pieces Palette -->
+      <div class="palette-section">
+        <h3 class="palette-title red">🔴 Red Army</h3>
+        <PiecePalette
+          {boardApi}
+          color="red"
+          onPieceSelect={handlePieceSelect}
+          {selectedPiece}
+          {heroicMode}
+          {editorMode}
+          onHandModeToggle={toggleHandMode}
+          onDeleteModeToggle={toggleDeleteMode}
+          onHeroicToggle={toggleHeroicMode}
+          compact={true}
+        />
+      </div>
+
+      <!-- Blue Pieces Palette -->
+      <div class="palette-section">
+        <h3 class="palette-title blue">🔵 Blue Army</h3>
+        <PiecePalette
+          {boardApi}
+          color="blue"
+          onPieceSelect={handlePieceSelect}
+          {selectedPiece}
+          {heroicMode}
+          {editorMode}
+          onHandModeToggle={toggleHandMode}
+          onDeleteModeToggle={toggleDeleteMode}
+          onHeroicToggle={toggleHeroicMode}
+          compact={true}
+        />
+      </div>
+
+      <!-- Controls Section -->
+      <div class="controls-section">
+        <div class="control-row">
+          <button
+            class="ctrl-btn"
+            onclick={loadStartingPosition}
+            title="Reset to starting position"
           >
-            {boardOrientation === 'red' ? 'Blue' : 'Red'} Pieces
-          </h3>
-          <PiecePalette
-            {boardApi}
-            color={boardOrientation === 'red' ? 'blue' : 'red'}
-            onPieceSelect={handlePieceSelect}
-            {selectedPiece}
-            {heroicMode}
-            {editorMode}
-            onHandModeToggle={toggleHandMode}
-            onDeleteModeToggle={toggleDeleteMode}
-            onHeroicToggle={toggleHeroicMode}
-          />
+            ↺ Reset
+          </button>
+          <button class="ctrl-btn" onclick={clearBoard} title="Clear all pieces"> 🧹 Clear </button>
+          <button class="ctrl-btn" onclick={flipBoard} title="Flip board orientation">
+            ⇅ Flip
+          </button>
         </div>
 
-        <!-- Board Container -->
-        <div
-          class="board-section flex justify-center items-center grow min-w-0 p-0 lg:p-1 bg-black/60 border border-mw-border/50 rounded-sm overflow-hidden lg:w-auto w-full order-first lg:order-none"
-        >
-          <div
-            bind:this={boardContainerElement}
-            class="board-container cg-wrap relative flex justify-center items-center bg-black border-none transition-all
-                   aspect-[11/12] h-auto w-full lg:w-[calc(85vh*11/12)] lg:max-w-[calc(100vw-500px)]
-                   {editorMode === 'delete'
-              ? 'cursor-not-allowed ring-2 ring-mw-alert shadow-[0_0_20px_rgba(255,171,0,0.4)]'
-              : ''}
-                   {selectedPiece !== null && editorMode !== 'delete'
-              ? 'cursor-crosshair ring-2 ring-mw-secondary shadow-[0_0_20px_rgba(0,255,65,0.4)]'
-              : ''}
-                   {!editorMode && !selectedPiece ? 'shadow-[0_0_30px_rgba(0,243,255,0.05)]' : ''}"
-          >
-            {#if !boardApi}<p class="text-mw-primary">Loading board...</p>{/if}
-          </div>
-        </div>
+        <button class="turn-btn {currentTurn}" onclick={toggleTurn} title="Toggle current turn">
+          <span class="turn-indicator {currentTurn}"></span>
+          Turn: {currentTurn === 'red' ? 'Red' : 'Blue'}
+        </button>
+      </div>
 
-        <!-- Right Palette (Desktop Only) -->
-        <div
-          class="palette-section hidden lg:flex bg-black/40 p-4 flex-col w-[240px] min-w-[200px] shrink-0 border border-mw-border/50 relative max-h-[80vh] overflow-y-auto rounded-sm"
-        >
-          <h3
-            class="font-display font-semibold text-mw-primary text-center uppercase tracking-wider border-b border-mw-border/50 pb-2 mb-4 text-sm"
-          >
-            {boardOrientation === 'red' ? 'Red' : 'Blue'} Pieces
-          </h3>
-          <PiecePalette
-            {boardApi}
-            color={boardOrientation === 'red' ? 'red' : 'blue'}
-            onPieceSelect={handlePieceSelect}
-            {selectedPiece}
-            {heroicMode}
-            {editorMode}
-            onHandModeToggle={toggleHandMode}
-            onDeleteModeToggle={toggleDeleteMode}
-            onHeroicToggle={toggleHeroicMode}
-          />
-        </div>
-
-        <!-- Mobile Palette (Mobile Only) -->
-        <div class="mobile-palette-section flex lg:hidden flex-col w-full">
-          <!-- Mobile Tabs -->
-          <div class="flex w-full mb-2 border border-mw-border rounded-sm overflow-hidden">
-            <button
-              class="flex-1 py-3 text-sm font-display uppercase tracking-wider transition-all
-                     {mobileTab === 'red'
-                ? 'bg-mw-primary/20 text-white font-bold border-b-2 border-mw-primary'
-                : 'bg-black/40 text-mw-primary/60 hover:bg-mw-primary/10'}"
-              onclick={() => (mobileTab = 'red')}
-            >
-              🔴 Red Army
-            </button>
-            <button
-              class="flex-1 py-3 text-sm font-display uppercase tracking-wider transition-all
-                     {mobileTab === 'blue'
-                ? 'bg-blue-500/20 text-white font-bold border-b-2 border-blue-500'
-                : 'bg-black/40 text-blue-400/60 hover:bg-blue-500/10'}"
-              onclick={() => (mobileTab = 'blue')}
-            >
-              🔵 Blue Army
-            </button>
-          </div>
-
-          <!-- Mobile Content -->
-          <div
-            class="bg-black/40 p-2 border border-mw-border/50 rounded-sm overflow-x-auto overflow-y-hidden"
-          >
-            <PiecePalette
-              {boardApi}
-              color={mobileTab}
-              onPieceSelect={handlePieceSelect}
-              {selectedPiece}
-              {heroicMode}
-              {editorMode}
-              onHandModeToggle={toggleHandMode}
-              onDeleteModeToggle={toggleDeleteMode}
-              onHeroicToggle={toggleHeroicMode}
-            />
-          </div>
+      <!-- FEN Section -->
+      <div class="fen-section">
+        <label for="fen-input">FEN Position</label>
+        <input
+          id="fen-input"
+          type="text"
+          bind:value={fenInput}
+          placeholder="Enter FEN string..."
+          class="fen-input"
+        />
+        <div class="fen-buttons">
+          <button class="fen-btn" onclick={applyFEN}>Apply</button>
+          <button class="fen-btn" onclick={copyFEN}>{copyButtonText}</button>
         </div>
       </div>
-    </div>
 
-    <!-- Ghost piece that follows mouse (only in relevant areas) -->
-    {#if showGhost && selectedPiece && isOverRelevantArea}
-      <div class="ghost-piece cg-wrap" style="left: {ghostPosition.x}px; top: {ghostPosition.y}px;">
-        <piece
-          class="{selectedPiece.role} {selectedPiece.color}"
-          class:heroic={selectedPiece.promoted}
-        ></piece>
-      </div>
-    {/if}
-
-    <!-- Ghost recycle bin that follows mouse in delete mode (only in relevant areas) -->
-    {#if editorMode === 'delete' && isOverRelevantArea}
-      <div class="ghost-recycle-bin" style="left: {ghostPosition.x}px; top: {ghostPosition.y}px;">
-        🗑️
-      </div>
-    {/if}
-
-    <!-- Special Play Button -->
-    <div class="play-button-container max-w-[1200px] mx-auto my-8 text-center">
-      <button
-        class="group relative inline-flex items-center gap-3 overflow-hidden rounded-sm px-10 py-4 font-display text-xl font-bold uppercase tracking-widest text-black shadow-[0_0_20px_rgba(0,243,255,0.3)] transition-all duration-300 hover:scale-105 hover:shadow-[0_0_30px_rgba(0,243,255,0.5)] active:scale-95 bg-gradient-to-br from-mw-primary to-[#00aaff] border border-mw-primary"
-        onclick={validateAndPlay}
-      >
-        <span
-          class="absolute top-0 left-[-100%] z-10 h-full w-full bg-linear-to-r from-transparent via-[rgba(255,255,255,0.5)] to-transparent transition-[left] duration-500 group-hover:left-full"
-        ></span>
-        <span class="animate-pulse">▶</span>
-        <span class="drop-shadow-sm">Play This Position</span>
+      <!-- Play Button -->
+      <button class="play-btn" onclick={validateAndPlay}>
+        <span class="play-icon">▶</span>
+        Play This Position
       </button>
+
       {#if validationError}
-        <div
-          class="validation-error mt-4 inline-block rounded-sm border border-mw-alert bg-mw-alert/10 px-5 py-3 font-ui font-semibold text-mw-alert shadow-[0_0_15px_rgba(255,171,0,0.2)] backdrop-blur-sm animate-[shake_0.5s]"
-        >
+        <div class="validation-error">
           ⚠️ {validationError}
         </div>
       {/if}
-    </div>
 
-    <!-- Controls Section at Bottom -->
-    <div
-      class="controls-container bg-mw-bg-panel border border-mw-border rounded-sm p-4 lg:p-8 max-w-[1200px] mx-auto w-full shadow-2xl relative mt-8"
-    >
-      <div
-        class="absolute -top-3 left-6 px-3 bg-black text-mw-border text-xs font-mono tracking-widest uppercase"
-      >
-        System_Controls
-      </div>
-
-      <div
-        class="button-row grid grid-cols-2 md:grid-cols-3 lg:flex lg:flex-wrap gap-2 lg:gap-4 justify-center border-b border-mw-border/50 pb-6 mb-8"
-      >
-        <button
-          class="px-3 py-3 lg:px-6 lg:py-2 rounded-sm font-ui uppercase text-xs lg:text-sm tracking-wider transition-all bg-mw-primary/5 border border-mw-border text-mw-primary hover:bg-mw-primary/20 hover:text-white flex items-center justify-center gap-2"
-          onclick={loadStartingPosition}
-        >
-          <span class="text-lg">↺</span> <span class="hidden sm:inline">Reset</span> Board
-        </button>
-        <button
-          class="px-3 py-3 lg:px-6 lg:py-2 rounded-sm font-ui uppercase text-xs lg:text-sm tracking-wider transition-all bg-mw-primary/5 border border-mw-border text-mw-primary hover:bg-mw-primary/20 hover:text-white flex items-center justify-center gap-2"
-          onclick={clearBoard}
-        >
-          <span class="text-lg">🧹</span> Clear
-        </button>
-        <button
-          class="px-3 py-3 lg:px-6 lg:py-2 rounded-sm font-ui uppercase text-xs lg:text-sm tracking-wider transition-all bg-mw-primary/5 border border-mw-border text-mw-primary hover:bg-mw-primary/20 hover:text-white flex items-center justify-center gap-2"
-          onclick={flipBoard}
-        >
-          <span class="text-lg">⇅</span> Flip
-        </button>
-        <button
-          class="px-3 py-3 lg:px-6 lg:py-2 rounded-sm font-ui uppercase text-xs lg:text-sm tracking-wider transition-all border flex items-center justify-center gap-2
-                 {currentTurn === 'red'
-            ? 'bg-amber-500/10 border-mw-alert text-mw-alert hover:bg-mw-alert/20 hover:text-white'
-            : 'bg-blue-500/10 border-blue-500 text-blue-500 hover:bg-blue-500/20 hover:text-white'}"
-          onclick={toggleTurn}
-        >
-          <span class="w-3 h-3 rounded-full {currentTurn === 'red' ? 'bg-red-500' : 'bg-blue-500'}"
-          ></span>
-          Turn: {currentTurn === 'red' ? 'Red' : 'Blue'}
-        </button>
-        <button
-          class="px-3 py-3 lg:px-6 lg:py-2 rounded-sm font-ui uppercase text-xs lg:text-sm tracking-wider transition-all bg-mw-primary/5 border border-mw-border text-mw-primary opacity-50 cursor-not-allowed col-span-2 md:col-span-1 lg:w-auto flex items-center justify-center gap-2"
-          onclick={screenshot}
-          disabled
-        >
-          <span>📷</span> Screenshot
-        </button>
-      </div>
-
-      <div
-        class="fen-section max-w-[800px] mx-auto bg-black/30 p-4 border border-mw-border/50 rounded-sm"
-      >
-        <label for="fen-input" class="block mb-2 font-display text-mw-primary text-sm font-semibold"
-          >FEN Position:</label
-        >
-        <div class="fen-input-group flex gap-2 flex-col md:flex-row">
-          <input
-            id="fen-input"
-            type="text"
-            bind:value={fenInput}
-            placeholder="Enter FEN string..."
-            class="fen-input flex-1 bg-black/50 border border-mw-border text-mw-primary p-2 font-mono rounded-sm text-sm focus:outline-none focus:border-mw-secondary transition-colors"
-          />
-          <button
-            class="px-4 py-2 rounded-sm font-ui uppercase text-sm bg-mw-primary/10 border border-mw-border text-mw-primary hover:bg-mw-primary/20 hover:text-white transition-colors"
-            onclick={applyFEN}
-          >
-            Apply
-          </button>
-          <button
-            class="px-4 py-2 rounded-sm font-ui uppercase text-sm bg-mw-primary/10 border border-mw-border text-mw-primary hover:bg-mw-primary/20 hover:text-white transition-colors"
-            onclick={copyFEN}
-          >
-            {copyButtonText}
-          </button>
-        </div>
-      </div>
-
-      <div class="info-section pt-4 border-t border-mw-border/30 mt-6">
-        <h4 class="mb-2 text-sm font-semibold text-slate-400 font-display uppercase tracking-wider">
-          Instructions
-        </h4>
-        <ul
-          class="text-xs text-slate-500 leading-relaxed grid grid-cols-1 md:grid-cols-2 gap-2 list-disc pl-4"
-        >
-          <li><strong>Hand Mode (✋):</strong> Drag pieces on board to move them</li>
-          <li>
-            <strong>Drop Mode:</strong> Click piece in palette to select, then click squares to place
-          </li>
-          <li><strong>Delete Mode (🗑️):</strong> Click to delete pieces on board</li>
-          <li><strong>Turn Toggle:</strong> Switch between Red and Blue turn</li>
-          <li><strong>Drag</strong> pieces from palette to board anytime</li>
-          <li>Drag pieces off board to delete them</li>
+      <!-- Quick Tips (collapsible) -->
+      <details class="tips-section">
+        <summary>Quick Tips</summary>
+        <ul>
+          <li><strong>✋ Hand:</strong> Drag pieces on board</li>
+          <li><strong>Click piece:</strong> Select, then click to place</li>
+          <li><strong>🗑️ Delete:</strong> Click to remove pieces</li>
+          <li><strong>⭐ Heroic:</strong> Toggle promotion status</li>
         </ul>
-      </div>
-    </div>
+      </details>
+    </aside>
   </div>
+
+  <!-- Ghost piece that follows mouse (only in relevant areas) -->
+  {#if showGhost && selectedPiece && isOverRelevantArea}
+    <div class="ghost-piece cg-wrap" style="left: {ghostPosition.x}px; top: {ghostPosition.y}px;">
+      <piece
+        class="{selectedPiece.role} {selectedPiece.color}"
+        class:heroic={selectedPiece.promoted}
+      ></piece>
+    </div>
+  {/if}
+
+  <!-- Ghost recycle bin that follows mouse in delete mode (only in relevant areas) -->
+  {#if editorMode === 'delete' && isOverRelevantArea}
+    <div class="ghost-recycle-bin" style="left: {ghostPosition.x}px; top: {ghostPosition.y}px;">
+      🗑️
+    </div>
+  {/if}
 </main>
 
 <style lang="postcss">
-  /* Local styles for complex animations or specific overrides not easily handled by Tailwind */
   @reference "../../app.css";
 
+  .editor-page {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: var(--color-mw-bg-dark);
+  }
+
+  .editor-header {
+    flex-shrink: 0;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--color-mw-border);
+    background: var(--color-mw-bg-panel);
+  }
+
+  .editor-header h1 {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: 1.25rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    text-align: center;
+  }
+
+  .editor-layout {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 0;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  /* Board Section */
+  .board-section {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    background: rgba(0, 0, 0, 0.4);
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .board-container {
+    /* CRITICAL: Maintain 11:12 aspect ratio */
+    aspect-ratio: 11 / 12;
+    height: calc(100vh - 80px);
+    max-height: calc(100vh - 80px);
+    width: auto;
+    max-width: 100%;
+    background: #000;
+    border: 2px solid var(--color-mw-border);
+    border-radius: 4px;
+    transition:
+      box-shadow 0.2s,
+      border-color 0.2s;
+  }
+
+  .board-container.mode-delete {
+    cursor: not-allowed;
+    border-color: var(--color-mw-alert);
+    box-shadow: 0 0 20px rgba(255, 171, 0, 0.4);
+  }
+
+  .board-container.mode-drop {
+    cursor: crosshair;
+    border-color: var(--color-mw-secondary);
+    box-shadow: 0 0 20px rgba(0, 255, 65, 0.4);
+  }
+
+  /* Sidebar */
+  .sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 1rem;
+    background: var(--color-mw-bg-panel);
+    border-left: 1px solid var(--color-mw-border);
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  .palette-section {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    padding: 0.5rem;
+  }
+
+  .palette-title {
+    font-family: var(--font-display);
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin: 0 0 0.5rem 0;
+    padding-bottom: 0.25rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .palette-title.red {
+    color: #ff6b6b;
+  }
+
+  .palette-title.blue {
+    color: #4dabf7;
+  }
+
+  /* Controls */
+  .controls-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .control-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.5rem;
+  }
+
+  .ctrl-btn {
+    padding: 0.5rem;
+    font-family: var(--font-ui);
+    font-size: 0.7rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    background: rgba(0, 243, 255, 0.05);
+    border: 1px solid var(--color-mw-border);
+    color: var(--color-mw-primary);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .ctrl-btn:hover {
+    background: rgba(0, 243, 255, 0.15);
+    color: #fff;
+  }
+
+  .turn-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    font-family: var(--font-ui);
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .turn-btn.red {
+    background: rgba(255, 107, 107, 0.1);
+    border: 1px solid rgba(255, 107, 107, 0.5);
+    color: #ff6b6b;
+  }
+
+  .turn-btn.blue {
+    background: rgba(77, 171, 247, 0.1);
+    border: 1px solid rgba(77, 171, 247, 0.5);
+    color: #4dabf7;
+  }
+
+  .turn-indicator {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+  }
+
+  .turn-indicator.red {
+    background: #ff6b6b;
+  }
+
+  .turn-indicator.blue {
+    background: #4dabf7;
+  }
+
+  /* FEN Section */
+  .fen-section {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    padding: 0.5rem;
+  }
+
+  .fen-section label {
+    display: block;
+    font-family: var(--font-display);
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--color-mw-primary);
+    margin-bottom: 0.25rem;
+  }
+
+  .fen-input {
+    width: 100%;
+    padding: 0.5rem;
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    background: rgba(0, 0, 0, 0.5);
+    border: 1px solid var(--color-mw-border);
+    color: var(--color-mw-primary);
+    border-radius: 4px;
+    margin-bottom: 0.5rem;
+  }
+
+  .fen-input:focus {
+    outline: none;
+    border-color: var(--color-mw-secondary);
+  }
+
+  .fen-buttons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+  }
+
+  .fen-btn {
+    padding: 0.4rem;
+    font-family: var(--font-ui);
+    font-size: 0.7rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    background: rgba(0, 243, 255, 0.1);
+    border: 1px solid var(--color-mw-border);
+    color: var(--color-mw-primary);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .fen-btn:hover {
+    background: rgba(0, 243, 255, 0.2);
+    color: #fff;
+  }
+
+  /* Play Button */
+  .play-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    font-family: var(--font-display);
+    font-size: 0.9rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    background: linear-gradient(135deg, var(--color-mw-primary), #00aaff);
+    border: 1px solid var(--color-mw-primary);
+    color: #000;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.3s;
+    box-shadow: 0 0 15px rgba(0, 243, 255, 0.3);
+  }
+
+  .play-btn:hover {
+    transform: scale(1.02);
+    box-shadow: 0 0 25px rgba(0, 243, 255, 0.5);
+  }
+
+  .play-icon {
+    animation: pulse 2s infinite;
+  }
+
+  .validation-error {
+    padding: 0.5rem;
+    font-family: var(--font-ui);
+    font-size: 0.75rem;
+    font-weight: 600;
+    background: rgba(255, 171, 0, 0.1);
+    border: 1px solid var(--color-mw-alert);
+    color: var(--color-mw-alert);
+    border-radius: 4px;
+    text-align: center;
+  }
+
+  /* Tips */
+  .tips-section {
+    font-size: 0.7rem;
+    color: #666;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+    padding: 0.5rem;
+  }
+
+  .tips-section summary {
+    cursor: pointer;
+    font-family: var(--font-ui);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #888;
+  }
+
+  .tips-section ul {
+    margin: 0.5rem 0 0;
+    padding-left: 1rem;
+    line-height: 1.6;
+  }
+
+  .tips-section li {
+    margin-bottom: 0.25rem;
+  }
+
+  /* Ghost elements */
   .ghost-piece {
-    @apply fixed z-50 w-[60px] h-[60px] opacity-80 pointer-events-none;
+    position: fixed;
+    z-index: 50;
+    width: 50px;
+    height: 50px;
+    opacity: 0.8;
+    pointer-events: none;
     transform: translate(-50%, -50%);
     filter: drop-shadow(0 0 10px var(--color-mw-primary));
   }
 
   .ghost-recycle-bin {
-    @apply fixed z-50 text-4xl pointer-events-none;
+    position: fixed;
+    z-index: 50;
+    font-size: 2rem;
+    pointer-events: none;
     transform: translate(-50%, -50%);
     filter: drop-shadow(0 0 10px var(--color-mw-alert));
   }
@@ -762,7 +973,63 @@
     }
   }
 
-  .animate-pulse {
-    animation: pulse 2s infinite;
+  /* Responsive: Mobile Layout */
+  @media (max-width: 900px) {
+    .editor-layout {
+      grid-template-columns: 1fr;
+      grid-template-rows: auto 1fr;
+    }
+
+    .board-section {
+      padding: 0.5rem;
+    }
+
+    .board-container {
+      height: auto;
+      max-height: 50vh;
+      width: 100%;
+      max-width: calc(50vh * 11 / 12);
+    }
+
+    .sidebar {
+      border-left: none;
+      border-top: 1px solid var(--color-mw-border);
+      padding: 0.75rem;
+      overflow-y: auto;
+    }
+
+    .palette-section {
+      padding: 0.25rem;
+    }
+
+    .palette-title {
+      font-size: 0.65rem;
+      margin-bottom: 0.25rem;
+    }
+  }
+
+  /* Very small screens */
+  @media (max-width: 480px) {
+    .editor-header {
+      padding: 0.5rem;
+    }
+
+    .editor-header h1 {
+      font-size: 1rem;
+      letter-spacing: 2px;
+    }
+
+    .board-container {
+      max-height: 45vh;
+    }
+
+    .control-row {
+      grid-template-columns: repeat(3, 1fr);
+    }
+
+    .ctrl-btn {
+      font-size: 0.6rem;
+      padding: 0.4rem;
+    }
   }
 </style>

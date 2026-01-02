@@ -13,7 +13,8 @@
     editorMode = 'hand',
     onHandModeToggle = () => {},
     onDeleteModeToggle = () => {},
-    onHeroicToggle = () => {}
+    onHeroicToggle = () => {},
+    compact = false
   }: {
     boardApi: Api | null;
     color: Color;
@@ -24,6 +25,7 @@
     onHandModeToggle: () => void;
     onDeleteModeToggle: () => void;
     onHeroicToggle: () => void;
+    compact: boolean;
   } = $props();
 
   const roles: Role[] = [
@@ -79,7 +81,7 @@
   }
 </script>
 
-<div class="palette-container">
+<div class="palette-container" class:compact>
   <!-- Control buttons: Heroic, Hand and Delete -->
   <div class="control-buttons">
     <!-- Heroic button -->
@@ -196,7 +198,37 @@
   .palette-container {
     display: flex;
     flex-direction: column;
-    height: 100%;
+  }
+
+  /* Compact mode for sidebar */
+  .palette-container.compact .control-buttons {
+    gap: 0.25rem;
+    margin-bottom: 0.5rem;
+    padding-bottom: 0.5rem;
+  }
+
+  .palette-container.compact .pieces-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.25rem;
+    padding: 0;
+  }
+
+  .palette-container.compact .palette-piece-wrapper {
+    padding: 0.25rem;
+    gap: 0;
+  }
+
+  .palette-container.compact .palette-piece-container {
+    width: 36px;
+    height: 36px;
+  }
+
+  .palette-container.compact .piece-label {
+    display: none;
+  }
+
+  .palette-container.compact .control-emoji {
+    font-size: 16px;
   }
 
   .pieces-grid {
