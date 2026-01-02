@@ -1,7 +1,7 @@
 [build]
   base = "/"
-  command = "pnpm build --filter=cotulenh-app"
-  publish = "apps/cotulenh-app/build"
+  command = "pnpm build --filter=@cotulenh/app"
+  publish = "apps/cotulenh/app/build"
 
 [build.environment]
   NODE_VERSION = "18"
