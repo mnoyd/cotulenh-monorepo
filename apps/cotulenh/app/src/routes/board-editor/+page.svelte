@@ -667,23 +667,43 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 1rem;
+    /* Remove padding to maximize space, use flex centering */
+    padding: 0;
     background: rgba(0, 0, 0, 0.4);
     min-width: 0;
     min-height: 0;
     overflow: hidden;
+    /* Enable container queries for the board */
+    container-type: size;
+    width: 100%;
+    height: 100%;
   }
 
   .board-container {
-    /* CRITICAL: Maintain 11:12 aspect ratio */
-    aspect-ratio: 11 / 12;
-    height: calc(100vh - 80px);
-    max-height: calc(100vh - 80px);
-    width: auto;
-    max-width: 100%;
+    /* CRITICAL: Maintain 12:13 aspect ratio strictly on the content box */
+    position: relative;
+    aspect-ratio: 12 / 13;
+
+    /* Use container query units to perfectly contain the board while maximizing size */
+    width: min(100cqw, 100cqh * 12 / 13);
+    height: min(100cqh, 100cqw * 13 / 12);
+
     background: #000;
+    border-radius: 4px;
+    /* Remove structural border to prevent aspect ratio distortion */
+    border: none;
+    padding: 0;
+  }
+
+  /* Use pseudo-element for the border/glow so it doesn't affect layout/dimensions */
+  .board-container::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
     border: 2px solid var(--color-mw-border);
     border-radius: 4px;
+    z-index: 10;
     transition:
       box-shadow 0.2s,
       border-color 0.2s;
@@ -691,12 +711,18 @@
 
   .board-container.mode-delete {
     cursor: not-allowed;
+  }
+
+  .board-container.mode-delete::after {
     border-color: var(--color-mw-alert);
     box-shadow: 0 0 20px rgba(255, 171, 0, 0.4);
   }
 
   .board-container.mode-drop {
     cursor: crosshair;
+  }
+
+  .board-container.mode-drop::after {
     border-color: var(--color-mw-secondary);
     box-shadow: 0 0 20px rgba(0, 255, 65, 0.4);
   }
@@ -984,14 +1010,12 @@
 
     .board-section {
       padding: 0.5rem;
+      /* Assign explicit height for container queries to work on mobile */
+      height: 50vh;
+      flex: none;
     }
 
-    .board-container {
-      height: auto;
-      max-height: 50vh;
-      width: 100%;
-      max-width: calc(50vh * 11 / 12);
-    }
+    /* .board-container size is automatically handled by container queries! */
 
     .sidebar {
       border-left: none;
@@ -1021,8 +1045,9 @@
       letter-spacing: 2px;
     }
 
-    .board-container {
-      max-height: 45vh;
+    /* Adjust board height slightly if needed */
+    .board-section {
+      height: 45vh;
     }
 
     .control-row {

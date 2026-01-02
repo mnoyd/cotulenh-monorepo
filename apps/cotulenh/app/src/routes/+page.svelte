@@ -482,7 +482,7 @@
       >
         <div
           bind:this={boardContainerElement}
-          class="w-full aspect-[11/12] relative bg-[#111] max-lg:h-auto max-lg:max-h-full max-lg:aspect-[11/12] max-lg:m-auto [&_cg-board]:!w-full [&_cg-board]:!h-full [&_cg-board]:max-h-screen [&_cg-board]:max-w-[100vw]"
+          class="w-full aspect-[12/13] relative bg-[#111] max-lg:h-auto max-lg:max-h-full max-lg:aspect-[12/13] max-lg:m-auto [&_cg-board]:!w-full [&_cg-board]:!h-full [&_cg-board]:max-h-screen [&_cg-board]:max-w-[100vw]"
         >
           {#if !boardApi}
             <div
