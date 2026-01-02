@@ -347,32 +347,6 @@
     }
   }
 
-  async function screenshot() {
-    // Dynamically import html2canvas only when needed
-    try {
-      // Use a function to defer import and avoid build-time resolution
-      const loadHtml2Canvas = new Function('return import("html2canvas")');
-      const module = await loadHtml2Canvas();
-      const html2canvas = module.default;
-
-      if (boardContainerElement) {
-        const canvas = await html2canvas(boardContainerElement);
-        const dataUrl = canvas.toDataURL('image/png');
-
-        // Download the image
-        const link = document.createElement('a');
-        link.download = 'cotulenh-position.png';
-        link.href = dataUrl;
-        link.click();
-      }
-    } catch (error) {
-      logger.error(error, 'Screenshot failed:');
-      toast.error(
-        'Screenshot feature requires html2canvas library. Install it with: pnpm add html2canvas --filter cotulenh-app'
-      );
-    }
-  }
-
   onMount(() => {
     // Check for FEN in URL parameters
     const urlFen = $page.url.searchParams.get('fen');
