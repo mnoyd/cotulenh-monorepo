@@ -10,10 +10,6 @@
     onPieceSelect = () => {},
     selectedPiece = null,
     heroicMode = false,
-    editorMode = 'hand',
-    onHandModeToggle = () => {},
-    onDeleteModeToggle = () => {},
-    onHeroicToggle = () => {},
     compact = false
   }: {
     boardApi: Api | null;
@@ -21,10 +17,6 @@
     onPieceSelect: (role: Role, color: Color) => void;
     selectedPiece: { role: Role; color: Color; promoted?: boolean } | null;
     heroicMode: boolean;
-    editorMode: EditorMode;
-    onHandModeToggle: () => void;
-    onDeleteModeToggle: () => void;
-    onHeroicToggle: () => void;
     compact: boolean;
   } = $props();
 
@@ -82,87 +74,6 @@
 </script>
 
 <div class="palette-container" class:compact>
-  <!-- Control buttons: Heroic, Hand and Delete -->
-  <div class="control-buttons">
-    <!-- Heroic button -->
-    <div
-      class="palette-piece-wrapper control-button heroic-button"
-      class:heroic-active={heroicMode}
-      title="Toggle Heroic Mode"
-    >
-      <div
-        class="palette-piece-container control-icon"
-        role="button"
-        tabindex="0"
-        onclick={(e) => {
-          e.stopPropagation();
-          onHeroicToggle();
-        }}
-        onkeydown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            onHeroicToggle();
-          }
-        }}
-      >
-        <span class="control-emoji">⭐</span>
-      </div>
-      <span class="piece-label">Heroic</span>
-    </div>
-
-    <!-- Hand button -->
-    <div
-      class="palette-piece-wrapper control-button"
-      class:selected={editorMode === 'hand'}
-      title="Hand Mode - Drag pieces on board"
-    >
-      <div
-        class="palette-piece-container control-icon"
-        role="button"
-        tabindex="0"
-        onclick={(e) => {
-          e.stopPropagation();
-          onHandModeToggle();
-        }}
-        onkeydown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            onHandModeToggle();
-          }
-        }}
-      >
-        <span class="control-emoji">✋</span>
-      </div>
-      <span class="piece-label">Hand</span>
-    </div>
-
-    <!-- Delete button -->
-    <div
-      class="palette-piece-wrapper control-button"
-      class:selected={editorMode === 'delete'}
-      title="Delete Mode - Click pieces to delete"
-    >
-      <div
-        class="palette-piece-container control-icon delete-icon"
-        role="button"
-        tabindex="0"
-        onclick={(e) => {
-          e.stopPropagation();
-          onDeleteModeToggle();
-        }}
-        onkeydown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            onDeleteModeToggle();
-          }
-        }}
-      >
-        <span class="control-emoji">🗑️</span>
-      </div>
-      <span class="piece-label">Delete</span>
-    </div>
-  </div>
-
   <div class="pieces-grid">
     {#each pieces as piece}
       <div
@@ -201,12 +112,6 @@
   }
 
   /* Compact mode for sidebar */
-  .palette-container.compact .control-buttons {
-    gap: 0.25rem;
-    margin-bottom: 0.5rem;
-    padding-bottom: 0.5rem;
-  }
-
   .palette-container.compact .pieces-grid {
     grid-template-columns: repeat(4, 1fr);
     gap: 0.25rem;
@@ -225,10 +130,6 @@
 
   .palette-container.compact .piece-label {
     display: none;
-  }
-
-  .palette-container.compact .control-emoji {
-    font-size: 16px;
   }
 
   .pieces-grid {
@@ -321,103 +222,8 @@
     text-shadow: 0 0 5px var(--mw-primary-dim);
   }
 
-  /* Control buttons styles */
-  .control-buttons {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 0.5rem;
-    margin-bottom: 1rem;
-    padding-bottom: 0.75rem;
-    border-bottom: 1px dashed var(--mw-border-color);
-  }
-
-  .control-button {
-    flex: 1;
-    cursor: pointer;
-  }
-
-  .control-button .control-icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background-color: rgba(255, 255, 255, 0.05);
-    border: 1px solid var(--mw-border-color);
-  }
-
-  .control-button:hover .control-icon {
-    background-color: rgba(255, 255, 255, 0.15);
-    border-color: #fff;
-  }
-
-  .control-button.selected .control-icon {
-    background-color: rgba(0, 243, 255, 0.2);
-    border-color: var(--mw-primary);
-    box-shadow: 0 0 10px var(--mw-primary-dim);
-  }
-
-  .control-button.selected .piece-label {
-    color: var(--mw-primary);
-  }
-
-  .heroic-button .control-icon {
-    border-color: var(--mw-warning);
-    background: rgba(255, 215, 0, 0.05);
-  }
-
-  .heroic-button:hover .control-icon {
-    background: rgba(255, 215, 0, 0.15);
-    box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
-  }
-
-  .heroic-button.heroic-active .control-icon {
-    background-color: rgba(255, 215, 0, 0.25);
-    border-color: var(--mw-warning);
-    box-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
-  }
-
-  .heroic-button.heroic-active .piece-label {
-    color: var(--mw-warning);
-  }
-
-  .heroic-button .control-icon:active {
-    transform: scale(0.95);
-  }
-
-  .delete-icon.control-icon {
-    border-color: var(--mw-alert);
-    background: rgba(255, 80, 0, 0.05);
-  }
-
-  .delete-icon.control-icon:hover {
-    background-color: rgba(255, 80, 0, 0.15);
-    box-shadow: 0 0 10px rgba(255, 80, 0, 0.3);
-  }
-
-  .control-button.selected .delete-icon {
-    background-color: rgba(255, 80, 0, 0.3);
-    border-color: var(--mw-alert);
-    box-shadow: 0 0 15px rgba(255, 80, 0, 0.4);
-  }
-
-  .control-button.selected:has(.delete-icon) .piece-label {
-    color: var(--mw-alert);
-  }
-
-  .control-emoji {
-    font-size: 20px;
-    user-select: none;
-    pointer-events: none;
-    filter: drop-shadow(0 0 5px rgba(0, 0, 0, 0.5));
-  }
-
   /* When palettes are stacked horizontally/responsive */
   @media (max-width: 1024px) {
-    .control-buttons {
-      gap: 0.25rem;
-      margin-bottom: 0.25rem;
-      padding-bottom: 0.25rem;
-    }
-
     .pieces-grid {
       /* Fit all 11 pieces in 2 rows (6 columns) */
       grid-template-columns: repeat(6, 1fr);

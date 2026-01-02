@@ -8,6 +8,7 @@
   import { validateFenString } from '@cotulenh/core';
   import { goto } from '$app/navigation';
   import PiecePalette from './PiecePalette.svelte';
+  import PaletteControls from './PaletteControls.svelte';
   import { toast } from 'svelte-sonner';
 
   // Only import CSS in browser environment to avoid SSR issues
@@ -517,13 +518,18 @@
           onPieceSelect={handlePieceSelect}
           {selectedPiece}
           {heroicMode}
-          {editorMode}
-          onHandModeToggle={toggleHandMode}
-          onDeleteModeToggle={toggleDeleteMode}
-          onHeroicToggle={toggleHeroicMode}
           compact={true}
         />
       </div>
+
+      <!-- Shared Controls -->
+      <PaletteControls
+        {heroicMode}
+        {editorMode}
+        onHandModeToggle={toggleHandMode}
+        onDeleteModeToggle={toggleDeleteMode}
+        onHeroicToggle={toggleHeroicMode}
+      />
 
       <!-- Blue Pieces Palette -->
       <div class="palette-section">
@@ -534,10 +540,6 @@
           onPieceSelect={handlePieceSelect}
           {selectedPiece}
           {heroicMode}
-          {editorMode}
-          onHandModeToggle={toggleHandMode}
-          onDeleteModeToggle={toggleDeleteMode}
-          onHeroicToggle={toggleHeroicMode}
           compact={true}
         />
       </div>
