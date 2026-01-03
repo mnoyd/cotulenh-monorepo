@@ -46,4 +46,5 @@ export interface GameState {
   status: GameStatus; // Current status of the game
   check: boolean; // Is the current player in check?
   historyViewIndex: number; // Index of the history item currently being viewed (-1 if viewing live game)
+  deployVersion: number; // Counter to trigger reactivity for deploy session changes
 }

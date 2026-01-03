@@ -20,10 +20,9 @@ export function createGameController() {
   let boardApi = $state<Api | null>(null);
   let game = $state<CoTuLenh | null>(null);
   let originalFen = $state<string | undefined>(undefined);
-  let deployVersion = $state(0);
   let isUpdatingBoard = $state(false);
   let lastProcessedFen = '';
-  let lastProcessedDeployState: unknown = null;
+  let lastProcessedDeployVersion = 0;
   let lastProcessedViewIndex = -1;
 
   const gameFen = $derived(gameState.fen);
@@ -33,6 +32,7 @@ export function createGameController() {
   const gameLastMove = $derived(gameState.lastMove);
   const gamePossibleMoves = $derived(gameState.possibleMoves);
   const historyViewIndex = $derived(gameState.historyViewIndex);
+  const deployVersion = $derived(gameState.deployVersion);
 
   const uiDeployState = $derived.by(() => {
     void deployVersion;
@@ -110,7 +110,7 @@ export function createGameController() {
 
       if (moveResult) {
         gameState.applyMove(game, moveResult);
-        deployVersion++;
+        gameState.incrementDeployVersion();
       } else {
         logger.warn('Illegal move attempted on board', { orig, dest });
       }
@@ -142,7 +142,7 @@ export function createGameController() {
         return;
       }
 
-      deployVersion++;
+      gameState.incrementDeployVersion();
       gameState.applyDeployCommit(game, result.result);
     } catch (error) {
       logger.error('❌ Failed to commit deploy session:', { error });
@@ -169,10 +169,10 @@ export function createGameController() {
 
       if (result.completed) {
         gameState.applyDeployCommit(game, result);
-        deployVersion++;
+        gameState.incrementDeployVersion();
       } else {
         gameState.applyMove(game, result);
-        deployVersion++;
+        gameState.incrementDeployVersion();
       }
     } catch (error) {
       logger.error('Failed to recombine:', { error });
@@ -187,7 +187,7 @@ export function createGameController() {
     try {
       game.cancelSession();
       gameState.initialize(game);
-      deployVersion++;
+      gameState.incrementDeployVersion();
     } catch (error) {
       logger.error('❌ Failed to cancel deploy:', { error });
       const errorMsg = error instanceof Error ? error.message : 'Unknown error';
@@ -287,16 +287,16 @@ export function createGameController() {
 
   function setupBoardEffect() {
     void gameFen;
-    void uiDeployState;
+    void deployVersion;
     void historyViewIndex;
 
     const fenChanged = gameFen && gameFen !== lastProcessedFen;
-    const deployStateChanged = uiDeployState !== lastProcessedDeployState;
+    const deployVersionChanged = deployVersion !== lastProcessedDeployVersion;
     const viewModeChanged = (historyViewIndex !== -1) !== (lastProcessedViewIndex !== -1);
 
-    if (boardApi && (fenChanged || deployStateChanged || viewModeChanged)) {
+    if (boardApi && (fenChanged || deployVersionChanged || viewModeChanged)) {
       lastProcessedFen = gameFen;
-      lastProcessedDeployState = uiDeployState;
+      lastProcessedDeployVersion = deployVersion;
       lastProcessedViewIndex = historyViewIndex;
       isUpdatingBoard = true;
       reSetupBoard();
