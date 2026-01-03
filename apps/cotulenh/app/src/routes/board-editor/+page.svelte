@@ -1,425 +1,21 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { page } from '$app/stores';
-  import { logger } from '@cotulenh/common';
-  import type { Api, Piece, Role, Color, Config } from '@cotulenh/board';
-  import { validateFenString } from '@cotulenh/core';
-  import { goto } from '$app/navigation';
   import BoardContainer from '$lib/components/BoardContainer.svelte';
   import PiecePalettesContainer from './PiecePalettesContainer.svelte';
-  import { toast } from 'svelte-sonner';
+  import { createBoardEditorState } from '$lib/features/board-editor';
 
   import '$lib/styles/modern-warfare.css';
 
-  // Mode system: 'hand' | 'drop' | 'delete'
-  type EditorMode = 'hand' | 'drop' | 'delete';
-
-  let boardComponent: BoardContainer | null = $state(null);
-  let boardApi: Api | null = $state(null);
-  // State that needs reactivity for child components or template bindings
-  let fenInput = $state('');
-  let copyButtonText = $state('Copy');
-  let boardOrientation: 'red' | 'blue' = $state('red');
-  let editorMode: EditorMode = $state('hand');
-  let selectedPiece: { role: Role; color: Color; promoted?: boolean } | null = $state(null);
-  let ghostPosition = $state({ x: 0, y: 0 });
-  let showGhost = $state(false);
-  let isOverRelevantArea = $state(false);
-  let heroicMode = $state(false);
-  let validationError = $state('');
-  let currentTurn: 'red' | 'blue' = $state('red');
-  let initialFen = $state('');
-  let boardReady = $state(false);
-
-  // Special marker for delete mode
-  const DELETE_MARKER: Piece = { role: 'commander', color: 'red' };
-
-  // Initial empty board FEN
-  const EMPTY_FEN = '11/11/11/11/11/11/11/11/11/11/11/11 r - - 0 1';
-  const STARTING_FEN =
-    '6c4/1n2fh1hf2/3a2s2a1/2n1gt1tg2/2ie2m2ei/11/11/2IE2M2EI/2N1GT1TG2/3A2S2A1/1N2FH1HF2/6C4 r - - 0 1';
-
-  function updateFEN() {
-    if (boardApi) {
-      let rawFen = boardApi.getFen();
-
-      // Ensure FEN has correct format: [board] [turn] - - 0 1
-      const fenParts = rawFen.split(' ');
-      const boardPart = fenParts[0];
-
-      // Parse turn (default to current turn if not in FEN)
-      if (fenParts.length >= 2) {
-        currentTurn = fenParts[1] === 'b' ? 'blue' : 'red';
-      }
-
-      // Reconstruct FEN with proper format
-      const turnChar = currentTurn === 'red' ? 'r' : 'b';
-      fenInput = `${boardPart} ${turnChar} - - 0 1`;
-    }
-  }
-
-  function applyFEN() {
-    if (boardApi && fenInput) {
-      try {
-        // Parse and normalize FEN
-        const fenParts = fenInput.split(' ');
-        const boardPart = fenParts[0];
-
-        // Parse turn (default to red if not specified)
-        if (fenParts.length >= 2) {
-          currentTurn = fenParts[1] === 'b' ? 'blue' : 'red';
-        } else {
-          currentTurn = 'red';
-        }
-
-        // Normalize to proper format: [board] [turn] - - 0 1
-        const turnChar = currentTurn === 'red' ? 'r' : 'b';
-        const normalizedFen = `${boardPart} ${turnChar} - - 0 1`;
-
-        boardApi.set({
-          fen: normalizedFen,
-          lastMove: undefined
-        });
-
-        // Update fenInput with normalized FEN
-        fenInput = normalizedFen;
-      } catch (error) {
-        toast.error('Invalid FEN: ' + error);
-      }
-    }
-  }
-
-  function clearBoard() {
-    if (boardApi) {
-      // Reset turn to red when clearing
-      currentTurn = 'red';
-      // Set to empty FEN
-      boardApi.set({
-        fen: EMPTY_FEN,
-        lastMove: undefined
-      });
-      updateFEN();
-    }
-  }
-
-  function flipBoard() {
-    if (boardApi) {
-      boardApi.toggleOrientation();
-      // Toggle orientation state to swap palettes
-      boardOrientation = boardOrientation === 'red' ? 'blue' : 'red';
-    }
-  }
-
-  function setMode(mode: EditorMode) {
-    if (!boardApi) return;
-
-    logger.debug('Setting mode to:', { mode });
-    editorMode = mode;
-
-    if (mode === 'hand') {
-      // Hand mode: can drag pieces on board
-      selectedPiece = null;
-      showGhost = false;
-      boardApi.state.dropmode = { active: false };
-      boardApi.state.movable.color = 'both';
-      document.body.style.cursor = 'default';
-    } else if (mode === 'delete') {
-      // Delete mode: click pieces to delete
-      selectedPiece = null;
-      showGhost = false;
-      boardApi.state.dropmode = {
-        active: true,
-        piece: DELETE_MARKER
-      };
-      document.body.style.cursor = 'not-allowed';
-    } else if (mode === 'drop') {
-      // Drop mode: place selected piece
-      // This is set when a piece is selected
-      document.body.style.cursor = 'default';
-    }
-  }
-
-  function toggleHandMode() {
-    // Always set to hand mode when clicked
-    setMode('hand');
-  }
-
-  function toggleDeleteMode() {
-    setMode(editorMode === 'delete' ? 'hand' : 'delete');
-  }
-
-  function scrollToBoard() {
-    // Scroll the board section into view
-    const boardSection = document.querySelector('.board-section');
-    if (boardSection) {
-      boardSection.scrollIntoView({
-        behavior: 'smooth',
-        block: 'center',
-        inline: 'center'
-      });
-    }
-  }
-
-  function handlePieceSelect(role: Role, color: Color) {
-    if (!boardApi) return;
-
-    // Toggle selection if clicking the same piece
-    const isPromoted = heroicMode && role !== 'commander';
-    if (
-      selectedPiece?.role === role &&
-      selectedPiece?.color === color &&
-      selectedPiece?.promoted === isPromoted
-    ) {
-      // Deselect piece - return to hand mode
-      selectedPiece = null;
-      showGhost = false;
-      setMode('hand');
-    } else {
-      // Select piece - enter drop mode
-      selectedPiece = { role, color, promoted: isPromoted ? true : undefined };
-      editorMode = 'drop';
-      showGhost = true;
-      scrollToBoard();
-
-      // Enable dropmode with the selected piece (including promoted/heroic status)
-      const piece: Piece = { role, color };
-      if (isPromoted) {
-        piece.promoted = true;
-      }
-      boardApi.state.dropmode = {
-        active: true,
-        piece
-      };
-      document.body.style.cursor = 'default';
-    }
-  }
-
-  function toggleHeroicMode() {
-    heroicMode = !heroicMode;
-    // If a piece is already selected, reselect it with new promoted status
-    if (selectedPiece) {
-      const { role, color } = selectedPiece;
-      selectedPiece = null;
-      handlePieceSelect(role, color);
-    }
-  }
-
-  function handleMouseMove(e: MouseEvent) {
-    if (selectedPiece || editorMode === 'delete') {
-      ghostPosition = { x: e.clientX, y: e.clientY };
-
-      // Check if mouse is over palette or board area
-      const target = e.target as HTMLElement;
-      isOverRelevantArea = !!(
-        target.closest('.palette-section') ||
-        target.closest('.board-container') ||
-        target.closest('.board-section')
-      );
-    }
-  }
-
-  function handleAfterNewPiece(role: Role, key: string) {
-    if (!boardApi) return;
-
-    logger.debug('afterNewPiece:', { role, at: key, mode: editorMode });
-
-    // Check if this was a delete action (using our marker)
-    if (editorMode === 'delete' && role === DELETE_MARKER.role) {
-      logger.debug('Delete mode detected! Removing piece at', { key });
-      // Use the proper API to remove the piece
-      boardApi.setPieces(new Map([[key, undefined]]));
-      boardApi.state.lastMove = undefined; // Clear last move highlight
-      updateFEN();
-      // Keep delete mode active for multiple deletions
-    } else {
-      // Normal piece placement in drop mode
-      logger.debug('Normal placement:', { role, at: key });
-      boardApi.state.lastMove = undefined; // Don't highlight in editor
-      updateFEN();
-      // Keep selection active for multiple placements (stay in drop mode)
-    }
-  }
-
-  function cancelSelection(e: MouseEvent) {
-    if (!boardApi) return;
-
-    // Only cancel if clicking outside the board and palettes
-    const target = e.target as HTMLElement;
-    if (
-      target.closest('.board-container') ||
-      target.closest('.palette-section') ||
-      target.closest('.sidebar')
-    ) {
-      return;
-    }
-
-    // Return to hand mode
-    selectedPiece = null;
-    showGhost = false;
-    setMode('hand');
-  }
-
-  function loadStartingPosition() {
-    if (boardApi) {
-      boardApi.set({
-        fen: STARTING_FEN,
-        lastMove: undefined
-      });
-      updateFEN(); // This will also update currentTurn
-    }
-  }
-
-  async function copyFEN() {
-    try {
-      await navigator.clipboard.writeText(fenInput);
-      copyButtonText = 'Copied!';
-      setTimeout(() => {
-        copyButtonText = 'Copy';
-      }, 2000);
-    } catch (error) {
-      // Fallback for older browsers
-      const textArea = document.createElement('textarea');
-      textArea.value = fenInput;
-      document.body.appendChild(textArea);
-      textArea.select();
-      document.execCommand('copy');
-      document.body.removeChild(textArea);
-      copyButtonText = 'Copied!';
-      setTimeout(() => {
-        copyButtonText = 'Copy';
-      }, 2000);
-    }
-  }
-
-  function toggleTurn() {
-    currentTurn = currentTurn === 'red' ? 'blue' : 'red';
-
-    // Update FEN with new turn
-    if (fenInput) {
-      const fenParts = fenInput.split(' ');
-      const boardPart = fenParts[0];
-      const turnChar = currentTurn === 'red' ? 'r' : 'b';
-
-      // Reconstruct FEN with proper format: [board] [turn] - - 0 1
-      fenInput = `${boardPart} ${turnChar} - - 0 1`;
-
-      // Apply the updated FEN to the board
-      if (boardApi) {
-        try {
-          boardApi.set({
-            fen: fenInput,
-            lastMove: undefined
-          });
-        } catch (error) {
-          logger.error(error, 'Error updating turn:');
-        }
-      }
-    }
-  }
-
-  function validateAndPlay() {
-    validationError = '';
-
-    if (!fenInput) {
-      validationError = 'Please enter a FEN position first';
-      return;
-    }
-
-    // Try to validate using cotulenh-core
-    try {
-      const isValid = validateFenString(fenInput);
-
-      if (!isValid) {
-        validationError = 'Invalid FEN format';
-        return;
-      }
-
-      // If validation passes, navigate to play mode with this FEN
-      // Encode FEN for URL
-      const encodedFen = encodeURIComponent(fenInput);
-      goto(`/?fen=${encodedFen}`);
-    } catch (error) {
-      // If validation throws an error, show it
-      validationError = error instanceof Error ? error.message : 'Invalid FEN';
-    }
-  }
-
-  function createEditorConfig(): Config {
-    return {
-      fen: initialFen || EMPTY_FEN,
-      orientation: 'red',
-      turnColor: currentTurn,
-      movable: {
-        free: true,
-        color: 'both',
-        showDests: false,
-        events: {
-          after: (_orig: any, _dest: any) => {
-            if (boardApi) {
-              boardApi.state.lastMove = undefined;
-            }
-            updateFEN();
-          },
-          afterNewPiece: handleAfterNewPiece
-        }
-      },
-      events: {
-        change: updateFEN
-      }
-    } as Config;
-  }
-
-  function handleBoardReady(api: Api) {
-    boardApi = api;
-    boardReady = true;
-
-    // Disable highlighting for editor mode
-    api.state.highlight.lastMove = false;
-    api.state.highlight.check = false;
-
-    updateFEN();
-    logger.debug('Board editor ready');
-  }
-
-  function handleBoardDestroy() {
-    logger.debug('Cleaning up board editor.');
-    document.body.style.cursor = 'default';
-    if (boardApi) {
-      boardApi.state.dropmode = { active: false };
-    }
-  }
+  const editor = createBoardEditorState();
 
   onMount(() => {
-    // Check for FEN in URL parameters
     const urlFen = $page.url.searchParams.get('fen');
-
-    if (urlFen) {
-      try {
-        let decodedFen = decodeURIComponent(urlFen);
-
-        // Parse turn from FEN
-        const fenParts = decodedFen.split(' ');
-        const boardPart = fenParts[0];
-
-        if (fenParts.length >= 2) {
-          currentTurn = fenParts[1] === 'b' ? 'blue' : 'red';
-        }
-
-        // Normalize FEN to proper format: [board] [turn] - - 0 1
-        const turnChar = currentTurn === 'red' ? 'r' : 'b';
-        initialFen = `${boardPart} ${turnChar} - - 0 1`;
-        fenInput = initialFen;
-      } catch (error) {
-        logger.error(error, 'Error decoding FEN from URL:');
-        initialFen = EMPTY_FEN;
-      }
-    } else {
-      initialFen = EMPTY_FEN;
-    }
+    editor.initializeFromUrl(urlFen);
   });
 </script>
 
-<svelte:body onmousemove={handleMouseMove} onclick={cancelSelection} />
+<svelte:body onmousemove={editor.handleMouseMove} onclick={editor.cancelSelection} />
 
 <main class="editor-page">
   <!-- Header -->
@@ -433,15 +29,14 @@
   <div class="editor-layout">
     <!-- Board Section (Left) -->
     <section class="board-section">
-      {#if initialFen}
+      {#if editor.initialFen}
         <BoardContainer
-          bind:this={boardComponent}
-          config={createEditorConfig()}
-          onApiReady={handleBoardReady}
-          onDestroy={handleBoardDestroy}
+          config={editor.createEditorConfig()}
+          onApiReady={editor.handleBoardReady}
+          onDestroy={editor.handleBoardDestroy}
           class="board-editor-container
-                 {editorMode === 'delete' ? 'mode-delete' : ''}
-                 {selectedPiece !== null && editorMode !== 'delete' ? 'mode-drop' : ''}"
+                 {editor.editorMode === 'delete' ? 'mode-delete' : ''}
+                 {editor.selectedPiece !== null && editor.editorMode !== 'delete' ? 'mode-drop' : ''}"
         />
       {:else}
         <div class="board-container">
@@ -454,14 +49,14 @@
     <aside class="sidebar">
       <!-- Palettes Container -->
       <PiecePalettesContainer
-        {boardApi}
-        {selectedPiece}
-        {heroicMode}
-        {editorMode}
-        onPieceSelect={handlePieceSelect}
-        onHandModeToggle={toggleHandMode}
-        onDeleteModeToggle={toggleDeleteMode}
-        onHeroicToggle={toggleHeroicMode}
+        boardApi={editor.boardApi}
+        selectedPiece={editor.selectedPiece}
+        heroicMode={editor.heroicMode}
+        editorMode={editor.editorMode}
+        onPieceSelect={editor.handlePieceSelect}
+        onHandModeToggle={editor.toggleHandMode}
+        onDeleteModeToggle={editor.toggleDeleteMode}
+        onHeroicToggle={editor.toggleHeroicMode}
       />
 
       <!-- Controls Section -->
@@ -469,20 +64,20 @@
         <div class="control-row">
           <button
             class="ctrl-btn"
-            onclick={loadStartingPosition}
+            onclick={editor.loadStartingPosition}
             title="Reset to starting position"
           >
             ↺ Reset
           </button>
-          <button class="ctrl-btn" onclick={clearBoard} title="Clear all pieces"> 🧹 Clear </button>
-          <button class="ctrl-btn" onclick={flipBoard} title="Flip board orientation">
+          <button class="ctrl-btn" onclick={editor.clearBoard} title="Clear all pieces"> 🧹 Clear </button>
+          <button class="ctrl-btn" onclick={editor.flipBoard} title="Flip board orientation">
             ⇅ Flip
           </button>
         </div>
 
-        <button class="turn-btn {currentTurn}" onclick={toggleTurn} title="Toggle current turn">
-          <span class="turn-indicator {currentTurn}"></span>
-          Turn: {currentTurn === 'red' ? 'Red' : 'Blue'}
+        <button class="turn-btn {editor.currentTurn}" onclick={editor.toggleTurn} title="Toggle current turn">
+          <span class="turn-indicator {editor.currentTurn}"></span>
+          Turn: {editor.currentTurn === 'red' ? 'Red' : 'Blue'}
         </button>
       </div>
 
@@ -492,25 +87,25 @@
         <input
           id="fen-input"
           type="text"
-          bind:value={fenInput}
+          bind:value={editor.fenInput}
           placeholder="Enter FEN string..."
           class="fen-input"
         />
         <div class="fen-buttons">
-          <button class="fen-btn" onclick={applyFEN}>Apply</button>
-          <button class="fen-btn" onclick={copyFEN}>{copyButtonText}</button>
+          <button class="fen-btn" onclick={editor.applyFEN}>Apply</button>
+          <button class="fen-btn" onclick={editor.copyFEN}>{editor.copyButtonText}</button>
         </div>
       </div>
 
       <!-- Play Button -->
-      <button class="play-btn" onclick={validateAndPlay}>
+      <button class="play-btn" onclick={editor.validateAndPlay}>
         <span class="play-icon">▶</span>
         Play This Position
       </button>
 
-      {#if validationError}
+      {#if editor.validationError}
         <div class="validation-error">
-          ⚠️ {validationError}
+          ⚠️ {editor.validationError}
         </div>
       {/if}
 
@@ -528,18 +123,18 @@
   </div>
 
   <!-- Ghost piece that follows mouse (only in relevant areas) -->
-  {#if showGhost && selectedPiece && isOverRelevantArea}
-    <div class="ghost-piece cg-wrap" style="left: {ghostPosition.x}px; top: {ghostPosition.y}px;">
+  {#if editor.showGhost && editor.selectedPiece && editor.isOverRelevantArea}
+    <div class="ghost-piece cg-wrap" style="left: {editor.ghostPosition.x}px; top: {editor.ghostPosition.y}px;">
       <piece
-        class="{selectedPiece.role} {selectedPiece.color}"
-        class:heroic={selectedPiece.promoted}
+        class="{editor.selectedPiece.role} {editor.selectedPiece.color}"
+        class:heroic={editor.selectedPiece.promoted}
       ></piece>
     </div>
   {/if}
 
   <!-- Ghost recycle bin that follows mouse in delete mode (only in relevant areas) -->
-  {#if editorMode === 'delete' && isOverRelevantArea}
-    <div class="ghost-recycle-bin" style="left: {ghostPosition.x}px; top: {ghostPosition.y}px;">
+  {#if editor.editorMode === 'delete' && editor.isOverRelevantArea}
+    <div class="ghost-recycle-bin" style="left: {editor.ghostPosition.x}px; top: {editor.ghostPosition.y}px;">
       🗑️
     </div>
   {/if}
@@ -586,7 +181,7 @@
     .editor-layout {
       grid-template-columns: 1fr;
       grid-template-rows: 1fr auto;
-      overflow-y: auto; /* Allow scrolling on mobile */
+      overflow-y: auto;
     }
   }
 
@@ -600,13 +195,11 @@
     min-width: 0;
     min-height: 0;
     overflow: hidden;
-    /* Enable container queries for the board */
     container-type: size;
     width: 100%;
     height: 100%;
   }
 
-  /* Fallback loading container - only used when BoardContainer hasn't loaded */
   .board-container {
     position: relative;
     aspect-ratio: 12 / 13;
@@ -619,14 +212,12 @@
     justify-content: center;
   }
 
-  /* Editor-specific board styling - use :global for component class */
   .board-section :global(.board-editor-container) {
     width: min(100cqw, 100cqh * 12 / 13);
     height: min(100cqh, 100cqw * 13 / 12);
     border-radius: 4px;
   }
 
-  /* Border/glow effect for editor modes */
   .board-section :global(.board-editor-container)::after {
     content: '';
     position: absolute;
@@ -941,12 +532,9 @@
 
     .board-section {
       padding: 0.5rem;
-      /* Assign explicit height for container queries to work on mobile */
       height: 50vh;
       flex: none;
     }
-
-    /* .board-container size is automatically handled by container queries! */
 
     .sidebar {
       border-left: none;
@@ -976,7 +564,6 @@
       letter-spacing: 2px;
     }
 
-    /* Adjust board height slightly if needed */
     .board-section {
       height: 45vh;
     }

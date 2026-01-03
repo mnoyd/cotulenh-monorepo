@@ -41,12 +41,6 @@
 </Dialog.Root>
 
 <style>
-  .shortcuts-dialog :global(.dialog-content) {
-    background: var(--color-mw-bg-panel);
-    border: 1px solid var(--color-mw-border);
-    backdrop-filter: blur(12px);
-  }
-
   .shortcuts-list {
     display: flex;
     flex-direction: column;

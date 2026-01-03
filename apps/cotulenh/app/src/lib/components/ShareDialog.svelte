@@ -36,17 +36,17 @@
 
     <div class="share-content">
       <div class="share-section">
-        <label class="share-label">FEN String</label>
+        <span class="share-label">FEN String</span>
         <code class="fen-display">{fen}</code>
-        <Button variant="secondary" size="sm" onclick={copyFen} class="share-btn">Copy FEN</Button>
+        <Button variant="secondary" size="sm" onclick={copyFen}>Copy FEN</Button>
       </div>
 
       <Separator />
 
       <div class="share-section">
-        <label class="share-label">Share URL</label>
+        <span class="share-label">Share URL</span>
         <p class="share-desc">Copy a shareable link that will load this position when opened</p>
-        <Button variant="default" onclick={copyShareUrl} class="share-btn">Copy Share Link</Button>
+        <Button variant="default" onclick={copyShareUrl}>Copy Share Link</Button>
       </div>
     </div>
 
@@ -57,12 +57,6 @@
 </Dialog.Root>
 
 <style>
-  .share-dialog :global(.dialog-content) {
-    background: var(--color-mw-bg-panel);
-    border: 1px solid var(--color-mw-border);
-    backdrop-filter: blur(12px);
-  }
-
   .share-content {
     display: flex;
     flex-direction: column;
@@ -104,9 +98,5 @@
     max-height: 80px;
     overflow-y: auto;
     box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
-  }
-
-  .share-btn {
-    align-self: flex-start;
   }
 </style>

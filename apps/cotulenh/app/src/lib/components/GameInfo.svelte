@@ -102,30 +102,6 @@
     color: #3b82f6;
   }
 
-  /* Alert overrides for Modern Warfare theme */
-  .check-alert {
-    background: rgba(239, 68, 68, 0.1);
-    border: 1px solid rgba(239, 68, 68, 0.5);
-    animation: pulse-red 1.5s infinite;
-  }
-
-  .check-alert :global(.alert-title) {
-    color: #ef4444;
-    font-family: var(--font-display);
-    letter-spacing: 0.05em;
-  }
-
-  .game-over-alert {
-    background: rgba(16, 185, 129, 0.1);
-    border: 1px solid rgba(16, 185, 129, 0.5);
-  }
-
-  .game-over-alert :global(.alert-title) {
-    color: #10b981;
-    font-family: var(--font-display);
-    letter-spacing: 0.05em;
-  }
-
   @keyframes pulse-red {
     0%,
     100% {

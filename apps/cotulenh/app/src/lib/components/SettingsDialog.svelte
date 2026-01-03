@@ -85,12 +85,6 @@
 </Dialog.Root>
 
 <style>
-  .settings-dialog :global(.dialog-content) {
-    background: var(--color-mw-bg-panel);
-    border: 1px solid var(--color-mw-border);
-    backdrop-filter: blur(12px);
-  }
-
   .settings-content {
     display: flex;
     flex-direction: column;

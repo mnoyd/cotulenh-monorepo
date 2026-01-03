@@ -190,9 +190,6 @@
   }
 
   /* Red Theme */
-  .red-move {
-    /* Subtle red tint border or background can be added if desired, keeping it clean for now */
-  }
   .red-move::before {
     background-color: #ef4444;
   }
@@ -201,8 +198,6 @@
   }
 
   /* Blue Theme */
-  .blue-move {
-  }
   .blue-move::before {
     background-color: #3b82f6;
   }
@@ -234,11 +229,6 @@
   .resume-btn:hover {
     background: rgba(245, 158, 11, 0.1);
     box-shadow: 0 0 8px rgba(245, 158, 11, 0.2);
-  }
-
-  /* Optional: Active state style override if needed */
-  .view-mode-active {
-    /* Kept for specificity if we need to toggle styles later */
   }
 
   @keyframes pulse {
