@@ -4,6 +4,7 @@
   import { Button } from '$lib/components/ui/button';
   import * as Card from '$lib/components/ui/card';
   import { Plane, CheckCircle2, XCircle } from 'lucide-svelte';
+  import { gameState } from '$lib/stores/game.svelte';
 
   let {
     game,
@@ -18,7 +19,10 @@
   } = $props();
 
   let hasSession = $derived(deployState !== null);
-  let canCommit = $derived(deployState && game ? game.canCommitSession() : false);
+  let canCommit = $derived.by(() => {
+    void gameState.deployVersion;
+    return deployState && game ? game.canCommitSession() : false;
+  });
 </script>
 
 {#if hasSession}

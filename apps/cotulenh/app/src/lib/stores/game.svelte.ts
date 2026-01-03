@@ -97,7 +97,8 @@ let state = $state<GameState>({
   status: 'playing',
   check: false,
   lastMove: undefined,
-  historyViewIndex: -1
+  historyViewIndex: -1,
+  deployVersion: 0
 });
 
 /**
@@ -166,6 +167,17 @@ export const gameState = {
   /** History view index (-1 for live game) */
   get historyViewIndex() {
     return state.historyViewIndex;
+  },
+  /** Deploy version counter for reactivity */
+  get deployVersion() {
+    return state.deployVersion;
+  },
+
+  /**
+   * Increment deploy version to trigger reactivity for deploy session changes.
+   */
+  incrementDeployVersion() {
+    state.deployVersion++;
   },
 
   /**
