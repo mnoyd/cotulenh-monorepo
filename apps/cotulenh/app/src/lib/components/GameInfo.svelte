@@ -1,114 +1,59 @@
 <script lang="ts">
   import { getTurnColorName } from '$lib/utils';
   import { gameState } from '$lib/stores/game.svelte';
+  import * as Card from '$lib/components/ui/card';
+  import { Badge } from '$lib/components/ui/badge';
   import * as Alert from '$lib/components/ui/alert';
   import AlertDescription from '$lib/components/ui/alert/alert-description.svelte';
   import AlertTitle from '$lib/components/ui/alert/alert-title.svelte';
+  import { ShieldAlert, Trophy, Timer } from 'lucide-svelte';
 
   // Use $derived to create reactive values from gameState
   let turn = $derived(gameState.turn);
   let check = $derived(gameState.check);
   let status = $derived(gameState.status);
+
+  // Helper for badge variant based on turn
+  let badgeVariant = $derived(turn === 'r' ? 'destructive' : 'default');
 </script>
 
-<div class="game-info-mini">
-  <div class="status-row">
-    <div class="turn-badge" class:red={turn === 'r'} class:blue={turn === 'b'}>
-      <span class="label">TURN</span>
-      <span class="value">{turn ? getTurnColorName(turn) : '...'}</span>
+<Card.Root class="border-mw-border bg-mw-bg-panel/50 backdrop-blur-sm shadow-lg">
+  <Card.Header class="p-3 pb-2">
+    <Card.Title
+      class="text-xs font-mono uppercase text-muted-foreground tracking-widest flex items-center gap-2"
+    >
+      <Timer class="w-3 h-3" />
+      Mission Status
+    </Card.Title>
+  </Card.Header>
+  <Card.Content class="p-3 pt-0 flex flex-col gap-3">
+    <div class="flex items-center justify-between">
+      <span class="text-sm font-bold text-foreground">Current Turn</span>
+      <Badge
+        variant={badgeVariant}
+        class="font-mono uppercase tracking-wider px-3 py-0.5 text-xs animate-pulse-glow"
+      >
+        {turn ? getTurnColorName(turn) : 'INITIALIZING...'}
+      </Badge>
     </div>
-  </div>
 
-  {#if check}
-    <Alert.Root variant="destructive" class="check-alert">
-      <AlertTitle>⚠️ CHECK!</AlertTitle>
-      <AlertDescription>
-        {turn ? getTurnColorName(turn) : 'Enemy'}'s commander is under attack
-      </AlertDescription>
-    </Alert.Root>
-  {/if}
+    {#if check}
+      <Alert.Root variant="destructive" class="py-2 px-3 border-destructive/50 bg-destructive/10">
+        <ShieldAlert class="w-4 h-4" />
+        <AlertDescription class="text-xs font-bold ml-2">COMMANDER UNDER THREAT</AlertDescription>
+      </Alert.Root>
+    {/if}
 
-  {#if status !== 'playing'}
-    <Alert.Root class="game-over-alert">
-      <AlertTitle>
-        {status === 'checkmate' ? '🏆 CHECKMATE!' : status.toUpperCase()}
-      </AlertTitle>
-      <AlertDescription>
-        Game over. {status === 'checkmate' ? 'Victory!' : 'Draw.'}
-      </AlertDescription>
-    </Alert.Root>
-  {/if}
-</div>
-
-<style>
-  .game-info-mini {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .status-row {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-  }
-
-  .turn-badge {
-    display: flex;
-    align-items: center;
-    background: rgba(0, 0, 0, 0.6);
-    border: 1px solid #333;
-    border-radius: 2px;
-    overflow: hidden;
-    height: 24px;
-    font-family: var(--font-display);
-  }
-
-  .turn-badge.red {
-    border-color: #ef4444;
-    box-shadow: 0 0 5px rgba(239, 68, 68, 0.3);
-  }
-
-  .turn-badge.blue {
-    border-color: #3b82f6;
-    box-shadow: 0 0 5px rgba(59, 130, 246, 0.3);
-  }
-
-  .label {
-    background: #222;
-    color: #888;
-    font-size: 0.7rem;
-    font-weight: 700;
-    padding: 0 6px;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    text-transform: uppercase;
-  }
-
-  .value {
-    padding: 0 8px;
-    font-weight: 700;
-    font-size: 0.8rem;
-    text-transform: uppercase;
-    color: #e5e5e5;
-  }
-
-  .turn-badge.red .value {
-    color: #ef4444;
-  }
-
-  .turn-badge.blue .value {
-    color: #3b82f6;
-  }
-
-  @keyframes pulse-red {
-    0%,
-    100% {
-      box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
-    }
-    50% {
-      box-shadow: 0 0 0 8px rgba(239, 68, 68, 0);
-    }
-  }
-</style>
+    {#if status !== 'playing'}
+      <Alert.Root class="py-2 px-3 border-mw-primary/50 bg-mw-primary/10">
+        <Trophy class="w-4 h-4 text-mw-primary" />
+        <AlertTitle class="text-sm font-bold text-mw-primary ml-2">
+          {status === 'checkmate' ? 'VICTORY' : status.toUpperCase()}
+        </AlertTitle>
+        <AlertDescription class="text-xs text-muted-foreground ml-9 mt-0">
+          Operation {status === 'checkmate' ? 'Successful' : 'Terminated'}.
+        </AlertDescription>
+      </Alert.Root>
+    {/if}
+  </Card.Content>
+</Card.Root>

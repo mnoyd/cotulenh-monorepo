@@ -28,6 +28,8 @@
 </script>
 
 <div class="app-container">
+  <div class="scanline-overlay"></div>
+  <div class="vignette-overlay"></div>
   <Sonner />
   <nav class="app-nav">
     <div class="nav-content">
@@ -100,7 +102,12 @@
             />
           </g>
         </svg>
-        <h2 class="nav-title">Cờ Tư Lệnh Việt Nam</h2>
+        <div class="flex flex-col">
+          <h2 class="nav-title tracking-tighter">Cờ Tư Lệnh</h2>
+          <span class="text-[0.6rem] text-primary tracking-[0.2em] font-mono leading-none"
+            >TACTICAL COMMAND</span
+          >
+        </div>
       </div>
       <div class="nav-links">
         <a href="/" class="nav-link" class:active={$page.url.pathname === '/'}>
@@ -113,7 +120,7 @@
               stroke-linejoin="round"
             />
           </svg>
-          <span>Play Game</span>
+          <span class="hidden md:inline">DEPLOY</span>
         </a>
         <a
           href="/board-editor"
@@ -136,7 +143,7 @@
               stroke-linejoin="round"
             />
           </svg>
-          <span>Editor</span>
+          <span class="hidden md:inline">EDITOR</span>
         </a>
 
         {#if browser}
@@ -220,23 +227,59 @@
 </div>
 
 <style>
+  /* Global Overlays */
+  .scanline-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+    background: linear-gradient(
+      to bottom,
+      rgba(255, 255, 255, 0),
+      rgba(255, 255, 255, 0) 50%,
+      rgba(0, 0, 0, 0.1) 50%,
+      rgba(0, 0, 0, 0.1)
+    );
+    background-size: 100% 4px;
+    z-index: 9998;
+    opacity: 0.15;
+    animation: scanline 8s linear infinite;
+  }
+
+  .vignette-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+    background: radial-gradient(circle, transparent 50%, rgba(0, 0, 0, 0.7) 100%);
+    z-index: 9999;
+    animation: vignette-pulse 4s ease-in-out infinite;
+  }
+
+  /* Layout */
   :global(body) {
     background-color: var(--color-mw-bg-dark);
     color: #e5e5e5;
     font-family: var(--font-ui);
     margin: 0;
+    overflow-x: hidden;
   }
 
   .app-container {
     min-height: 100vh;
     display: flex;
     flex-direction: column;
-    background: var(--color-mw-bg-dark);
+    background: radial-gradient(circle at top center, #1e293b 0%, var(--color-mw-bg-dark) 40%);
   }
 
+  /* Navigation */
   .app-nav {
-    background: var(--color-mw-bg-panel);
-    backdrop-filter: blur(12px);
+    background: rgba(15, 23, 42, 0.7);
+    backdrop-filter: blur(16px);
     border-bottom: 1px solid var(--color-mw-border);
     position: sticky;
     top: 0;
@@ -244,7 +287,7 @@
   }
 
   .nav-content {
-    max-width: 1600px;
+    max-width: 1800px;
     margin: 0 auto;
     padding: 0 1.5rem;
     display: flex;
@@ -256,19 +299,18 @@
   .nav-brand {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
+    gap: 1rem;
   }
 
   .logo-icon {
     width: 48px;
     height: 48px;
-    color: var(--color-mw-primary);
-    filter: drop-shadow(0 0 8px rgba(0, 243, 255, 0.5));
+    filter: drop-shadow(0 0 10px rgba(0, 243, 255, 0.3));
   }
 
   .nav-title {
     font-family: var(--font-display);
-    font-size: 1.5rem;
+    font-size: 1.25rem; /* Reduced from 1.5rem */
     font-weight: 800;
     text-transform: uppercase;
     letter-spacing: 0.05em;
@@ -276,6 +318,8 @@
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
+    text-shadow: 0 0 15px rgba(0, 243, 255, 0.2);
+    margin: 0;
   }
 
   .nav-links {
@@ -288,19 +332,22 @@
     align-items: center;
     gap: 0.5rem;
     padding: 0.5rem 1rem;
-    border-radius: 0.25rem;
+    border-radius: 4px;
     text-decoration: none;
-    color: rgba(255, 255, 255, 0.7);
+    color: rgba(255, 255, 255, 0.6);
     font-weight: 500;
-    font-size: 0.95rem;
+    font-size: 0.85rem;
     transition: all 0.2s ease;
     border: 1px solid transparent;
+    font-family: var(--font-mono);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
   }
 
   .nav-link:hover {
     color: var(--color-mw-primary);
-    background: rgba(0, 243, 255, 0.1);
-    border-color: var(--color-mw-border);
+    background: rgba(0, 243, 255, 0.05);
+    border-color: rgba(0, 243, 255, 0.2);
     box-shadow: 0 0 10px rgba(0, 243, 255, 0.1);
   }
 
@@ -313,8 +360,8 @@
   }
 
   .nav-icon {
-    width: 20px;
-    height: 20px;
+    width: 18px;
+    height: 18px;
     stroke-width: 2;
   }
 
@@ -322,6 +369,7 @@
     flex: 1;
     display: flex;
     flex-direction: column;
+    padding: 0;
   }
 
   @media (max-width: 768px) {
@@ -331,21 +379,35 @@
     }
 
     .logo-icon {
-      width: 40px;
-      height: 40px;
+      width: 36px;
+      height: 36px;
     }
 
     .nav-title {
-      font-size: 1.1rem;
+      font-size: 0.9rem;
     }
 
     .nav-link {
       padding: 0.5rem;
-      font-size: 0.875rem;
     }
+  }
 
-    .nav-link span {
-      display: none;
+  @keyframes scanline {
+    0% {
+      background-position: 0% 0%;
+    }
+    100% {
+      background-position: 0% 100%;
+    }
+  }
+
+  @keyframes vignette-pulse {
+    0%,
+    100% {
+      opacity: 0.6;
+    }
+    50% {
+      opacity: 0.8;
     }
   }
 </style>
