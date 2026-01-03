@@ -60,7 +60,7 @@
   }
 </script>
 
-<div class="grid grid-cols-2 gap-2 mt-2">
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-2 mt-2">
   <Button
     variant="default"
     size="sm"

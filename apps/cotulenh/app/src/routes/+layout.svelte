@@ -7,6 +7,7 @@
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
   import SettingsDialog from '$lib/components/SettingsDialog.svelte';
   import ShortcutsDialog from '$lib/components/ShortcutsDialog.svelte';
+  import { Menu } from 'lucide-svelte';
 
   interface Props {
     children: import('svelte').Snippet;
@@ -149,29 +150,8 @@
         {#if browser}
           <DropdownMenu.Root>
             <DropdownMenu.Trigger>
-              <button class="nav-link settings-trigger" aria-label="Settings" title="Settings">
-                <svg
-                  class="nav-icon"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <path
-                    d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1-1.73V4a2 2 0 0 0-2-2z"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  />
-                  <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2" />
-                  <path
-                    d="M12 17v5m0-5a5 5 0 0 1 5 5m-10 0a5 5 0 0 1 5-5"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  />
-                </svg>
+              <button class="nav-link settings-trigger" aria-label="Menu" title="Menu">
+                <Menu class="nav-icon" />
               </button>
             </DropdownMenu.Trigger>
             <DropdownMenu.Content>
@@ -188,29 +168,8 @@
             </DropdownMenu.Content>
           </DropdownMenu.Root>
         {:else}
-          <button class="nav-link settings-trigger" aria-label="Settings" title="Settings">
-            <svg
-              class="nav-icon"
-              viewBox="0 0 24 24"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1-1.73V4a2 2 0 0 0-2-2z"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-              <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2" />
-              <path
-                d="M12 17v5m0-5a5 5 0 0 1 5 5m-10 0a5 5 0 0 1 5-5"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
+          <button class="nav-link settings-trigger" aria-label="Menu" title="Menu">
+            <Menu class="nav-icon" />
           </button>
         {/if}
       </div>
