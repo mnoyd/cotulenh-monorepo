@@ -1,27 +1,21 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { page } from '$app/stores';
-  import { browser } from '$app/environment';
   import { logger } from '@cotulenh/common';
-  import { CotulenhBoard } from '@cotulenh/board';
-  import type { Api, Piece, Role, Color } from '@cotulenh/board';
+  import type { Api, Piece, Role, Color, Config } from '@cotulenh/board';
   import { validateFenString } from '@cotulenh/core';
   import { goto } from '$app/navigation';
+  import BoardContainer from '$lib/components/BoardContainer.svelte';
   import PiecePalettesContainer from './PiecePalettesContainer.svelte';
   import { toast } from 'svelte-sonner';
 
-  // Only import CSS in browser environment to avoid SSR issues
-  if (browser) {
-    import('@cotulenh/board/assets/commander-chess.base.css');
-    import('@cotulenh/board/assets/commander-chess.pieces.css');
-  }
   import '$lib/styles/modern-warfare.css';
 
   // Mode system: 'hand' | 'drop' | 'delete'
   type EditorMode = 'hand' | 'drop' | 'delete';
 
-  let boardContainerElement: HTMLElement | null = null;
-  let boardApi: Api | null = null;
+  let boardComponent: BoardContainer | null = $state(null);
+  let boardApi: Api | null = $state(null);
   // State that needs reactivity for child components or template bindings
   let fenInput = $state('');
   let copyButtonText = $state('Copy');
@@ -34,6 +28,8 @@
   let heroicMode = $state(false);
   let validationError = $state('');
   let currentTurn: 'red' | 'blue' = $state('red');
+  let initialFen = $state('');
+  let boardReady = $state(false);
 
   // Special marker for delete mode
   const DELETE_MARKER: Piece = { role: 'commander', color: 'red' };
@@ -153,8 +149,10 @@
   }
 
   function scrollToBoard() {
-    if (boardContainerElement && browser) {
-      boardContainerElement.scrollIntoView({
+    // Scroll the board section into view
+    const boardSection = document.querySelector('.board-section');
+    if (boardSection) {
+      boardSection.scrollIntoView({
         behavior: 'smooth',
         block: 'center',
         inline: 'center'
@@ -346,10 +344,54 @@
     }
   }
 
+  function createEditorConfig(): Config {
+    return {
+      fen: initialFen || EMPTY_FEN,
+      orientation: 'red',
+      turnColor: currentTurn,
+      movable: {
+        free: true,
+        color: 'both',
+        showDests: false,
+        events: {
+          after: (_orig: any, _dest: any) => {
+            if (boardApi) {
+              boardApi.state.lastMove = undefined;
+            }
+            updateFEN();
+          },
+          afterNewPiece: handleAfterNewPiece
+        }
+      },
+      events: {
+        change: updateFEN
+      }
+    } as Config;
+  }
+
+  function handleBoardReady(api: Api) {
+    boardApi = api;
+    boardReady = true;
+
+    // Disable highlighting for editor mode
+    api.state.highlight.lastMove = false;
+    api.state.highlight.check = false;
+
+    updateFEN();
+    logger.debug('Board editor ready');
+  }
+
+  function handleBoardDestroy() {
+    logger.debug('Cleaning up board editor.');
+    document.body.style.cursor = 'default';
+    if (boardApi) {
+      boardApi.state.dropmode = { active: false };
+    }
+  }
+
   onMount(() => {
     // Check for FEN in URL parameters
     const urlFen = $page.url.searchParams.get('fen');
-    let initialFen = EMPTY_FEN;
 
     if (urlFen) {
       try {
@@ -371,87 +413,8 @@
         logger.error(error, 'Error decoding FEN from URL:');
         initialFen = EMPTY_FEN;
       }
-    }
-
-    if (boardContainerElement) {
-      logger.debug('Initializing board editor...');
-
-      // Force proper sizing before and after board initialization
-      const ensureBoardSize = () => {
-        if (!boardContainerElement) return;
-
-        const container = boardContainerElement.querySelector('cg-container') as HTMLElement;
-        if (container) {
-          const rect = boardContainerElement.getBoundingClientRect();
-          // Only set size if the container has proper dimensions
-          if (rect.width > 0 && rect.height > 0) {
-            container.style.width = rect.width + 'px';
-            container.style.height = rect.height + 'px';
-          }
-        }
-      };
-
-      boardApi = CotulenhBoard(boardContainerElement, {
-        fen: initialFen,
-        orientation: 'red',
-        turnColor: currentTurn,
-        movable: {
-          free: true, // Allow any move - editor mode
-          color: 'both', // Allow moving both colors
-          showDests: false, // Don't show move destinations
-          events: {
-            after: (orig, dest) => {
-              // Clear last move highlight after moves
-              if (boardApi) {
-                boardApi.state.lastMove = undefined;
-              }
-              updateFEN();
-            },
-            afterNewPiece: handleAfterNewPiece
-          }
-        },
-        events: {
-          change: updateFEN
-        }
-      });
-
-      // Disable highlighting after initialization
-      boardApi.state.highlight.lastMove = false;
-      boardApi.state.highlight.check = false;
-
-      // Ensure proper sizing after initialization
-      setTimeout(ensureBoardSize, 50);
-      setTimeout(ensureBoardSize, 200);
-      // Extra safety check for layout shifts
-      setTimeout(ensureBoardSize, 500);
-
-      updateFEN();
-
-      // Add resize observer for better cross-browser compatibility
-      let resizeObserver: ResizeObserver | undefined;
-      if (window.ResizeObserver) {
-        resizeObserver = new ResizeObserver(() => {
-          ensureBoardSize();
-        });
-        resizeObserver.observe(boardContainerElement);
-      }
-
-      // Fallback resize handler
-      const handleResize = () => ensureBoardSize();
-      window.addEventListener('resize', handleResize);
-
-      return () => {
-        logger.debug('Cleaning up board editor.');
-        document.body.style.cursor = 'default';
-        if (boardApi) {
-          boardApi.state.dropmode = { active: false };
-        }
-        if (resizeObserver) {
-          resizeObserver.disconnect();
-        }
-        window.removeEventListener('resize', handleResize);
-        boardApi?.destroy();
-      };
+    } else {
+      initialFen = EMPTY_FEN;
     }
   });
 </script>
@@ -470,14 +433,21 @@
   <div class="editor-layout">
     <!-- Board Section (Left) -->
     <section class="board-section">
-      <div
-        bind:this={boardContainerElement}
-        class="board-container cg-wrap
-               {editorMode === 'delete' ? 'mode-delete' : ''}
-               {selectedPiece !== null && editorMode !== 'delete' ? 'mode-drop' : ''}"
-      >
-        {#if !boardApi}<p class="text-mw-primary">Loading board...</p>{/if}
-      </div>
+      {#if initialFen}
+        <BoardContainer
+          bind:this={boardComponent}
+          config={createEditorConfig()}
+          onApiReady={handleBoardReady}
+          onDestroy={handleBoardDestroy}
+          class="board-editor-container
+                 {editorMode === 'delete' ? 'mode-delete' : ''}
+                 {selectedPiece !== null && editorMode !== 'delete' ? 'mode-drop' : ''}"
+        />
+      {:else}
+        <div class="board-container">
+          <p class="text-mw-primary">Loading board...</p>
+        </div>
+      {/if}
     </section>
 
     <!-- Sidebar (Right) -->
@@ -625,7 +595,6 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    /* Remove padding to maximize space, use flex centering */
     padding: 0;
     background: rgba(0, 0, 0, 0.4);
     min-width: 0;
@@ -637,24 +606,28 @@
     height: 100%;
   }
 
+  /* Fallback loading container - only used when BoardContainer hasn't loaded */
   .board-container {
-    /* CRITICAL: Maintain 12:13 aspect ratio strictly on the content box */
     position: relative;
     aspect-ratio: 12 / 13;
-
-    /* Use container query units to perfectly contain the board while maximizing size */
     width: min(100cqw, 100cqh * 12 / 13);
     height: min(100cqh, 100cqw * 13 / 12);
-
     background: #000;
     border-radius: 4px;
-    /* Remove structural border to prevent aspect ratio distortion */
-    border: none;
-    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
-  /* Use pseudo-element for the border/glow so it doesn't affect layout/dimensions */
-  .board-container::after {
+  /* Editor-specific board styling - use :global for component class */
+  .board-section :global(.board-editor-container) {
+    width: min(100cqw, 100cqh * 12 / 13);
+    height: min(100cqh, 100cqw * 13 / 12);
+    border-radius: 4px;
+  }
+
+  /* Border/glow effect for editor modes */
+  .board-section :global(.board-editor-container)::after {
     content: '';
     position: absolute;
     inset: 0;
@@ -667,20 +640,20 @@
       border-color 0.2s;
   }
 
-  .board-container.mode-delete {
+  .board-section :global(.board-editor-container.mode-delete) {
     cursor: not-allowed;
   }
 
-  .board-container.mode-delete::after {
+  .board-section :global(.board-editor-container.mode-delete)::after {
     border-color: var(--color-mw-alert);
     box-shadow: 0 0 20px rgba(255, 171, 0, 0.4);
   }
 
-  .board-container.mode-drop {
+  .board-section :global(.board-editor-container.mode-drop) {
     cursor: crosshair;
   }
 
-  .board-container.mode-drop::after {
+  .board-section :global(.board-editor-container.mode-drop)::after {
     border-color: var(--color-mw-secondary);
     box-shadow: 0 0 20px rgba(0, 255, 65, 0.4);
   }

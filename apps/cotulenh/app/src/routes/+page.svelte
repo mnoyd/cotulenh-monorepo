@@ -1,10 +1,9 @@
 <script lang="ts">
   import { onMount, tick } from 'svelte';
   import { page } from '$app/stores';
-  import { browser } from '$app/environment';
   import { logger } from '@cotulenh/common';
-  import { CotulenhBoard, origMoveToKey } from '@cotulenh/board';
-  import type { Api, DestMove, OrigMove, OrigMoveKey, Role } from '@cotulenh/board';
+  import { origMoveToKey } from '@cotulenh/board';
+  import type { Api, DestMove, OrigMove, OrigMoveKey, Role, Config } from '@cotulenh/board';
   import { CoTuLenh, BLUE, RED } from '@cotulenh/core';
   import type {
     Square,
@@ -14,6 +13,7 @@
     PieceSymbol
   } from '@cotulenh/core';
   import type { Key, Dests } from '@cotulenh/board';
+  import BoardContainer from '$lib/components/BoardContainer.svelte';
   import GameInfo from '$lib/components/GameInfo.svelte';
   import DeploySessionPanel from '$lib/components/DeploySessionPanel.svelte';
   import MoveHistory from '$lib/components/MoveHistory.svelte';
@@ -26,7 +26,7 @@
   import { typeToRole, roleToType, coreColorToBoard } from '$lib/types/translations';
   import { toast } from 'svelte-sonner';
 
-  let boardContainerElement: HTMLElement | null = null;
+  let boardComponent: BoardContainer | null = $state(null);
   let boardApi = $state<Api | null>(null);
   let game = $state<CoTuLenh | null>(null);
   let originalFen = $state<string | undefined>(undefined);
@@ -306,54 +306,37 @@
     }
   }
 
+  function handleBoardReady(api: Api) {
+    boardApi = api;
+    logger.debug('Board API ready');
+  }
+
   onMount(() => {
-    (async () => {
-      if (!boardContainerElement) return;
+    logger.debug('Initializing game logic...');
 
-      // Load CSS before initializing board to prevent 0-size layout issues
-      if (browser) {
-        await Promise.all([
-          import('@cotulenh/board/assets/commander-chess.base.css'),
-          import('@cotulenh/board/assets/commander-chess.pieces.css')
-        ]);
+    // Check for FEN in URL parameters
+    const urlFen = $page.url.searchParams.get('fen');
+
+    if (urlFen) {
+      try {
+        originalFen = decodeURIComponent(urlFen);
+        logger.debug('Loading game with custom FEN:', { fen: originalFen });
+      } catch (error) {
+        logger.error(error, 'Error decoding FEN from URL:');
       }
+    }
 
-      logger.debug('Initializing game logic and board...');
-
-      // Check for FEN in URL parameters
-      const urlFen = $page.url.searchParams.get('fen');
-
-      if (urlFen) {
-        try {
-          originalFen = decodeURIComponent(urlFen);
-          logger.debug('Loading game with custom FEN:', { fen: originalFen });
-        } catch (error) {
-          logger.error(error, 'Error decoding FEN from URL:');
-        }
-      }
-
-      // Initialize game with custom FEN or default position
-      game = originalFen ? new CoTuLenh(originalFen) : new CoTuLenh();
-      gameState.initialize(game);
-
-      boardApi = CotulenhBoard(boardContainerElement, createBoardConfig());
-
-      cleanup = () => {
-        logger.debug('Cleaning up board and game subscription.');
-        boardApi?.destroy();
-      };
-    })();
+    // Initialize game with custom FEN or default position
+    game = originalFen ? new CoTuLenh(originalFen) : new CoTuLenh();
+    gameState.initialize(game);
 
     // Add keyboard event listener
     window.addEventListener('keydown', handleKeydown);
 
     return () => {
-      if (cleanup) cleanup();
       window.removeEventListener('keydown', handleKeydown);
     };
   });
-
-  let cleanup: (() => void) | null = null;
 
   let isUpdatingBoard = $state(false);
   let lastProcessedFen = '';
@@ -478,20 +461,20 @@
     >
       <!-- Board Section -->
       <div
-        class="flex-none border border-mw-border p-1 bg-mw-bg-panel shadow-2xl rounded-sm w-[min(760px,100%)] max-lg:flex-1 max-lg:border-none max-lg:bg-black max-lg:shadow-none max-lg:p-0 max-lg:flex max-lg:items-center max-lg:justify-center max-lg:overflow-hidden"
+        class="board-wrapper flex-none border border-mw-border p-1 bg-mw-bg-panel shadow-2xl rounded-sm w-[min(760px,100%)] max-lg:flex-1 max-lg:border-none max-lg:bg-black max-lg:shadow-none max-lg:p-0 max-lg:flex max-lg:items-center max-lg:justify-center max-lg:overflow-hidden"
       >
-        <div
-          bind:this={boardContainerElement}
-          class="w-full aspect-[12/13] relative bg-[#111] max-lg:h-auto max-lg:max-h-full max-lg:aspect-[12/13] max-lg:m-auto [&_cg-board]:!w-full [&_cg-board]:!h-full [&_cg-board]:max-h-screen [&_cg-board]:max-w-[100vw]"
-        >
-          {#if !boardApi}
-            <div
-              class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-mw-secondary"
-            >
-              <div class="loading-spinner"></div>
-            </div>
-          {/if}
-        </div>
+        {#if game}
+          <BoardContainer
+            bind:this={boardComponent}
+            config={createBoardConfig()}
+            onApiReady={handleBoardReady}
+            class="w-full max-lg:h-auto max-lg:max-h-full max-lg:m-auto"
+          />
+        {:else}
+          <div class="w-full aspect-[12/13] relative bg-[#111] flex items-center justify-center">
+            <div class="loading-spinner"></div>
+          </div>
+        {/if}
       </div>
 
       <!-- Controls Section (Side Panel) -->
