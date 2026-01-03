@@ -60,118 +60,43 @@
   }
 </script>
 
-<div class="controls-mini">
-  <Button variant="default" size="sm" onclick={resetGame} title="Reset Game">RESET</Button>
-  <Button variant="destructive" size="sm" onclick={undoLastMove} title="Undo Last Move">UNDO</Button
+<div class="grid grid-cols-2 gap-2 mt-2">
+  <Button
+    variant="default"
+    size="sm"
+    onclick={resetGame}
+    title="Reset Game"
+    class="h-7 text-[0.65rem] font-bold tracking-wider uppercase border border-mw-primary/40 bg-mw-primary/10 text-mw-primary hover:bg-mw-primary/20 hover:text-mw-primary hover:shadow-[0_0_10px_rgba(0,243,255,0.3)]"
   >
-  <Button variant="outline" size="sm" onclick={openShare} title="Share Game">SHARE</Button>
-  <Button variant="ghost" size="sm" onclick={reportIssue} title="Report Issue">REPORT</Button>
+    RESET
+  </Button>
+  <Button
+    variant="destructive"
+    size="sm"
+    onclick={undoLastMove}
+    title="Undo Last Move"
+    class="h-7 text-[0.65rem] font-bold tracking-wider uppercase border border-mw-alert/40 bg-mw-alert/10 text-mw-alert hover:bg-mw-alert/20 hover:text-mw-alert hover:shadow-[0_0_10px_rgba(255,171,0,0.3)]"
+  >
+    UNDO
+  </Button>
+  <Button
+    variant="outline"
+    size="sm"
+    onclick={openShare}
+    title="Share Game"
+    class="h-7 text-[0.65rem] font-bold tracking-wider uppercase border border-primary/40 text-primary/80 hover:bg-primary/10"
+  >
+    SHARE
+  </Button>
+  <Button
+    variant="ghost"
+    size="sm"
+    onclick={reportIssue}
+    title="Report Issue"
+    class="h-7 text-[0.65rem] font-bold tracking-wider uppercase border border-white/20 text-white/60 hover:bg-white/10 hover:text-white"
+  >
+    REPORT
+  </Button>
 </div>
 
 <ShareDialog bind:open={shareOpen} fen={game ? game.fen() : ''} />
-
-<style>
-  .controls-mini {
-    display: flex;
-    gap: 4px;
-    margin-top: 8px;
-  }
-
-  /* Override button styles for Modern Warfare theme */
-  .controls-mini :global(button) {
-    font-size: 0.65rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    padding: 0.5rem 0.25rem;
-    min-height: 32px;
-    flex: 1;
-    border-radius: 2px;
-    transition: all 0.2s ease;
-  }
-
-  /* Cyan primary (UNDO) */
-  .controls-mini :global(button[data-variant='default']) {
-    background: rgba(0, 243, 255, 0.15);
-    border-color: rgba(0, 243, 255, 0.4);
-    color: #00f3ff;
-    box-shadow:
-      0 0 8px rgba(0, 243, 255, 0.1),
-      inset 0 0 10px rgba(0, 243, 255, 0.05);
-  }
-
-  .controls-mini :global(button[data-variant='default']:hover) {
-    background: rgba(0, 243, 255, 0.25);
-    border-color: rgba(0, 243, 255, 0.8);
-    box-shadow:
-      0 0 15px rgba(0, 243, 255, 0.3),
-      inset 0 0 15px rgba(0, 243, 255, 0.1);
-    text-shadow: 0 0 8px rgba(0, 243, 255, 0.8);
-  }
-
-  /* Destructive/Amber (RESET) */
-  .controls-mini :global(button[data-variant='destructive']) {
-    background: rgba(255, 171, 0, 0.15);
-    border-color: rgba(255, 171, 0, 0.4);
-    color: #ffab00;
-    box-shadow:
-      0 0 8px rgba(255, 171, 0, 0.1),
-      inset 0 0 10px rgba(255, 171, 0, 0.05);
-  }
-
-  .controls-mini :global(button[data-variant='destructive']:hover) {
-    background: rgba(255, 171, 0, 0.25);
-    border-color: rgba(255, 171, 0, 0.8);
-    box-shadow:
-      0 0 15px rgba(255, 171, 0, 0.3),
-      inset 0 0 15px rgba(255, 171, 0, 0.1);
-    text-shadow: 0 0 8px rgba(255, 171, 0, 0.8);
-  }
-
-  /* Secondary/Green (FEN) */
-  .controls-mini :global(button[data-variant='secondary']) {
-    background: rgba(0, 255, 65, 0.15);
-    border-color: rgba(0, 255, 65, 0.4);
-    color: #00ff41;
-    box-shadow:
-      0 0 8px rgba(0, 255, 65, 0.1),
-      inset 0 0 10px rgba(0, 255, 65, 0.05);
-  }
-
-  .controls-mini :global(button[data-variant='secondary']:hover) {
-    background: rgba(0, 255, 65, 0.25);
-    border-color: rgba(0, 255, 65, 0.8);
-    box-shadow:
-      0 0 15px rgba(0, 255, 65, 0.3),
-      inset 0 0 15px rgba(0, 255, 65, 0.1);
-    text-shadow: 0 0 8px rgba(0, 255, 65, 0.8);
-  }
-
-  /* Outline (SHARE) */
-  .controls-mini :global(button[data-variant='outline']) {
-    background: rgba(139, 92, 246, 0.15);
-    border-color: rgba(139, 92, 246, 0.4);
-    color: #a78bfa;
-    box-shadow: 0 0 8px rgba(139, 92, 246, 0.1);
-  }
-
-  .controls-mini :global(button[data-variant='outline']:hover) {
-    background: rgba(139, 92, 246, 0.25);
-    border-color: rgba(139, 92, 246, 0.8);
-    box-shadow: 0 0 15px rgba(139, 92, 246, 0.3);
-    text-shadow: 0 0 8px rgba(139, 92, 246, 0.8);
-  }
-
-  /* Ghost (REPORT) */
-  .controls-mini :global(button[data-variant='ghost']) {
-    background: rgba(255, 255, 255, 0.05);
-    border-color: rgba(255, 255, 255, 0.2);
-    color: rgba(255, 255, 255, 0.6);
-  }
-
-  .controls-mini :global(button[data-variant='ghost']:hover) {
-    background: rgba(255, 255, 255, 0.15);
-    border-color: rgba(255, 255, 255, 0.4);
-    color: #fff;
-  }
-</style>

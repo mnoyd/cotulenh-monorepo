@@ -21,46 +21,38 @@
   let canCommit = $derived(deployState && game ? game.canCommitSession() : false);
 </script>
 
-<Card.Root class="border-mw-border bg-mw-bg-panel/50 backdrop-blur-sm shadow-lg mt-2">
-  <Card.Header class="p-3 pb-2 border-b border-border/50">
-    <Card.Title
-      class="text-xs font-mono uppercase text-muted-foreground tracking-widest flex items-center gap-2"
-    >
-      <Plane class="w-3 h-3" />
-      Deployment Control
-    </Card.Title>
-  </Card.Header>
-  <Card.Content class="p-3">
-    {#if hasSession}
+{#if hasSession}
+  <Card.Root class="border-mw-border bg-mw-bg-panel/50 backdrop-blur-sm shadow-lg mt-2">
+    <Card.Header class="p-2 pb-1 border-b border-border/50">
+      <Card.Title
+        class="text-[0.65rem] font-mono uppercase text-muted-foreground tracking-widest flex items-center gap-2"
+      >
+        <Plane class="w-3 h-3" />
+        Deployment Control
+      </Card.Title>
+    </Card.Header>
+    <Card.Content class="p-2">
       <div class="flex w-full gap-2">
         <Button
           variant="secondary"
           size="sm"
-          class="h-9 flex-1 border border-mw-secondary/50 font-bold tracking-widest text-black uppercase transition-all hover:shadow-[0_0_15px_var(--color-mw-secondary)] hover:brightness-110 disabled:opacity-50"
+          class="h-7 text-xs flex-1 border border-mw-secondary/50 font-bold tracking-widest text-black uppercase transition-all hover:shadow-[0_0_15px_var(--color-mw-secondary)] hover:brightness-110 disabled:opacity-50"
           onclick={onCommit}
           disabled={!canCommit}
         >
-          <CheckCircle2 class="w-4 h-4 mr-2" />
+          <CheckCircle2 class="w-3 h-3 mr-1" />
           Commit
         </Button>
         <Button
           variant="destructive"
           size="sm"
-          class="h-9 flex-1 border border-destructive/50 font-bold tracking-widest uppercase transition-all hover:shadow-[0_0_15px_var(--color-destructive)] hover:brightness-110"
+          class="h-7 text-xs flex-1 border border-destructive/50 font-bold tracking-widest uppercase transition-all hover:shadow-[0_0_15px_var(--color-destructive)] hover:brightness-110"
           onclick={onCancel}
         >
-          <XCircle class="w-4 h-4 mr-2" />
+          <XCircle class="w-3 h-3 mr-1" />
           Abort
         </Button>
       </div>
-    {:else}
-      <div
-        class="w-full text-center text-xs font-mono font-semibold tracking-wider text-muted-foreground/70 uppercase py-2 animate-pulse"
-      >
-        [ STATUS: READY TO DEPLOY ]
-        <br />
-        <span class="text-[0.6rem] font-normal opacity-70">Interact with reserves to begin</span>
-      </div>
-    {/if}
-  </Card.Content>
-</Card.Root>
+    </Card.Content>
+  </Card.Root>
+{/if}

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { getTurnColorName } from '$lib/utils';
   import { gameState } from '$lib/stores/game.svelte';
-  import * as Card from '$lib/components/ui/card';
+
   import { Badge } from '$lib/components/ui/badge';
   import * as Alert from '$lib/components/ui/alert';
   import AlertDescription from '$lib/components/ui/alert/alert-description.svelte';
@@ -17,43 +17,49 @@
   let badgeVariant = $derived(turn === 'r' ? 'destructive' : 'default');
 </script>
 
-<Card.Root class="border-mw-border bg-mw-bg-panel/50 backdrop-blur-sm shadow-lg">
-  <Card.Header class="p-3 pb-2">
-    <Card.Title
-      class="text-xs font-mono uppercase text-muted-foreground tracking-widest flex items-center gap-2"
+<div class="border border-mw-border bg-mw-bg-panel/50 backdrop-blur-sm shadow-lg rounded-sm">
+  <div class="px-2 py-1 flex flex-row items-center justify-between h-6 bg-mw-surface/50">
+    <div
+      class="flex items-center gap-1.5 text-[0.65rem] font-mono uppercase text-muted-foreground tracking-widest"
     >
       <Timer class="w-3 h-3" />
       Mission Status
-    </Card.Title>
-  </Card.Header>
-  <Card.Content class="p-3 pt-0 flex flex-col gap-3">
-    <div class="flex items-center justify-between">
-      <span class="text-sm font-bold text-foreground">Current Turn</span>
-      <Badge
-        variant={badgeVariant}
-        class="font-mono uppercase tracking-wider px-3 py-0.5 text-xs animate-pulse-glow"
-      >
-        {turn ? getTurnColorName(turn) : 'INITIALIZING...'}
-      </Badge>
     </div>
+    <Badge
+      variant={badgeVariant}
+      class="font-mono uppercase tracking-wider px-1.5 py-0 text-[0.6rem] h-4 animate-pulse-glow"
+    >
+      {turn ? getTurnColorName(turn) : '...'}
+    </Badge>
+  </div>
 
-    {#if check}
-      <Alert.Root variant="destructive" class="py-2 px-3 border-destructive/50 bg-destructive/10">
-        <ShieldAlert class="w-4 h-4" />
-        <AlertDescription class="text-xs font-bold ml-2">COMMANDER UNDER THREAT</AlertDescription>
-      </Alert.Root>
-    {/if}
+  {#if check || status !== 'playing'}
+    <div class="p-2 pt-1 flex flex-col gap-2">
+      {#if check}
+        <Alert.Root
+          variant="destructive"
+          class="py-1 px-2 border-destructive/50 bg-destructive/10 flex items-center gap-2"
+        >
+          <ShieldAlert class="w-3 h-3 shrink-0" />
+          <AlertDescription class="text-[0.65rem] font-bold">
+            COMMANDER UNDER THREAT
+          </AlertDescription>
+        </Alert.Root>
+      {/if}
 
-    {#if status !== 'playing'}
-      <Alert.Root class="py-2 px-3 border-mw-primary/50 bg-mw-primary/10">
-        <Trophy class="w-4 h-4 text-mw-primary" />
-        <AlertTitle class="text-sm font-bold text-mw-primary ml-2">
-          {status === 'checkmate' ? 'VICTORY' : status.toUpperCase()}
-        </AlertTitle>
-        <AlertDescription class="text-xs text-muted-foreground ml-9 mt-0">
-          Operation {status === 'checkmate' ? 'Successful' : 'Terminated'}.
-        </AlertDescription>
-      </Alert.Root>
-    {/if}
-  </Card.Content>
-</Card.Root>
+      {#if status !== 'playing'}
+        <Alert.Root class="py-1 px-2 border-mw-primary/50 bg-mw-primary/10">
+          <div class="flex items-center gap-2 mb-1">
+            <Trophy class="w-3 h-3 text-mw-primary" />
+            <AlertTitle class="text-xs font-bold text-mw-primary">
+              {status === 'checkmate' ? 'VICTORY' : status.toUpperCase()}
+            </AlertTitle>
+          </div>
+          <AlertDescription class="text-[0.65rem] text-muted-foreground">
+            Operation {status === 'checkmate' ? 'Successful' : 'Terminated'}.
+          </AlertDescription>
+        </Alert.Root>
+      {/if}
+    </div>
+  {/if}
+</div>
