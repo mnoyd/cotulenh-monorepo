@@ -780,10 +780,7 @@ export class CoTuLenh {
     if (verbose) {
       return internalMoves.map((move) => {
         const [san, lan] = moveToSanLan(move, internalMoves)
-        const flagsStr = Object.keys(BITS)
-          .filter((flag) => BITS[flag] & move.flags)
-          .map((flag) => FLAGS[flag])
-          .join('')
+        const flagsStr = MoveResult.flagsToString(move.flags)
 
         const result = MoveResult.create({
           color: move.color,
@@ -1173,7 +1170,6 @@ export class CoTuLenh {
   // --- SAN Parsing/Generation (Updated for Stay Capture & Deploy) ---
 
   /**
-  /**
    * Parses a move in Standard Algebraic Notation (SAN) and returns the corresponding
    * internal move object if legal. Handles various formats including simplified
    * (e.g., "Nc3"), full (e.g., "Nb1-c3", "Ie2xe3"), stay capture ("Td2<d3", "A<b2", "A2<b2", "Ab<b2"),
@@ -1193,8 +1189,6 @@ export class CoTuLenh {
     for (let i = 0, len = moves.length; i < len; i++) {
       const [san, lan] = moveToSanLan(moves[i], moves)
       if (cleanMove === strippedSan(san) || cleanMove === strippedSan(lan)) {
-        moves[i].san = san
-        moves[i].lan = lan
         return moves[i]
       }
     }
@@ -1243,8 +1237,6 @@ export class CoTuLenh {
           cleanMove === strippedSan(curSan).replace(/[x<>+&-]|>x/g, '') ||
           cleanMove === strippedSan(curLan).replace(/[x<>+&-]|>x/g, '')
         ) {
-          moves[i].san = curSan
-          moves[i].lan = curLan
           return moves[i]
         }
         // hand-compare move properties with the results from our permissive regex
@@ -1253,8 +1245,6 @@ export class CoTuLenh {
         SQUARE_MAP[from] == moves[i].from &&
         SQUARE_MAP[to] == moves[i].to
       ) {
-        moves[i].san = curSan
-        moves[i].lan = curLan
         return moves[i]
       } else if (overlyDisambiguated) {
         /*
@@ -1268,8 +1258,6 @@ export class CoTuLenh {
           SQUARE_MAP[to] == moves[i].to &&
           (from == square[0] || from == square[1])
         ) {
-          moves[i].san = curSan
-          moves[i].lan = curLan
           return moves[i]
         }
       }
@@ -1361,10 +1349,6 @@ export class CoTuLenh {
         (stayFilter === undefined || stayFilter === isStayMove) &&
         (deployFilter === undefined || deployFilter === isDeployMove)
       ) {
-        // Generate SAN/LAN for the move
-        const [san, lan] = moveToSanLan(m, legalMoves)
-        m.san = san
-        m.lan = lan
         foundMoves.push(m)
       }
     }
@@ -1386,11 +1370,9 @@ export class CoTuLenh {
     if (inputInternalMove) {
       // Verify flags match (this is a safety check)
       if (inputInternalMove.flags === foundMove.flags) {
-        // Return a move with the input's piece but the generated SAN/LAN
+        // Return a move with the input's piece
         return {
           ...inputInternalMove,
-          san: foundMove.san,
-          lan: foundMove.lan,
         }
       }
     }

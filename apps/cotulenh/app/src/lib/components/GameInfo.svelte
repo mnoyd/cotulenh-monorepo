@@ -14,7 +14,9 @@
   let status = $derived(gameState.status);
 
   // Helper for badge variant based on turn
-  let badgeVariant = $derived(turn === 'r' ? 'destructive' : 'default');
+  let badgeVariant = $derived(turn === 'r' ? 'destructive' : 'default') as
+    | 'default'
+    | 'destructive';
 </script>
 
 <div class="border border-mw-border bg-mw-bg-panel/50 backdrop-blur-sm shadow-lg rounded-sm">

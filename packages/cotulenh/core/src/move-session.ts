@@ -61,16 +61,8 @@ export class MoveResult {
     return this.flags.includes(FLAGS.STAY_CAPTURE)
   }
 
-  get isCombination(): boolean {
-    return this.flags.includes(FLAGS.COMBINATION)
-  }
-
   get isSuicideCapture(): boolean {
     return this.flags.includes(FLAGS.SUICIDE_CAPTURE)
-  }
-
-  hasNotation(): boolean {
-    return !!this.san && !!this.lan
   }
 
   /**
@@ -90,11 +82,12 @@ export class MoveResult {
     stay?: Piece
     completed?: boolean
   }): MoveResult {
-    const captured = Array.isArray(data.captured)
-      ? data.captured
-      : data.captured
-        ? flattenPiece(data.captured)
-        : undefined
+    let captured: Piece[] | undefined
+    if (data.captured) {
+      captured = Array.isArray(data.captured)
+        ? data.captured
+        : flattenPiece(data.captured)
+    }
 
     return new MoveResult(
       data.color,
@@ -137,13 +130,27 @@ export class MoveResult {
   static calculateDeployFlags(moves: InternalMove[]): string {
     const set = new Set<string>()
     for (const m of moves) {
-      for (const flag in BITS) {
-        if (BITS[flag] & m.flags) set.add(FLAGS[flag])
+      set.add(MoveResult.flagsToString(m.flags))
+    }
+    // Flatten individual flag strings into unique characters
+    const allFlags = new Set<string>()
+    for (const flagStr of set) {
+      for (const char of flagStr) {
+        allFlags.add(char)
       }
     }
     // ensureDeploy=true logic: 'd' appears first and no duplicates
-    const parts = Array.from(set).filter((f) => f !== FLAGS.DEPLOY)
+    const parts = Array.from(allFlags).filter((f) => f !== FLAGS.DEPLOY)
     return FLAGS.DEPLOY + parts.join('')
+  }
+
+  /** Convert a flags bitmask to a string */
+  static flagsToString(flags: number): string {
+    let out = ''
+    for (const flag in BITS) {
+      if (BITS[flag] & flags) out += FLAGS[flag]
+    }
+    return out
   }
 }
 
@@ -165,6 +172,7 @@ export class MoveSession {
   public readonly isDeploy: boolean
   private readonly _game: CoTuLenh
   private readonly _beforeFEN: string
+  private readonly _beforeMoves: InternalMove[] // Legal moves at session start for SAN disambiguation
   private readonly _commands: CTLMoveCommandInteface[] = []
 
   // === Small helpers to avoid duplication ===
@@ -222,6 +230,8 @@ export class MoveSession {
     this.isDeploy = data.isDeploy
     // Capture FEN before any moves
     this._beforeFEN = game.fen()
+    // Capture legal moves before any moves (for SAN disambiguation)
+    this._beforeMoves = game['_moves']({ legal: true })
   }
 
   get startFEN(): string {
@@ -409,10 +419,7 @@ export class MoveSession {
   } {
     const command = this._commands[0]
     const move = command.move
-    const [san, lan] =
-      move.san && move.lan
-        ? [move.san, move.lan]
-        : moveToSanLan(move, this._game['_moves']({ legal: true }))
+    const [san, lan] = moveToSanLan(move, this._beforeMoves)
     const flagsStr = this._flagsFromMove(move)
 
     const moveObj = MoveResult.create({
@@ -602,12 +609,7 @@ function applyRecombineToMoves(
     )
   }
 
-  const newMoves = moves.map((m) => ({
-    ...m,
-    piece: { ...m.piece },
-    captured: m.captured ? { ...m.captured } : undefined,
-    combined: m.combined ? { ...m.combined } : undefined,
-  }))
+  const newMoves: InternalMove[] = structuredClone(moves)
 
   newMoves[moveIndex] = {
     ...newMoves[moveIndex],

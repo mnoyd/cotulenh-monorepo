@@ -32,8 +32,6 @@ export interface UIDeployState {
  */
 export interface HistoryMove extends MoveResult {
   cachedMoves?: MoveResult[];
-  san?: string;
-  lan?: string;
 }
 
 /**

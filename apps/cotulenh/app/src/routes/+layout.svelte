@@ -3,6 +3,7 @@
   import { page } from '$app/stores';
   import { logger } from '@cotulenh/common';
   import '../app.css';
+  import '@cotulenh/board/assets/commander-chess.pieces.css';
   import Sonner from '$lib/components/ui/sonner/sonner.svelte';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
   import SettingsDialog from '$lib/components/SettingsDialog.svelte';

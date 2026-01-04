@@ -187,8 +187,6 @@ export type InternalMove = {
   captured?: Piece
   combined?: Piece
   flags: number // Bitmask using BITS
-  san?: string
-  lan?: string
 }
 
 export interface GameStateMetadata {
