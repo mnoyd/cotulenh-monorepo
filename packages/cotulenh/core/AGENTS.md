@@ -3,6 +3,81 @@
 This document defines rules and conventions that all agents must follow when
 working on this codebase.
 
+---
+
+## ⚠️ MANDATORY: Before Writing ANY Test Code
+
+**STOP. You MUST read these files FIRST before writing or modifying tests.**
+
+### Required Reading (in order)
+
+1. ✅ `AGENTS.md` - You're reading it now
+2. 📖 **`TEST_RULES_REFERENCE.md`** - Terrain zones, movement ranges, valid
+   squares
+3. 📖 **`blueprints.yaml`** - Valid piece stacking combinations (in
+   `../combine-piece/`)
+
+### If You Skip This
+
+- Your tests WILL have illegal moves or invalid stacks
+- You MUST delete your work and start over
+- There is NO excuse for inventing moves without checking rules
+
+### Quick Terrain Reference
+
+| Piece Type      | Files a-b | File c + river | Files d-k            |
+| --------------- | --------- | -------------- | -------------------- |
+| Navy            | ✓         | ✓              | ✗                    |
+| Land units      | ✗         | ✓              | ✓                    |
+| Heavy (A, G, S) | ✗         | ✓              | ✓ (bridge for river) |
+| Air Force       | ✓         | ✓              | ✓                    |
+
+### Quick Stack Reference
+
+| Carrier     | Can Carry (Slot 1)           | Can Carry (Slot 2)                 |
+| ----------- | ---------------------------- | ---------------------------------- |
+| NAVY        | AIR_FORCE                    | COMMANDER, INFANTRY, MILITIA, TANK |
+| TANK        | COMMANDER, INFANTRY, MILITIA | —                                  |
+| ENGINEER    | ARTILLERY, ANTI_AIR, MISSILE | —                                  |
+| AIR_FORCE   | TANK                         | COMMANDER, INFANTRY, MILITIA       |
+| HEADQUARTER | COMMANDER                    | —                                  |
+
+**Read `TEST_RULES_REFERENCE.md` for complete details before proceeding.**
+
+---
+
+## 🚨 ESCALATION RULE: When You Get Stuck
+
+**If you encounter problems setting up tests using the standard rules above, you
+MUST:**
+
+1. **STOP immediately** - Do NOT try to work around or bypass the rules
+2. **Describe the problem** - Explain exactly what you're trying to do and why
+   standard approaches aren't working
+3. **Propose a plan** - Outline what alternative approach you want to take
+4. **ASK FOR PERMISSION** - Wait for explicit approval before proceeding
+
+**Examples of situations requiring escalation:**
+
+- Test helper validation throws an error you don't understand
+- You need a piece combination not in blueprints.yaml
+- You need to place a piece on terrain that seems invalid
+- You think the rules might be wrong or incomplete
+- You want to use `game.put()` directly instead of `placeAt()`
+
+**NEVER:**
+
+- Suppress or catch validation errors to make tests pass
+- Hardcode pieces/moves to bypass helpers
+- Assume rules are wrong and proceed without asking
+- Create workarounds that bypass established patterns
+
+**The test helpers now have runtime validation.** If `makePiece()` or
+`placeAt()` throws an error, that's intentional - it means your test setup is
+invalid.
+
+---
+
 ## Package Management
 
 **Always use `pnpm`** - never use `npm` or `yarn`.
@@ -49,15 +124,17 @@ When writing or modifying tests, follow the rules below. This is non-negotiable.
 ### Example: Correct Test Setup
 
 ```typescript
-import { makePiece, makeMove, setupGameBasic } from './test-helpers'
+import { makePiece, makeMove, setupGameBasic, placeAt } from './test-helpers'
 
 it('should handle navy deploy', () => {
+  const game = setupGameBasic()
+
   // ✅ CORRECT: Use valid stack from blueprints
   const originalPiece = makePiece(NAVY, RED, false, [
     makePiece(AIR_FORCE), // Slot 1: AIR_FORCE ✓
     makePiece(TANK), // Slot 2: TANK ✓
   ])
-  game.put(originalPiece, 'c3')
+  placeAt(game, originalPiece, 'c3') // ✅ Use placeAt for terrain validation
 
   // ✅ CORRECT: Use makeMove helper
   const move = makeMove({
