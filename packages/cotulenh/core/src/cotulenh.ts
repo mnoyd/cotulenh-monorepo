@@ -67,9 +67,9 @@ import {
 import {
   MoveSession,
   handleMove,
-  executeRecombine,
   MoveResult,
   type RecombineOption,
+  recombine,
 } from './move-session.js'
 import { createError, ErrorCode, logger } from '@cotulenh/common'
 
@@ -1445,8 +1445,8 @@ export class CoTuLenh {
    * @param option - The recombine option containing the square and piece to combine
    * @returns MoveResult when complete, or intermediate result if session needs more moves
    */
-  public recombine(option: RecombineOption): MoveResult {
-    return executeRecombine(this, option)
+  public recombine(option: RecombineOption): boolean {
+    return recombine(this, option)
   }
 
   /**
