@@ -29,6 +29,69 @@ export enum ErrorCode {
 }
 
 /**
+ * Error category for validation results
+ */
+export type ValidationErrorCategory =
+  | 'structure'
+  | 'lexical'
+  | 'semantic'
+  | 'terrain'
+  | 'combination'
+  | 'roundtrip';
+
+/**
+ * Position in FEN string for error reporting
+ */
+export interface FenLocation {
+  /** Rank number (1-12, display rank) */
+  rank?: number;
+  /** File number (0-10, where 0=a, 10=k) */
+  file?: number;
+  /** Which FEN token (0-5) */
+  tokenIndex?: number;
+  /** Character index in raw FEN string */
+  charIndex?: number;
+  /** The problematic substring */
+  context?: string;
+}
+
+/**
+ * A single validation error
+ */
+export interface ValidationError {
+  /** Error code from ErrorCode enum */
+  code: ErrorCode;
+  /** Human-readable error message */
+  message: string;
+  /** Category of validation error */
+  category: ValidationErrorCategory;
+  /** Location of the error in the FEN */
+  location?: FenLocation;
+}
+
+/**
+ * Result of FEN validation
+ */
+export interface ValidationResult {
+  /** Whether the FEN is valid (no errors) */
+  valid: boolean;
+  /** All validation errors found */
+  errors: ValidationError[];
+}
+
+/**
+ * Options for FEN validation
+ */
+export interface ValidateFenOptions {
+  /** Whether to perform deep semantic checks (default: false) */
+  checkSemantics?: boolean;
+  /** Whether to perform round-trip test (default: false) */
+  roundTripTest?: boolean;
+  /** Whether to throw on first error vs. collect all (default: false) */
+  throwOnError?: boolean;
+}
+
+/**
  * Base Error class for CoTuLenh
  */
 export class CotulenhError extends Error {

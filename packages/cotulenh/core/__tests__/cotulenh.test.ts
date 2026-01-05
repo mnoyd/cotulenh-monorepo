@@ -245,7 +245,7 @@ describe('CoTuLenh.getHeroicStatus', () => {
 
     it('throws on invalid FEN with wrong rank count', () => {
       const badFen = '11/11/11/11/11/11/11/11/11/11/11 r - - 0 1'
-      expect(() => game.load(badFen)).toThrow(/expected 12 ranks/)
+      expect(() => game.load(badFen)).toThrow(/Expected 12 ranks/)
     })
 
     //TODO: write fen validationß
@@ -391,9 +391,7 @@ describe('CoTuLenh.FEN', () => {
     it('should throw an error for an invalid FEN string by default', () => {
       const invalidFen = '11/11/11/11/11/11/11/11/11/11/4c6/4C6/11 b - - 0 1' // Extra rank
       const game = new CoTuLenh()
-      expect(() => game.load(invalidFen)).toThrow(
-        /Invalid FEN: expected 12 ranks/,
-      )
+      expect(() => game.load(invalidFen)).toThrow(/Expected 12 ranks/)
     })
 
     it('should clear headers by default when loading', () => {
