@@ -52,14 +52,23 @@ export function createBoardEditorState(getInitialFen?: () => string) {
         const turnChar = currentTurn === 'red' ? 'r' : 'b';
         const normalizedFen = `${boardPart} ${turnChar} - - 0 1`;
 
+        // Validate FEN before applying
+        const isValid = validateFenString(normalizedFen);
+        if (!isValid) {
+          throw new Error('Invalid FEN format');
+        }
+
         boardApi.set({
           fen: normalizedFen,
           lastMove: undefined
         });
 
         fenInput = normalizedFen;
+        validationError = ''; // Clear any previous errors
       } catch (error) {
-        toast.error('Invalid FEN: ' + error);
+        const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+        validationError = errorMsg;
+        toast.error('Invalid FEN: ' + errorMsg);
       }
     }
   }

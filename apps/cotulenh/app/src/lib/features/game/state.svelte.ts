@@ -7,6 +7,7 @@ import type { RecombineOption as BoardRecombineOption } from '@cotulenh/board';
 import { gameState, getDeployState } from '$lib/stores/game.svelte';
 import { makeCoreMove } from '$lib/utils';
 import { typeToRole, roleToType } from '$lib/types/translations';
+import { safeSymbolToRole, safeRoleToSymbol } from '$lib/types/type-guards';
 import { toast } from 'svelte-sonner';
 import {
   coreToBoardColor,
@@ -63,7 +64,7 @@ export function createGameController() {
           options: uiDeployState?.recombineOptions
             ? uiDeployState.recombineOptions.map((opt: CoreRecombineOption) => ({
                 square: opt.square,
-                piece: typeToRole(opt.piece as unknown as PieceSymbol) as Role
+                piece: safeSymbolToRole(opt.piece)
               }))
             : undefined
         }
@@ -162,12 +163,14 @@ export function createGameController() {
 
       const coreOption: CoreRecombineOption = {
         square: option.square,
-        piece: roleToType(option.piece as unknown as Role)
+        piece: safeRoleToSymbol(option.piece)
       };
 
-      const { success, result } = game.recombine(coreOption);
+      const recombineResult = game.recombine(coreOption);
 
-      if (success && result) {
+      // Type assertion is safe here because recombine returns an object with success/result
+      if ((recombineResult as any).success && (recombineResult as any).result) {
+        const result = (recombineResult as any).result;
         if (result.completed) {
           gameState.applyDeployCommit(game, result);
         } else {
@@ -259,8 +262,8 @@ export function createGameController() {
         e.preventDefault();
         if (game && game.getSession()) {
           cancelDeploy();
-        } else if (gameState.historyViewIndex !== -1) {
-          gameState.cancelPreview(game!);
+        } else if (game && gameState.historyViewIndex !== -1) {
+          gameState.cancelPreview(game);
         }
         break;
       case 'ArrowLeft':

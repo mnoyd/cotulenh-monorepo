@@ -5,7 +5,6 @@
   let fen = $state('');
   let gameState = $state('');
   let issueDescription = $state('');
-  let title = $state('Bug Report');
   let copied = $state(false);
 
   // Load data from localStorage on mount (browser only)

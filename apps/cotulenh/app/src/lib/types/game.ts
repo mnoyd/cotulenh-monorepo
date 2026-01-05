@@ -12,6 +12,39 @@ import {
 export type GameStatus = 'playing' | 'checkmate' | 'stalemate' | 'draw';
 
 /**
+ * Represents a deploy action/move in a deploy session
+ */
+export interface DeployAction {
+  from: number;
+  to: number;
+  piece: Piece;
+  flags: number;
+}
+
+/**
+ * Internal deploy session interface (from @cotulenh/core)
+ * This represents the structure we access via getSession()
+ */
+export interface DeploySession {
+  isDeploy: boolean;
+  stackSquare: number;
+  turn: Color;
+  originalPiece: Piece;
+  moves: DeployAction[];
+  remaining: Piece[];
+  getOptions?: () => RecombineOption[];
+}
+
+/**
+ * Extended game interface with additional methods
+ */
+export interface ExtendedGame {
+  isGameOver(): boolean;
+  isStalemate?(): boolean;
+  isDraw?(): boolean;
+}
+
+/**
  * Extended deploy state for UI with additional computed properties.
  * This is computed directly from the game instance, not stored in the store.
  */
@@ -22,8 +55,8 @@ export interface UIDeployState {
   movedPieces: Piece[];
   stay: Piece | undefined;
 
-  actions: any[]; // Actions from the deploy session
-  remainingPieces: any; // Remaining pieces to deploy
+  actions: DeployAction[]; // Actions from the deploy session
+  remainingPieces: Piece[]; // Remaining pieces to deploy
   recombineOptions: RecombineOption[]; // Available recombine options
 }
 

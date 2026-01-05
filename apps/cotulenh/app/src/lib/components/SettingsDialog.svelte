@@ -4,6 +4,7 @@
   import { Button } from '$lib/components/ui/button';
   import { Separator } from '$lib/components/ui/separator';
   import { toast } from 'svelte-sonner';
+  import { isObject } from '$lib/types/type-guards';
 
   interface Props {
     open: boolean;
@@ -11,29 +12,71 @@
 
   let { open = $bindable() }: Props = $props();
 
+  // Settings interface for type safety
+  interface Settings {
+    soundsEnabled: boolean;
+    showMoveHints: boolean;
+    confirmReset: boolean;
+  }
+
+  // Default settings
+  const DEFAULT_SETTINGS: Settings = {
+    soundsEnabled: true,
+    showMoveHints: true,
+    confirmReset: true
+  };
+
   // Settings state with localStorage persistence
-  let soundsEnabled = $state(true);
-  let showMoveHints = $state(true);
-  let confirmReset = $state(true);
+  let soundsEnabled = $state(DEFAULT_SETTINGS.soundsEnabled);
+  let showMoveHints = $state(DEFAULT_SETTINGS.showMoveHints);
+  let confirmReset = $state(DEFAULT_SETTINGS.confirmReset);
+
+  /**
+   * Validates settings object from localStorage
+   */
+  function validateSettings(data: unknown): Settings {
+    if (!isObject(data)) {
+      throw new Error('Settings must be an object');
+    }
+
+    return {
+      soundsEnabled: typeof data.soundsEnabled === 'boolean' 
+        ? data.soundsEnabled 
+        : DEFAULT_SETTINGS.soundsEnabled,
+      showMoveHints: typeof data.showMoveHints === 'boolean'
+        ? data.showMoveHints
+        : DEFAULT_SETTINGS.showMoveHints,
+      confirmReset: typeof data.confirmReset === 'boolean'
+        ? data.confirmReset
+        : DEFAULT_SETTINGS.confirmReset
+    };
+  }
 
   function loadSettings() {
     if (!browser) return;
+    
     const saved = localStorage.getItem('cotulenh_settings');
-    if (saved) {
-      try {
-        const settings = JSON.parse(saved);
-        soundsEnabled = settings.soundsEnabled ?? true;
-        showMoveHints = settings.showMoveHints ?? true;
-        confirmReset = settings.confirmResetReset ?? true;
-      } catch (e) {
-        console.error('Failed to load settings', e);
-      }
+    if (!saved) return;
+
+    try {
+      const parsed = JSON.parse(saved);
+      const validated = validateSettings(parsed);
+      
+      soundsEnabled = validated.soundsEnabled;
+      showMoveHints = validated.showMoveHints;
+      confirmReset = validated.confirmReset;
+    } catch (e) {
+      console.error('Failed to load settings, using defaults:', e);
+      // Reset to defaults on error
+      soundsEnabled = DEFAULT_SETTINGS.soundsEnabled;
+      showMoveHints = DEFAULT_SETTINGS.showMoveHints;
+      confirmReset = DEFAULT_SETTINGS.confirmReset;
     }
   }
 
   function saveSettings() {
     if (!browser) return;
-    const settings = {
+    const settings: Settings = {
       soundsEnabled,
       showMoveHints,
       confirmReset

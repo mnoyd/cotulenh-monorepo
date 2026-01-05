@@ -1,5 +1,13 @@
 import { logger } from '@cotulenh/common';
-import type { GameState, GameStatus, UIDeployState, HistoryMove } from '$lib/types/game';
+import type {
+  GameState,
+  GameStatus,
+  UIDeployState,
+  HistoryMove,
+  DeploySession,
+  DeployAction,
+  ExtendedGame
+} from '$lib/types/game';
 import { CoTuLenh, BITS, MoveResult } from '@cotulenh/core';
 import type { Square, Piece } from '@cotulenh/core';
 import { getPossibleMoves } from '$lib/utils';
@@ -23,29 +31,31 @@ export function getDeployState(game: CoTuLenh | null): UIDeployState | null {
   const session = game.getSession();
   if (!session || !session.isDeploy) return null;
 
-  // Cast to any to access internal properties safely
-  const s = session as any;
+  // Type-safe access to deploy session properties
+  const deploySession = session as unknown as DeploySession;
 
-  const moves = s.moves || [];
+  const moves = deploySession.moves || [];
 
   // Get pieces that were moved FROM the stack in this deploy session
   const movedPieces = moves
-    .filter((move: any) => move.from === s.stackSquare && move.flags & BITS.DEPLOY)
-    .flatMap((move: any) => flattenPiece(move.piece));
+    .filter(
+      (move: DeployAction) => move.from === deploySession.stackSquare && move.flags & BITS.DEPLOY
+    )
+    .flatMap((move: DeployAction) => flattenPiece(move.piece));
 
   // The "stay" piece is the first remaining piece (what stayed on the stack)
-  const remainingPieces = s.remaining || [];
+  const remainingPieces = deploySession.remaining || [];
   const stayPiece = remainingPieces.length > 0 ? remainingPieces[0] : undefined;
 
   return {
-    stackSquare: s.stackSquare,
-    turn: s.turn,
-    originalPiece: s.originalPiece,
+    stackSquare: deploySession.stackSquare,
+    turn: deploySession.turn,
+    originalPiece: deploySession.originalPiece,
     movedPieces,
     stay: stayPiece,
     actions: moves,
     remainingPieces,
-    recombineOptions: s.getOptions?.() || []
+    recombineOptions: deploySession.getOptions?.() || []
   };
 }
 
@@ -53,13 +63,13 @@ export function getDeployState(game: CoTuLenh | null): UIDeployState | null {
  * Calculates the current game status based on the CoTuLenh instance.
  */
 function calculateGameStatus(game: CoTuLenh): GameStatus {
-  // Cast to any to verify new methods that might not be in the build types yet
-  const g = game as any;
+  // Type-safe access to extended game methods
+  const extendedGame = game as unknown as ExtendedGame;
 
-  if (g.isGameOver()) {
+  if (extendedGame.isGameOver()) {
     if (game.isCheckmate()) return 'checkmate';
-    if (g.isStalemate && g.isStalemate()) return 'stalemate';
-    if (g.isDraw && g.isDraw()) return 'draw';
+    if (extendedGame.isStalemate && extendedGame.isStalemate()) return 'stalemate';
+    if (extendedGame.isDraw && extendedGame.isDraw()) return 'draw';
     return 'checkmate'; // Commander captured or generic loss
   }
   return 'playing';
@@ -282,7 +292,8 @@ export const gameState = {
     if (index < 0 || index >= state.history.length) return;
 
     const move = state.history[index];
-    const fen = (move as any).after;
+    // MoveResult includes 'after' FEN property
+    const fen = move.after;
 
     if (!fen) {
       logger.error('No FEN found in history move', move);
