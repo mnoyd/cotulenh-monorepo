@@ -140,6 +140,11 @@
     flex: 1;
   }
 
+  /* Prevent scroll interference on piece touch */
+  .palette-piece-wrapper {
+    touch-action: none;
+  }
+
   .palette-piece-wrapper {
     display: flex;
     flex-direction: column;
@@ -222,19 +227,25 @@
     text-shadow: 0 0 5px var(--mw-primary-dim);
   }
 
-  /* When palettes are stacked horizontally/responsive */
+  /* Mobile layout with horizontal scrolling */
   @media (max-width: 1024px) {
     .pieces-grid {
-      /* Fit all 11 pieces in 2 rows (6 columns) */
-      grid-template-columns: repeat(6, 1fr);
-      gap: 0.25rem;
-      padding: 0;
+      /* Horizontal scroll layout - pieces in a single row */
+      display: inline-flex;
+      flex-direction: row;
+      gap: 0.5rem;
+      padding: 0.25rem;
+      /* Ensure container shrinks to fit content */
+      width: max-content;
+      min-width: 100%;
     }
 
     .palette-piece-wrapper {
       padding: 0.15rem;
       gap: 0;
-      background: transparent; /* Remove heavy background to look cleaner */
+      background: transparent;
+      /* Don't shrink pieces */
+      flex-shrink: 0;
     }
 
     .palette-piece-wrapper.selected {
@@ -246,12 +257,12 @@
       height: clamp(30px, 7vw, 40px);
     }
 
-    /* Hide labels on mobile to save massive separate vert space */
+    /* Hide labels on mobile */
     .piece-label {
       display: none;
     }
 
-    /* Show label only for selected item if needed, or just rely on icon */
+    /* Show label only for selected item */
     .palette-piece-wrapper.selected .piece-label {
       display: block;
       font-size: 0.5rem;

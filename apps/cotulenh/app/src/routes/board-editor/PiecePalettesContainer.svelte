@@ -24,49 +24,10 @@
     onDeleteModeToggle: () => void;
     onHeroicToggle: () => void;
   } = $props();
-
-  let activeTab: 'red' | 'blue' = $state('red');
-
-  function switchTab(color: 'red' | 'blue') {
-    activeTab = color;
-  }
 </script>
 
 <div class="palettes-container">
-  <!-- Mobile Tabs -->
-  <div class="palette-tabs">
-    <button
-      class="tab-btn red"
-      class:active={activeTab === 'red'}
-      onclick={() => switchTab('red')}
-      title="Show Red Army"
-    >
-      🔴 Red Army
-    </button>
-    <button
-      class="tab-btn blue"
-      class:active={activeTab === 'blue'}
-      onclick={() => switchTab('blue')}
-      title="Show Blue Army"
-    >
-      🔵 Blue Army
-    </button>
-  </div>
-
-  <!-- Red Palette -->
-  <div class="palette-wrapper" class:visible={activeTab === 'red'}>
-    <h3 class="palette-header red">🔴 Red Army</h3>
-    <PiecePalette
-      {boardApi}
-      color="red"
-      {onPieceSelect}
-      {selectedPiece}
-      {heroicMode}
-      compact={true}
-    />
-  </div>
-
-  <!-- Shared Controls placed between palettes on desktop, or consistently visible on mobile -->
+  <!-- Controls first on mobile, between palettes on desktop -->
   <div class="controls-wrapper">
     <PaletteControls
       {heroicMode}
@@ -77,17 +38,34 @@
     />
   </div>
 
-  <!-- Blue Palette -->
-  <div class="palette-wrapper" class:visible={activeTab === 'blue'}>
-    <h3 class="palette-header blue">🔵 Blue Army</h3>
-    <PiecePalette
-      {boardApi}
-      color="blue"
-      {onPieceSelect}
-      {selectedPiece}
-      {heroicMode}
-      compact={true}
-    />
+  <!-- Red Palette - horizontally scrollable on mobile -->
+  <div class="palette-wrapper red-palette">
+    <h3 class="palette-header red">🔴 Red</h3>
+    <div class="palette-scroll-container">
+      <PiecePalette
+        {boardApi}
+        color="red"
+        {onPieceSelect}
+        {selectedPiece}
+        {heroicMode}
+        compact={true}
+      />
+    </div>
+  </div>
+
+  <!-- Blue Palette - horizontally scrollable on mobile -->
+  <div class="palette-wrapper blue-palette">
+    <h3 class="palette-header blue">🔵 Blue</h3>
+    <div class="palette-scroll-container">
+      <PiecePalette
+        {boardApi}
+        color="blue"
+        {onPieceSelect}
+        {selectedPiece}
+        {heroicMode}
+        compact={true}
+      />
+    </div>
   </div>
 </div>
 
@@ -96,7 +74,10 @@
     display: flex;
     flex-direction: column;
     gap: 1rem;
-    height: 100%;
+  }
+
+  .controls-wrapper {
+    /* Default order for desktop - controls in middle */
   }
 
   .palette-wrapper {
@@ -104,9 +85,14 @@
     border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 4px;
     padding: 0.5rem;
-    display: flex; /* Always flex on desktop */
+    display: flex;
     flex-direction: column;
+  }
+
+  .palette-scroll-container {
+    /* Desktop: vertical scroll if needed */
     overflow-y: auto;
+    flex: 1;
   }
 
   .palette-header {
@@ -118,82 +104,75 @@
     margin: 0 0 0.5rem 0;
     padding-bottom: 0.25rem;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    display: block; /* Show header on desktop */
+    display: block;
+    flex-shrink: 0;
   }
 
   .palette-header.red {
     color: #ff6b6b;
   }
+
   .palette-header.blue {
     color: #4dabf7;
   }
 
-  /* Tabs are hidden by default (Desktop) */
-  .palette-tabs {
-    display: none;
+  /* Desktop: Controls between palettes */
+  .controls-wrapper {
+    order: 1;
+  }
+
+  .red-palette {
+    order: 0;
+  }
+
+  .blue-palette {
+    order: 2;
   }
 
   /* Mobile/Tablet Styles */
   @media (max-width: 1024px) {
     .palettes-container {
       gap: 0.5rem;
+      /* No scrolling on the container itself */
+      overflow: visible;
     }
 
-    .palette-tabs {
-      display: flex;
-      gap: 0;
-      background: rgba(0, 0, 0, 0.2);
-      border-radius: 6px;
-      padding: 4px;
-      margin-bottom: 0.5rem;
-    }
-
-    .tab-btn {
-      flex: 1;
-      padding: 0.5rem;
-      border: none;
-      background: transparent;
-      color: var(--color-mw-text-muted);
-      font-family: var(--font-ui);
-      font-weight: 600;
-      font-size: 0.8rem;
-      text-transform: uppercase;
-      cursor: pointer;
-      border-radius: 4px;
-      transition: all 0.2s;
-    }
-
-    .tab-btn.active.red {
-      background: rgba(255, 107, 107, 0.2);
-      color: #ff6b6b;
-      box-shadow: 0 0 10px rgba(255, 107, 107, 0.1);
-    }
-
-    .tab-btn.active.blue {
-      background: rgba(77, 171, 247, 0.2);
-      color: #4dabf7;
-      box-shadow: 0 0 10px rgba(77, 171, 247, 0.1);
-    }
-
-    /* Hide palette headers on mobile since we have tabs */
-    .palette-header {
-      display: none;
+    /* Controls first on mobile */
+    .controls-wrapper {
+      order: -1;
+      flex-shrink: 0;
     }
 
     .palette-wrapper {
-      display: none; /* Hidden by default on mobile */
-      border: none;
-      background: transparent;
-      padding: 0;
+      /* Compact styling for mobile */
+      padding: 0.25rem 0.5rem;
+      flex-shrink: 0;
+      /* Fixed height for horizontal scroll area */
+      max-height: 80px;
     }
 
-    .palette-wrapper.visible {
-      display: flex; /* Show only active tab */
+    .palette-header {
+      font-size: 0.65rem;
+      margin-bottom: 0.25rem;
+      padding-bottom: 0.15rem;
     }
 
-    .controls-wrapper {
-      order: 10; /* Ensure controls are always at the bottom on mobile */
-      margin-top: 0.5rem;
+    /* Enable horizontal scroll on mobile */
+    .palette-scroll-container {
+      overflow-x: auto;
+      overflow-y: visible;
+      /* Horizontal scroll with momentum */
+      scroll-snap-type: x mandatory;
+      -webkit-overflow-scrolling: touch;
+      /* Prevent vertical scroll interference */
+      touch-action: pan-x;
+      /* Hide scrollbar but keep functionality */
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+
+    .palette-scroll-container::-webkit-scrollbar {
+      display: none;
     }
   }
 </style>
