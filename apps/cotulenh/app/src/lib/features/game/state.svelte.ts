@@ -165,20 +165,15 @@ export function createGameController() {
         piece: roleToType(option.piece as unknown as Role)
       };
 
-      const success = game.recombine(coreOption);
+      const { success, result } = game.recombine(coreOption);
 
-      if (success) {
-        const session = game.getSession();
-        if (session) {
-          const result = session.getCurrentResult();
-          if (result.completed) {
-            gameState.applyDeployCommit(game, result);
-            gameState.incrementDeployVersion();
-          } else {
-            gameState.applyMove(game, result);
-            gameState.incrementDeployVersion();
-          }
+      if (success && result) {
+        if (result.completed) {
+          gameState.applyDeployCommit(game, result);
+        } else {
+          gameState.applyMove(game, result);
         }
+        gameState.incrementDeployVersion();
       }
     } catch (error) {
       logger.error('Failed to recombine:', { error });

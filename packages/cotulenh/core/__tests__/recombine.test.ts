@@ -290,7 +290,7 @@ describe('Recombine Option', () => {
       expect(airForceOption).toBeDefined()
 
       const result = game.recombine(airForceOption!)
-      expect(result).toBe(true)
+      expect(result.success).toBe(true)
 
       expect(game.get('c5')?.carrying).toHaveLength(1)
       expect(game.get('c4')?.type).toBe(TANK)
@@ -330,7 +330,7 @@ describe('Recombine Option', () => {
       expect(infantryOption).toBeDefined()
 
       const result = game.recombine(infantryOption!)
-      expect(result).toBe(true)
+      expect(result.success).toBe(true)
 
       expect(game.get('c5')?.carrying?.[0].type).toBe(INFANTRY)
       expect(game.get('c7')?.type).toBe(AIR_FORCE)

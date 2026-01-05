@@ -73,7 +73,11 @@ import {
 } from './move-session.js'
 import { createError, ErrorCode, logger } from '@cotulenh/common'
 
-export { MoveResult, type RecombineOption }
+export {
+  MoveResult,
+  type RecombineOption,
+  type RecombineResult,
+} from './move-session.js'
 
 // Structure for storing history states
 interface History {
@@ -1425,9 +1429,11 @@ export class CoTuLenh {
   /**
    * Executes a recombine operation safely.
    * @param option - The recombine option containing the square and piece to combine
-   * @returns MoveResult when complete, or intermediate result if session needs more moves
+   * @returns RecombineResult with success status and MoveResult
    */
-  public recombine(option: RecombineOption): boolean {
+  public recombine(
+    option: RecombineOption,
+  ): import('./move-session.js').RecombineResult {
     return recombine(this, option)
   }
 

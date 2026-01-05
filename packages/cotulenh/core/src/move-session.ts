@@ -564,7 +564,7 @@ export function handleMove(
   // 1. Ensure Session
   const session = MoveSession.ensure(game, move)
 
-  // 2. Add move to session (executes immediately)
+  // 2. Add move to session (executes immediately on board)
   session.addMove(move)
 
   // 3. Check if complete and should auto-commit
@@ -680,13 +680,25 @@ function getValidRecombineOptions(session: MoveSession): RecombineOption[] {
 }
 
 /**
+ * Result of a recombine operation
+ */
+export interface RecombineResult {
+  success: boolean
+  result?: MoveResult
+}
+
+/**
  * Apply a recombine option to the current game session.
  * Cancels current session and replays moves with the recombined piece.
+ * Returns the MoveResult so the caller can update UI and decide when to commit.
  */
-export function recombine(game: CoTuLenh, option: RecombineOption): boolean {
+export function recombine(
+  game: CoTuLenh,
+  option: RecombineOption,
+): RecombineResult {
   const session = game.getSession()
   if (!session) {
-    return false
+    return { success: false }
   }
 
   const moves = [...session.moves]
@@ -694,8 +706,26 @@ export function recombine(game: CoTuLenh, option: RecombineOption): boolean {
 
   try {
     const modifiedMoves = applyRecombineToMoves(moves, option)
-    return replayMoves(game, modifiedMoves)
+
+    // Replay all moves - no auto-commit, session stays open
+    let lastResult: MoveResult | null = null
+    for (const move of modifiedMoves) {
+      lastResult = game.move(move)
+      if (!lastResult) {
+        game.getSession()?.cancel()
+        return { success: false }
+      }
+    }
+
+    // Return the current session state
+    const currentSession = game.getSession()
+    if (currentSession) {
+      return { success: true, result: currentSession.getCurrentResult() }
+    }
+
+    return { success: true, result: lastResult ?? undefined }
   } catch {
-    return false
+    game.getSession()?.cancel()
+    return { success: false }
   }
 }
