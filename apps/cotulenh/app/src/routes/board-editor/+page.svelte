@@ -27,8 +27,10 @@
   </header>
 
   <div class="editor-layout">
-    <!-- Board Section (Left) -->
-    <section class="board-section">
+    <!-- Board and Sidebar wrapper -->
+    <div class="board-wrapper">
+      <!-- Board Section -->
+      <section class="board-section">
       {#if editor.initialFen}
         <BoardContainer
           config={editor.createEditorConfig()}
@@ -45,7 +47,7 @@
       {/if}
     </section>
 
-    <!-- Sidebar (Right) -->
+    <!-- Piece Panel (next to board) -->
     <aside class="sidebar">
       <!-- Palettes Container -->
       <PiecePalettesContainer
@@ -120,6 +122,7 @@
         </ul>
       </details>
     </aside>
+    </div>
   </div>
 
   <!-- Ghost piece that follows mouse (only in relevant areas) -->
@@ -170,18 +173,31 @@
 
   .editor-layout {
     flex: 1;
-    display: grid;
-    grid-template-columns: 1fr 320px;
-    gap: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
     min-height: 0;
     overflow: hidden;
+    padding: 1rem;
+  }
+
+  .board-wrapper {
+    display: flex;
+    gap: 1rem;
+    align-items: stretch;
   }
 
   @media (max-width: 1024px) {
     .editor-layout {
-      grid-template-columns: 1fr;
-      grid-template-rows: 1fr auto;
-      overflow-y: auto;
+      flex-direction: column;
+      padding: 0;
+    }
+
+    .board-wrapper {
+      flex-direction: column;
+      gap: 0;
+      width: 100%;
     }
   }
 
@@ -196,8 +212,9 @@
     min-height: 0;
     overflow: hidden;
     container-type: size;
-    width: 100%;
-    height: 100%;
+    width: 600px;
+    height: 650px;
+    flex-shrink: 0;
   }
 
   .board-container {
@@ -249,16 +266,19 @@
     box-shadow: 0 0 20px rgba(0, 255, 65, 0.4);
   }
 
-  /* Sidebar */
+  /* Sidebar (renamed to Piece Panel) */
   .sidebar {
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
     padding: 1rem;
     background: var(--color-mw-bg-panel);
-    border-left: 1px solid var(--color-mw-border);
+    border: 1px solid var(--color-mw-border);
+    border-radius: 4px;
     overflow-y: auto;
     overflow-x: hidden;
+    width: 320px;
+    flex-shrink: 0;
   }
 
   .palette-section {
@@ -525,20 +545,20 @@
 
   /* Responsive: Mobile Layout */
   @media (max-width: 900px) {
-    .editor-layout {
-      grid-template-columns: 1fr;
-      grid-template-rows: auto 1fr;
-    }
-
     .board-section {
-      padding: 0.5rem;
+      width: 100%;
       height: 50vh;
       flex: none;
+      border-radius: 0;
     }
 
     .sidebar {
+      width: 100%;
       border-left: none;
+      border-right: none;
       border-top: 1px solid var(--color-mw-border);
+      border-bottom: none;
+      border-radius: 0;
       padding: 0.75rem;
       overflow-y: auto;
     }

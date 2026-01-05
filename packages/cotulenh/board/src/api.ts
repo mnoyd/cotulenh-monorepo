@@ -6,6 +6,7 @@ import { anim, render } from './anim.js';
 import { DrawShape } from './draw.js';
 import { write as fenWrite } from './fen.js';
 import { dragNewPiece } from './drag.js';
+import * as drop from './drop.js';
 
 export interface Api {
   set(config: Config): void;
@@ -35,6 +36,8 @@ export interface Api {
 
   // for crazyhouse and board editors
   dragNewPiece(piece: cg.Piece, event: cg.MouchEvent, force?: boolean): void;
+
+  setDropMode(active: boolean, piece?: cg.Piece): void;
 
   // unbinds all events
   // (important for document-wide events like scroll and mousemove)
@@ -72,6 +75,11 @@ export function start(state: State, redrawAll: cg.Redraw): Api {
 
     dragNewPiece(piece, event, force): void {
       dragNewPiece(state, piece, event, force);
+    },
+
+    setDropMode(active, piece): void {
+      if (active) drop.setDropMode(state, piece);
+      else drop.cancelDropMode(state);
     },
 
     destroy(): void {
