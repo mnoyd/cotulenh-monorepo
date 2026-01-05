@@ -75,8 +75,11 @@ const startDragOrDraw =
     else if (e.shiftKey) {
       if (s.drawable.enabled) draw.start(s, e);
     } else if (!s.viewOnly) {
-      if (s.dropmode.active) drop(s, e);
-      else drag.start(s, e);
+      if (s.dropmode.active) {
+        drop(s, e);
+      } else {
+        drag.start(s, e);
+      }
     }
   };
 

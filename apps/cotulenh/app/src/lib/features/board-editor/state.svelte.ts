@@ -6,8 +6,8 @@ import { toast } from 'svelte-sonner';
 import type { EditorMode, SelectedPiece, GhostPosition } from './types.js';
 import { EMPTY_FEN, STARTING_FEN, DELETE_MARKER } from './constants.js';
 
-export function createBoardEditorState(getInitialFen?: () => string) {
-  let boardApi = $state<Api | null>(null);
+export function createBoardEditorState() {
+  let boardApi = $state.raw<Api | null>(null);
   let fenInput = $state('');
   let copyButtonText = $state('Copy');
   let boardOrientation = $state<'red' | 'blue'>('red');
@@ -100,16 +100,13 @@ export function createBoardEditorState(getInitialFen?: () => string) {
     if (mode === 'hand') {
       selectedPiece = null;
       showGhost = false;
-      boardApi.state.dropmode = { active: false };
+      boardApi.setDropMode(false);
       boardApi.state.movable.color = 'both';
       document.body.style.cursor = 'default';
     } else if (mode === 'delete') {
       selectedPiece = null;
       showGhost = false;
-      boardApi.state.dropmode = {
-        active: true,
-        piece: DELETE_MARKER
-      };
+      boardApi.setDropMode(true, DELETE_MARKER);
       document.body.style.cursor = 'not-allowed';
     } else if (mode === 'drop') {
       document.body.style.cursor = 'default';
@@ -157,10 +154,9 @@ export function createBoardEditorState(getInitialFen?: () => string) {
       if (isPromoted) {
         piece.promoted = true;
       }
-      boardApi.state.dropmode = {
-        active: true,
-        piece
-      };
+
+      boardApi.setDropMode(true, piece);
+
       document.body.style.cursor = 'default';
     }
   }
@@ -338,7 +334,7 @@ export function createBoardEditorState(getInitialFen?: () => string) {
     logger.debug('Cleaning up board editor.');
     document.body.style.cursor = 'default';
     if (boardApi) {
-      boardApi.state.dropmode = { active: false };
+      boardApi.setDropMode(false);
     }
   }
 

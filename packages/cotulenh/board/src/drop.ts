@@ -20,15 +20,21 @@ export function cancelDropMode(s: State): void {
 }
 
 export function drop(s: State, e: cg.MouchEvent): void {
-  if (!s.dropmode.active) return;
+  if (!s.dropmode.active) {
+    return;
+  }
 
   const piece = s.dropmode.piece;
 
   if (piece) {
     s.pieces.set(TEMP_KEY, piece);
     const position = util.eventPosition(e);
+
     const dest = position && board.getKeyAtDomPos(position, board.redPov(s), s.dom.bounds());
-    if (dest) board.dropNewPiece(s, TEMP_KEY, dest);
+
+    if (dest) {
+      board.dropNewPiece(s, TEMP_KEY, dest);
+    }
   }
   s.dom.redraw();
 }
