@@ -203,7 +203,7 @@ export class CoTuLenh {
 
     // Validate FEN format if not skipping validation
     if (!skipValidation) {
-      // validateFen(fen)
+      validateFen(fen, { throwOnError: true })
     }
 
     // Parse board position
@@ -1688,10 +1688,6 @@ export * from './type.js'
  * @returns true if the FEN string is valid and can be loaded, false otherwise
  */
 export function validateFenString(fen: string): boolean {
-  try {
-    validateFen(fen)
-    return true
-  } catch (e) {
-    return false
-  }
+  const result = validateFen(fen)
+  return result.valid
 }
