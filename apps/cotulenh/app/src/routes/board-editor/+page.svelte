@@ -27,37 +27,56 @@
   </header>
 
   <div class="editor-layout">
-    <!-- Board Section (Left) -->
-    <section class="board-section">
-      {#if editor.initialFen}
-        <BoardContainer
-          config={editor.createEditorConfig()}
-          onApiReady={editor.handleBoardReady}
-          onDestroy={editor.handleBoardDestroy}
-          class="board-editor-container
-                 {editor.editorMode === 'delete' ? 'mode-delete' : ''}
-                 {editor.selectedPiece !== null && editor.editorMode !== 'delete' ? 'mode-drop' : ''}"
+    <!-- Main content area (Palettes + Board) -->
+    <div class="main-content">
+      <!-- Palettes (Left of board) -->
+      <aside class="palettes-sidebar">
+        <PiecePalettesContainer
+          boardApi={editor.boardApi}
+          selectedPiece={editor.selectedPiece}
+          heroicMode={editor.heroicMode}
+          editorMode={editor.editorMode}
+          onPieceSelect={editor.handlePieceSelect}
+          onHandModeToggle={editor.toggleHandMode}
+          onDeleteModeToggle={editor.toggleDeleteMode}
+          onHeroicToggle={editor.toggleHeroicMode}
         />
-      {:else}
-        <div class="board-container">
-          <p class="text-mw-primary">Loading board...</p>
-        </div>
-      {/if}
-    </section>
+      </aside>
 
-    <!-- Sidebar (Right) -->
+      <!-- Board Section -->
+      <section class="board-section">
+        {#if editor.initialFen}
+          <BoardContainer
+            config={editor.createEditorConfig()}
+            onApiReady={editor.handleBoardReady}
+            onDestroy={editor.handleBoardDestroy}
+            class="board-editor-container
+                   {editor.editorMode === 'delete' ? 'mode-delete' : ''}
+                   {editor.selectedPiece !== null && editor.editorMode !== 'delete' ? 'mode-drop' : ''}"
+          />
+        {:else}
+          <div class="board-container">
+            <p class="text-mw-primary">Loading board...</p>
+          </div>
+        {/if}
+      </section>
+    </div>
+
+    <!-- Controls Sidebar (Right) -->
     <aside class="sidebar">
-      <!-- Palettes Container -->
-      <PiecePalettesContainer
-        boardApi={editor.boardApi}
-        selectedPiece={editor.selectedPiece}
-        heroicMode={editor.heroicMode}
-        editorMode={editor.editorMode}
-        onPieceSelect={editor.handlePieceSelect}
-        onHandModeToggle={editor.toggleHandMode}
-        onDeleteModeToggle={editor.toggleDeleteMode}
-        onHeroicToggle={editor.toggleHeroicMode}
-      />
+      <!-- Palettes (Mobile only - shown when palettes-sidebar is hidden) -->
+      <div class="mobile-palettes">
+        <PiecePalettesContainer
+          boardApi={editor.boardApi}
+          selectedPiece={editor.selectedPiece}
+          heroicMode={editor.heroicMode}
+          editorMode={editor.editorMode}
+          onPieceSelect={editor.handlePieceSelect}
+          onHandModeToggle={editor.toggleHandMode}
+          onDeleteModeToggle={editor.toggleDeleteMode}
+          onHeroicToggle={editor.toggleHeroicMode}
+        />
+      </div>
 
       <!-- Controls Section -->
       <div class="controls-section">
@@ -171,10 +190,35 @@
   .editor-layout {
     flex: 1;
     display: grid;
-    grid-template-columns: 1fr 320px;
+    grid-template-columns: 1fr auto;
     gap: 0;
     min-height: 0;
     overflow: hidden;
+  }
+
+  /* Main content: Palettes + Board grouped together */
+  .main-content {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    background: rgba(0, 0, 0, 0.4);
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+    padding: 1rem;
+  }
+
+  /* Palettes sidebar (left of board) */
+  .palettes-sidebar {
+    width: 260px;
+    flex-shrink: 0;
+    background: var(--color-mw-bg-panel);
+    border: 1px solid var(--color-mw-border);
+    border-radius: 4px;
+    padding: 0.5rem;
+    overflow-y: auto;
+    max-height: 100%;
   }
 
   @media (max-width: 1024px) {
@@ -182,6 +226,15 @@
       grid-template-columns: 1fr;
       grid-template-rows: 1fr auto;
       overflow-y: auto;
+    }
+
+    .main-content {
+      flex-direction: column;
+      padding: 0.5rem;
+    }
+
+    .palettes-sidebar {
+      display: none;
     }
   }
 
@@ -191,11 +244,12 @@
     align-items: center;
     justify-content: center;
     padding: 0;
-    background: rgba(0, 0, 0, 0.4);
     min-width: 0;
     min-height: 0;
     overflow: hidden;
     container-type: size;
+    max-width: 600px;
+    max-height: calc(600px * 13 / 12);
     width: 100%;
     height: 100%;
   }
@@ -259,6 +313,23 @@
     border-left: 1px solid var(--color-mw-border);
     overflow-y: auto;
     overflow-x: hidden;
+    width: 280px;
+    flex-shrink: 0;
+  }
+
+  /* Mobile palettes - hidden on desktop */
+  .mobile-palettes {
+    display: none;
+  }
+
+  @media (max-width: 1024px) {
+    .sidebar {
+      width: auto;
+    }
+
+    .mobile-palettes {
+      display: block;
+    }
   }
 
   .palette-section {

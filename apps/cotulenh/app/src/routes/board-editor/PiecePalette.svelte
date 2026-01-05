@@ -111,16 +111,29 @@
     flex-direction: column;
   }
 
-  /* Compact mode for sidebar */
+  /* Compact mode for sidebar - flexbox for dynamic flow */
   .palette-container.compact .pieces-grid {
-    grid-template-columns: repeat(4, 1fr);
-    gap: 0.25rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
     padding: 0;
+    justify-content: space-evenly;
   }
 
   .palette-container.compact .palette-piece-wrapper {
-    padding: 0.25rem;
+    padding: 2px;
     gap: 0;
+    background: transparent;
+    border: none;
+    flex-shrink: 0;
+  }
+
+  .palette-container.compact .palette-piece-wrapper:hover {
+    background: rgba(0, 243, 255, 0.15);
+  }
+
+  .palette-container.compact .palette-piece-wrapper.selected {
+    background: rgba(0, 243, 255, 0.2);
   }
 
   .palette-container.compact .palette-piece-container {
