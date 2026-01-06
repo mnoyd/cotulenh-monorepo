@@ -35,7 +35,6 @@ import {
 } from './type.js'
 import {
   printBoard,
-  validateFen,
   makeSanPiece,
   combinePieces,
   strippedSan,
@@ -45,6 +44,7 @@ import {
   moveToSanLan,
   extractPieces,
 } from './utils.js'
+import { validateFen, validateFenFormat } from './fen-validation.js'
 import {
   generateMoves,
   ALL_OFFSETS,
@@ -71,7 +71,12 @@ import {
   type RecombineOption,
   recombine,
 } from './move-session.js'
-import { createError, ErrorCode, logger } from '@cotulenh/common'
+import {
+  createError,
+  ErrorCode,
+  logger,
+  ValidationResult,
+} from '@cotulenh/common'
 
 export {
   MoveResult,
@@ -106,6 +111,28 @@ export class CoTuLenh {
 
   constructor(fen = DEFAULT_POSITION) {
     this.load(fen)
+  }
+
+  /**
+   * Validates a FEN string comprehensively.
+   * First validates format, then attempts to load for semantic validation.
+   * The load() → put() method validates terrain, stacking, and commander limit.
+   *
+   * @param fen - The FEN string to validate
+   * @param options - Validation options
+   * @param options.checkSemantics - Whether to validate semantics (default: true)
+   * @param options.throwOnError - Whether to throw on first error (default: false)
+   * @returns ValidationResult with all errors found
+   */
+  static checkFen(
+    fen: string,
+    options: { checkSemantics?: boolean; throwOnError?: boolean } = {},
+  ): ValidationResult {
+    return validateFen(fen, options, () => {
+      const game = new CoTuLenh()
+      game.load(fen, { skipValidation: true })
+      return { commanders: game._commanders }
+    })
   }
 
   /**
@@ -203,7 +230,11 @@ export class CoTuLenh {
 
     // Validate FEN format if not skipping validation
     if (!skipValidation) {
-      validateFen(fen, { throwOnError: true })
+      const result = validateFenFormat(fen)
+      if (!result.valid) {
+        const err = result.errors[0]
+        throw createError(err.code, err.message, err.location)
+      }
     }
 
     // Parse board position
@@ -1688,6 +1719,6 @@ export * from './type.js'
  * @returns true if the FEN string is valid and can be loaded, false otherwise
  */
 export function validateFenString(fen: string): boolean {
-  const result = validateFen(fen)
+  const result = CoTuLenh.checkFen(fen)
   return result.valid
 }
