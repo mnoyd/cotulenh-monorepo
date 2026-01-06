@@ -4,5 +4,6 @@ dist/
 scripts/
 
 /*.js
+!eslint.config.js
 /*.d.ts
 /*.js.map
