@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { Hand, Star, Trash2 } from 'lucide-svelte';
+
   type EditorMode = 'hand' | 'drop' | 'delete';
 
   let {
@@ -38,7 +40,7 @@
         }
       }}
     >
-      <span class="control-emoji">⭐</span>
+      <span class="control-emoji"><Star size={20} /></span>
     </div>
     <span class="piece-label max-lg:hidden">Heroic</span>
   </div>
@@ -64,7 +66,7 @@
         }
       }}
     >
-      <span class="control-emoji">✋</span>
+      <span class="control-emoji"><Hand size={20} /></span>
     </div>
     <span class="piece-label max-lg:hidden">Hand</span>
   </div>
@@ -90,7 +92,7 @@
         }
       }}
     >
-      <span class="control-emoji">🗑️</span>
+      <span class="control-emoji"><Trash2 size={20} /></span>
     </div>
     <span class="piece-label max-lg:hidden">Delete</span>
   </div>

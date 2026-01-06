@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { page } from '$app/stores';
+  import { Trash2, Hand, Star } from 'lucide-svelte';
   import BoardContainer from '$lib/components/BoardContainer.svelte';
   import PiecePalettesContainer from './PiecePalettesContainer.svelte';
   import { createBoardEditorState } from '$lib/features/board-editor';
@@ -127,10 +128,18 @@
         <details class="tips-section">
           <summary>Quick Tips</summary>
           <ul>
-            <li><strong>✋ Hand:</strong> Drag pieces on board</li>
-            <li><strong>Click piece:</strong> Select, then click to place</li>
-            <li><strong>🗑️ Delete:</strong> Click to remove pieces</li>
-            <li><strong>⭐ Heroic:</strong> Toggle promotion status</li>
+            <li class="flex items-center gap-1">
+              <strong><Hand size={14} class="inline" /> Hand:</strong> Drag pieces on board
+            </li>
+            <li class="flex items-center gap-1">
+              <strong>Click piece:</strong> Select, then click to place
+            </li>
+            <li class="flex items-center gap-1">
+              <strong><Trash2 size={14} class="inline" /> Delete:</strong> Click to remove pieces
+            </li>
+            <li class="flex items-center gap-1">
+              <strong><Star size={14} class="inline" /> Heroic:</strong> Toggle promotion status
+            </li>
           </ul>
         </details>
       </aside>
@@ -156,7 +165,7 @@
       class="ghost-recycle-bin"
       style="left: {editor.ghostPosition.x}px; top: {editor.ghostPosition.y}px;"
     >
-      🗑️
+      <Trash2 size={32} />
     </div>
   {/if}
 </main>
@@ -551,10 +560,10 @@
   .ghost-recycle-bin {
     position: fixed;
     z-index: 50;
-    font-size: 2rem;
     pointer-events: none;
     transform: translate(-50%, -50%);
     filter: drop-shadow(0 0 10px var(--color-mw-alert));
+    color: var(--color-mw-alert);
   }
 
   /* Mobile Layout Overrides - Must come last */
