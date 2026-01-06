@@ -2,7 +2,7 @@
 
 import { describe, it, expect, beforeEach } from 'vitest'
 import { CoTuLenh } from '../src/cotulenh.js'
-import { RED, BLUE, TANK, MILITIA, AIR_FORCE } from '../src/type.js'
+import { RED, BLUE, TANK, MILITIA, AIR_FORCE, SQUARE_MAP } from '../src/type.js'
 import { setupGameBasic } from './test-helpers.js'
 
 describe('DeploySession.processMove()', () => {
@@ -36,7 +36,7 @@ describe('DeploySession.processMove()', () => {
       // Verify session was created
       const session = game.getSession()
       expect(session).toBeTruthy()
-      expect(session?.stackSquare).toBe(0x92) // c3
+      expect(session?.stackSquare).toBe(SQUARE_MAP.c3)
       expect(session?.turn).toBe(RED)
       expect(session?.commands.length).toBe(1)
     })

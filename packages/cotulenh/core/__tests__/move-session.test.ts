@@ -59,13 +59,13 @@ describe('DeploySession', () => {
       ])
 
       const session = new MoveSession(game, {
-        stackSquare: 0x92, // c3
+        stackSquare: SQUARE_MAP.c3,
         turn: RED,
         originalPiece,
         isDeploy: true,
       })
 
-      expect(session.stackSquare).toBe(0x92)
+      expect(session.stackSquare).toBe(SQUARE_MAP.c3)
       expect(session.turn).toBe(RED)
       expect(session.originalPiece).toEqual(originalPiece)
       expect(session.commands).toEqual([])
@@ -80,7 +80,7 @@ describe('DeploySession', () => {
       ])
 
       const session = new MoveSession(game, {
-        stackSquare: 0x92,
+        stackSquare: SQUARE_MAP.c3,
         turn: RED,
         originalPiece,
         isDeploy: true,
@@ -107,14 +107,14 @@ describe('DeploySession', () => {
       game.put(originalPiece, 'c3')
 
       const session = new MoveSession(game, {
-        stackSquare: 0x92,
+        stackSquare: SQUARE_MAP.c3,
         turn: RED,
         originalPiece,
         isDeploy: true,
       })
 
       // Deploy Navy
-      const move = createMove(0x92, 0x72, createPiece(NAVY))
+      const move = createMove(SQUARE_MAP.c3, SQUARE_MAP.c5, createPiece(NAVY))
       session.addMove(move)
 
       const remaining = session.remaining
@@ -134,20 +134,24 @@ describe('DeploySession', () => {
       game.put(originalPiece, 'c3')
 
       const session = new MoveSession(game, {
-        stackSquare: 0x92,
+        stackSquare: SQUARE_MAP.c3,
         turn: RED,
         originalPiece,
         isDeploy: true,
       })
 
       // Deploy all pieces
-      const move1 = createMove(0x92, 0x72, createPiece(NAVY))
+      const move1 = createMove(SQUARE_MAP.c3, SQUARE_MAP.c5, createPiece(NAVY))
       session.addMove(move1)
 
-      const move2 = createMove(0x92, 0x82, createPiece(AIR_FORCE))
+      const move2 = createMove(
+        SQUARE_MAP.c3,
+        SQUARE_MAP.c2,
+        createPiece(AIR_FORCE),
+      )
       session.addMove(move2)
 
-      const move3 = createMove(0x92, 0x93, createPiece(TANK))
+      const move3 = createMove(SQUARE_MAP.c3, SQUARE_MAP.d3, createPiece(TANK))
       session.addMove(move3)
 
       const remaining = session.remaining
@@ -160,13 +164,13 @@ describe('DeploySession', () => {
       game.put(createPiece(NAVY), 'c3')
 
       const session = new MoveSession(game, {
-        stackSquare: 0x92,
+        stackSquare: SQUARE_MAP.c3,
         turn: RED,
         originalPiece: createPiece(NAVY),
         isDeploy: false,
       })
 
-      const move = createMove(0x92, 0x72, createPiece(NAVY))
+      const move = createMove(SQUARE_MAP.c3, SQUARE_MAP.c5, createPiece(NAVY))
       session.addMove(move)
 
       expect(session.moves).toHaveLength(1)
@@ -178,13 +182,13 @@ describe('DeploySession', () => {
       game.put(createPiece(NAVY), 'c3')
 
       const session = new MoveSession(game, {
-        stackSquare: 0x92,
+        stackSquare: SQUARE_MAP.c3,
         turn: RED,
         originalPiece: createPiece(NAVY),
         isDeploy: false,
       })
 
-      const move1 = createMove(0x92, 0x72, createPiece(NAVY))
+      const move1 = createMove(SQUARE_MAP.c3, SQUARE_MAP.c5, createPiece(NAVY))
       session.addMove(move1)
 
       const undone = session.undoLastMove()
@@ -202,21 +206,25 @@ describe('DeploySession', () => {
       game.put(originalPiece, 'c3')
 
       const session = new MoveSession(game, {
-        stackSquare: 0x92,
+        stackSquare: SQUARE_MAP.c3,
         turn: RED,
         originalPiece,
         isDeploy: true,
       })
 
-      const move1 = createMove(0x92, 0x72, createPiece(NAVY))
+      const move1 = createMove(SQUARE_MAP.c3, SQUARE_MAP.c5, createPiece(NAVY))
       session.addMove(move1)
 
-      const move2 = createMove(0x92, 0x82, createPiece(AIR_FORCE))
+      const move2 = createMove(
+        SQUARE_MAP.c3,
+        SQUARE_MAP.c2,
+        createPiece(AIR_FORCE),
+      )
       session.addMove(move2)
 
-      // Before cancel: Navy at c5, AirForce at c4, c3 should have nothing (all pieces deployed)
+      // Before cancel: Navy at c5, AirForce at c2, c3 should have nothing (all pieces deployed)
       expect(game.get('c5')).toBeDefined()
-      expect(game.get('c4')).toBeDefined()
+      expect(game.get('c2')).toBeDefined()
       expect(game.get('c3')).toBeUndefined() // All pieces deployed
 
       session.cancel()
@@ -237,7 +245,7 @@ describe('DeploySession', () => {
   describe('isComplete', () => {
     it('should return false when no moves made', () => {
       const session = new MoveSession(game, {
-        stackSquare: 0x92,
+        stackSquare: SQUARE_MAP.c3,
         turn: RED,
         originalPiece: createPiece(NAVY),
         isDeploy: false,
@@ -251,16 +259,20 @@ describe('DeploySession', () => {
       game.put(originalPiece, 'c3')
 
       const session = new MoveSession(game, {
-        stackSquare: 0x92,
+        stackSquare: SQUARE_MAP.c3,
         turn: RED,
         originalPiece,
         isDeploy: true,
       })
 
-      const move1 = createMove(0x92, 0x72, createPiece(NAVY))
+      const move1 = createMove(SQUARE_MAP.c3, SQUARE_MAP.c5, createPiece(NAVY))
       session.addMove(move1)
 
-      const move2 = createMove(0x92, 0x82, createPiece(AIR_FORCE))
+      const move2 = createMove(
+        SQUARE_MAP.c3,
+        SQUARE_MAP.c2,
+        createPiece(AIR_FORCE),
+      )
       session.addMove(move2)
 
       expect(session.isComplete).toBe(true)
@@ -271,7 +283,7 @@ describe('DeploySession', () => {
     it('should generate extended FEN with no moves', () => {
       const baseFen = game.fen()
       const session = new MoveSession(game, {
-        stackSquare: 0x92, // c3
+        stackSquare: SQUARE_MAP.c3,
         turn: RED,
         originalPiece: createPiece(NAVY),
         isDeploy: true,
@@ -291,22 +303,26 @@ describe('DeploySession', () => {
 
       const baseFen = game.fen()
       const session = new MoveSession(game, {
-        stackSquare: 0x92, // c3
+        stackSquare: SQUARE_MAP.c3,
         turn: RED,
         originalPiece,
         isDeploy: true,
       })
 
-      const move1 = createMove(0x92, 0x72, createPiece(NAVY)) // c3 to c5
+      const move1 = createMove(SQUARE_MAP.c3, SQUARE_MAP.c5, createPiece(NAVY))
       session.addMove(move1)
 
-      const move2 = createMove(0x92, 0x82, createPiece(AIR_FORCE)) // c3 to c4
+      const move2 = createMove(
+        SQUARE_MAP.c3,
+        SQUARE_MAP.c2,
+        createPiece(AIR_FORCE),
+      )
       session.addMove(move2)
 
       const extendedFEN = session.toFenString()
       // Tank remains at c3 -> T<
-      // Moves are N>c5, F>c4
-      expect(extendedFEN).toBe(`${baseFen} c3:T:N>c5,F>c4...`)
+      // Moves are N>c5, F>c2
+      expect(extendedFEN).toBe(`${baseFen} c3:T:N>c5,F>c2...`)
     })
 
     it('should generate extended FEN with capture', () => {
@@ -316,15 +332,15 @@ describe('DeploySession', () => {
 
       const baseFen = game.fen()
       const session = new MoveSession(game, {
-        stackSquare: 0x92,
+        stackSquare: SQUARE_MAP.c3,
         turn: RED,
         originalPiece,
         isDeploy: true,
       })
 
       const move = createMove(
-        0x92,
-        0x72,
+        SQUARE_MAP.c3,
+        SQUARE_MAP.c5,
         createPiece(NAVY),
         BITS.DEPLOY | BITS.CAPTURE,
       )
@@ -342,13 +358,13 @@ describe('DeploySession', () => {
 
       const baseFen = game.fen()
       const session = new MoveSession(game, {
-        stackSquare: 0x92,
+        stackSquare: SQUARE_MAP.c3,
         turn: RED,
         originalPiece: combinedPiece,
         isDeploy: true,
       })
 
-      const move = createMove(0x92, 0x72, combinedPiece)
+      const move = createMove(SQUARE_MAP.c3, SQUARE_MAP.c5, combinedPiece)
       session.addMove(move)
 
       const extendedFEN = session.toFenString()
@@ -363,22 +379,26 @@ describe('DeploySession', () => {
 
       const baseFen = game.fen()
       const session = new MoveSession(game, {
-        stackSquare: 0x92,
+        stackSquare: SQUARE_MAP.c3,
         turn: RED,
         originalPiece,
         isDeploy: true,
       })
 
       // Deploy all pieces
-      const move1 = createMove(0x92, 0x72, createPiece(NAVY))
+      const move1 = createMove(SQUARE_MAP.c3, SQUARE_MAP.c5, createPiece(NAVY))
       session.addMove(move1)
 
-      const move2 = createMove(0x92, 0x82, createPiece(AIR_FORCE))
+      const move2 = createMove(
+        SQUARE_MAP.c3,
+        SQUARE_MAP.c2,
+        createPiece(AIR_FORCE),
+      )
       session.addMove(move2)
 
       const extendedFEN = session.toFenString()
       // Nothing stays -> no < notation
-      expect(extendedFEN).toBe(`${baseFen} c3::N>c5,F>c4`)
+      expect(extendedFEN).toBe(`${baseFen} c3::N>c5,F>c2`)
     })
   })
 })
@@ -473,12 +493,16 @@ describe('handleDeployMove', () => {
     const commitSpy = vi.spyOn(game, 'commitSession')
 
     // 1. Deploy Navy (incomplete)
-    const move1 = createMove(0x92, 0x72, createPiece(NAVY))
+    const move1 = createMove(SQUARE_MAP.c3, SQUARE_MAP.c5, createPiece(NAVY))
     handleMove(game, move1)
     expect(commitSpy).not.toHaveBeenCalled()
 
     // 2. Deploy AirForce (complete)
-    const move2 = createMove(0x92, 0x82, createPiece(AIR_FORCE))
+    const move2 = createMove(
+      SQUARE_MAP.c3,
+      SQUARE_MAP.c2,
+      createPiece(AIR_FORCE),
+    )
     handleMove(game, move2)
 
     expect(commitSpy).toHaveBeenCalled()
@@ -489,12 +513,16 @@ describe('handleDeployMove', () => {
     const commitSpy = vi.spyOn(game, 'commitSession')
 
     // 1. Deploy Navy (incomplete)
-    const move1 = createMove(0x92, 0x72, createPiece(NAVY))
+    const move1 = createMove(SQUARE_MAP.c3, SQUARE_MAP.c5, createPiece(NAVY))
     handleMove(game, move1, false)
     expect(commitSpy).not.toHaveBeenCalled()
 
     // 2. Deploy AirForce (complete)
-    const move2 = createMove(0x92, 0x82, createPiece(AIR_FORCE))
+    const move2 = createMove(
+      SQUARE_MAP.c3,
+      SQUARE_MAP.c2,
+      createPiece(AIR_FORCE),
+    )
     handleMove(game, move2, false)
 
     expect(commitSpy).not.toHaveBeenCalled()
@@ -507,7 +535,7 @@ describe('handleDeployMove', () => {
 
   describe('Normal Move Handling', () => {
     it('should handle normal moves correctly', () => {
-      // Create a game with a piece (General) at c3 (0x92)
+      // Create a game with a piece (Commander) at c3
       const game = new CoTuLenh()
       // Use default position but clear c3/c4 first to be safe
       game.remove('c3')
@@ -529,8 +557,8 @@ describe('handleDeployMove', () => {
       // Spy on commitSession
       const commitSpy = vi.spyOn(game, 'commitSession')
 
-      // Move General from c3 to d4 (0x83)
-      const move = createMove(0x92, 0x83, piece, BITS.NORMAL) // c3 -> d4
+      // Move General from c3 to d4
+      const move = createMove(SQUARE_MAP.c3, SQUARE_MAP.d4, piece, BITS.NORMAL) // c3 -> d4
 
       // Handle the move
       const result = handleMove(game, move)
@@ -582,11 +610,8 @@ describe('Remaining pieces have no move', () => {
     game.clear()
 
     // Setup:
-    // Red HQ (h) carrying Red Commander (c) at f2 (0x81 if using hex, algebraic 'f2' is 0x81?? No, wait.
-    // Let's use algebraic to be safe or verify hex.
-    // f2 -> col=5, row=1 (0-indexed logic in some places?)
-    // In cotulenh.ts: 12 ranks (0-11?).
-    // Let's just use game.put with algebraic string.
+    // Red HQ (h) carrying Red Commander (c) at f2
+    // Using algebraic notation for clarity
 
     // Helper arguments: makePiece(type, color, heroic, carrying)
     // Red HQ, carrying Commander (wrapped in array)

@@ -290,6 +290,24 @@ describe('Move History and Undo', () => {
     expect(game.history().length).toBe(0)
     expect(game.turn()).toBe(RED)
   })
+
+  it('history() should preserve game state (regression test for undo-replay bug)', () => {
+    game.move({ from: 'c5', to: 'c6' })
+    game.move({ from: 'g8', to: 'g7' })
+
+    const fenBefore = game.fen()
+    const turnBefore = game.turn()
+
+    // Call history() which internally uses undo-replay
+    game.history()
+
+    const fenAfter = game.fen()
+    const turnAfter = game.turn()
+
+    // State should be unchanged after calling history()
+    expect(fenAfter).toBe(fenBefore)
+    expect(turnAfter).toBe(turnBefore)
+  })
 })
 
 describe('SAN Conversion', () => {

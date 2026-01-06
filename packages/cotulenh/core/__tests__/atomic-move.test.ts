@@ -16,6 +16,7 @@ import {
   TANK,
   INFANTRY,
   COMMANDER,
+  SQUARE_MAP,
 } from '../src/type.js'
 import { makePiece } from './test-helpers.js'
 
@@ -33,8 +34,8 @@ describe('Move Commands', () => {
       })
       const move: InternalMove = {
         color: RED,
-        from: 0xa3, // d2
-        to: 0xa5, // f2
+        from: SQUARE_MAP.d2,
+        to: SQUARE_MAP.f2,
         piece: makePiece(TANK, RED),
         flags: BITS.NORMAL,
       }
@@ -55,8 +56,8 @@ describe('Move Commands', () => {
       })
       const move: InternalMove = {
         color: RED,
-        from: 0xa3,
-        to: 0x83,
+        from: SQUARE_MAP.d2,
+        to: SQUARE_MAP.d4,
         piece: makePiece(TANK, RED),
         flags: BITS.CAPTURE,
       }
@@ -80,18 +81,18 @@ describe('Move Commands', () => {
       })
       const move: InternalMove = {
         color: RED,
-        from: 0xb5,
-        to: 0xb6,
+        from: SQUARE_MAP.f1,
+        to: SQUARE_MAP.g1,
         piece: makePiece(COMMANDER, RED),
         flags: BITS.NORMAL,
       }
 
       const command = new NormalMoveCommand(game, move)
       command.execute()
-      expect(game['_commanders'].r).toBe(0xb6)
+      expect(game['_commanders'].r).toBe(SQUARE_MAP.g1)
 
       command.undo()
-      expect(game['_commanders'].r).toBe(0xb5)
+      expect(game['_commanders'].r).toBe(SQUARE_MAP.f1)
     })
   })
 
@@ -102,8 +103,8 @@ describe('Move Commands', () => {
       })
       const move: InternalMove = {
         color: RED,
-        from: 0x84,
-        to: 0x85,
+        from: SQUARE_MAP.e4,
+        to: SQUARE_MAP.f4,
         piece: makePiece(INFANTRY, RED),
         flags: BITS.DEPLOY,
       }
@@ -125,8 +126,8 @@ describe('Move Commands', () => {
       })
       const move: InternalMove = {
         color: RED,
-        from: 0x84,
-        to: 0x85,
+        from: SQUARE_MAP.e4,
+        to: SQUARE_MAP.f4,
         piece: makePiece(INFANTRY, RED),
         flags: BITS.DEPLOY | BITS.CAPTURE,
       }
@@ -153,8 +154,8 @@ describe('Move Commands', () => {
       })
       const move: InternalMove = {
         color: RED,
-        from: 0x81,
-        to: 0x85,
+        from: SQUARE_MAP.b4,
+        to: SQUARE_MAP.f4,
         piece: makePiece(AIR_FORCE, RED),
         flags: BITS.DEPLOY | BITS.STAY_CAPTURE,
       }
@@ -200,8 +201,8 @@ describe('Move Commands', () => {
       expect(
         createMoveCommand(game, {
           color: RED,
-          from: 0x84,
-          to: 0x86,
+          from: SQUARE_MAP.e4,
+          to: SQUARE_MAP.g4,
           piece: makePiece(ARTILLERY, RED),
           flags: BITS.NORMAL,
         }),
@@ -210,8 +211,8 @@ describe('Move Commands', () => {
       expect(
         createMoveCommand(game, {
           color: BLUE,
-          from: 0x81,
-          to: 0xa3,
+          from: SQUARE_MAP.b4,
+          to: SQUARE_MAP.d4,
           piece: makePiece(AIR_FORCE, BLUE),
           flags: BITS.DEPLOY,
         }),
@@ -220,8 +221,8 @@ describe('Move Commands', () => {
       expect(
         createMoveCommand(game, {
           color: RED,
-          from: 0x84,
-          to: 0x81,
+          from: SQUARE_MAP.e4,
+          to: SQUARE_MAP.b4,
           piece: makePiece(ARTILLERY, RED),
           flags: BITS.STAY_CAPTURE,
         }),
@@ -251,8 +252,8 @@ describe('Move Commands', () => {
       })
       const move: InternalMove = {
         color: RED,
-        from: 0x35,
-        to: 0x36,
+        from: SQUARE_MAP.f8,
+        to: SQUARE_MAP.g8,
         piece: makePiece(INFANTRY, RED),
         flags: BITS.DEPLOY,
       }

@@ -50,12 +50,10 @@ describe.skip('Stress Play random game', () => {
   it('should play a random game without errors for multiple runs', () => {
     const numberOfRuns = 5 // Or any number of runs you want
     for (let run = 0; run < numberOfRuns; run++) {
-      console.log(`Starting run ${run + 1} of ${numberOfRuns}`)
       const game = new CoTuLenh()
       try {
         playRandomGame(game, 50) // Play up to 50 moves
         expect(game.fen()).toBeDefined()
-        console.log(`Run ${run + 1} completed. Final FEN: ${game.fen()}`)
       } catch (error) {
         console.error(`Error in run ${run + 1}:`, error)
         console.error(`Final FEN: ${game.fen()}`)
