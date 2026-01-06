@@ -1,8 +1,9 @@
 // Test for generate-stacks with mock blueprint
+import { describe, expect, it } from 'vitest';
 import { generatePredefinedStacks } from '../helpers/generate-stacks.js';
 
 describe('generatePredefinedStacks', () => {
-  test('should generate stacks from simple blueprint', () => {
+  it('should generate stacks from simple blueprint', () => {
     const mockBlueprint = {
       // Tank (64) can carry Commander (1)
       64: [[1]]
@@ -19,7 +20,7 @@ describe('generatePredefinedStacks', () => {
     expect(result.get(65)).toBe(64n | (1n << 16n)); // tank + commander (mask: 64|1 = 65)
   });
 
-  test('should handle multiple slots', () => {
+  it('should handle multiple slots', () => {
     const mockBlueprint = {
       // Navy (512) can carry: slot1=[128], slot2=[1,2]
       512: [[128], [1, 2]]
@@ -38,12 +39,12 @@ describe('generatePredefinedStacks', () => {
     expect(result.get(641)).toBe(512n | (128n << 16n) | (1n << 32n)); // navy + air_force(slot1) + commander(slot2)
   });
 
-  test('should handle empty blueprint', () => {
+  it('should handle empty blueprint', () => {
     const result = generatePredefinedStacks({});
     expect(result.size).toBe(0);
   });
 
-  test('should remove duplicates', () => {
+  it('should remove duplicates', () => {
     const mockBlueprint = {
       // Two carriers that can carry the same piece
       64: [[1]], // tank carries commander
@@ -57,7 +58,7 @@ describe('generatePredefinedStacks', () => {
     expect(commanderAloneEntries).toHaveLength(1);
   });
 
-  test('should generate correct slot assignments', () => {
+  it('should generate correct slot assignments', () => {
     const mockBlueprint = {
       // Carrier with 2 slots, different pieces in each
       100: [[10], [20]] // carrier(100): slot1=[10], slot2=[20]

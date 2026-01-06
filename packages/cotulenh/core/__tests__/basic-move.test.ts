@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, test } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import {
   TANK,
   RED,
@@ -106,7 +106,7 @@ describe('Basic MISSILE Moves on Empty Board', () => {
     game = setupGameBasic()
   })
 
-  test('Missile basic moves from g3 (Land - middle)', () => {
+  it('Missile basic moves from g3 (Land - middle)', () => {
     const startSquare: Square = 'g3'
     game.put({ type: MISSILE, color: RED }, startSquare)
 
@@ -153,7 +153,7 @@ describe('Basic MISSILE Moves on Empty Board', () => {
     expect(actualDestinations).toEqual(expectedDestinations)
   })
 
-  test('Missile move with obstacles', () => {
+  it('Missile move with obstacles', () => {
     const startSquare: Square = 'g3'
     game.put({ type: MISSILE, color: RED }, startSquare)
 
@@ -200,7 +200,7 @@ describe('Basic MISSILE Moves on Empty Board', () => {
     expect(actualDestinations).toEqual(expectedDestinations)
   })
 
-  test('Missile basic moves near the board edge', () => {
+  it('Missile basic moves near the board edge', () => {
     const startSquare: Square = 'c1'
     game.put({ type: MISSILE, color: RED }, startSquare)
 
@@ -235,7 +235,7 @@ describe('Basic AIR_FORCE Moves on Empty Board', () => {
     game = setupGameBasic()
   })
 
-  test('Air Force basic moves from g5 (Land)', () => {
+  it('Air Force basic moves from g5 (Land)', () => {
     const startSquare: Square = 'g5'
     game.put({ type: AIR_FORCE, color: RED }, startSquare)
 
@@ -270,7 +270,7 @@ describe('Basic AIR_FORCE Moves on Empty Board', () => {
     expect(moves).toHaveLength(expectedDestinations.length)
   })
 
-  test('Air Force basic moves from c5 (Coast)', () => {
+  it('Air Force basic moves from c5 (Coast)', () => {
     const startSquare: Square = 'c5'
     game.put({ type: AIR_FORCE, color: RED }, startSquare)
 
@@ -299,7 +299,7 @@ describe('Basic AIR_FORCE Moves on Empty Board', () => {
     expect(moves).toHaveLength(expectedDestinations.length)
   })
 
-  test('Air Force basic moves from a1 (Water)', () => {
+  it('Air Force basic moves from a1 (Water)', () => {
     const startSquare: Square = 'a1'
     game.put(
       { type: NAVY, color: RED, carrying: [{ type: AIR_FORCE, color: RED }] },
