@@ -78,13 +78,10 @@ describe('Debug Standardize RemovePieceAction', () => {
     })
 
     if (afDeployMove) {
-      console.log('AF Deploy Move FOUND')
       // We can execute it via game.move if we pass correct structure, or just trust generation works
       // The goal of this task was Standardize RemoveFromStackAction for NORMAL moves.
       // Deploy moves use SingleDeployMoveCommand which uses RemoveFromStackAction.
       // We verified RemoveFromStackAction logic in previous test case.
-    } else {
-      console.log('AF Deploy Move NOT found')
     }
 
     // Now verify NormalMoveCommand for moving the WHOLE STACK (NAVY+AF)
@@ -93,7 +90,6 @@ describe('Debug Standardize RemovePieceAction', () => {
       (m) => m.piece && m.piece.type === NAVY && m.to === 'a2' && !m.isDeploy,
     )
     if (navyMove) {
-      console.log('Navy Normal Move FOUND')
       const res = game.move({
         from: navyMove.from,
         to: navyMove.to,
@@ -108,9 +104,6 @@ describe('Debug Standardize RemovePieceAction', () => {
       expect(atA2).toBeDefined()
       expect(atA2?.type).toBe(NAVY)
       expect(atA2?.carrying?.[0].type).toBe(AIR_FORCE)
-    } else {
-      console.log('Navy Normal Move NOT found')
-      // Fail if not found?
     }
   })
 })
