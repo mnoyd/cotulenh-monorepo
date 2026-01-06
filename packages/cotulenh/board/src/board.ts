@@ -18,7 +18,7 @@ import { createError, ErrorCode } from '@cotulenh/common';
 export function toggleOrientation(state: HeadlessState): void {
   state.orientation = opposite(state.orientation);
 }
-export function callUserFunction<T extends (...args: any[]) => void>(
+export function callUserFunction<T extends (...args: never[]) => void>(
   f: T | undefined,
   ...args: Parameters<T>
 ): void {

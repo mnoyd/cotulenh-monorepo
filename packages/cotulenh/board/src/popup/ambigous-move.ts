@@ -36,7 +36,7 @@ function createStartHandler<T>(option: AmbigousMoveHandlingOption<T>): (s: State
  * Get the ambiguous move handler for the current ambiguous move type
  * Uses the registry to avoid circular dependencies
  */
-export function getAmbigousMoveHandling(state: State): AmbigousMoveHandling<any> | undefined {
+export function getAmbigousMoveHandling(state: State): AmbigousMoveHandling<unknown> | undefined {
   if (!state.ambigousMove) {
     return undefined;
   }

@@ -5,7 +5,7 @@ import { CTLPopup } from './popup-factory';
  * This breaks the circular dependency between popup-factory and popup consumers
  */
 class PopupRegistry {
-  private readonly popups = new Map<string, CTLPopup<any>>();
+  private readonly popups = new Map<string, CTLPopup<unknown>>();
 
   /**
    * Register a popup instance with a type identifier
@@ -17,7 +17,7 @@ class PopupRegistry {
   /**
    * Get a registered popup by type
    */
-  get(type: string): CTLPopup<any> | undefined {
+  get(type: string): CTLPopup<unknown> | undefined {
     return this.popups.get(type);
   }
 

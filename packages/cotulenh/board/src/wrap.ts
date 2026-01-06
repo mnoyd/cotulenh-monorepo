@@ -1,8 +1,9 @@
 import { HeadlessState } from './state.js';
 import { files, ranks, Color as cgColor } from './types.js'; // Import Color as cgColor to avoid conflict if any
 import { createEl } from './util.js';
+import { Elements } from './types.js';
 
-export function renderWrap(element: HTMLElement, s: HeadlessState): any {
+export function renderWrap(element: HTMLElement, s: HeadlessState): Elements {
   element.innerHTML = '';
 
   // ensure the cg-wrap class is set

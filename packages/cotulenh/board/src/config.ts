@@ -72,16 +72,19 @@ export function applyAnimation(state: HeadlessState, config: Config): void {
   }
 }
 
-function deepMerge(base: any, extend: any): void {
+function deepMerge(base: object, extend: object): void {
   for (const key in extend) {
     if (Object.prototype.hasOwnProperty.call(extend, key)) {
       if (
         Object.prototype.hasOwnProperty.call(base, key) &&
-        isPlainObject(base[key]) &&
-        isPlainObject(extend[key])
+        isPlainObject((base as Record<string, unknown>)[key]) &&
+        isPlainObject((extend as Record<string, unknown>)[key])
       )
-        deepMerge(base[key], extend[key]);
-      else base[key] = extend[key];
+        deepMerge(
+          (base as Record<string, unknown>)[key] as object,
+          (extend as Record<string, unknown>)[key] as object,
+        );
+      else (base as Record<string, unknown>)[key] = (extend as Record<string, unknown>)[key];
     }
   }
 }
