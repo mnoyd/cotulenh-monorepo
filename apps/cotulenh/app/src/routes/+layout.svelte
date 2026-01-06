@@ -8,7 +8,7 @@
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
   import SettingsDialog from '$lib/components/SettingsDialog.svelte';
   import ShortcutsDialog from '$lib/components/ShortcutsDialog.svelte';
-  import { Menu } from 'lucide-svelte';
+  import { Menu, Home, PenSquare, Settings, Keyboard } from 'lucide-svelte';
 
   interface Props {
     children: import('svelte').Snippet;
@@ -19,12 +19,9 @@
   let settingsOpen = $state(false);
   let shortcutsOpen = $state(false);
 
-  // Log only in browser
   $effect(() => {
     if (browser) {
       logger.info('CoTuLenh App Initialized');
-      // Future: Register Sentry processor here
-      // logger.registerProcessor(new SentryProcessor());
     }
   });
 </script>
@@ -33,157 +30,140 @@
   <div class="scanline-overlay"></div>
   <div class="vignette-overlay"></div>
   <Sonner />
-  <nav class="app-nav">
-    <div class="nav-content">
-      <div class="nav-brand">
-        <svg class="logo-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-          <g transform="translate(-128, -170) scale(1.5)">
-            <!-- Chin Strap (behind helmet brim) -->
-            <path
-              d="M 176 340 C 176 420 336 420 336 340"
-              fill="none"
-              stroke="#2a4d36"
-              stroke-width="8"
-              stroke-linecap="round"
-            />
-            <!-- Chin Strap Buckle -->
-            <rect
-              x="241"
-              y="395"
-              width="30"
-              height="14"
-              rx="4"
-              fill="#6b7c4b"
-              stroke="#2a4d36"
-              stroke-width="2"
-            />
 
-            <!-- HELMET -->
-            <!-- Main Dome (Green) -->
-            <path d="M 160 300 C 160 140 352 140 352 300 Z" fill="#3c7a46" />
-
-            <!-- Ribs/Segments on the dome (Dark Green Lines) -->
-            <!-- Center Vertical Line -->
-            <line x1="256" y1="180" x2="256" y2="300" stroke="#204526" stroke-width="4" />
-            <!-- Left Curve -->
-            <path d="M 256 182 Q 200 180 196 300" fill="none" stroke="#204526" stroke-width="4" />
-            <!-- Right Curve -->
-            <path d="M 256 182 Q 312 180 316 300" fill="none" stroke="#204526" stroke-width="4" />
-
-            <!-- Horizontal Band around dome (just above brim) -->
-            <path
-              d="M 160 280 Q 256 260 352 280 L 352 300 Q 256 280 160 300 Z"
-              fill="#33683b"
-              stroke="#204526"
-              stroke-width="3"
-            />
-
-            <!-- Brim (projecting front/sides) -->
-            <path
-              d="M 130 310 Q 256 270 382 310 L 370 345 Q 256 315 142 345 Z"
-              fill="#3c7a46"
-              stroke="#204526"
-              stroke-width="4"
-              stroke-linejoin="round"
-            />
-
-            <!-- Yellow Circle with Red Star Emblem -->
-            <circle cx="256" cy="245" r="28" fill="#fdd835" stroke="#e65100" stroke-width="2" />
-            <!-- Red Star -->
-            <polygon
-              points="256,227 263,243 280,243 266,254 271,270 256,260 241,270 246,254 232,243 249,243"
-              fill="#d32f2f"
-            />
-
-            <!-- Little knob on top -->
-            <path
-              d="M 246 180 Q 256 170 266 180 Z"
-              fill="#3c7a46"
-              stroke="#204526"
-              stroke-width="3"
-            />
-          </g>
-        </svg>
-        <div class="flex flex-col">
-          <h2 class="nav-title tracking-tighter">Cờ Tư Lệnh</h2>
-          <span class="text-[0.6rem] text-primary tracking-[0.2em] font-mono leading-none"
-            >TACTICAL COMMAND</span
-          >
-        </div>
-      </div>
-      <div class="nav-links">
-        <a href="/" class="nav-link" class:active={$page.url.pathname === '/'}>
-          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path
-              d="M3 9L12 2L21 9V20C21 20.5304 20.7893 21.0391 20.4142 21.4142C20.0391 21.7893 19.5304 22 19 22H5C4.46957 22 3.96086 21.7893 3.58579 21.4142C3.21071 21.0391 3 20.5304 3 20V9Z"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-          </svg>
-          <span class="hidden md:inline">DEPLOY</span>
-        </a>
-        <a
-          href="/board-editor"
-          class="nav-link"
-          class:active={$page.url.pathname === '/board-editor'}
-        >
-          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path
-              d="M11 4H4C3.46957 4 2.96086 4.21071 2.58579 4.58579C2.21071 4.96086 2 5.46957 2 6V20C2 20.5304 2.21071 21.0391 2.58579 21.4142C2.96086 21.7893 3.46957 22 4 22H18C18.5304 22 19.0391 21.7893 19.4142 21.4142C19.7893 21.0391 20 20.5304 20 20V13"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-            <path
-              d="M18.5 2.50001C18.8978 2.10219 19.4374 1.87869 20 1.87869C20.5626 1.87869 21.1022 2.10219 21.5 2.50001C21.8978 2.89784 22.1213 3.4374 22.1213 4.00001C22.1213 4.56262 21.8978 5.10219 21.5 5.50001L12 15L8 16L9 12L18.5 2.50001Z"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-          </svg>
-          <span class="hidden md:inline">EDITOR</span>
-        </a>
-
-        {#if browser}
-          <DropdownMenu.Root>
-            <DropdownMenu.Trigger>
-              <button class="nav-link settings-trigger" aria-label="Menu" title="Menu">
-                <Menu class="nav-icon" />
-              </button>
-            </DropdownMenu.Trigger>
-            <DropdownMenu.Content>
-              <DropdownMenu.Item onclick={() => (settingsOpen = true)}>Settings</DropdownMenu.Item>
-              <DropdownMenu.Item onclick={() => (shortcutsOpen = true)}>
-                Keyboard Shortcuts
-              </DropdownMenu.Item>
-              <DropdownMenu.Separator />
-              <DropdownMenu.Item>
-                {#snippet child({ props })}
-                  <a href="/board-editor" {...props}>Board Editor</a>
-                {/snippet}
-              </DropdownMenu.Item>
-            </DropdownMenu.Content>
-          </DropdownMenu.Root>
-        {:else}
-          <button class="nav-link settings-trigger" aria-label="Menu" title="Menu">
-            <Menu class="nav-icon" />
-          </button>
-        {/if}
-      </div>
+  <!-- Desktop Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <svg class="logo-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+        <g transform="translate(-128, -170) scale(1.5)">
+          <path
+            d="M 176 340 C 176 420 336 420 336 340"
+            fill="none"
+            stroke="#2a4d36"
+            stroke-width="8"
+            stroke-linecap="round"
+          />
+          <rect
+            x="241"
+            y="395"
+            width="30"
+            height="14"
+            rx="4"
+            fill="#6b7c4b"
+            stroke="#2a4d36"
+            stroke-width="2"
+          />
+          <path d="M 160 300 C 160 140 352 140 352 300 Z" fill="#3c7a46" />
+          <line x1="256" y1="180" x2="256" y2="300" stroke="#204526" stroke-width="4" />
+          <path d="M 256 182 Q 200 180 196 300" fill="none" stroke="#204526" stroke-width="4" />
+          <path d="M 256 182 Q 312 180 316 300" fill="none" stroke="#204526" stroke-width="4" />
+          <path
+            d="M 160 280 Q 256 260 352 280 L 352 300 Q 256 280 160 300 Z"
+            fill="#33683b"
+            stroke="#204526"
+            stroke-width="3"
+          />
+          <path
+            d="M 130 310 Q 256 270 382 310 L 370 345 Q 256 315 142 345 Z"
+            fill="#3c7a46"
+            stroke="#204526"
+            stroke-width="4"
+            stroke-linejoin="round"
+          />
+          <circle cx="256" cy="245" r="28" fill="#fdd835" stroke="#e65100" stroke-width="2" />
+          <polygon
+            points="256,227 263,243 280,243 266,254 271,270 256,260 241,270 246,254 232,243 249,243"
+            fill="#d32f2f"
+          />
+          <path
+            d="M 246 180 Q 256 170 266 180 Z"
+            fill="#3c7a46"
+            stroke="#204526"
+            stroke-width="3"
+          />
+        </g>
+      </svg>
     </div>
-  </nav>
+
+    <nav class="sidebar-nav">
+      <a href="/" class="sidebar-link" class:active={$page.url.pathname === '/'} title="Deploy">
+        <Home class="sidebar-icon" />
+        <span class="sidebar-label">Deploy</span>
+      </a>
+      <a
+        href="/board-editor"
+        class="sidebar-link"
+        class:active={$page.url.pathname === '/board-editor'}
+        title="Editor"
+      >
+        <PenSquare class="sidebar-icon" />
+        <span class="sidebar-label">Editor</span>
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <button
+        class="sidebar-link"
+        onclick={() => (shortcutsOpen = true)}
+        title="Keyboard Shortcuts"
+      >
+        <Keyboard class="sidebar-icon" />
+        <span class="sidebar-label">Shortcuts</span>
+      </button>
+      <button class="sidebar-link" onclick={() => (settingsOpen = true)} title="Settings">
+        <Settings class="sidebar-icon" />
+        <span class="sidebar-label">Settings</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- Mobile Menu Button -->
+  {#if browser}
+    <div class="mobile-menu">
+      <DropdownMenu.Root>
+        <DropdownMenu.Trigger>
+          <button class="mobile-menu-trigger" aria-label="Menu" title="Menu">
+            <Menu size={24} />
+          </button>
+        </DropdownMenu.Trigger>
+        <DropdownMenu.Content align="start" side="bottom">
+          <DropdownMenu.Item>
+            {#snippet child({ props })}
+              <a href="/" {...props}>
+                <Home size={16} />
+                Deploy
+              </a>
+            {/snippet}
+          </DropdownMenu.Item>
+          <DropdownMenu.Item>
+            {#snippet child({ props })}
+              <a href="/board-editor" {...props}>
+                <PenSquare size={16} />
+                Editor
+              </a>
+            {/snippet}
+          </DropdownMenu.Item>
+          <DropdownMenu.Separator />
+          <DropdownMenu.Item onclick={() => (shortcutsOpen = true)}>
+            <Keyboard size={16} />
+            Keyboard Shortcuts
+          </DropdownMenu.Item>
+          <DropdownMenu.Item onclick={() => (settingsOpen = true)}>
+            <Settings size={16} />
+            Settings
+          </DropdownMenu.Item>
+        </DropdownMenu.Content>
+      </DropdownMenu.Root>
+    </div>
+  {/if}
 
   <!-- Dialogs -->
   <SettingsDialog bind:open={settingsOpen} />
   <ShortcutsDialog bind:open={shortcutsOpen} />
 
-  <div class="app-content">
+  <main class="app-content">
     {@render children()}
-  </div>
+  </main>
 </div>
 
 <style>
@@ -220,7 +200,6 @@
     animation: vignette-pulse 4s ease-in-out infinite;
   }
 
-  /* Layout */
   :global(body) {
     background-color: var(--color-mw-bg-dark);
     color: #e5e5e5;
@@ -232,86 +211,83 @@
   .app-container {
     min-height: 100vh;
     display: flex;
-    flex-direction: column;
     background: radial-gradient(circle at top center, #1e293b 0%, var(--color-mw-bg-dark) 40%);
   }
 
-  /* Navigation */
-  .app-nav {
-    background: rgba(15, 23, 42, 0.7);
-    backdrop-filter: blur(16px);
-    border-bottom: 1px solid var(--color-mw-border);
-    position: sticky;
+  /* Desktop Sidebar */
+  .sidebar {
+    position: fixed;
+    left: 0;
     top: 0;
+    bottom: 0;
+    width: 72px;
+    background: rgba(15, 23, 42, 0.9);
+    backdrop-filter: blur(16px);
+    border-right: 1px solid var(--color-mw-border);
+    display: flex;
+    flex-direction: column;
     z-index: 100;
+    padding: 1rem 0;
   }
 
-  .nav-content {
-    max-width: 1800px;
-    margin: 0 auto;
-    padding: 0 1.5rem;
+  .sidebar-brand {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    height: 70px;
-  }
-
-  .nav-brand {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
+    justify-content: center;
+    padding: 0.5rem;
+    margin-bottom: 1.5rem;
   }
 
   .logo-icon {
-    width: 48px;
-    height: 48px;
+    width: 40px;
+    height: 40px;
     filter: drop-shadow(0 0 10px rgba(0, 243, 255, 0.3));
   }
 
-  .nav-title {
-    font-family: var(--font-display);
-    font-size: 1.25rem; /* Reduced from 1.5rem */
-    font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    background: linear-gradient(135deg, #fff 0%, var(--color-mw-primary) 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    text-shadow: 0 0 15px rgba(0, 243, 255, 0.2);
-    margin: 0;
+  .sidebar-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    padding: 0 0.5rem;
+    flex: 1;
   }
 
-  .nav-links {
+  .sidebar-footer {
     display: flex;
-    gap: 0.5rem;
+    flex-direction: column;
+    gap: 0.25rem;
+    padding: 0 0.5rem;
+    border-top: 1px solid var(--color-mw-border);
+    padding-top: 0.75rem;
+    margin-top: 0.75rem;
   }
 
-  .nav-link {
+  .sidebar-link {
     display: flex;
+    flex-direction: column;
     align-items: center;
-    gap: 0.5rem;
-    padding: 0.5rem 1rem;
-    border-radius: 4px;
+    gap: 0.25rem;
+    padding: 0.75rem 0.5rem;
+    border-radius: 8px;
     text-decoration: none;
     color: rgba(255, 255, 255, 0.6);
     font-weight: 500;
-    font-size: 0.85rem;
+    font-size: 0.65rem;
     transition: all 0.2s ease;
     border: 1px solid transparent;
     font-family: var(--font-mono);
     text-transform: uppercase;
     letter-spacing: 0.05em;
+    background: transparent;
+    cursor: pointer;
   }
 
-  .nav-link:hover {
+  .sidebar-link:hover {
     color: var(--color-mw-primary);
     background: rgba(0, 243, 255, 0.05);
     border-color: rgba(0, 243, 255, 0.2);
-    box-shadow: 0 0 10px rgba(0, 243, 255, 0.1);
   }
 
-  .nav-link.active {
+  .sidebar-link.active {
     color: var(--color-mw-bg-dark);
     background: var(--color-mw-primary);
     border-color: var(--color-mw-primary);
@@ -319,36 +295,71 @@
     font-weight: 700;
   }
 
-  .nav-icon {
-    width: 18px;
-    height: 18px;
-    stroke-width: 2;
+  .sidebar-icon {
+    width: 22px;
+    height: 22px;
   }
 
+  .sidebar-label {
+    white-space: nowrap;
+  }
+
+  /* Mobile Menu */
+  .mobile-menu {
+    display: none;
+    position: fixed;
+    top: 0.75rem;
+    left: 0.75rem;
+    z-index: 150;
+  }
+
+  .mobile-menu-trigger {
+    width: 44px;
+    height: 44px;
+    border-radius: 8px;
+    background: rgba(15, 23, 42, 0.9);
+    color: var(--color-mw-primary);
+    border: 1px solid var(--color-mw-border);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(8px);
+    transition: all 0.2s ease;
+  }
+
+  .mobile-menu-trigger:hover {
+    background: rgba(15, 23, 42, 1);
+    border-color: var(--color-mw-primary);
+    box-shadow: 0 0 15px rgba(0, 243, 255, 0.2);
+  }
+
+  .mobile-menu-trigger:active {
+    transform: scale(0.95);
+  }
+
+  /* Main Content */
   .app-content {
     flex: 1;
     display: flex;
     flex-direction: column;
-    padding: 0;
+    margin-left: 72px;
+    min-height: 100vh;
   }
 
+  /* Mobile Styles */
   @media (max-width: 768px) {
-    .nav-content {
-      padding: 0 1rem;
-      height: 60px;
+    .sidebar {
+      display: none;
     }
 
-    .logo-icon {
-      width: 36px;
-      height: 36px;
+    .mobile-menu {
+      display: block;
     }
 
-    .nav-title {
-      font-size: 0.9rem;
-    }
-
-    .nav-link {
-      padding: 0.5rem;
+    .app-content {
+      margin-left: 0;
     }
   }
 
