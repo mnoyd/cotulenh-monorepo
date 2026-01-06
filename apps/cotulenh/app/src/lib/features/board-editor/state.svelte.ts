@@ -239,7 +239,7 @@ export function createBoardEditorState() {
       setTimeout(() => {
         copyButtonText = 'Copy';
       }, 2000);
-    } catch (error) {
+    } catch {
       const textArea = document.createElement('textarea');
       textArea.value = fenInput;
       document.body.appendChild(textArea);
@@ -309,7 +309,7 @@ export function createBoardEditorState() {
         color: 'both',
         showDests: false,
         events: {
-          after: (_orig: unknown, _dest: unknown) => {
+          after: () => {
             if (boardApi) {
               boardApi.state.lastMove = undefined;
             }

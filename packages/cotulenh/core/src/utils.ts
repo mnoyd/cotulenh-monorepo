@@ -2,7 +2,6 @@ import { logger } from '@cotulenh/common'
 import {
   algebraic,
   file,
-  isDigit,
   LAND_MASK,
   NAVY_MASK,
   Piece,
@@ -174,7 +173,11 @@ export function printBoard(board: Record<number, Piece | undefined>) {
       const isBridge = ['f6', 'f7', 'h6', 'h7'].includes(alg)
 
       let bgCode = ''
-      let fgCode = piece ? (piece.color === RED ? '\x1b[31m' : '\x1b[34m') : ''
+      const fgCode = piece
+        ? piece.color === RED
+          ? '\x1b[31m'
+          : '\x1b[34m'
+        : ''
 
       // Use fixed-width display for all pieces (heroic or not)
       let symbol = ' '

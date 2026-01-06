@@ -15,7 +15,6 @@ import {
   AIR_FORCE,
   TANK,
   INFANTRY,
-  NAVY,
   COMMANDER,
 } from '../src/type.js'
 import { makePiece } from './test-helpers.js'

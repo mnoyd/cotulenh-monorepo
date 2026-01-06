@@ -94,7 +94,7 @@ describe('Last Guard Promotion', () => {
     game.put({ type: COMMANDER, color: BLUE }, 'g12')
     game['_turn'] = BLUE
 
-    const moveResult = game.move({ from: 'g12', to: 'g11', piece: COMMANDER }) // Just a move
+    game.move({ from: 'g12', to: 'g11', piece: COMMANDER }) // Just a move
 
     // Check Red status
     const tank = game.get('d2')

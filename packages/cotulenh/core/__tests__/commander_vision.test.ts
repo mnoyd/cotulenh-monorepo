@@ -19,7 +19,9 @@ describe('Commander Flying General Sight Block', () => {
     game.put({ type: COMMANDER, color: BLUE }, 'e12')
 
     const moves = game.moves({ verbose: true, square: 'd1' })
-    const destinations = moves.map((m: any) => m.to)
+    const destinations = moves
+      .map((m) => (typeof m.to === 'string' ? m.to : null))
+      .filter((v): v is string => v !== null)
 
     expect(destinations).toContain('d2') // Safe vertical
     expect(destinations).not.toContain('e1') // Exposed horizontal
@@ -35,7 +37,9 @@ describe('Commander Flying General Sight Block', () => {
     game.put({ type: COMMANDER, color: BLUE }, 'e12')
 
     const moves = game.moves({ verbose: true, square: 'e1' })
-    const destinations = moves.map((m: any) => m.to)
+    const destinations = moves
+      .map((m) => (typeof m.to === 'string' ? m.to : null))
+      .filter((v): v is string => v !== null)
 
     expect(destinations).toContain('d1') // Safe side step
     expect(destinations).not.toContain('e2') // Still exposed
@@ -52,7 +56,9 @@ describe('Commander Flying General Sight Block', () => {
     game.put({ type: 'i', color: BLUE }, 'e7') // Blocker
 
     const moves = game.moves({ verbose: true, square: 'd1' })
-    const destinations = moves.map((m: any) => m.to)
+    const destinations = moves
+      .map((m) => (typeof m.to === 'string' ? m.to : null))
+      .filter((v): v is string => v !== null)
 
     expect(destinations).toContain('e1') // Safe
   })
@@ -76,7 +82,9 @@ describe('Commander Flying General Sight Block', () => {
     game.put({ type: COMMANDER, color: BLUE }, 'e12')
 
     const moves = game.moves({ verbose: true, square: 'd1' })
-    const destinations = moves.map((m: any) => m.to)
+    const destinations = moves
+      .map((m) => (typeof m.to === 'string' ? m.to : null))
+      .filter((v): v is string => v !== null)
 
     expect(destinations).toContain('e1') // Should be allowed because Commander is hidden
   })

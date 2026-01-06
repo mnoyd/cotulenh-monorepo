@@ -15,7 +15,7 @@
     try {
       await navigator.clipboard.writeText(fen);
       toast.success('FEN copied to clipboard');
-    } catch (err) {
+    } catch {
       toast.error('Failed to copy');
     }
   }

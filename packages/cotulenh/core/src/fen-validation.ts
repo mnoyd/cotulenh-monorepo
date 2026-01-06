@@ -289,7 +289,11 @@ export function validateFen(
   if (!formatResult.valid) {
     if (throwOnError) {
       const err = formatResult.errors[0]
-      throw createError(err.code, err.message, err.location)
+      throw createError(
+        err.code,
+        err.message,
+        err.location as Record<string, unknown>,
+      )
     }
     return formatResult
   }

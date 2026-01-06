@@ -10,7 +10,6 @@ import {
   MILITIA,
   RED,
   BLUE,
-  PieceSymbol,
   SQUARE_MAP,
   ENGINEER,
 } from '../src/type'

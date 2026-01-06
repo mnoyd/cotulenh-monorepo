@@ -976,7 +976,7 @@ function generateMovesFromSquare(
   if (!pieceData || pieceData.color !== us) return
 
   if (pieceData.carrying && pieceData.carrying.length > 0) {
-    let candidates = flattenPiece(pieceData)
+    const candidates = flattenPiece(pieceData)
 
     moves.push(
       ...generateDeployMovesForPieces(

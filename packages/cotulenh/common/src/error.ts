@@ -96,9 +96,9 @@ export interface ValidateFenOptions {
  */
 export class CotulenhError extends Error {
   public readonly code: ErrorCode;
-  public readonly metadata?: Record<string, any>;
+  public readonly metadata?: Record<string, unknown>;
 
-  constructor(code: ErrorCode, message: string, metadata?: Record<string, any>) {
+  constructor(code: ErrorCode, message: string, metadata?: Record<string, unknown>) {
     super(message);
     this.name = 'CotulenhError';
     this.code = code;
@@ -128,7 +128,7 @@ export class CotulenhError extends Error {
 export function createError(
   code: ErrorCode,
   message?: string,
-  metadata?: Record<string, any>
+  metadata?: Record<string, unknown>
 ): CotulenhError {
   const msg = message || `CoTuLenh Error: ${code}`;
   return new CotulenhError(code, msg, metadata);

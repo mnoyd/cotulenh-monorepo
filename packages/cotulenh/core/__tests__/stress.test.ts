@@ -7,7 +7,7 @@ import { CoTuLenh } from '../src/cotulenh'
  * @returns The game instance after playing the moves
  */
 export function playRandomGame(game: CoTuLenh, depth = 20) {
-  let moves: string[] = []
+  const moves: string[] = []
   for (let i = 0; i < depth; i++) {
     const fenBeforeMove = game.fen() // Store FEN before making a move
     const legalMoves = game.moves() as string[]
@@ -53,12 +53,9 @@ describe.skip('Stress Play random game', () => {
       console.log(`Starting run ${run + 1} of ${numberOfRuns}`)
       const game = new CoTuLenh()
       try {
-        const playedMoves = playRandomGame(game, 50) // Play up to 50 moves
+        playRandomGame(game, 50) // Play up to 50 moves
         expect(game.fen()).toBeDefined()
-        expect(playedMoves.length).toBeGreaterThanOrEqual(0)
-        console.log(
-          `Run ${run + 1} completed. Moves: ${playedMoves.join(', ')}. Final FEN: ${game.fen()}`,
-        )
+        console.log(`Run ${run + 1} completed. Final FEN: ${game.fen()}`)
       } catch (error) {
         console.error(`Error in run ${run + 1}:`, error)
         console.error(`Final FEN: ${game.fen()}`)
@@ -70,7 +67,7 @@ describe.skip('Stress Play random game', () => {
   })
   it('should play a random game to depth 10', () => {
     const gameInstance = new CoTuLenh()
-    const playedMoves = playRandomGame(gameInstance, 10)
+    playRandomGame(gameInstance, 10)
     expect(gameInstance.fen()).toBeDefined()
     // You might want to add assertions about playedMoves if relevant, e.g.:
     // expect(playedMoves.length).toBeLessThanOrEqual(10);
@@ -78,7 +75,7 @@ describe.skip('Stress Play random game', () => {
 
   it('should play a random game to depth 20', () => {
     const gameInstance = new CoTuLenh()
-    const playedMoves = playRandomGame(gameInstance, 20)
+    playRandomGame(gameInstance, 20)
     expect(gameInstance.fen()).toBeDefined()
   })
 })

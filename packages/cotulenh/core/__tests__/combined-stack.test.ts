@@ -13,7 +13,7 @@ import {
   MILITIA,
 } from '../src/type'
 import { combinePieces } from '../src/utils'
-import { findVerboseMove, makePiece, setupGameBasic } from './test-helpers'
+import { findVerboseMove } from './test-helpers'
 
 describe('Stack Movement and Deployment', () => {
   let game: CoTuLenh

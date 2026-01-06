@@ -63,7 +63,7 @@ describe('DeploySession.processMove()', () => {
       )
       game['_turn'] = RED
 
-      const startFEN = game.fen()
+      game.fen()
       game.move({ from: 'c3', to: 'c4', piece: TANK, deploy: true })
 
       const session = game.getSession()
