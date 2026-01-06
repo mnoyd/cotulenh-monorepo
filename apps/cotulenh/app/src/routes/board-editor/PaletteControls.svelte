@@ -16,7 +16,7 @@
   } = $props();
 </script>
 
-<div class="control-buttons">
+<div class="control-buttons max-lg:gap-1 max-lg:my-1 max-lg:p-1">
   <!-- Heroic button -->
   <div
     class="palette-piece-wrapper control-button heroic-button"
@@ -40,7 +40,7 @@
     >
       <span class="control-emoji">⭐</span>
     </div>
-    <span class="piece-label">Heroic</span>
+    <span class="piece-label max-lg:hidden">Heroic</span>
   </div>
 
   <!-- Hand button -->
@@ -66,7 +66,7 @@
     >
       <span class="control-emoji">✋</span>
     </div>
-    <span class="piece-label">Hand</span>
+    <span class="piece-label max-lg:hidden">Hand</span>
   </div>
 
   <!-- Delete button -->
@@ -92,7 +92,7 @@
     >
       <span class="control-emoji">🗑️</span>
     </div>
-    <span class="piece-label">Delete</span>
+    <span class="piece-label max-lg:hidden">Delete</span>
   </div>
 </div>
 
@@ -223,20 +223,10 @@
     color: #fff;
   }
 
-  @media (max-width: 1024px) {
-    .control-buttons {
-      gap: 0.25rem;
-      margin: 0.25rem 0;
-      padding: 0.25rem;
-    }
-
+  @media (width < 1024px) {
     .palette-piece-container {
       width: clamp(30px, 7vw, 40px);
       height: clamp(30px, 7vw, 40px);
-    }
-
-    .piece-label {
-      display: none;
     }
   }
 </style>

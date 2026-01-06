@@ -26,9 +26,9 @@
   } = $props();
 </script>
 
-<div class="palettes-container">
+<div class="palettes-container max-lg:gap-2 max-lg:overflow-visible">
   <!-- Controls first on mobile, between palettes on desktop -->
-  <div class="controls-wrapper">
+  <div class="controls-wrapper max-lg:-order-1 max-lg:flex-shrink-0">
     <PaletteControls
       {heroicMode}
       {editorMode}
@@ -39,9 +39,9 @@
   </div>
 
   <!-- Red Palette - horizontally scrollable on mobile -->
-  <div class="palette-wrapper red-palette">
-    <h3 class="palette-header red">🔴 Red</h3>
-    <div class="palette-scroll-container">
+  <div class="palette-wrapper red-palette max-lg:py-1 max-lg:px-2 max-lg:flex-shrink-0 max-lg:max-h-20">
+    <h3 class="palette-header red max-lg:text-[0.65rem] max-lg:mb-1 max-lg:pb-0.5">🔴 Red</h3>
+    <div class="palette-scroll-container max-lg:overflow-x-auto max-lg:overflow-y-visible max-lg:snap-x max-lg:snap-mandatory max-lg:touch-pan-x max-lg:scrollbar-none">
       <PiecePalette
         {boardApi}
         color="red"
@@ -54,9 +54,9 @@
   </div>
 
   <!-- Blue Palette - horizontally scrollable on mobile -->
-  <div class="palette-wrapper blue-palette">
-    <h3 class="palette-header blue">🔵 Blue</h3>
-    <div class="palette-scroll-container">
+  <div class="palette-wrapper blue-palette max-lg:py-1 max-lg:px-2 max-lg:flex-shrink-0 max-lg:max-h-20">
+    <h3 class="palette-header blue max-lg:text-[0.65rem] max-lg:mb-1 max-lg:pb-0.5">🔵 Blue</h3>
+    <div class="palette-scroll-container max-lg:overflow-x-auto max-lg:overflow-y-visible max-lg:snap-x max-lg:snap-mandatory max-lg:touch-pan-x max-lg:scrollbar-none">
       <PiecePalette
         {boardApi}
         color="blue"
@@ -124,52 +124,5 @@
 
   .blue-palette {
     order: 2;
-  }
-
-  /* Mobile/Tablet Styles */
-  @media (max-width: 1024px) {
-    .palettes-container {
-      gap: 0.5rem;
-      /* No scrolling on the container itself */
-      overflow: visible;
-    }
-
-    /* Controls first on mobile */
-    .controls-wrapper {
-      order: -1;
-      flex-shrink: 0;
-    }
-
-    .palette-wrapper {
-      /* Compact styling for mobile */
-      padding: 0.25rem 0.5rem;
-      flex-shrink: 0;
-      /* Fixed height for horizontal scroll area */
-      max-height: 80px;
-    }
-
-    .palette-header {
-      font-size: 0.65rem;
-      margin-bottom: 0.25rem;
-      padding-bottom: 0.15rem;
-    }
-
-    /* Enable horizontal scroll on mobile */
-    .palette-scroll-container {
-      overflow-x: auto;
-      overflow-y: visible;
-      /* Horizontal scroll with momentum */
-      scroll-snap-type: x mandatory;
-      -webkit-overflow-scrolling: touch;
-      /* Prevent vertical scroll interference */
-      touch-action: pan-x;
-      /* Hide scrollbar but keep functionality */
-      scrollbar-width: none;
-      -ms-overflow-style: none;
-    }
-
-    .palette-scroll-container::-webkit-scrollbar {
-      display: none;
-    }
   }
 </style>

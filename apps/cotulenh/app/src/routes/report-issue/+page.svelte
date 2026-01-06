@@ -42,14 +42,14 @@ ${gameState}
   }
 </script>
 
-<div class="report-container" in:fade>
-  <div class="report-card">
+<div class="report-container max-md:p-4" in:fade>
+  <div class="report-card max-md:p-6">
     <div class="header">
       <h1>Report an Issue</h1>
       <p>Found a bug? Help us improve Co Tu Lenh.</p>
     </div>
 
-    <div class="connect-section">
+    <div class="connect-section max-md:grid-cols-1">
       <div class="info-box">
         <h3>🌟 Support the Project</h3>
         <p>Please consider giving a star to our repository to support open source development.</p>
@@ -84,7 +84,7 @@ ${gameState}
     </div>
 
     <div class="actions">
-      <button class="submit-btn" onclick={createGithubIssue} disabled={!issueDescription}>
+      <button class="submit-btn max-md:w-full max-md:min-w-0" onclick={createGithubIssue} disabled={!issueDescription}>
         {#if copied}
           Copied to Clipboard & Opening GitHub...
         {:else}
@@ -314,24 +314,5 @@ ${gameState}
 
   .cancel-link:hover {
     color: var(--mw-primary);
-  }
-
-  @media (max-width: 768px) {
-    .connect-section {
-      grid-template-columns: 1fr;
-    }
-
-    .report-container {
-      padding: var(--spacing-md);
-    }
-
-    .report-card {
-      padding: var(--spacing-lg);
-    }
-
-    .submit-btn {
-      width: 100%;
-      min-width: auto;
-    }
   }
 </style>

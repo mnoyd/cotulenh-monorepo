@@ -1,6 +1,11 @@
 @import 'tailwindcss';
 
 @theme {
+  /* Custom Breakpoints - standardized responsive system */
+  --breakpoint-xs: 480px;
+
+  /* Note: Tailwind defaults are:
+     sm: 640px, md: 768px, lg: 1024px, xl: 1280px, 2xl: 1536px */
   /* Modern Warfare Theme Colors */
   --color-mw-primary: #00f3ff;
   --color-mw-primary-dim: rgba(0, 243, 255, 0.15);

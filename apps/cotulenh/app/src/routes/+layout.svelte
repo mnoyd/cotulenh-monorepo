@@ -32,7 +32,7 @@
   <Sonner />
 
   <!-- Desktop Sidebar -->
-  <aside class="sidebar">
+  <aside class="sidebar max-md:hidden">
     <div class="sidebar-brand">
       <svg class="logo-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
         <g transform="translate(-128, -170) scale(1.5)">
@@ -119,7 +119,7 @@
 
   <!-- Mobile Menu Button -->
   {#if browser}
-    <div class="mobile-menu">
+    <div class="mobile-menu hidden max-md:block">
       <DropdownMenu.Root>
         <DropdownMenu.Trigger>
           <button class="mobile-menu-trigger" aria-label="Menu" title="Menu">
@@ -161,7 +161,7 @@
   <SettingsDialog bind:open={settingsOpen} />
   <ShortcutsDialog bind:open={shortcutsOpen} />
 
-  <main class="app-content">
+  <main class="app-content max-md:ml-0">
     {@render children()}
   </main>
 </div>
@@ -346,21 +346,6 @@
     flex-direction: column;
     margin-left: 72px;
     min-height: 100vh;
-  }
-
-  /* Mobile Styles */
-  @media (max-width: 768px) {
-    .sidebar {
-      display: none;
-    }
-
-    .mobile-menu {
-      display: block;
-    }
-
-    .app-content {
-      margin-left: 0;
-    }
   }
 
   @keyframes scanline {

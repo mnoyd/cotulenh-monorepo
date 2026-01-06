@@ -19,18 +19,18 @@
 
 <main class="editor-page">
   <!-- Header -->
-  <header class="editor-header">
-    <h1>
+  <header class="editor-header max-xs:p-2">
+    <h1 class="max-xs:text-base max-xs:tracking-[2px]">
       <span class="text-mw-secondary">Board</span>
       <span class="text-mw-primary font-light">Editor</span>
     </h1>
   </header>
 
-  <div class="editor-layout">
+  <div class="editor-layout max-lg:flex-col max-lg:p-0">
     <!-- Board and Sidebar wrapper -->
-    <div class="board-wrapper">
+    <div class="board-wrapper max-lg:flex-col max-lg:gap-0 max-lg:w-full">
       <!-- Board Section -->
-      <section class="board-section">
+      <section class="board-section max-lg:w-full max-lg:h-[50vh] max-lg:flex-none max-lg:rounded-none max-lg:border-b max-lg:border-b-mw-border max-xs:h-[40vh]">
       {#if editor.initialFen}
         <BoardContainer
           config={editor.createEditorConfig()}
@@ -48,7 +48,7 @@
     </section>
 
     <!-- Piece Panel (next to board) -->
-    <aside class="sidebar">
+    <aside class="sidebar max-lg:w-full max-lg:border-l-0 max-lg:border-r-0 max-lg:border-t-0 max-lg:border-b-0 max-lg:rounded-none max-lg:p-3 max-lg:flex-1 max-lg:min-h-0 max-lg:overflow-y-auto max-lg:flex max-lg:flex-col">
       <!-- Palettes Container -->
       <PiecePalettesContainer
         boardApi={editor.boardApi}
@@ -63,7 +63,7 @@
 
       <!-- Controls Section -->
       <div class="controls-section">
-        <div class="control-row">
+        <div class="control-row max-xs:grid-cols-3">
           <button
             class="ctrl-btn"
             onclick={editor.loadStartingPosition}
@@ -186,19 +186,6 @@
     display: flex;
     gap: 1rem;
     align-items: stretch;
-  }
-
-  @media (max-width: 1024px) {
-    .editor-layout {
-      flex-direction: column;
-      padding: 0;
-    }
-
-    .board-wrapper {
-      flex-direction: column;
-      gap: 0;
-      width: 100%;
-    }
   }
 
   /* Board Section */
@@ -548,61 +535,6 @@
     }
     50% {
       opacity: 0.5;
-    }
-  }
-
-  /* Responsive: Mobile Layout */
-  @media (max-width: 900px) {
-    .board-section {
-      width: 100%;
-      height: 50vh;
-      flex: none;
-      border-radius: 0;
-    }
-
-    .sidebar {
-      width: 100%;
-      border-left: none;
-      border-right: none;
-      border-top: 1px solid var(--color-mw-border);
-      border-bottom: none;
-      border-radius: 0;
-      padding: 0.75rem;
-      overflow-y: auto;
-    }
-
-    .palette-section {
-      padding: 0.25rem;
-    }
-
-    .palette-title {
-      font-size: 0.65rem;
-      margin-bottom: 0.25rem;
-    }
-  }
-
-  /* Very small screens */
-  @media (max-width: 480px) {
-    .editor-header {
-      padding: 0.5rem;
-    }
-
-    .editor-header h1 {
-      font-size: 1rem;
-      letter-spacing: 2px;
-    }
-
-    .board-section {
-      height: 45vh;
-    }
-
-    .control-row {
-      grid-template-columns: repeat(3, 1fr);
-    }
-
-    .ctrl-btn {
-      font-size: 0.6rem;
-      padding: 0.4rem;
     }
   }
 </style>
