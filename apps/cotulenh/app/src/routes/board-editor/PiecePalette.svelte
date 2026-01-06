@@ -72,10 +72,10 @@
 </script>
 
 <div class="palette-container" class:compact>
-  <div class="pieces-grid max-lg:inline-flex max-lg:flex-row max-lg:gap-2 max-lg:p-1 max-lg:w-max max-lg:min-w-full">
+  <div class="pieces-grid max-lg:grid max-lg:grid-cols-5 max-lg:gap-2 max-lg:p-2">
     {#each pieces as piece}
       <div
-        class="palette-piece-wrapper max-lg:p-0.5 max-lg:gap-0 max-lg:bg-transparent max-lg:flex-shrink-0"
+        class="palette-piece-wrapper"
         class:selected={selectedPiece?.role === piece.role &&
           selectedPiece?.color === piece.color &&
           selectedPiece?.promoted === piece.promoted}
@@ -91,13 +91,13 @@
           }
         }}
       >
-        <div class="cg-wrap palette-piece-container max-lg:w-[clamp(30px,7vw,40px)] max-lg:h-[clamp(30px,7vw,40px)]">
+        <div class="cg-wrap palette-piece-container">
           <piece class="{piece.role} {piece.color}" class:heroic={piece.promoted}>
             <!-- Piece will be rendered via CSS background from commander-chess.pieces.css -->
             <!-- Heroic (promoted) pieces get golden glow and star indicator -->
           </piece>
         </div>
-        <span class="piece-label max-lg:hidden">{formatRoleName(piece.role)}</span>
+        <span class="piece-label lg:block hidden">{formatRoleName(piece.role)}</span>
       </div>
     {/each}
   </div>

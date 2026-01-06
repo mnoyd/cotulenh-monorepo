@@ -24,11 +24,31 @@
     onDeleteModeToggle: () => void;
     onHeroicToggle: () => void;
   } = $props();
+
+  let activeTab = $state<'red' | 'blue'>('red');
 </script>
 
-<div class="palettes-container max-lg:gap-2 max-lg:overflow-visible">
-  <!-- Controls first on mobile, between palettes on desktop -->
-  <div class="controls-wrapper max-lg:-order-1 max-lg:flex-shrink-0">
+<div class="palettes-container">
+  <!-- Mobile Tabs Header -->
+  <div class="mobile-tabs lg:hidden">
+    <button
+      class="tab-btn red"
+      class:active={activeTab === 'red'}
+      onclick={() => (activeTab = 'red')}
+    >
+      🔴 Red Team
+    </button>
+    <button
+      class="tab-btn blue"
+      class:active={activeTab === 'blue'}
+      onclick={() => (activeTab = 'blue')}
+    >
+      🔵 Blue Team
+    </button>
+  </div>
+
+  <!-- Controls -->
+  <div class="controls-wrapper">
     <PaletteControls
       {heroicMode}
       {editorMode}
@@ -38,10 +58,10 @@
     />
   </div>
 
-  <!-- Red Palette - horizontally scrollable on mobile -->
-  <div class="palette-wrapper red-palette max-lg:py-1 max-lg:px-2 max-lg:flex-shrink-0 max-lg:max-h-20">
-    <h3 class="palette-header red max-lg:text-[0.65rem] max-lg:mb-1 max-lg:pb-0.5">🔴 Red</h3>
-    <div class="palette-scroll-container max-lg:overflow-x-auto max-lg:overflow-y-visible max-lg:snap-x max-lg:snap-mandatory max-lg:touch-pan-x max-lg:scrollbar-none">
+  <!-- Red Palette -->
+  <div class="palette-wrapper red-palette" class:hidden-mobile={activeTab !== 'red'}>
+    <h3 class="palette-header red lg:block hidden">🔴 Red</h3>
+    <div class="palette-content">
       <PiecePalette
         {boardApi}
         color="red"
@@ -53,10 +73,10 @@
     </div>
   </div>
 
-  <!-- Blue Palette - horizontally scrollable on mobile -->
-  <div class="palette-wrapper blue-palette max-lg:py-1 max-lg:px-2 max-lg:flex-shrink-0 max-lg:max-h-20">
-    <h3 class="palette-header blue max-lg:text-[0.65rem] max-lg:mb-1 max-lg:pb-0.5">🔵 Blue</h3>
-    <div class="palette-scroll-container max-lg:overflow-x-auto max-lg:overflow-y-visible max-lg:snap-x max-lg:snap-mandatory max-lg:touch-pan-x max-lg:scrollbar-none">
+  <!-- Blue Palette -->
+  <div class="palette-wrapper blue-palette" class:hidden-mobile={activeTab !== 'blue'}>
+    <h3 class="palette-header blue lg:block hidden">🔵 Blue</h3>
+    <div class="palette-content">
       <PiecePalette
         {boardApi}
         color="blue"
@@ -74,6 +94,7 @@
     display: flex;
     flex-direction: column;
     gap: 1rem;
+    height: 100%;
   }
 
   .palette-wrapper {
@@ -83,12 +104,16 @@
     padding: 0.5rem;
     display: flex;
     flex-direction: column;
+    flex: 1; /* Take available space */
+    min-height: 0;
   }
 
-  .palette-scroll-container {
-    /* Desktop: vertical scroll if needed */
+  .palette-content {
     overflow-y: auto;
     flex: 1;
+    /* Custom scrollbar */
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-mw-primary) rgba(0, 0, 0, 0.3);
   }
 
   .palette-header {
@@ -100,29 +125,76 @@
     margin: 0 0 0.5rem 0;
     padding-bottom: 0.25rem;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    display: block;
     flex-shrink: 0;
   }
 
   .palette-header.red {
     color: #ff6b6b;
   }
-
   .palette-header.blue {
     color: #4dabf7;
   }
 
-  /* Desktop: Controls between palettes */
-  .controls-wrapper {
-    /* Default order for desktop - controls in middle */
-    order: 1;
+  /* Desktop Layout */
+  @media (min-width: 1024px) {
+    .controls-wrapper {
+      order: 1;
+    }
+    .red-palette {
+      order: 0;
+    }
+    .blue-palette {
+      order: 2;
+    }
   }
 
-  .red-palette {
-    order: 0;
-  }
+  /* Mobile Layout */
+  @media (max-width: 1023px) {
+    .palettes-container {
+      gap: 0.5rem;
+    }
 
-  .blue-palette {
-    order: 2;
+    .mobile-tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.5rem;
+    }
+
+    .tab-btn {
+      padding: 0.5rem;
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 4px;
+      color: #666;
+      font-family: var(--font-display);
+      font-weight: 600;
+      text-transform: uppercase;
+      font-size: 0.8rem;
+      transition: all 0.2s;
+    }
+
+    .tab-btn.red.active {
+      background: rgba(255, 107, 107, 0.1);
+      border-color: #ff6b6b;
+      color: #ff6b6b;
+      box-shadow: 0 0 10px rgba(255, 107, 107, 0.2);
+    }
+
+    .tab-btn.blue.active {
+      background: rgba(77, 171, 247, 0.1);
+      border-color: #4dabf7;
+      color: #4dabf7;
+      box-shadow: 0 0 10px rgba(77, 171, 247, 0.2);
+    }
+
+    .palette-wrapper {
+      background: transparent;
+      border: none;
+      padding: 0;
+    }
+
+    .hidden-mobile {
+      display: none !important;
+    }
   }
 </style>
