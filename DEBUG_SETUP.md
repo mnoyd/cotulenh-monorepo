@@ -58,7 +58,6 @@ Two debug configurations are provided in `.vscode/launch.json`:
    ```
 
 2. **Set breakpoints** anywhere:
-
    - `packages/cotulenh-core/src/**/*.ts`
    - `packages/cotulenh-board/src/**/*.ts`
    - `apps/cotulenh-app/src/**/*.svelte` or `.ts`
@@ -66,13 +65,11 @@ Two debug configurations are provided in `.vscode/launch.json`:
 3. **Start debugging** (choose one method):
 
    **Method A: VS Code Debugger (Recommended)**
-
    - Press `F5` or click "Run and Debug"
    - Select "Debug SvelteKit App (Server + Client)"
    - Breakpoints will work across all packages
 
    **Method B: Chrome DevTools**
-
    - Start dev server: `pnpm dev`
    - Open http://localhost:5173
    - Open Chrome DevTools (F12)
@@ -81,7 +78,6 @@ Two debug configurations are provided in `.vscode/launch.json`:
    - Set breakpoints directly in Chrome
 
    **Method C: VS Code Chrome Debugger**
-
    - First, start dev server: `pnpm dev`
    - Then press `F5` and select "Debug SvelteKit (Chrome)"
    - Debugs in Chrome while controlling from VS Code
@@ -157,7 +153,6 @@ Build process still generates:
    ```
 
 2. **Check VS Code is using workspace TypeScript:**
-
    - Open any `.ts` file
    - Look at bottom right: "TypeScript 5.x.x"
    - If it says different version, click and select "Use Workspace Version"

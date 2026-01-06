@@ -257,22 +257,18 @@ class Chess {
 ### For Core Chess Libraries
 
 1. ✅ **Default fast, opt-in detailed**
-
    - `moves()` returns strings
    - `moves({ verbose: true })` returns objects
 
 2. ✅ **Support filtering at core level**
-
    - `moves({ square: 'e2' })`
    - `moves({ piece: 'n' })`
 
 3. ✅ **Lazy evaluation**
-
    - Don't compute what's not requested
    - Cache expensive operations
 
 4. ✅ **Immutable APIs**
-
    - Methods don't have side effects
    - Predictable behavior
 
@@ -283,17 +279,14 @@ class Chess {
 ### For Chess UIs
 
 1. ✅ **Don't pre-generate all moves**
-
    - Generate on user interaction
    - Filter to relevant pieces/squares
 
 2. ✅ **Use non-verbose mode for highlights**
-
    - `moves({ square })` for destinations
    - Fast enough for real-time
 
 3. ✅ **Use verbose mode sparingly**
-
    - Only when recording moves
    - Only for the actual move made
 
@@ -441,12 +434,10 @@ While Stockfish is C++, the principles apply:
 ### Move Generation Stages
 
 1. **Pseudo-legal generation** (fast)
-
    - Generate moves ignoring check
    - ~0.1ms per position
 
 2. **Legal move filtering** (medium)
-
    - Test each for legality
    - ~1-2ms per position
 

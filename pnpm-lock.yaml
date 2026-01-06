@@ -39,6 +39,9 @@ importers:
         specifier: ^10.1.1
         version: 10.2.0
     devDependencies:
+      '@eslint/js':
+        specifier: ^9.24.0
+        version: 9.39.2
       '@internationalized/date':
         specifier: ^3.10.0
         version: 3.10.1
@@ -72,6 +75,15 @@ importers:
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
+      eslint:
+        specifier: ^9.24.0
+        version: 9.39.2
+      eslint-plugin-svelte:
+        specifier: ^2.46.1
+        version: 2.46.1(eslint@9.39.2)(svelte@5.46.0)(ts-node@10.9.2)
+      globals:
+        specifier: ^15.15.0
+        version: 15.15.0
       lucide-svelte:
         specifier: ^0.562.0
         version: 0.562.0(svelte@5.46.0)
@@ -105,6 +117,9 @@ importers:
       typescript:
         specifier: ^5.0.0
         version: 5.8.2
+      typescript-eslint:
+        specifier: ^8.29.0
+        version: 8.29.0(eslint@9.39.2)(typescript@5.8.2)
       vite:
         specifier: ^6.2.5
         version: 6.4.1(@types/node@24.10.4)
@@ -121,12 +136,24 @@ importers:
         specifier: workspace:^
         version: link:../common
     devDependencies:
+      '@eslint/js':
+        specifier: ^9.24.0
+        version: 9.39.2
+      eslint:
+        specifier: ^9.24.0
+        version: 9.39.2
+      globals:
+        specifier: ^15.15.0
+        version: 15.15.0
       prettier:
         specifier: ^3.5.3
         version: 3.7.4
       typescript:
         specifier: ^5.8.2
         version: 5.8.2
+      typescript-eslint:
+        specifier: ^8.29.0
+        version: 8.29.0(eslint@9.39.2)(typescript@5.8.2)
       vite:
         specifier: ^6.2.5
         version: 6.4.1(@types/node@24.10.4)
@@ -137,18 +164,33 @@ importers:
         specifier: ^4.1.0
         version: 4.1.1
     devDependencies:
+      '@cotulenh/common':
+        specifier: workspace:^
+        version: link:../common
+      '@eslint/js':
+        specifier: ^9.24.0
+        version: 9.39.2
       '@types/js-yaml':
         specifier: ^4.0.9
         version: 4.0.9
       '@types/node':
         specifier: ^20.0.0
         version: 20.19.27
+      eslint:
+        specifier: ^9.24.0
+        version: 9.39.2
+      globals:
+        specifier: ^15.15.0
+        version: 15.15.0
       tsx:
         specifier: ^4.7.0
         version: 4.21.0
       typescript:
         specifier: ^5.3.3
         version: 5.8.2
+      typescript-eslint:
+        specifier: ^8.29.0
+        version: 8.29.0(eslint@9.39.2)(typescript@5.8.2)
       vite:
         specifier: ^5.0.0
         version: 5.4.21(@types/node@20.19.27)
@@ -170,9 +212,9 @@ importers:
       '@types/node':
         specifier: ^22.13.11
         version: 22.14.1
-      '@vitest/coverage-v8':
-        specifier: ^1.6.1
-        version: 1.6.1(vitest@1.6.1)
+      eslint:
+        specifier: ^9.24.0
+        version: 9.39.2
       eslint-config-prettier:
         specifier: ^10.1.1
         version: 10.1.1(eslint@9.39.2)
@@ -207,7 +249,7 @@ importers:
         specifier: ^4.3.0
         version: 4.5.4(@types/node@22.14.1)(typescript@5.8.2)(vite@5.4.21)
       vitest:
-        specifier: ^1.6.1
+        specifier: ^1.2.0
         version: 1.6.1(@types/node@22.14.1)
 
   packages/cotulenh/core:
@@ -222,12 +264,21 @@ importers:
         specifier: ^7.0.1
         version: 7.3.0
     devDependencies:
+      '@eslint/js':
+        specifier: ^9.24.0
+        version: 9.39.2
       '@types/node':
         specifier: ^22.13.11
         version: 22.14.1
       '@vitest/coverage-v8':
         specifier: ^1.6.1
         version: 1.6.1(vitest@1.6.1)
+      eslint:
+        specifier: ^9.24.0
+        version: 9.39.2
+      globals:
+        specifier: ^15.15.0
+        version: 15.15.0
       prettier:
         specifier: ^3.5.3
         version: 3.7.4
@@ -240,6 +291,9 @@ importers:
       typescript:
         specifier: ^5.8.2
         version: 5.8.2
+      typescript-eslint:
+        specifier: ^8.29.0
+        version: 8.29.0(eslint@9.39.2)(typescript@5.8.2)
       vite:
         specifier: ^5.4.11
         version: 5.4.21(@types/node@22.14.1)

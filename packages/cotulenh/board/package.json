@@ -8,12 +8,14 @@
   "type": "module",
   "scripts": {
     "build": "$npm_execpath run dist",
+    "bundle": "vite build",
+    "check-format": "prettier --check .",
+    "check-types": "tsc --noEmit",
     "compile": "tsc --sourceMap --declaration",
     "copy-assets": "mkdir -p dist/assets && cp -r assets/. dist/assets/",
     "dist": "$npm_execpath run compile && $npm_execpath run bundle && $npm_execpath run copy-assets",
     "format": "prettier --write .",
-    "bundle": "vite build",
-    "check-format": "prettier --check ."
+    "lint": "eslint ."
   },
   "keywords": [
     "commander",
@@ -24,8 +26,12 @@
   "author": "Hoang Manh",
   "license": "GPL-3.0-or-later",
   "devDependencies": {
+    "@eslint/js": "^9.24.0",
+    "eslint": "^9.24.0",
+    "globals": "^15.15.0",
     "prettier": "^3.5.3",
     "typescript": "^5.8.2",
+    "typescript-eslint": "^8.29.0",
     "vite": "^6.2.5"
   },
   "exports": {

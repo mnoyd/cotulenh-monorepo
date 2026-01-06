@@ -314,7 +314,6 @@ export function moves(options?) {
 ### Phase 2: Core Optimization (2-4 hours)
 
 2. ✅ **Profile move generation** (Strategy 5)
-
    - Add performance logging
    - Identify slowest operations
    - Optimize based on data
@@ -327,7 +326,6 @@ export function moves(options?) {
 ### Phase 3: Advanced (4-8 hours)
 
 4. ✅ **Web Worker implementation** (Strategy 2)
-
    - Create worker for background computation
    - Update store to use async API
    - Handle worker lifecycle
