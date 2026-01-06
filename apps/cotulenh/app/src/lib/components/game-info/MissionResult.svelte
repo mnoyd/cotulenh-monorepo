@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { type ComponentType } from 'svelte';
+  import { type ComponentType, type Snippet } from 'svelte';
 
   let {
     icon: Icon,
@@ -14,7 +14,7 @@
     borderColor: string;
     bgColor: string;
     textColor: string;
-    children?: any;
+    children?: Snippet;
   } = $props();
 </script>
 
