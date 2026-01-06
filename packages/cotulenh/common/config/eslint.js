@@ -33,6 +33,9 @@ export const baseConfig = [
         __filename: 'readonly'
       }
     }
+  },
+  {
+    ignores: ['dist/', 'coverage/', 'node_modules/']
   }
 ];
 
