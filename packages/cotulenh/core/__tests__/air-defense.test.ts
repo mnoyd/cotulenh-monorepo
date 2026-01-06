@@ -19,7 +19,7 @@ describe('calculateAirDefense', () => {
   })
 
   it('calculates orthogonal/diagonal coverage for a single anti-air', () => {
-    // Place anti-air at a5 (0xB4)
+    // Place anti-air at c5
     game.put({ type: ANTI_AIR, color: RED }, 'c5')
     const airDefenseRed = updateAirDefensePiecesPosition(game)
     // Anti-air has level 1 (not heroic), so covers 2 orthogonal, 1 diagonal steps
