@@ -78,20 +78,31 @@ function calculateGameStatus(game: CoTuLenh): GameStatus {
 /**
  * Extract last move squares from a MoveResult for UI highlighting.
  */
-function extractLastMoveSquares(move: MoveResult | any): Square[] {
+function extractLastMoveSquares(move: MoveResult | unknown): Square[] {
   if (!move) return [];
 
+  // Type guard to check if move is a MoveResult
+  if (
+    typeof move !== 'object' ||
+    move === null ||
+    !('from' in move && 'to' in move && 'flags' in move)
+  ) {
+    return [];
+  }
+
+  const moveResult = move as MoveResult;
+
   // Check if it's a Deploy/Recombine move (which might have multiple destinations or map)
-  if (move.isDeploy || move.flags?.includes('d') || move.to instanceof Map) {
-    if (move.to instanceof Map) {
-      return [move.from, ...Array.from(move.to.keys())];
+  if (moveResult.isDeploy || moveResult.flags?.includes('d') || moveResult.to instanceof Map) {
+    if (moveResult.to instanceof Map) {
+      return [moveResult.from, ...Array.from(moveResult.to.keys())];
     } else {
       // Fallback/Legacy or single deploy
-      return [move.from, move.to].filter(Boolean);
+      return [moveResult.from, moveResult.to as string].filter(Boolean);
     }
   } else {
     // Standard move
-    return [move.from, move.to];
+    return [moveResult.from, moveResult.to as string];
   }
 }
 
@@ -99,7 +110,7 @@ function extractLastMoveSquares(move: MoveResult | any): Square[] {
  * Internal state holder using Svelte 5's $state.
  * This is the single source of truth for game state.
  */
-let state = $state<GameState>({
+const state = $state<GameState>({
   fen: '',
   turn: null,
   history: [],
@@ -296,7 +307,7 @@ export const gameState = {
     const fen = move.after;
 
     if (!fen) {
-      logger.error('No FEN found in history move', move);
+      logger.error('No FEN found in history move', move as unknown as Record<string, unknown>);
       return;
     }
 

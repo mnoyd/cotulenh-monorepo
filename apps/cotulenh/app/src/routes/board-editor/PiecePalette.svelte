@@ -2,8 +2,6 @@
   import { logger } from '@cotulenh/common';
   import type { Api, Piece, Role, Color } from '@cotulenh/board';
 
-  type EditorMode = 'hand' | 'drop' | 'delete';
-
   let {
     boardApi = null,
     color = 'red',
@@ -56,7 +54,7 @@
     onPieceSelect(piece.role, piece.color);
 
     try {
-      boardApi.dragNewPiece(piece, event as any, true);
+      boardApi.dragNewPiece(piece, event as unknown as MouseEvent | TouchEvent, true);
       logger.debug(
         `Started dragging ${piece.color} ${piece.role}${piece.promoted ? ' (heroic)' : ''}`
       );

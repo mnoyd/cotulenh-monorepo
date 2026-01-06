@@ -3,7 +3,6 @@
   import type { CoTuLenh } from '@cotulenh/core';
 
   import { Button } from '$lib/components/ui/button';
-  import { ScrollArea } from 'bits-ui';
   import { cn } from '$lib/utils';
   import { History, Eye } from 'lucide-svelte';
 

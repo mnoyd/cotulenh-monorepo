@@ -110,11 +110,6 @@ function isPureNavyZone(square: Square): boolean {
   return PURE_NAVY_FILES.includes(square[0])
 }
 
-function isLandZone(square: Square): boolean {
-  const file = square[0]
-  return file >= 'c' && file <= 'k'
-}
-
 function validateTerrain(pieceType: PieceSymbol, square: Square): void {
   if (pieceType === AIR_FORCE) {
     return // Air Force can go anywhere

@@ -113,7 +113,7 @@ export interface HeadlessState {
   };
   popup?: {
     square?: cg.Key; // square where it initiate this popup
-    items: any[];
+    items: unknown[];
     type: string;
     containerEl: HTMLElement;
     isDeployPopup?: boolean; // Flag to identify deploy session popups

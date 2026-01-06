@@ -1,13 +1,10 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { MoveSession, MoveResult } from '../src/move-session.js'
 import {
-  BITS,
   RED,
   BLUE,
   NAVY,
   TANK,
   INFANTRY,
-  COMMANDER,
   ANTI_AIR,
   AIR_FORCE,
   SQUARE_MAP,

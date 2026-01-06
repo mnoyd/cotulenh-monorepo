@@ -26,7 +26,7 @@ const createPiece = (
   color: Color = RED,
 ): Piece => ({
   color,
-  type: type as any,
+  type: type as unknown as PieceSymbol,
   carrying,
   heroic: false,
 })
@@ -43,13 +43,6 @@ const createMove = (
   to,
   piece,
   flags,
-})
-
-// Helper to create a mock command
-const createMockCommand = (move: InternalMove): any => ({
-  move,
-  execute: vi.fn(),
-  undo: vi.fn(),
 })
 
 describe('DeploySession', () => {
@@ -415,8 +408,8 @@ describe('Deploy Session History Management', () => {
     )
     game['_turn'] = RED
 
-    const initialHistoryLength = game.history().length
-    const initialFEN = game.fen()
+    void game.history().length
+    void game.fen()
 
     // NOTE: The batch deployMove() API has been removed
     // Use handleMove() instead for incremental deploy moves
@@ -569,16 +562,16 @@ describe('Random finding', () => {
     const game = new CoTuLenh(
       '11/4+F2(hc)3/11/7i1M1/11/11/11/11/11/5C5/11/11 b - - 3 2',
     )
-    const moves = game.moves({ square: 'h11' })
+    game.moves({ square: 'h11' })
     game.move('C>h12')
   })
   it('should handle navy deploy move', () => {
     const game = new CoTuLenh(
       '6c4/4fh1hf2/1n1a2s2a1/1n2gt1tg2/2ie2m2ei/11/1(NF)9/2IE2M2EI/2N1GT1TG2/3A2S2A1/5H1HF2/6C4 r - - 4 3',
     )
-    const moves = game.moves({ square: 'b6' })
+    game.moves({ square: 'b6' })
     game.move({ from: 'b6', to: 'e9', piece: NAVY, deploy: true })
-    const fen = game.fen()
+    game.fen()
     // console.log(fen)
   })
 })
@@ -609,7 +602,7 @@ describe('Remaining pieces have no move', () => {
 
     // Check moves from f2
     // Cast result to StandardMove[] to access properties
-    const movesFromF2 = game.moves({ square: 'f2', verbose: true }) as any[]
+    const movesFromF2 = game.moves({ square: 'f2', verbose: true }) as unknown[]
     // Should find Commander deploy move.
     const deployMove = movesFromF2.find((m) => m.piece.type === 'c')
     expect(deployMove).toBeDefined()

@@ -6,24 +6,17 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 // Type helpers for components (from shadcn-svelte)
-export type WithoutChild<T> = T extends { child?: any } ? Omit<T, 'child'> : T;
-export type WithoutChildren<T> = T extends { children?: any } ? Omit<T, 'children'> : T;
+export type WithoutChild<T> = T extends { child?: unknown } ? Omit<T, 'child'> : T;
+export type WithoutChildren<T> = T extends { children?: unknown } ? Omit<T, 'children'> : T;
 export type WithoutChildrenOrChild<T> = WithoutChildren<WithoutChild<T>>;
 export type WithElementRef<T, U extends HTMLElement = HTMLElement> = T & { ref?: U | null };
 
-import {
-  type DestMove,
-  type OrigMove,
-  type Piece as BoardPiece,
-  type Color as BoardColor
-} from '@cotulenh/board';
+import { type DestMove, type OrigMove } from '@cotulenh/board';
 import {
   type CoTuLenh,
   MoveResult as Move,
   type MoveResult,
-  type Color as CoreColor,
-  type Piece as CorePiece,
-  type PieceSymbol
+  type Color as CoreColor
 } from '@cotulenh/core';
 import { createError, ErrorCode, logger } from '@cotulenh/common';
 
@@ -80,7 +73,6 @@ export function getMovesForSquare(game: CoTuLenh, square: string): Move[] {
  * @returns Array of squares that have movable pieces
  */
 export function getMovableSquares(game: CoTuLenh): string[] {
-  const moves = game.moves({ verbose: false }) as string[];
   const squares = new Set<string>();
 
   // Parse move strings to extract origin squares

@@ -8,7 +8,6 @@ import {
   HEADQUARTER,
   COMMANDER,
   Square,
-  algebraic,
   NAVY,
   AIR_FORCE,
 } from '../src/type'
@@ -327,6 +326,8 @@ describe('setHeroicStatus', () => {
   })
 
   it('returns false if square is invalid', () => {
-    expect(game.setHeroicStatus('z9' as any, INFANTRY, true)).toBe(false)
+    expect(
+      game.setHeroicStatus('z9' as unknown as Square, INFANTRY, true),
+    ).toBe(false)
   })
 })

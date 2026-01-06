@@ -76,10 +76,6 @@
     gap: 1rem;
   }
 
-  .controls-wrapper {
-    /* Default order for desktop - controls in middle */
-  }
-
   .palette-wrapper {
     background: rgba(0, 0, 0, 0.3);
     border: 1px solid rgba(255, 255, 255, 0.1);
@@ -118,6 +114,7 @@
 
   /* Desktop: Controls between palettes */
   .controls-wrapper {
+    /* Default order for desktop - controls in middle */
     order: 1;
   }
 

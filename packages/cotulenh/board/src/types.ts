@@ -93,7 +93,7 @@ export interface MoveMetadata {
 /**
  * Metadata for a single deploy step
  */
-export interface DeployStepMetadata extends MoveMetadata {}
+export type DeployStepMetadata = MoveMetadata;
 export type BrushColor = 'green' | 'red' | 'blue' | 'yellow';
 export type KeyPair = [Key, Key];
 

@@ -63,7 +63,7 @@ describe('Debug Standardize RemovePieceAction', () => {
     // basic-move.test.ts uses algebraic.
     // Let's assume game.moves() generates valid internal moves.
 
-    const moves = game.moves({ square: 'a1', verbose: true }) as any[] // cast to any to avoid complex type checks
+    const moves = game.moves({ square: 'a1', verbose: true }) as unknown[] // cast to unknown to avoid complex type checks
     // For partial stack move (AF leaving), it is generated as a DeployMove
     // So 'to' is a Map.
     const afDeployMove = moves.find((m) => {

@@ -165,7 +165,7 @@ describe('CoTuLenh.getHeroicStatus', () => {
     it('returns false when placing on an invalid square', () => {
       // 'z9' is not a valid square
       expect(() =>
-        game.put({ type: INFANTRY, color: BLUE }, 'z9' as any),
+        game.put({ type: INFANTRY, color: BLUE }, 'z9' as unknown as Square),
       ).toThrow()
     })
 
@@ -257,12 +257,9 @@ describe('CoTuLenh.getHeroicStatus', () => {
     it('parses turn, halfmove, and move number from FEN', () => {
       const fen = '11/11/11/11/11/11/11/11/11/11/11/9C1 b - - 4 12'
       game.load(fen)
-      // @ts-ignore: access private
-      expect(game._turn).toBe(BLUE)
-      // @ts-ignore: access private
-      expect(game._halfMoves).toBe(4)
-      // @ts-ignore: access private
-      expect(game._moveNumber).toBe(12)
+      expect(game.turn()).toBe(BLUE)
+      expect(game.halfMoves()).toBe(4)
+      expect(game.moveNumber()).toBe(12)
     })
     //TODO: add fen write for middle deploy state move
   })
@@ -474,10 +471,10 @@ describe('Stalemate Reproduction', () => {
     // console.log('Loaded FEN:', game.fen())
     // console.log('Turn:', game.turn())
 
-    const isCheck = game.isCheck()
+    game.isCheck()
     // console.log('Is Check:', isCheck)
 
-    const moves = game.moves()
+    game.moves()
     // console.log('Available Moves:', moves)
 
     const isStalemate = game.isStalemate()

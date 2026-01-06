@@ -247,7 +247,6 @@ describe('Move History and Undo', () => {
     game.move({ from: 'e9', to: 'e8' }) // B AntiAir
     const fen2 = game.fen()
     game.move({ from: 'f4', to: 'f6' }) // R Tank
-    const fen3 = game.fen()
 
     expect(game.history().length).toBe(3)
 
@@ -280,7 +279,7 @@ describe('Move History and Undo', () => {
     expect(move).not.toBeNull()
     expect(game.get('d2')?.type).toBeUndefined() // AF stays
     expect(game.get('b2')).toBeUndefined() // Navy removed
-    const fenAfterMove = game.fen()
+    game.fen()
 
     game.undo()
 
@@ -569,10 +568,6 @@ describe('Terrain blocking movement logic', () => {
   })
 })
 describe('move sequence', () => {
-  let game: CoTuLenh
-  beforeEach(() => {
-    game = setupGameBasic()
-  })
   it('sequence of moves from initial position', () => {
     const game = new CoTuLenh()
 

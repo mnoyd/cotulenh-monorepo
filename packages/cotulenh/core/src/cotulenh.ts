@@ -12,7 +12,6 @@ import {
   BLUE,
   Color,
   DEFAULT_POSITION,
-  FLAGS,
   Piece,
   PieceSymbol,
   RED,
@@ -233,7 +232,11 @@ export class CoTuLenh {
       const result = validateFenFormat(fen)
       if (!result.valid) {
         const err = result.errors[0]
-        throw createError(err.code, err.message, err.location)
+        throw createError(
+          err.code,
+          err.message,
+          err.location as Record<string, unknown>,
+        )
       }
     }
 
@@ -978,8 +981,8 @@ export class CoTuLenh {
       this.setSession(null)
 
       return { success: true, result }
-    } catch (e: any) {
-      return { success: false, reason: e.message }
+    } catch (e: unknown) {
+      return { success: false, reason: (e as Error).message }
     }
   }
 
@@ -1232,12 +1235,9 @@ export class CoTuLenh {
     if (strict) {
       return null
     }
-    let heroic = undefined
     let matches = undefined
     let from = undefined
     let to = undefined
-    let flag = undefined
-    let check = undefined
 
     let overlyDisambiguated = false
 
@@ -1245,12 +1245,9 @@ export class CoTuLenh {
       /^(\(.*\))?(\+)?([CITMEAGSFNH])?([a-k]?(?:1[0-2]|[1-9])?)([x<>\+&-]|>x)?([a-k](?:1[0-2]|[1-9]))([#\^]?)?$/
     matches = cleanMove.match(regex)
     if (matches) {
-      heroic = matches[2]
       pieceType = matches[3] as PieceSymbol
       from = matches[4] as Square
-      flag = matches[5]
       to = matches[6] as Square
-      check = matches[7]
 
       if (from.length == 1) {
         overlyDisambiguated = true
@@ -1670,6 +1667,15 @@ export class CoTuLenh {
    */
   moveNumber(): number {
     return this._moveNumber
+  }
+
+  /**
+   * Retrieves the current half-move clock (ply count since last pawn move or capture).
+   * Used for the fifty-move rule in chess variants.
+   * @returns The current half-move count
+   */
+  halfMoves(): number {
+    return this._halfMoves
   }
 
   /**

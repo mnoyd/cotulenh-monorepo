@@ -270,7 +270,7 @@ function createHandlePopupClick<T>(
  * Get the popup instance for the current popup type
  * Uses the popup registry to avoid circular dependencies
  */
-export function getPopup(s: State): CTLPopup<any> | undefined {
+export function getPopup(s: State): CTLPopup<unknown> | undefined {
   if (!s.popup) {
     return undefined;
   }

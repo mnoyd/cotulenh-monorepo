@@ -35,7 +35,7 @@ export function CotulenhBoard(element: HTMLElement, config?: Config): Api {
     redrawNow();
     events.bindBoard(state, onResize);
     if (!prevUnbind) state.dom.unbind = events.bindDocument(state, onResize);
-    state.events.insert && state.events.insert(elements);
+    if (state.events.insert) state.events.insert(elements);
     return state;
   }
   return start(redrawAll(), redrawAll);

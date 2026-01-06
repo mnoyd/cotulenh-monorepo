@@ -151,7 +151,7 @@ export class PieceStacker<T> {
 
     // Fast path: if removing from a single piece, just check if it matches any role to remove
     const stackPieceRole = this.getRoleFlag(stackPiece);
-    const carrying = (stackPiece as any).carrying;
+    const carrying = (stackPiece as unknown as { carrying?: T[] }).carrying;
 
     if (!carrying || carrying.length === 0) {
       // Single piece - return null if it matches any role to remove, otherwise return unchanged
@@ -226,7 +226,10 @@ export class PieceStacker<T> {
     const result: T[] = [];
 
     for (const piece of pieces) {
-      const { carrying, ...pieceWithoutCarrying } = piece as any;
+      const { carrying, ...pieceWithoutCarrying } = piece as unknown as {
+        carrying?: T[];
+        [key: string]: unknown;
+      };
       result.push(pieceWithoutCarrying as T);
 
       if (carrying?.length) {

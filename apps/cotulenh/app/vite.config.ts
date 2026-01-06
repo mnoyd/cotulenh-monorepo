@@ -3,7 +3,7 @@ import { defineConfig } from 'vite';
 import path from 'path';
 
 export default defineConfig(({ mode }) => {
-  const config: any = {
+  const config: Record<string, unknown> = {
     plugins: [sveltekit()],
     optimizeDeps: {
       include: [],

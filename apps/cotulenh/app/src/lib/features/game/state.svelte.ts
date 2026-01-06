@@ -1,12 +1,11 @@
 import { tick } from 'svelte';
 import { logger } from '@cotulenh/common';
-import type { Api, Role, Config, DestMove, OrigMove } from '@cotulenh/board';
+import type { Api, Config, DestMove, OrigMove } from '@cotulenh/board';
 import { CoTuLenh } from '@cotulenh/core';
-import type { RecombineOption as CoreRecombineOption, PieceSymbol } from '@cotulenh/core';
+import type { RecombineOption as CoreRecombineOption, RecombineResult } from '@cotulenh/core';
 import type { RecombineOption as BoardRecombineOption } from '@cotulenh/board';
 import { gameState, getDeployState } from '$lib/stores/game.svelte';
 import { makeCoreMove } from '$lib/utils';
-import { typeToRole, roleToType } from '$lib/types/translations';
 import { safeSymbolToRole, safeRoleToSymbol } from '$lib/types/type-guards';
 import { toast } from 'svelte-sonner';
 import {
@@ -169,8 +168,11 @@ export function createGameController() {
       const recombineResult = game.recombine(coreOption);
 
       // Type assertion is safe here because recombine returns an object with success/result
-      if ((recombineResult as any).success && (recombineResult as any).result) {
-        const result = (recombineResult as any).result;
+      if (
+        (recombineResult as RecombineResult).success &&
+        (recombineResult as RecombineResult).result
+      ) {
+        const result = (recombineResult as RecombineResult).result!;
         if (result.completed) {
           gameState.applyDeployCommit(game, result);
         } else {

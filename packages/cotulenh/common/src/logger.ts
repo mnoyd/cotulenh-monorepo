@@ -7,7 +7,7 @@ export interface LogProcessor {
    * @param error The error object
    * @param context Additional context or message
    */
-  captureException(error: unknown, context?: Record<string, any> | string): void;
+  captureException(error: unknown, context?: Record<string, unknown> | string): void;
 
   /**
    * Log a general message
@@ -18,7 +18,7 @@ export interface LogProcessor {
   log(
     message: string,
     level: 'info' | 'warn' | 'error' | 'debug',
-    context?: Record<string, any>
+    context?: Record<string, unknown>
   ): void;
 }
 
@@ -26,14 +26,14 @@ export interface LogProcessor {
  * Default console processor
  */
 class ConsoleProcessor implements LogProcessor {
-  captureException(error: unknown, context?: Record<string, any> | string): void {
+  captureException(error: unknown, context?: Record<string, unknown> | string): void {
     console.error(error, context);
   }
 
   log(
     message: string,
     level: 'info' | 'warn' | 'error' | 'debug',
-    context?: Record<string, any>
+    context?: Record<string, unknown>
   ): void {
     const args = context ? [message, context] : [message];
     switch (level) {
@@ -87,19 +87,19 @@ export class Logger {
     this.processors = [];
   }
 
-  public error(error: unknown, context?: Record<string, any> | string): void {
+  public error(error: unknown, context?: Record<string, unknown> | string): void {
     this.processors.forEach((p) => p.captureException(error, context));
   }
 
-  public info(message: string, context?: Record<string, any>): void {
+  public info(message: string, context?: Record<string, unknown>): void {
     this.processors.forEach((p) => p.log(message, 'info', context));
   }
 
-  public warn(message: string, context?: Record<string, any>): void {
+  public warn(message: string, context?: Record<string, unknown>): void {
     this.processors.forEach((p) => p.log(message, 'warn', context));
   }
 
-  public debug(message: string, context?: Record<string, any>): void {
+  public debug(message: string, context?: Record<string, unknown>): void {
     this.processors.forEach((p) => p.log(message, 'debug', context));
   }
 }

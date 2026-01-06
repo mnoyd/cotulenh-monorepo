@@ -1,5 +1,6 @@
 import { logger } from '@cotulenh/common';
 import * as cg from './types.js';
+import type { Piece } from './types.js';
 import { clearPopup, createPopupFactory, CTLPopup } from './popup/popup-factory';
 import { createAmbigousPiecesStackElement, createSinglePieceElement } from './render';
 import { HeadlessState, State } from './state';
@@ -209,7 +210,7 @@ const moveWithCarrierPopup = createPopupFactory<cg.Piece>({
     return piece;
   },
   onSelect: (s: State, index: number) => {
-    const selectedPiece = s.popup?.items[index];
+    const selectedPiece = s.popup?.items[index] as Piece | undefined;
     if (!selectedPiece || !s.ambigousMove) return;
     const origMove = {
       square: s.ambigousMove.origKey,

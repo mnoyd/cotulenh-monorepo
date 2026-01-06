@@ -2,10 +2,10 @@ import { origMoveToKey } from '@cotulenh/board';
 import type { Key, Dests, OrigMoveKey, DestMove, OrigMove, Role } from '@cotulenh/board';
 import type { Color, Square, MoveResult } from '@cotulenh/core';
 import { BLUE, RED, CoTuLenh } from '@cotulenh/core';
-import { logger } from '@cotulenh/common';
-import { typeToRole, coreColorToBoard } from '$lib/types/translations';
+import { typeToRole } from '$lib/types/translations';
 
 export function coreToBoardColor(coreColor: Color | null): 'red' | 'blue' | undefined {
+  const coreColorToBoard = (color: Color): 'red' | 'blue' => (color === 'r' ? 'red' : 'blue');
   return coreColor ? coreColorToBoard(coreColor) : undefined;
 }
 
@@ -58,8 +58,6 @@ export function mapPossibleMovesToDests(possibleMoves: MoveResult[]): Dests {
     const destList = dests.get(key);
     if (destList) {
       destList.push(moveDest);
-    } else {
-      logger.error('Unexpected missing key in dests map', { key });
     }
   }
   return dests;
