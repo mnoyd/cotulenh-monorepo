@@ -72,10 +72,10 @@
 </script>
 
 <div class="palette-container" class:compact>
-  <div class="pieces-grid">
+  <div class="pieces-grid max-lg:inline-flex max-lg:flex-row max-lg:gap-2 max-lg:p-1 max-lg:w-max max-lg:min-w-full">
     {#each pieces as piece}
       <div
-        class="palette-piece-wrapper"
+        class="palette-piece-wrapper max-lg:p-0.5 max-lg:gap-0 max-lg:bg-transparent max-lg:flex-shrink-0"
         class:selected={selectedPiece?.role === piece.role &&
           selectedPiece?.color === piece.color &&
           selectedPiece?.promoted === piece.promoted}
@@ -91,13 +91,13 @@
           }
         }}
       >
-        <div class="cg-wrap palette-piece-container">
+        <div class="cg-wrap palette-piece-container max-lg:w-[clamp(30px,7vw,40px)] max-lg:h-[clamp(30px,7vw,40px)]">
           <piece class="{piece.role} {piece.color}" class:heroic={piece.promoted}>
             <!-- Piece will be rendered via CSS background from commander-chess.pieces.css -->
             <!-- Heroic (promoted) pieces get golden glow and star indicator -->
           </piece>
         </div>
-        <span class="piece-label">{formatRoleName(piece.role)}</span>
+        <span class="piece-label max-lg:hidden">{formatRoleName(piece.role)}</span>
       </div>
     {/each}
   </div>
@@ -223,57 +223,5 @@
   .palette-piece-wrapper.selected .piece-label {
     color: var(--mw-primary);
     text-shadow: 0 0 5px var(--mw-primary-dim);
-  }
-
-  /* Mobile layout with horizontal scrolling */
-  @media (max-width: 1024px) {
-    .pieces-grid {
-      /* Horizontal scroll layout - pieces in a single row */
-      display: inline-flex;
-      flex-direction: row;
-      gap: 0.5rem;
-      padding: 0.25rem;
-      /* Ensure container shrinks to fit content */
-      width: max-content;
-      min-width: 100%;
-    }
-
-    .palette-piece-wrapper {
-      padding: 0.15rem;
-      gap: 0;
-      background: transparent;
-      /* Don't shrink pieces */
-      flex-shrink: 0;
-    }
-
-    .palette-piece-wrapper.selected {
-      background-color: rgba(0, 243, 255, 0.15);
-    }
-
-    .palette-piece-container {
-      width: clamp(30px, 7vw, 40px);
-      height: clamp(30px, 7vw, 40px);
-    }
-
-    /* Hide labels on mobile */
-    .piece-label {
-      display: none;
-    }
-
-    /* Show label only for selected item */
-    .palette-piece-wrapper.selected .piece-label {
-      display: block;
-      font-size: 0.5rem;
-      position: absolute;
-      bottom: -10px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: rgba(0, 0, 0, 0.8);
-      padding: 1px 4px;
-      z-index: 10;
-      border-radius: 2px;
-      width: auto;
-      max-width: none;
-    }
   }
 </style>
