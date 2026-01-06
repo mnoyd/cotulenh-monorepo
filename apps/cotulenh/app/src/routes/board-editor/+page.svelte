@@ -30,104 +30,119 @@
     <!-- Board and Sidebar wrapper -->
     <div class="board-wrapper max-lg:flex-col max-lg:gap-0 max-lg:w-full">
       <!-- Board Section -->
-      <section class="board-section max-lg:w-full max-lg:h-[50vh] max-lg:flex-none max-lg:rounded-none max-lg:border-b max-lg:border-b-mw-border max-xs:h-[40vh]">
-      {#if editor.initialFen}
-        <BoardContainer
-          config={editor.createEditorConfig()}
-          onApiReady={editor.handleBoardReady}
-          onDestroy={editor.handleBoardDestroy}
-          class="board-editor-container
+      <section
+        class="board-section max-lg:w-full max-lg:h-auto max-lg:aspect-square max-lg:max-h-[50vh] max-lg:flex-none max-lg:rounded-none max-lg:border-b max-lg:border-b-mw-border"
+      >
+        {#if editor.initialFen}
+          <BoardContainer
+            config={editor.createEditorConfig()}
+            onApiReady={editor.handleBoardReady}
+            onDestroy={editor.handleBoardDestroy}
+            class="board-editor-container
                  {editor.editorMode === 'delete' ? 'mode-delete' : ''}
-                 {editor.selectedPiece !== null && editor.editorMode !== 'delete' ? 'mode-drop' : ''}"
+                 {editor.selectedPiece !== null && editor.editorMode !== 'delete'
+              ? 'mode-drop'
+              : ''}"
+          />
+        {:else}
+          <div class="board-container">
+            <p class="text-mw-primary">Loading board...</p>
+          </div>
+        {/if}
+      </section>
+
+      <!-- Piece Panel (next to board) -->
+      <aside
+        class="editor-panel max-lg:w-full max-lg:border-l-0 max-lg:border-r-0 max-lg:border-t-0 max-lg:border-b-0 max-lg:rounded-none max-lg:p-3 max-lg:flex-none max-lg:h-auto max-lg:overflow-visible max-lg:flex max-lg:flex-col"
+      >
+        <!-- Palettes Container -->
+        <PiecePalettesContainer
+          boardApi={editor.boardApi}
+          selectedPiece={editor.selectedPiece}
+          heroicMode={editor.heroicMode}
+          editorMode={editor.editorMode}
+          onPieceSelect={editor.handlePieceSelect}
+          onHandModeToggle={editor.toggleHandMode}
+          onDeleteModeToggle={editor.toggleDeleteMode}
+          onHeroicToggle={editor.toggleHeroicMode}
         />
-      {:else}
-        <div class="board-container">
-          <p class="text-mw-primary">Loading board...</p>
-        </div>
-      {/if}
-    </section>
 
-    <!-- Piece Panel (next to board) -->
-    <aside class="sidebar max-lg:w-full max-lg:border-l-0 max-lg:border-r-0 max-lg:border-t-0 max-lg:border-b-0 max-lg:rounded-none max-lg:p-3 max-lg:flex-1 max-lg:min-h-0 max-lg:overflow-y-auto max-lg:flex max-lg:flex-col">
-      <!-- Palettes Container -->
-      <PiecePalettesContainer
-        boardApi={editor.boardApi}
-        selectedPiece={editor.selectedPiece}
-        heroicMode={editor.heroicMode}
-        editorMode={editor.editorMode}
-        onPieceSelect={editor.handlePieceSelect}
-        onHandModeToggle={editor.toggleHandMode}
-        onDeleteModeToggle={editor.toggleDeleteMode}
-        onHeroicToggle={editor.toggleHeroicMode}
-      />
+        <!-- Controls Section -->
+        <div class="controls-section">
+          <div class="control-row max-xs:grid-cols-3">
+            <button
+              class="ctrl-btn"
+              onclick={editor.loadStartingPosition}
+              title="Reset to starting position"
+            >
+              ↺ Reset
+            </button>
+            <button class="ctrl-btn" onclick={editor.clearBoard} title="Clear all pieces">
+              🧹 Clear
+            </button>
+            <button class="ctrl-btn" onclick={editor.flipBoard} title="Flip board orientation">
+              ⇅ Flip
+            </button>
+          </div>
 
-      <!-- Controls Section -->
-      <div class="controls-section">
-        <div class="control-row max-xs:grid-cols-3">
           <button
-            class="ctrl-btn"
-            onclick={editor.loadStartingPosition}
-            title="Reset to starting position"
+            class="turn-btn {editor.currentTurn}"
+            onclick={editor.toggleTurn}
+            title="Toggle current turn"
           >
-            ↺ Reset
-          </button>
-          <button class="ctrl-btn" onclick={editor.clearBoard} title="Clear all pieces"> 🧹 Clear </button>
-          <button class="ctrl-btn" onclick={editor.flipBoard} title="Flip board orientation">
-            ⇅ Flip
+            <span class="turn-indicator {editor.currentTurn}"></span>
+            Turn: {editor.currentTurn === 'red' ? 'Red' : 'Blue'}
           </button>
         </div>
 
-        <button class="turn-btn {editor.currentTurn}" onclick={editor.toggleTurn} title="Toggle current turn">
-          <span class="turn-indicator {editor.currentTurn}"></span>
-          Turn: {editor.currentTurn === 'red' ? 'Red' : 'Blue'}
+        <!-- FEN Section -->
+        <div class="fen-section">
+          <label for="fen-input">FEN Position</label>
+          <input
+            id="fen-input"
+            type="text"
+            bind:value={editor.fenInput}
+            placeholder="Enter FEN string..."
+            class="fen-input"
+          />
+          <div class="fen-buttons">
+            <button class="fen-btn" onclick={editor.applyFEN}>Apply</button>
+            <button class="fen-btn" onclick={editor.copyFEN}>{editor.copyButtonText}</button>
+          </div>
+        </div>
+
+        <!-- Play Button -->
+        <button class="play-btn" onclick={editor.validateAndPlay} disabled={!editor.isFenValid}>
+          <span class="play-icon">▶</span>
+          Play This Position
         </button>
-      </div>
 
-      <!-- FEN Section -->
-      <div class="fen-section">
-        <label for="fen-input">FEN Position</label>
-        <input
-          id="fen-input"
-          type="text"
-          bind:value={editor.fenInput}
-          placeholder="Enter FEN string..."
-          class="fen-input"
-        />
-        <div class="fen-buttons">
-          <button class="fen-btn" onclick={editor.applyFEN}>Apply</button>
-          <button class="fen-btn" onclick={editor.copyFEN}>{editor.copyButtonText}</button>
-        </div>
-      </div>
+        {#if editor.validationError}
+          <div class="validation-error">
+            ⚠️ {editor.validationError}
+          </div>
+        {/if}
 
-      <!-- Play Button -->
-      <button class="play-btn" onclick={editor.validateAndPlay} disabled={!editor.isFenValid}>
-        <span class="play-icon">▶</span>
-        Play This Position
-      </button>
-
-      {#if editor.validationError}
-        <div class="validation-error">
-          ⚠️ {editor.validationError}
-        </div>
-      {/if}
-
-      <!-- Quick Tips (collapsible) -->
-      <details class="tips-section">
-        <summary>Quick Tips</summary>
-        <ul>
-          <li><strong>✋ Hand:</strong> Drag pieces on board</li>
-          <li><strong>Click piece:</strong> Select, then click to place</li>
-          <li><strong>🗑️ Delete:</strong> Click to remove pieces</li>
-          <li><strong>⭐ Heroic:</strong> Toggle promotion status</li>
-        </ul>
-      </details>
-    </aside>
+        <!-- Quick Tips (collapsible) -->
+        <details class="tips-section">
+          <summary>Quick Tips</summary>
+          <ul>
+            <li><strong>✋ Hand:</strong> Drag pieces on board</li>
+            <li><strong>Click piece:</strong> Select, then click to place</li>
+            <li><strong>🗑️ Delete:</strong> Click to remove pieces</li>
+            <li><strong>⭐ Heroic:</strong> Toggle promotion status</li>
+          </ul>
+        </details>
+      </aside>
     </div>
   </div>
 
   <!-- Ghost piece that follows mouse (only in relevant areas) -->
   {#if editor.showGhost && editor.selectedPiece && editor.isOverRelevantArea}
-    <div class="ghost-piece cg-wrap" style="left: {editor.ghostPosition.x}px; top: {editor.ghostPosition.y}px;">
+    <div
+      class="ghost-piece cg-wrap"
+      style="left: {editor.ghostPosition.x}px; top: {editor.ghostPosition.y}px;"
+    >
       <piece
         class="{editor.selectedPiece.role} {editor.selectedPiece.color}"
         class:heroic={editor.selectedPiece.promoted}
@@ -137,7 +152,10 @@
 
   <!-- Ghost recycle bin that follows mouse in delete mode (only in relevant areas) -->
   {#if editor.editorMode === 'delete' && editor.isOverRelevantArea}
-    <div class="ghost-recycle-bin" style="left: {editor.ghostPosition.x}px; top: {editor.ghostPosition.y}px;">
+    <div
+      class="ghost-recycle-bin"
+      style="left: {editor.ghostPosition.x}px; top: {editor.ghostPosition.y}px;"
+    >
       🗑️
     </div>
   {/if}
@@ -156,7 +174,7 @@
 
   .editor-header {
     flex-shrink: 0;
-    padding: 0.75rem 1rem;
+    padding: 0.5rem 1rem;
     border-bottom: 1px solid var(--color-mw-border);
     background: var(--color-mw-bg-panel);
   }
@@ -164,11 +182,22 @@
   .editor-header h1 {
     margin: 0;
     font-family: var(--font-display);
-    font-size: 1.25rem;
+    font-size: 1rem; /* Smaller on mobile by default */
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 3px;
+    letter-spacing: 2px;
     text-align: center;
+  }
+
+  @media (min-width: 1024px) {
+    .editor-header h1 {
+      font-size: 1.25rem;
+      letter-spacing: 3px;
+    }
+
+    .editor-header {
+      padding: 0.75rem 1rem;
+    }
   }
 
   .editor-layout {
@@ -254,7 +283,7 @@
   }
 
   /* Sidebar (renamed to Piece Panel) */
-  .sidebar {
+  .editor-panel {
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
@@ -528,13 +557,110 @@
     filter: drop-shadow(0 0 10px var(--color-mw-alert));
   }
 
-  @keyframes pulse {
-    0%,
-    100% {
-      opacity: 1;
+  /* Mobile Layout Overrides - Must come last */
+  @media (max-width: 1024px) {
+    .editor-page {
+      height: 100dvh; /* use dynamic viewport height for mobile browsers */
+      min-height: 0;
+      overflow: hidden;
     }
-    50% {
-      opacity: 0.5;
+
+    .editor-layout {
+      overflow: hidden;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      padding: 0;
+      gap: 0;
+    }
+
+    .board-wrapper {
+      flex-direction: column;
+      height: 100%;
+      width: 100%;
+      gap: 0;
+    }
+
+    /* Board Section uses flex to take available space */
+    .board-section {
+      flex: 1;
+      width: 100%; /* Override 600px */
+      height: 100%; /* Override 650px - ensuring explicit height for container query */
+      min-height: 0;
+      /* Remove aspect-ratio from section */
+      aspect-ratio: auto;
+      border-bottom: 1px solid var(--color-mw-border);
+      background: #000;
+      padding: 0.5rem; /* Reduced padding on mobile */
+
+      /* Vital for the child size calculation */
+      container-type: size;
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Force board container to fit inside section using container units */
+    .board-section :global(.board-editor-container) {
+      /* Calculate the largest 12:13 box that fits in the container */
+      width: min(100cqw, 100cqh * 12 / 13);
+      height: min(100cqh, 100cqw * 13 / 12);
+
+      /* Reset constraints that might fight with the explicit size */
+      max-width: none;
+      max-height: none;
+
+      aspect-ratio: 12/13;
+      object-fit: contain;
+    }
+
+    /* Update internal container to transparently follow parent */
+    .board-container {
+      width: 100%; /* Will fill the aspect-ratio constrained parent */
+      height: 100%;
+      background: transparent;
+    }
+
+    .editor-panel {
+      width: 100%;
+      height: auto;
+      max-height: 45vh;
+      overflow-y: auto;
+      padding: 0.5rem;
+      border: none;
+      background: var(--color-mw-bg-panel);
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    /* Controls tweaks */
+    .controls-section {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.5rem;
+    }
+
+    .control-row {
+      display: contents;
+    }
+
+    .turn-btn {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      font-size: 0.65rem !important;
+      padding: 0.5rem 0.1rem;
+    }
+
+    .ctrl-btn {
+      font-size: 0.65rem;
+      padding: 0.5rem 0.25rem;
     }
   }
 </style>
