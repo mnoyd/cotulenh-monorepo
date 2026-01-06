@@ -72,7 +72,7 @@
 </script>
 
 <div class="palette-container" class:compact>
-  <div class="pieces-grid max-lg:grid max-lg:grid-cols-5 max-lg:gap-2 max-lg:p-2">
+  <div class="pieces-grid">
     {#each pieces as piece}
       <div
         class="palette-piece-wrapper"
@@ -128,6 +128,20 @@
 
   .palette-container.compact .piece-label {
     display: none;
+  }
+
+  /* Mobile overrides for compact mode */
+  @media (max-width: 1023px) {
+    .palette-container.compact .pieces-grid {
+      grid-template-columns: repeat(6, 1fr);
+      gap: 0.25rem;
+    }
+
+    /* Make pieces even smaller on mobile to ensure they fit well */
+    .palette-container.compact .palette-piece-container {
+      width: 32px;
+      height: 32px;
+    }
   }
 
   .pieces-grid {
