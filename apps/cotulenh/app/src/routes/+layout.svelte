@@ -314,33 +314,34 @@
   }
 
   .mobile-menu-trigger {
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    background: var(--color-mw-primary); /* Bright dot */
-    border: none;
+    width: 44px;
+    height: 44px;
+    border-radius: 8px;
+    background: rgba(15, 23, 42, 0.9);
+    border: 1px solid var(--color-mw-border);
+    color: var(--color-mw-primary);
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: 0 0 10px var(--color-mw-primary); /* Glow effect */
-    transition: all 0.3s ease;
-    padding: 0; /* Remove padding */
-    overflow: hidden; /* Ensure icon doesn't show */
-  }
-
-  /* Hide the icon inside */
-  .mobile-menu-trigger :global(svg) {
-    display: none;
+    box-shadow:
+      0 4px 6px -1px rgba(0, 0, 0, 0.1),
+      0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    backdrop-filter: blur(8px);
+    transition: all 0.2s ease;
+    padding: 0;
+    z-index: 151;
   }
 
   .mobile-menu-trigger:hover {
-    transform: scale(1.2);
-    box-shadow: 0 0 15px var(--color-mw-primary);
+    background: rgba(0, 243, 255, 0.1);
+    border-color: var(--color-mw-primary);
+    box-shadow: 0 0 15px rgba(0, 243, 255, 0.3);
+    transform: translateY(-1px);
   }
 
   .mobile-menu-trigger:active {
-    transform: scale(0.9);
+    transform: translateY(1px);
   }
 
   /* Main Content */
