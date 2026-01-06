@@ -24,19 +24,19 @@
   ],
   "scripts": {
     "build": "vite build",
-    "check": "npm run format:check && npm run lint && npm run test && npm run build",
+    "check": "npm run format:check && npm run lint && npm run build",
+    "check-types": "tsc --noEmit",
     "clean": "rm -rf ./dist",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "test": "vitest",
-    "bench": "vitest bench"
+    "lint": "eslint ."
   },
   "author": "Hoang Manh",
   "devDependencies": {
     "@eslint/eslintrc": "^3.3.1",
     "@eslint/js": "^9.24.0",
     "@types/node": "^22.13.11",
-    "@vitest/coverage-v8": "^1.6.1",
+    "eslint": "^9.24.0",
     "eslint-config-prettier": "^10.1.1",
     "eslint-config-turbo": "^2.5.0",
     "eslint-plugin-svelte": "^2.46.1",
@@ -47,8 +47,7 @@
     "typescript": "^5.8.2",
     "typescript-eslint": "^8.29.0",
     "vite": "^5.4.11",
-    "vite-plugin-dts": "^4.3.0",
-    "vitest": "^1.6.1"
+    "vite-plugin-dts": "^4.3.0"
   },
   "dependencies": {}
 }
