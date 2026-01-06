@@ -113,6 +113,7 @@ function extractLastMoveSquares(move: MoveResult | unknown): Square[] {
 const state = $state<GameState>({
   fen: '',
   turn: null,
+  winner: null,
   history: [],
   possibleMoves: [],
   status: 'playing',
@@ -134,6 +135,9 @@ function updateStateFromGame(game: CoTuLenh, overrides?: Partial<GameState>) {
   state.check = game.isCheck();
   state.status = status;
   state.possibleMoves = isPlaying ? getPossibleMoves(game) : [];
+
+  // Winner is the opponent of the player whose turn it was when game ended
+  state.winner = isPlaying ? null : game.turn() === 'r' ? 'b' : 'r';
 
   // Apply any overrides
   if (overrides) {
@@ -184,6 +188,10 @@ export const gameState = {
   /** Is current player in check? */
   get check() {
     return state.check;
+  },
+  /** The player who won (null unless game over) */
+  get winner() {
+    return state.winner;
   },
   /** History view index (-1 for live game) */
   get historyViewIndex() {
@@ -363,6 +371,7 @@ export const gameState = {
   reset() {
     state.fen = '';
     state.turn = null;
+    state.winner = null;
     state.history = [];
     state.possibleMoves = [];
     state.status = 'playing';

@@ -73,6 +73,7 @@ export interface HistoryMove extends MoveResult {
 export interface GameState {
   fen: string; // Forsyth–Edwards Notation of the board
   turn: Color | null; // Current player's turn ('r' or 'b')
+  winner: Color | null; // The player who won (null unless game over)
   history: HistoryMove[]; // History of moves made
   possibleMoves: MoveResult[]; // Possible moves for the current turn
   lastMove?: Square[]; // The last move made [from, to]
