@@ -100,7 +100,7 @@
       </div>
 
       <!-- Play Button -->
-      <button class="play-btn" onclick={editor.validateAndPlay}>
+      <button class="play-btn" onclick={editor.validateAndPlay} disabled={!editor.isFenValid}>
         <span class="play-icon">▶</span>
         Play This Position
       </button>
@@ -463,9 +463,17 @@
     box-shadow: 0 0 15px rgba(0, 243, 255, 0.3);
   }
 
-  .play-btn:hover {
+  .play-btn:hover:not(:disabled) {
     transform: scale(1.02);
     box-shadow: 0 0 25px rgba(0, 243, 255, 0.5);
+  }
+
+  .play-btn:disabled {
+    background: rgba(128, 128, 128, 0.3);
+    border-color: rgba(128, 128, 128, 0.5);
+    color: #666;
+    cursor: not-allowed;
+    box-shadow: none;
   }
 
   .play-icon {

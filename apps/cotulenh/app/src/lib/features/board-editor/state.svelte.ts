@@ -22,6 +22,11 @@ export function createBoardEditorState() {
   let initialFen = $state('');
   let boardReady = $state(false);
 
+  const isFenValid = $derived.by(() => {
+    if (!fenInput) return false;
+    return validateFenString(fenInput);
+  });
+
   function updateFEN() {
     if (boardApi) {
       const rawFen = boardApi.getFen();
@@ -409,6 +414,9 @@ export function createBoardEditorState() {
     },
     get boardReady() {
       return boardReady;
+    },
+    get isFenValid() {
+      return isFenValid;
     },
 
     updateFEN,
