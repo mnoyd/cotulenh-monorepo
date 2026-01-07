@@ -1,54 +1,45 @@
 <script lang="ts">
   import { logger } from '@cotulenh/common';
-  import { CoTuLenh } from '@cotulenh/core';
-  import { gameState } from '$lib/stores/game.svelte';
+  import type { GameSession } from '$lib/game-session.svelte';
   import { goto } from '$app/navigation';
   import { Button } from '$lib/components/ui/button';
-  import { toast } from 'svelte-sonner';
   import ShareDialog from './ShareDialog.svelte';
 
   interface Props {
-    game: CoTuLenh | null;
-    originalFen: string | undefined;
+    session: GameSession;
   }
 
-  let { game = $bindable(), originalFen }: Props = $props();
+  let { session }: Props = $props();
 
   let shareOpen = $state(false);
 
   function resetGame() {
-    if (!game) return;
-    // Reset to the original FEN from URL or default starting position
-    game = originalFen ? new CoTuLenh(originalFen) : new CoTuLenh();
-    gameState.initialize(game);
-    toast.success('Game reset');
+    if (confirm('Are you sure you want to reset the game?')) {
+      session.reset();
+    }
   }
 
   function undoLastMove() {
-    if (!game) return;
-    game.undo();
-    gameState.handleUndo(game);
+    if (session.canUndo) {
+      session.undo();
+    }
   }
 
   function openShare() {
-    if (!game) return;
     shareOpen = true;
   }
 
   function reportIssue() {
-    if (!game) return;
-
     // Capture current state for report
     const currentState = {
-      fen: gameState.fen,
-      turn: gameState.turn,
-      history: gameState.history,
-      status: gameState.status,
-      check: gameState.check
+      fen: session.fen,
+      turn: session.turn,
+      history: session.history,
+      status: session.status,
+      check: session.check
     };
 
-    localStorage.setItem('report_fen', game.fen());
-    // Safe stringify to handle circular references if any
+    localStorage.setItem('report_fen', session.fen);
     try {
       localStorage.setItem('report_state', JSON.stringify(currentState, null, 2));
     } catch (e) {
@@ -101,9 +92,5 @@
 
 <ShareDialog
   bind:open={shareOpen}
-  fen={game ? game.fen() : ''}
-  {game}
-  onGameLoaded={(newGame) => {
-    game = newGame;
-  }}
+  fen={session.fen}
 />

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { getTurnColorName } from '$lib/utils';
-  import { gameState } from '$lib/stores/game.svelte';
+  import type { GameSession } from '$lib/game-session.svelte';
 
   import { Badge } from '$lib/components/ui/badge';
   import * as Card from '$lib/components/ui/card';
@@ -9,11 +9,17 @@
   import CheckAlert from './game-info/CheckAlert.svelte';
   import MissionResult from './game-info/MissionResult.svelte';
 
-  // Use $derived to create reactive values from gameState
-  let turn = $derived(gameState.turn);
-  let winner = $derived(gameState.winner);
-  let check = $derived(gameState.check);
-  let status = $derived(gameState.status);
+  interface Props {
+    session: GameSession;
+  }
+
+  let { session }: Props = $props();
+
+  // Derive from session
+  let turn = $derived(session.turn);
+  let winner = $derived(session.winner);
+  let check = $derived(session.check);
+  let status = $derived(session.status);
 
   // Helper for colors based on state
   let turnColor = $derived(turn === 'r' ? 'text-red-500' : 'text-mw-primary');

@@ -1,18 +1,21 @@
 <script lang="ts">
-  import { gameState } from '$lib/stores/game.svelte';
-  import type { CoTuLenh } from '@cotulenh/core';
+  import type { GameSession } from '$lib/game-session.svelte';
 
   import { Button } from '$lib/components/ui/button';
   import { cn } from '$lib/utils';
   import { History, Eye } from 'lucide-svelte';
 
-  let { game } = $props<{ game: CoTuLenh | null }>();
+  interface Props {
+    session: GameSession;
+  }
+
+  let { session }: Props = $props();
 
   let historyContainer: HTMLDivElement;
 
-  // Use $derived to create reactive values from gameState
-  let history = $derived(gameState.history);
-  let historyViewIndex = $derived(gameState.historyViewIndex);
+  // Derive from session
+  let history = $derived(session.history);
+  let historyViewIndex = $derived(session.historyViewIndex);
 
   // Use $effect to auto-scroll when history changes
   $effect(() => {
@@ -54,9 +57,7 @@
         variant="ghost"
         size="sm"
         class="h-4 text-[0.6rem] px-1.5 text-mw-warning border border-mw-warning/50 hover:bg-mw-warning/10 hover:text-mw-warning animate-pulse"
-        onclick={() => {
-          if (game) gameState.cancelPreview(game);
-        }}
+        onclick={() => session.cancelPreview()}
       >
         <Eye class="w-2.5 h-2.5 mr-1" />
         LIVE
@@ -87,7 +88,7 @@
                 (historyViewIndex === -1 && index === history.length - 1)) &&
                 'ring-1 ring-mw-primary border-mw-primary bg-mw-primary/10 text-white shadow-[0_0_10px_rgba(0,243,255,0.2)]'
             )}
-            onclick={() => gameState.previewMove(index)}
+            onclick={() => session.previewMove(index)}
           >
             <span class="text-[0.55rem] opacity-50"
               >{(Math.floor(index / 2) + 1).toString().padStart(2, '0')}</span

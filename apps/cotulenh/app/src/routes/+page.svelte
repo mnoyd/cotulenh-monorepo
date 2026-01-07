@@ -6,27 +6,42 @@
   import DeploySessionPanel from '$lib/components/DeploySessionPanel.svelte';
   import MoveHistory from '$lib/components/MoveHistory.svelte';
   import GameControls from '$lib/components/GameControls.svelte';
-  import { createGameController } from '$lib/features/game';
+  import { GameSession } from '$lib/game-session.svelte';
+  import { logger } from '@cotulenh/common';
 
   import '$lib/styles/modern-warfare.css';
 
   let boardComponent: BoardContainer | null = $state(null);
-
-  const controller = createGameController();
+  let session = $state<GameSession | null>(null);
 
   onMount(() => {
     const urlFen = $page.url.searchParams.get('fen');
-    controller.initializeGame(urlFen);
+    let initialFen: string | undefined;
 
-    window.addEventListener('keydown', controller.handleKeydown);
+    if (urlFen) {
+      try {
+        initialFen = decodeURIComponent(urlFen);
+        logger.debug('Loading game with custom FEN:', { fen: initialFen });
+      } catch (error) {
+        logger.error(error, 'Error decoding FEN from URL:');
+      }
+    }
+
+    session = new GameSession(initialFen);
+
+    window.addEventListener('keydown', session.handleKeydown);
 
     return () => {
-      window.removeEventListener('keydown', controller.handleKeydown);
+      if (session) {
+        window.removeEventListener('keydown', session.handleKeydown);
+      }
     };
   });
 
   $effect(() => {
-    controller.setupBoardEffect();
+    if (session) {
+      session.setupBoardEffect();
+    }
   });
 </script>
 
@@ -42,11 +57,11 @@
       <div
         class="board-wrapper flex-none border border-mw-border p-1 bg-mw-bg-panel shadow-2xl rounded-sm w-[min(760px,100%)] max-lg:flex-1 max-lg:border-none max-lg:bg-black max-lg:shadow-none max-lg:p-0 max-lg:flex max-lg:items-center max-lg:justify-center max-lg:overflow-hidden"
       >
-        {#if controller.game}
+        {#if session}
           <BoardContainer
             bind:this={boardComponent}
-            config={controller.createBoardConfig()}
-            onApiReady={controller.handleBoardReady}
+            config={session.boardConfig}
+            onApiReady={(api) => session?.setBoardApi(api)}
             class="w-full max-lg:h-auto max-lg:max-h-full max-lg:m-auto"
           />
         {:else}
@@ -71,23 +86,26 @@
 
         <div class="flex flex-col gap-4 flex-1 max-lg:grid max-lg:grid-cols-2 max-lg:gap-2">
           <div class="max-lg:col-start-1">
-            <GameInfo />
+            {#if session}
+              <GameInfo {session} />
+            {/if}
           </div>
           <div class="max-lg:col-span-full max-lg:order-3">
-            <DeploySessionPanel
-              game={controller.game}
-              deployState={controller.uiDeployState}
-              onCommit={controller.commitDeploy}
-              onCancel={controller.cancelDeploy}
-            />
+            {#if session}
+              <DeploySessionPanel {session} />
+            {/if}
           </div>
           <div class="max-lg:col-start-2">
-            <GameControls bind:game={controller.game} originalFen={controller.originalFen} />
+            {#if session}
+              <GameControls {session} />
+            {/if}
           </div>
           <div
             class="flex-1 min-h-0 overflow-hidden max-lg:col-span-full max-lg:order-4 max-lg:h-[120px]"
           >
-            <MoveHistory game={controller.game} />
+            {#if session}
+              <MoveHistory {session} />
+            {/if}
           </div>
         </div>
       </div>
