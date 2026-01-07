@@ -4,9 +4,10 @@ import * as board from './board.js';
 import { applyAnimation, Config, configure } from './config.js';
 import { anim, render } from './anim.js';
 import { DrawShape } from './draw.js';
-import { write as fenWrite } from './fen.js';
+import { write as fenWrite, read as fenRead } from './fen.js';
 import { dragNewPiece } from './drag.js';
 import * as drop from './drop.js';
+import { piecesEqual } from './util.js';
 
 export interface Api {
   set(config: Config): void;
@@ -45,8 +46,6 @@ export interface Api {
 }
 
 export function start(state: State, redrawAll: cg.Redraw): Api {
-  console.log('🔄 [RENDER] board/src/api.ts - start() called - API initialized');
-
   function toggleOrientation(): void {
     board.toggleOrientation(state);
     redrawAll();
@@ -54,16 +53,20 @@ export function start(state: State, redrawAll: cg.Redraw): Api {
 
   return {
     set(config): void {
-      console.log('🔄 [RENDER] board/src/api.ts - api.set() called', {
-        fen: config.fen,
-        orientation: config.orientation,
-        turnColor: config.turnColor,
-        movable: !!config.movable,
-        lastMove: config.lastMove,
-        check: config.check,
-      });
       if (config.orientation && config.orientation !== state.orientation) toggleOrientation();
       applyAnimation(state, config);
+
+      // Optimization: Skip full re-render if pieces haven't changed
+      // This prevents duplicate animations when Svelte syncs after board internal move
+      if (config.fen) {
+        const incomingPieces = fenRead(config.fen).pieces;
+        if (piecesEqual(state.pieces, incomingPieces)) {
+          // Still configure non-piece state (turn color, dests, etc.) but skip animation
+          render(s => configure(s, config), state);
+          return;
+        }
+      }
+
       (config.fen ? anim : render)(state => configure(state, config), state);
     },
     state,

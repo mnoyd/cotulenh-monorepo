@@ -173,3 +173,23 @@ export const flattenPiece = (p: cg.Piece): cg.Piece[] => {
   if (!p.carrying) return [p];
   return [{ ...p, carrying: undefined }, ...p.carrying];
 };
+
+/**
+ * Check if two piece maps are equivalent (same pieces at same positions)
+ */
+export function piecesEqual(a: cg.Pieces, b: cg.Pieces): boolean {
+  if (a.size !== b.size) return false;
+  for (const [key, pieceA] of a) {
+    const pieceB = b.get(key);
+    if (!pieceB) return false;
+    if (pieceA.role !== pieceB.role || pieceA.color !== pieceB.color) return false;
+    // Check carrying pieces
+    const carryA = pieceA.carrying || [];
+    const carryB = pieceB.carrying || [];
+    if (carryA.length !== carryB.length) return false;
+    for (let i = 0; i < carryA.length; i++) {
+      if (carryA[i].role !== carryB[i].role || carryA[i].color !== carryB[i].color) return false;
+    }
+  }
+  return true;
+}

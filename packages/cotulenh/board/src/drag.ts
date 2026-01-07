@@ -84,7 +84,7 @@ export function start(s: State, e: cg.MouchEvent): void {
         prepareCombinedPopup(s, util.flattenPiece(piece), keyAtPosition),
         keyAtPosition,
       );
-      s.dom.redraw(); // Redraw immediately to show popup
+      s.dom.redraw();
       return;
     }
     board.unselect(s);

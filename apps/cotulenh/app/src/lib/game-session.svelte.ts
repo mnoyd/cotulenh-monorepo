@@ -1,5 +1,6 @@
 import { tick } from 'svelte';
 import { logger } from '@cotulenh/common';
+import { logRender } from '$lib/debug';
 import type { Api, Config, DestMove, OrigMove, Key } from '@cotulenh/board';
 import { CoTuLenh, BITS, BLUE, RED } from '@cotulenh/core';
 import type {
@@ -92,6 +93,10 @@ export class GameSession {
   // Board integration
   #boardApi = $state<Api | null>(null);
   #isUpdatingBoard = $state(false);
+
+  // Memoization to prevent duplicate syncs
+  #lastSyncedFen: string | null = null;
+  #lastSyncedHistoryIdx: number | null = null;
 
   constructor(fen?: string) {
     this.#originalFen = fen;
@@ -277,7 +282,7 @@ export class GameSession {
   }
 
   syncBoard(): void {
-    console.log('🔄 [RENDER] game-session.svelte.ts - syncBoard() called', {
+    logRender('🔄 [RENDER] game-session.svelte.ts - syncBoard() called', {
       hasBoardApi: !!this.#boardApi,
       turnColor: this.turn,
       fen: this.fen
@@ -502,17 +507,25 @@ export class GameSession {
 
   setupBoardEffect(): void {
     // Access reactive properties to register dependencies
-    void this.fen;
+    const currentFen = this.fen;
+    const currentHistoryIdx = this.historyViewIndex;
     void this.deployState;
-    void this.historyViewIndex;
 
-    console.log('🔄 [RENDER] game-session.svelte.ts - setupBoardEffect triggered', {
-      fen: this.fen,
+    // Skip if already synced with these exact values
+    if (this.#lastSyncedFen === currentFen && this.#lastSyncedHistoryIdx === currentHistoryIdx) {
+      return;
+    }
+
+    logRender('🔄 [RENDER] game-session.svelte.ts - setupBoardEffect triggered', {
+      fen: currentFen,
       hasDeployState: !!this.deployState,
-      historyViewIndex: this.historyViewIndex
+      historyViewIndex: currentHistoryIdx
     });
 
     if (this.#boardApi) {
+      this.#lastSyncedFen = currentFen;
+      this.#lastSyncedHistoryIdx = currentHistoryIdx;
+
       this.#isUpdatingBoard = true;
       this.syncBoard();
 
