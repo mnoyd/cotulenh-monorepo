@@ -8,6 +8,7 @@
   import GameControls from '$lib/components/GameControls.svelte';
   import { GameSession } from '$lib/game-session.svelte';
   import { logger } from '@cotulenh/common';
+  import { logRender } from '$lib/debug';
 
   import '$lib/styles/modern-warfare.css';
 
@@ -15,7 +16,7 @@
   let session = $state<GameSession | null>(null);
 
   // Log initial render
-  console.log('🔄 [RENDER] +page.svelte initial render');
+  logRender('🔄 [RENDER] +page.svelte initial render');
 
   onMount(() => {
     const urlFen = $page.url.searchParams.get('fen');
@@ -42,7 +43,7 @@
   });
 
   $effect(() => {
-    console.log('🔄 [RENDER] +page.svelte $effect (setupBoardEffect) triggered');
+    logRender('🔄 [RENDER] +page.svelte $effect (setupBoardEffect) triggered');
     if (session) {
       session.setupBoardEffect();
     }

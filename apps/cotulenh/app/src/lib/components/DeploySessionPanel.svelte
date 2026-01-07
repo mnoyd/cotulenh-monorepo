@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { GameSession } from '$lib/game-session.svelte';
+  import { logRender } from '$lib/debug';
   import { Button } from '$lib/components/ui/button';
   import * as Card from '$lib/components/ui/card';
   import { Plane, CheckCircle2, XCircle } from 'lucide-svelte';
@@ -15,7 +16,7 @@
   let canCommit = $derived(session.canCommitSession);
 
   // Log renders
-  console.log('🔄 [RENDER] DeploySessionPanel.svelte component rendered', { hasSession, canCommit });
+  logRender('🔄 [RENDER] DeploySessionPanel.svelte component rendered', { hasSession, canCommit });
 </script>
 
 {#if hasSession}

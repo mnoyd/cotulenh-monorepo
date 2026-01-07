@@ -4,6 +4,7 @@ import { read } from './fen.js';
 import { DrawShape, DrawBrushes } from './draw.js';
 import { setCheck, setSelected } from './board.js';
 import { RecombineOption } from './types.js';
+import { logRender } from './debug.js';
 
 export interface Config {
   orientation?: cg.Color;
@@ -96,7 +97,7 @@ function isPlainObject(o: unknown): boolean {
 }
 
 export function configure(state: HeadlessState, config: Config): void {
-  console.log('🔄 [RENDER] board/src/config.ts - configure() called', {
+  logRender('🔄 [RENDER] board/src/config.ts - configure() called', {
     hasFen: !!config.fen,
     fen: config.fen,
     turnColor: config.turnColor,

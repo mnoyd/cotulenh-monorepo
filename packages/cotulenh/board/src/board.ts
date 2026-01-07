@@ -14,6 +14,7 @@ import * as cg from './types.js';
 import { AMBIGOUS_STACK_MOVE_STAY_PIECES_CANT_COMBINE, tryCombinePieces } from './combined-piece.js';
 import { AMBIGOUS_CAPTURE_STAY_BACK } from './piece-attack';
 import { createError, ErrorCode } from '@cotulenh/common';
+import { logRender } from './debug.js';
 
 export function toggleOrientation(state: HeadlessState): void {
   state.orientation = opposite(state.orientation);
@@ -37,7 +38,7 @@ export function setCheck(state: HeadlessState, color: cg.Color | boolean): void 
 }
 
 export function setSelected(state: HeadlessState, origMove: cg.OrigMove): void {
-  console.log('🔄 [RENDER] board/src/board.ts - setSelected() called', {
+  logRender('🔄 [RENDER] board/src/board.ts - setSelected() called', {
     square: origMove.square,
     type: origMove.type,
     stackMove: origMove.stackMove,
@@ -49,7 +50,7 @@ export function setSelected(state: HeadlessState, origMove: cg.OrigMove): void {
 }
 
 export function unselect(state: HeadlessState): void {
-  console.log('🔄 [RENDER] board/src/board.ts - unselect() called');
+  logRender('🔄 [RENDER] board/src/board.ts - unselect() called');
   if (state.airDefense) state.airDefense.showInfluenceZone = undefined;
   state.selected = undefined;
   state.hold.cancel();
@@ -95,7 +96,7 @@ export function baseMove(
   orig: cg.OrigMove,
   dest: cg.DestMove,
 ): PreparedPiece | AmbigousMove | boolean {
-  console.log('🔄 [RENDER] board/src/board.ts - baseMove() called', {
+  logRender('🔄 [RENDER] board/src/board.ts - baseMove() called', {
     orig: orig.square,
     dest: dest.square,
     origType: orig.type,
@@ -146,7 +147,7 @@ function baseUserMove(state: HeadlessState, orig: cg.OrigMove, dest: cg.DestMove
 }
 
 export function userMove(state: HeadlessState, origMove: cg.OrigMove, destMove: cg.DestMove): boolean {
-  console.log('🔄 [RENDER] board/src/board.ts - userMove() called', {
+  logRender('🔄 [RENDER] board/src/board.ts - userMove() called', {
     orig: origMove.square,
     dest: destMove.square,
     type: origMove.type,
@@ -288,7 +289,7 @@ export function selectSquare(
   stackMove?: boolean,
   force?: boolean,
 ): void {
-  console.log('🔄 [RENDER] board/src/board.ts - selectSquare() called', {
+  logRender('🔄 [RENDER] board/src/board.ts - selectSquare() called', {
     square: selectedSquare,
     piece: selectedPiece,
     stackMove,

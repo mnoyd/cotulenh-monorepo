@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import { browser } from '$app/environment';
   import { logger } from '@cotulenh/common';
+  import { logRender } from '$lib/debug';
   import { CotulenhBoard } from '@cotulenh/board';
   import type { Api, Config } from '@cotulenh/board';
 
@@ -39,7 +40,7 @@
   let isLoading = $state(true);
 
   // Log renders
-  console.log('🔄 [RENDER] BoardContainer.svelte component rendered', { config, isLoading });
+  logRender('🔄 [RENDER] BoardContainer.svelte component rendered', { config, isLoading });
 
   /**
    * Ensure the board maintains proper dimensions after initialization
@@ -100,7 +101,7 @@
       }
 
       logger.debug('BoardContainer: Initializing board...');
-      console.log('🔄 [RENDER] BoardContainer.svelte onMount - Initializing board');
+      logRender('🔄 [RENDER] BoardContainer.svelte onMount - Initializing board');
 
       // Initialize the board
       boardApi = CotulenhBoard(containerElement, config);

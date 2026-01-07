@@ -2,6 +2,7 @@
   import { logger } from '@cotulenh/common';
   import type { GameSession } from '$lib/game-session.svelte';
   import { goto } from '$app/navigation';
+  import { logRender } from '$lib/debug';
   import { Button } from '$lib/components/ui/button';
   import ShareDialog from './ShareDialog.svelte';
 
@@ -14,7 +15,7 @@
   let shareOpen = $state(false);
 
   // Log renders
-  console.log('🔄 [RENDER] GameControls.svelte component rendered', { hasGame: !!game, originalFen });
+  logRender('🔄 [RENDER] GameControls.svelte component rendered', { session: !!session });
 
   function resetGame() {
     if (confirm('Are you sure you want to reset the game?')) {
