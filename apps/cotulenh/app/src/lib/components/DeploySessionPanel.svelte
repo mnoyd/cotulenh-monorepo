@@ -1,28 +1,18 @@
 <script lang="ts">
-  import type { CoTuLenh } from '@cotulenh/core';
-  import type { UIDeployState } from '$lib/types/game';
+  import type { GameSession } from '$lib/game-session.svelte';
   import { Button } from '$lib/components/ui/button';
   import * as Card from '$lib/components/ui/card';
   import { Plane, CheckCircle2, XCircle } from 'lucide-svelte';
-  import { gameState } from '$lib/stores/game.svelte';
 
-  let {
-    game,
-    deployState,
-    onCommit,
-    onCancel
-  }: {
-    game: CoTuLenh | null;
-    deployState: UIDeployState | null;
-    onCommit: () => void;
-    onCancel: () => void;
-  } = $props();
+  interface Props {
+    session: GameSession;
+  }
 
+  let { session }: Props = $props();
+
+  let deployState = $derived(session.deployState);
   let hasSession = $derived(deployState !== null);
-  let canCommit = $derived.by(() => {
-    void gameState.deployVersion;
-    return deployState && game ? game.canCommitSession() : false;
-  });
+  let canCommit = $derived(session.canCommitSession);
 </script>
 
 {#if hasSession}
@@ -41,7 +31,7 @@
           variant="secondary"
           size="sm"
           class="h-7 text-xs flex-1 border border-mw-secondary/50 font-bold tracking-widest text-black uppercase transition-all hover:shadow-[0_0_15px_var(--color-mw-secondary)] hover:brightness-110 disabled:opacity-50"
-          onclick={onCommit}
+          onclick={() => session.commitDeploy()}
           disabled={!canCommit}
         >
           <CheckCircle2 class="w-3 h-3 mr-1" />
@@ -51,7 +41,7 @@
           variant="destructive"
           size="sm"
           class="h-7 text-xs flex-1 border border-destructive/50 font-bold tracking-widest uppercase transition-all hover:shadow-[0_0_15px_var(--color-destructive)] hover:brightness-110"
-          onclick={onCancel}
+          onclick={() => session.cancelDeploy()}
         >
           <XCircle class="w-3 h-3 mr-1" />
           Abort
