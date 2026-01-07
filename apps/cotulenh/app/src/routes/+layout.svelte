@@ -1,7 +1,6 @@
 <script lang="ts">
   import { browser } from '$app/environment';
   import { page } from '$app/stores';
-  import { logger } from '@cotulenh/common';
   import { logRender } from '$lib/debug';
   import '../app.css';
   import '@cotulenh/board/assets/commander-chess.pieces.css';
