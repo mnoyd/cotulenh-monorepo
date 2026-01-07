@@ -88,6 +88,35 @@ interface History {
   command: CTLMoveCommandInteface | CTLMoveSequenceCommandInterface
 }
 
+// PGN Seven Tag Roster - required headers according to PGN spec
+// Adapted for CoTuLenh: White/Black → Red/Blue
+export const SEVEN_TAG_ROSTER: Record<string, string> = {
+  Event: '?',
+  Site: '?',
+  Date: '????.??.??',
+  Round: '?',
+  Red: '?',
+  Blue: '?',
+  Result: '*',
+}
+
+// Supplemental PGN tags (optional, null means not set)
+const SUPPLEMENTAL_TAGS: Record<string, string | null> = {
+  RedElo: null,
+  BlueElo: null,
+  TimeControl: null,
+  SetUp: null,
+  FEN: null,
+  Termination: null,
+  Annotator: null,
+}
+
+// Template for header ordering
+const HEADER_TEMPLATE: Record<string, string | null> = {
+  ...SEVEN_TAG_ROSTER,
+  ...SUPPLEMENTAL_TAGS,
+}
+
 // Public Move class moved to move-session.ts
 
 // --- CoTuLenh Class (Additions) ---
@@ -1703,6 +1732,415 @@ export class CoTuLenh {
     delete this._comments[this.fen()]
     return comment
   }
+
+  // ============================================
+  // PGN Header Management
+  // ============================================
+
+  /**
+   * Sets a PGN header tag value.
+   * @param key - The header tag name (e.g., 'Event', 'Red', 'Blue')
+   * @param value - The value to set for the header
+   * @returns The current headers object
+   */
+  setHeader(key: string, value: string): Record<string, string> {
+    this._header[key] = value ?? SEVEN_TAG_ROSTER[key] ?? null
+    return this.getHeaders()
+  }
+
+  /**
+   * Gets all non-null PGN headers.
+   * @returns An object containing all set headers
+   */
+  getHeaders(): Record<string, string> {
+    const nonNullHeaders: Record<string, string> = {}
+    for (const [key, value] of Object.entries(this._header)) {
+      if (value !== null && value !== undefined) {
+        nonNullHeaders[key] = value
+      }
+    }
+    return nonNullHeaders
+  }
+
+  /**
+   * Removes a PGN header tag.
+   * If the tag is part of the Seven Tag Roster, it resets to the default value.
+   * @param key - The header tag name to remove
+   * @returns True if the header was found and removed/reset
+   */
+  removeHeader(key: string): boolean {
+    if (key in this._header) {
+      if (key in SEVEN_TAG_ROSTER) {
+        this._header[key] = SEVEN_TAG_ROSTER[key]
+      } else {
+        delete this._header[key]
+      }
+      return true
+    }
+    return false
+  }
+
+  // ============================================
+  // PGN Export/Import
+  // ============================================
+
+  /**
+   * Generates a PGN (Portable Game Notation) string for the current game.
+   * Includes headers, move history with comments, and result.
+   *
+   * @param options - Configuration options
+   * @param options.newline - The newline character to use (default: '\n')
+   * @param options.maxWidth - Maximum line width for wrapping (0 = no wrapping)
+   * @returns The PGN string representation of the game
+   *
+   * @example
+   * ```typescript
+   * const game = new CoTuLenh()
+   * game.setHeader('Event', 'Friendly Match')
+   * game.setHeader('Red', 'Player 1')
+   * game.setHeader('Blue', 'Player 2')
+   * game.move({ from: 'f2', to: 'f4' })
+   * console.log(game.pgn())
+   * // [Event "Friendly Match"]
+   * // [Site "?"]
+   * // [Date "2026.01.07"]
+   * // [Round "?"]
+   * // [Red "Player 1"]
+   * // [Blue "Player 2"]
+   * // [Result "*"]
+   * //
+   * // 1. Ff2-f4 *
+   * ```
+   */
+  pgn({
+    newline = '\n',
+    maxWidth = 0,
+  }: { newline?: string; maxWidth?: number } = {}): string {
+    const result: string[] = []
+
+    // Ensure we have the required Seven Tag Roster headers
+    const headers: Record<string, string | null> = { ...HEADER_TEMPLATE }
+
+    // Copy existing headers
+    for (const [key, value] of Object.entries(this._header)) {
+      headers[key] = value
+    }
+
+    // Set default date if not provided
+    if (!headers['Date'] || headers['Date'] === '????.??.??') {
+      const now = new Date()
+      headers['Date'] =
+        `${now.getFullYear()}.${String(now.getMonth() + 1).padStart(2, '0')}.${String(now.getDate()).padStart(2, '0')}`
+    }
+
+    // Determine result based on game state
+    if (!headers['Result'] || headers['Result'] === '*') {
+      if (this.isGameOver()) {
+        if (this.isCheckmate()) {
+          // The player whose turn it is lost
+          headers['Result'] = this._turn === RED ? '0-1' : '1-0'
+        } else {
+          headers['Result'] = '1/2-1/2'
+        }
+      }
+    }
+
+    // Build header section
+    let headerExists = false
+    for (const key of Object.keys(HEADER_TEMPLATE)) {
+      const value = headers[key]
+      if (value !== null && value !== undefined) {
+        result.push(`[${key} "${value}"]${newline}`)
+        headerExists = true
+      }
+    }
+
+    // Add any custom headers not in the template
+    for (const [key, value] of Object.entries(headers)) {
+      if (!(key in HEADER_TEMPLATE) && value !== null && value !== undefined) {
+        result.push(`[${key} "${value}"]${newline}`)
+        headerExists = true
+      }
+    }
+
+    // Add blank line between headers and moves
+    if (headerExists && this._history.length > 0) {
+      result.push(newline)
+    }
+
+    // Helper to append comments
+    const appendComment = (moveString: string, fen: string): string => {
+      const comment = this._comments[fen]
+      if (comment) {
+        const delimiter = moveString.length > 0 ? ' ' : ''
+        moveString = `${moveString}${delimiter}{${comment}}`
+      }
+      return moveString
+    }
+
+    // Get move history as SAN strings by replaying
+    const reversedHistory: (InternalMove | InternalMove[])[] = []
+    while (this._history.length > 0) {
+      const moves = this._undoMove()
+      if (moves) {
+        reversedHistory.unshift(moves)
+      }
+    }
+
+    const moveStrings: string[] = []
+    let currentMoveString = ''
+
+    // Check for comment at starting position
+    if (reversedHistory.length === 0) {
+      moveStrings.push(appendComment('', this.fen()))
+    }
+
+    // Replay and build move notation
+    let moveIndex = 0
+    for (const item of reversedHistory) {
+      currentMoveString = appendComment(currentMoveString, this.fen())
+
+      let moveResult: MoveResult | null = null
+
+      if (Array.isArray(item)) {
+        // Handle deploy/recombine sequence
+        for (const move of item) {
+          moveResult = this.move(move)
+        }
+        if (this._session) {
+          const commitRes = this.commitSession()
+          if (commitRes.success && commitRes.result) {
+            moveResult = commitRes.result
+          }
+        }
+      } else {
+        moveResult = this.move(item)
+      }
+
+      if (moveResult && moveResult.completed && moveResult.san) {
+        const isRedMove = moveIndex % 2 === 0
+
+        if (isRedMove) {
+          // Start new move pair
+          if (currentMoveString.length > 0) {
+            moveStrings.push(currentMoveString)
+          }
+          const moveNum = Math.floor(moveIndex / 2) + 1
+          currentMoveString = `${moveNum}. ${moveResult.san}`
+        } else {
+          // Add Blue's move to current pair
+          currentMoveString += ` ${moveResult.san}`
+        }
+
+        moveIndex++
+      }
+    }
+
+    // Add any remaining move string
+    if (currentMoveString.length > 0) {
+      moveStrings.push(appendComment(currentMoveString, this.fen()))
+    }
+
+    // Add result
+    moveStrings.push(headers['Result'] || '*')
+
+    // Join moves with word wrapping if requested
+    if (maxWidth === 0) {
+      return result.join('') + moveStrings.join(' ')
+    }
+
+    // Word wrap implementation
+    let currentWidth = 0
+    for (let i = 0; i < moveStrings.length; i++) {
+      const moveStr = moveStrings[i]
+
+      // Handle comments with internal spaces
+      if (currentWidth + moveStr.length > maxWidth && i !== 0) {
+        // Remove trailing space
+        if (result.length > 0 && result[result.length - 1] === ' ') {
+          result.pop()
+        }
+        result.push(newline)
+        currentWidth = 0
+      } else if (i !== 0) {
+        result.push(' ')
+        currentWidth++
+      }
+
+      result.push(moveStr)
+      currentWidth += moveStr.length
+    }
+
+    return result.join('')
+  }
+
+  /**
+   * Loads a game from PGN (Portable Game Notation) format.
+   * Parses headers and replays all moves.
+   *
+   * @param pgn - The PGN string to load
+   * @param options - Configuration options
+   * @param options.strict - If true, strictly validates SAN notation
+   * @returns True if the PGN was successfully loaded
+   * @throws Error if the PGN is invalid or contains illegal moves
+   *
+   * @example
+   * ```typescript
+   * const game = new CoTuLenh()
+   * game.loadPgn(`
+   *   [Event "Test Game"]
+   *   [Red "Player 1"]
+   *   [Blue "Player 2"]
+   *
+   *   1. Ff2-f4 Ff11-f9 *
+   * `)
+   * ```
+   */
+  loadPgn(pgn: string, { strict = false }: { strict?: boolean } = {}): boolean {
+    // Reset the game
+    this.clear()
+
+    // Normalize line endings
+    const normalizedPgn = pgn.replace(/\r\n?/g, '\n')
+
+    // Parse headers
+    const headerRegex = /\[(\w+)\s+"([^"]*)"\]/g
+    let match
+    let lastHeaderEnd = 0
+
+    while ((match = headerRegex.exec(normalizedPgn)) !== null) {
+      const [fullMatch, key, value] = match
+      this._header[key] = value
+      lastHeaderEnd = match.index + fullMatch.length
+    }
+
+    // Check for FEN in headers and load it
+    const fenHeader = this._header['FEN']
+    if (fenHeader && this._header['SetUp'] === '1') {
+      this.load(fenHeader, { preserveHeaders: true })
+    }
+
+    // Extract moves section (after headers)
+    let moveSection = normalizedPgn.slice(lastHeaderEnd).trim()
+
+    // Remove comments for parsing (we'll handle them separately)
+    const comments: { index: number; text: string }[] = []
+    moveSection = moveSection.replace(
+      /\{([^}]*)\}/g,
+      (match, comment, offset) => {
+        comments.push({ index: offset, text: comment })
+        return ''
+      },
+    )
+
+    // Remove result markers
+    moveSection = moveSection.replace(/\s*(1-0|0-1|1\/2-1\/2|\*)\s*$/, '')
+
+    // Parse move tokens
+    // Remove move numbers and clean up
+    const moveTokens = moveSection
+      .replace(/\d+\.\s*/g, '') // Remove move numbers
+      .replace(/\.\.\./g, '') // Remove continuation dots
+      .split(/\s+/)
+      .filter((token) => token.length > 0)
+
+    // Replay moves
+    for (const token of moveTokens) {
+      // Skip empty tokens and annotations
+      if (!token || /^[!?]+$/.test(token) || /^\$\d+$/.test(token)) {
+        continue
+      }
+
+      try {
+        // Try to parse and execute the move
+        const moveResult = this._parseSanMove(token, strict)
+        if (!moveResult) {
+          throw createError(
+            ErrorCode.MOVE_INVALID_DESTINATION,
+            `Invalid move in PGN: ${token}`,
+            { move: token },
+          )
+        }
+      } catch (error) {
+        if (strict) {
+          throw error
+        }
+        logger.warn(`Skipping invalid move in PGN: ${token}`)
+      }
+    }
+
+    return true
+  }
+
+  /**
+   * Parses a SAN move string and executes it.
+   * @private
+   */
+  private _parseSanMove(san: string, strict: boolean): MoveResult | null {
+    // Strip decorators like +, #, !, ?
+    const cleanSan = san.replace(/[+#!?]+$/, '')
+
+    // Get all legal moves as MoveResult objects
+    const legalMoves = this.moves({ verbose: true }) as MoveResult[]
+
+    // Try to find a matching move
+    for (const move of legalMoves) {
+      // Compare SAN notation
+      const moveSan = move.san?.replace(/[+#!?]+$/, '')
+      if (moveSan === cleanSan) {
+        // For deploy moves, 'to' can be a Map - get the first destination
+        const toSquare =
+          move.to instanceof Map
+            ? (Array.from(move.to.keys())[0] as Square)
+            : move.to
+        // Execute the move using the move's from/to
+        return this.move({
+          from: move.from,
+          to: toSquare,
+          piece: move.piece?.type,
+        })
+      }
+
+      // Also try matching LAN notation
+      const moveLan = move.lan?.replace(/[+#!?]+$/, '')
+      if (moveLan === cleanSan) {
+        const toSquare =
+          move.to instanceof Map
+            ? (Array.from(move.to.keys())[0] as Square)
+            : move.to
+        return this.move({
+          from: move.from,
+          to: toSquare,
+          piece: move.piece?.type,
+        })
+      }
+    }
+
+    // If strict mode, return null for no match
+    if (strict) {
+      return null
+    }
+
+    // Try permissive parsing - extract from/to squares
+    const permissiveMatch = cleanSan.match(
+      /([A-Z])?([a-k]\d{1,2})-?([a-k]\d{1,2})/,
+    )
+    if (permissiveMatch) {
+      const [, piece, from, to] = permissiveMatch
+      try {
+        return this.move({
+          from: from as Square,
+          to: to as Square,
+          piece: piece?.toLowerCase() as PieceSymbol,
+        })
+      } catch {
+        return null
+      }
+    }
+
+    return null
+  }
+
   // Removed printTerrainZones
 
   /**

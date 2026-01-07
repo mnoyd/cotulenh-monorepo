@@ -99,4 +99,11 @@
   </Button>
 </div>
 
-<ShareDialog bind:open={shareOpen} fen={game ? game.fen() : ''} />
+<ShareDialog
+  bind:open={shareOpen}
+  fen={game ? game.fen() : ''}
+  {game}
+  onGameLoaded={(newGame) => {
+    game = newGame;
+  }}
+/>
