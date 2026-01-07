@@ -73,7 +73,12 @@ export function createGameController() {
 
   function reSetupBoard(): Api | null {
     if (boardApi) {
-      boardApi.set(createBoardConfig());
+      const config = createBoardConfig();
+      // Don't include fen if unchanged - avoids triggering unnecessary animation cycle
+      if (config.fen === lastProcessedFen) {
+        delete (config as { fen?: string }).fen;
+      }
+      boardApi.set(config);
     }
     return boardApi;
   }
