@@ -16,6 +16,9 @@
     textColor: string;
     children?: Snippet;
   } = $props();
+
+  // Log renders
+  console.log('🔄 [RENDER] MissionResult.svelte component rendered', { title });
 </script>
 
 <div

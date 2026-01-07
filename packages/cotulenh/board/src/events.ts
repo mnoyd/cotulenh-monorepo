@@ -70,6 +70,7 @@ function unbindable(
 const startDragOrDraw =
   (s: State): MouchBind =>
   e => {
+    console.log('🔄 [RENDER] board/src/events.ts - startDragOrDraw triggered', { type: e.type });
     if (s.draggable.current) drag.cancel(s);
     else if (s.drawable.current) draw.cancel(s);
     else if (e.shiftKey) {

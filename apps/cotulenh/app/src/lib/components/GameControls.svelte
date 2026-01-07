@@ -13,6 +13,9 @@
 
   let shareOpen = $state(false);
 
+  // Log renders
+  console.log('🔄 [RENDER] GameControls.svelte component rendered', { hasGame: !!game, originalFen });
+
   function resetGame() {
     if (confirm('Are you sure you want to reset the game?')) {
       session.reset();

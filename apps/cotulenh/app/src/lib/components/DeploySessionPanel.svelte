@@ -13,6 +13,9 @@
   let deployState = $derived(session.deployState);
   let hasSession = $derived(deployState !== null);
   let canCommit = $derived(session.canCommitSession);
+
+  // Log renders
+  console.log('🔄 [RENDER] DeploySessionPanel.svelte component rendered', { hasSession, canCommit });
 </script>
 
 {#if hasSession}

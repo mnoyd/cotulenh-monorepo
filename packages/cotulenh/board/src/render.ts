@@ -126,6 +126,16 @@ export function createAmbigousPiecesStackElement(pieces: cg.Piece[]): cg.KeyedNo
 }
 
 export function render(s: State): void {
+  console.log('🔄 [RENDER] board/src/render.ts - render() called', {
+    piecesCount: s.pieces.size,
+    orientation: s.orientation,
+    turnColor: s.turnColor,
+    selected: s.selected?.square,
+    lastMove: s.lastMove,
+    check: s.check,
+    animating: !!s.animation.current,
+    dragging: !!s.draggable.current,
+  });
   const asRed: boolean = orientRed(s),
     posToTranslate = posToTranslateFromBounds(s.dom.bounds()),
     pieces: cg.Pieces = s.pieces,
@@ -340,6 +350,7 @@ export function render(s: State): void {
 export const orientRed = (s: HeadlessState): boolean => s.orientation === 'red';
 
 export function updateBounds(s: State): void {
+  console.log('🔄 [RENDER] board/src/render.ts - updateBounds() called');
   const bounds = s.dom.elements.wrap.getBoundingClientRect();
   const container = s.dom.elements.container;
   const ratio = bounds.height / bounds.width;
@@ -354,6 +365,7 @@ export function updateBounds(s: State): void {
 }
 
 export function renderResized(s: State): void {
+  console.log('🔄 [RENDER] board/src/render.ts - renderResized() called');
   const asRed: boolean = redPov(s),
     posToTranslate = posToTranslateFromBounds(s.dom.bounds());
   let el = s.dom.elements.board.firstChild as cg.PieceNode | cg.SquareNode | undefined;
@@ -369,6 +381,15 @@ export function renderResized(s: State): void {
 }
 
 function computeSquareClasses(s: State): cg.SquareClasses {
+  console.log('🔄 [RENDER] board/src/render.ts - computeSquareClasses() called', {
+    selected: s.selected?.square,
+    lastMove: s.lastMove,
+    check: s.check,
+    hasDeploySession: !!s.deploySession,
+    showDests: s.movable.showDests,
+    hasDests: !!s.movable.dests,
+    destsCount: s.movable.dests?.size || 0,
+  });
   const squares: cg.SquareClasses = new Map();
   let isFirstSquareInLastMove = true;
   if (s.lastMove && s.highlight.lastMove)

@@ -30,6 +30,9 @@
   let winnerColor = $derived(winner === 'r' ? 'text-red-500' : 'text-mw-primary');
   let winnerBg = $derived(winner === 'r' ? 'bg-red-500/10' : 'bg-mw-primary/10');
   let winnerBorder = $derived(winner === 'r' ? 'border-red-500/30' : 'border-mw-primary/30');
+
+  // Log renders
+  console.log('🔄 [RENDER] GameInfo.svelte component rendered', { turn, winner, check, status });
 </script>
 
 <Card.Root

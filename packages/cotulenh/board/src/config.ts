@@ -96,6 +96,16 @@ function isPlainObject(o: unknown): boolean {
 }
 
 export function configure(state: HeadlessState, config: Config): void {
+  console.log('🔄 [RENDER] board/src/config.ts - configure() called', {
+    hasFen: !!config.fen,
+    fen: config.fen,
+    turnColor: config.turnColor,
+    check: config.check,
+    lastMove: config.lastMove,
+    hasMovableDests: !!config.movable?.dests,
+    hasDeploySession: !!state.deploySession,
+    selected: state.selected,
+  });
   // don't merge destinations and autoShapes. Just override.
   if (config.movable?.dests) state.movable.dests = undefined;
   if (config.drawable?.autoShapes) state.drawable.autoShapes = [];
