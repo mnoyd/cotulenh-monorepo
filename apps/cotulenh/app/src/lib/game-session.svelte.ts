@@ -1,6 +1,6 @@
 import { tick } from 'svelte';
 import { logger } from '@cotulenh/common';
-import type { Api, Config, DestMove, OrigMove, Key, Role } from '@cotulenh/board';
+import type { Api, Config, DestMove, OrigMove, Key } from '@cotulenh/board';
 import { CoTuLenh, BITS, BLUE, RED } from '@cotulenh/core';
 import type {
   Color,
@@ -17,7 +17,6 @@ import { toast } from 'svelte-sonner';
 import {
   coreToBoardColor,
   coreToBoardCheck,
-  coreToBoardAirDefense,
   mapPossibleMovesToDests,
   mapLastMoveToBoardFormat
 } from '$lib/features/game/utils.js';
@@ -104,7 +103,7 @@ export class GameSession {
   // ============================================================
 
   get fen(): string {
-    this.#version; // Register dependency
+    void this.#version; // Register dependency
     if (this.#historyViewIndex !== -1 && this.#history[this.#historyViewIndex]) {
       return this.#history[this.#historyViewIndex].after;
     }
@@ -112,7 +111,7 @@ export class GameSession {
   }
 
   get turn(): Color | null {
-    this.#version;
+    void this.#version;
     if (this.status !== 'playing') return null;
     if (this.#historyViewIndex !== -1 && this.#history[this.#historyViewIndex]) {
       // For preview, parse turn from the previewed FEN
@@ -124,7 +123,7 @@ export class GameSession {
   }
 
   get status(): GameStatus {
-    this.#version;
+    void this.#version;
     const extendedGame = this.#game as unknown as ExtendedGame;
     if (extendedGame.isGameOver()) {
       if (this.#game.isCheckmate()) return 'checkmate';
@@ -136,18 +135,18 @@ export class GameSession {
   }
 
   get check(): boolean {
-    this.#version;
+    void this.#version;
     return this.#game.isCheck();
   }
 
   get winner(): Color | null {
-    this.#version;
+    void this.#version;
     if (this.status === 'playing') return null;
     return this.#game.turn() === 'r' ? 'b' : 'r';
   }
 
   get history(): HistoryMove[] {
-    this.#version;
+    void this.#version;
     return this.#history;
   }
 
@@ -156,7 +155,7 @@ export class GameSession {
   }
 
   get lastMove(): Square[] | undefined {
-    this.#version;
+    void this.#version;
     if (this.#historyViewIndex !== -1) {
       const move = this.#history[this.#historyViewIndex];
       return move ? extractLastMoveSquares(move) : undefined;
@@ -168,13 +167,13 @@ export class GameSession {
   }
 
   get possibleMoves(): MoveResult[] {
-    this.#version;
+    void this.#version;
     if (this.status !== 'playing' || this.#historyViewIndex !== -1) return [];
     return this.#game.moves({ verbose: true }) as MoveResult[];
   }
 
   get deployState(): UIDeployState | null {
-    this.#version;
+    void this.#version;
     const session = this.#game.getSession();
     if (!session || !session.isDeploy) return null;
 
@@ -211,12 +210,12 @@ export class GameSession {
   }
 
   get canUndo(): boolean {
-    this.#version;
+    void this.#version;
     return this.#game.history().length > 0 || this.#game.getSession() !== null;
   }
 
   get canCommitSession(): boolean {
-    this.#version;
+    void this.#version;
     return this.#game.canCommitSession();
   }
 
