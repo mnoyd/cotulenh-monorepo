@@ -1,0 +1,6 @@
+{
+  "scripts": {
+    "setup": "pnpm install",
+    "run": "z apps/cotulenh/app; pnpm run dev --host"
+  }
+}
