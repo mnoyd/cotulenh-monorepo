@@ -1,6 +1,7 @@
 import { State } from './state.js';
 import * as util from './util.js';
 import * as cg from './types.js';
+import { logRender } from './debug.js';
 
 export type Mutation<A> = (state: State) => A;
 export type AnimVector = cg.NumberQuad;
@@ -23,7 +24,7 @@ export const anim = <A>(mutation: Mutation<A>, state: State): A =>
   state.animation.enabled ? animate(mutation, state) : render(mutation, state);
 
 export function render<A>(mutation: Mutation<A>, state: State): A {
-  console.log('🔄 [RENDER] board/src/anim.ts - render() called (no animation)');
+  logRender('🔄 [RENDER] board/src/anim.ts - render() called (no animation)');
   const result = mutation(state);
   state.dom.redraw();
   return result;
@@ -65,7 +66,7 @@ function step(state: State, now: DOMHighResTimeStamp): void {
 }
 
 function animate<A>(mutation: Mutation<A>, state: State): A {
-  console.log('🔄 [RENDER] board/src/anim.ts - animate() called (with animation)');
+  logRender('🔄 [RENDER] board/src/anim.ts - animate() called (with animation)');
   // clone state before mutating it
   const prevPieces: cg.Pieces = new Map(state.pieces);
 

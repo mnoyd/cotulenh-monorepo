@@ -3,6 +3,7 @@ import * as drag from './drag.js';
 import * as draw from './draw.js';
 import { drop } from './drop.js';
 import * as cg from './types.js';
+import { logRender } from './debug.js';
 
 type MouchBind = (e: cg.MouchEvent) => void;
 type StateMouchBind = (d: State, e: cg.MouchEvent) => void;
@@ -70,7 +71,7 @@ function unbindable(
 const startDragOrDraw =
   (s: State): MouchBind =>
   e => {
-    console.log('🔄 [RENDER] board/src/events.ts - startDragOrDraw triggered', { type: e.type });
+    logRender('🔄 [RENDER] board/src/events.ts - startDragOrDraw triggered', { type: e.type });
     if (s.draggable.current) drag.cancel(s);
     else if (s.drawable.current) draw.cancel(s);
     else if (e.shiftKey) {

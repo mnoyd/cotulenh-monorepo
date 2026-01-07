@@ -1,6 +1,7 @@
 <script lang="ts">
   import { getTurnColorName } from '$lib/utils';
   import type { GameSession } from '$lib/game-session.svelte';
+  import { logRender } from '$lib/debug';
 
   import { Badge } from '$lib/components/ui/badge';
   import * as Card from '$lib/components/ui/card';
@@ -32,7 +33,7 @@
   let winnerBorder = $derived(winner === 'r' ? 'border-red-500/30' : 'border-mw-primary/30');
 
   // Log renders
-  console.log('🔄 [RENDER] GameInfo.svelte component rendered', { turn, winner, check, status });
+  logRender('🔄 [RENDER] GameInfo.svelte component rendered', { turn, winner, check, status });
 </script>
 
 <Card.Root

@@ -2,6 +2,7 @@
   import { browser } from '$app/environment';
   import { page } from '$app/stores';
   import { logger } from '@cotulenh/common';
+  import { logRender } from '$lib/debug';
   import '../app.css';
   import '@cotulenh/board/assets/commander-chess.pieces.css';
   import Sonner from '$lib/components/ui/sonner/sonner.svelte';
@@ -21,12 +22,12 @@
 
   $effect(() => {
     if (browser) {
-      logger.info('🔄 [RENDER] +layout.svelte $effect triggered');
+      logRender('🔄 [RENDER] +layout.svelte $effect triggered');
     }
   });
 
   // Log component renders
-  console.log('🔄 [RENDER] +layout.svelte component rendered');
+  logRender('🔄 [RENDER] +layout.svelte component rendered');
 </script>
 
 <div class="app-container">

@@ -1,5 +1,6 @@
 <script lang="ts">
   import { type ComponentType, type Snippet } from 'svelte';
+  import { logRender } from '$lib/debug';
 
   let {
     icon: Icon,
@@ -18,7 +19,7 @@
   } = $props();
 
   // Log renders
-  console.log('🔄 [RENDER] MissionResult.svelte component rendered', { title });
+  logRender('🔄 [RENDER] MissionResult.svelte component rendered', { title });
 </script>
 
 <div

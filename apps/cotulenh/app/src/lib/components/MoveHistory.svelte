@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { GameSession } from '$lib/game-session.svelte';
+  import { logRender } from '$lib/debug';
 
   import { Button } from '$lib/components/ui/button';
   import { cn } from '$lib/utils';
@@ -18,12 +19,12 @@
   let historyViewIndex = $derived(session.historyViewIndex);
 
   // Log renders
-  console.log('🔄 [RENDER] MoveHistory.svelte component rendered', { historyLength: history.length, historyViewIndex });
+  logRender('🔄 [RENDER] MoveHistory.svelte component rendered', { historyLength: history.length, historyViewIndex });
 
   // Use $effect to auto-scroll when history changes
   $effect(() => {
     const idx = historyViewIndex;
-    console.log('🔄 [RENDER] MoveHistory.svelte $effect (auto-scroll) triggered', { idx });
+    logRender('🔄 [RENDER] MoveHistory.svelte $effect (auto-scroll) triggered', { idx });
     let cleanup: (() => void) | undefined;
 
     if (historyContainer) {

@@ -1,8 +1,9 @@
 <script lang="ts">
   import { ShieldAlert } from 'lucide-svelte';
+  import { logRender } from '$lib/debug';
 
   // Log renders
-  console.log('🔄 [RENDER] CheckAlert.svelte component rendered');
+  logRender('🔄 [RENDER] CheckAlert.svelte component rendered');
 </script>
 
 <div class="p-2 md:p-3">
