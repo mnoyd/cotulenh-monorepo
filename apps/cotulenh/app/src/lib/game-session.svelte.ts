@@ -277,6 +277,11 @@ export class GameSession {
   }
 
   syncBoard(): void {
+    console.log('🔄 [RENDER] game-session.svelte.ts - syncBoard() called', {
+      hasBoardApi: !!this.#boardApi,
+      turnColor: this.turn,
+      fen: this.fen
+    });
     if (this.#boardApi) {
       this.#boardApi.set(this.boardConfig);
     }
@@ -500,6 +505,12 @@ export class GameSession {
     void this.fen;
     void this.deployState;
     void this.historyViewIndex;
+
+    console.log('🔄 [RENDER] game-session.svelte.ts - setupBoardEffect triggered', {
+      fen: this.fen,
+      hasDeployState: !!this.deployState,
+      historyViewIndex: this.historyViewIndex
+    });
 
     if (this.#boardApi) {
       this.#isUpdatingBoard = true;

@@ -21,9 +21,12 @@
 
   $effect(() => {
     if (browser) {
-      logger.info('CoTuLenh App Initialized');
+      logger.info('🔄 [RENDER] +layout.svelte $effect triggered');
     }
   });
+
+  // Log component renders
+  console.log('🔄 [RENDER] +layout.svelte component rendered');
 </script>
 
 <div class="app-container">

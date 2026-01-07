@@ -37,6 +37,11 @@ export function setCheck(state: HeadlessState, color: cg.Color | boolean): void 
 }
 
 export function setSelected(state: HeadlessState, origMove: cg.OrigMove): void {
+  console.log('🔄 [RENDER] board/src/board.ts - setSelected() called', {
+    square: origMove.square,
+    type: origMove.type,
+    stackMove: origMove.stackMove,
+  });
   if (origMove.type === 'air_force') {
     if (state.airDefense) state.airDefense.showInfluenceZone = opposite(state.turnColor);
   }
@@ -44,6 +49,7 @@ export function setSelected(state: HeadlessState, origMove: cg.OrigMove): void {
 }
 
 export function unselect(state: HeadlessState): void {
+  console.log('🔄 [RENDER] board/src/board.ts - unselect() called');
   if (state.airDefense) state.airDefense.showInfluenceZone = undefined;
   state.selected = undefined;
   state.hold.cancel();
@@ -89,6 +95,12 @@ export function baseMove(
   orig: cg.OrigMove,
   dest: cg.DestMove,
 ): PreparedPiece | AmbigousMove | boolean {
+  console.log('🔄 [RENDER] board/src/board.ts - baseMove() called', {
+    orig: orig.square,
+    dest: dest.square,
+    origType: orig.type,
+    destStay: dest.stay,
+  });
   if (orig.square === dest.square) return false;
 
   const prepareResult = preparePieceThatChanges(state, orig, dest);
@@ -134,6 +146,11 @@ function baseUserMove(state: HeadlessState, orig: cg.OrigMove, dest: cg.DestMove
 }
 
 export function userMove(state: HeadlessState, origMove: cg.OrigMove, destMove: cg.DestMove): boolean {
+  console.log('🔄 [RENDER] board/src/board.ts - userMove() called', {
+    orig: origMove.square,
+    dest: destMove.square,
+    type: origMove.type,
+  });
   if (!canMove(state, origMove, destMove)) {
     unselect(state);
     return false;
@@ -271,6 +288,13 @@ export function selectSquare(
   stackMove?: boolean,
   force?: boolean,
 ): void {
+  console.log('🔄 [RENDER] board/src/board.ts - selectSquare() called', {
+    square: selectedSquare,
+    piece: selectedPiece,
+    stackMove,
+    force,
+    currentlySelected: state.selected?.square,
+  });
   const origMove = { square: selectedSquare, type: selectedPiece, stackMove } as cg.OrigMove;
   callUserFunction(state.events.select, origMove);
 

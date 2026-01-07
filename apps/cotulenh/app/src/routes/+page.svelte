@@ -14,6 +14,9 @@
   let boardComponent: BoardContainer | null = $state(null);
   let session = $state<GameSession | null>(null);
 
+  // Log initial render
+  console.log('🔄 [RENDER] +page.svelte initial render');
+
   onMount(() => {
     const urlFen = $page.url.searchParams.get('fen');
     let initialFen: string | undefined;
@@ -39,6 +42,7 @@
   });
 
   $effect(() => {
+    console.log('🔄 [RENDER] +page.svelte $effect (setupBoardEffect) triggered');
     if (session) {
       session.setupBoardEffect();
     }

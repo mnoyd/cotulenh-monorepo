@@ -45,6 +45,8 @@ export interface Api {
 }
 
 export function start(state: State, redrawAll: cg.Redraw): Api {
+  console.log('🔄 [RENDER] board/src/api.ts - start() called - API initialized');
+
   function toggleOrientation(): void {
     board.toggleOrientation(state);
     redrawAll();
@@ -52,6 +54,14 @@ export function start(state: State, redrawAll: cg.Redraw): Api {
 
   return {
     set(config): void {
+      console.log('🔄 [RENDER] board/src/api.ts - api.set() called', {
+        fen: config.fen,
+        orientation: config.orientation,
+        turnColor: config.turnColor,
+        movable: !!config.movable,
+        lastMove: config.lastMove,
+        check: config.check,
+      });
       if (config.orientation && config.orientation !== state.orientation) toggleOrientation();
       applyAnimation(state, config);
       (config.fen ? anim : render)(state => configure(state, config), state);

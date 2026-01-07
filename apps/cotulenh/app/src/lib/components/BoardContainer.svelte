@@ -38,6 +38,9 @@
   let boardApi = $state<Api | null>(null);
   let isLoading = $state(true);
 
+  // Log renders
+  console.log('🔄 [RENDER] BoardContainer.svelte component rendered', { config, isLoading });
+
   /**
    * Ensure the board maintains proper dimensions after initialization
    * and during resize events. This is critical for position calculations.
@@ -97,6 +100,7 @@
       }
 
       logger.debug('BoardContainer: Initializing board...');
+      console.log('🔄 [RENDER] BoardContainer.svelte onMount - Initializing board');
 
       // Initialize the board
       boardApi = CotulenhBoard(containerElement, config);
