@@ -74,6 +74,13 @@ export interface PieceColors {
   dragFilter: string;
 }
 
+export interface TextColors {
+  primary: string;
+  secondary: string;
+  muted: string;
+  inverse: string;
+}
+
 /**
  * Theme color configuration
  */
@@ -84,6 +91,7 @@ export interface ThemeColors {
   semantic: SemanticColors;
   board: BoardColors;
   pieces: PieceColors;
+  text: TextColors;
 }
 
 /**

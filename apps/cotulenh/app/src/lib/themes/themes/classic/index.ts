@@ -41,6 +41,12 @@ export const classicTheme: ThemeConfig = {
       success: '#67c23a',
       info: '#5d9bce'
     },
+    text: {
+      primary: '#302e2b',
+      secondary: 'rgba(48, 46, 43, 0.75)',
+      muted: 'rgba(48, 46, 43, 0.5)',
+      inverse: '#f0d9b5'
+    },
     board: {
       background: '#f0d9b5',
       border: 'rgba(181, 136, 99, 0.5)',

@@ -45,6 +45,12 @@ export const baseTheme: ThemeConfig = {
       success: '#22c55e',
       info: '#3b82f6'
     },
+    text: {
+      primary: '#f3f4f6',
+      secondary: 'rgba(229, 231, 235, 0.7)',
+      muted: 'rgba(229, 231, 235, 0.5)',
+      inverse: '#111827'
+    },
     board: {
       background: '#1f2937',
       border: 'rgba(59, 130, 246, 0.2)',

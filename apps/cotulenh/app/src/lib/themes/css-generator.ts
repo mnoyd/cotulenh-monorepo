@@ -55,10 +55,10 @@ export function generateThemeCSS(config: ResolvedThemeConfig): string {
   cssVars.push(`  --theme-border-strong: ${colors.primary.base};`);
 
   // === Text Colors ===
-  cssVars.push(`  --theme-text-primary: ${ui.background.overlay?.color || '#e5e5e5'};`);
-  cssVars.push(`  --theme-text-secondary: ${colors.primary.dim};`);
-  cssVars.push(`  --theme-text-muted: ${colors.secondary.dim};`);
-  cssVars.push(`  --theme-text-inverse: ${colors.primary.base};`);
+  cssVars.push(`  --theme-text-primary: ${colors.text.primary};`);
+  cssVars.push(`  --theme-text-secondary: ${colors.text.secondary};`);
+  cssVars.push(`  --theme-text-muted: ${colors.text.muted};`);
+  cssVars.push(`  --theme-text-inverse: ${colors.text.inverse};`);
 
   // === Navigation Colors ===
   cssVars.push(`  --theme-nav-bg: ${ui.panel.background};`);

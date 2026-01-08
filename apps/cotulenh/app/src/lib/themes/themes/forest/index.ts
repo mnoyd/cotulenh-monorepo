@@ -41,6 +41,12 @@ export const forestTheme: ThemeConfig = {
       success: '#10b981',
       info: '#0ea5e9' // Sky 500 for rain/water elements
     },
+    text: {
+      primary: '#e5e5e5',
+      secondary: 'rgba(16, 185, 129, 0.7)',
+      muted: 'rgba(52, 211, 153, 0.5)',
+      inverse: '#022c22'
+    },
     board: {
       background: '#022c22', // Emerald 950 (Deep wet forest floor)
       border: 'rgba(16, 185, 129, 0.15)',
