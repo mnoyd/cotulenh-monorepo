@@ -91,7 +91,7 @@
       soundsEnabled = validated.soundsEnabled;
       showMoveHints = validated.showMoveHints;
       confirmReset = validated.confirmReset;
-      selectedTheme = themeStore.current;
+      selectedTheme = validated.theme;
       radarEffect = validated.radarEffect;
     } catch (e) {
       console.error('Failed to load settings, using defaults:', e);
@@ -99,7 +99,7 @@
       soundsEnabled = DEFAULT_SETTINGS.soundsEnabled;
       showMoveHints = DEFAULT_SETTINGS.showMoveHints;
       confirmReset = DEFAULT_SETTINGS.confirmReset;
-      selectedTheme = themeStore.current;
+      selectedTheme = DEFAULT_SETTINGS.theme;
       radarEffect = DEFAULT_SETTINGS.radarEffect;
     }
   }

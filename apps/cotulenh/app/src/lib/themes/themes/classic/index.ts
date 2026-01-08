@@ -42,10 +42,10 @@ export const classicTheme: ThemeConfig = {
       info: '#5d9bce'
     },
     text: {
-      primary: '#302e2b',
-      secondary: 'rgba(48, 46, 43, 0.75)',
-      muted: 'rgba(48, 46, 43, 0.5)',
-      inverse: '#f0d9b5'
+      primary: '#f0d9b5',
+      secondary: 'rgba(240, 217, 181, 0.8)',
+      muted: 'rgba(240, 217, 181, 0.5)',
+      inverse: '#302e2b'
     },
     board: {
       background: '#f0d9b5',

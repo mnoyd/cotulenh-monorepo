@@ -42,9 +42,9 @@ export const forestTheme: ThemeConfig = {
       info: '#0ea5e9' // Sky 500 for rain/water elements
     },
     text: {
-      primary: '#e5e5e5',
-      secondary: 'rgba(16, 185, 129, 0.7)',
-      muted: 'rgba(52, 211, 153, 0.5)',
+      primary: '#ecfdf5',
+      secondary: '#a7f3d0',
+      muted: 'rgba(167, 243, 208, 0.6)',
       inverse: '#022c22'
     },
     board: {

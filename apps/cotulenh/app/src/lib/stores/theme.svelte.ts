@@ -143,11 +143,14 @@ function createThemeStore() {
 
     const savedTheme = loadFromStorage();
 
-    // Initialize theme system (loads base theme)
+    // Initialize theme system (loads base theme and applies theme)
     await initThemes(savedTheme);
 
     current = savedTheme;
     isInitialized = true;
+
+    // Apply theme to DOM and set currentConfig
+    await applyThemeToDOM(savedTheme);
   }
 
   /**
