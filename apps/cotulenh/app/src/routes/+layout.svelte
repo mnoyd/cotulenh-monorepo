@@ -200,7 +200,11 @@
     right: 0;
     bottom: 0;
     pointer-events: none;
-    background: radial-gradient(circle, transparent 50%, var(--theme-vignette-color, rgba(0, 0, 0, 0.7)) 100%);
+    background: radial-gradient(
+      circle,
+      transparent 50%,
+      var(--theme-vignette-color, rgba(0, 0, 0, 0.7)) 100%
+    );
     z-index: 9999;
     opacity: var(--theme-vignette-opacity, 0.6);
     /* Removed animation for better performance */
@@ -217,7 +221,11 @@
   .app-container {
     min-height: 100vh;
     display: flex;
-    background: radial-gradient(circle at top center, var(--theme-bg-base) 0%, var(--theme-bg-dark) 40%);
+    background: radial-gradient(
+      circle at top center,
+      var(--theme-bg-base) 0%,
+      var(--theme-bg-dark) 40%
+    );
   }
 
   /* Desktop Sidebar - using theme navbar variables */

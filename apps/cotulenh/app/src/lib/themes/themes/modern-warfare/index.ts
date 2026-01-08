@@ -203,6 +203,10 @@ export const modernWarfareTheme: ThemeConfig = {
         vignette: true,
         opacity: 0.15,
         color: 'rgba(0, 0, 0, 0.7)'
+      },
+      colors: {
+        base: '#0f172a',
+        dark: '#050a14'
       }
     },
     panel: {

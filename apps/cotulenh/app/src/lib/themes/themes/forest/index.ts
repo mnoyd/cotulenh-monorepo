@@ -198,6 +198,10 @@ export const forestTheme: ThemeConfig = {
         vignette: true,
         opacity: 0.08,
         color: 'rgba(0, 20, 0, 0.6)'
+      },
+      colors: {
+        base: '#122912',
+        dark: '#0a1f0a'
       }
     },
     panel: {

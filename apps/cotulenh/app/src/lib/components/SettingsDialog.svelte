@@ -104,7 +104,7 @@
     }
   }
 
-  function saveSettings() {
+  async function saveSettings() {
     if (!browser) return;
     const settings: Settings = {
       soundsEnabled,
@@ -115,8 +115,8 @@
     };
     localStorage.setItem('cotulenh_settings', JSON.stringify(settings));
 
-    // Apply theme change
-    themeStore.setTheme(selectedTheme);
+    // Apply theme change (async)
+    await themeStore.setTheme(selectedTheme);
 
     // Apply radar effect to document
     if (browser) {
@@ -127,10 +127,10 @@
     open = false;
   }
 
-  function handleThemeChange(themeId: ThemeId) {
+  async function handleThemeChange(themeId: ThemeId) {
     selectedTheme = themeId;
-    // Preview theme immediately
-    themeStore.setTheme(themeId);
+    // Preview theme immediately (async with loading state)
+    await themeStore.setTheme(themeId);
   }
 
   // Load settings when component mounts (browser only)
@@ -162,11 +162,16 @@
             <button
               class="theme-option"
               class:selected={selectedTheme === theme.id}
+              class:loading={themeStore.isLoading && selectedTheme === theme.id}
+              disabled={themeStore.isLoading}
               onclick={() => handleThemeChange(theme.id)}
             >
               <div class="theme-preview theme-preview-{theme.id}"></div>
               <span class="theme-name">{theme.name}</span>
               <span class="theme-desc">{theme.description}</span>
+              {#if themeStore.isLoading && selectedTheme === theme.id}
+                <span class="loading-indicator">Loading...</span>
+              {/if}
             </button>
           {/each}
         </div>
@@ -294,6 +299,21 @@
     border-color: var(--theme-primary);
     background: var(--theme-primary-dim);
     box-shadow: var(--theme-glow-primary);
+  }
+
+  .theme-option:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+  }
+
+  .theme-option.loading {
+    position: relative;
+  }
+
+  .loading-indicator {
+    font-size: 0.6rem;
+    color: var(--theme-primary);
+    opacity: 0.8;
   }
 
   .theme-preview {

@@ -195,6 +195,10 @@ export const classicTheme: ThemeConfig = {
         vignette: true,
         opacity: 0.1,
         color: 'rgba(0, 0, 0, 0.4)'
+      },
+      colors: {
+        base: '#302e2b',
+        dark: '#262421'
       }
     },
     panel: {

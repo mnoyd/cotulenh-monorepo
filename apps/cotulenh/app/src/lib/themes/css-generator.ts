@@ -38,11 +38,16 @@ export function generateThemeCSS(config: ResolvedThemeConfig): string {
   cssVars.push(`  --theme-info: ${colors.semantic.info};`);
 
   // === Background Colors ===
-  cssVars.push(`  --theme-bg-dark: ${ui.background.value};`);
-  cssVars.push(`  --theme-bg-base: ${ui.background.value};`);
+  // Note: --theme-bg-dark and --theme-bg-base are defined in static CSS files
+  // since ui.background.value may contain gradients/images, not colors
   cssVars.push(`  --theme-bg-panel: ${ui.panel.background};`);
   cssVars.push(`  --theme-bg-elevated: ${ui.panel.background};`);
   cssVars.push(`  --theme-bg-overlay: ${ui.panel.background};`);
+
+  if (ui.background.colors) {
+    cssVars.push(`  --theme-bg-base: ${ui.background.colors.base};`);
+    cssVars.push(`  --theme-bg-dark: ${ui.background.colors.dark};`);
+  }
 
   // === Border Colors ===
   cssVars.push(`  --theme-border: ${colors.accent.base};`);

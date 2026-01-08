@@ -246,6 +246,10 @@ export interface BackgroundConfig {
     opacity: number;
     color?: string;
   };
+  colors?: {
+    base: string;
+    dark: string;
+  };
 }
 
 /**
