@@ -1,0 +1,42 @@
+/* Forest Theme - Natural green military aesthetic */
+.theme-forest {
+  /* Primary palette */
+  --theme-primary: #4ade80;
+  --theme-primary-dim: rgba(74, 222, 128, 0.2);
+  --theme-secondary: #86efac;
+  --theme-accent: #fbbf24;
+  --theme-warning: #f59e0b;
+  --theme-error: #dc2626;
+
+  /* Background colors */
+  --theme-bg-dark: #0a1f0a;
+  --theme-bg-panel: rgba(20, 40, 20, 0.9);
+  --theme-bg-elevated: rgba(30, 55, 30, 0.9);
+
+  /* Border colors */
+  --theme-border: rgba(74, 222, 128, 0.35);
+  --theme-border-subtle: rgba(74, 222, 128, 0.15);
+
+  /* Text colors */
+  --theme-text-primary: #e5e5e5;
+  --theme-text-secondary: #a3a3a3;
+  --theme-text-muted: #6b7280;
+
+  /* Team colors */
+  --theme-team-blue: #60a5fa;
+  --theme-team-red: #f87171;
+
+  /* Glow effects */
+  --theme-glow-primary: 0 0 12px rgba(74, 222, 128, 0.4);
+  --theme-glow-secondary: 0 0 12px rgba(134, 239, 172, 0.4);
+  --theme-glow-accent: 0 0 12px rgba(251, 191, 36, 0.4);
+
+  /* Board specific */
+  --theme-board-light: #2d5a27;
+  --theme-board-dark: #1a3d16;
+  --theme-board-highlight: rgba(74, 222, 128, 0.25);
+  --theme-board-selected: rgba(134, 239, 172, 0.2);
+  --theme-board-move-dest: var(--theme-primary);
+  --theme-board-capture: var(--theme-accent);
+  --theme-board-check: rgba(251, 191, 36, 0.5);
+}

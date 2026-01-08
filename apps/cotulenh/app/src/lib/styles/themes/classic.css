@@ -1,0 +1,42 @@
+/* Classic Theme - Traditional warm wood tones */
+.theme-classic {
+  /* Primary palette */
+  --theme-primary: #b58863;
+  --theme-primary-dim: rgba(181, 136, 99, 0.3);
+  --theme-secondary: #769656;
+  --theme-accent: #f0d9b5;
+  --theme-warning: #e6a23c;
+  --theme-error: #d32f2f;
+
+  /* Background colors */
+  --theme-bg-dark: #262421;
+  --theme-bg-panel: rgba(48, 46, 43, 0.95);
+  --theme-bg-elevated: rgba(60, 57, 53, 0.95);
+
+  /* Border colors */
+  --theme-border: rgba(181, 136, 99, 0.4);
+  --theme-border-subtle: rgba(181, 136, 99, 0.2);
+
+  /* Text colors */
+  --theme-text-primary: #e8e6e3;
+  --theme-text-secondary: #bababa;
+  --theme-text-muted: #8b8987;
+
+  /* Team colors */
+  --theme-team-blue: #5d9bce;
+  --theme-team-red: #c75450;
+
+  /* Glow effects */
+  --theme-glow-primary: 0 2px 8px rgba(181, 136, 99, 0.4);
+  --theme-glow-secondary: 0 2px 8px rgba(118, 150, 86, 0.4);
+  --theme-glow-accent: 0 2px 8px rgba(240, 217, 181, 0.4);
+
+  /* Board specific */
+  --theme-board-light: #f0d9b5;
+  --theme-board-dark: #b58863;
+  --theme-board-highlight: rgba(255, 255, 0, 0.4);
+  --theme-board-selected: rgba(20, 85, 30, 0.5);
+  --theme-board-move-dest: #829769;
+  --theme-board-capture: #c75450;
+  --theme-board-check: rgba(255, 0, 0, 0.5);
+}

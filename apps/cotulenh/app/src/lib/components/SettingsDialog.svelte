@@ -5,6 +5,7 @@
   import { Separator } from '$lib/components/ui/separator';
   import { toast } from 'svelte-sonner';
   import { isObject } from '$lib/types/type-guards';
+  import { themeStore, type ThemeId } from '$lib/stores/theme.svelte';
 
   interface Props {
     open: boolean;
@@ -17,19 +18,22 @@
     soundsEnabled: boolean;
     showMoveHints: boolean;
     confirmReset: boolean;
+    theme: ThemeId;
   }
 
   // Default settings
   const DEFAULT_SETTINGS: Settings = {
     soundsEnabled: true,
     showMoveHints: true,
-    confirmReset: true
+    confirmReset: true,
+    theme: 'modern-warfare'
   };
 
   // Settings state with localStorage persistence
   let soundsEnabled = $state(DEFAULT_SETTINGS.soundsEnabled);
   let showMoveHints = $state(DEFAULT_SETTINGS.showMoveHints);
   let confirmReset = $state(DEFAULT_SETTINGS.confirmReset);
+  let selectedTheme = $state<ThemeId>(themeStore.current);
 
   /**
    * Validates settings object from localStorage
@@ -48,7 +52,10 @@
         : DEFAULT_SETTINGS.showMoveHints,
       confirmReset: typeof data.confirmReset === 'boolean'
         ? data.confirmReset
-        : DEFAULT_SETTINGS.confirmReset
+        : DEFAULT_SETTINGS.confirmReset,
+      theme: typeof data.theme === 'string' && themeStore.themes.some(t => t.id === data.theme)
+        ? data.theme as ThemeId
+        : DEFAULT_SETTINGS.theme
     };
   }
 
@@ -56,7 +63,10 @@
     if (!browser) return;
     
     const saved = localStorage.getItem('cotulenh_settings');
-    if (!saved) return;
+    if (!saved) {
+      selectedTheme = themeStore.current;
+      return;
+    }
 
     try {
       const parsed = JSON.parse(saved);
@@ -65,12 +75,14 @@
       soundsEnabled = validated.soundsEnabled;
       showMoveHints = validated.showMoveHints;
       confirmReset = validated.confirmReset;
+      selectedTheme = themeStore.current;
     } catch (e) {
       console.error('Failed to load settings, using defaults:', e);
       // Reset to defaults on error
       soundsEnabled = DEFAULT_SETTINGS.soundsEnabled;
       showMoveHints = DEFAULT_SETTINGS.showMoveHints;
       confirmReset = DEFAULT_SETTINGS.confirmReset;
+      selectedTheme = themeStore.current;
     }
   }
 
@@ -79,11 +91,22 @@
     const settings: Settings = {
       soundsEnabled,
       showMoveHints,
-      confirmReset
+      confirmReset,
+      theme: selectedTheme
     };
     localStorage.setItem('cotulenh_settings', JSON.stringify(settings));
+    
+    // Apply theme change
+    themeStore.setTheme(selectedTheme);
+    
     toast.success('Settings saved');
     open = false;
+  }
+
+  function handleThemeChange(themeId: ThemeId) {
+    selectedTheme = themeId;
+    // Preview theme immediately
+    themeStore.setTheme(themeId);
   }
 
   // Load settings when component mounts (browser only)
@@ -100,24 +123,45 @@
     </Dialog.Header>
 
     <div class="settings-content">
-      <label class="setting-item">
-        <input type="checkbox" bind:checked={soundsEnabled} />
-        <span>Sound Effects</span>
-      </label>
+      <!-- Theme Selection -->
+      <div class="setting-section">
+        <h3 class="setting-section-title">Theme</h3>
+        <div class="theme-grid">
+          {#each themeStore.themes as theme}
+            <button
+              class="theme-option"
+              class:selected={selectedTheme === theme.id}
+              onclick={() => handleThemeChange(theme.id)}
+            >
+              <div class="theme-preview theme-preview-{theme.id}"></div>
+              <span class="theme-name">{theme.name}</span>
+              <span class="theme-desc">{theme.description}</span>
+            </button>
+          {/each}
+        </div>
+      </div>
 
       <Separator />
 
-      <label class="setting-item">
-        <input type="checkbox" bind:checked={showMoveHints} />
-        <span>Show Move Hints</span>
-      </label>
+      <!-- Gameplay Settings -->
+      <div class="setting-section">
+        <h3 class="setting-section-title">Gameplay</h3>
+        
+        <label class="setting-item">
+          <input type="checkbox" bind:checked={soundsEnabled} />
+          <span>Sound Effects</span>
+        </label>
 
-      <Separator />
+        <label class="setting-item">
+          <input type="checkbox" bind:checked={showMoveHints} />
+          <span>Show Move Hints</span>
+        </label>
 
-      <label class="setting-item">
-        <input type="checkbox" bind:checked={confirmReset} />
-        <span>Confirm Before Reset</span>
-      </label>
+        <label class="setting-item">
+          <input type="checkbox" bind:checked={confirmReset} />
+          <span>Confirm Before Reset</span>
+        </label>
+      </div>
     </div>
 
     <Dialog.Footer>
@@ -131,8 +175,85 @@
   .settings-content {
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
+    gap: 1.25rem;
     padding: 1rem 0;
+  }
+
+  .setting-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .setting-section-title {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--theme-text-secondary);
+    margin: 0;
+  }
+
+  .theme-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.75rem;
+  }
+
+  .theme-option {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    background: transparent;
+    border: 1px solid var(--theme-border-subtle);
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .theme-option:hover {
+    border-color: var(--theme-border);
+    background: var(--theme-primary-dim);
+  }
+
+  .theme-option.selected {
+    border-color: var(--theme-primary);
+    background: var(--theme-primary-dim);
+    box-shadow: var(--theme-glow-primary);
+  }
+
+  .theme-preview {
+    width: 100%;
+    height: 32px;
+    border-radius: 0.25rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .theme-preview-modern-warfare {
+    background: linear-gradient(135deg, #050a14 0%, #00f3ff 50%, #00ff41 100%);
+  }
+
+  .theme-preview-classic {
+    background: linear-gradient(135deg, #262421 0%, #b58863 50%, #f0d9b5 100%);
+  }
+
+  .theme-preview-forest {
+    background: linear-gradient(135deg, #0a1f0a 0%, #4ade80 50%, #86efac 100%);
+  }
+
+  .theme-name {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--theme-text-primary);
+  }
+
+  .theme-desc {
+    font-size: 0.65rem;
+    color: var(--theme-text-muted);
+    text-align: center;
+    line-height: 1.3;
   }
 
   .setting-item {
@@ -146,20 +267,26 @@
   }
 
   .setting-item:hover {
-    background: rgba(0, 243, 255, 0.1);
+    background: var(--theme-primary-dim);
   }
 
   .setting-item input[type='checkbox'] {
     width: 1.25rem;
     height: 1.25rem;
-    accent-color: var(--color-mw-primary);
+    accent-color: var(--theme-primary);
     cursor: pointer;
   }
 
   .setting-item span {
     font-size: 0.875rem;
     font-weight: 500;
-    color: #e5e5e5;
+    color: var(--theme-text-primary);
     font-family: var(--font-ui);
+  }
+
+  @media (max-width: 480px) {
+    .theme-grid {
+      grid-template-columns: 1fr;
+    }
   }
 </style>

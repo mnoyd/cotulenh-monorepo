@@ -9,6 +9,7 @@
   import SettingsDialog from '$lib/components/SettingsDialog.svelte';
   import ShortcutsDialog from '$lib/components/ShortcutsDialog.svelte';
   import { Menu, Home, PenSquare, Settings, Keyboard } from 'lucide-svelte';
+  import { themeStore } from '$lib/stores/theme.svelte';
 
   interface Props {
     children: import('svelte').Snippet;
@@ -22,6 +23,7 @@
   $effect(() => {
     if (browser) {
       logRender('🔄 [RENDER] +layout.svelte $effect triggered');
+      themeStore.init();
     }
   });
 

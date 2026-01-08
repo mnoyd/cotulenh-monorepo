@@ -1,0 +1,42 @@
+/* Modern Warfare Theme - Tactical HUD with Cyan/Amber accents */
+.theme-modern-warfare {
+  /* Primary palette */
+  --theme-primary: #00f3ff;
+  --theme-primary-dim: rgba(0, 243, 255, 0.15);
+  --theme-secondary: #00ff41;
+  --theme-accent: #ffab00;
+  --theme-warning: #ffd700;
+  --theme-error: #ef4444;
+
+  /* Background colors */
+  --theme-bg-dark: #050a14;
+  --theme-bg-panel: rgba(15, 23, 42, 0.85);
+  --theme-bg-elevated: rgba(30, 41, 59, 0.9);
+
+  /* Border colors */
+  --theme-border: rgba(0, 243, 255, 0.3);
+  --theme-border-subtle: rgba(0, 243, 255, 0.15);
+
+  /* Text colors */
+  --theme-text-primary: #e5e5e5;
+  --theme-text-secondary: #94a3b8;
+  --theme-text-muted: #64748b;
+
+  /* Team colors */
+  --theme-team-blue: #00aaff;
+  --theme-team-red: #ffab00;
+
+  /* Glow effects */
+  --theme-glow-primary: 0 0 10px rgba(0, 243, 255, 0.5);
+  --theme-glow-secondary: 0 0 10px rgba(0, 255, 65, 0.5);
+  --theme-glow-accent: 0 0 10px rgba(255, 171, 0, 0.5);
+
+  /* Board specific */
+  --theme-board-light: #1e293b;
+  --theme-board-dark: #0f172a;
+  --theme-board-highlight: rgba(0, 243, 255, 0.2);
+  --theme-board-selected: rgba(0, 255, 65, 0.15);
+  --theme-board-move-dest: var(--theme-primary);
+  --theme-board-capture: var(--theme-accent);
+  --theme-board-check: rgba(255, 171, 0, 0.6);
+}
