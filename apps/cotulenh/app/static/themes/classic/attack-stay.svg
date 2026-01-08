@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <defs>
+    <g id="arrows">
+      <!-- Arrow 1 -->
+      <path d="M20 12 L20 44" stroke-width="2" />
+      <path d="M16 40 L20 48 L24 40" stroke-width="2" fill="none" />
+      <path d="M16 16 L20 8 L24 16" stroke-width="1" fill="none" />
+      
+      <!-- Arrow 2 -->
+      <path d="M32 20 L32 52" stroke-width="2" />
+      <path d="M28 48 L32 56 L36 48" stroke-width="2" fill="none" />
+      <path d="M28 24 L32 16 L36 24" stroke-width="1" fill="none" />
+
+      <!-- Arrow 3 -->
+      <path d="M44 12 L44 44" stroke-width="2" />
+      <path d="M40 40 L44 48 L48 40" stroke-width="2" fill="none" />
+      <path d="M40 16 L44 8 L48 16" stroke-width="1" fill="none" />
+    </g>
+  </defs>
+
+  <!-- Outline -->
+  <use href="#arrows" stroke="black" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" />
+  <!-- Fill/Stroke -->
+  <use href="#arrows" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+  
+  <!-- Ground impacts -->
+  <ellipse cx="20" cy="54" rx="4" ry="1" fill="white" opacity="0.5"/>
+  <ellipse cx="44" cy="54" rx="4" ry="1" fill="white" opacity="0.5"/>
+  <ellipse cx="32" cy="60" rx="4" ry="1" fill="white" opacity="0.5"/>
+</svg>

@@ -54,6 +54,20 @@ export const ROLES = [
 
 export type Role = (typeof ROLES)[number];
 
+export const Role = {
+  Commander: ROLE_COMMANDER,
+  Infantry: ROLE_INFANTRY,
+  Tank: ROLE_TANK,
+  Militia: ROLE_MILITIA,
+  Engineer: ROLE_ENGINEER,
+  Artillery: ROLE_ARTILLERY,
+  AntiAir: ROLE_ANTI_AIR,
+  Missile: ROLE_MISSILE,
+  AirForce: ROLE_AIR_FORCE,
+  Navy: ROLE_NAVY,
+  Headquarter: ROLE_HEADQUARTER
+} as const;
+
 export const SYMBOL_TO_ROLE: Record<PieceSymbol, Role> = {
   [COMMANDER]: ROLE_COMMANDER,
   [INFANTRY]: ROLE_INFANTRY,

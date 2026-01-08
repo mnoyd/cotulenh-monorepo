@@ -10,7 +10,7 @@
   import { logger } from '@cotulenh/common';
   import { logRender } from '$lib/debug';
 
-  import '$lib/styles/modern-warfare.css';
+  import '$lib/styles/board.css';
 
   let boardComponent: BoardContainer | null = $state(null);
   let session = $state<GameSession | null>(null);

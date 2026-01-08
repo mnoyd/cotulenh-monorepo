@@ -1,5 +1,5 @@
 /* Forest Theme - Natural green military aesthetic */
-.theme-forest {
+:root {
   /* ===== CORE PALETTE ===== */
   --theme-primary: #4ade80;
   --theme-primary-dim: rgba(74, 222, 128, 0.2);
@@ -22,24 +22,24 @@
   --theme-bg-overlay: rgba(0, 0, 0, 0.65);
 
   /* ===== BORDERS ===== */
-  --theme-border: rgba(74, 222, 128, 0.35);
-  --theme-border-subtle: rgba(74, 222, 128, 0.15);
-  --theme-border-strong: rgba(74, 222, 128, 0.5);
+  --theme-border: rgba(74, 222, 128, 0.5);
+  --theme-border-subtle: rgba(74, 222, 128, 0.25);
+  --theme-border-strong: rgba(74, 222, 128, 0.7);
 
   /* ===== TEXT ===== */
-  --theme-text-primary: #e5e5e5;
-  --theme-text-secondary: #a3a3a3;
-  --theme-text-muted: #6b7280;
+  --theme-text-primary: #ffffff;
+  --theme-text-secondary: #c8d4c8;
+  --theme-text-muted: #8fa38f;
   --theme-text-inverse: #0a1f0a;
 
   /* ===== NAVBAR ===== */
-  --theme-nav-bg: rgba(20, 40, 20, 0.95);
-  --theme-nav-border: rgba(74, 222, 128, 0.2);
-  --theme-nav-text: rgba(255, 255, 255, 0.65);
+  --theme-nav-bg: rgba(20, 40, 20, 0.98);
+  --theme-nav-border: rgba(74, 222, 128, 0.4);
+  --theme-nav-text: rgba(255, 255, 255, 0.9);
   --theme-nav-text-hover: #4ade80;
   --theme-nav-text-active: #0a1f0a;
   --theme-nav-active-bg: #4ade80;
-  --theme-nav-hover-bg: rgba(74, 222, 128, 0.08);
+  --theme-nav-hover-bg: rgba(74, 222, 128, 0.18);
 
   /* ===== TEAM COLORS ===== */
   --theme-team-blue: #60a5fa;
@@ -52,6 +52,7 @@
   --theme-board-border: rgba(74, 222, 128, 0.25);
   --theme-board-shadow: inset 0 0 80px rgba(0, 0, 0, 0.6);
   --theme-board-filter: sepia(20%) saturate(120%) hue-rotate(60deg) brightness(0.9);
+  --theme-board-image: url('/assets/board-grid.svg');
 
   /* Board Squares */
   --theme-board-light: #2d5a27;
@@ -85,11 +86,11 @@
   --theme-piece-drag-filter: brightness(1.25) drop-shadow(0 12px 14px rgba(0, 0, 0, 0.5));
 
   /* ===== BUTTONS ===== */
-  --theme-btn-attack-stay: #16a34a;
-  --theme-btn-attack-normal: #f59e0b;
-  --theme-btn-cancel-bg: rgba(248, 113, 113, 0.15);
+  --theme-btn-attack-stay: #22c55e;
+  --theme-btn-attack-normal: #fbbf24;
+  --theme-btn-cancel-bg: rgba(248, 113, 113, 0.25);
   --theme-btn-cancel-border: #f87171;
-  --theme-btn-confirm-bg: rgba(74, 222, 128, 0.15);
+  --theme-btn-confirm-bg: rgba(74, 222, 128, 0.25);
   --theme-btn-confirm-border: #4ade80;
 
   /* ===== HEROIC BADGE ===== */
@@ -118,4 +119,8 @@
   --theme-transition-fast: 0.15s ease;
   --theme-transition-base: 0.2s ease;
   --theme-transition-slow: 0.3s ease;
+
+  /* ===== ATTACK ICONS ===== */
+  --theme-icon-attack-stay: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'%3E%3Cdefs%3E%3Cg id='seeds'%3E%3Cg transform='translate(16, 12) rotate(10)'%3E%3Cpath d='M0 0 Q 6 10 0 20 Q -6 10 0 0' /%3E%3Cpath d='M0 20 L0 26' stroke-width='1' fill='none' /%3E%3C/g%3E%3Cg transform='translate(48, 16) rotate(-15)'%3E%3Cpath d='M0 0 Q 6 10 0 20 Q -6 10 0 0' /%3E%3Cpath d='M0 20 L0 26' stroke-width='1' fill='none' /%3E%3C/g%3E%3Cg transform='translate(32, 24)'%3E%3Cpath d='M0 0 Q 8 12 0 24 Q -8 12 0 0' /%3E%3Cpath d='M0 24 L0 32' stroke-width='2' fill='none' /%3E%3C/g%3E%3C/g%3E%3Cg id='trails'%3E%3Cpath d='M16 6 L16 10' /%3E%3Cpath d='M48 10 L48 14' /%3E%3Cpath d='M32 16 L32 22' /%3E%3C/g%3E%3C/defs%3E%3Cuse href='%23seeds' stroke='black' stroke-width='4' fill='black' /%3E%3Cuse href='%23trails' stroke='black' stroke-width='3' /%3E%3Cuse href='%23seeds' stroke='white' stroke-width='2' fill='white' /%3E%3Cuse href='%23trails' stroke='white' stroke-width='1' /%3E%3C/svg%3E");
+  --theme-icon-attack-normal: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'%3E%3Cdefs%3E%3Cg id='raptor' transform='rotate(45 32 32)'%3E%3Cpath d='M32 10 L40 28 L32 54 L24 28 Z' fill='black' /%3E%3Cpath d='M40 28 L60 38 L42 42 Z' fill='black' /%3E%3Cpath d='M24 28 L4 38 L22 42 Z' fill='black' /%3E%3Cpath d='M32 54 L38 62 L26 62 Z' fill='black' /%3E%3C/g%3E%3Cpath id='dive-lines' d='M12 50 L22 40 M52 50 L42 40' stroke='black' stroke-width='2' /%3E%3C/defs%3E%3Cg transform='rotate(45 32 32)'%3E%3Cpath d='M32 10 L40 28 L32 54 L24 28 Z' stroke='black' stroke-width='4' fill='black' /%3E%3Cpath d='M40 28 L60 38 L42 42 Z' stroke='black' stroke-width='4' fill='black' /%3E%3Cpath d='M24 28 L4 38 L22 42 Z' stroke='black' stroke-width='4' fill='black' /%3E%3Cpath d='M32 54 L38 62 L26 62 Z' stroke='black' stroke-width='4' fill='black' /%3E%3C/g%3E%3Cuse href='%23dive-lines' stroke='black' stroke-width='4' /%3E%3Cg transform='rotate(45 32 32)'%3E%3Cpath d='M32 10 L40 28 L32 54 L24 28 Z' fill='white' /%3E%3Cpath d='M40 28 L60 38 L42 42 Z' fill='white' /%3E%3Cpath d='M24 28 L4 38 L22 42 Z' fill='white' /%3E%3Cpath d='M32 54 L38 62 L26 62 Z' fill='white' /%3E%3Cpath d='M32 14 L32 48' stroke='black' stroke-width='1' /%3E%3Cpath d='M40 28 L32 36' stroke='black' stroke-width='1' /%3E%3Cpath d='M24 28 L32 36' stroke='black' stroke-width='1' /%3E%3C/g%3E%3Cuse href='%23dive-lines' stroke='white' stroke-width='2' /%3E%3C/svg%3E");
 }

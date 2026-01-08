@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <defs>
+    <g id="clash">
+      <!-- Sword 1 -->
+      <g transform="translate(24, 32) rotate(45)">
+         <path d="M0 -20 L0 20" stroke-width="4" stroke-linecap="round" />
+         <path d="M-6 8 L6 8" stroke-width="4" stroke-linecap="round" />
+      </g>
+      <!-- Sword 2 -->
+      <g transform="translate(40, 32) rotate(-45)">
+         <path d="M0 -20 L0 20" stroke-width="4" stroke-linecap="round" />
+         <path d="M-6 8 L6 8" stroke-width="4" stroke-linecap="round" />
+      </g>
+      <!-- Impact Spark/Burst -->
+      <path d="M32 24 L32 16" stroke-width="3" stroke-linecap="round" />
+      <path d="M32 40 L32 48" stroke-width="3" stroke-linecap="round" />
+      <path d="M24 32 L16 32" stroke-width="3" stroke-linecap="round" />
+      <path d="M40 32 L48 32" stroke-width="3" stroke-linecap="round" />
+      <path d="M26 26 L20 20" stroke-width="2" stroke-linecap="round" />
+      <path d="M38 26 L44 20" stroke-width="2" stroke-linecap="round" />
+      <path d="M26 38 L20 44" stroke-width="2" stroke-linecap="round" />
+      <path d="M38 38 L44 44" stroke-width="2" stroke-linecap="round" />
+    </g>
+  </defs>
+
+  <!-- Outline -->
+  <use href="#clash" stroke="black" stroke-width="4" fill="none" />
+
+  <!-- Main -->
+  <use href="#clash" stroke="white" stroke-width="2" fill="none" />
+</svg>
