@@ -21,55 +21,55 @@ export const forestTheme: ThemeConfig = {
 
   colors: {
     primary: {
-      base: '#4ade80',
-      dim: 'rgba(74, 222, 128, 0.2)',
-      glow: 'rgba(74, 222, 128, 0.5)'
+      base: '#10b981', // Emerald 500
+      dim: 'rgba(16, 185, 129, 0.2)',
+      glow: 'rgba(16, 185, 129, 0.5)'
     },
     secondary: {
-      base: '#86efac',
-      dim: 'rgba(134, 239, 172, 0.2)',
-      glow: 'rgba(134, 239, 172, 0.5)'
+      base: '#34d399', // Emerald 400
+      dim: 'rgba(52, 211, 153, 0.2)',
+      glow: 'rgba(52, 211, 153, 0.5)'
     },
     accent: {
-      base: '#fbbf24',
-      dim: 'rgba(251, 191, 36, 0.2)',
-      glow: 'rgba(251, 191, 36, 0.5)'
+      base: '#facc15', // Yellow 400
+      dim: 'rgba(250, 204, 21, 0.2)',
+      glow: 'rgba(250, 204, 21, 0.5)'
     },
     semantic: {
       warning: '#f59e0b',
-      error: '#dc2626',
-      success: '#16a34a',
-      info: '#60a5fa'
+      error: '#ef4444',
+      success: '#10b981',
+      info: '#0ea5e9' // Sky 500 for rain/water elements
     },
     board: {
-      background: '#2d5a27',
-      border: 'rgba(74, 222, 128, 0.25)',
-      shadow: 'inset 0 0 80px rgba(0, 0, 0, 0.6)',
-      light: '#2d5a27',
-      dark: '#1a3d16',
-      highlight: 'rgba(74, 222, 128, 0.25)',
-      selected: 'rgba(134, 239, 172, 0.25)',
-      selectedBorder: '#86efac',
-      lastMoveFrom: 'rgba(74, 222, 128, 0.15)',
-      lastMoveTo: 'rgba(74, 222, 128, 0.25)',
-      moveDest: '#4ade80',
-      capture: '#fbbf24',
-      check: 'rgba(251, 191, 36, 0.6)',
-      deployOrigin: 'rgba(251, 191, 36, 0.15)',
-      deployOriginBorder: '#fbbf24',
-      deployDest: 'rgba(134, 239, 172, 0.15)',
-      deployDestBorder: '#86efac',
-      airFriendly: '#4ade80',
-      airOpponent: '#fbbf24',
+      background: '#022c22', // Emerald 950 (Deep wet forest floor)
+      border: 'rgba(16, 185, 129, 0.15)',
+      shadow: 'inset 0 0 100px rgba(0, 0, 0, 0.8)',
+      light: '#064e3b', // Emerald 900
+      dark: '#022c22', // Emerald 950
+      highlight: 'rgba(52, 211, 153, 0.2)',
+      selected: 'rgba(16, 185, 129, 0.25)',
+      selectedBorder: '#10b981',
+      lastMoveFrom: 'rgba(16, 185, 129, 0.15)',
+      lastMoveTo: 'rgba(16, 185, 129, 0.25)',
+      moveDest: '#34d399',
+      capture: '#facc15',
+      check: 'rgba(239, 68, 68, 0.5)',
+      deployOrigin: 'rgba(250, 204, 21, 0.15)',
+      deployOriginBorder: '#facc15',
+      deployDest: 'rgba(52, 211, 153, 0.15)',
+      deployDestBorder: '#34d399',
+      airFriendly: '#10b981',
+      airOpponent: '#facc15',
       airOverlap: '#ef4444'
     },
     pieces: {
-      shadow: 'drop-shadow(0 0 3px rgba(0, 0, 0, 0.6))',
-      blueFilter: 'drop-shadow(0 0 5px rgba(96, 165, 250, 0.5)) brightness(1.15)',
-      redFilter: 'drop-shadow(0 0 5px rgba(248, 113, 113, 0.5)) brightness(1.15)',
-      heroicFilter: 'drop-shadow(0 0 12px rgba(251, 191, 36, 0.7)) brightness(1.2)',
-      hoverFilter: 'brightness(1.2) drop-shadow(0 8px 10px rgba(0, 0, 0, 0.4))',
-      dragFilter: 'brightness(1.25) drop-shadow(0 12px 14px rgba(0, 0, 0, 0.5))'
+      shadow: 'drop-shadow(0 2px 4px rgba(0, 0, 0, 0.8))',
+      blueFilter: 'drop-shadow(0 0 5px rgba(14, 165, 233, 0.5)) brightness(1.2) contrast(1.1)', // rain-like glow
+      redFilter: 'drop-shadow(0 0 5px rgba(239, 68, 68, 0.5)) brightness(1.15) contrast(1.1)',
+      heroicFilter: 'drop-shadow(0 0 12px rgba(250, 204, 21, 0.7)) brightness(1.25)',
+      hoverFilter: 'brightness(1.25) drop-shadow(0 8px 12px rgba(0, 0, 0, 0.6))',
+      dragFilter: 'brightness(1.3) drop-shadow(0 14px 18px rgba(0, 0, 0, 0.7))'
     }
   },
 
@@ -115,25 +115,25 @@ export const forestTheme: ThemeConfig = {
   effects: {
     moveIndicators: {
       type: 'dot',
-      color: 'rgba(74, 222, 128, 0.5)',
+      color: 'rgba(52, 211, 153, 0.6)',
       size: 40,
       opacity: 0.7,
       glow: true,
-      glowColor: 'rgba(74, 222, 128, 0.3)',
+      glowColor: 'rgba(52, 211, 153, 0.3)',
       glowSize: 8
     },
     selection: {
       type: 'glow',
-      color: 'rgba(134, 239, 172, 0.25)',
+      color: 'rgba(52, 211, 153, 0.25)',
       borderWidth: 2,
       borderRadius: 10,
       glow: true,
-      glowColor: 'rgba(134, 239, 172, 0.4)'
+      glowColor: 'rgba(52, 211, 153, 0.4)'
     },
     airDefense: {
       type: 'circle',
-      friendlyColor: '#4ade80',
-      opponentColor: '#fbbf24',
+      friendlyColor: '#10b981',
+      opponentColor: '#facc15',
       overlapColor: '#ef4444',
       size: 16,
       opacity: 0.6,
@@ -141,14 +141,14 @@ export const forestTheme: ThemeConfig = {
     },
     deploy: {
       origin: {
-        fill: 'rgba(251, 191, 36, 0.15)',
-        border: '#fbbf24',
+        fill: 'rgba(250, 204, 21, 0.15)',
+        border: '#facc15',
         pulse: true,
         pulseSpeed: 2.5
       },
       dest: {
-        fill: 'rgba(134, 239, 172, 0.15)',
-        border: '#86efac',
+        fill: 'rgba(52, 211, 153, 0.15)',
+        border: '#34d399',
         pulse: false
       },
       incomplete: {
@@ -159,21 +159,22 @@ export const forestTheme: ThemeConfig = {
     lastMove: {
       from: {
         type: 'glow',
-        color: 'rgba(74, 222, 128, 0.15)',
+        color: 'rgba(16, 185, 129, 0.2)',
         borderRadius: 10
       },
       to: {
         type: 'glow',
-        color: 'rgba(74, 222, 128, 0.25)',
+        color: 'rgba(16, 185, 129, 0.3)',
         borderRadius: 10
       }
     }
   },
 
   filters: {
-    pieceBlue: 'drop-shadow(0 0 5px rgba(96, 165, 250, 0.5)) brightness(1.15)',
-    pieceRed: 'drop-shadow(0 0 5px rgba(248, 113, 113, 0.5)) brightness(1.15)',
-    board: 'sepia(20%) saturate(120%) hue-rotate(60deg) brightness(0.9)'
+    pieceBlue: 'drop-shadow(0 0 5px rgba(14, 165, 233, 0.5)) brightness(1.2) contrast(1.1)',
+    pieceRed: 'drop-shadow(0 0 5px rgba(239, 68, 68, 0.5)) brightness(1.15) contrast(1.1)',
+    // Deep contrast, slight cool shift, somewhat desaturated to feel "gritty" and wet
+    board: 'contrast(1.2) brightness(0.9) hue-rotate(-10deg) saturate(1.1)'
   },
 
   animations: {
@@ -196,19 +197,21 @@ export const forestTheme: ThemeConfig = {
       overlay: {
         scanlines: true,
         vignette: true,
-        opacity: 0.08,
-        color: 'rgba(0, 20, 0, 0.6)'
+        opacity: 0.1,
+        // Dark blue-ish tint simulating rain/night atmosphere
+        color: 'rgba(2, 6, 23, 0.7)'
       },
       colors: {
-        base: '#122912',
-        dark: '#0a1f0a'
+        base: '#022c22', // Emerald 950
+        dark: '#064e3b' // Emerald 900
       }
     },
     panel: {
-      background: 'rgba(20, 40, 20, 0.9)',
-      border: 'rgba(74, 222, 128, 0.35)',
+      // Dark emerald glass
+      background: 'rgba(6, 78, 59, 0.85)',
+      border: 'rgba(16, 185, 129, 0.3)',
       borderRadius: '8px',
-      backdropBlur: 12
+      backdropBlur: 16
     },
     typography: {
       fontFamily: "'Be Vietnam Pro', sans-serif",
@@ -224,9 +227,9 @@ export const forestTheme: ThemeConfig = {
   },
 
   shadows: {
-    sm: '0 1px 3px rgba(0, 0, 0, 0.4)',
-    md: '0 4px 8px rgba(0, 0, 0, 0.35)',
-    lg: '0 10px 20px rgba(0, 0, 0, 0.4)'
+    sm: '0 2px 4px rgba(0, 0, 0, 0.5)',
+    md: '0 6px 12px rgba(0, 0, 0, 0.5)',
+    lg: '0 15px 30px rgba(0, 0, 0, 0.5)'
   },
 
   transitions: {
