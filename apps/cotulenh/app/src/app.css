@@ -30,10 +30,10 @@
   --color-input: var(--theme-border-subtle);
 
   --color-primary: var(--theme-primary);
-  --color-primary-foreground: #000;
+  --color-primary-foreground: var(--theme-text-inverse);
 
   --color-secondary: var(--theme-secondary);
-  --color-secondary-foreground: #000;
+  --color-secondary-foreground: var(--theme-text-inverse);
 
   --color-accent: var(--theme-primary-dim);
   --color-accent-foreground: var(--theme-primary);
@@ -87,10 +87,10 @@
   @keyframes vignette-pulse {
     0%,
     100% {
-      opacity: 0.6;
+      opacity: var(--theme-vignette-opacity);
     }
     50% {
-      opacity: 0.8;
+      opacity: calc(var(--theme-vignette-opacity) + 0.2);
     }
   }
 }

@@ -172,7 +172,7 @@
 </div>
 
 <style>
-  /* Global Overlays */
+  /* Global Overlays - use theme variables */
   .scanline-overlay {
     position: fixed;
     top: 0;
@@ -189,7 +189,7 @@
     );
     background-size: 100% 4px;
     z-index: 9998;
-    opacity: 0.15;
+    opacity: var(--theme-scanline-opacity, 0.15);
     animation: scanline 8s linear infinite;
   }
 
@@ -200,14 +200,15 @@
     right: 0;
     bottom: 0;
     pointer-events: none;
-    background: radial-gradient(circle, transparent 50%, rgba(0, 0, 0, 0.7) 100%);
+    background: radial-gradient(circle, transparent 50%, var(--theme-vignette-color, rgba(0, 0, 0, 0.7)) 100%);
     z-index: 9999;
+    opacity: var(--theme-vignette-opacity, 0.6);
     animation: vignette-pulse 4s ease-in-out infinite;
   }
 
   :global(body) {
-    background-color: var(--color-mw-bg-dark);
-    color: #e5e5e5;
+    background-color: var(--theme-bg-dark);
+    color: var(--theme-text-primary);
     font-family: var(--font-ui);
     margin: 0;
     overflow-x: hidden;
@@ -216,19 +217,19 @@
   .app-container {
     min-height: 100vh;
     display: flex;
-    background: radial-gradient(circle at top center, #1e293b 0%, var(--color-mw-bg-dark) 40%);
+    background: radial-gradient(circle at top center, var(--theme-bg-base) 0%, var(--theme-bg-dark) 40%);
   }
 
-  /* Desktop Sidebar */
+  /* Desktop Sidebar - using theme navbar variables */
   .sidebar {
     position: fixed;
     left: 0;
     top: 0;
     bottom: 0;
     width: 72px;
-    background: rgba(15, 23, 42, 0.9);
+    background: var(--theme-nav-bg);
     backdrop-filter: blur(16px);
-    border-right: 1px solid var(--color-mw-border);
+    border-right: 1px solid var(--theme-nav-border);
     display: flex;
     flex-direction: column;
     z-index: 100;
@@ -245,7 +246,7 @@
   .logo-icon {
     width: 40px;
     height: 40px;
-    filter: drop-shadow(0 0 10px rgba(0, 243, 255, 0.3));
+    filter: drop-shadow(0 0 10px var(--theme-primary-glow));
   }
 
   .sidebar-nav {
@@ -261,7 +262,7 @@
     flex-direction: column;
     gap: 0.25rem;
     padding: 0 0.5rem;
-    border-top: 1px solid var(--color-mw-border);
+    border-top: 1px solid var(--theme-nav-border);
     padding-top: 0.75rem;
     margin-top: 0.75rem;
   }
@@ -274,10 +275,10 @@
     padding: 0.75rem 0.5rem;
     border-radius: 8px;
     text-decoration: none;
-    color: rgba(255, 255, 255, 0.6);
+    color: var(--theme-nav-text);
     font-weight: 500;
     font-size: 0.65rem;
-    transition: all 0.2s ease;
+    transition: var(--theme-transition-base, 0.2s ease);
     border: 1px solid transparent;
     font-family: var(--font-mono);
     text-transform: uppercase;
@@ -287,16 +288,16 @@
   }
 
   .sidebar-link:hover {
-    color: var(--color-mw-primary);
-    background: rgba(0, 243, 255, 0.05);
-    border-color: rgba(0, 243, 255, 0.2);
+    color: var(--theme-nav-text-hover);
+    background: var(--theme-nav-hover-bg);
+    border-color: var(--theme-border-subtle);
   }
 
   .sidebar-link.active {
-    color: var(--color-mw-bg-dark);
-    background: var(--color-mw-primary);
-    border-color: var(--color-mw-primary);
-    box-shadow: 0 0 15px rgba(0, 243, 255, 0.3);
+    color: var(--theme-nav-text-active);
+    background: var(--theme-nav-active-bg);
+    border-color: var(--theme-nav-active-bg);
+    box-shadow: var(--theme-glow-primary);
     font-weight: 700;
   }
 
@@ -322,26 +323,24 @@
     width: 44px;
     height: 44px;
     border-radius: 8px;
-    background: rgba(15, 23, 42, 0.9);
-    border: 1px solid var(--color-mw-border);
-    color: var(--color-mw-primary);
+    background: var(--theme-nav-bg);
+    border: 1px solid var(--theme-nav-border);
+    color: var(--theme-primary);
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow:
-      0 4px 6px -1px rgba(0, 0, 0, 0.1),
-      0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    box-shadow: var(--theme-shadow-md);
     backdrop-filter: blur(8px);
-    transition: all 0.2s ease;
+    transition: var(--theme-transition-base, 0.2s ease);
     padding: 0;
     z-index: 151;
   }
 
   .mobile-menu-trigger:hover {
-    background: rgba(0, 243, 255, 0.1);
-    border-color: var(--color-mw-primary);
-    box-shadow: 0 0 15px rgba(0, 243, 255, 0.3);
+    background: var(--theme-nav-hover-bg);
+    border-color: var(--theme-primary);
+    box-shadow: var(--theme-glow-primary);
     transform: translateY(-1px);
   }
 
@@ -384,10 +383,10 @@
   @keyframes vignette-pulse {
     0%,
     100% {
-      opacity: 0.6;
+      opacity: var(--theme-vignette-opacity, 0.6);
     }
     50% {
-      opacity: 0.8;
+      opacity: calc(var(--theme-vignette-opacity, 0.6) + 0.2);
     }
   }
 </style>

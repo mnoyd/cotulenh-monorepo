@@ -1,42 +1,121 @@
 /* Forest Theme - Natural green military aesthetic */
 .theme-forest {
-  /* Primary palette */
+  /* ===== CORE PALETTE ===== */
   --theme-primary: #4ade80;
   --theme-primary-dim: rgba(74, 222, 128, 0.2);
+  --theme-primary-glow: rgba(74, 222, 128, 0.5);
   --theme-secondary: #86efac;
+  --theme-secondary-dim: rgba(134, 239, 172, 0.2);
+  --theme-secondary-glow: rgba(134, 239, 172, 0.5);
   --theme-accent: #fbbf24;
+  --theme-accent-dim: rgba(251, 191, 36, 0.2);
+  --theme-accent-glow: rgba(251, 191, 36, 0.5);
   --theme-warning: #f59e0b;
   --theme-error: #dc2626;
+  --theme-success: #16a34a;
 
-  /* Background colors */
+  /* ===== BACKGROUNDS ===== */
   --theme-bg-dark: #0a1f0a;
+  --theme-bg-base: #122912;
   --theme-bg-panel: rgba(20, 40, 20, 0.9);
   --theme-bg-elevated: rgba(30, 55, 30, 0.9);
+  --theme-bg-overlay: rgba(0, 0, 0, 0.65);
 
-  /* Border colors */
+  /* ===== BORDERS ===== */
   --theme-border: rgba(74, 222, 128, 0.35);
   --theme-border-subtle: rgba(74, 222, 128, 0.15);
+  --theme-border-strong: rgba(74, 222, 128, 0.5);
 
-  /* Text colors */
+  /* ===== TEXT ===== */
   --theme-text-primary: #e5e5e5;
   --theme-text-secondary: #a3a3a3;
   --theme-text-muted: #6b7280;
+  --theme-text-inverse: #0a1f0a;
 
-  /* Team colors */
+  /* ===== NAVBAR ===== */
+  --theme-nav-bg: rgba(20, 40, 20, 0.95);
+  --theme-nav-border: rgba(74, 222, 128, 0.2);
+  --theme-nav-text: rgba(255, 255, 255, 0.65);
+  --theme-nav-text-hover: #4ade80;
+  --theme-nav-text-active: #0a1f0a;
+  --theme-nav-active-bg: #4ade80;
+  --theme-nav-hover-bg: rgba(74, 222, 128, 0.08);
+
+  /* ===== TEAM COLORS ===== */
   --theme-team-blue: #60a5fa;
+  --theme-team-blue-glow: rgba(96, 165, 250, 0.5);
   --theme-team-red: #f87171;
+  --theme-team-red-glow: rgba(248, 113, 113, 0.5);
 
-  /* Glow effects */
-  --theme-glow-primary: 0 0 12px rgba(74, 222, 128, 0.4);
-  --theme-glow-secondary: 0 0 12px rgba(134, 239, 172, 0.4);
-  --theme-glow-accent: 0 0 12px rgba(251, 191, 36, 0.4);
+  /* ===== BOARD ===== */
+  --theme-board-bg: #2d5a27;
+  --theme-board-border: rgba(74, 222, 128, 0.25);
+  --theme-board-shadow: inset 0 0 80px rgba(0, 0, 0, 0.6);
+  --theme-board-filter: sepia(20%) saturate(120%) hue-rotate(60deg) brightness(0.9);
 
-  /* Board specific */
+  /* Board Squares */
   --theme-board-light: #2d5a27;
   --theme-board-dark: #1a3d16;
   --theme-board-highlight: rgba(74, 222, 128, 0.25);
-  --theme-board-selected: rgba(134, 239, 172, 0.2);
-  --theme-board-move-dest: var(--theme-primary);
-  --theme-board-capture: var(--theme-accent);
-  --theme-board-check: rgba(251, 191, 36, 0.5);
+  --theme-board-selected: rgba(134, 239, 172, 0.25);
+  --theme-board-selected-border: #86efac;
+  --theme-board-last-move-from: rgba(74, 222, 128, 0.15);
+  --theme-board-last-move-to: rgba(74, 222, 128, 0.25);
+  --theme-board-move-dest: #4ade80;
+  --theme-board-capture: #fbbf24;
+  --theme-board-check: rgba(251, 191, 36, 0.6);
+
+  /* Deploy Mode */
+  --theme-board-deploy-origin: rgba(251, 191, 36, 0.15);
+  --theme-board-deploy-origin-border: #fbbf24;
+  --theme-board-deploy-dest: rgba(134, 239, 172, 0.15);
+  --theme-board-deploy-dest-border: #86efac;
+
+  /* Air Defense */
+  --theme-board-air-friendly: #4ade80;
+  --theme-board-air-opponent: #fbbf24;
+  --theme-board-air-overlap: #ef4444;
+
+  /* ===== PIECES ===== */
+  --theme-piece-shadow: drop-shadow(0 0 3px rgba(0, 0, 0, 0.6));
+  --theme-piece-blue-filter: drop-shadow(0 0 5px rgba(96, 165, 250, 0.5)) brightness(1.15);
+  --theme-piece-red-filter: drop-shadow(0 0 5px rgba(248, 113, 113, 0.5)) brightness(1.15);
+  --theme-piece-heroic-filter: drop-shadow(0 0 12px rgba(251, 191, 36, 0.7)) brightness(1.2);
+  --theme-piece-hover-filter: brightness(1.2) drop-shadow(0 8px 10px rgba(0, 0, 0, 0.4));
+  --theme-piece-drag-filter: brightness(1.25) drop-shadow(0 12px 14px rgba(0, 0, 0, 0.5));
+
+  /* ===== BUTTONS ===== */
+  --theme-btn-attack-stay: #16a34a;
+  --theme-btn-attack-normal: #f59e0b;
+  --theme-btn-cancel-bg: rgba(248, 113, 113, 0.15);
+  --theme-btn-cancel-border: #f87171;
+  --theme-btn-confirm-bg: rgba(74, 222, 128, 0.15);
+  --theme-btn-confirm-border: #4ade80;
+
+  /* ===== HEROIC BADGE ===== */
+  --theme-heroic-bg: rgba(20, 40, 20, 0.9);
+  --theme-heroic-border: #fbbf24;
+  --theme-heroic-glow: 0 0 10px rgba(251, 191, 36, 0.6);
+  --theme-heroic-star: #fbbf24;
+
+  /* ===== GLOW EFFECTS ===== */
+  --theme-glow-primary: 0 0 12px rgba(74, 222, 128, 0.4);
+  --theme-glow-secondary: 0 0 12px rgba(134, 239, 172, 0.4);
+  --theme-glow-accent: 0 0 12px rgba(251, 191, 36, 0.4);
+  --theme-glow-error: 0 0 12px rgba(220, 38, 38, 0.4);
+
+  /* ===== SHADOWS ===== */
+  --theme-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.4);
+  --theme-shadow-md: 0 4px 8px rgba(0, 0, 0, 0.35);
+  --theme-shadow-lg: 0 10px 20px rgba(0, 0, 0, 0.4);
+
+  /* ===== OVERLAYS ===== */
+  --theme-scanline-opacity: 0.08;
+  --theme-vignette-opacity: 0.4;
+  --theme-vignette-color: rgba(0, 20, 0, 0.6);
+
+  /* ===== ANIMATIONS ===== */
+  --theme-transition-fast: 0.15s ease;
+  --theme-transition-base: 0.2s ease;
+  --theme-transition-slow: 0.3s ease;
 }
