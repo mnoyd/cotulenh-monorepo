@@ -107,7 +107,7 @@ export const forestTheme: ThemeConfig = {
       heroic: `${ASSET_BASE}/pieces/heroic-star.svg`
     },
     background: {
-      image: `${ASSET_BASE}/forest-bg.jpg`,
+      image: `${ASSET_BASE}/background.jpg`,
       pattern: `${ASSET_BASE}/camo-pattern.svg`
     }
   },
@@ -192,7 +192,7 @@ export const forestTheme: ThemeConfig = {
   ui: {
     background: {
       type: 'image',
-      value: 'url(/themes/forest/forest-bg.jpg)',
+      value: 'url(/themes/forest/background.jpg)',
       overlay: {
         scanlines: true,
         vignette: true,

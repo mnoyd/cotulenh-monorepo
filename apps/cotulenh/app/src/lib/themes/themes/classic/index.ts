@@ -107,6 +107,7 @@ export const classicTheme: ThemeConfig = {
       heroic: `${ASSET_BASE}/pieces/heroic-star.svg`
     },
     background: {
+      image: `${ASSET_BASE}/background.jpg`,
       pattern: `${ASSET_BASE}/paper-texture.svg`
     }
   },
@@ -187,13 +188,13 @@ export const classicTheme: ThemeConfig = {
 
   ui: {
     background: {
-      type: 'gradient',
-      value: 'radial-gradient(circle at top center, #302e2b 0%, #262421 40%)',
+      type: 'image',
+      value: 'url(/themes/classic/background.jpg)',
       overlay: {
         scanlines: false,
-        vignette: false,
-        opacity: 0,
-        color: 'transparent'
+        vignette: true,
+        opacity: 0.1,
+        color: 'rgba(0, 0, 0, 0.4)'
       }
     },
     panel: {
