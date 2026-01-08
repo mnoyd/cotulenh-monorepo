@@ -1,11 +1,12 @@
-/* Board Theme Styles for CoTuLenh */
-/* Uses centralized theme variables from themes/*.css */
+/* Shared Board Styles for CoTuLenh */
+/* This file contains theme-agnostic board styles that use CSS variables.
+   Theme-specific values are defined in themes/*.css (e.g., .theme-modern-warfare, .theme-classic) */
 
 /* --- Board Background --- */
 /* Board grid SVG is shared across all themes - located at /assets/board-grid.svg */
 cg-background {
-  background-color: #eeedef;
-  background-image: url('/assets/board-grid.svg');
+  background-color: var(--theme-board-bg, #eeedef);
+  background-image: var(--theme-board-image, url('/assets/board-grid.svg'));
   background-size: cover;
   filter: var(--theme-board-filter, none);
   box-shadow: var(--theme-board-shadow, none);
@@ -77,10 +78,12 @@ cg-piece-star::before {
     opacity: 0.4;
     transform: scale(1);
   }
+
   50% {
     opacity: 1;
     transform: scale(1.15);
   }
+
   100% {
     opacity: 0.4;
     transform: scale(1);
@@ -92,14 +95,14 @@ cg-board cg-btn.piece-attack.stay {
   background-color: var(--theme-btn-attack-stay);
   border: 1px solid #fff;
   box-shadow: 0 0 10px var(--theme-btn-attack-stay);
-  background-image: url('data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz4KPCEtLSBHZW5lcmF0b3I6IEFkb2JlIElsbHVzdHJhdG9yIDI2LjQuMSwgU1ZHIEV4cG9ydCBQbHVnLUluIC4gU1ZHIFZlcnNpb246IDYuMDAgQnVpbGQgMCkgIC0tPgo8c3ZnIHZlcnNpb249IjEuMSIgaWQ9IkxheWVyXzEiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiIHg9IjBweCIgeT0iMHB4IgoJIHZpZXdCb3g9IjAgMCA1NjYuOTMgNTY2LjkzIiBzdHlsZT0iZW5hYmxlLWJhY2tncm91bmQ6bmV3IDAgMCA1NjYuOTMgNTY2LjkzOyIgeG1sOnNwYWNlPSJwcmVzZXJ2ZSI+CjxnPgoJPHBhdGggZD0iTTI4Ni44MSwxNTguMDNjMjIuNzksMi42Nyw0MC41NCwxMy41LDUzLjU4LDMyLjQzYzkuNTYsMTMuODksMTkuNTUsMjcuNDgsMjkuMzIsNDEuMjIKCQljMjguMTIsMzkuNTIsNTYuOTQsNzguNTcsODQuMTgsMTE4LjY5YzMzLjIzLDQ4Ljk2LDEyLjQsMTE5LjcyLTQxLjM3LDE0NC4yMmMtNDYuMDEsMjAuOTYtOTYuMjEsNy41Ny0xMjUuOS0zMy44NwoJCWMtMzYuODYtNTEuNDQtNzMuNTYtMTAzLTExMC4xNy0xNTQuNjJjLTMuOC01LjM2LTcuMDYtMTEuMjUtOS42Mi0xNy4yOWMtNi4yNy0xNC44MS02LjMyLTMwLjE4LTIuNDMtNDYuMjkKCQljLTEwLjg0LDIuMTQtMjEuMiw0LjA1LTMxLjQ5LDYuMjljLTQuMjYsMC45My02Ljk1LTAuMDYtOS41Ni0zLjc2Yy0xOS40My0yNy41Ni0zOS4wOS01NC45Ny01OC42NS04Mi40NQoJCWMtNC4yMy01Ljk0LTMuMzEtOC4yMiwzLjc4LTkuMzRjMjQuODUtMy45Myw0OS43Mi03Ljc0LDc0LjU1LTExLjgxYzMuOTgtMC42NSw2LjI1LDAuNTQsOC40OSwzLjc0CgkJYzEyLjMsMTcuNTIsMjQuOCwzNC45MSwzNy4yMyw1Mi4zNGMxLjE4LDEuNjYsMi4zNiwzLjMyLDMuNzQsNS4yNGMyLjgxLTIsNS4xNy0zLjY5LDguMDItNS43MmMtMS41Mi0yLjEzLTIuODEtMy45NC00LjEtNS43NQoJCWMtMjEuNDUtMzAuMDktNDIuODYtNjAuMi02NC4zOS05MC4yM2MtMy42My01LjA2LTUuNjctMTAuMzItMy45My0xNi40NmMxLjkxLTYuNzQsNi4yNi0xMS4yNCwxMy4yOC0xMi41CgkJYzcuNjItMS4zNiwxMy42NCwxLjM0LDE4LjE3LDcuNzNjMjEuNzMsMzAuNTgsNDMuNTQsNjEuMTEsNjUuMzIsOTEuNjVjMS4yNywxLjc4LDIuNTMsMy41NSwzLjgyLDUuMzYKCQljMy4wOS0yLjIsNS40NS0zLjg5LDguMDQtNS43NGMtMTMuOC0xOS4zNi0yNy4yNi0zOC4zOC00MC45Mi01Ny4yNWMtMi40Mi0zLjM0LTIuOC02LTAuNzctOS43NQoJCWMxMS45Ni0yMi4xMywyMy42NS00NC40MSwzNS40OC02Ni42MWMzLjE4LTUuOTYsNS43NS02LjA4LDkuNzgtMC40NGMxOS43MSwyNy42LDM5LjMzLDU1LjI3LDU5LjE1LDgyLjc5CgkJYzIuNTEsMy40OCwyLjUxLDYuMTksMC4zNiw5Ljc0Yy01LjQ5LDkuMDQtMTAuNjYsMTguMy...');
+  background-image: var(--theme-icon-attack-stay);
 }
 
 cg-board cg-btn.piece-attack.normal {
   background-color: var(--theme-btn-attack-normal);
   border: 1px solid #fff;
   box-shadow: 0 0 10px var(--theme-btn-attack-normal);
-  background-image: url('data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0idXRmLTgiPz4KPCEtLSBHZW5lcmF0b3I6IEFkb2JlIElsbHVzdHJhdG9yIDI2LjQuMSwgU1ZHIEV4cG9ydCBQbHVnLUluIC4gU1ZHIFZlcnNpb246IDYuMDAgQnVpbGQgMCkgIC0tPgo8c3ZnIHZlcnNpb249IjEuMSIgaWQ9IkxheWVyXzEiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiIHg9IjBweCIgeT0iMHB4IgoJIHZpZXdCb3g9IjAgMCA1NjYuOTMgNTY2LjkzIiBzdHlsZT0iZW5hYmxlLWJhY2tncm91bmQ6bmV3IDAgMCA1NjYuOTMgNTY2LjkzOyIgeG1sOnNwYWNlPSJwcmVzZXJ2ZSI+CjxwYXRoIGQ9Ik00NzkuNTksNjQuMzZjNC4yNywwLDguNTQsMCwxMi44MiwwYzcuNjMsMy40OSw5Ljk0LDkuNTMsOS40LDE3LjY0Yy0xLjY5LDI1LjM2LTkuNjIsNDguNDktMjYuNjcsNjcuMzYKCWMtMTYuNjgsMTguNDYtMzQuNzgsMzUuNjUtNTIuMzgsNTMuMjdjLTIuNDMsMi40My0zLjMyLDQuODQtMy4zMiw4LjIxYzAuMDksNjYuMTksMC4xMiwxMzIuMzgsMC4wNCwxOTguNTgKCWMtMC4wNCwzNi40MS0xNC4zMiw2NS45MS00My41OSw4Ny44M2MtOS4wNSw2Ljc4LTE0LjA0LDYuMjQtMjEuOTgtMS43Yy0zNi4zNC0zNi4zNC03Mi42Ny03Mi42Ny0xMDkuMDEtMTA5LjAxCgljLTEuMDMtMS4wMy0yLjExLTItMy44My0zLjYxYzAsMi42MywwLDQuMTksMCw1Ljc0YzAsMjMuNDktMC4wNSw0Ni45OCwwLjA0LDcwLjQ2YzAuMDIsNS4xNS0xLjU4LDkuMzQtNS4zMSwxMi45NwoJYy04LjA2LDcuODQtMTUuOTMsMTUuODgtMjMuODksMjMuODJjLTcuOTMsNy45MS0xNC40NCw3LjkxLTIyLjMzLDAuMDJjLTM5LjM2LTM5LjM1LTc4Ljc0LTc4LjY5LTExOC4wMi0xMTguMTIKCWMtMi43NS0yLjc2LTQuODEtNi4xOS03LjE5LTkuMzFjMC0xLjk5LDAtMy45OSwwLTUuOThjMi4yNS0zLjA0LDQuMjEtNi4zNyw2LjgxLTkuMDhjNy4yOC03LjYsMTQuOTYtMTQuODEsMjIuMjItMjIuNDMKCWM0LjAyLTQuMjIsOC41OS02LjAzLDE0LjM5LTZjMjMuMzIsMC4xNSw0Ni42NSwwLjA2LDY5Ljk4LDAuMDZjMS41LDAsMywwLDUuNDIsMGMtMS42OC0xLjgxLTIuNjYtMi45NS0zLjcyLTQuMDEKCWMtMzYuMS0zNi4xMS03Mi4yMy03Mi4xOS0xMDguMjYtMTA4LjM3Yy0yLjY1LTIuNjYtNC41Ny02LjA1LTYuODMtOS4xYzAtMS45OSwwLTMuOTksMC01Ljk4YzEuMjItMi4wNiwyLjI4LTQuMjQsMy42OS02LjE2CgljMjEuODktMjkuOTMsNTEuNTUtNDQuNzIsODguNDktNDQuNzhjNjYuMzQtMC4xMSwxMzIuNjgtMC4wNSwxOTkuMDIsMC4wM2MzLjIxLDAsNS41NC0wLjgzLDcuODUtMy4xNgoJYzE1LjgxLTE1Ljk5LDMxLjY2LTMxLjk2LDQ3LjcyLTQ3LjdjMTMuNTctMTMuMywyOS43LTIyLjQxLDQ4LjA3LTI3LjNDNDY1LjksNjYuNzgsNDcyLjc5LDY1Ljc0LDQ3OS41OSw2NC4zN...');
+  background-image: var(--theme-icon-attack-normal);
 }
 
 cg-board cg-btn.cancel-stack-move {
@@ -349,6 +352,7 @@ cg-board square.air-defense-influence {
     transform: translate(-50%, -50%) scale(0.9);
     opacity: 0.5;
   }
+
   50% {
     transform: translate(-50%, -50%) scale(1.05);
     opacity: 0.3;
@@ -392,6 +396,7 @@ cg-board square.air-defense-influence {
   0% {
     transform: translate(-50%, -50%) rotate(0deg);
   }
+
   100% {
     transform: translate(-50%, -50%) rotate(360deg);
   }
@@ -517,6 +522,7 @@ piece.dragging {
   100% {
     opacity: 0.3;
   }
+
   50% {
     opacity: 0.8;
   }
@@ -526,6 +532,7 @@ piece.dragging {
   0% {
     opacity: 0.5;
   }
+
   100% {
     opacity: 0.9;
   }
@@ -536,6 +543,7 @@ piece.dragging {
   100% {
     opacity: 0.3;
   }
+
   50% {
     opacity: 0.8;
   }

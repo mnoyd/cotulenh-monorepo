@@ -6,7 +6,7 @@
   import PiecePalettesContainer from './PiecePalettesContainer.svelte';
   import { createBoardEditorState } from '$lib/features/board-editor';
 
-  import '$lib/styles/modern-warfare.css';
+  import '$lib/styles/board.css';
 
   const editor = createBoardEditorState();
 

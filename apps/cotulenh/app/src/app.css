@@ -1,5 +1,7 @@
 @import 'tailwindcss';
-@import './lib/styles/themes/index.css';
+
+/* Base theme variables (fallback) - actual theme loaded dynamically via <link> tag */
+@import url('/themes/base.css');
 
 @theme {
   /* Custom Breakpoints - standardized responsive system */

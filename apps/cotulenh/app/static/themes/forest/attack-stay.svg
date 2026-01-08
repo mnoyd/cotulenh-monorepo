@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <defs>
+    <g id="seeds">
+      <g transform="translate(16, 12) rotate(10)">
+        <path d="M0 0 Q 6 10 0 20 Q -6 10 0 0" />
+        <path d="M0 20 L0 26" stroke-width="1" fill="none" />
+      </g>
+      <g transform="translate(48, 16) rotate(-15)">
+        <path d="M0 0 Q 6 10 0 20 Q -6 10 0 0" />
+         <path d="M0 20 L0 26" stroke-width="1" fill="none" />
+      </g>
+      <g transform="translate(32, 24)">
+        <path d="M0 0 Q 8 12 0 24 Q -8 12 0 0" />
+         <path d="M0 24 L0 32" stroke-width="2" fill="none" />
+      </g>
+    </g>
+    <g id="trails">
+      <path d="M16 6 L16 10" />
+      <path d="M48 10 L48 14" />
+      <path d="M32 16 L32 22" />
+    </g>
+  </defs>
+
+  <!-- Outline -->
+  <use href="#seeds" stroke="black" stroke-width="4" fill="black" />
+  <use href="#trails" stroke="black" stroke-width="3" />
+
+  <!-- Main -->
+  <use href="#seeds" stroke="white" stroke-width="2" fill="white" />
+  <use href="#trails" stroke="white" stroke-width="1" />
+</svg>

@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <defs>
+    <g id="raptor" transform="rotate(45 32 32)">
+       <!-- Body/Fuselage -->
+       <path d="M32 10 L40 28 L32 54 L24 28 Z" fill="black" />
+       <!-- Wings - Swept back like Delta shielding -->
+       <path d="M40 28 L60 38 L42 42 Z" fill="black" />
+       <path d="M24 28 L4 38 L22 42 Z" fill="black" />
+       <!-- Tail feathers -->
+       <path d="M32 54 L38 62 L26 62 Z" fill="black" />
+    </g>
+    <!-- Speed/Dive lines -->
+    <path id="dive-lines" d="M12 50 L22 40 M52 50 L42 40" stroke="black" stroke-width="2" />
+  </defs>
+
+  <!-- Outline -->
+  <g transform="rotate(45 32 32)">
+      <path d="M32 10 L40 28 L32 54 L24 28 Z" stroke="black" stroke-width="4" fill="black" />
+      <path d="M40 28 L60 38 L42 42 Z" stroke="black" stroke-width="4" fill="black" />
+      <path d="M24 28 L4 38 L22 42 Z" stroke="black" stroke-width="4" fill="black" />
+      <path d="M32 54 L38 62 L26 62 Z" stroke="black" stroke-width="4" fill="black" />
+  </g>
+  <use href="#dive-lines" stroke="black" stroke-width="4" />
+
+  <!-- Main White -->
+  <g transform="rotate(45 32 32)">
+       <path d="M32 10 L40 28 L32 54 L24 28 Z" fill="white" />
+       <path d="M40 28 L60 38 L42 42 Z" fill="white" />
+       <path d="M24 28 L4 38 L22 42 Z" fill="white" />
+       <path d="M32 54 L38 62 L26 62 Z" fill="white" />
+       <!-- Feather details mimicking panel lines -->
+       <path d="M32 14 L32 48" stroke="black" stroke-width="1" />
+       <path d="M40 28 L32 36" stroke="black" stroke-width="1" />
+       <path d="M24 28 L32 36" stroke="black" stroke-width="1" />
+  </g>
+  <use href="#dive-lines" stroke="white" stroke-width="2" />
+</svg>
