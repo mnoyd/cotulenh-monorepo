@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_1" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 219.21 205.9">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: none;
+      }
+
+      .cls-2 {
+        clip-path: url(#clippath);
+      }
+
+      .cls-3 {
+        fill: #ec2024;
+      }
+
+      .cls-4 {
+        fill: #fff;
+      }
+
+      .cls-5 {
+        stroke-width: 2px;
+      }
+
+      .cls-5, .cls-6 {
+        fill: #ffebd2;
+        stroke: #ec2024;
+        stroke-miterlimit: 10;
+      }
+
+      .cls-6 {
+        stroke-width: 2.05px;
+      }
+    </style>
+    <clipPath id="clippath">
+      <circle class="cls-1" cx="110.8" cy="103.18" r="65.22"/>
+    </clipPath>
+  </defs>
+  <circle class="cls-5" cx="110.84" cy="103.18" r="85.55"/>
+  <circle class="cls-3" cx="110.84" cy="103.18" r="65.22"/>
+  <g class="cls-2">
+    <g>
+      <polygon class="cls-4" points="57.45 109.6 44.72 117.7 42.7 124.93 69.6 124.93 67.29 133.61 63.82 133.61 63.82 144.31 72.21 144.31 80.85 136.5 81.21 127.6 92.13 129.17 115.6 109.6 115.6 98.89 164.21 64.75 162.18 57.81 109.53 90.21 94.49 89.34 81.83 102 67 102 67 109.6 57.45 109.6"/>
+      <line class="cls-6" x1="121.84" y1="96.18" x2="81.79" y2="128.47"/>
+      <line class="cls-6" x1="61.49" y1="108.58" x2="81.36" y2="108.58"/>
+      <polygon class="cls-4" points="75.2 144.31 75.2 153.27 80.98 153.27 80.98 166.87 102.97 175.26 102.97 159.79 106.73 159.79 106.73 148.36 120.33 148.36 120.33 133.6 104.42 133.6 104.42 140.83 85.9 140.83 85.9 138.22 81.85 138.22 75.2 144.31"/>
+    </g>
+  </g>
+</svg>
