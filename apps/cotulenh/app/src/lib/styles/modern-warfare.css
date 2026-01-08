@@ -57,22 +57,33 @@ cg-piece-star {
   background-position: center;
   background-size: 70%;
   z-index: 10;
+}
+
+/* Pulse effect using pseudo-element for GPU acceleration */
+cg-piece-star::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border: 1px solid #fff;
+  border-radius: 50%;
+  box-shadow: 0 0 12px var(--theme-heroic-border);
+  pointer-events: none;
+  will-change: opacity, transform;
   animation: pulse-badge 2s infinite ease-in-out;
 }
 
 @keyframes pulse-badge {
   0% {
+    opacity: 0.4;
     transform: scale(1);
-    box-shadow: var(--theme-heroic-glow);
   }
   50% {
+    opacity: 1;
     transform: scale(1.15);
-    box-shadow: 0 0 12px var(--theme-heroic-border);
-    border-color: #fff;
   }
   100% {
+    opacity: 0.4;
     transform: scale(1);
-    box-shadow: var(--theme-heroic-glow);
   }
 }
 
@@ -159,8 +170,20 @@ cg-board square.last-move.from {
 }
 
 cg-board square.last-move.to {
+  position: relative;
   background-color: var(--theme-board-last-move-to);
   box-shadow: inset 0 0 10px var(--theme-primary);
+}
+
+/* Pulse glow effect using pseudo-element for GPU acceleration */
+cg-board square.last-move.to::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-color: var(--theme-primary-dim);
+  box-shadow: inset 0 0 15px var(--theme-primary);
+  pointer-events: none;
+  will-change: opacity;
   animation: pulse-glow 2s infinite;
 }
 
@@ -173,7 +196,17 @@ cg-board square.selected {
 
 /* Check / Danger */
 cg-board square.check {
+  position: relative;
   background: radial-gradient(circle, var(--theme-board-check) 0%, transparent 70%);
+}
+
+cg-board square.check::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle, var(--theme-board-check) 0%, transparent 70%);
+  pointer-events: none;
+  will-change: opacity;
   animation: alarm-pulse 1s infinite alternate;
 }
 
@@ -189,12 +222,172 @@ cg-board square.deploy-dest {
 }
 
 cg-board square.deploy-incomplete {
+  position: relative;
   box-shadow: inset 0 0 20px var(--theme-accent-dim);
+}
+
+cg-board square.deploy-incomplete::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border: 1px dashed rgba(255, 255, 255, 0.8);
+  box-shadow: var(--theme-glow-accent);
+  pointer-events: none;
+  will-change: opacity;
   animation: pulse-deploy 1.5s ease-in-out infinite;
 }
 
 /* --- Air Defense (Radar Zones) --- */
 
+/* Shared base styles */
+cg-board square.air-defense-influence {
+  z-index: 3;
+  --overlap-intensity: 1;
+}
+
+/* OFF - No effects at all */
+[data-radar-effect='off'] cg-board square.air-defense-influence::before,
+[data-radar-effect='off'] cg-board square.air-defense-influence::after {
+  display: none;
+}
+
+/* MINIMAL - Beautiful static tactical design (best performance) */
+[data-radar-effect='minimal'] cg-board square.air-defense-influence::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 80%;
+  height: 80%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  z-index: 8;
+  pointer-events: none;
+
+  /* Layered tactical rings - pure CSS, no animation */
+  background:
+    /* Outer ring - dashed */
+    radial-gradient(circle, transparent 68%, currentColor 68%, currentColor 69%, transparent 69%),
+    /* Middle ring - solid */
+    radial-gradient(circle, transparent 48%, currentColor 48%, currentColor 50%, transparent 50%),
+    /* Inner ring - dotted effect */
+    radial-gradient(circle, transparent 28%, currentColor 28%, currentColor 29%, transparent 29%),
+    /* Center dot */ radial-gradient(circle at center, currentColor 8%, transparent 8%),
+    /* Crosshairs - horizontal */
+    linear-gradient(to bottom, transparent 49%, currentColor 49%, currentColor 51%, transparent 51%),
+    /* Crosshairs - vertical */
+    linear-gradient(to right, transparent 49%, currentColor 49%, currentColor 51%, transparent 51%),
+    /* Base glow */ radial-gradient(circle, currentColor 0%, transparent 70%);
+
+  opacity: 0.4;
+  filter: drop-shadow(0 0 2px currentColor);
+}
+
+[data-radar-effect='minimal'] cg-board square.air-defense-influence::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 80%;
+  height: 80%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  z-index: 7;
+  pointer-events: none;
+
+  /* Dashed outer ring pattern */
+  background: conic-gradient(
+    from 0deg,
+    currentColor 0deg,
+    currentColor 20deg,
+    transparent 20deg,
+    transparent 40deg,
+    currentColor 40deg,
+    currentColor 60deg,
+    transparent 60deg,
+    transparent 80deg,
+    currentColor 80deg,
+    currentColor 100deg,
+    transparent 100deg,
+    transparent 120deg,
+    currentColor 120deg,
+    currentColor 140deg,
+    transparent 140deg,
+    transparent 160deg,
+    currentColor 160deg,
+    currentColor 180deg,
+    transparent 180deg,
+    transparent 200deg,
+    currentColor 200deg,
+    currentColor 220deg,
+    transparent 220deg,
+    transparent 240deg,
+    currentColor 240deg,
+    currentColor 260deg,
+    transparent 260deg,
+    transparent 280deg,
+    currentColor 280deg,
+    currentColor 300deg,
+    transparent 300deg,
+    transparent 320deg,
+    currentColor 320deg,
+    currentColor 340deg,
+    transparent 340deg,
+    transparent 360deg
+  );
+
+  /* Mask to create dashed ring only on outer edge */
+  -webkit-mask: radial-gradient(circle, transparent 68%, black 68%, black 72%, transparent 72%);
+  mask: radial-gradient(circle, transparent 68%, black 68%, black 72%, transparent 72%);
+  opacity: 0.25;
+}
+
+/* PULSE - Pulsing effect (recommended, GPU-accelerated) */
+@keyframes air-defense-pulse {
+  0%,
+  100% {
+    transform: translate(-50%, -50%) scale(0.9);
+    opacity: 0.5;
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.05);
+    opacity: 0.3;
+  }
+}
+
+[data-radar-effect='pulse'] cg-board square.air-defense-influence::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 70%;
+  height: 70%;
+  transform: translate(-50%, -50%);
+  border: 2px solid currentColor;
+  border-radius: 50%;
+  opacity: 0.5;
+  z-index: 9;
+  pointer-events: none;
+  will-change: transform, opacity;
+  animation: air-defense-pulse 2s ease-in-out infinite;
+}
+
+[data-radar-effect='pulse'] cg-board square.air-defense-influence::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 50%;
+  height: 50%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.15;
+  z-index: 8;
+  pointer-events: none;
+}
+
+/* SCAN - Full radar scan (CPU intensive, high-end only) */
 @keyframes radar-scan {
   0% {
     transform: translate(-50%, -50%) rotate(0deg);
@@ -204,12 +397,7 @@ cg-board square.deploy-incomplete {
   }
 }
 
-cg-board square.air-defense-influence {
-  z-index: 3;
-  --overlap-intensity: 1;
-}
-
-cg-board square.air-defense-influence::before {
+[data-radar-effect='scan'] cg-board square.air-defense-influence::before {
   content: '';
   position: absolute;
   top: 50%;
@@ -225,7 +413,7 @@ cg-board square.air-defense-influence::before {
   pointer-events: none;
 }
 
-cg-board square.air-defense-influence::after {
+[data-radar-effect='scan'] cg-board square.air-defense-influence::after {
   content: '';
   position: absolute;
   top: 50%;
@@ -240,20 +428,47 @@ cg-board square.air-defense-influence::after {
   opacity: 0.3;
   z-index: 9;
   pointer-events: none;
+  will-change: transform;
   animation: radar-scan 2.5s linear infinite;
 }
 
-cg-board square.air-defense-influence.overlap::before {
+/* Overlap styles for all modes except "off" */
+[data-radar-effect='minimal'] cg-board square.air-defense-influence.overlap::before {
+  opacity: calc(0.5 + (var(--overlap-intensity) * 0.08));
+  filter: drop-shadow(0 0 3px currentColor);
+}
+
+[data-radar-effect='minimal'] cg-board square.air-defense-influence.overlap::after {
+  opacity: calc(0.35 + (var(--overlap-intensity) * 0.05));
+}
+
+[data-radar-effect='pulse'] cg-board square.air-defense-influence.overlap::before,
+[data-radar-effect='scan'] cg-board square.air-defense-influence.overlap::before {
   border-width: 2px;
-  border-style: dashed;
   opacity: calc(0.5 + (var(--overlap-intensity) * 0.1));
 }
 
-cg-board square.air-defense-influence.overlap::after {
+[data-radar-effect='pulse'] cg-board square.air-defense-influence.overlap::before {
+  border-width: 3px;
+  opacity: calc(0.6 + (var(--overlap-intensity) * 0.1));
+}
+
+[data-radar-effect='pulse'] cg-board square.air-defense-influence.overlap::after {
+  opacity: calc(0.2 + (var(--overlap-intensity) * 0.05));
+  animation-duration: 1.5s;
+}
+
+[data-radar-effect='scan'] cg-board square.air-defense-influence.overlap::before {
+  border-width: 2px;
+  border-style: dashed;
+}
+
+[data-radar-effect='scan'] cg-board square.air-defense-influence.overlap::after {
   opacity: calc(0.3 + (var(--overlap-intensity) * 0.1));
   animation-duration: 1.5s;
 }
 
+/* Friendly color variants */
 cg-board square.air-defense-influence.friendly {
   color: var(--theme-board-air-friendly);
 }
@@ -298,34 +513,30 @@ piece.dragging {
 
 /* --- Animations --- */
 @keyframes pulse-glow {
-  0% {
-    box-shadow: inset 0 0 5px var(--theme-primary);
+  0%,
+  100% {
+    opacity: 0.3;
   }
   50% {
-    box-shadow: inset 0 0 15px var(--theme-primary);
-    background-color: var(--theme-primary-dim);
-  }
-  100% {
-    box-shadow: inset 0 0 5px var(--theme-primary);
+    opacity: 0.8;
   }
 }
 
 @keyframes alarm-pulse {
-  from {
-    background-color: var(--theme-board-check);
+  0% {
+    opacity: 0.5;
   }
-  to {
-    opacity: 0.7;
+  100% {
+    opacity: 0.9;
   }
 }
 
 @keyframes pulse-deploy {
   0%,
   100% {
-    border-color: var(--theme-board-deploy-origin-border);
+    opacity: 0.3;
   }
   50% {
-    border-color: rgba(255, 255, 255, 0.8);
-    box-shadow: var(--theme-glow-accent);
+    opacity: 0.8;
   }
 }

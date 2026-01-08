@@ -1,6 +1,7 @@
 <script lang="ts">
   import { browser } from '$app/environment';
   import * as Dialog from '$lib/components/ui/dialog';
+  import { onMount } from 'svelte';
   import { Button } from '$lib/components/ui/button';
   import { Separator } from '$lib/components/ui/separator';
   import { toast } from 'svelte-sonner';
@@ -13,12 +14,16 @@
 
   let { open = $bindable() }: Props = $props();
 
+  // Radar effect types
+  export type RadarEffectType = 'off' | 'minimal' | 'pulse' | 'scan';
+
   // Settings interface for type safety
   interface Settings {
     soundsEnabled: boolean;
     showMoveHints: boolean;
     confirmReset: boolean;
     theme: ThemeId;
+    radarEffect: RadarEffectType;
   }
 
   // Default settings
@@ -26,7 +31,8 @@
     soundsEnabled: true,
     showMoveHints: true,
     confirmReset: true,
-    theme: 'modern-warfare'
+    theme: 'modern-warfare',
+    radarEffect: 'pulse'
   };
 
   // Settings state with localStorage persistence
@@ -34,6 +40,7 @@
   let showMoveHints = $state(DEFAULT_SETTINGS.showMoveHints);
   let confirmReset = $state(DEFAULT_SETTINGS.confirmReset);
   let selectedTheme = $state<ThemeId>(themeStore.current);
+  let radarEffect = $state<RadarEffectType>(DEFAULT_SETTINGS.radarEffect);
 
   /**
    * Validates settings object from localStorage
@@ -43,25 +50,34 @@
       throw new Error('Settings must be an object');
     }
 
+    const validRadarEffects: RadarEffectType[] = ['off', 'minimal', 'pulse', 'scan'];
+
     return {
-      soundsEnabled: typeof data.soundsEnabled === 'boolean' 
-        ? data.soundsEnabled 
-        : DEFAULT_SETTINGS.soundsEnabled,
-      showMoveHints: typeof data.showMoveHints === 'boolean'
-        ? data.showMoveHints
-        : DEFAULT_SETTINGS.showMoveHints,
-      confirmReset: typeof data.confirmReset === 'boolean'
-        ? data.confirmReset
-        : DEFAULT_SETTINGS.confirmReset,
-      theme: typeof data.theme === 'string' && themeStore.themes.some(t => t.id === data.theme)
-        ? data.theme as ThemeId
-        : DEFAULT_SETTINGS.theme
+      soundsEnabled:
+        typeof data.soundsEnabled === 'boolean'
+          ? data.soundsEnabled
+          : DEFAULT_SETTINGS.soundsEnabled,
+      showMoveHints:
+        typeof data.showMoveHints === 'boolean'
+          ? data.showMoveHints
+          : DEFAULT_SETTINGS.showMoveHints,
+      confirmReset:
+        typeof data.confirmReset === 'boolean' ? data.confirmReset : DEFAULT_SETTINGS.confirmReset,
+      theme:
+        typeof data.theme === 'string' && themeStore.themes.some((t) => t.id === data.theme)
+          ? (data.theme as ThemeId)
+          : DEFAULT_SETTINGS.theme,
+      radarEffect:
+        typeof data.radarEffect === 'string' &&
+        validRadarEffects.includes(data.radarEffect as RadarEffectType)
+          ? (data.radarEffect as RadarEffectType)
+          : DEFAULT_SETTINGS.radarEffect
     };
   }
 
   function loadSettings() {
     if (!browser) return;
-    
+
     const saved = localStorage.getItem('cotulenh_settings');
     if (!saved) {
       selectedTheme = themeStore.current;
@@ -71,11 +87,12 @@
     try {
       const parsed = JSON.parse(saved);
       const validated = validateSettings(parsed);
-      
+
       soundsEnabled = validated.soundsEnabled;
       showMoveHints = validated.showMoveHints;
       confirmReset = validated.confirmReset;
       selectedTheme = themeStore.current;
+      radarEffect = validated.radarEffect;
     } catch (e) {
       console.error('Failed to load settings, using defaults:', e);
       // Reset to defaults on error
@@ -83,6 +100,7 @@
       showMoveHints = DEFAULT_SETTINGS.showMoveHints;
       confirmReset = DEFAULT_SETTINGS.confirmReset;
       selectedTheme = themeStore.current;
+      radarEffect = DEFAULT_SETTINGS.radarEffect;
     }
   }
 
@@ -92,13 +110,19 @@
       soundsEnabled,
       showMoveHints,
       confirmReset,
-      theme: selectedTheme
+      theme: selectedTheme,
+      radarEffect
     };
     localStorage.setItem('cotulenh_settings', JSON.stringify(settings));
-    
+
     // Apply theme change
     themeStore.setTheme(selectedTheme);
-    
+
+    // Apply radar effect to document
+    if (browser) {
+      document.documentElement.setAttribute('data-radar-effect', radarEffect);
+    }
+
     toast.success('Settings saved');
     open = false;
   }
@@ -110,8 +134,15 @@
   }
 
   // Load settings when component mounts (browser only)
-  $effect(() => {
+  onMount(() => {
     loadSettings();
+  });
+
+  // Apply radar effect when it changes
+  $effect(() => {
+    if (browser) {
+      document.documentElement.setAttribute('data-radar-effect', radarEffect);
+    }
   });
 </script>
 
@@ -143,10 +174,51 @@
 
       <Separator />
 
+      <!-- Performance Settings -->
+      <div class="setting-section">
+        <h3 class="setting-section-title">Performance</h3>
+
+        <div class="setting-item-vertical">
+          <label class="setting-label">Radar Effect</label>
+          <div class="radio-group">
+            <label class="radio-item">
+              <input type="radio" name="radar" value="off" bind:group={radarEffect} />
+              <div class="radio-item-content">
+                <span>Off</span>
+                <small>No effects (best performance)</small>
+              </div>
+            </label>
+            <label class="radio-item">
+              <input type="radio" name="radar" value="minimal" bind:group={radarEffect} />
+              <div class="radio-item-content">
+                <span>Minimal</span>
+                <small>Beautiful static tactical design</small>
+              </div>
+            </label>
+            <label class="radio-item">
+              <input type="radio" name="radar" value="pulse" bind:group={radarEffect} />
+              <div class="radio-item-content">
+                <span>Pulse</span>
+                <small>Pulsing effect (recommended)</small>
+              </div>
+            </label>
+            <label class="radio-item">
+              <input type="radio" name="radar" value="scan" bind:group={radarEffect} />
+              <div class="radio-item-content">
+                <span>Scan</span>
+                <small>Full radar scan (high-end only)</small>
+              </div>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <Separator />
+
       <!-- Gameplay Settings -->
       <div class="setting-section">
         <h3 class="setting-section-title">Gameplay</h3>
-        
+
         <label class="setting-item">
           <input type="checkbox" bind:checked={soundsEnabled} />
           <span>Sound Effects</span>
@@ -282,6 +354,75 @@
     font-weight: 500;
     color: var(--theme-text-primary);
     font-family: var(--font-ui);
+  }
+
+  .setting-item-vertical {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .setting-label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--theme-text-primary);
+    font-family: var(--font-ui);
+  }
+
+  .radio-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .radio-item {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    border: 1px solid var(--theme-border-subtle);
+    border-radius: 0.375rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .radio-item:hover {
+    border-color: var(--theme-border);
+    background: var(--theme-primary-dim);
+  }
+
+  .radio-item:has(input:checked) {
+    border-color: var(--theme-primary);
+    background: var(--theme-primary-dim);
+  }
+
+  .radio-item input[type='radio'] {
+    width: 1.25rem;
+    height: 1.25rem;
+    margin-top: 0.125rem;
+    accent-color: var(--theme-primary);
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  .radio-item-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    flex: 1;
+  }
+
+  .radio-item span {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--theme-text-primary);
+  }
+
+  .radio-item small {
+    font-size: 0.7rem;
+    color: var(--theme-text-muted);
+    line-height: 1.3;
   }
 
   @media (max-width: 480px) {

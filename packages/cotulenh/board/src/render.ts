@@ -412,12 +412,16 @@ function computeSquareClasses(s: State): cg.SquareClasses {
           }
         }
     }
-    if (s.airDefense?.showInfluenceZone) {
-      const side = s.airDefense?.showInfluenceZone;
-      if (s.airDefense?.influenceZone) {
-        const zone = s.airDefense.influenceZone[side];
-        if (zone) {
-          renderInfluenceZones(squares, zone);
+    // Only render air-defense zones if an air_force piece is selected
+    if (s.airDefense?.showInfluenceZone && s.selected) {
+      const selectedPiece = s.pieces.get(s.selected.square);
+      if (selectedPiece?.role === 'air_force') {
+        const side = s.airDefense.showInfluenceZone;
+        if (s.airDefense?.influenceZone) {
+          const zone = s.airDefense.influenceZone[side];
+          if (zone) {
+            renderInfluenceZones(squares, zone);
+          }
         }
       }
     }

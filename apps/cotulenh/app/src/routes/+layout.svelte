@@ -190,7 +190,7 @@
     background-size: 100% 4px;
     z-index: 9998;
     opacity: var(--theme-scanline-opacity, 0.15);
-    animation: scanline 8s linear infinite;
+    /* Removed animation for better performance */
   }
 
   .vignette-overlay {
@@ -203,7 +203,7 @@
     background: radial-gradient(circle, transparent 50%, var(--theme-vignette-color, rgba(0, 0, 0, 0.7)) 100%);
     z-index: 9999;
     opacity: var(--theme-vignette-opacity, 0.6);
-    animation: vignette-pulse 4s ease-in-out infinite;
+    /* Removed animation for better performance */
   }
 
   :global(body) {
