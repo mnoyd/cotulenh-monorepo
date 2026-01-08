@@ -195,43 +195,20 @@ ${prefix} cg-board square.selected {
 }`);
 
   // === Air Defense Zones ===
+  // Note: Air defense visual styles (radar effects) are defined in modern-warfare.css
+  // using [data-radar-effect='...'] selectors. Here we only set the color variables
+  // that those styles consume via currentColor.
   rules.push(`
-${prefix} cg-board square.air-defense-influence::before,
-${prefix} cg-board square.air-defense-influence::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: ${effects.airDefense.size}px;
-  height: 2px;
-  background-color: currentColor;
-  opacity: ${effects.airDefense.opacity};
-  z-index: 9;
-  pointer-events: none;
-}
-
-${prefix} cg-board square.air-defense-influence::before {
-  transform: translate(-50%, -50%) rotate(45deg);
-}
-
-${prefix} cg-board square.air-defense-influence::after {
-  transform: translate(-50%, -50%) rotate(-45deg);
-}
-
-${prefix} cg-board square.air-defense-influence.friendly::before,
-${prefix} cg-board square.air-defense-influence.friendly::after {
+${prefix} cg-board square.air-defense-influence.friendly {
   color: ${effects.airDefense.friendlyColor};
 }
 
-${prefix} cg-board square.air-defense-influence.opponent::before,
-${prefix} cg-board square.air-defense-influence.opponent::after {
+${prefix} cg-board square.air-defense-influence.opponent {
   color: ${effects.airDefense.opponentColor};
 }
 
-${prefix} cg-board square.air-defense-influence.opponent.overlap::before,
-${prefix} cg-board square.air-defense-influence.opponent.overlap::after {
+${prefix} cg-board square.air-defense-influence.opponent.overlap {
   color: ${effects.airDefense.overlapColor};
-  opacity: ${effects.airDefense.opacity * effects.airDefense.overlapOpacityMultiplier};
 }`);
 
   // === Deploy Session ===

@@ -43,9 +43,9 @@ export const modernWarfareTheme: ThemeConfig = {
       info: '#00f3ff'
     },
     text: {
-      primary: '#e5e5e5',
-      secondary: 'rgba(0, 243, 255, 0.7)',
-      muted: 'rgba(0, 255, 65, 0.6)',
+      primary: '#ffffff',
+      secondary: '#00f3ff',
+      muted: 'rgba(0, 255, 65, 0.8)',
       inverse: '#0f172a'
     },
     board: {
