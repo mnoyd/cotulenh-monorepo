@@ -59,7 +59,7 @@ function createThemeController() {
       isLoading = true;
 
       let link = document.getElementById(LINK_ID) as HTMLLinkElement | null;
-      const newHref = `/themes/${id}.css`;
+      const newHref = `/themes/${id}/${id}.css`;
 
       // If already loaded, just resolve
       if (link?.getAttribute('href') === newHref) {

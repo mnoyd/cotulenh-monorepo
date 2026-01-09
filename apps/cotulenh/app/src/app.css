@@ -2,6 +2,7 @@
 @import 'tailwindcss';
 
 /* Load theme variables from /static/themes/*.css via <link> tag */
+
 /* Fallback values used if theme hasn't loaded yet */
 :root {
   /* Fonts */

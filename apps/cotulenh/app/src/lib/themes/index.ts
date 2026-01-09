@@ -2,7 +2,7 @@
  * Theme System
  *
  * Simplified theme management using static CSS files.
- * CSS files are located in /static/themes/ and loaded via <link> tag swapping.
+ * CSS files are located in /static/themes/[theme]/ and loaded via <link> tag swapping.
  *
  * @example
  * ```ts
