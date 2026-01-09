@@ -110,6 +110,33 @@
   --theme-shadow-md: 0 4px 6px rgba(0, 0, 0, 0.2);
   --theme-shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.25);
 
+  /* ===== GRADIENTS (static, GPU-composited) ===== */
+  --theme-bg-gradient: linear-gradient(180deg, var(--theme-bg-dark) 0%, var(--theme-bg-base) 100%);
+  --theme-panel-gradient: linear-gradient(
+    135deg,
+    var(--theme-bg-panel) 0%,
+    var(--theme-bg-elevated) 100%
+  );
+
+  /* ===== PATTERNS (subtle texture) ===== */
+  --theme-bg-pattern: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(255, 255, 255, 0.015) 2px,
+    rgba(255, 255, 255, 0.015) 4px
+  );
+
+  /* ===== INSET BORDERS (depth without shadows) ===== */
+  --theme-inset-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  --theme-inset-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.2);
+  --theme-inset-both: inset 0 1px 0 rgba(255, 255, 255, 0.05), inset 0 -1px 0 rgba(0, 0, 0, 0.2);
+
+  /* ===== HUD CORNERS ===== */
+  --theme-hud-corner-size: 10px;
+  --theme-hud-corner-width: 2px;
+  --theme-hud-corner-color: var(--theme-border);
+
   /* ===== OVERLAYS - DISABLED ===== */
   --theme-scanline-opacity: 0;
   --theme-vignette-opacity: 0;

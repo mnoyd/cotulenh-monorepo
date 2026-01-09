@@ -20,7 +20,7 @@
 </script>
 
 {#if hasSession}
-  <Card.Root class="border-mw-border bg-mw-bg-panel mt-2">
+  <Card.Root class="border-mw-border bg-mw-bg-panel mt-2 hud-corners panel-inset">
     <Card.Header class="p-2 pb-1 border-b border-border/50">
       <Card.Title
         class="text-[0.65rem] font-mono uppercase text-muted-foreground tracking-widest flex items-center gap-2"

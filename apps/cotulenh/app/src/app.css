@@ -92,3 +92,93 @@ body {
 .vignette-overlay {
   display: none !important;
 }
+
+/* === HUD Corners - Military/Tactical aesthetic === */
+.hud-corners {
+  position: relative;
+}
+
+.hud-corners::before,
+.hud-corners::after {
+  content: '';
+  position: absolute;
+  width: var(--theme-hud-corner-size, 10px);
+  height: var(--theme-hud-corner-size, 10px);
+  border-color: var(--theme-hud-corner-color, var(--theme-border));
+  border-style: solid;
+  border-width: var(--theme-hud-corner-width, 2px);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.hud-corners::before {
+  top: 0;
+  left: 0;
+  border-right: none;
+  border-bottom: none;
+}
+
+.hud-corners::after {
+  bottom: 0;
+  right: 0;
+  border-left: none;
+  border-top: none;
+}
+
+/* Four-corner variant using wrapper */
+.hud-corners-full {
+  position: relative;
+}
+
+.hud-corners-full::before,
+.hud-corners-full::after,
+.hud-corners-full > .hud-corners-extra::before,
+.hud-corners-full > .hud-corners-extra::after {
+  content: '';
+  position: absolute;
+  width: var(--theme-hud-corner-size, 10px);
+  height: var(--theme-hud-corner-size, 10px);
+  border-color: var(--theme-hud-corner-color, var(--theme-border));
+  border-style: solid;
+  border-width: var(--theme-hud-corner-width, 2px);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.hud-corners-full::before {
+  top: 0;
+  left: 0;
+  border-right: none;
+  border-bottom: none;
+}
+
+.hud-corners-full::after {
+  top: 0;
+  right: 0;
+  border-left: none;
+  border-bottom: none;
+}
+
+.hud-corners-full > .hud-corners-extra::before {
+  bottom: 0;
+  left: 0;
+  border-right: none;
+  border-top: none;
+}
+
+.hud-corners-full > .hud-corners-extra::after {
+  bottom: 0;
+  right: 0;
+  border-left: none;
+  border-top: none;
+}
+
+/* Panel with gradient background */
+.panel-gradient {
+  background: var(--theme-panel-gradient);
+}
+
+/* Panel with inset depth */
+.panel-inset {
+  box-shadow: var(--theme-inset-both);
+}

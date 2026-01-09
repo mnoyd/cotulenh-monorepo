@@ -46,7 +46,7 @@
 </script>
 
 <div
-  class="h-full flex flex-col border border-mw-border bg-mw-bg-panel overflow-hidden rounded-sm"
+  class="h-full flex flex-col border border-mw-border bg-mw-bg-panel overflow-hidden rounded-sm hud-corners panel-inset"
 >
   <div
     class="px-2 py-1 border-b border-border/50 shrink-0 flex flex-row items-center justify-between h-6 bg-mw-surface/50"
@@ -87,11 +87,11 @@
             class={cn(
               'move-chip relative flex items-center gap-1.5 px-1.5 py-0.5 border text-[0.65rem] font-mono rounded-sm',
               index % 2 === 0
-                ? 'border-red-900/50 bg-red-950/30 text-red-200 hover:bg-red-900/40'
-                : 'border-blue-900/50 bg-blue-950/30 text-blue-200 hover:bg-blue-900/40',
+                ? 'border-[color:var(--theme-team-red)]/30 bg-[color:var(--theme-team-red)]/10 text-[color:var(--theme-team-red)] hover:bg-[color:var(--theme-team-red)]/20'
+                : 'border-[color:var(--theme-team-blue)]/30 bg-[color:var(--theme-team-blue)]/10 text-[color:var(--theme-team-blue)] hover:bg-[color:var(--theme-team-blue)]/20',
               (index === historyViewIndex ||
                 (historyViewIndex === -1 && index === history.length - 1)) &&
-                'ring-1 ring-mw-primary border-mw-primary bg-mw-primary/10 text-white shadow-[0_0_10px_rgba(0,243,255,0.2)]'
+                'ring-1 ring-mw-primary border-mw-primary bg-mw-primary/10 text-white'
             )}
             onclick={() => session.previewMove(index)}
           >

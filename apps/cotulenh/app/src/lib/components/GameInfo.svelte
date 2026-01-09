@@ -37,7 +37,7 @@
 </script>
 
 <Card.Root
-  class="border-mw-border bg-mw-bg-panel rounded-sm overflow-hidden"
+  class="border-mw-border bg-mw-bg-panel rounded-sm overflow-hidden hud-corners panel-inset"
 >
   <!-- Header / Status Bar -->
   <Card.Header
