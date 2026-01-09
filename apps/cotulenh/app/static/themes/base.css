@@ -110,15 +110,15 @@
   --theme-shadow-md: 0 4px 6px rgba(0, 0, 0, 0.2);
   --theme-shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.25);
 
-  /* ===== OVERLAYS ===== */
+  /* ===== OVERLAYS - DISABLED ===== */
   --theme-scanline-opacity: 0;
   --theme-vignette-opacity: 0;
   --theme-vignette-color: transparent;
 
-  /* ===== ANIMATIONS ===== */
-  --theme-transition-fast: 0.1s ease;
-  --theme-transition-base: 0.15s ease;
-  --theme-transition-slow: 0.25s ease;
+  /* ===== ANIMATIONS - DISABLED ===== */
+  --theme-transition-fast: 0s;
+  --theme-transition-base: 0s;
+  --theme-transition-slow: 0s;
 
   /* ===== ATTACK ICONS ===== */
   --theme-icon-attack-stay: url('/themes/modern-warfare/attack-stay.svg');

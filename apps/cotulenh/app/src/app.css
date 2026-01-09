@@ -1,54 +1,57 @@
-/* MINIMAL STATIC CSS - Pure performance */
+/* MINIMAL THEMING - CSS variables only, no animations or effects */
 @import 'tailwindcss';
 
+/* Load theme variables from /static/themes/*.css via <link> tag */
+/* Fallback values used if theme hasn't loaded yet */
 :root {
   /* Fonts */
   --font-display: 'Be Vietnam Pro', sans-serif;
   --font-ui: 'Be Vietnam Pro', sans-serif;
   --font-mono: 'Share Tech Mono', monospace;
+}
 
-  /* Static colors - no CSS variables that change */
-  --bg-dark: #111;
-  --bg-panel: #222;
-  --bg-elevated: #333;
-  --text-primary: #eee;
-  --text-secondary: #aaa;
-  --border: #444;
-  --primary: #06b6d4;
-  --secondary: #22c55e;
-  --accent: #f59e0b;
+@theme {
+  /* Fonts */
+  --font-display: 'Be Vietnam Pro', sans-serif;
+  --font-ui: 'Be Vietnam Pro', sans-serif;
+  --font-mono: 'Share Tech Mono', monospace;
 
-  /* Tailwind mapping */
-  --color-background: var(--bg-dark);
-  --color-foreground: var(--text-primary);
-  --color-muted: var(--bg-elevated);
-  --color-muted-foreground: var(--text-secondary);
-  --color-popover: var(--bg-panel);
-  --color-popover-foreground: var(--text-primary);
-  --color-card: var(--bg-panel);
-  --color-card-foreground: var(--text-primary);
-  --color-border: var(--border);
-  --color-input: var(--border);
-  --color-primary: var(--primary);
-  --color-primary-foreground: #000;
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: #000;
-  --color-accent: rgba(6, 182, 212, 0.2);
-  --color-accent-foreground: var(--primary);
-  --color-destructive: #ef4444;
+  /* Map theme variables to Tailwind/Shadcn colors */
+  --color-background: var(--theme-bg-dark);
+  --color-foreground: var(--theme-text-primary);
+  --color-muted: var(--theme-bg-elevated);
+  --color-muted-foreground: var(--theme-text-secondary);
+  --color-popover: var(--theme-bg-panel);
+  --color-popover-foreground: var(--theme-text-primary);
+  --color-card: var(--theme-bg-panel);
+  --color-card-foreground: var(--theme-text-primary);
+  --color-border: var(--theme-border);
+  --color-input: var(--theme-border-subtle);
+  --color-primary: var(--theme-primary);
+  --color-primary-foreground: var(--theme-text-inverse);
+  --color-secondary: var(--theme-secondary);
+  --color-secondary-foreground: var(--theme-text-inverse);
+  --color-accent: var(--theme-primary-dim);
+  --color-accent-foreground: var(--theme-primary);
+  --color-destructive: var(--theme-error);
   --color-destructive-foreground: #fff;
-  --color-ring: var(--primary);
+  --color-ring: var(--theme-primary);
+
+  /* Radius */
+  --radius-lg: 0.5rem;
+  --radius-md: calc(0.5rem - 2px);
+  --radius-sm: calc(0.5rem - 4px);
 }
 
 body {
-  background-color: var(--bg-dark);
-  color: var(--text-primary);
+  background-color: var(--theme-bg-dark, #111);
+  color: var(--theme-text-primary, #eee);
   font-family: var(--font-ui);
   margin: 0;
   overflow-x: hidden;
 }
 
-/* NO overlays */
+/* Disable ALL overlays - they cause CPU usage */
 .scanline-overlay,
 .vignette-overlay {
   display: none !important;

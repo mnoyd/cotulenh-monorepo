@@ -1,8 +1,8 @@
-/* STATIC BOARD STYLES - Zero animations, zero effects */
+/* BOARD STYLES - Themeable with CSS variables, no animations or effects */
 
 /* --- Board Background --- */
 cg-background {
-  background-color: #222;
+  background-color: var(--theme-board-bg, #222);
   background-image: none;
   filter: none;
   box-shadow: none;
@@ -20,7 +20,7 @@ piece.dragging.heroic,
   filter: none;
 }
 
-/* --- Heroic Star Badge - NO animation --- */
+/* --- Heroic Star Badge - Static --- */
 cg-piece-star {
   position: absolute;
   right: -5%;
@@ -29,8 +29,8 @@ cg-piece-star {
   height: 35%;
   min-width: 16px;
   min-height: 16px;
-  background-color: #222;
-  border: 1px solid #ffd700;
+  background-color: var(--theme-heroic-bg, #222);
+  border: 1px solid var(--theme-heroic-border, #ffd700);
   border-radius: 50%;
   box-shadow: none;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23ffd700'%3E%3Cpath d='M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z'/%3E%3C/svg%3E");
@@ -46,22 +46,22 @@ cg-piece-star::before {
 
 /* --- Attack Buttons --- */
 cg-board cg-btn.piece-attack.stay {
-  background-color: #22c55e;
+  background-color: var(--theme-btn-attack-stay, #22c55e);
   border: 1px solid #fff;
   box-shadow: none;
   background-image: none;
 }
 
 cg-board cg-btn.piece-attack.normal {
-  background-color: #f59e0b;
+  background-color: var(--theme-btn-attack-normal, #f59e0b);
   border: 1px solid #fff;
   box-shadow: none;
   background-image: none;
 }
 
 cg-board cg-btn.cancel-stack-move {
-  background-color: #442200;
-  border: 1px solid #f59e0b;
+  background-color: var(--theme-btn-cancel-bg, #442200);
+  border: 1px solid var(--theme-btn-cancel-border, #f59e0b);
   box-shadow: none;
   background-image: none;
   background-size: 60%;
@@ -72,14 +72,14 @@ cg-board cg-btn.cancel-stack-move {
 }
 
 cg-board cg-btn.cancel-stack-move:hover {
-  background-color: #553300;
+  background-color: var(--theme-btn-cancel-bg, #553300);
   box-shadow: none;
   transform: none;
 }
 
 cg-board cg-btn.complete-stack-move {
-  background-color: #003311;
-  border: 1px solid #22c55e;
+  background-color: var(--theme-btn-confirm-bg, #003311);
+  border: 1px solid var(--theme-btn-confirm-border, #22c55e);
   box-shadow: none;
   background-image: none;
   background-size: 60%;
@@ -90,14 +90,14 @@ cg-board cg-btn.complete-stack-move {
 }
 
 cg-board cg-btn.complete-stack-move:hover {
-  background-color: #004422;
+  background-color: var(--theme-btn-confirm-bg, #004422);
   box-shadow: none;
   transform: none;
 }
 
 /* --- Board Squares --- */
 cg-board square.move-dest {
-  background-color: #06b6d4;
+  background-color: var(--theme-board-move-dest, #06b6d4);
   opacity: 0.5;
 }
 
@@ -106,17 +106,17 @@ cg-board square.move-dest:hover {
 }
 
 cg-board square.oc.move-dest {
-  background-color: #f59e0b;
+  background-color: var(--theme-board-capture, #f59e0b);
   opacity: 0.5;
 }
 
 cg-board square.last-move.from {
-  background-color: #064d52;
+  background-color: var(--theme-board-last-move-from, #064d52);
   box-shadow: none;
 }
 
 cg-board square.last-move.to {
-  background-color: #064d52;
+  background-color: var(--theme-board-last-move-to, #064d52);
   box-shadow: none;
 }
 
@@ -125,13 +125,13 @@ cg-board square.last-move.to::before {
 }
 
 cg-board square.selected {
-  background-color: #004433;
+  background-color: var(--theme-board-selected, #004433);
   box-shadow: none;
-  border: 1px solid #22c55e;
+  border: 1px solid var(--theme-board-selected-border, #22c55e);
 }
 
 cg-board square.check {
-  background-color: #553300;
+  background-color: var(--theme-board-check, #553300);
 }
 
 cg-board square.check::before {
@@ -140,31 +140,31 @@ cg-board square.check::before {
 
 /* --- Deploy Mode --- */
 cg-board square.deploy-origin {
-  background-color: #443300;
-  border: 1px dashed #ffd700;
+  background-color: var(--theme-board-deploy-origin, #443300);
+  border: 1px dashed var(--theme-board-deploy-origin-border, #ffd700);
 }
 
 cg-board square.deploy-dest {
-  background-color: #003311;
-  border: 1px dashed #22c55e;
+  background-color: var(--theme-board-deploy-dest, #003311);
+  border: 1px dashed var(--theme-board-deploy-dest-border, #22c55e);
 }
 
 cg-board square.deploy-incomplete {
-  background-color: #443300;
-  border: 2px solid #f59e0b;
+  background-color: var(--theme-board-deploy-origin, #443300);
+  border: 2px solid var(--theme-accent, #f59e0b);
 }
 
 cg-board square.deploy-incomplete::before {
   display: none;
 }
 
-/* --- Air Defense - COMPLETELY DISABLED --- */
+/* --- Air Defense - DISABLED --- */
 cg-board square.air-defense-influence::before,
 cg-board square.air-defense-influence::after {
   display: none !important;
 }
 
-/* --- Piece Styling --- */
+/* --- Piece Styling - NO animations --- */
 piece {
   transition: none;
   filter: none;

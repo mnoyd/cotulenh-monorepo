@@ -8,7 +8,7 @@
   import SettingsDialog from '$lib/components/SettingsDialog.svelte';
   import ShortcutsDialog from '$lib/components/ShortcutsDialog.svelte';
   import { Menu, Home, PenSquare, Settings, Keyboard } from 'lucide-svelte';
-  // NO theme store - static only
+  import { themeStore } from '$lib/stores/theme.svelte';
 
   interface Props {
     children: import('svelte').Snippet;
@@ -18,6 +18,12 @@
 
   let settingsOpen = $state(false);
   let shortcutsOpen = $state(false);
+
+  $effect(() => {
+    if (browser) {
+      themeStore.init();
+    }
+  });
 </script>
 
 <div class="app-container">
@@ -159,10 +165,10 @@
 </div>
 
 <style>
-  /* Minimal static styles */
+  /* Themeable styles - uses CSS variables from loaded theme */
   :global(body) {
-    background-color: #111;
-    color: #eee;
+    background-color: var(--theme-bg-dark, #111);
+    color: var(--theme-text-primary, #eee);
     font-family: var(--font-ui);
     margin: 0;
     overflow-x: hidden;
@@ -171,7 +177,7 @@
   .app-container {
     min-height: 100vh;
     display: flex;
-    background: #111;
+    background: var(--theme-bg-dark, #111);
   }
 
   /* Desktop Sidebar */
@@ -181,9 +187,8 @@
     top: 0;
     bottom: 0;
     width: 72px;
-    background: #222;
-    backdrop-filter: none;
-    border-right: 1px solid #444;
+    background: var(--theme-bg-panel, #222);
+    border-right: 1px solid var(--theme-border, #444);
     display: flex;
     flex-direction: column;
     z-index: 100;
@@ -200,7 +205,6 @@
   .logo-icon {
     width: 40px;
     height: 40px;
-    filter: none;
   }
 
   .sidebar-nav {
@@ -216,7 +220,7 @@
     flex-direction: column;
     gap: 0.25rem;
     padding: 0 0.5rem;
-    border-top: 1px solid #444;
+    border-top: 1px solid var(--theme-border, #444);
     padding-top: 0.75rem;
     margin-top: 0.75rem;
   }
@@ -229,10 +233,9 @@
     padding: 0.75rem 0.5rem;
     border-radius: 8px;
     text-decoration: none;
-    color: #aaa;
+    color: var(--theme-text-secondary, #aaa);
     font-weight: 500;
     font-size: 0.65rem;
-    transition: none;
     border: 1px solid transparent;
     font-family: var(--font-mono);
     text-transform: uppercase;
@@ -242,16 +245,15 @@
   }
 
   .sidebar-link:hover {
-    color: #06b6d4;
-    background: #333;
-    border-color: #444;
+    color: var(--theme-primary, #06b6d4);
+    background: var(--theme-bg-elevated, #333);
+    border-color: var(--theme-border, #444);
   }
 
   .sidebar-link.active {
-    color: #000;
-    background: #06b6d4;
-    border-color: #06b6d4;
-    box-shadow: none;
+    color: var(--theme-text-inverse, #000);
+    background: var(--theme-primary, #06b6d4);
+    border-color: var(--theme-primary, #06b6d4);
     font-weight: 700;
   }
 
@@ -277,29 +279,20 @@
     width: 44px;
     height: 44px;
     border-radius: 8px;
-    background: #222;
-    border: 1px solid #444;
-    color: #06b6d4;
+    background: var(--theme-bg-panel, #222);
+    border: 1px solid var(--theme-border, #444);
+    color: var(--theme-primary, #06b6d4);
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: none;
-    backdrop-filter: none;
-    transition: none;
     padding: 0;
     z-index: 151;
   }
 
   .mobile-menu-trigger:hover {
-    background: #333;
-    border-color: #06b6d4;
-    box-shadow: none;
-    transform: none;
-  }
-
-  .mobile-menu-trigger:active {
-    transform: none;
+    background: var(--theme-bg-elevated, #333);
+    border-color: var(--theme-primary, #06b6d4);
   }
 
   /* Main Content */
