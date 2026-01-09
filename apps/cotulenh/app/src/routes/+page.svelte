@@ -106,8 +106,8 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    background: #000;
-    color: #eee;
+    background: var(--theme-bg-dark, #000);
+    color: var(--theme-text-primary, #eee);
     font-family: var(--font-ui);
   }
 
@@ -126,9 +126,9 @@
 
   .board-section {
     flex: none;
-    border: 1px solid #444;
+    border: 1px solid var(--theme-border, #444);
     padding: 0.25rem;
-    background: #222;
+    background: var(--theme-bg-base, #222);
     width: min(760px, 100%);
   }
 
@@ -155,13 +155,14 @@
     display: flex;
     flex-direction: column;
     gap: 1rem;
-    background: #222;
-    border: 1px solid #444;
+    gap: 1rem;
+    background: var(--theme-bg-panel, #222);
+    border: 1px solid var(--theme-border, #444);
     padding: 1rem;
   }
 
   .controls-header {
-    border-bottom: 1px solid #444;
+    border-bottom: 1px solid var(--theme-border, #444);
     padding-bottom: 0.75rem;
     margin-bottom: 0.5rem;
   }
@@ -201,7 +202,7 @@
 
     .board-section {
       border: none;
-      background: #000;
+      background: var(--theme-bg-dark, #000);
       flex: 1;
       padding: 0;
     }
@@ -209,8 +210,8 @@
     .controls-section {
       width: 100%;
       flex: none;
-      background: #000;
-      border-top: 2px solid #22c55e;
+      background: var(--theme-bg-dark, #000);
+      border-top: 2px solid var(--theme-success, #22c55e);
       padding: 0.75rem;
       gap: 0.75rem;
     }
