@@ -218,6 +218,13 @@
     height: 100% !important;
   }
 
+  /* Apply the board grid background image */
+  .board-container :global(cg-background) {
+    background-image: var(--theme-board-image);
+    background-size: cover;
+    background-position: center;
+  }
+
   /* Loading state */
   .board-loading {
     position: absolute;
