@@ -62,7 +62,7 @@ piece.dragging,
 .ghost-piece piece {
   position: absolute;
   z-index: 2;
-  will-change: transform;
+  /* will-change removed for base - only enable during actual transform */
   pointer-events: none;
   display: flex;
   justify-content: center;
@@ -70,6 +70,14 @@ piece.dragging,
   background-size: contain;
   width: 8.33%;
   height: 7.69%;
+}
+
+/* Only enable will-change for medium/high tiers and only when hovering/dragging */
+[data-performance='medium'] .cg-wrap piece:hover,
+[data-performance='high'] .cg-wrap piece:hover,
+[data-performance='medium'] piece.dragging,
+[data-performance='high'] piece.dragging {
+  will-change: transform;
 }
 
 .cg-wrap piece svg,
@@ -90,8 +98,15 @@ cg-board square.move-dest {
   pointer-events: auto;
 }
 
-cg-board square.last-move {
+/* Only enable will-change for medium/high tiers on last-move squares */
+[data-performance='medium'] cg-board square.last-move,
+[data-performance='high'] cg-board square.last-move {
   will-change: transform;
+}
+
+[data-performance='off'] cg-board square.last-move,
+[data-performance='low'] cg-board square.last-move {
+  will-change: auto;
 }
 
 /* Piece states */
@@ -248,7 +263,17 @@ cg-board piece-ambigous-stack piece {
   opacity: 0.8;
   width: 100% !important;
   height: 100% !important;
+  /* transition removed for off/low */
+}
+
+[data-performance='medium'] cg-board piece-ambigous-stack piece,
+[data-performance='high'] cg-board piece-ambigous-stack piece {
   transition: transform 0.2s;
+}
+
+[data-performance='off'] cg-board piece-ambigous-stack piece,
+[data-performance='low'] cg-board piece-ambigous-stack piece {
+  transition: none !important;
 }
 
 cg-board piece-ambigous-stack::before {
@@ -259,7 +284,20 @@ cg-board piece-ambigous-stack::before {
   border-radius: 50%;
   background: rgba(255, 255, 0, 0.3);
   z-index: -1;
+  /* Animation disabled for off/low tiers */
+}
+
+/* Enable animation only for medium/high tiers */
+[data-performance='medium'] cg-board piece-ambigous-stack::before,
+[data-performance='high'] cg-board piece-ambigous-stack::before {
   animation: pulse 1.5s infinite;
+}
+
+/* Static state for off/low tiers */
+[data-performance='off'] cg-board piece-ambigous-stack::before,
+[data-performance='low'] cg-board piece-ambigous-stack::before {
+  animation: none !important;
+  opacity: 0.3;
 }
 
 /* piece.promoted {
@@ -311,12 +349,22 @@ cg-board .popup-container {
 /* Popup piece styling */
 cg-board .popup-container piece {
   cursor: grab;
-  transition: transform 0.1s;
+  /* transition removed for off/low */
   position: relative;
   pointer-events: auto;
   user-select: none;
   width: 100%;
   height: 100%;
+}
+
+[data-performance='medium'] cg-board .popup-container piece,
+[data-performance='high'] cg-board .popup-container piece {
+  transition: transform 0.1s;
+}
+
+[data-performance='off'] cg-board .popup-container piece,
+[data-performance='low'] cg-board .popup-container piece {
+  transition: none !important;
 }
 
 /* Popup piece states */
@@ -326,9 +374,7 @@ cg-board .popup-container piece:active {
 
 /* End stack move button styling */
 cg-board .popup-container cg-btn.end-stack-move {
-  transition:
-    transform 0.1s,
-    background-color 0.2s;
+  /* transitions removed for off/low */
   flex-shrink: 0;
   pointer-events: auto;
   user-select: none;
@@ -337,6 +383,18 @@ cg-board .popup-container cg-btn.end-stack-move {
   background-size: contain;
   background-repeat: no-repeat;
   transform: scale(0.8);
+}
+
+[data-performance='medium'] cg-board .popup-container cg-btn.end-stack-move,
+[data-performance='high'] cg-board .popup-container cg-btn.end-stack-move {
+  transition:
+    transform 0.1s,
+    background-color 0.2s;
+}
+
+[data-performance='off'] cg-board .popup-container cg-btn.end-stack-move,
+[data-performance='low'] cg-board .popup-container cg-btn.end-stack-move {
+  transition: none !important;
 }
 
 cg-board .popup-container cg-btn.end-stack-move:hover {
@@ -386,8 +444,16 @@ cg-board square.deploy-dest {
 }
 
 /* Incomplete deployment indicator - pulsing animation */
-cg-board square.deploy-incomplete {
+/* Animation disabled for off/low tiers */
+[data-performance='medium'] cg-board square.deploy-incomplete,
+[data-performance='high'] cg-board square.deploy-incomplete {
   animation: deploy-pulse 2s ease-in-out infinite;
+}
+
+[data-performance='off'] cg-board square.deploy-incomplete,
+[data-performance='low'] cg-board square.deploy-incomplete {
+  animation: none !important;
+  box-shadow: inset 0 0 0 2px rgba(255, 215, 0, 0.75) !important;
 }
 
 @keyframes deploy-pulse {
@@ -406,7 +472,19 @@ cg-board square.deploy-incomplete {
 /* Safe recombine options - gold pulse */
 cg-board square.recombine-available {
   background: radial-gradient(circle at center, rgba(255, 215, 0, 0.4) 25%, transparent 50%);
+  /* Animation disabled for off/low tiers */
+}
+
+/* Enable animation only for medium/high tiers */
+[data-performance='medium'] cg-board square.recombine-available,
+[data-performance='high'] cg-board square.recombine-available {
   animation: recombine-pulse 2s ease-in-out infinite;
+}
+
+[data-performance='off'] cg-board square.recombine-available,
+[data-performance='low'] cg-board square.recombine-available {
+  animation: none !important;
+  opacity: 0.8;
 }
 
 /* Unsafe recombine options - warning indicator */

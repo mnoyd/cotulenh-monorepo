@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, untrack } from 'svelte';
   import { page } from '$app/stores';
   import BoardContainer from '$lib/components/BoardContainer.svelte';
   import GameInfo from '$lib/components/GameInfo.svelte';
@@ -42,10 +42,21 @@
     };
   });
 
+  // Track dependencies separately to avoid infinite loops
   $effect(() => {
     logRender('🔄 [RENDER] +page.svelte $effect (setupBoardEffect) triggered');
-    if (session) {
-      session.setupBoardEffect();
+    if (session && session.boardApi) {
+      // Only read the properties we actually need to trigger on
+      const fen = session.fen;
+      const historyIdx = session.historyViewIndex;
+      const deployState = session.deployState;
+      
+      // Use untrack to prevent setupBoardEffect from creating new dependencies
+      untrack(() => {
+        if (session) {
+          session.setupBoardEffect();
+        }
+      });
     }
   });
 </script>

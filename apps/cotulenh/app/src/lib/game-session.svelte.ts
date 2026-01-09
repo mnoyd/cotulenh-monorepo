@@ -506,10 +506,9 @@ export class GameSession {
   // ============================================================
 
   setupBoardEffect(): void {
-    // Access reactive properties to register dependencies
+    // Don't access reactive properties here - let the caller handle dependencies
     const currentFen = this.fen;
     const currentHistoryIdx = this.historyViewIndex;
-    void this.deployState;
 
     // Skip if already synced with these exact values
     if (this.#lastSyncedFen === currentFen && this.#lastSyncedHistoryIdx === currentHistoryIdx) {

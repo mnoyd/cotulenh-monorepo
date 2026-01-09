@@ -23,7 +23,7 @@ export function callUserFunction<T extends (...args: never[]) => void>(
   f: T | undefined,
   ...args: Parameters<T>
 ): void {
-  if (f) setTimeout(() => f(...args), 1);
+  if (f) queueMicrotask(() => f(...args));
 }
 export function setCheck(state: HeadlessState, color: cg.Color | boolean): void {
   state.check = undefined;
