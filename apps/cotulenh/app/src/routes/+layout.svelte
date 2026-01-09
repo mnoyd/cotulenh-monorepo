@@ -24,6 +24,22 @@
     if (browser) {
       logRender('🔄 [RENDER] +layout.svelte $effect triggered');
       themeStore.init();
+      
+      // Initialize performance tier from localStorage
+      const saved = localStorage.getItem('cotulenh_settings');
+      if (saved) {
+        try {
+          const settings = JSON.parse(saved);
+          const tier = settings.performanceTier || 'low';
+          document.documentElement.setAttribute('data-performance', tier);
+        } catch (e) {
+          // Default to low tier on error
+          document.documentElement.setAttribute('data-performance', 'low');
+        }
+      } else {
+        // No saved settings, use default
+        document.documentElement.setAttribute('data-performance', 'low');
+      }
     }
   });
 

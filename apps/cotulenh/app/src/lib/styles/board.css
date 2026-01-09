@@ -2,6 +2,28 @@
 /* This file contains theme-agnostic board styles that use CSS variables.
    Theme-specific values are defined in themes/*.css (e.g., .theme-modern-warfare, .theme-classic) */
 
+/* ===== CSS CONTAINMENT FOR PERFORMANCE ===== */
+/* Isolate layout/paint to prevent thrashing */
+cg-board {
+  contain: layout style;
+}
+
+cg-board square {
+  contain: layout style paint;
+}
+
+piece {
+  contain: layout style paint;
+  content-visibility: auto;
+}
+
+/* ===== BOX-SHADOW REMOVAL FOR LOW/OFF TIERS ===== */
+/* Box-shadows are expensive to paint - disable for performance */
+[data-performance='off'] *,
+[data-performance='low'] * {
+  box-shadow: none !important;
+}
+
 /* --- Board Background --- */
 /* Board grid SVG is shared across all themes - located at /assets/board-grid.svg */
 cg-background {
@@ -67,26 +89,33 @@ cg-piece-star::before {
   inset: -1px;
   border: 1px solid #fff;
   border-radius: 50%;
-  box-shadow: 0 0 12px var(--theme-heroic-border);
+  box-shadow: 0 0 8px var(--theme-heroic-border);
   pointer-events: none;
-  will-change: opacity, transform;
-  animation: pulse-badge 2s infinite ease-in-out;
+  will-change: opacity;
+}
+
+/* Animation only for medium/high tiers */
+[data-performance='medium'] cg-piece-star::before,
+[data-performance='high'] cg-piece-star::before {
+  animation: pulse-badge 3s infinite ease-in-out;
+}
+
+[data-performance='off'] cg-piece-star::before,
+[data-performance='low'] cg-piece-star::before {
+  animation: none;
 }
 
 @keyframes pulse-badge {
   0% {
     opacity: 0.4;
-    transform: scale(1);
   }
 
   50% {
     opacity: 1;
-    transform: scale(1.15);
   }
 
   100% {
     opacity: 0.4;
-    transform: scale(1);
   }
 }
 
@@ -113,7 +142,6 @@ cg-board cg-btn.cancel-stack-move {
   background-size: 60%;
   background-repeat: no-repeat;
   background-position: center;
-  backdrop-filter: blur(4px);
   transition: var(--theme-transition-base);
 }
 
@@ -131,7 +159,6 @@ cg-board cg-btn.complete-stack-move {
   background-size: 60%;
   background-repeat: no-repeat;
   background-position: center;
-  backdrop-filter: blur(4px);
   transition: var(--theme-transition-base);
 }
 
@@ -187,7 +214,18 @@ cg-board square.last-move.to::before {
   box-shadow: inset 0 0 15px var(--theme-primary);
   pointer-events: none;
   will-change: opacity;
+}
+
+/* Animation only for medium/high tiers */
+[data-performance='medium'] cg-board square.last-move.to::before,
+[data-performance='high'] cg-board square.last-move.to::before {
   animation: pulse-glow 2s infinite;
+}
+
+[data-performance='off'] cg-board square.last-move.to::before,
+[data-performance='low'] cg-board square.last-move.to::before {
+  animation: none;
+  opacity: 0.5;
 }
 
 /* Selected Piece */
@@ -210,7 +248,18 @@ cg-board square.check::before {
   background: radial-gradient(circle, var(--theme-board-check) 0%, transparent 70%);
   pointer-events: none;
   will-change: opacity;
+}
+
+/* Animation only for medium/high tiers */
+[data-performance='medium'] cg-board square.check::before,
+[data-performance='high'] cg-board square.check::before {
   animation: alarm-pulse 1s infinite alternate;
+}
+
+[data-performance='off'] cg-board square.check::before,
+[data-performance='low'] cg-board square.check::before {
+  animation: none;
+  opacity: 0.7;
 }
 
 /* --- Deploy Mode --- */
@@ -237,8 +286,21 @@ cg-board square.deploy-incomplete::before {
   box-shadow: var(--theme-glow-accent);
   pointer-events: none;
   will-change: opacity;
+}
+
+/* Animation only for medium/high tiers */
+[data-performance='medium'] cg-board square.deploy-incomplete::before,
+[data-performance='high'] cg-board square.deploy-incomplete::before {
   animation: pulse-deploy 1.5s ease-in-out infinite;
 }
+
+[data-performance='off'] cg-board square.deploy-incomplete::before,
+[data-performance='low'] cg-board square.deploy-incomplete::before {
+  animation: none;
+  opacity: 0.6;
+}
+
+/* --- Air Defense (Radar Zones) --- */
 
 /* --- Air Defense (Radar Zones) --- */
 
@@ -248,118 +310,85 @@ cg-board square.air-defense-influence {
   --overlap-intensity: 1;
 }
 
-/* OFF - No effects at all */
-[data-radar-effect='off'] cg-board square.air-defense-influence::before,
-[data-radar-effect='off'] cg-board square.air-defense-influence::after {
-  display: none;
-}
-
-/* MINIMAL - Beautiful static tactical design (best performance) */
-[data-radar-effect='minimal'] cg-board square.air-defense-influence::before {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 80%;
-  height: 80%;
-  transform: translate(-50%, -50%);
-  border-radius: 50%;
-  z-index: 8;
-  pointer-events: none;
-
-  /* Layered tactical rings - pure CSS, no animation */
-  background:
-    /* Outer ring - dashed */
-    radial-gradient(circle, transparent 68%, currentColor 68%, currentColor 69%, transparent 69%),
-    /* Middle ring - solid */
-    radial-gradient(circle, transparent 48%, currentColor 48%, currentColor 50%, transparent 50%),
-    /* Inner ring - dotted effect */
-    radial-gradient(circle, transparent 28%, currentColor 28%, currentColor 29%, transparent 29%),
-    /* Center dot */ radial-gradient(circle at center, currentColor 8%, transparent 8%),
-    /* Crosshairs - horizontal */
-    linear-gradient(to bottom, transparent 49%, currentColor 49%, currentColor 51%, transparent 51%),
-    /* Crosshairs - vertical */
-    linear-gradient(to right, transparent 49%, currentColor 49%, currentColor 51%, transparent 51%),
-    /* Base glow */ radial-gradient(circle, currentColor 0%, transparent 70%);
-
-  opacity: 0.4;
-  filter: drop-shadow(0 0 2px currentColor);
-}
-
-[data-radar-effect='minimal'] cg-board square.air-defense-influence::after {
-  content: '';
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 80%;
-  height: 80%;
-  transform: translate(-50%, -50%);
-  border-radius: 50%;
-  z-index: 7;
-  pointer-events: none;
-
-  /* Dashed outer ring pattern */
-  background: conic-gradient(
-    from 0deg,
-    currentColor 0deg,
-    currentColor 20deg,
-    transparent 20deg,
-    transparent 40deg,
-    currentColor 40deg,
-    currentColor 60deg,
-    transparent 60deg,
-    transparent 80deg,
-    currentColor 80deg,
-    currentColor 100deg,
-    transparent 100deg,
-    transparent 120deg,
-    currentColor 120deg,
-    currentColor 140deg,
-    transparent 140deg,
-    transparent 160deg,
-    currentColor 160deg,
-    currentColor 180deg,
-    transparent 180deg,
-    transparent 200deg,
-    currentColor 200deg,
-    currentColor 220deg,
-    transparent 220deg,
-    transparent 240deg,
-    currentColor 240deg,
-    currentColor 260deg,
-    transparent 260deg,
-    transparent 280deg,
-    currentColor 280deg,
-    currentColor 300deg,
-    transparent 300deg,
-    transparent 320deg,
-    currentColor 320deg,
-    currentColor 340deg,
-    transparent 340deg,
-    transparent 360deg
-  );
-
-  /* Mask to create dashed ring only on outer edge */
-  -webkit-mask: radial-gradient(circle, transparent 68%, black 68%, black 72%, transparent 72%);
-  mask: radial-gradient(circle, transparent 68%, black 68%, black 72%, transparent 72%);
-  opacity: 0.25;
-}
-
-/* PULSE - Pulsing effect (recommended, GPU-accelerated) */
+/* Animation keyframes */
 @keyframes air-defense-pulse {
   0%,
   100% {
-    transform: translate(-50%, -50%) scale(0.9);
     opacity: 0.5;
   }
 
   50% {
-    transform: translate(-50%, -50%) scale(1.05);
-    opacity: 0.3;
+    opacity: 0.8;
   }
 }
 
-[data-radar-effect='pulse'] cg-board square.air-defense-influence::before {
+@keyframes radar-scan {
+  0% {
+    transform: translate(-50%, -50%) rotate(0deg);
+  }
+
+  100% {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
+}
+
+/* ======================================
+   PERFORMANCE TIER SYSTEM
+   ====================================== */
+
+/* --- OFF TIER: No visual effects --- */
+[data-performance='off'] cg-board square.air-defense-influence::before,
+[data-performance='off'] cg-board square.air-defense-influence::after {
+  display: none;
+}
+
+/* --- LOW TIER: Simple static circles (NO GRADIENTS for performance) --- */
+[data-performance='low'] cg-board square.air-defense-influence::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 80%;
+  height: 80%;
+  transform: translate(-50%, -50%);
+  border: 2px solid currentColor;
+  border-radius: 50%;
+  z-index: 9;
+  pointer-events: none;
+  opacity: 0.4;
+}
+
+[data-performance='low'] cg-board square.air-defense-influence::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 100%;
+  height: 100%;
+  transform: translate(-50%, -50%);
+  background-color: currentColor;
+  border-radius: 50%;
+  opacity: 0.08;
+  z-index: 8;
+  pointer-events: none;
+}
+
+[data-performance='low'] piece {
+  filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.5));
+  transition: none;
+}
+
+[data-performance='low'] piece:hover {
+  transform: none;
+  filter: drop-shadow(0 0 3px rgba(0, 0, 0, 0.6));
+}
+
+[data-performance='low'] cg-piece-star::before {
+  animation: none;
+}
+
+/* --- MEDIUM TIER: Smooth opacity animations, optimized filters --- */
+[data-performance='medium'] cg-board square.air-defense-influence::before {
   content: '';
   position: absolute;
   top: 50%;
@@ -372,11 +401,11 @@ cg-board square.air-defense-influence {
   opacity: 0.5;
   z-index: 9;
   pointer-events: none;
-  will-change: transform, opacity;
-  animation: air-defense-pulse 2s ease-in-out infinite;
+  will-change: opacity;
+  animation: air-defense-pulse 3s ease-in-out infinite;
 }
 
-[data-radar-effect='pulse'] cg-board square.air-defense-influence::after {
+[data-performance='medium'] cg-board square.air-defense-influence::after {
   content: '';
   position: absolute;
   top: 50%;
@@ -391,18 +420,8 @@ cg-board square.air-defense-influence {
   pointer-events: none;
 }
 
-/* SCAN - Full radar scan (CPU intensive, high-end only) */
-@keyframes radar-scan {
-  0% {
-    transform: translate(-50%, -50%) rotate(0deg);
-  }
-
-  100% {
-    transform: translate(-50%, -50%) rotate(360deg);
-  }
-}
-
-[data-radar-effect='scan'] cg-board square.air-defense-influence::before {
+/* --- HIGH TIER: Full radar scan, all effects --- */
+[data-performance='high'] cg-board square.air-defense-influence::before {
   content: '';
   position: absolute;
   top: 50%;
@@ -418,7 +437,7 @@ cg-board square.air-defense-influence {
   pointer-events: none;
 }
 
-[data-radar-effect='scan'] cg-board square.air-defense-influence::after {
+[data-performance='high'] cg-board square.air-defense-influence::after {
   content: '';
   position: absolute;
   top: 50%;
@@ -437,38 +456,38 @@ cg-board square.air-defense-influence {
   animation: radar-scan 2.5s linear infinite;
 }
 
-/* Overlap styles for all modes except "off" */
-[data-radar-effect='minimal'] cg-board square.air-defense-influence.overlap::before {
+/* Overlap styles */
+[data-performance='low'] cg-board square.air-defense-influence.overlap::before {
   opacity: calc(0.5 + (var(--overlap-intensity) * 0.08));
   filter: drop-shadow(0 0 3px currentColor);
 }
 
-[data-radar-effect='minimal'] cg-board square.air-defense-influence.overlap::after {
+[data-performance='low'] cg-board square.air-defense-influence.overlap::after {
   opacity: calc(0.35 + (var(--overlap-intensity) * 0.05));
 }
 
-[data-radar-effect='pulse'] cg-board square.air-defense-influence.overlap::before,
-[data-radar-effect='scan'] cg-board square.air-defense-influence.overlap::before {
+[data-performance='medium'] cg-board square.air-defense-influence.overlap::before,
+[data-performance='high'] cg-board square.air-defense-influence.overlap::before {
   border-width: 2px;
   opacity: calc(0.5 + (var(--overlap-intensity) * 0.1));
 }
 
-[data-radar-effect='pulse'] cg-board square.air-defense-influence.overlap::before {
+[data-performance='medium'] cg-board square.air-defense-influence.overlap::before {
   border-width: 3px;
   opacity: calc(0.6 + (var(--overlap-intensity) * 0.1));
 }
 
-[data-radar-effect='pulse'] cg-board square.air-defense-influence.overlap::after {
+[data-performance='medium'] cg-board square.air-defense-influence.overlap::after {
   opacity: calc(0.2 + (var(--overlap-intensity) * 0.05));
   animation-duration: 1.5s;
 }
 
-[data-radar-effect='scan'] cg-board square.air-defense-influence.overlap::before {
+[data-performance='high'] cg-board square.air-defense-influence.overlap::before {
   border-width: 2px;
   border-style: dashed;
 }
 
-[data-radar-effect='scan'] cg-board square.air-defense-influence.overlap::after {
+[data-performance='high'] cg-board square.air-defense-influence.overlap::after {
   opacity: calc(0.3 + (var(--overlap-intensity) * 0.1));
   animation-duration: 1.5s;
 }
@@ -488,10 +507,21 @@ cg-board square.air-defense-influence.opponent.overlap {
 
 /* --- Piece Styling --- */
 piece {
+  filter: var(--theme-piece-shadow);
+}
+
+/* Transitions only for medium/high tiers */
+[data-performance='medium'] piece,
+[data-performance='high'] piece {
   transition:
     transform var(--theme-transition-base),
     filter var(--theme-transition-base);
-  filter: var(--theme-piece-shadow);
+}
+
+[data-performance='off'] piece,
+[data-performance='low'] piece {
+  transition: none;
+  filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.5));
 }
 
 piece[class*='blue'] {
@@ -502,15 +532,36 @@ piece[class*='red'] {
   filter: var(--theme-piece-red-filter);
 }
 
+/* Disable complex filters for off/low tiers */
+[data-performance='off'] piece[class*='blue'],
+[data-performance='off'] piece[class*='red'] {
+  filter: none;
+}
+
+[data-performance='low'] piece[class*='blue'],
+[data-performance='low'] piece[class*='red'] {
+  filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.5));
+}
+
 piece:hover {
-  transform: translateY(-5px) scale(1.1);
-  filter: var(--theme-piece-hover-filter);
   z-index: 100;
+}
+
+/* Hover effects only for medium/high tiers */
+[data-performance='medium'] piece:hover,
+[data-performance='high'] piece:hover {
+  transform: translate3d(0, -5px, 0) scale(1.1); /* GPU-accelerated */
+  filter: var(--theme-piece-hover-filter);
+}
+
+[data-performance='off'] piece:hover,
+[data-performance='low'] piece:hover {
+  transform: none;
 }
 
 piece.dragging {
   transition: none !important;
-  transform: scale(1.1);
+  transform: translate3d(0, 0, 0) scale(1.1); /* GPU-accelerated */
   filter: var(--theme-piece-drag-filter) !important;
   z-index: 1000;
   cursor: grabbing;

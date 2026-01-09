@@ -14,8 +14,8 @@
 
   let { open = $bindable() }: Props = $props();
 
-  // Radar effect types
-  export type RadarEffectType = 'off' | 'minimal' | 'pulse' | 'scan';
+  // Performance tier types - controls ALL visual effects
+  export type PerformanceTier = 'off' | 'low' | 'medium' | 'high';
 
   // Settings interface for type safety
   interface Settings {
@@ -23,7 +23,7 @@
     showMoveHints: boolean;
     confirmReset: boolean;
     theme: ThemeId;
-    radarEffect: RadarEffectType;
+    performanceTier: PerformanceTier;
   }
 
   // Default settings
@@ -32,7 +32,7 @@
     showMoveHints: true,
     confirmReset: true,
     theme: 'modern-warfare',
-    radarEffect: 'pulse'
+    performanceTier: 'low'
   };
 
   // Settings state with localStorage persistence
@@ -40,7 +40,7 @@
   let showMoveHints = $state(DEFAULT_SETTINGS.showMoveHints);
   let confirmReset = $state(DEFAULT_SETTINGS.confirmReset);
   let selectedTheme = $state<ThemeId>(themeStore.current);
-  let radarEffect = $state<RadarEffectType>(DEFAULT_SETTINGS.radarEffect);
+  let performanceTier = $state<PerformanceTier>(DEFAULT_SETTINGS.performanceTier);
 
   /**
    * Validates settings object from localStorage
@@ -50,7 +50,7 @@
       throw new Error('Settings must be an object');
     }
 
-    const validRadarEffects: RadarEffectType[] = ['off', 'minimal', 'pulse', 'scan'];
+    const validPerformanceTiers: PerformanceTier[] = ['off', 'low', 'medium', 'high'];
 
     return {
       soundsEnabled:
@@ -67,11 +67,11 @@
         typeof data.theme === 'string' && themeStore.themes.some((t) => t.id === data.theme)
           ? (data.theme as ThemeId)
           : DEFAULT_SETTINGS.theme,
-      radarEffect:
-        typeof data.radarEffect === 'string' &&
-        validRadarEffects.includes(data.radarEffect as RadarEffectType)
-          ? (data.radarEffect as RadarEffectType)
-          : DEFAULT_SETTINGS.radarEffect
+      performanceTier:
+        typeof data.performanceTier === 'string' &&
+        validPerformanceTiers.includes(data.performanceTier as PerformanceTier)
+          ? (data.performanceTier as PerformanceTier)
+          : DEFAULT_SETTINGS.performanceTier
     };
   }
 
@@ -92,7 +92,7 @@
       showMoveHints = validated.showMoveHints;
       confirmReset = validated.confirmReset;
       selectedTheme = validated.theme;
-      radarEffect = validated.radarEffect;
+      performanceTier = validated.performanceTier;
     } catch (e) {
       console.error('Failed to load settings, using defaults:', e);
       // Reset to defaults on error
@@ -100,7 +100,7 @@
       showMoveHints = DEFAULT_SETTINGS.showMoveHints;
       confirmReset = DEFAULT_SETTINGS.confirmReset;
       selectedTheme = DEFAULT_SETTINGS.theme;
-      radarEffect = DEFAULT_SETTINGS.radarEffect;
+      performanceTier = DEFAULT_SETTINGS.performanceTier;
     }
   }
 
@@ -111,16 +111,16 @@
       showMoveHints,
       confirmReset,
       theme: selectedTheme,
-      radarEffect
+      performanceTier
     };
     localStorage.setItem('cotulenh_settings', JSON.stringify(settings));
 
     // Apply theme change (async)
     await themeStore.setTheme(selectedTheme);
 
-    // Apply radar effect to document
+    // Apply performance tier to document
     if (browser) {
-      document.documentElement.setAttribute('data-radar-effect', radarEffect);
+      document.documentElement.setAttribute('data-performance', performanceTier);
     }
 
     toast.success('Settings saved');
@@ -138,10 +138,10 @@
     loadSettings();
   });
 
-  // Apply radar effect when it changes
+  // Apply performance tier when it changes
   $effect(() => {
     if (browser) {
-      document.documentElement.setAttribute('data-radar-effect', radarEffect);
+      document.documentElement.setAttribute('data-performance', performanceTier);
     }
   });
 </script>
@@ -182,36 +182,38 @@
       <!-- Performance Settings -->
       <div class="setting-section">
         <h3 class="setting-section-title">Performance</h3>
+        <p class="setting-description">
+          Controls all visual effects: radar animations, piece filters, shadows, and backdrop blurs
+        </p>
 
         <div class="setting-item-vertical">
-          <label class="setting-label">Radar Effect</label>
           <div class="radio-group">
             <label class="radio-item">
-              <input type="radio" name="radar" value="off" bind:group={radarEffect} />
+              <input type="radio" name="performance" value="off" bind:group={performanceTier} />
               <div class="radio-item-content">
                 <span>Off</span>
-                <small>No effects (best performance)</small>
+                <small>No effects, static only (accessibility mode)</small>
               </div>
             </label>
             <label class="radio-item">
-              <input type="radio" name="radar" value="minimal" bind:group={radarEffect} />
+              <input type="radio" name="performance" value="low" bind:group={performanceTier} />
               <div class="radio-item-content">
-                <span>Minimal</span>
-                <small>Beautiful static tactical design</small>
+                <span>Low</span>
+                <small>Minimal effects, static radar (mobile/low-end)</small>
               </div>
             </label>
             <label class="radio-item">
-              <input type="radio" name="radar" value="pulse" bind:group={radarEffect} />
+              <input type="radio" name="performance" value="medium" bind:group={performanceTier} />
               <div class="radio-item-content">
-                <span>Pulse</span>
-                <small>Pulsing effect (recommended)</small>
+                <span>Medium</span>
+                <small>Moderate effects, smooth animations (recommended)</small>
               </div>
             </label>
             <label class="radio-item">
-              <input type="radio" name="radar" value="scan" bind:group={radarEffect} />
+              <input type="radio" name="performance" value="high" bind:group={performanceTier} />
               <div class="radio-item-content">
-                <span>Scan</span>
-                <small>Full radar scan (high-end only)</small>
+                <span>High</span>
+                <small>All effects, full radar scan (desktop/high-end)</small>
               </div>
             </label>
           </div>
@@ -269,6 +271,13 @@
     letter-spacing: 0.05em;
     color: var(--theme-text-secondary);
     margin: 0;
+  }
+
+  .setting-description {
+    font-size: 0.875rem;
+    color: var(--theme-text-muted);
+    margin: 0;
+    line-height: 1.4;
   }
 
   .theme-grid {
