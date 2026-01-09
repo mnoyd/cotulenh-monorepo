@@ -1,105 +1,55 @@
+/* MINIMAL STATIC CSS - Pure performance */
 @import 'tailwindcss';
 
-/* Base theme variables (fallback) - actual theme loaded dynamically via <link> tag */
-@import url('/themes/base.css');
-
-@theme {
-  /* Custom Breakpoints - standardized responsive system */
-  --breakpoint-xs: 480px;
-
-  /* Note: Tailwind defaults are:
-     sm: 640px, md: 768px, lg: 1024px, xl: 1280px, 2xl: 1536px */
-
+:root {
   /* Fonts */
   --font-display: 'Be Vietnam Pro', sans-serif;
   --font-ui: 'Be Vietnam Pro', sans-serif;
   --font-mono: 'Share Tech Mono', monospace;
 
-  /* Map theme variables to Shadcn-compatible variables */
-  --color-background: var(--theme-bg-dark);
-  --color-foreground: var(--theme-text-primary);
+  /* Static colors - no CSS variables that change */
+  --bg-dark: #111;
+  --bg-panel: #222;
+  --bg-elevated: #333;
+  --text-primary: #eee;
+  --text-secondary: #aaa;
+  --border: #444;
+  --primary: #06b6d4;
+  --secondary: #22c55e;
+  --accent: #f59e0b;
 
-  --color-muted: var(--theme-bg-elevated);
-  --color-muted-foreground: var(--theme-text-secondary);
-
-  --color-popover: var(--theme-bg-panel);
-  --color-popover-foreground: var(--theme-text-primary);
-
-  --color-card: var(--theme-bg-panel);
-  --color-card-foreground: var(--theme-text-primary);
-
-  --color-border: var(--theme-border);
-  --color-input: var(--theme-border-subtle);
-
-  --color-primary: var(--theme-primary);
-  --color-primary-foreground: var(--theme-text-inverse);
-
-  --color-secondary: var(--theme-secondary);
-  --color-secondary-foreground: var(--theme-text-inverse);
-
-  --color-accent: var(--theme-primary-dim);
-  --color-accent-foreground: var(--theme-primary);
-
-  --color-destructive: var(--theme-error);
+  /* Tailwind mapping */
+  --color-background: var(--bg-dark);
+  --color-foreground: var(--text-primary);
+  --color-muted: var(--bg-elevated);
+  --color-muted-foreground: var(--text-secondary);
+  --color-popover: var(--bg-panel);
+  --color-popover-foreground: var(--text-primary);
+  --color-card: var(--bg-panel);
+  --color-card-foreground: var(--text-primary);
+  --color-border: var(--border);
+  --color-input: var(--border);
+  --color-primary: var(--primary);
+  --color-primary-foreground: #000;
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: #000;
+  --color-accent: rgba(6, 182, 212, 0.2);
+  --color-accent-foreground: var(--primary);
+  --color-destructive: #ef4444;
   --color-destructive-foreground: #fff;
-
-  --color-ring: var(--theme-primary);
-
-  /* Legacy MW variables for backward compatibility */
-  --color-mw-primary: var(--theme-primary);
-  --color-mw-primary-dim: var(--theme-primary-dim);
-  --color-mw-secondary: var(--theme-secondary);
-  --color-mw-bg-dark: var(--theme-bg-dark);
-  --color-mw-bg-panel: var(--theme-bg-panel);
-  --color-mw-border: var(--theme-border);
-  --color-mw-alert: var(--theme-accent);
-  --color-mw-warning: var(--theme-warning);
-
-  /* Radius */
-  --radius-lg: 0.5rem;
-  --radius-md: calc(0.5rem - 2px);
-  --radius-sm: calc(0.5rem - 4px);
-
-  /* Animations */
-  --animate-pulse-glow: pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-  --animate-scanline: scanline 8s linear infinite;
-  --animate-vignette-pulse: vignette-pulse 4s ease-in-out infinite;
-
-  @keyframes pulse-glow {
-    0%,
-    100% {
-      box-shadow: 0 0 5px var(--theme-primary);
-      opacity: 1;
-    }
-    50% {
-      box-shadow: 0 0 20px var(--theme-primary);
-      opacity: 0.8;
-    }
-  }
-
-  @keyframes scanline {
-    0% {
-      background-position: 0% 0%;
-    }
-    100% {
-      background-position: 0% 100%;
-    }
-  }
-
-  @keyframes vignette-pulse {
-    0%,
-    100% {
-      opacity: var(--theme-vignette-opacity);
-    }
-    50% {
-      opacity: calc(var(--theme-vignette-opacity) + 0.2);
-    }
-  }
+  --color-ring: var(--primary);
 }
 
-/* Custom base styles */
 body {
-  background-color: var(--theme-bg-dark);
-  color: var(--theme-text-primary);
+  background-color: var(--bg-dark);
+  color: var(--text-primary);
   font-family: var(--font-ui);
+  margin: 0;
+  overflow-x: hidden;
+}
+
+/* NO overlays */
+.scanline-overlay,
+.vignette-overlay {
+  display: none !important;
 }
