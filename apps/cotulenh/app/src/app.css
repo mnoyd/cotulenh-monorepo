@@ -8,6 +8,20 @@
   --font-display: 'Be Vietnam Pro', sans-serif;
   --font-ui: 'Be Vietnam Pro', sans-serif;
   --font-mono: 'Share Tech Mono', monospace;
+
+  /* Legacy mw-* CSS variable mappings for inline styles */
+  --mw-primary: var(--theme-primary);
+  --mw-primary-dim: var(--theme-primary-dim);
+  --mw-secondary: var(--theme-secondary);
+  --mw-accent: var(--theme-accent);
+  --mw-warning: var(--theme-warning);
+  --mw-alert: var(--theme-accent);
+  --mw-error: var(--theme-error);
+  --mw-bg-dark: var(--theme-bg-dark);
+  --mw-bg-panel: var(--theme-bg-panel);
+  --mw-surface: var(--theme-bg-elevated);
+  --mw-border-color: var(--theme-border);
+  --mw-text-glow: var(--theme-glow-primary);
 }
 
 @theme {
@@ -36,6 +50,27 @@
   --color-destructive: var(--theme-error);
   --color-destructive-foreground: #fff;
   --color-ring: var(--theme-primary);
+
+  /* Legacy mw-* mappings for backward compatibility */
+  --color-mw-primary: var(--theme-primary);
+  --color-mw-primary-dim: var(--theme-primary-dim);
+  --color-mw-secondary: var(--theme-secondary);
+  --color-mw-accent: var(--theme-accent);
+  --color-mw-warning: var(--theme-warning);
+  --color-mw-alert: var(--theme-accent);
+  --color-mw-error: var(--theme-error);
+  --color-mw-success: var(--theme-success);
+  --color-mw-bg-dark: var(--theme-bg-dark);
+  --color-mw-bg-panel: var(--theme-bg-panel);
+  --color-mw-bg-elevated: var(--theme-bg-elevated);
+  --color-mw-surface: var(--theme-bg-elevated);
+  --color-mw-border: var(--theme-border);
+  --color-mw-border-color: var(--theme-border);
+  --color-mw-text-glow: var(--theme-glow-primary);
+
+  /* Team colors */
+  --color-mw-team-blue: var(--theme-team-blue);
+  --color-mw-team-red: var(--theme-team-red);
 
   /* Radius */
   --radius-lg: 0.5rem;

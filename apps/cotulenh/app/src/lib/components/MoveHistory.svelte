@@ -46,7 +46,7 @@
 </script>
 
 <div
-  class="h-full flex flex-col border border-mw-border bg-mw-bg-panel/50 backdrop-blur-sm shadow-lg overflow-hidden rounded-sm"
+  class="h-full flex flex-col border border-mw-border bg-mw-bg-panel overflow-hidden rounded-sm"
 >
   <div
     class="px-2 py-1 border-b border-border/50 shrink-0 flex flex-row items-center justify-between h-6 bg-mw-surface/50"
@@ -61,7 +61,7 @@
       <Button
         variant="ghost"
         size="sm"
-        class="h-4 text-[0.6rem] px-1.5 text-mw-warning border border-mw-warning/50 hover:bg-mw-warning/10 hover:text-mw-warning animate-pulse"
+        class="h-4 text-[0.6rem] px-1.5 text-mw-warning border border-mw-warning/50 hover:bg-mw-warning/10 hover:text-mw-warning"
         onclick={() => session.cancelPreview()}
       >
         <Eye class="w-2.5 h-2.5 mr-1" />
@@ -85,7 +85,7 @@
         {#each history as move, index}
           <button
             class={cn(
-              'move-chip relative flex items-center gap-1.5 px-1.5 py-0.5 border text-[0.65rem] font-mono transition-all rounded-sm',
+              'move-chip relative flex items-center gap-1.5 px-1.5 py-0.5 border text-[0.65rem] font-mono rounded-sm',
               index % 2 === 0
                 ? 'border-red-900/50 bg-red-950/30 text-red-200 hover:bg-red-900/40'
                 : 'border-blue-900/50 bg-blue-950/30 text-blue-200 hover:bg-blue-900/40',

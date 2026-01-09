@@ -1,117 +1,118 @@
 /* Modern Warfare Theme - Tactical HUD with Cyan/Amber accents */
+/* Inspired by military FPS game interfaces - high contrast, tech-forward */
 :root {
   /* ===== CORE PALETTE ===== */
-  --theme-primary: #00f3ff;
-  --theme-primary-dim: rgba(0, 243, 255, 0.15);
-  --theme-primary-glow: rgba(0, 243, 255, 0.5);
-  --theme-secondary: #00ff41;
-  --theme-secondary-dim: rgba(0, 255, 65, 0.15);
-  --theme-secondary-glow: rgba(0, 255, 65, 0.5);
-  --theme-accent: #ffab00;
-  --theme-accent-dim: rgba(255, 171, 0, 0.15);
-  --theme-accent-glow: rgba(255, 171, 0, 0.5);
-  --theme-warning: #ffd700;
-  --theme-error: #ef4444;
-  --theme-success: #22c55e;
+  --theme-primary: #00e5ff;
+  --theme-primary-dim: rgba(0, 229, 255, 0.12);
+  --theme-primary-glow: rgba(0, 229, 255, 0.4);
+  --theme-secondary: #00ff6a;
+  --theme-secondary-dim: rgba(0, 255, 106, 0.12);
+  --theme-secondary-glow: rgba(0, 255, 106, 0.4);
+  --theme-accent: #ff9500;
+  --theme-accent-dim: rgba(255, 149, 0, 0.12);
+  --theme-accent-glow: rgba(255, 149, 0, 0.4);
+  --theme-warning: #ffcc00;
+  --theme-error: #ff3b30;
+  --theme-success: #30d158;
 
   /* ===== BACKGROUNDS ===== */
-  --theme-bg-dark: #050a14;
-  --theme-bg-base: #0f172a;
-  --theme-bg-panel: rgba(15, 23, 42, 0.85);
-  --theme-bg-elevated: rgba(30, 41, 59, 0.9);
-  --theme-bg-overlay: rgba(0, 0, 0, 0.7);
+  --theme-bg-dark: #030810;
+  --theme-bg-base: #0a1628;
+  --theme-bg-panel: rgba(10, 22, 40, 0.92);
+  --theme-bg-elevated: rgba(20, 38, 65, 0.95);
+  --theme-bg-overlay: rgba(0, 0, 0, 0.8);
 
   /* ===== BORDERS ===== */
-  --theme-border: rgba(0, 243, 255, 0.45);
-  --theme-border-subtle: rgba(0, 243, 255, 0.25);
-  --theme-border-strong: rgba(0, 243, 255, 0.7);
+  --theme-border: rgba(0, 229, 255, 0.35);
+  --theme-border-subtle: rgba(0, 229, 255, 0.18);
+  --theme-border-strong: rgba(0, 229, 255, 0.6);
 
   /* ===== TEXT ===== */
-  --theme-text-primary: #ffffff;
-  --theme-text-secondary: #c8d4e6;
-  --theme-text-muted: #8fa3bf;
-  --theme-text-inverse: #000000;
+  --theme-text-primary: #e8f4fc;
+  --theme-text-secondary: #9eb8d4;
+  --theme-text-muted: #5c7a99;
+  --theme-text-inverse: #030810;
 
   /* ===== NAVBAR ===== */
-  --theme-nav-bg: rgba(15, 23, 42, 0.95);
-  --theme-nav-border: rgba(0, 243, 255, 0.3);
-  --theme-nav-text: rgba(255, 255, 255, 0.85);
-  --theme-nav-text-hover: #00f3ff;
-  --theme-nav-text-active: #050a14;
-  --theme-nav-active-bg: #00f3ff;
-  --theme-nav-hover-bg: rgba(0, 243, 255, 0.15);
+  --theme-nav-bg: rgba(10, 22, 40, 0.97);
+  --theme-nav-border: rgba(0, 229, 255, 0.25);
+  --theme-nav-text: rgba(232, 244, 252, 0.85);
+  --theme-nav-text-hover: #00e5ff;
+  --theme-nav-text-active: #030810;
+  --theme-nav-active-bg: #00e5ff;
+  --theme-nav-hover-bg: rgba(0, 229, 255, 0.12);
 
   /* ===== TEAM COLORS ===== */
-  --theme-team-blue: #00aaff;
-  --theme-team-blue-glow: rgba(0, 170, 255, 0.6);
-  --theme-team-red: #ffab00;
-  --theme-team-red-glow: rgba(255, 171, 0, 0.6);
+  --theme-team-blue: #00b4ff;
+  --theme-team-blue-glow: rgba(0, 180, 255, 0.5);
+  --theme-team-red: #ff9500;
+  --theme-team-red-glow: rgba(255, 149, 0, 0.5);
 
   /* ===== BOARD ===== */
-  --theme-board-bg: #1e293b;
-  --theme-board-border: rgba(0, 243, 255, 0.15);
+  --theme-board-bg: #142640;
+  --theme-board-border: rgba(0, 229, 255, 0.2);
   --theme-board-shadow: inset 0 0 100px rgba(0, 0, 0, 0.9);
   --theme-board-filter: invert(100%) hue-rotate(190deg) brightness(0.65) contrast(1.1) sepia(40%)
     saturate(150%);
   --theme-board-image: url('/assets/board-grid.svg');
 
-  /* Board Squares */
-  --theme-board-light: #1e293b;
-  --theme-board-dark: #0f172a;
-  --theme-board-highlight: rgba(0, 243, 255, 0.2);
-  --theme-board-selected: rgba(0, 255, 65, 0.15);
-  --theme-board-selected-border: #00ff41;
-  --theme-board-last-move-from: rgba(0, 243, 255, 0.1);
-  --theme-board-last-move-to: rgba(0, 243, 255, 0.15);
-  --theme-board-move-dest: #00f3ff;
-  --theme-board-capture: #ffab00;
-  --theme-board-check: rgba(255, 171, 0, 0.6);
+  /* Board Squares - Higher contrast tactical grid */
+  --theme-board-light: #1a3050;
+  --theme-board-dark: #0c1a2e;
+  --theme-board-highlight: rgba(0, 229, 255, 0.18);
+  --theme-board-selected: rgba(0, 255, 106, 0.15);
+  --theme-board-selected-border: #00ff6a;
+  --theme-board-last-move-from: rgba(0, 229, 255, 0.08);
+  --theme-board-last-move-to: rgba(0, 229, 255, 0.15);
+  --theme-board-move-dest: #00e5ff;
+  --theme-board-capture: #ff9500;
+  --theme-board-check: rgba(255, 59, 48, 0.5);
 
   /* Deploy Mode */
-  --theme-board-deploy-origin: rgba(255, 174, 0, 0.1);
-  --theme-board-deploy-origin-border: #ffd700;
-  --theme-board-deploy-dest: rgba(0, 255, 65, 0.1);
-  --theme-board-deploy-dest-border: #00ff41;
+  --theme-board-deploy-origin: rgba(255, 204, 0, 0.1);
+  --theme-board-deploy-origin-border: #ffcc00;
+  --theme-board-deploy-dest: rgba(0, 255, 106, 0.1);
+  --theme-board-deploy-dest-border: #00ff6a;
 
   /* Air Defense */
-  --theme-board-air-friendly: #00f3ff;
-  --theme-board-air-opponent: #ffab00;
-  --theme-board-air-overlap: #ff3333;
+  --theme-board-air-friendly: #00e5ff;
+  --theme-board-air-opponent: #ff9500;
+  --theme-board-air-overlap: #ff3b30;
 
   /* ===== PIECES ===== */
   --theme-piece-shadow: drop-shadow(0 0 2px rgba(0, 0, 0, 0.8));
-  --theme-piece-blue-filter: drop-shadow(0 0 4px #00aaff) brightness(1.2) contrast(1.2);
-  --theme-piece-red-filter: drop-shadow(0 0 4px #ffab00) hue-rotate(45deg) brightness(1.2)
+  --theme-piece-blue-filter: drop-shadow(0 0 4px #00b4ff) brightness(1.2) contrast(1.2);
+  --theme-piece-red-filter: drop-shadow(0 0 4px #ff9500) hue-rotate(45deg) brightness(1.2)
     contrast(1.1);
-  --theme-piece-heroic-filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.6)) brightness(1.2)
+  --theme-piece-heroic-filter: drop-shadow(0 0 10px rgba(255, 204, 0, 0.6)) brightness(1.2)
     contrast(1.1);
   --theme-piece-hover-filter: brightness(1.3) drop-shadow(0 10px 10px rgba(0, 0, 0, 0.5));
   --theme-piece-drag-filter: brightness(1.3) drop-shadow(0 15px 15px rgba(0, 0, 0, 0.6));
 
   /* ===== BUTTONS ===== */
-  --theme-btn-attack-stay: #00ff41;
-  --theme-btn-attack-normal: #ffab00;
-  --theme-btn-cancel-bg: rgba(255, 80, 0, 0.25);
-  --theme-btn-cancel-border: #ff6b00;
-  --theme-btn-confirm-bg: rgba(0, 255, 65, 0.25);
-  --theme-btn-confirm-border: #00ff41;
+  --theme-btn-attack-stay: #00ff6a;
+  --theme-btn-attack-normal: #ff9500;
+  --theme-btn-cancel-bg: rgba(255, 59, 48, 0.2);
+  --theme-btn-cancel-border: #ff3b30;
+  --theme-btn-confirm-bg: rgba(0, 255, 106, 0.2);
+  --theme-btn-confirm-border: #00ff6a;
 
   /* ===== HEROIC BADGE ===== */
-  --theme-heroic-bg: rgba(15, 23, 42, 0.9);
-  --theme-heroic-border: #ffd700;
-  --theme-heroic-glow: 0 0 8px #ffd700;
-  --theme-heroic-star: #ffd700;
+  --theme-heroic-bg: rgba(10, 22, 40, 0.95);
+  --theme-heroic-border: #ffcc00;
+  --theme-heroic-glow: 0 0 8px #ffcc00;
+  --theme-heroic-star: #ffcc00;
 
   /* ===== GLOW EFFECTS ===== */
-  --theme-glow-primary: 0 0 10px rgba(0, 243, 255, 0.5);
-  --theme-glow-secondary: 0 0 10px rgba(0, 255, 65, 0.5);
-  --theme-glow-accent: 0 0 10px rgba(255, 171, 0, 0.5);
-  --theme-glow-error: 0 0 10px rgba(239, 68, 68, 0.5);
+  --theme-glow-primary: 0 0 10px rgba(0, 229, 255, 0.4);
+  --theme-glow-secondary: 0 0 10px rgba(0, 255, 106, 0.4);
+  --theme-glow-accent: 0 0 10px rgba(255, 149, 0, 0.4);
+  --theme-glow-error: 0 0 10px rgba(255, 59, 48, 0.4);
 
   /* ===== SHADOWS ===== */
-  --theme-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
-  --theme-shadow-md: 0 4px 6px rgba(0, 0, 0, 0.5);
-  --theme-shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.5);
+  --theme-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.6);
+  --theme-shadow-md: 0 4px 6px rgba(0, 0, 0, 0.55);
+  --theme-shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.6);
 
   /* ===== OVERLAYS - DISABLED for performance ===== */
   --theme-scanline-opacity: 0;
