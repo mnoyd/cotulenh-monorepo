@@ -295,14 +295,53 @@ export class MoveSession {
   }
 
   /**
-   * Add an InternalMove to the session
-   * Converts to command and executes immediately
+   * Add an InternalMove to the session.
+   * Detects recombine moves and handles them by replaying with combined piece.
+   * Converts to command and executes immediately.
    */
   addMove(move: InternalMove): void {
+    // Check if this is a recombine move (remaining piece targeting a deployed square)
+    if (this.isDeploy && !this.isEmpty) {
+      const targetSquare = algebraic(move.to)
+      const pieceType = move.piece.type
+
+      if (this.isRecombineTarget(targetSquare, pieceType)) {
+        this._executeRecombine({ square: targetSquare, piece: pieceType })
+        return
+      }
+    }
+
     const command = createMoveCommand(this._game, move)
     command.execute()
     this._commands.push(command)
     this._game['_movesCache'].clear()
+  }
+
+  /**
+   * Execute a recombine: cancel current moves, replay with combined piece.
+   * @private
+   */
+  private _executeRecombine(option: RecombineOption): void {
+    const moves = [...this.moves]
+    this.cancel()
+
+    try {
+      const modifiedMoves = applyRecombineToMoves(moves, option)
+      for (const modMove of modifiedMoves) {
+        const command = createMoveCommand(this._game, modMove)
+        command.execute()
+        this._commands.push(command)
+      }
+      this._game['_movesCache'].clear()
+    } catch {
+      // If recombine fails, restore original moves
+      for (const origMove of moves) {
+        const command = createMoveCommand(this._game, origMove)
+        command.execute()
+        this._commands.push(command)
+      }
+      this._game['_movesCache'].clear()
+    }
   }
 
   /**
@@ -593,10 +632,13 @@ export class MoveSession {
 
   /**
    * Check if a move to target square with given piece type is a recombine attempt.
-   * Returns true if the target is a deployed square and piece is from remaining.
+   * Returns true if the target is a deployed square and piece is a cargo piece (not the carrier).
    */
   isRecombineTarget(targetSquare: Square, pieceType: PieceSymbol): boolean {
     if (!this.isDeploy || this.isEmpty) return false
+
+    // Carrier moving is not a recombine - it's completing the deploy
+    if (pieceType === this.originalPiece.type) return false
 
     const isDeployedSquare = this.moves.some(
       (m) => algebraic(m.to) === targetSquare,
@@ -673,12 +715,16 @@ export class MoveSession {
       )
       if (!deployedMove) continue
 
+      // Calculate combined piece for the recombine
+      const combinedPiece = combinePieces([deployedMove.piece, remainingPiece])
+
       moves.push({
         color: this.turn,
         from: this.stackSquare,
         to: deployedMove.to,
         piece: remainingPiece,
-        flags: BITS.DEPLOY,
+        flags: BITS.DEPLOY | BITS.COMBINATION,
+        combined: combinedPiece ?? undefined,
       })
     }
 

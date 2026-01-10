@@ -63,12 +63,7 @@ import {
   getCheckAirDefenseZone,
   updateAirDefensePiecesPosition,
 } from './air-defense.js'
-import {
-  MoveSession,
-  handleMove,
-  MoveResult,
-  tryRecombine,
-} from './move-session.js'
+import { MoveSession, handleMove, MoveResult } from './move-session.js'
 import {
   createError,
   ErrorCode,
@@ -1460,31 +1455,8 @@ export class CoTuLenh {
   ): MoveResult | null {
     let internalMove: InternalMove | null = null
 
-    // Check for auto-recombine scenario using MoveSession's encapsulated logic
-    const session = this.getSession()
-    if (
-      session &&
-      typeof move === 'object' &&
-      'to' in move &&
-      'piece' in move
-    ) {
-      const targetSquare = move.to as Square
-      const pieceType = move.piece as PieceSymbol
-
-      if (session.isRecombineTarget(targetSquare, pieceType)) {
-        // Attempt recombine (prefer recombine over separate move)
-        const recombineResult = tryRecombine(this, {
-          square: targetSquare,
-          piece: pieceType,
-        })
-        if (recombineResult.success && recombineResult.result) {
-          return recombineResult.result
-        }
-        // Fall through to normal validation if recombine fails
-      }
-    }
-
     // 1. Parse move
+    // Note: Recombine detection is now handled inside MoveSession.addMove()
     if (typeof move === 'string') {
       internalMove = this._moveFromSan(move, strict)
     } else if (typeof move === 'object') {
