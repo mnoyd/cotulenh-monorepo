@@ -171,29 +171,6 @@ export function userMove(state: HeadlessState, origMove: cg.OrigMove, destMove: 
   return false;
 }
 
-/**
- * Attempts to recombine a piece from stack/origin with a deployed piece.
- * Returns true if recombine was triggered, false otherwise.
- */
-export function tryUserRecombine(state: HeadlessState, origMove: cg.OrigMove, destSquare: cg.Key): boolean {
-  if (!state.movable.session?.options) return false;
-
-  const fromStack = isPieceFromStack(state, origMove);
-  const isOrigin = state.deploySession && origMove.square === state.deploySession.originSquare;
-
-  if (!(fromStack || isOrigin)) return false;
-
-  const option = state.movable.session.options.find(
-    o => o.square === destSquare && o.piece === origMove.type,
-  );
-
-  if (!option || !state.movable.events.session?.recombine) return false;
-
-  state.movable.events.session.recombine(option);
-  unselect(state);
-  return true;
-}
-
 export function endUserNormalMove(
   state: HeadlessState,
   result: MoveResult,
@@ -305,9 +282,6 @@ export function selectSquare(
     const isOrigin = state.deploySession && state.selected.square === state.deploySession.originSquare;
 
     if (fromStack || isOrigin) {
-      if (tryUserRecombine(state, state.selected, selectedSquare)) {
-        return;
-      }
       if (userMove(state, state.selected, { square: selectedSquare } as cg.DestMove)) {
         state.stats.dragged = false;
         return;

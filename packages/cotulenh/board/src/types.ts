@@ -125,8 +125,3 @@ export interface SingleMove {
   dest: Key;
   capturedPiece?: Piece;
 }
-
-export interface RecombineOption {
-  piece: Role;
-  square: Key;
-}

@@ -457,15 +457,6 @@ function computeSquareClasses(s: State): cg.SquareClasses {
     ) {
       addSquare(squares, s.deploySession.originSquare, 'deploy-incomplete');
     }
-
-    // Draw Recombine options
-    if (s.movable.session?.options) {
-      if (s.movable.session?.options) {
-        for (const opt of s.movable.session.options) {
-          addSquare(squares, opt.square, 'recombine-available');
-        }
-      }
-    }
   }
 
   if (s.highlight.custom) {

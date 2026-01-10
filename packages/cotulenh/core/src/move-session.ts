@@ -26,11 +26,67 @@ import { createError, ErrorCode } from '@cotulenh/common'
 import { CoTuLenh } from './cotulenh.js'
 
 /**
- * Result of a move operation - unified for both standard and deploy moves
+ * Internal interface for recombine operations
  */
-export interface RecombineOption {
+interface RecombineOption {
   square: Square // The square of the deployed piece we want to recombine with
   piece: PieceSymbol // The piece from the stack we are adding
+}
+
+/**
+ * Modify moves array to apply a recombine option to the target move.
+ */
+function applyRecombineToMoves(
+  moves: InternalMove[],
+  option: RecombineOption,
+): InternalMove[] {
+  const moveIndex = moves.findIndex((m) => algebraic(m.to) === option.square)
+  if (moveIndex === -1) {
+    throw createError(
+      ErrorCode.MOVE_PIECE_NOT_FOUND,
+      `No move found targeting square ${option.square}`,
+    )
+  }
+
+  const targetMove = moves[moveIndex]
+  const stackPiece: Piece = {
+    type: option.piece,
+    color: targetMove.piece.color,
+  }
+
+  const combinedPiece = combinePieces([targetMove.piece, stackPiece])
+  if (!combinedPiece) {
+    throw createError(
+      ErrorCode.COMBINATION_FAILED,
+      `Failed to combine ${targetMove.piece.type} with ${option.piece}`,
+    )
+  }
+
+  const newMoves: InternalMove[] = structuredClone(moves)
+
+  newMoves[moveIndex] = {
+    ...newMoves[moveIndex],
+    piece: combinedPiece,
+    combined: combinedPiece,
+  }
+
+  return newMoves
+}
+
+/**
+ * Try to replay moves on a game instance.
+ * Returns true if all moves succeed.
+ */
+function replayMovesOnGame(game: CoTuLenh, moves: InternalMove[]): boolean {
+  try {
+    for (const move of moves) {
+      if (!game.move(move)) return false
+    }
+    return true
+  } catch {
+    game.getSession()?.cancel()
+    return false
+  }
 }
 
 export class MoveResult {
@@ -239,14 +295,60 @@ export class MoveSession {
   }
 
   /**
-   * Add an InternalMove to the session
-   * Converts to command and executes immediately
+   * Add an InternalMove to the session.
+   * Detects recombine moves and handles them by replaying with combined piece.
+   * Converts to command and executes immediately.
    */
   addMove(move: InternalMove): void {
+    // Check if this is a recombine move (remaining piece targeting a deployed square)
+    if (this.isDeploy && !this.isEmpty) {
+      const targetSquare = algebraic(move.to)
+      const pieceType = move.piece.type
+
+      if (this.isRecombineTarget(targetSquare, pieceType)) {
+        this._executeRecombine({ square: targetSquare, piece: pieceType })
+        return
+      }
+    }
+
     const command = createMoveCommand(this._game, move)
     command.execute()
     this._commands.push(command)
     this._game['_movesCache'].clear()
+  }
+
+  /**
+   * Execute a recombine: cancel current moves, replay with combined piece.
+   * Uses game.move() to properly create a new session via MoveSession.ensure().
+   * @private
+   */
+  private _executeRecombine(option: RecombineOption): void {
+    const moves = [...this.moves]
+    const game = this._game
+    this.cancel()
+
+    try {
+      const modifiedMoves = applyRecombineToMoves(moves, option)
+
+      // Replay through game.move() which creates a new session via MoveSession.ensure()
+      for (const modMove of modifiedMoves) {
+        const result = game.move(modMove)
+        if (!result) {
+          // If replay fails, cancel and restore original moves
+          game.getSession()?.cancel()
+          for (const origMove of moves) {
+            game.move(origMove)
+          }
+          return
+        }
+      }
+    } catch {
+      // If recombine fails, restore original moves
+      game.getSession()?.cancel()
+      for (const origMove of moves) {
+        game.move(origMove)
+      }
+    }
   }
 
   /**
@@ -536,10 +638,104 @@ export class MoveSession {
   }
 
   /**
-   * Get available Recombine options.
+   * Check if a move to target square with given piece type is a recombine attempt.
+   * Returns true if the target is a deployed square and piece is a cargo piece (not the carrier).
    */
-  getOptions(): RecombineOption[] {
-    return getValidRecombineOptions(this)
+  isRecombineTarget(targetSquare: Square, pieceType: PieceSymbol): boolean {
+    if (!this.isDeploy || this.isEmpty) return false
+
+    // Carrier moving is not a recombine - it's completing the deploy
+    if (pieceType === this.originalPiece.type) return false
+
+    const isDeployedSquare = this.moves.some(
+      (m) => algebraic(m.to) === targetSquare,
+    )
+    const isRemainingPiece = this.remaining.some((p) => p.type === pieceType)
+
+    return isDeployedSquare && isRemainingPiece
+  }
+
+  /**
+   * Get valid recombine options as RecombineOption[].
+   * Validates terrain, combination rules, and replays on a test game to ensure validity.
+   */
+  getRecombineOptions(): RecombineOption[] {
+    if (!this.isDeploy || this.isEmpty) return []
+
+    const remaining = this.remaining
+    const sessionMoves = this.moves
+
+    if (remaining.length === 0 || sessionMoves.length === 0) return []
+
+    const validOptions: RecombineOption[] = []
+    const startFEN = this.startFEN
+    const moves = [...sessionMoves]
+
+    for (const remainingPiece of remaining) {
+      for (const move of sessionMoves) {
+        const combinedPiece = combinePieces([move.piece, remainingPiece])
+        if (!combinedPiece) continue
+
+        const terrainMask = getMovementMask(combinedPiece.type)
+        if (!terrainMask[move.to]) continue
+
+        const option: RecombineOption = {
+          square: algebraic(move.to),
+          piece: remainingPiece.type,
+        }
+
+        // Validate by replaying modified moves on a fresh game
+        try {
+          const modifiedMoves = applyRecombineToMoves(moves, option)
+          const testGame = new CoTuLenh(startFEN)
+          if (replayMovesOnGame(testGame, modifiedMoves)) {
+            validOptions.push(option)
+          }
+        } catch {
+          // Invalid combination, skip
+        }
+      }
+    }
+
+    return validOptions
+  }
+
+  /**
+   * Generate recombine moves as InternalMove[] for move generation.
+   * These moves allow remaining pieces to target deployed squares for recombination.
+   * @param filterPiece - Optional piece type filter
+   */
+  generateRecombineMoves(filterPiece?: PieceSymbol): InternalMove[] {
+    const options = this.getRecombineOptions()
+    if (options.length === 0) return []
+
+    const moves: InternalMove[] = []
+
+    for (const option of options) {
+      if (filterPiece && option.piece !== filterPiece) continue
+
+      const remainingPiece = this.remaining.find((p) => p.type === option.piece)
+      if (!remainingPiece) continue
+
+      const deployedMove = this.moves.find(
+        (m) => algebraic(m.to) === option.square,
+      )
+      if (!deployedMove) continue
+
+      // Calculate combined piece for the recombine
+      const combinedPiece = combinePieces([deployedMove.piece, remainingPiece])
+
+      moves.push({
+        color: this.turn,
+        from: this.stackSquare,
+        to: deployedMove.to,
+        piece: remainingPiece,
+        flags: BITS.DEPLOY | BITS.COMBINATION,
+        combined: combinedPiece ?? undefined,
+      })
+    }
+
+    return moves
   }
 }
 
@@ -561,7 +757,8 @@ export function handleMove(
   move: InternalMove,
   autoCommit: boolean = true,
 ): MoveResult {
-  // 1. Ensure Session
+  // Note: Auto-recombine detection is handled in CoTuLenh.move() before validation
+  // Ensure Session
   const session = MoveSession.ensure(game, move)
 
   // 2. Add move to session (executes immediately on board)
@@ -581,108 +778,9 @@ export function handleMove(
 }
 
 /**
- * Modify moves array to apply a recombine option to the target move.
+ * Result of a recombine operation (internal)
  */
-function applyRecombineToMoves(
-  moves: InternalMove[],
-  option: RecombineOption,
-): InternalMove[] {
-  const moveIndex = moves.findIndex((m) => algebraic(m.to) === option.square)
-  if (moveIndex === -1) {
-    throw createError(
-      ErrorCode.MOVE_PIECE_NOT_FOUND,
-      `No move found targeting square ${option.square}`,
-    )
-  }
-
-  const targetMove = moves[moveIndex]
-  const stackPiece: Piece = {
-    type: option.piece,
-    color: targetMove.piece.color,
-  }
-
-  const combinedPiece = combinePieces([targetMove.piece, stackPiece])
-  if (!combinedPiece) {
-    throw createError(
-      ErrorCode.COMBINATION_FAILED,
-      `Failed to combine ${targetMove.piece.type} with ${option.piece}`,
-    )
-  }
-
-  const newMoves: InternalMove[] = structuredClone(moves)
-
-  newMoves[moveIndex] = {
-    ...newMoves[moveIndex],
-    piece: combinedPiece,
-    combined: combinedPiece,
-  }
-
-  return newMoves
-}
-
-/**
- * Try to replay moves on a fresh game instance.
- */
-function replayMoves(game: CoTuLenh, moves: InternalMove[]): boolean {
-  try {
-    for (const move of moves) {
-      if (!game.move(move)) return false
-    }
-    return true
-  } catch {
-    game.getSession()?.cancel()
-    return false
-  }
-}
-
-/**
- * Get all valid recombine options for the session.
- * Tests each candidate by replaying moves on a reused game instance.
- */
-function getValidRecombineOptions(session: MoveSession): RecombineOption[] {
-  if (!session.isDeploy || session.isEmpty) {
-    return []
-  }
-
-  const remaining = session.remaining
-  const sessionMoves = session.moves
-
-  if (remaining.length === 0 || sessionMoves.length === 0) {
-    return []
-  }
-
-  const startFEN = session.startFEN
-  const moves = [...sessionMoves]
-  const validOptions: RecombineOption[] = []
-  const testGame = new CoTuLenh(startFEN)
-
-  for (const remainingPiece of remaining) {
-    for (const move of sessionMoves) {
-      const option: RecombineOption = {
-        square: algebraic(move.to),
-        piece: remainingPiece.type,
-      }
-
-      try {
-        const modifiedMoves = applyRecombineToMoves(moves, option)
-        if (replayMoves(testGame, modifiedMoves)) {
-          validOptions.push(option)
-        }
-      } catch {
-        // Invalid combination, skip
-      }
-
-      testGame.load(startFEN)
-    }
-  }
-
-  return validOptions
-}
-
-/**
- * Result of a recombine operation
- */
-export interface RecombineResult {
+interface RecombineResult {
   success: boolean
   result?: MoveResult
 }
@@ -692,9 +790,9 @@ export interface RecombineResult {
  * Cancels current session and replays moves with the recombined piece.
  * Returns the MoveResult so the caller can update UI and decide when to commit.
  */
-export function recombine(
+export function tryRecombine(
   game: CoTuLenh,
-  option: RecombineOption,
+  option: { square: Square; piece: PieceSymbol },
 ): RecombineResult {
   const session = game.getSession()
   if (!session) {

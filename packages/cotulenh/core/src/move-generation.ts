@@ -957,6 +957,34 @@ export function generateDeployMoves(
     filterPiece,
   )
 
+  // Generate recombine moves using MoveSession's encapsulated logic
+  if (deploySession) {
+    const recombineMoves = deploySession.generateRecombineMoves(filterPiece)
+
+    // Build a map of recombine moves by key for replacement
+    const recombineByKey = new Map<string, InternalMove>()
+    for (const recombineMove of recombineMoves) {
+      const moveKey = `${recombineMove.piece.type}-${recombineMove.to}`
+      recombineByKey.set(moveKey, recombineMove)
+    }
+
+    // Replace regular deploy moves with recombine moves when targeting same square
+    // Recombine takes priority because deploying to a deployed square always combines
+    for (let i = 0; i < moves.length; i++) {
+      const moveKey = `${moves[i].piece.type}-${moves[i].to}`
+      const recombineMove = recombineByKey.get(moveKey)
+      if (recombineMove) {
+        moves[i] = recombineMove
+        recombineByKey.delete(moveKey)
+      }
+    }
+
+    // Add remaining recombine moves that don't have corresponding regular moves
+    for (const recombineMove of recombineByKey.values()) {
+      moves.push(recombineMove)
+    }
+  }
+
   return moves
 }
 

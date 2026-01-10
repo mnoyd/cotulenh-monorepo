@@ -1,10 +1,4 @@
-import {
-  MoveResult,
-  type Color,
-  type RecombineOption,
-  type Square,
-  type Piece
-} from '@cotulenh/core';
+import { MoveResult, type Color, type Square, type Piece } from '@cotulenh/core';
 
 /**
  * Represents the possible states of the game.
@@ -32,7 +26,6 @@ export interface DeploySession {
   originalPiece: Piece;
   moves: DeployAction[];
   remaining: Piece[];
-  getOptions?: () => RecombineOption[];
 }
 
 /**
@@ -57,7 +50,6 @@ export interface UIDeployState {
 
   actions: DeployAction[]; // Actions from the deploy session
   remainingPieces: Piece[]; // Remaining pieces to deploy
-  recombineOptions: RecombineOption[]; // Available recombine options
 }
 
 /**

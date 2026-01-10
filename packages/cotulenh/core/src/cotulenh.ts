@@ -63,13 +63,7 @@ import {
   getCheckAirDefenseZone,
   updateAirDefensePiecesPosition,
 } from './air-defense.js'
-import {
-  MoveSession,
-  handleMove,
-  MoveResult,
-  type RecombineOption,
-  recombine,
-} from './move-session.js'
+import { MoveSession, handleMove, MoveResult } from './move-session.js'
 import {
   createError,
   ErrorCode,
@@ -77,11 +71,7 @@ import {
   ValidationResult,
 } from '@cotulenh/common'
 
-export {
-  MoveResult,
-  type RecombineOption,
-  type RecombineResult,
-} from './move-session.js'
+export { MoveResult } from './move-session.js'
 
 // Structure for storing history states
 interface History {
@@ -1271,7 +1261,7 @@ export class CoTuLenh {
     let overlyDisambiguated = false
 
     const regex =
-      /^(\(.*\))?(\+)?([CITMEAGSFNH])?([a-k]?(?:1[0-2]|[1-9])?)([x<>\+&-]|>x)?([a-k](?:1[0-2]|[1-9]))([#\^]?)?$/
+      /^(\(.*\))?(\+)?([CITMEAGSFNH])?([a-k]?(?:1[0-2]|[1-9])?)([x<>\+&-]|>x|>&)?([a-k](?:1[0-2]|[1-9]))([#\^]?)?$/
     matches = cleanMove.match(regex)
     if (matches) {
       pieceType = matches[3] as PieceSymbol
@@ -1466,6 +1456,7 @@ export class CoTuLenh {
     let internalMove: InternalMove | null = null
 
     // 1. Parse move
+    // Note: Recombine detection is now handled inside MoveSession.addMove()
     if (typeof move === 'string') {
       internalMove = this._moveFromSan(move, strict)
     } else if (typeof move === 'object') {
@@ -1479,19 +1470,6 @@ export class CoTuLenh {
 
     // 4. Execute move
     return handleMove(this, internalMove)
-  }
-  // deployMove() method removed - use handleDeployMove() from move-session.ts instead
-  // The new architecture uses MoveSession for unified move handling
-
-  /**
-   * Executes a recombine operation safely.
-   * @param option - The recombine option containing the square and piece to combine
-   * @returns RecombineResult with success status and MoveResult
-   */
-  public recombine(
-    option: RecombineOption,
-  ): import('./move-session.js').RecombineResult {
-    return recombine(this, option)
   }
 
   /**
