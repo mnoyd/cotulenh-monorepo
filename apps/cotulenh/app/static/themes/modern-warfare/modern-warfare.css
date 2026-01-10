@@ -48,19 +48,23 @@
   --theme-team-red: #ff9500;
   --theme-team-red-glow: rgba(255, 149, 0, 0.5);
 
-  /* ===== BOARD ===== */
-  --theme-board-bg: #142640;
-  --theme-board-border: rgba(0, 229, 255, 0.35);
+  /* ===== BOARD - BATTLEFIELD STYLE ===== */
+  /* Satellite/Tactical Map Aesthetic - Earth & Concrete tones */
+  --theme-board-bg: #1a1a1a;
+  --theme-board-border: #4a5a4a;
   --theme-board-radius: 2px;
-  --theme-board-shadow: inset 0 0 100px rgba(0, 0, 0, 0.9);
-  --theme-board-filter: hue-rotate(160deg) saturate(1.4) brightness(0.85) contrast(1.1);
+  --theme-board-shadow: inset 0 0 50px rgba(0, 0, 0, 0.8);
+  --theme-board-filter: sepia(0.2) contrast(1.1) brightness(0.9);
+  /* Gritty look */
   --theme-board-image: url('/assets/board-grid.svg');
 
-  /* Board Squares - Higher contrast tactical grid */
-  --theme-board-light: #1a3050;
-  --theme-board-dark: #0c1a2e;
-  --theme-board-highlight: rgba(0, 229, 255, 0.18);
-  --theme-board-selected: rgba(0, 255, 106, 0.15);
+  /* Board Squares - Mud & Concrete */
+  --theme-board-light: #5d665e;
+  /* Concrete / Pale Grass */
+  --theme-board-dark: #2d332d;
+  /* Dark Earth / Mud */
+  --theme-board-highlight: rgba(255, 204, 0, 0.2);
+  --theme-board-selected: rgba(0, 255, 106, 0.3);
   --theme-board-selected-border: #00ff6a;
   --theme-board-selected-radius: 0;
   --theme-board-last-move-from: rgba(0, 229, 255, 0.08);
@@ -150,42 +154,52 @@
 piece.dragging.air_force.blue {
   background-image: url('/themes/modern-warfare/pieces/blue/air-force.svg');
 }
+
 .cg-wrap piece.anti_air.blue,
 piece.dragging.anti_air.blue {
   background-image: url('/themes/modern-warfare/pieces/blue/anti-air.svg');
 }
+
 .cg-wrap piece.artillery.blue,
 piece.dragging.artillery.blue {
   background-image: url('/themes/modern-warfare/pieces/blue/artillery.svg');
 }
+
 .cg-wrap piece.commander.blue,
 piece.dragging.commander.blue {
   background-image: url('/themes/modern-warfare/pieces/blue/commander.svg');
 }
+
 .cg-wrap piece.engineer.blue,
 piece.dragging.engineer.blue {
   background-image: url('/themes/modern-warfare/pieces/blue/engineer.svg');
 }
+
 .cg-wrap piece.headquarter.blue,
 piece.dragging.headquarter.blue {
   background-image: url('/themes/modern-warfare/pieces/blue/headquarter.svg');
 }
+
 .cg-wrap piece.infantry.blue,
 piece.dragging.infantry.blue {
   background-image: url('/themes/modern-warfare/pieces/blue/infantry.svg');
 }
+
 .cg-wrap piece.militia.blue,
 piece.dragging.militia.blue {
   background-image: url('/themes/modern-warfare/pieces/blue/militia.svg');
 }
+
 .cg-wrap piece.missile.blue,
 piece.dragging.missile.blue {
   background-image: url('/themes/modern-warfare/pieces/blue/missile.svg');
 }
+
 .cg-wrap piece.navy.blue,
 piece.dragging.navy.blue {
   background-image: url('/themes/modern-warfare/pieces/blue/navy.svg');
 }
+
 .cg-wrap piece.tank.blue,
 piece.dragging.tank.blue {
   background-image: url('/themes/modern-warfare/pieces/blue/tank.svg');
@@ -196,42 +210,52 @@ piece.dragging.tank.blue {
 piece.dragging.air_force.red {
   background-image: url('/themes/modern-warfare/pieces/red/air-force.svg');
 }
+
 .cg-wrap piece.anti_air.red,
 piece.dragging.anti_air.red {
   background-image: url('/themes/modern-warfare/pieces/red/anti-air.svg');
 }
+
 .cg-wrap piece.artillery.red,
 piece.dragging.artillery.red {
   background-image: url('/themes/modern-warfare/pieces/red/artillery.svg');
 }
+
 .cg-wrap piece.commander.red,
 piece.dragging.commander.red {
   background-image: url('/themes/modern-warfare/pieces/red/commander.svg');
 }
+
 .cg-wrap piece.engineer.red,
 piece.dragging.engineer.red {
   background-image: url('/themes/modern-warfare/pieces/red/engineer.svg');
 }
+
 .cg-wrap piece.headquarter.red,
 piece.dragging.headquarter.red {
   background-image: url('/themes/modern-warfare/pieces/red/headquarter.svg');
 }
+
 .cg-wrap piece.infantry.red,
 piece.dragging.infantry.red {
   background-image: url('/themes/modern-warfare/pieces/red/infantry.svg');
 }
+
 .cg-wrap piece.militia.red,
 piece.dragging.militia.red {
   background-image: url('/themes/modern-warfare/pieces/red/militia.svg');
 }
+
 .cg-wrap piece.missile.red,
 piece.dragging.missile.red {
   background-image: url('/themes/modern-warfare/pieces/red/missile.svg');
 }
+
 .cg-wrap piece.navy.red,
 piece.dragging.navy.red {
   background-image: url('/themes/modern-warfare/pieces/red/navy.svg');
 }
+
 .cg-wrap piece.tank.red,
 piece.dragging.tank.red {
   background-image: url('/themes/modern-warfare/pieces/red/tank.svg');
