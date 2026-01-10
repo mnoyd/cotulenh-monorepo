@@ -1,39 +1,41 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
   <defs>
-    <radialGradient id="flame" cx="50%" cy="50%" r="50%">
+    <radialGradient id="blast" cx="50%" cy="50%" r="50%">
       <stop offset="0%" stop-color="#fff"/>
-      <stop offset="50%" stop-color="#ffcc00"/>
-      <stop offset="100%" stop-color="#ff4400"/>
+      <stop offset="50%" stop-color="#ff9900"/>
+      <stop offset="100%" stop-color="#333"/>
     </radialGradient>
-    <linearGradient id="bodyGradRed" x1="0%" y1="0%" x2="0%" y2="100%">
+    <linearGradient id="bodyGradRed" x1="0%" y1="0%" x2="100%" y2="100%">
       <stop offset="0%" stop-color="#ffeecc"/>
       <stop offset="50%" stop-color="#50322c"/>
       <stop offset="100%" stop-color="#34201a"/>
     </linearGradient>
-    <filter id="blurFlame">
+    <filter id="blurBlast">
       <feGaussianBlur stdDeviation="3"/>
     </filter>
   </defs>
   <g>
-    <!-- Flame Trail -->
-    <path d="M50 85 L45 100 L50 95 L55 100 L50 85" fill="url(#flame)" filter="url(#blurFlame)"/>
-    <path d="M50 85 L48 95 L50 92 L52 95 L50 85" fill="#fff" opacity="0.8"/>
-
-    <!-- Missile Body -->
-    <path d="M50 5 Q55 10, 60 25 L60 85 L40 85 L40 25 Q45 10, 50 5 Z" 
-          fill="url(#bodyGradRed)" stroke="#34201a" />
-          
+    <!-- Silo Hatch (Opened) -->
+    <path d="M20 70 L50 85 L80 70 L50 55 Z" fill="#111" stroke="#333"/>
+    <path d="M10 70 L40 55 L30 75 Z" fill="#34201a" stroke="#34201a"/> <!-- Door 1 -->
+    <path d="M90 70 L60 55 L70 75 Z" fill="#34201a" stroke="#34201a"/> <!-- Door 2 -->
+    
+    <!-- Blast Cloud -->
+    <circle cx="50" cy="80" r="15" fill="url(#blast)" filter="url(#blurBlast)"/>
+    
+    <!-- Missile Body (Launching Angled) -->
+    <path d="M45 75 L45 30 Q50 20, 55 30 L55 75" fill="url(#bodyGradRed)" stroke="#34201a"/>
+    <path d="M45 75 L35 85 L55 85 L65 75" fill="#50322c"/> <!-- Fins Base -->
+    
     <!-- Fins -->
-    <path d="M40 75 L20 90 L40 85" fill="#50322c" stroke="#34201a"/>
-    <path d="M60 75 L80 90 L60 85" fill="#50322c" stroke="#34201a"/>
+    <path d="M45 70 L35 75 L45 75" fill="#50322c"/>
+    <path d="M55 70 L65 75 L55 75" fill="#50322c"/>
     
-    <!-- Mid Fins -->
-    <path d="M40 40 L30 50 L40 50" fill="#50322c" stroke="#34201a"/>
-    <path d="M60 40 L70 50 L60 50" fill="#50322c" stroke="#34201a"/>
+    <!-- Warhead -->
+    <path d="M45 30 Q50 15, 55 30" fill="#ffeeaa"/>
+    <path d="M45 35 L55 35" stroke="#ff9500" stroke-width="1"/>
     
-    <!-- Warhead Markings -->
-    <path d="M40 25 L60 25" stroke="#FFFFFF" stroke-width="0.5"/>
-    <path d="M50 35 L55 40 L45 40 Z" fill="#ff9500"/>
-    <circle cx="50" cy="38" r="1.5" fill="#111"/>
+    <!-- Smoke Trail -->
+    <path d="M50 85 Q40 95, 50 100" stroke="#fff" stroke-width="5" stroke-opacity="0.5" filter="url(#blurBlast)"/>
   </g>
 </svg>

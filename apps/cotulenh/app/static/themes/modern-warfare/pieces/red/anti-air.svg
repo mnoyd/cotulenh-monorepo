@@ -1,39 +1,53 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
   <defs>
-    <linearGradient id="chassisRed" x1="0%" y1="0%" x2="100%" y2="0%">
+    <linearGradient id="bodyGradRed" x1="0%" y1="0%" x2="0%" y2="100%">
       <stop offset="0%" stop-color="#50322c"/>
       <stop offset="50%" stop-color="#8a5a4a"/>
       <stop offset="100%" stop-color="#50322c"/>
     </linearGradient>
+    <filter id="shadowRed">
+      <feDropShadow dx="1" dy="1" stdDeviation="1" flood-opacity="0.5"/>
+    </filter>
   </defs>
-  <g>
-    <!-- Truck Chassis -->
-    <rect x="25" y="20" width="50" height="60" rx="5" fill="url(#chassisRed)" stroke="#34201a" stroke-width="1"/>
+  <g filter="url(#shadowRed)">
+    <!-- Deployed Outriggers (Cruciform Base) - "Static/Towed" look -->
+    <path d="M50 50 L20 80 L15 75 L45 45 Z" fill="#34201a" stroke="#111"/> <!-- Rear Left -->
+    <path d="M50 50 L80 80 L85 75 L55 45 Z" fill="#34201a" stroke="#111"/> <!-- Rear Right -->
+    <path d="M50 50 L20 20 L25 15 L55 45 Z" fill="#34201a" stroke="#111"/> <!-- Front Left -->
+    <path d="M50 50 L80 20 L75 15 L45 45 Z" fill="#34201a" stroke="#111"/> <!-- Front Right -->
     
-    <!-- Wheels -->
-    <rect x="15" y="25" width="10" height="15" rx="2" fill="#111" />
-    <rect x="15" y="55" width="10" height="15" rx="2" fill="#111" />
-    <rect x="75" y="25" width="10" height="15" rx="2" fill="#111" />
-    <rect x="75" y="55" width="10" height="15" rx="2" fill="#111" />
+    <!-- Spikes/ Feet on outriggers -->
+    <circle cx="18" cy="78" r="3" fill="#111"/>
+    <circle cx="82" cy="78" r="3" fill="#111"/>
+    <circle cx="22" cy="18" r="3" fill="#111"/>
+    <circle cx="78" cy="18" r="3" fill="#111"/>
+
+    <!-- Central Turret Platform -->
+    <circle cx="50" cy="50" r="15" fill="#50322c" stroke="#34201a"/>
     
-    <!-- Turret Base -->
-    <circle cx="50" cy="50" r="18" fill="#5e4034" stroke="#34201a"/>
+    <!-- The AA GUNS (Twin Barrel) -->
+    <!-- Left Gun -->
+    <rect x="40" y="5" width="6" height="60" fill="#605050" stroke="#111"/>
+    <rect x="38" y="5" width="10" height="8" fill="#111"/> <!-- Muzzle Brake -->
+    <rect x="38" y="25" width="10" height="4" fill="#333"/> <!-- Clamp -->
     
-    <!-- Missile Pods -->
-    <rect x="30" y="35" width="10" height="30" fill="#50322c" stroke="#34201a"/>
-    <rect x="60" y="35" width="10" height="30" fill="#50322c" stroke="#34201a"/>
+    <!-- Right Gun -->
+    <rect x="54" y="5" width="6" height="60" fill="#605050" stroke="#111"/>
+    <rect x="52" y="5" width="10" height="8" fill="#111"/> <!-- Muzzle Brake -->
+    <rect x="52" y="25" width="10" height="4" fill="#333"/> <!-- Clamp -->
     
-    <!-- Missiles Tips -->
-    <circle cx="35" cy="40" r="3" fill="#ff9500"/>
-    <circle cx="35" cy="50" r="3" fill="#ff9500"/>
-    <circle cx="35" cy="60" r="3" fill="#ff9500"/>
-    <circle cx="65" cy="40" r="3" fill="#ff9500"/>
-    <circle cx="65" cy="50" r="3" fill="#ff9500"/>
-    <circle cx="65" cy="60" r="3" fill="#ff9500"/>
+    <!-- Gun Breech / Mechanism -->
+    <rect x="35" y="45" width="30" height="20" rx="3" fill="#5e4034" stroke="#111"/>
     
-    <!-- Radar Dish -->
-    <path d="M42 20 Q50 10, 58 20" fill="none" stroke="#c99f8b" stroke-width="2"/>
-    <path d="M50 20 L50 35" stroke="#34201a" stroke-width="1"/>
-    <circle cx="50" cy="18" r="2" fill="#ff9500"/>
+    <!-- Gunner Shield -->
+    <path d="M30 40 L70 40 L65 30 L35 30 Z" fill="#8a5a4a" stroke="#34201a" opacity="0.9"/>
+    
+    <!-- Ammo Boxes -->
+    <rect x="25" y="45" width="10" height="15" fill="#5e4034" stroke="#111"/>
+    <rect x="65" y="45" width="10" height="15" fill="#5e4034" stroke="#111"/>
+    
+    <!-- Tow Hitch (Folded/Stowed at rear) -->
+    <rect x="48" y="65" width="4" height="15" fill="#333"/>
+    <circle cx="50" cy="80" r="3" fill="none" stroke="#333" stroke-width="2"/>
   </g>
 </svg>

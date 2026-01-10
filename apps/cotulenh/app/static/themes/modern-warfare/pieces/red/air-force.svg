@@ -1,39 +1,37 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
   <defs>
-    <linearGradient id="bodyGradRed" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#c99f8b"/>
-      <stop offset="50%" stop-color="#8a5a4a"/>
-      <stop offset="100%" stop-color="#50322c"/>
+    <linearGradient id="bodyGradRed" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#8a5a4a"/>
+      <stop offset="50%" stop-color="#50322c"/>
+      <stop offset="100%" stop-color="#34201a"/>
     </linearGradient>
-    <linearGradient id="glassRed" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#ffeebb"/>
-      <stop offset="100%" stop-color="#ff9500"/>
-    </linearGradient>
-    <filter id="shadowRed">
-      <feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.5"/>
+    <filter id="afterburnerRed">
+      <feGaussianBlur stdDeviation="2"/>
     </filter>
   </defs>
-  <g filter="url(#shadowRed)">
-    <!-- Main Fuselage (Stealth Shape) -->
-    <path d="M50 5 L65 35 L95 55 L70 65 L65 85 L50 95 L35 85 L30 65 L5 55 L35 35 Z" 
-          fill="url(#bodyGradRed)" stroke="#34201a" stroke-width="1"/>
+  <g>
+    <!-- Afterburner Trails (Action) -->
+    <path d="M20 80 Q10 85, 0 90" stroke="#ff9500" stroke-width="3" stroke-linecap="round" filter="url(#afterburnerRed)" opacity="0.8"/>
+    <path d="M30 75 Q20 80, 10 90" stroke="#ff9500" stroke-width="3" stroke-linecap="round" filter="url(#afterburnerRed)" opacity="0.8"/>
+
+    <!-- Jet Body (Isometric/Banking) -->
+    <!-- Left Wing -->
+    <path d="M10 50 L40 40 L45 60 L10 50" fill="#34201a" stroke="#1a2634"/>
     
-    <!-- Wings Detail -->
-    <path d="M65 35 L95 55 L70 65" fill="none" stroke="#50322c" stroke-width="0.5"/>
-    <path d="M35 35 L5 55 L30 65" fill="none" stroke="#50322c" stroke-width="0.5"/>
+    <!-- Fuselage -->
+    <path d="M40 40 L80 20 L90 25 L50 80 L40 70 Z" fill="url(#bodyGradRed)" stroke="#34201a" />
     
-    <!-- Stabilizers -->
-    <path d="M40 85 L30 95 L45 95 Z" fill="#50322c" stroke="#34201a" stroke-width="0.5"/>
-    <path d="M60 85 L70 95 L55 95 Z" fill="#50322c" stroke="#34201a" stroke-width="0.5"/>
+    <!-- Right Wing (Tilted up) -->
+    <path d="M80 20 L95 10 L90 40 L80 20" fill="#50322c" stroke="#34201a"/>
     
-    <!-- Cockpit Canopy -->
-    <ellipse cx="50" cy="45" rx="5" ry="12" fill="url(#glassRed)" stroke="#874f00" stroke-width="1"/>
+    <!-- Cockpit Canopy (Reflective) -->
+    <path d="M60 35 L75 30 L72 35 Z" fill="#ffeeaa" stroke="#ff9500" stroke-width="0.5"/>
     
-    <!-- Engine Glow -->
-    <path d="M45 95 Q50 100, 55 95" fill="none" stroke="#ff9500" stroke-width="2" stroke-opacity="0.8"/>
+    <!-- Vertical Stabilizers -->
+    <path d="M45 65 L35 75 L50 75 Z" fill="#34201a"/>
+    <path d="M55 25 L65 15 L70 25 Z" fill="#34201a"/>
     
-    <!-- Team Accents -->
-    <path d="M65 35 L75 55" stroke="#ff9500" stroke-width="1"/>
-    <path d="M35 35 L25 55" stroke="#ff9500" stroke-width="1"/>
+    <!-- Team Glow (Rim Light) -->
+    <path d="M80 20 L90 25 L50 80" fill="none" stroke="#ff9500" stroke-width="1.5" stroke-opacity="0.8"/>
   </g>
 </svg>
