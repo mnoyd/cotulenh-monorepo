@@ -680,6 +680,8 @@ describe('Remaining pieces have no move', () => {
     expect(remaining).toHaveLength(1)
     expect(remaining[0].type).toBe('h') // Headquarter
 
+    // HQ is stationary - it cannot move, so it cannot recombine either
+    // Session is complete because remaining piece (HQ) has no valid moves
     expect(session.isComplete).toBe(true)
   })
 })

@@ -67,8 +67,7 @@ import {
   MoveSession,
   handleMove,
   MoveResult,
-  type RecombineOption,
-  recombine,
+  tryRecombine,
 } from './move-session.js'
 import {
   createError,
@@ -77,11 +76,7 @@ import {
   ValidationResult,
 } from '@cotulenh/common'
 
-export {
-  MoveResult,
-  type RecombineOption,
-  type RecombineResult,
-} from './move-session.js'
+export { MoveResult } from './move-session.js'
 
 // Structure for storing history states
 interface History {
@@ -1271,7 +1266,7 @@ export class CoTuLenh {
     let overlyDisambiguated = false
 
     const regex =
-      /^(\(.*\))?(\+)?([CITMEAGSFNH])?([a-k]?(?:1[0-2]|[1-9])?)([x<>\+&-]|>x)?([a-k](?:1[0-2]|[1-9]))([#\^]?)?$/
+      /^(\(.*\))?(\+)?([CITMEAGSFNH])?([a-k]?(?:1[0-2]|[1-9])?)([x<>\+&-]|>x|>&)?([a-k](?:1[0-2]|[1-9]))([#\^]?)?$/
     matches = cleanMove.match(regex)
     if (matches) {
       pieceType = matches[3] as PieceSymbol
@@ -1465,6 +1460,30 @@ export class CoTuLenh {
   ): MoveResult | null {
     let internalMove: InternalMove | null = null
 
+    // Check for auto-recombine scenario using MoveSession's encapsulated logic
+    const session = this.getSession()
+    if (
+      session &&
+      typeof move === 'object' &&
+      'to' in move &&
+      'piece' in move
+    ) {
+      const targetSquare = move.to as Square
+      const pieceType = move.piece as PieceSymbol
+
+      if (session.isRecombineTarget(targetSquare, pieceType)) {
+        // Attempt recombine (prefer recombine over separate move)
+        const recombineResult = tryRecombine(this, {
+          square: targetSquare,
+          piece: pieceType,
+        })
+        if (recombineResult.success && recombineResult.result) {
+          return recombineResult.result
+        }
+        // Fall through to normal validation if recombine fails
+      }
+    }
+
     // 1. Parse move
     if (typeof move === 'string') {
       internalMove = this._moveFromSan(move, strict)
@@ -1479,19 +1498,6 @@ export class CoTuLenh {
 
     // 4. Execute move
     return handleMove(this, internalMove)
-  }
-  // deployMove() method removed - use handleDeployMove() from move-session.ts instead
-  // The new architecture uses MoveSession for unified move handling
-
-  /**
-   * Executes a recombine operation safely.
-   * @param option - The recombine option containing the square and piece to combine
-   * @returns RecombineResult with success status and MoveResult
-   */
-  public recombine(
-    option: RecombineOption,
-  ): import('./move-session.js').RecombineResult {
-    return recombine(this, option)
   }
 
   /**

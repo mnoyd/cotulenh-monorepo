@@ -957,6 +957,24 @@ export function generateDeployMoves(
     filterPiece,
   )
 
+  // Generate recombine moves using MoveSession's encapsulated logic
+  if (deploySession) {
+    const recombineMoves = deploySession.generateRecombineMoves(filterPiece)
+
+    // Track existing moves to avoid duplicates
+    const existingMoveKeys = new Set(
+      moves.map((m) => `${m.piece.type}-${m.to}`),
+    )
+
+    for (const recombineMove of recombineMoves) {
+      const moveKey = `${recombineMove.piece.type}-${recombineMove.to}`
+      if (existingMoveKeys.has(moveKey)) continue
+
+      moves.push(recombineMove)
+      existingMoveKeys.add(moveKey)
+    }
+  }
+
   return moves
 }
 
