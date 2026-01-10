@@ -49,14 +49,20 @@ cg-board cg-btn.piece-attack.stay {
   background-color: var(--theme-btn-attack-stay, #22c55e);
   border: 1px solid #fff;
   box-shadow: none;
-  background-image: none;
+  background-image: var(--theme-icon-attack-stay, none);
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
 }
 
 cg-board cg-btn.piece-attack.normal {
   background-color: var(--theme-btn-attack-normal, #f59e0b);
   border: 1px solid #fff;
   box-shadow: none;
-  background-image: none;
+  background-image: var(--theme-icon-attack-normal, none);
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
 }
 
 cg-board cg-btn.cancel-stack-move {
@@ -75,6 +81,24 @@ cg-board cg-btn.cancel-stack-move:hover {
   background-color: var(--theme-btn-cancel-bg, #553300);
   box-shadow: none;
   transform: none;
+}
+
+/* --- Promoted Pieces (Heroic Star) --- */
+.cg-wrap piece.promoted {
+  filter: var(--theme-piece-heroic-filter, drop-shadow(0 0 8px rgba(255, 215, 0, 0.8)));
+}
+
+.cg-wrap piece.promoted::before {
+  content: '';
+  position: absolute;
+  top: -10%;
+  right: -10%;
+  width: 35%;
+  height: 35%;
+  background-image: var(--theme-heroic-star);
+  background-size: contain;
+  background-repeat: no-repeat;
+  z-index: 10;
 }
 
 cg-board cg-btn.complete-stack-move {

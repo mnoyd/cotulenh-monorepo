@@ -1,1 +1,43 @@
-<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="40" fill="blue" /><text x="50" y="55" font-size="20" text-anchor="middle" fill="white">TA</text></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <linearGradient id="bodyGradBlue" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#2c3e50"/>
+      <stop offset="50%" stop-color="#4a6b8a"/>
+      <stop offset="100%" stop-color="#2c3e50"/>
+    </linearGradient>
+  </defs>
+  <g>
+     <!-- Tracks -->
+    <rect x="15" y="15" width="15" height="70" rx="2" fill="#111" />
+    <rect x="70" y="15" width="15" height="70" rx="2" fill="#111" />
+    
+    <!-- Tread Details -->
+    <path d="M15 25 L30 25 M15 35 L30 35 M15 45 L30 45 M15 55 L30 55 M15 65 L30 65" stroke="#333" stroke-width="1"/>
+    <path d="M70 25 L85 25 M70 35 L85 35 M70 45 L85 45 M70 55 L85 55 M70 65 L85 65" stroke="#333" stroke-width="1"/>
+    
+    <!-- Main Hull -->
+    <rect x="30" y="20" width="40" height="60" fill="url(#bodyGradBlue)" stroke="#1a2634" />
+    
+    <!-- Reactive Armor Blocks (Front) -->
+    <rect x="32" y="22" width="10" height="8" fill="#2c3e50" stroke="#111"/>
+    <rect x="45" y="22" width="10" height="8" fill="#2c3e50" stroke="#111"/>
+    <rect x="58" y="22" width="10" height="8" fill="#2c3e50" stroke="#111"/>
+    
+    <!-- Turret -->
+    <path d="M35 45 L40 40 L60 40 L65 45 L65 70 L35 70 Z" fill="#34495e" stroke="#1a2634"/>
+    
+    <!-- Main Gun -->
+    <rect x="48" y="5" width="4" height="40" fill="#506070" stroke="#111"/>
+    <rect x="47" y="5" width="6" height="4" fill="#333"/>
+    
+    <!-- Commander Hatch -->
+    <circle cx="58" cy="55" r="4" fill="#222" stroke="#111"/>
+    <line x1="58" y1="55" x2="65" y2="45" stroke="#111" stroke-width="1"/> <!-- MG -->
+    
+    <!-- Vents (Rear) -->
+    <rect x="35" y="72" width="30" height="6" fill="#111" opacity="0.6"/>
+    
+    <!-- Team ID Panel -->
+    <rect x="40" y="65" width="20" height="3" fill="#00b4ff"/>
+  </g>
+</svg>

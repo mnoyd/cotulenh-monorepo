@@ -1,1 +1,28 @@
-<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="40" fill="blue" /><text x="50" y="55" font-size="20" text-anchor="middle" fill="white">HE</text></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <linearGradient id="groundGradBlue" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#2c3e50"/>
+      <stop offset="100%" stop-color="#1a2634"/>
+    </linearGradient>
+  </defs>
+  <g>
+    <!-- Base Plate -->
+    <rect x="10" y="10" width="80" height="80" rx="5" fill="url(#groundGradBlue)" stroke="#00b4ff" stroke-width="2"/>
+    
+    <!-- Walls -->
+    <path d="M15 15 L85 15 L85 85 L15 85 Z" fill="none" stroke="#34495e" stroke-width="4"/>
+    
+    <!-- Buildings -->
+    <rect x="20" y="20" width="25" height="25" fill="#4a6b8a" stroke="#111"/>
+    <rect x="55" y="20" width="25" height="25" fill="#4a6b8a" stroke="#111"/>
+    <rect x="20" y="55" width="25" height="25" fill="#4a6b8a" stroke="#111"/>
+    
+    <!-- Helipad (Main Control) -->
+    <circle cx="67.5" cy="67.5" r="12" fill="#2c3e50" stroke="#00b4ff" stroke-width="1"/>
+    <text x="67.5" y="71" font-family="Arial" font-weight="bold" font-size="10" fill="#00b4ff" text-anchor="middle">H</text>
+    
+    <!-- Flag / Antenna -->
+    <line x1="50" y1="50" x2="50" y2="30" stroke="#888" stroke-width="2"/>
+    <circle cx="50" cy="50" r="4" fill="#111"/>
+  </g>
+</svg>

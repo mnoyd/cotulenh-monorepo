@@ -1,1 +1,37 @@
-<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="40" fill="blue" /><text x="50" y="55" font-size="20" text-anchor="middle" fill="white">AI</text></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <linearGradient id="bodyGradBlue" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4a6b8a"/>
+      <stop offset="50%" stop-color="#2c3e50"/>
+      <stop offset="100%" stop-color="#1a2634"/>
+    </linearGradient>
+    <filter id="afterburner">
+      <feGaussianBlur stdDeviation="2"/>
+    </filter>
+  </defs>
+  <g>
+    <!-- Afterburner Trails (Action) -->
+    <path d="M20 80 Q10 85, 0 90" stroke="#00b4ff" stroke-width="3" stroke-linecap="round" filter="url(#afterburner)" opacity="0.8"/>
+    <path d="M30 75 Q20 80, 10 90" stroke="#00b4ff" stroke-width="3" stroke-linecap="round" filter="url(#afterburner)" opacity="0.8"/>
+
+    <!-- Jet Body (Isometric/Banking) -->
+    <!-- Left Wing -->
+    <path d="M10 50 L40 40 L45 60 L10 50" fill="#2c3e50" stroke="#1a2634"/>
+    
+    <!-- Fuselage -->
+    <path d="M40 40 L80 20 L90 25 L50 80 L40 70 Z" fill="url(#bodyGradBlue)" stroke="#1a2634" />
+    
+    <!-- Right Wing (Tilted up) -->
+    <path d="M80 20 L95 10 L90 40 L80 20" fill="#34495e" stroke="#1a2634"/>
+    
+    <!-- Cockpit Canopy (Reflective) -->
+    <path d="M60 35 L75 30 L72 35 Z" fill="#aeeeff" stroke="#00b4ff" stroke-width="0.5"/>
+    
+    <!-- Vertical Stabilizers -->
+    <path d="M45 65 L35 75 L50 75 Z" fill="#1a2634"/>
+    <path d="M55 25 L65 15 L70 25 Z" fill="#1a2634"/>
+    
+    <!-- Team Glow (Rim Light) -->
+    <path d="M80 20 L90 25 L50 80" fill="none" stroke="#00b4ff" stroke-width="1.5" stroke-opacity="0.8"/>
+  </g>
+</svg>

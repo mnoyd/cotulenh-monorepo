@@ -95,12 +95,14 @@
   --theme-board-air-overlap: rgba(192, 57, 43, 0.8);
 
   /* ===== PIECES ===== */
+  --theme-piece-path: '/themes/forest/pieces';
   --theme-piece-shadow: drop-shadow(0 0 3px rgba(0, 0, 0, 0.55));
   --theme-piece-blue-filter: drop-shadow(0 0 5px rgba(93, 173, 226, 0.45)) brightness(1.15);
   --theme-piece-red-filter: drop-shadow(0 0 5px rgba(229, 115, 115, 0.45)) brightness(1.15);
   --theme-piece-heroic-filter: drop-shadow(0 0 10px rgba(212, 160, 23, 0.6)) brightness(1.18);
   --theme-piece-hover-filter: brightness(1.2) drop-shadow(0 8px 10px rgba(0, 0, 0, 0.38));
   --theme-piece-drag-filter: brightness(1.22) drop-shadow(0 12px 14px rgba(0, 0, 0, 0.45));
+  --theme-heroic-star: url('/themes/forest/pieces/heroic-star.svg');
 
   /* ===== BUTTONS ===== */
   --theme-btn-attack-stay: #27ae60;
