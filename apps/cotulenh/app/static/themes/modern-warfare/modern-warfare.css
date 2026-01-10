@@ -56,7 +56,7 @@
   --theme-board-shadow: inset 0 0 50px rgba(0, 0, 0, 0.8);
   --theme-board-filter: sepia(0.2) contrast(1.1) brightness(0.9);
   /* Gritty look */
-  --theme-board-image: url('/assets/board-grid.svg');
+  --theme-board-image: url('/themes/modern-warfare/board-grid.svg');
 
   /* Board Squares - Mud & Concrete */
   --theme-board-light: #5d665e;
@@ -99,6 +99,7 @@
   --theme-board-air-overlap: rgba(255, 107, 0, 0.8);
 
   /* ===== PIECES ===== */
+  --theme-piece-path: '/themes/modern-warfare/pieces';
   --theme-piece-shadow: drop-shadow(0 0 2px rgba(0, 0, 0, 0.8));
   --theme-piece-blue-filter: drop-shadow(0 0 4px #00b4ff) brightness(1.2) contrast(1.2);
   --theme-piece-red-filter: drop-shadow(0 0 4px #ff9500) hue-rotate(45deg) brightness(1.2)
@@ -107,6 +108,7 @@
     contrast(1.1);
   --theme-piece-hover-filter: brightness(1.3) drop-shadow(0 10px 10px rgba(0, 0, 0, 0.5));
   --theme-piece-drag-filter: brightness(1.3) drop-shadow(0 15px 15px rgba(0, 0, 0, 0.6));
+  --theme-heroic-star: url('/themes/modern-warfare/pieces/heroic-star.svg');
 
   /* ===== BUTTONS ===== */
   --theme-btn-attack-stay: #00ff6a;
