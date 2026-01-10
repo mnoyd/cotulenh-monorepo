@@ -100,64 +100,69 @@ cg-board square.deploy-incomplete {
   }
 }
 
-/* Base styles for all influence markers */
+/* Air Defense Radar */
 cg-board square.air-defense-influence {
-  /* position: relative; */
   z-index: 3;
-  --overlap-intensity: 1;
+  --radar-color: rgba(23, 82, 190, 0.8);
+  --radar-ring-opacity: 0.4;
 }
 
-/* Create X shape with pseudo-elements */
-cg-board square.air-defense-influence::before,
+/* Radar rings using radial gradient */
+cg-board square.air-defense-influence::before {
+  content: '';
+  position: absolute;
+  inset: 10%;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at center,
+    var(--radar-color) 0%,
+    var(--radar-color) 8%,
+    transparent 8%,
+    transparent 25%,
+    var(--radar-color) 25%,
+    var(--radar-color) 30%,
+    transparent 30%,
+    transparent 55%,
+    var(--radar-color) 55%,
+    var(--radar-color) 60%,
+    transparent 60%
+  );
+  opacity: var(--radar-ring-opacity);
+  pointer-events: none;
+  z-index: 9;
+}
+
+/* Crosshair overlay */
 cg-board square.air-defense-influence::after {
   content: '';
   position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 16px;
-  height: 2px;
-  background-color: currentColor;
-  opacity: 0.7;
-  z-index: 9;
-  /* Ensure visibility even when overlapping with pieces */
+  inset: 10%;
+  background:
+    linear-gradient(0deg, transparent 47%, var(--radar-color) 47%, var(--radar-color) 53%, transparent 53%),
+    linear-gradient(90deg, transparent 47%, var(--radar-color) 47%, var(--radar-color) 53%, transparent 53%);
+  opacity: calc(var(--radar-ring-opacity) * 0.6);
   pointer-events: none;
-  /* Allow clicks to pass through */
+  z-index: 9;
 }
 
-cg-board square.air-defense-influence::before {
-  transform: translate(-50%, -50%) rotate(45deg);
-}
-
-cg-board square.air-defense-influence::after {
-  transform: translate(-50%, -50%) rotate(-45deg);
-}
-
-/* Overlapping zones get higher opacity */
-cg-board square.air-defense-influence.overlap::before,
-cg-board square.air-defense-influence.overlap::after {
-  opacity: calc(0.7 + (var(--overlap-intensity) * 0.1));
-  /* Make the X thicker for overlapping zones */
-  height: calc(2px + (var(--overlap-intensity) * 1px));
+/* Overlap zones - more intense */
+cg-board square.air-defense-influence.overlap {
+  --radar-ring-opacity: 0.6;
 }
 
 /* Friendly color */
-cg-board square.air-defense-influence.friendly::before,
-cg-board square.air-defense-influence.friendly::after {
-  color: rgba(23, 82, 190, 0.8);
+cg-board square.air-defense-influence.friendly {
+  --radar-color: rgba(23, 82, 190, 0.8);
 }
 
-/* Opponent colors - single influence */
-cg-board square.air-defense-influence.opponent::before,
-cg-board square.air-defense-influence.opponent::after {
-  color: rgba(255, 165, 0, 0.9);
-  /* Orange color for single zones */
+/* Opponent color */
+cg-board square.air-defense-influence.opponent {
+  --radar-color: rgba(255, 165, 0, 0.9);
 }
 
-/* Overlapping zones - special color */
-cg-board square.air-defense-influence.opponent.overlap::before,
-cg-board square.air-defense-influence.opponent.overlap::after {
-  color: rgba(190, 23, 23, 0.8);
-  /* Red color for overlapping influence */
+/* Overlap zones - special color */
+cg-board square.air-defense-influence.opponent.overlap {
+  --radar-color: rgba(190, 23, 23, 0.8);
 }
 
 /* Highlight for a selected piece within a combined stack */

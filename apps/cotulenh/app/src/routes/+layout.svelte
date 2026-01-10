@@ -1,7 +1,6 @@
 <script lang="ts">
   import { browser } from '$app/environment';
   import { page } from '$app/stores';
-  import { logRender } from '$lib/debug';
   import '../app.css';
   import '@cotulenh/board/assets/commander-chess.pieces.css';
   import Sonner from '$lib/components/ui/sonner/sonner.svelte';
@@ -22,18 +21,12 @@
 
   $effect(() => {
     if (browser) {
-      logRender('🔄 [RENDER] +layout.svelte $effect triggered');
       themeStore.init();
     }
   });
-
-  // Log component renders
-  logRender('🔄 [RENDER] +layout.svelte component rendered');
 </script>
 
 <div class="app-container">
-  <div class="scanline-overlay"></div>
-  <div class="vignette-overlay"></div>
   <Sonner />
 
   <!-- Desktop Sidebar -->
@@ -172,47 +165,10 @@
 </div>
 
 <style>
-  /* Global Overlays - use theme variables */
-  .scanline-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    pointer-events: none;
-    background: linear-gradient(
-      to bottom,
-      rgba(255, 255, 255, 0),
-      rgba(255, 255, 255, 0) 50%,
-      rgba(0, 0, 0, 0.1) 50%,
-      rgba(0, 0, 0, 0.1)
-    );
-    background-size: 100% 4px;
-    z-index: 9998;
-    opacity: var(--theme-scanline-opacity, 0.15);
-    /* Removed animation for better performance */
-  }
-
-  .vignette-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    pointer-events: none;
-    background: radial-gradient(
-      circle,
-      transparent 50%,
-      var(--theme-vignette-color, rgba(0, 0, 0, 0.7)) 100%
-    );
-    z-index: 9999;
-    opacity: var(--theme-vignette-opacity, 0.6);
-    /* Removed animation for better performance */
-  }
-
+  /* Themeable styles - uses CSS variables from loaded theme */
   :global(body) {
-    background-color: var(--theme-bg-dark);
-    color: var(--theme-text-primary);
+    background-color: var(--theme-bg-dark, #111);
+    color: var(--theme-text-primary, #eee);
     font-family: var(--font-ui);
     margin: 0;
     overflow-x: hidden;
@@ -221,23 +177,18 @@
   .app-container {
     min-height: 100vh;
     display: flex;
-    background: radial-gradient(
-      circle at top center,
-      var(--theme-bg-base) 0%,
-      var(--theme-bg-dark) 40%
-    );
+    background: var(--theme-bg-dark, #111);
   }
 
-  /* Desktop Sidebar - using theme navbar variables */
+  /* Desktop Sidebar */
   .sidebar {
     position: fixed;
     left: 0;
     top: 0;
     bottom: 0;
     width: 72px;
-    background: var(--theme-nav-bg);
-    backdrop-filter: blur(16px);
-    border-right: 1px solid var(--theme-nav-border);
+    background: var(--theme-bg-panel, #222);
+    border-right: 1px solid var(--theme-border, #444);
     display: flex;
     flex-direction: column;
     z-index: 100;
@@ -254,7 +205,6 @@
   .logo-icon {
     width: 40px;
     height: 40px;
-    filter: drop-shadow(0 0 10px var(--theme-primary-glow));
   }
 
   .sidebar-nav {
@@ -270,7 +220,7 @@
     flex-direction: column;
     gap: 0.25rem;
     padding: 0 0.5rem;
-    border-top: 1px solid var(--theme-nav-border);
+    border-top: 1px solid var(--theme-border, #444);
     padding-top: 0.75rem;
     margin-top: 0.75rem;
   }
@@ -283,10 +233,9 @@
     padding: 0.75rem 0.5rem;
     border-radius: 8px;
     text-decoration: none;
-    color: var(--theme-nav-text);
+    color: var(--theme-text-secondary, #aaa);
     font-weight: 500;
     font-size: 0.65rem;
-    transition: var(--theme-transition-base, 0.2s ease);
     border: 1px solid transparent;
     font-family: var(--font-mono);
     text-transform: uppercase;
@@ -296,16 +245,15 @@
   }
 
   .sidebar-link:hover {
-    color: var(--theme-nav-text-hover);
-    background: var(--theme-nav-hover-bg);
-    border-color: var(--theme-border-subtle);
+    color: var(--theme-primary, #06b6d4);
+    background: var(--theme-bg-elevated, #333);
+    border-color: var(--theme-border, #444);
   }
 
   .sidebar-link.active {
-    color: var(--theme-nav-text-active);
-    background: var(--theme-nav-active-bg);
-    border-color: var(--theme-nav-active-bg);
-    box-shadow: var(--theme-glow-primary);
+    color: var(--theme-text-inverse, #000);
+    background: var(--theme-primary, #06b6d4);
+    border-color: var(--theme-primary, #06b6d4);
     font-weight: 700;
   }
 
@@ -331,29 +279,20 @@
     width: 44px;
     height: 44px;
     border-radius: 8px;
-    background: var(--theme-nav-bg);
-    border: 1px solid var(--theme-nav-border);
-    color: var(--theme-primary);
+    background: var(--theme-bg-panel, #222);
+    border: 1px solid var(--theme-border, #444);
+    color: var(--theme-primary, #06b6d4);
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    box-shadow: var(--theme-shadow-md);
-    backdrop-filter: blur(8px);
-    transition: var(--theme-transition-base, 0.2s ease);
     padding: 0;
     z-index: 151;
   }
 
   .mobile-menu-trigger:hover {
-    background: var(--theme-nav-hover-bg);
-    border-color: var(--theme-primary);
-    box-shadow: var(--theme-glow-primary);
-    transform: translateY(-1px);
-  }
-
-  .mobile-menu-trigger:active {
-    transform: translateY(1px);
+    background: var(--theme-bg-elevated, #333);
+    border-color: var(--theme-primary, #06b6d4);
   }
 
   /* Main Content */
@@ -376,25 +315,6 @@
 
     .mobile-menu {
       display: block;
-    }
-  }
-
-  @keyframes scanline {
-    0% {
-      background-position: 0% 0%;
-    }
-    100% {
-      background-position: 0% 100%;
-    }
-  }
-
-  @keyframes vignette-pulse {
-    0%,
-    100% {
-      opacity: var(--theme-vignette-opacity, 0.6);
-    }
-    50% {
-      opacity: calc(var(--theme-vignette-opacity, 0.6) + 0.2);
     }
   }
 </style>

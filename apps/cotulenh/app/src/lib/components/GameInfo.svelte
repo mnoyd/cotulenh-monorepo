@@ -37,7 +37,7 @@
 </script>
 
 <Card.Root
-  class="border-mw-border bg-mw-bg-panel/50 backdrop-blur-sm shadow-lg rounded-sm overflow-hidden"
+  class="border-mw-border bg-mw-bg-panel rounded-sm overflow-hidden hud-corners panel-inset"
 >
   <!-- Header / Status Bar -->
   <Card.Header
@@ -58,7 +58,7 @@
         >
         <Badge
           variant="outline"
-          class="font-mono uppercase tracking-wider px-1.5 py-0 md:px-2 md:py-0.5 text-[0.6rem] md:text-xs border bg-opacity-10 {turnBorder} {turnBg} {turnColor} backdrop-blur-sm animate-pulse-glow"
+          class="font-mono uppercase tracking-wider px-1.5 py-0 md:px-2 md:py-0.5 text-[0.6rem] md:text-xs border bg-opacity-10 {turnBorder} {turnBg} {turnColor}"
         >
           {turn ? getTurnColorName(turn) : '...'}
         </Badge>

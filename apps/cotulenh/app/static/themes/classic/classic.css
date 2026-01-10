@@ -1,0 +1,144 @@
+/* Classic Theme - Rich Wood & Leather Chess Aesthetic */
+/* Inspired by premium chess sets - warm, elegant, timeless */
+:root {
+  /* ===== CORE PALETTE ===== */
+  --theme-primary: #c9a66b;
+  --theme-primary-dim: rgba(201, 166, 107, 0.25);
+  --theme-primary-glow: rgba(201, 166, 107, 0.4);
+  --theme-secondary: #8fbc8f;
+  --theme-secondary-dim: rgba(143, 188, 143, 0.25);
+  --theme-secondary-glow: rgba(143, 188, 143, 0.4);
+  --theme-accent: #deb887;
+  --theme-accent-dim: rgba(222, 184, 135, 0.25);
+  --theme-accent-glow: rgba(222, 184, 135, 0.4);
+  --theme-warning: #d4a04a;
+  --theme-error: #b84c4c;
+  --theme-success: #6b9e6b;
+
+  /* ===== BACKGROUNDS ===== */
+  --theme-bg-dark: #1a1614;
+  --theme-bg-base: #2a2420;
+  --theme-bg-panel: rgba(42, 36, 32, 0.96);
+  --theme-bg-elevated: rgba(58, 50, 44, 0.96);
+  --theme-bg-overlay: rgba(0, 0, 0, 0.55);
+
+  /* ===== BORDERS ===== */
+  --theme-border: rgba(201, 166, 107, 0.5);
+  --theme-border-subtle: rgba(201, 166, 107, 0.28);
+  --theme-border-strong: rgba(201, 166, 107, 0.7);
+
+  /* ===== TEXT ===== */
+  --theme-text-primary: #f5f0e8;
+  --theme-text-secondary: #c8bfb2;
+  --theme-text-muted: #8c8378;
+  --theme-text-inverse: #1a1614;
+
+  /* ===== NAVBAR ===== */
+  --theme-nav-bg: rgba(42, 36, 32, 0.98);
+  --theme-nav-border: rgba(201, 166, 107, 0.4);
+  --theme-nav-text: rgba(245, 240, 232, 0.9);
+  --theme-nav-text-hover: #deb887;
+  --theme-nav-text-active: #1a1614;
+  --theme-nav-active-bg: #c9a66b;
+  --theme-nav-hover-bg: rgba(201, 166, 107, 0.18);
+
+  /* ===== TEAM COLORS ===== */
+  --theme-team-blue: #6b98c9;
+  --theme-team-blue-glow: rgba(107, 152, 201, 0.45);
+  --theme-team-red: #c96b6b;
+  --theme-team-red-glow: rgba(201, 107, 107, 0.45);
+
+  /* ===== BOARD ===== */
+  --theme-board-bg: #e8d5b5;
+  --theme-board-border: rgba(139, 90, 43, 0.6);
+  --theme-board-radius: 8px;
+  --theme-board-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  --theme-board-filter: sepia(0.25) saturate(1.1) brightness(1.05);
+  --theme-board-image: url('/assets/board-grid.svg');
+
+  /* Board Squares - Rich walnut and maple tones */
+  --theme-board-light: #e8d5b5;
+  --theme-board-dark: #a67c52;
+  --theme-board-highlight: rgba(218, 165, 32, 0.35);
+  --theme-board-selected: rgba(107, 158, 107, 0.45);
+  --theme-board-selected-border: #5a8a5a;
+  --theme-board-selected-radius: 10px;
+  --theme-board-last-move-from: rgba(49, 206, 143, 0.5);
+  --theme-board-last-move-to: rgba(206, 49, 112, 0.5);
+  --theme-board-last-move-radius: 10px;
+  --theme-board-move-dest: #7d9b5a;
+  --theme-board-move-dest-bg: radial-gradient(rgba(20, 85, 30, 0.5) 22%, transparent 22%);
+  --theme-board-capture-bg: radial-gradient(
+    transparent 0%,
+    transparent 80%,
+    rgba(20, 85, 0, 0.3) 80%
+  );
+  --theme-board-capture: #c96b6b;
+  --theme-board-check: rgba(184, 76, 76, 0.45);
+  --theme-board-check-bg: radial-gradient(
+    ellipse at center,
+    rgba(255, 0, 0, 1) 0%,
+    rgba(231, 0, 0, 1) 25%,
+    rgba(169, 0, 0, 0) 89%,
+    transparent 100%
+  );
+
+  /* Deploy Mode */
+  --theme-board-deploy-origin: rgba(218, 165, 32, 0.3);
+  --theme-board-deploy-origin-border: #daa520;
+  --theme-board-deploy-dest: rgba(107, 158, 107, 0.25);
+  --theme-board-deploy-dest-border: #6b9e6b;
+  --theme-board-deploy-radius: 10px;
+
+  /* Air Defense */
+  --theme-board-air-friendly: rgba(107, 152, 201, 0.75);
+  --theme-board-air-opponent: rgba(218, 165, 32, 0.8);
+  --theme-board-air-overlap: rgba(184, 76, 76, 0.75);
+
+  /* ===== PIECES ===== */
+  --theme-piece-shadow: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.35));
+  --theme-piece-blue-filter: drop-shadow(0 2px 4px rgba(107, 152, 201, 0.35));
+  --theme-piece-red-filter: drop-shadow(0 2px 4px rgba(201, 107, 107, 0.35));
+  --theme-piece-heroic-filter: drop-shadow(0 0 8px rgba(218, 165, 32, 0.55)) brightness(1.1);
+  --theme-piece-hover-filter: brightness(1.1) drop-shadow(0 6px 8px rgba(0, 0, 0, 0.3));
+  --theme-piece-drag-filter: brightness(1.1) drop-shadow(0 10px 12px rgba(0, 0, 0, 0.4));
+
+  /* ===== BUTTONS ===== */
+  --theme-btn-attack-stay: #6b9e6b;
+  --theme-btn-attack-normal: #d4a04a;
+  --theme-btn-cancel-bg: rgba(245, 240, 232, 0.92);
+  --theme-btn-cancel-border: #c96b6b;
+  --theme-btn-confirm-bg: rgba(107, 158, 107, 0.9);
+  --theme-btn-confirm-border: #5a8a5a;
+
+  /* ===== HEROIC BADGE ===== */
+  --theme-heroic-bg: rgba(245, 240, 232, 0.92);
+  --theme-heroic-border: #daa520;
+  --theme-heroic-glow: 0 2px 6px rgba(218, 165, 32, 0.45);
+  --theme-heroic-star: #daa520;
+
+  /* ===== GLOW EFFECTS ===== */
+  --theme-glow-primary: 0 2px 8px rgba(201, 166, 107, 0.35);
+  --theme-glow-secondary: 0 2px 8px rgba(143, 188, 143, 0.35);
+  --theme-glow-accent: 0 2px 8px rgba(222, 184, 135, 0.35);
+  --theme-glow-error: 0 2px 8px rgba(184, 76, 76, 0.35);
+
+  /* ===== SHADOWS ===== */
+  --theme-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.18);
+  --theme-shadow-md: 0 4px 6px rgba(0, 0, 0, 0.14);
+  --theme-shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.18);
+
+  /* ===== OVERLAYS - DISABLED ===== */
+  --theme-scanline-opacity: 0;
+  --theme-vignette-opacity: 0;
+  --theme-vignette-color: transparent;
+
+  /* ===== ANIMATIONS - DISABLED ===== */
+  --theme-transition-fast: 0s;
+  --theme-transition-base: 0s;
+  --theme-transition-slow: 0s;
+
+  /* ===== ATTACK ICONS ===== */
+  --theme-icon-attack-stay: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'%3E%3Cdefs%3E%3Cg id='arrows'%3E%3Cpath d='M20 12 L20 44' stroke-width='2' /%3E%3Cpath d='M16 40 L20 48 L24 40' stroke-width='2' fill='none' /%3E%3Cpath d='M16 16 L20 8 L24 16' stroke-width='1' fill='none' /%3E%3Cpath d='M32 20 L32 52' stroke-width='2' /%3E%3Cpath d='M28 48 L32 56 L36 48' stroke-width='2' fill='none' /%3E%3Cpath d='M28 24 L32 16 L36 24' stroke-width='1' fill='none' /%3E%3Cpath d='M44 12 L44 44' stroke-width='2' /%3E%3Cpath d='M40 40 L44 48 L48 40' stroke-width='2' fill='none' /%3E%3Cpath d='M40 16 L44 8 L48 16' stroke-width='1' fill='none' /%3E%3C/g%3E%3C/defs%3E%3Cuse href='%23arrows' stroke='%231a1614' stroke-width='4' stroke-linecap='round' stroke-linejoin='round' /%3E%3Cuse href='%23arrows' stroke='%23f5f0e8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' /%3E%3Cellipse cx='20' cy='54' rx='4' ry='1' fill='%23c9a66b' opacity='0.6'/%3E%3Cellipse cx='44' cy='54' rx='4' ry='1' fill='%23c9a66b' opacity='0.6'/%3E%3Cellipse cx='32' cy='60' rx='4' ry='1' fill='%23c9a66b' opacity='0.6'/%3E%3C/svg%3E");
+  --theme-icon-attack-normal: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'%3E%3Cdefs%3E%3Cg id='clash'%3E%3Cg transform='translate(24, 32) rotate(45)'%3E%3Cpath d='M0 -20 L0 20' stroke-width='4' stroke-linecap='round' /%3E%3Cpath d='M-6 8 L6 8' stroke-width='4' stroke-linecap='round' /%3E%3C/g%3E%3Cg transform='translate(40, 32) rotate(-45)'%3E%3Cpath d='M0 -20 L0 20' stroke-width='4' stroke-linecap='round' /%3E%3Cpath d='M-6 8 L6 8' stroke-width='4' stroke-linecap='round' /%3E%3C/g%3E%3Cpath d='M32 24 L32 16' stroke-width='3' stroke-linecap='round' /%3E%3Cpath d='M32 40 L32 48' stroke-width='3' stroke-linecap='round' /%3E%3Cpath d='M24 32 L16 32' stroke-width='3' stroke-linecap='round' /%3E%3Cpath d='M40 32 L48 32' stroke-width='3' stroke-linecap='round' /%3E%3Cpath d='M26 26 L20 20' stroke-width='2' stroke-linecap='round' /%3E%3Cpath d='M38 26 L44 20' stroke-width='2' stroke-linecap='round' /%3E%3Cpath d='M26 38 L20 44' stroke-width='2' stroke-linecap='round' /%3E%3Cpath d='M38 38 L44 44' stroke-width='2' stroke-linecap='round' /%3E%3C/g%3E%3C/defs%3E%3Cuse href='%23clash' stroke='%231a1614' stroke-width='4' fill='none' /%3E%3Cuse href='%23clash' stroke='%23f5f0e8' stroke-width='2' fill='none' /%3E%3C/svg%3E");
+}
