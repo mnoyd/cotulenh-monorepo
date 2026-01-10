@@ -29,6 +29,10 @@
     }
   }
 
+  function flipBoard() {
+    session.flipBoard();
+  }
+
   function openShare() {
     shareOpen = true;
   }
@@ -55,7 +59,7 @@
   }
 </script>
 
-<div class="grid grid-cols-2 lg:grid-cols-4 gap-2 mt-2">
+<div class="grid grid-cols-2 lg:grid-cols-5 gap-2 mt-2">
   <Button
     variant="default"
     size="sm"
@@ -73,6 +77,15 @@
     class="h-7 text-[0.65rem] font-bold tracking-wider uppercase border border-mw-alert/40 bg-mw-alert/10 text-mw-alert hover:bg-mw-alert/20 hover:text-mw-alert hover:shadow-[0_0_10px_rgba(255,171,0,0.3)]"
   >
     UNDO
+  </Button>
+  <Button
+    variant="outline"
+    size="sm"
+    onclick={flipBoard}
+    title="Flip Board"
+    class="h-7 text-[0.65rem] font-bold tracking-wider uppercase border border-cyan-400/40 bg-cyan-400/10 text-cyan-400 hover:bg-cyan-400/20 hover:text-cyan-400 hover:shadow-[0_0_10px_rgba(34,211,238,0.3)]"
+  >
+    FLIP
   </Button>
   <Button
     variant="outline"
