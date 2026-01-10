@@ -50,9 +50,10 @@
 
   /* ===== BOARD ===== */
   --theme-board-bg: #2d4a2d;
-  --theme-board-border: rgba(92, 184, 92, 0.3);
+  --theme-board-border: rgba(92, 184, 92, 0.4);
+  --theme-board-radius: 4px;
   --theme-board-shadow: inset 0 0 80px rgba(0, 0, 0, 0.55);
-  --theme-board-filter: sepia(20%) saturate(120%) hue-rotate(60deg) brightness(0.9);
+  --theme-board-filter: hue-rotate(60deg) saturate(1.2) brightness(0.9);
   --theme-board-image: url('/assets/board-grid.svg');
 
   /* Board Squares - Jungle floor and moss tones */
@@ -61,22 +62,37 @@
   --theme-board-highlight: rgba(139, 195, 74, 0.28);
   --theme-board-selected: rgba(92, 184, 92, 0.3);
   --theme-board-selected-border: #5cb85c;
-  --theme-board-last-move-from: rgba(139, 195, 74, 0.15);
-  --theme-board-last-move-to: rgba(139, 195, 74, 0.25);
+  --theme-board-selected-radius: 4px;
+  --theme-board-last-move-from: rgba(139, 195, 74, 0.2);
+  --theme-board-last-move-to: rgba(139, 195, 74, 0.35);
+  --theme-board-last-move-radius: 4px;
   --theme-board-move-dest: #5cb85c;
+  --theme-board-move-dest-bg: radial-gradient(rgba(92, 184, 92, 0.5) 25%, transparent 25%);
+  --theme-board-capture-bg: radial-gradient(
+    transparent 0%,
+    transparent 75%,
+    rgba(212, 160, 23, 0.4) 75%
+  );
   --theme-board-capture: #d4a017;
   --theme-board-check: rgba(192, 57, 43, 0.5);
+  --theme-board-check-bg: radial-gradient(
+    ellipse at center,
+    rgba(192, 57, 43, 1) 0%,
+    rgba(192, 57, 43, 0.7) 30%,
+    transparent 65%
+  );
 
   /* Deploy Mode */
   --theme-board-deploy-origin: rgba(212, 160, 23, 0.18);
   --theme-board-deploy-origin-border: #d4a017;
   --theme-board-deploy-dest: rgba(139, 195, 74, 0.18);
   --theme-board-deploy-dest-border: #8bc34a;
+  --theme-board-deploy-radius: 4px;
 
   /* Air Defense */
-  --theme-board-air-friendly: #5cb85c;
-  --theme-board-air-opponent: #d4a017;
-  --theme-board-air-overlap: #c0392b;
+  --theme-board-air-friendly: rgba(92, 184, 92, 0.8);
+  --theme-board-air-opponent: rgba(212, 160, 23, 0.9);
+  --theme-board-air-overlap: rgba(192, 57, 43, 0.8);
 
   /* ===== PIECES ===== */
   --theme-piece-shadow: drop-shadow(0 0 3px rgba(0, 0, 0, 0.55));

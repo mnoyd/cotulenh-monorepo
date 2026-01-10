@@ -3,10 +3,10 @@
 /* --- Board Background --- */
 cg-background {
   background-color: var(--theme-board-bg, #222);
-  background-image: none;
-  filter: none;
-  box-shadow: none;
-  border: none;
+  filter: var(--theme-board-filter, none);
+  box-shadow: var(--theme-board-shadow, none);
+  border: 1px solid var(--theme-board-border, rgba(59, 130, 246, 0.2));
+  border-radius: var(--theme-board-radius, 0);
 }
 
 cg-background::after {
@@ -97,26 +97,33 @@ cg-board cg-btn.complete-stack-move:hover {
 
 /* --- Board Squares --- */
 cg-board square.move-dest {
-  background-color: var(--theme-board-move-dest, #06b6d4);
-  opacity: 0.5;
+  background: var(
+    --theme-board-move-dest-bg,
+    radial-gradient(rgba(59, 130, 246, 0.5) 22%, transparent 22%)
+  );
 }
 
 cg-board square.move-dest:hover {
-  opacity: 0.7;
+  background-color: var(--theme-board-move-dest, #06b6d4);
+  opacity: 0.4;
 }
 
 cg-board square.oc.move-dest {
-  background-color: var(--theme-board-capture, #f59e0b);
-  opacity: 0.5;
+  background: var(
+    --theme-board-capture-bg,
+    radial-gradient(transparent 0%, transparent 80%, rgba(245, 158, 11, 0.3) 80%)
+  );
 }
 
 cg-board square.last-move.from {
   background-color: var(--theme-board-last-move-from, #064d52);
+  border-radius: var(--theme-board-last-move-radius, 0);
   box-shadow: none;
 }
 
 cg-board square.last-move.to {
   background-color: var(--theme-board-last-move-to, #064d52);
+  border-radius: var(--theme-board-last-move-radius, 0);
   box-shadow: none;
 }
 
@@ -126,12 +133,25 @@ cg-board square.last-move.to::before {
 
 cg-board square.selected {
   background-color: var(--theme-board-selected, #004433);
+  border-radius: var(--theme-board-selected-radius, 0);
   box-shadow: none;
   border: 1px solid var(--theme-board-selected-border, #22c55e);
 }
 
+cg-board square.sm.selected {
+  background-color: var(--theme-accent, rgba(237, 174, 27, 0.5));
+}
+
 cg-board square.check {
-  background-color: var(--theme-board-check, #553300);
+  background: var(
+    --theme-board-check-bg,
+    radial-gradient(
+      ellipse at center,
+      rgba(239, 68, 68, 1) 0%,
+      rgba(239, 68, 68, 0.8) 25%,
+      transparent 70%
+    )
+  );
 }
 
 cg-board square.check::before {
@@ -142,11 +162,13 @@ cg-board square.check::before {
 cg-board square.deploy-origin {
   background-color: var(--theme-board-deploy-origin, #443300);
   border: 1px dashed var(--theme-board-deploy-origin-border, #ffd700);
+  border-radius: var(--theme-board-deploy-radius, 0);
 }
 
 cg-board square.deploy-dest {
   background-color: var(--theme-board-deploy-dest, #003311);
   border: 1px dashed var(--theme-board-deploy-dest-border, #22c55e);
+  border-radius: var(--theme-board-deploy-radius, 0);
 }
 
 cg-board square.deploy-incomplete {
@@ -158,10 +180,83 @@ cg-board square.deploy-incomplete::before {
   display: none;
 }
 
-/* --- Air Defense - DISABLED --- */
-cg-board square.air-defense-influence::before,
+/* --- Air Defense Radar --- */
+cg-board square.air-defense-influence {
+  z-index: 3;
+  --radar-color: var(--theme-board-air-friendly, rgba(59, 130, 246, 0.8));
+  --radar-ring-opacity: 0.4;
+  --radar-blip-opacity: 0.7;
+}
+
+/* Radar rings using radial gradient */
+cg-board square.air-defense-influence::before {
+  content: '';
+  position: absolute;
+  inset: 10%;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at center,
+    var(--radar-color) 0%,
+    var(--radar-color) 8%,
+    transparent 8%,
+    transparent 25%,
+    var(--radar-color) 25%,
+    var(--radar-color) 30%,
+    transparent 30%,
+    transparent 55%,
+    var(--radar-color) 55%,
+    var(--radar-color) 60%,
+    transparent 60%
+  );
+  opacity: var(--radar-ring-opacity);
+  pointer-events: none;
+  z-index: 9;
+}
+
+/* Crosshair overlay */
 cg-board square.air-defense-influence::after {
-  display: none !important;
+  content: '';
+  position: absolute;
+  inset: 10%;
+  background:
+    linear-gradient(
+      0deg,
+      transparent 47%,
+      var(--radar-color) 47%,
+      var(--radar-color) 53%,
+      transparent 53%
+    ),
+    linear-gradient(
+      90deg,
+      transparent 47%,
+      var(--radar-color) 47%,
+      var(--radar-color) 53%,
+      transparent 53%
+    );
+  opacity: calc(var(--radar-ring-opacity) * 0.6);
+  pointer-events: none;
+  z-index: 9;
+}
+
+/* Overlap zones - more intense */
+cg-board square.air-defense-influence.overlap {
+  --radar-ring-opacity: 0.6;
+  --radar-blip-opacity: 0.9;
+}
+
+/* Friendly color */
+cg-board square.air-defense-influence.friendly {
+  --radar-color: var(--theme-board-air-friendly, rgba(59, 130, 246, 0.8));
+}
+
+/* Opponent color */
+cg-board square.air-defense-influence.opponent {
+  --radar-color: var(--theme-board-air-opponent, rgba(245, 158, 11, 0.9));
+}
+
+/* Overlap zones - special color */
+cg-board square.air-defense-influence.opponent.overlap {
+  --radar-color: var(--theme-board-air-overlap, rgba(239, 68, 68, 0.8));
 }
 
 /* --- Piece Styling - NO animations --- */

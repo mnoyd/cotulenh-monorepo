@@ -50,6 +50,7 @@
   /* ===== BOARD ===== */
   --theme-board-bg: #1f2937;
   --theme-board-border: rgba(59, 130, 246, 0.2);
+  --theme-board-radius: 0;
   --theme-board-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
   --theme-board-filter: none;
   --theme-board-image: url('/assets/board-grid.svg');
@@ -60,22 +61,37 @@
   --theme-board-highlight: rgba(59, 130, 246, 0.25);
   --theme-board-selected: rgba(16, 185, 129, 0.25);
   --theme-board-selected-border: #10b981;
+  --theme-board-selected-radius: 0;
   --theme-board-last-move-from: rgba(59, 130, 246, 0.15);
   --theme-board-last-move-to: rgba(59, 130, 246, 0.25);
+  --theme-board-last-move-radius: 0;
   --theme-board-move-dest: #3b82f6;
+  --theme-board-move-dest-bg: radial-gradient(rgba(59, 130, 246, 0.5) 22%, transparent 22%);
+  --theme-board-capture-bg: radial-gradient(
+    transparent 0%,
+    transparent 80%,
+    rgba(59, 130, 246, 0.3) 80%
+  );
   --theme-board-capture: #f59e0b;
   --theme-board-check: rgba(239, 68, 68, 0.5);
+  --theme-board-check-bg: radial-gradient(
+    ellipse at center,
+    rgba(239, 68, 68, 1) 0%,
+    rgba(239, 68, 68, 0.8) 25%,
+    rgba(239, 68, 68, 0) 70%
+  );
 
   /* Deploy Mode */
   --theme-board-deploy-origin: rgba(245, 158, 11, 0.2);
   --theme-board-deploy-origin-border: #f59e0b;
   --theme-board-deploy-dest: rgba(16, 185, 129, 0.2);
   --theme-board-deploy-dest-border: #10b981;
+  --theme-board-deploy-radius: 0;
 
   /* Air Defense */
-  --theme-board-air-friendly: #3b82f6;
-  --theme-board-air-opponent: #f59e0b;
-  --theme-board-air-overlap: #ef4444;
+  --theme-board-air-friendly: rgba(59, 130, 246, 0.8);
+  --theme-board-air-opponent: rgba(245, 158, 11, 0.9);
+  --theme-board-air-overlap: rgba(239, 68, 68, 0.8);
 
   /* ===== PIECES ===== */
   --theme-piece-shadow: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
