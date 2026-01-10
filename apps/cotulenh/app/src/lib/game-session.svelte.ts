@@ -3,17 +3,8 @@ import { logger } from '@cotulenh/common';
 import { logRender } from '$lib/debug';
 import type { Api, Config, DestMove, OrigMove, Key } from '@cotulenh/board';
 import { CoTuLenh, BITS, BLUE, RED } from '@cotulenh/core';
-import type {
-  Color,
-  Square,
-  Piece,
-  MoveResult,
-  RecombineOption as CoreRecombineOption,
-  RecombineResult
-} from '@cotulenh/core';
-import type { RecombineOption as BoardRecombineOption } from '@cotulenh/board';
+import type { Color, Square, Piece, MoveResult } from '@cotulenh/core';
 import { makeCoreMove } from '$lib/utils';
-import { safeSymbolToRole, safeRoleToSymbol } from '$lib/types/type-guards';
 import { toast } from 'svelte-sonner';
 import {
   coreToBoardColor,
@@ -201,8 +192,7 @@ export class GameSession {
       movedPieces,
       stay: stayPiece,
       actions: moves,
-      remainingPieces,
-      recombineOptions: deploySession.getOptions?.() || []
+      remainingPieces
     };
   }
 
@@ -244,17 +234,8 @@ export class GameSession {
           after: (orig: OrigMove, dest: DestMove) => this.#handleMove(orig, dest),
           session: {
             cancel: () => this.cancelDeploy(),
-            complete: () => this.commitDeploy(),
-            recombine: (opt: BoardRecombineOption) => this.#handleRecombine(opt)
+            complete: () => this.commitDeploy()
           }
-        },
-        session: {
-          options: this.deployState?.recombineOptions
-            ? this.deployState.recombineOptions.map((opt: CoreRecombineOption) => ({
-                square: opt.square,
-                piece: safeSymbolToRole(opt.piece)
-              }))
-            : undefined
         }
       }
     } as unknown as Config;
@@ -392,37 +373,6 @@ export class GameSession {
       logger.error('❌ Failed to cancel deploy:', { error });
       const errorMsg = error instanceof Error ? error.message : 'Unknown error';
       toast.error(`Error cancelling deployment: ${errorMsg}`);
-    }
-  }
-
-  #handleRecombine(option: BoardRecombineOption): void {
-    try {
-      const session = this.#game.getSession();
-      if (!session || !session.isDeploy) {
-        return;
-      }
-
-      const coreOption: CoreRecombineOption = {
-        square: option.square,
-        piece: safeRoleToSymbol(option.piece)
-      };
-
-      const recombineResult = this.#game.recombine(coreOption);
-
-      if (
-        (recombineResult as RecombineResult).success &&
-        (recombineResult as RecombineResult).result
-      ) {
-        const result = (recombineResult as RecombineResult).result!;
-        if (result.completed) {
-          this.#history = [...this.#history, result as HistoryMove];
-        }
-        this.#version++;
-      }
-    } catch (error) {
-      logger.error('Failed to recombine:', { error });
-      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-      toast.error(`Error executing recombine: ${errorMsg}`);
     }
   }
 
