@@ -441,6 +441,12 @@ export class GameSession {
     this.#version++;
   }
 
+  flipBoard(): void {
+    if (this.#boardApi) {
+      this.#boardApi.toggleOrientation();
+    }
+  }
+
   // ============================================================
   // KEYBOARD HANDLING
   // ============================================================

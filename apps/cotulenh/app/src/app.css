@@ -182,3 +182,76 @@ body {
 .panel-inset {
   box-shadow: var(--theme-inset-both);
 }
+
+/* === Game Button Utilities === */
+.btn-game-primary {
+  height: 1.75rem;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  border: 1px solid var(--theme-border);
+  background-color: var(--theme-primary-dim);
+  color: var(--theme-primary);
+}
+.btn-game-primary:hover {
+  background-color: color-mix(in srgb, var(--theme-primary) 20%, transparent);
+  box-shadow: var(--theme-glow-primary);
+}
+
+.btn-game-alert {
+  height: 1.75rem;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  border: 1px solid color-mix(in srgb, var(--theme-accent) 40%, transparent);
+  background-color: var(--theme-accent-dim);
+  color: var(--theme-accent);
+}
+.btn-game-alert:hover {
+  background-color: color-mix(in srgb, var(--theme-accent) 20%, transparent);
+  box-shadow: var(--theme-glow-accent);
+}
+
+.btn-game-secondary {
+  height: 1.75rem;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  border: 1px solid color-mix(in srgb, var(--theme-secondary) 40%, transparent);
+  background-color: var(--theme-secondary-dim);
+  color: var(--theme-secondary);
+}
+.btn-game-secondary:hover {
+  background-color: color-mix(in srgb, var(--theme-secondary) 20%, transparent);
+  box-shadow: var(--theme-glow-secondary);
+}
+
+.btn-game-subtle {
+  height: 1.75rem;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  border: 1px solid var(--theme-border);
+  color: color-mix(in srgb, var(--theme-primary) 80%, transparent);
+}
+.btn-game-subtle:hover {
+  background-color: var(--theme-primary-dim);
+}
+
+.btn-game-ghost {
+  height: 1.75rem;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  border: 1px solid color-mix(in srgb, white 20%, transparent);
+  color: color-mix(in srgb, white 60%, transparent);
+}
+.btn-game-ghost:hover {
+  background-color: color-mix(in srgb, white 10%, transparent);
+  color: white;
+}
