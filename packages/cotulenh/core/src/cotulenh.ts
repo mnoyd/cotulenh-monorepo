@@ -1221,6 +1221,10 @@ export class CoTuLenh {
   }
 
   isGameOver(): boolean {
+    // Don't check for game over mid deploy session - the session hasn't been committed yet
+    if (this._session && this._session.isDeploy) {
+      return false
+    }
     return this.isCheckmate() || this.isDraw() || this.isCommanderCaptured()
   }
 
