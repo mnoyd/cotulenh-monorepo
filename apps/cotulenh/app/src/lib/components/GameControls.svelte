@@ -65,7 +65,7 @@
     size="sm"
     onclick={resetGame}
     title="Reset Game"
-    class="h-7 text-[0.65rem] font-bold tracking-wider uppercase border border-mw-primary/40 bg-mw-primary/10 text-mw-primary hover:bg-mw-primary/20 hover:text-mw-primary hover:shadow-[0_0_10px_rgba(0,243,255,0.3)]"
+    class="btn-game-primary"
   >
     RESET
   </Button>
@@ -74,7 +74,7 @@
     size="sm"
     onclick={undoLastMove}
     title="Undo Last Move"
-    class="h-7 text-[0.65rem] font-bold tracking-wider uppercase border border-mw-alert/40 bg-mw-alert/10 text-mw-alert hover:bg-mw-alert/20 hover:text-mw-alert hover:shadow-[0_0_10px_rgba(255,171,0,0.3)]"
+    class="btn-game-alert"
   >
     UNDO
   </Button>
@@ -83,7 +83,7 @@
     size="sm"
     onclick={flipBoard}
     title="Flip Board"
-    class="h-7 text-[0.65rem] font-bold tracking-wider uppercase border border-cyan-400/40 bg-cyan-400/10 text-cyan-400 hover:bg-cyan-400/20 hover:text-cyan-400 hover:shadow-[0_0_10px_rgba(34,211,238,0.3)]"
+    class="btn-game-secondary"
   >
     FLIP
   </Button>
@@ -92,7 +92,7 @@
     size="sm"
     onclick={openShare}
     title="Share Game"
-    class="h-7 text-[0.65rem] font-bold tracking-wider uppercase border border-primary/40 text-primary/80 hover:bg-primary/10"
+    class="btn-game-subtle"
   >
     SHARE
   </Button>
@@ -101,7 +101,7 @@
     size="sm"
     onclick={reportIssue}
     title="Report Issue"
-    class="h-7 text-[0.65rem] font-bold tracking-wider uppercase border border-white/20 text-white/60 hover:bg-white/10 hover:text-white"
+    class="btn-game-ghost"
   >
     REPORT
   </Button>
