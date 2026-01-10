@@ -120,6 +120,11 @@ export class GameSession {
 
   get status(): GameStatus {
     void this.#version;
+    // Don't check for game ended mid deploy session - the session hasn't been committed yet
+    const session = this.#game.getSession();
+    if (session && session.isDeploy) {
+      return 'playing';
+    }
     const extendedGame = this.#game as unknown as ExtendedGame;
     if (extendedGame.isGameOver()) {
       if (this.#game.isCheckmate()) return 'checkmate';
