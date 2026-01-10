@@ -1,1 +1,39 @@
-<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="40" fill="blue" /><text x="50" y="55" font-size="20" text-anchor="middle" fill="white">AI</text></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <linearGradient id="bodyGradBlue" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#8baec9"/>
+      <stop offset="50%" stop-color="#4a6b8a"/>
+      <stop offset="100%" stop-color="#2c3e50"/>
+    </linearGradient>
+    <linearGradient id="glassBlue" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#aeeeff"/>
+      <stop offset="100%" stop-color="#00b4ff"/>
+    </linearGradient>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.5"/>
+    </filter>
+  </defs>
+  <g filter="url(#shadow)">
+    <!-- Main Fuselage (Stealth Shape) -->
+    <path d="M50 5 L65 35 L95 55 L70 65 L65 85 L50 95 L35 85 L30 65 L5 55 L35 35 Z" 
+          fill="url(#bodyGradBlue)" stroke="#1a2634" stroke-width="1"/>
+    
+    <!-- Wings Detail (Panel Lines) -->
+    <path d="M65 35 L95 55 L70 65" fill="none" stroke="#2c3e50" stroke-width="0.5"/>
+    <path d="M35 35 L5 55 L30 65" fill="none" stroke="#2c3e50" stroke-width="0.5"/>
+    
+    <!-- Stabilizers -->
+    <path d="M40 85 L30 95 L45 95 Z" fill="#2c3e50" stroke="#1a2634" stroke-width="0.5"/>
+    <path d="M60 85 L70 95 L55 95 Z" fill="#2c3e50" stroke="#1a2634" stroke-width="0.5"/>
+    
+    <!-- Cockpit Canopy -->
+    <ellipse cx="50" cy="45" rx="5" ry="12" fill="url(#glassBlue)" stroke="#005f87" stroke-width="1"/>
+    
+    <!-- Engine Glow -->
+    <path d="M45 95 Q50 100, 55 95" fill="none" stroke="#00b4ff" stroke-width="2" stroke-opacity="0.8"/>
+    
+    <!-- Team Accents -->
+    <path d="M65 35 L75 55" stroke="#00b4ff" stroke-width="1"/>
+    <path d="M35 35 L25 55" stroke="#00b4ff" stroke-width="1"/>
+  </g>
+</svg>

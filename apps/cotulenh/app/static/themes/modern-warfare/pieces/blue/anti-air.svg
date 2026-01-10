@@ -1,1 +1,43 @@
-<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="40" fill="blue" /><text x="50" y="55" font-size="20" text-anchor="middle" fill="white">AN</text></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <linearGradient id="chassisBlue" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#2c3e50"/>
+      <stop offset="50%" stop-color="#4a6b8a"/>
+      <stop offset="100%" stop-color="#2c3e50"/>
+    </linearGradient>
+    <radialGradient id="radarDishBlue" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#aeeeff"/>
+      <stop offset="100%" stop-color="#4a6b8a"/>
+    </radialGradient>
+  </defs>
+  <g>
+    <!-- Truck Chassis -->
+    <rect x="25" y="20" width="50" height="60" rx="5" fill="url(#chassisBlue)" stroke="#1a2634" stroke-width="1"/>
+    
+    <!-- Wheels -->
+    <rect x="15" y="25" width="10" height="15" rx="2" fill="#111" />
+    <rect x="15" y="55" width="10" height="15" rx="2" fill="#111" />
+    <rect x="75" y="25" width="10" height="15" rx="2" fill="#111" />
+    <rect x="75" y="55" width="10" height="15" rx="2" fill="#111" />
+    
+    <!-- Turret Base -->
+    <circle cx="50" cy="50" r="18" fill="#34495e" stroke="#1a2634"/>
+    
+    <!-- Missile Pods -->
+    <rect x="30" y="35" width="10" height="30" fill="#2c3e50" stroke="#1a2634"/>
+    <rect x="60" y="35" width="10" height="30" fill="#2c3e50" stroke="#1a2634"/>
+    
+    <!-- Missiles Tips -->
+    <circle cx="35" cy="40" r="3" fill="#00b4ff"/>
+    <circle cx="35" cy="50" r="3" fill="#00b4ff"/>
+    <circle cx="35" cy="60" r="3" fill="#00b4ff"/>
+    <circle cx="65" cy="40" r="3" fill="#00b4ff"/>
+    <circle cx="65" cy="50" r="3" fill="#00b4ff"/>
+    <circle cx="65" cy="60" r="3" fill="#00b4ff"/>
+    
+    <!-- Radar Dish -->
+    <path d="M42 20 Q50 10, 58 20" fill="none" stroke="#8baec9" stroke-width="2"/>
+    <path d="M50 20 L50 35" stroke="#1a2634" stroke-width="1"/>
+    <circle cx="50" cy="18" r="2" fill="#00b4ff"/>
+  </g>
+</svg>

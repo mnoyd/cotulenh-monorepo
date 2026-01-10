@@ -1,1 +1,44 @@
-<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="40" fill="blue" /><text x="50" y="55" font-size="20" text-anchor="middle" fill="white">NA</text></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <linearGradient id="hullBlue" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#4a6b8a"/>
+      <stop offset="50%" stop-color="#2c3e50"/>
+      <stop offset="100%" stop-color="#1a2634"/>
+    </linearGradient>
+    <filter id="wake">
+      <feGaussianBlur stdDeviation="2"/>
+    </filter>
+  </defs>
+  <g>
+    <!-- Wake -->
+    <path d="M50 90 L10 100" stroke="#aeeeff" stroke-width="3" opacity="0.5" filter="url(#wake)"/>
+    <path d="M50 90 L90 100" stroke="#aeeeff" stroke-width="3" opacity="0.5" filter="url(#wake)"/>
+
+    <!-- Hull -->
+    <path d="M50 5 Q65 20, 70 50 L70 90 L30 90 L30 50 Q35 20, 50 5 Z" 
+          fill="url(#hullBlue)" stroke="#1a2634" />
+          
+    <!-- Deck Structure -->
+    <rect x="35" y="40" width="30" height="40" fill="#34495e" stroke="#111"/>
+    <rect x="40" y="30" width="20" height="15" fill="#34495e" stroke="#111"/> <!-- Bridge -->
+    
+    <!-- Helicopter Pad (Rear) -->
+    <rect x="35" y="70" width="30" height="15" fill="#2c3e50" stroke="#111"/>
+    <circle cx="50" cy="77.5" r="5" fill="none" stroke="#fff" stroke-width="1"/>
+    <text x="50" y="80" font-family="Arial" font-size="8" fill="#fff" text-anchor="middle">H</text>
+    
+    <!-- Forward Gun -->
+    <circle cx="50" cy="25" r="4" fill="#506070" stroke="#111"/>
+    <rect x="49" y="15" width="2" height="10" fill="#111"/>
+    
+    <!-- VLS Cells (Missile hatches) -->
+    <rect x="40" y="45" width="20" height="10" fill="#1a2634"/>
+    <rect x="42" y="47" width="2" height="2" fill="#fff" opacity="0.5"/>
+    <rect x="46" y="47" width="2" height="2" fill="#fff" opacity="0.5"/>
+    <rect x="50" y="47" width="2" height="2" fill="#fff" opacity="0.5"/>
+    <rect x="54" y="47" width="2" height="2" fill="#fff" opacity="0.5"/>
+    
+    <!-- Radar Mast -->
+    <path d="M40 35 L60 35" stroke="#00b4ff" stroke-width="2"/>
+  </g>
+</svg>

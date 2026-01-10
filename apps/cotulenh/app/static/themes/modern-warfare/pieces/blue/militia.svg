@@ -1,1 +1,24 @@
-<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="40" fill="blue" /><text x="50" y="55" font-size="20" text-anchor="middle" fill="white">MI</text></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <filter id="shadow">
+      <feDropShadow dx="1" dy="1" stdDeviation="1" flood-opacity="0.5"/>
+    </filter>
+  </defs>
+  <g filter="url(#shadow)">
+    <!-- Bandana Head -->
+    <circle cx="50" cy="40" r="11" fill="#d4aa7d" /> <!-- Skin tone -->
+    <path d="M38 30 Q50 25, 62 30 L62 42 Q50 38, 38 42 Z" fill="#00b4ff" stroke="#111" stroke-width="0.5"/> <!-- Bandana -->
+    
+    <!-- Shoulders / Vest -->
+    <path d="M32 50 Q50 48, 68 50 L72 75 L28 75 Z" fill="#ccc" stroke="#111"/> <!-- Civ clothes -->
+    <rect x="35" y="52" width="30" height="20" rx="3" fill="#2c3e50" /> <!-- Tac Vest -->
+    
+    <!-- Arms -->
+    <ellipse cx="28" cy="55" rx="7" ry="12" fill="#4a6b8a" />
+    <ellipse cx="72" cy="55" rx="7" ry="12" fill="#4a6b8a" />
+    
+    <!-- Weapon (AK Style) -->
+    <path d="M60 70 L85 45 L90 50 L65 75 Z" fill="#5d4037" /> <!-- Stock -->
+    <rect x="75" y="45" width="4" height="20" transform="rotate(45 77 55)" fill="#111" /> <!-- Receiver -->
+  </g>
+</svg>

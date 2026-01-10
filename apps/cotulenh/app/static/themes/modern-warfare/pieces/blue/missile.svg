@@ -1,1 +1,39 @@
-<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="40" fill="blue" /><text x="50" y="55" font-size="20" text-anchor="middle" fill="white">MI</text></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <radialGradient id="flame" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#fff"/>
+      <stop offset="50%" stop-color="#ffcc00"/>
+      <stop offset="100%" stop-color="#ff4400"/>
+    </radialGradient>
+    <linearGradient id="bodyGradBlue" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#aeeeff"/>
+      <stop offset="50%" stop-color="#2c3e50"/>
+      <stop offset="100%" stop-color="#1a2634"/>
+    </linearGradient>
+    <filter id="blurFlame">
+      <feGaussianBlur stdDeviation="3"/>
+    </filter>
+  </defs>
+  <g>
+    <!-- Flame Trail -->
+    <path d="M50 85 L45 100 L50 95 L55 100 L50 85" fill="url(#flame)" filter="url(#blurFlame)"/>
+    <path d="M50 85 L48 95 L50 92 L52 95 L50 85" fill="#fff" opacity="0.8"/>
+
+    <!-- Missile Body -->
+    <path d="M50 5 Q55 10, 60 25 L60 85 L40 85 L40 25 Q45 10, 50 5 Z" 
+          fill="url(#bodyGradBlue)" stroke="#1a2634" />
+          
+    <!-- Fins -->
+    <path d="M40 75 L20 90 L40 85" fill="#2c3e50" stroke="#1a2634"/>
+    <path d="M60 75 L80 90 L60 85" fill="#2c3e50" stroke="#1a2634"/>
+    
+    <!-- Mid Fins -->
+    <path d="M40 40 L30 50 L40 50" fill="#2c3e50" stroke="#1a2634"/>
+    <path d="M60 40 L70 50 L60 50" fill="#2c3e50" stroke="#1a2634"/>
+    
+    <!-- Warhead Markings -->
+    <path d="M40 25 L60 25" stroke="#FFFFFF" stroke-width="0.5"/>
+    <path d="M50 35 L55 40 L45 40 Z" fill="#00b4ff"/> <!-- Radiation Symbol / Hazard -->
+    <circle cx="50" cy="38" r="1.5" fill="#111"/>
+  </g>
+</svg>

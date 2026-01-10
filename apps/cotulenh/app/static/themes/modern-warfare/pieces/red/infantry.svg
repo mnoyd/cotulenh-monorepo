@@ -1,1 +1,26 @@
-<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="40" fill="red" /><text x="50" y="55" font-size="20" text-anchor="middle" fill="white">IN</text></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <filter id="shadowRed">
+      <feDropShadow dx="1" dy="1" stdDeviation="1" flood-opacity="0.5"/>
+    </filter>
+  </defs>
+  <g filter="url(#shadowRed)">
+    <!-- Helmet -->
+    <circle cx="50" cy="40" r="12" fill="#8a5a4a" stroke="#34201a" />
+    <path d="M42 45 Q50 50, 58 45" fill="none" stroke="#111" stroke-width="1.5" />
+    
+    <!-- Shoulders / Body Armor -->
+    <path d="M30 50 Q50 45, 70 50 L75 75 Q50 80, 25 75 Z" fill="#50322c" stroke="#34201a"/>
+    
+    <!-- Arms -->
+    <ellipse cx="25" cy="55" rx="8" ry="12" fill="#8a5a4a" />
+    <ellipse cx="75" cy="55" rx="8" ry="12" fill="#8a5a4a" />
+    
+    <!-- Weapon (Info) -->
+    <rect x="70" y="45" width="6" height="35" transform="rotate(20 73 62)" fill="#111" />
+    <rect x="68" y="75" width="12" height="4" transform="rotate(20 74 77)" fill="#111" />
+    
+    <!-- Visor / Goggles -->
+    <rect x="42" y="32" width="16" height="6" rx="2" fill="#ff9500" opacity="0.9"/>
+  </g>
+</svg>

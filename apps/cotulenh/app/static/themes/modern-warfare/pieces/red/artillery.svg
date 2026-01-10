@@ -1,1 +1,45 @@
-<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="40" fill="red" /><text x="50" y="55" font-size="20" text-anchor="middle" fill="white">AR</text></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <linearGradient id="bodyGradRed" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#50322c"/>
+      <stop offset="50%" stop-color="#8a5a4a"/>
+      <stop offset="100%" stop-color="#50322c"/>
+    </linearGradient>
+  </defs>
+  <g>
+    <!-- Tracks -->
+    <rect x="15" y="20" width="15" height="60" rx="3" fill="#111" />
+    <rect x="70" y="20" width="15" height="60" rx="3" fill="#111" />
+    
+    <!-- Track Details (Treads) -->
+    <line x1="15" y1="30" x2="30" y2="30" stroke="#333" stroke-width="1"/>
+    <line x1="15" y1="40" x2="30" y2="40" stroke="#333" stroke-width="1"/>
+    <line x1="15" y1="50" x2="30" y2="50" stroke="#333" stroke-width="1"/>
+    <line x1="15" y1="60" x2="30" y2="60" stroke="#333" stroke-width="1"/>
+    <line x1="15" y1="70" x2="30" y2="70" stroke="#333" stroke-width="1"/>
+    
+    <line x1="70" y1="30" x2="85" y2="30" stroke="#333" stroke-width="1"/>
+    <line x1="70" y1="40" x2="85" y2="40" stroke="#333" stroke-width="1"/>
+    <line x1="70" y1="50" x2="85" y2="50" stroke="#333" stroke-width="1"/>
+    <line x1="70" y1="60" x2="85" y2="60" stroke="#333" stroke-width="1"/>
+    <line x1="70" y1="70" x2="85" y2="70" stroke="#333" stroke-width="1"/>
+    
+    <!-- Main Chassis -->
+    <rect x="30" y="25" width="40" height="50" fill="url(#bodyGradRed)" stroke="#34201a" />
+    
+    <!-- Turret -->
+    <rect x="35" y="45" width="30" height="35" rx="5" fill="#5e4034" stroke="#34201a" />
+    
+    <!-- Barrel -->
+    <rect x="46" y="5" width="8" height="50" fill="#605050" stroke="#34201a" />
+    <rect x="44" y="5" width="12" height="5" fill="#34201a" /> <!-- Muzzle Brake -->
+    <rect x="45" y="45" width="10" height="5" fill="#50322c" /> <!-- Mantlet -->
+    
+    <!-- Vents/Details -->
+    <rect x="38" y="55" width="8" height="4" fill="#34201a" opacity="0.5"/>
+    <rect x="54" y="55" width="8" height="4" fill="#34201a" opacity="0.5"/>
+    
+    <!-- Team Markings -->
+    <circle cx="50" cy="70" r="3" fill="#ff9500"/>
+  </g>
+</svg>

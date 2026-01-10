@@ -1,1 +1,35 @@
-<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="40" fill="blue" /><text x="50" y="55" font-size="20" text-anchor="middle" fill="white">EN</text></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <linearGradient id="bodyGradBlue" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#2c3e50"/>
+      <stop offset="50%" stop-color="#4a6b8a"/>
+      <stop offset="100%" stop-color="#2c3e50"/>
+    </linearGradient>
+  </defs>
+  <g>
+    <!-- Tracks -->
+    <rect x="15" y="20" width="15" height="60" rx="3" fill="#111" />
+    <rect x="70" y="20" width="15" height="60" rx="3" fill="#111" />
+    
+    <!-- Dozer Blade (Front) -->
+    <path d="M10 85 L90 85 L85 95 L15 95 Z" fill="#34495e" stroke="#1a2634"/>
+    <path d="M20 85 L25 80 L75 80 L80 85" fill="#2c3e50" stroke="#1a2634"/>
+    
+    <!-- Main Chassis -->
+    <rect x="30" y="25" width="40" height="50" fill="url(#bodyGradBlue)" stroke="#1a2634" />
+    
+    <!-- Crane Arm Base -->
+    <circle cx="50" cy="50" r="12" fill="#34495e" stroke="#1a2634"/>
+    
+    <!-- Crane Arm Segments (Folded) -->
+    <rect x="45" y="25" width="10" height="25" rx="3" fill="#506070" stroke="#1a2634"/>
+    <rect x="42" y="10" width="16" height="20" rx="3" fill="#506070" stroke="#1a2634"/>
+    
+    <!-- Claw/Bucket -->
+    <path d="M40 10 L60 10 L65 15 L35 15 Z" fill="#aaa" stroke="#111"/>
+    
+    <!-- Markings -->
+    <rect x="42" y="10" width="16" height="5" fill="#f1c40f" stroke="none" opacity="0.8"/> <!-- Hazard Stripe -->
+    <path d="M44 10 L49 15 M52 10 L57 15" stroke="#111" stroke-width="1"/>
+  </g>
+</svg>
