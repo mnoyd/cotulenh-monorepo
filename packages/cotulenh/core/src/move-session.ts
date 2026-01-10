@@ -319,28 +319,35 @@ export class MoveSession {
 
   /**
    * Execute a recombine: cancel current moves, replay with combined piece.
+   * Uses game.move() to properly create a new session via MoveSession.ensure().
    * @private
    */
   private _executeRecombine(option: RecombineOption): void {
     const moves = [...this.moves]
+    const game = this._game
     this.cancel()
 
     try {
       const modifiedMoves = applyRecombineToMoves(moves, option)
+
+      // Replay through game.move() which creates a new session via MoveSession.ensure()
       for (const modMove of modifiedMoves) {
-        const command = createMoveCommand(this._game, modMove)
-        command.execute()
-        this._commands.push(command)
+        const result = game.move(modMove)
+        if (!result) {
+          // If replay fails, cancel and restore original moves
+          game.getSession()?.cancel()
+          for (const origMove of moves) {
+            game.move(origMove)
+          }
+          return
+        }
       }
-      this._game['_movesCache'].clear()
     } catch {
       // If recombine fails, restore original moves
+      game.getSession()?.cancel()
       for (const origMove of moves) {
-        const command = createMoveCommand(this._game, origMove)
-        command.execute()
-        this._commands.push(command)
+        game.move(origMove)
       }
-      this._game['_movesCache'].clear()
     }
   }
 

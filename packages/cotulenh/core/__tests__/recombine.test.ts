@@ -7,6 +7,7 @@ import {
   INFANTRY,
   ANTI_AIR,
   AIR_FORCE,
+  COMMANDER,
   SQUARE_MAP,
 } from '../src/type.js'
 import { CoTuLenh } from '../src/cotulenh.js'
@@ -369,6 +370,115 @@ describe('Recombine Option', () => {
       // Commander can recombine with either AirForce at e3 or Tank at i5
       const recombineMoves = moves.filter((m) => m.to === 'e3' || m.to === 'i5')
       expect(recombineMoves.length).toBe(2)
+    })
+  })
+
+  describe('recombine with remaining pieces bug', () => {
+    it('should NOT end session when Tank still remains after recombine', () => {
+      // FEN: 2c8/3i7/11/11/4e6/8(FTC)2/11/11/11/11/5H1A3/11 r - - 0 1
+      // Stack (FTC) = AirForce + Tank + Commander at i7 (row 7 from bottom)
+      const fen = '2c8/3i7/11/11/4e6/8(FTC)2/11/11/11/11/5H1A3/11 r - - 0 1'
+      const game = new CoTuLenh(fen)
+
+      // Verify stack exists at i7
+      const stackPiece = game.get('i7')
+      expect(stackPiece).toBeDefined()
+      expect(stackPiece?.type).toBe(AIR_FORCE)
+      expect(stackPiece?.carrying).toHaveLength(2)
+
+      const turnBefore = game.turn()
+      expect(turnBefore).toBe(RED)
+
+      // 1. Deploy F (AirForce) to i11
+      game.move({
+        from: 'i7',
+        to: 'i11',
+        piece: AIR_FORCE,
+        deploy: true,
+      })
+
+      let session = game.getSession()
+      expect(session).toBeDefined()
+      expect(session?.remaining).toHaveLength(2) // Tank + Commander remain
+
+      // 2. Recombine C (Commander) to i11 (where AirForce is)
+      game.move({
+        from: 'i7',
+        to: 'i11',
+        piece: COMMANDER,
+        deploy: true,
+      })
+
+      // After recombine: AirForce + Commander are combined at i11
+      // Tank should still be remaining at i7
+      session = game.getSession()
+
+      // BUG: Session should still exist because Tank is not moved
+      expect(session).not.toBeNull()
+      if (session) {
+        expect(session.remaining).toHaveLength(1)
+        expect(session.remaining[0].type).toBe(TANK)
+      }
+
+      // Turn should NOT have switched yet
+      expect(game.turn()).toBe(RED)
+
+      // Stack square should still have Tank (or be tracked in session)
+      const i7Piece = game.get('i7')
+      // If Tank still at i7, check it
+      if (i7Piece) {
+        expect(i7Piece.type).toBe(TANK)
+      }
+
+      // The combined piece at i11 should be AirForce carrying Commander
+      const i11Piece = game.get('i11')
+      expect(i11Piece).toBeDefined()
+      expect(i11Piece?.type).toBe(AIR_FORCE)
+      expect(i11Piece?.carrying).toHaveLength(1)
+      expect(i11Piece?.carrying?.[0].type).toBe(COMMANDER)
+    })
+
+    it('should allow Tank to move after recombine and then commit', () => {
+      const fen = '2c8/3i7/11/11/4e6/8(FTC)2/11/11/11/11/5H1A3/11 r - - 0 1'
+      const game = new CoTuLenh(fen)
+
+      const turnBefore = game.turn()
+      expect(turnBefore).toBe(RED)
+
+      // 1. Deploy F (AirForce) to i11
+      game.move({
+        from: 'i7',
+        to: 'i11',
+        piece: AIR_FORCE,
+        deploy: true,
+      })
+
+      // 2. Recombine C (Commander) to i11
+      game.move({
+        from: 'i7',
+        to: 'i11',
+        piece: COMMANDER,
+        deploy: true,
+      })
+
+      // 3. Now move Tank somewhere else (e.g., i5)
+      game.move({
+        from: 'i7',
+        to: 'i5',
+        piece: TANK,
+        deploy: true,
+      })
+
+      // Session should now be complete (all pieces deployed)
+      expect(game.getSession()).toBeNull()
+
+      // Turn should have switched to BLUE
+      expect(game.turn()).toBe(BLUE)
+
+      // Verify final positions
+      expect(game.get('i11')?.type).toBe(AIR_FORCE)
+      expect(game.get('i5')?.type).toBe(TANK)
+      expect(game.get('i7')).toBeUndefined() // Stack square should be empty
     })
   })
 })
