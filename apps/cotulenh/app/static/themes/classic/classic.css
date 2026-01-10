@@ -96,12 +96,14 @@
   --theme-board-air-overlap: rgba(184, 76, 76, 0.75);
 
   /* ===== PIECES ===== */
+  --theme-piece-path: '/themes/classic/pieces';
   --theme-piece-shadow: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.35));
   --theme-piece-blue-filter: drop-shadow(0 2px 4px rgba(107, 152, 201, 0.35));
   --theme-piece-red-filter: drop-shadow(0 2px 4px rgba(201, 107, 107, 0.35));
   --theme-piece-heroic-filter: drop-shadow(0 0 8px rgba(218, 165, 32, 0.55)) brightness(1.1);
   --theme-piece-hover-filter: brightness(1.1) drop-shadow(0 6px 8px rgba(0, 0, 0, 0.3));
   --theme-piece-drag-filter: brightness(1.1) drop-shadow(0 10px 12px rgba(0, 0, 0, 0.4));
+  --theme-heroic-star: url('/themes/classic/pieces/heroic-star.svg');
 
   /* ===== BUTTONS ===== */
   --theme-btn-attack-stay: #6b9e6b;

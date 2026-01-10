@@ -83,6 +83,24 @@ cg-board cg-btn.cancel-stack-move:hover {
   transform: none;
 }
 
+/* --- Promoted Pieces (Heroic Star) --- */
+.cg-wrap piece.promoted {
+  filter: var(--theme-piece-heroic-filter, drop-shadow(0 0 8px rgba(255, 215, 0, 0.8)));
+}
+
+.cg-wrap piece.promoted::before {
+  content: '';
+  position: absolute;
+  top: -10%;
+  right: -10%;
+  width: 35%;
+  height: 35%;
+  background-image: var(--theme-heroic-star);
+  background-size: contain;
+  background-repeat: no-repeat;
+  z-index: 10;
+}
+
 cg-board cg-btn.complete-stack-move {
   background-color: var(--theme-btn-confirm-bg, #003311);
   border: 1px solid var(--theme-btn-confirm-border, #22c55e);
