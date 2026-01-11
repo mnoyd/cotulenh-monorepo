@@ -18,8 +18,10 @@
     children?: Snippet;
   } = $props();
 
-  // Log renders
-  logRender('🔄 [RENDER] MissionResult.svelte component rendered', { title });
+  // Log renders in effect to track reactive changes
+  $effect(() => {
+    logRender('🔄 [RENDER] MissionResult.svelte component rendered', { title });
+  });
 </script>
 
 <div

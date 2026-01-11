@@ -17,44 +17,10 @@ import type {
   UIDeployState,
   HistoryMove,
   DeploySession,
-  DeployAction,
-  ExtendedGame
+  DeployAction
 } from '$lib/types/game';
-
-/**
- * Helper function to flatten a piece
- */
-function flattenPiece(piece: Piece): Piece[] {
-  if (!piece.carrying?.length) return [piece];
-  return [{ ...piece, carrying: undefined }, ...piece.carrying];
-}
-
-/**
- * Extract last move squares from a MoveResult for UI highlighting.
- */
-function extractLastMoveSquares(move: MoveResult | unknown): Square[] {
-  if (!move) return [];
-
-  if (
-    typeof move !== 'object' ||
-    move === null ||
-    !('from' in move && 'to' in move && 'flags' in move)
-  ) {
-    return [];
-  }
-
-  const moveResult = move as MoveResult;
-
-  if (moveResult.isDeploy || moveResult.flags?.includes('d') || moveResult.to instanceof Map) {
-    if (moveResult.to instanceof Map) {
-      return [moveResult.from, ...Array.from(moveResult.to.keys())];
-    } else {
-      return [moveResult.from, moveResult.to as string].filter(Boolean);
-    }
-  } else {
-    return [moveResult.from, moveResult.to as string];
-  }
-}
+import { hasExtendedGameMethods } from '$lib/types/type-guards';
+import { flattenPiece, extractLastMoveSquares } from './game-session-helpers';
 
 /**
  * GameSession - Unified reactive state management using the Reactive Adapter Pattern.
@@ -88,6 +54,10 @@ export class GameSession {
   // Memoization to prevent duplicate syncs
   #lastSyncedFen: string | null = null;
   #lastSyncedHistoryIdx: number | null = null;
+
+  // Memoization for expensive move computation
+  #cachedPossibleMoves: MoveResult[] = [];
+  #lastMovesVersion = -1;
 
   constructor(fen?: string) {
     this.#originalFen = fen;
@@ -125,12 +95,15 @@ export class GameSession {
     if (session && session.isDeploy) {
       return 'playing';
     }
-    const extendedGame = this.#game as unknown as ExtendedGame;
-    if (extendedGame.isGameOver()) {
-      if (this.#game.isCheckmate()) return 'checkmate';
-      if (extendedGame.isStalemate?.()) return 'stalemate';
-      if (extendedGame.isDraw?.()) return 'draw';
-      return 'checkmate';
+
+    // Use type guard instead of unsafe casting
+    if (hasExtendedGameMethods(this.#game)) {
+      if (this.#game.isGameOver()) {
+        if (this.#game.isCheckmate()) return 'checkmate';
+        if (this.#game.isStalemate?.()) return 'stalemate';
+        if (this.#game.isDraw?.()) return 'draw';
+        return 'checkmate';
+      }
     }
     return 'playing';
   }
@@ -170,7 +143,16 @@ export class GameSession {
   get possibleMoves(): MoveResult[] {
     void this.#version;
     if (this.status !== 'playing' || this.#historyViewIndex !== -1) return [];
-    return this.#game.moves({ verbose: true }) as MoveResult[];
+
+    // Return cached moves if version unchanged
+    if (this.#lastMovesVersion === this.#version) {
+      return this.#cachedPossibleMoves;
+    }
+
+    // Compute and cache
+    this.#cachedPossibleMoves = this.#game.moves({ verbose: true }) as MoveResult[];
+    this.#lastMovesVersion = this.#version;
+    return this.#cachedPossibleMoves;
   }
 
   get deployState(): UIDeployState | null {
@@ -243,7 +225,7 @@ export class GameSession {
           }
         }
       }
-    } as unknown as Config;
+    };
   }
 
   #getAirDefense(): { red: Map<Key, Key[]>; blue: Map<Key, Key[]> } {
@@ -314,34 +296,46 @@ export class GameSession {
         this.#version++;
       } else {
         logger.warn('Illegal move attempted on board', { orig, dest });
+        toast.error('Illegal move');
       }
     } catch (error) {
       logger.error('Error making move in game engine:', { error });
+      toast.error('Move failed');
       this.syncBoard();
     }
   }
 
   undo(): void {
-    const session = this.#game.getSession();
+    try {
+      const session = this.#game.getSession();
 
-    this.#game.undo();
+      this.#game.undo();
 
-    // Only pop history if we're NOT in a deploy session
-    if (!session && this.#history.length > 0) {
-      this.#history = this.#history.slice(0, -1);
+      // Only pop history if we're NOT in a deploy session
+      if (!session && this.#history.length > 0) {
+        this.#history = this.#history.slice(0, -1);
+      }
+
+      this.#historyViewIndex = -1;
+      this.#version++;
+      toast.info('Undo successful');
+    } catch (error) {
+      logger.error('Failed to undo move:', { error });
+      toast.error('Undo failed');
     }
-
-    this.#historyViewIndex = -1;
-    this.#version++;
-    toast.info('Undo successful');
   }
 
   reset(): void {
-    this.#game = this.#originalFen ? new CoTuLenh(this.#originalFen) : new CoTuLenh();
-    this.#history = [];
-    this.#historyViewIndex = -1;
-    this.#version++;
-    toast.success('Game reset');
+    try {
+      this.#game = this.#originalFen ? new CoTuLenh(this.#originalFen) : new CoTuLenh();
+      this.#history = [];
+      this.#historyViewIndex = -1;
+      this.#version++;
+      toast.success('Game reset');
+    } catch (error) {
+      logger.error('Failed to reset game:', { error });
+      toast.error('Reset failed');
+    }
   }
 
   commitDeploy(): void {

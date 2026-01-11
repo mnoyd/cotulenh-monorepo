@@ -65,3 +65,14 @@ export function safeSymbolToRole(symbol: unknown): Role {
 export function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
+
+/**
+ * Type guard for ExtendedGame interface
+ * Checks if the game instance has extended methods like isGameOver, isStalemate, isDraw
+ */
+export function hasExtendedGameMethods(
+  game: unknown
+): game is { isGameOver(): boolean; isStalemate?(): boolean; isDraw?(): boolean } {
+  if (!isObject(game)) return false;
+  return typeof (game as Record<string, unknown>).isGameOver === 'function';
+}

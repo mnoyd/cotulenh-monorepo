@@ -32,8 +32,10 @@
   let winnerBg = $derived(winner === 'r' ? 'bg-red-500/10' : 'bg-mw-primary/10');
   let winnerBorder = $derived(winner === 'r' ? 'border-red-500/30' : 'border-mw-primary/30');
 
-  // Log renders
-  logRender('🔄 [RENDER] GameInfo.svelte component rendered', { turn, winner, check, status });
+  // Log renders in effect to track reactive changes
+  $effect(() => {
+    logRender('🔄 [RENDER] GameInfo.svelte component rendered', { turn, winner, check, status });
+  });
 </script>
 
 <Card.Root

@@ -18,8 +18,10 @@
   let history = $derived(session.history);
   let historyViewIndex = $derived(session.historyViewIndex);
 
-  // Log renders
-  logRender('🔄 [RENDER] MoveHistory.svelte component rendered', { historyLength: history.length, historyViewIndex });
+  // Log renders in effect to track reactive changes
+  $effect(() => {
+    logRender('🔄 [RENDER] MoveHistory.svelte component rendered', { historyLength: history.length, historyViewIndex });
+  });
 
   // Use $effect to auto-scroll when history changes
   $effect(() => {

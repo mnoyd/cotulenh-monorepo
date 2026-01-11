@@ -5,6 +5,12 @@ import path from 'path';
 export default defineConfig(({ mode }) => {
   const config: Record<string, unknown> = {
     plugins: [sveltekit()],
+    test: {
+      globals: true,
+      environment: 'jsdom',
+      setupFiles: [],
+      include: ['src/**/*.{test,spec}.{js,ts}']
+    },
     optimizeDeps: {
       include: [],
       // Exclude workspace packages from pre-bundling in dev to use source directly

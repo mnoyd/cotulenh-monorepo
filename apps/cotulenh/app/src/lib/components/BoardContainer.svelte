@@ -39,8 +39,10 @@
   let boardApi = $state<Api | null>(null);
   let isLoading = $state(true);
 
-  // Log renders
-  logRender('🔄 [RENDER] BoardContainer.svelte component rendered', { config, isLoading });
+  // Log renders in effect to track reactive changes
+  $effect(() => {
+    logRender('🔄 [RENDER] BoardContainer.svelte component rendered', { config, isLoading });
+  });
 
   /**
    * Ensure the board maintains proper dimensions after initialization

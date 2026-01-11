@@ -3,6 +3,7 @@
   import type { GameSession } from '$lib/game-session.svelte';
   import { goto } from '$app/navigation';
   import { logRender } from '$lib/debug';
+  import { setStoredValue } from '$lib/stores/persisted.svelte';
   import { Button } from '$lib/components/ui/button';
   import ShareDialog from './ShareDialog.svelte';
 
@@ -14,8 +15,10 @@
 
   let shareOpen = $state(false);
 
-  // Log renders
-  logRender('🔄 [RENDER] GameControls.svelte component rendered', { session: !!session });
+  // Log renders in effect to avoid capturing stale values
+  $effect(() => {
+    logRender('🔄 [RENDER] GameControls.svelte component rendered', { session: !!session });
+  });
 
   function resetGame() {
     if (confirm('Are you sure you want to reset the game?')) {
@@ -47,13 +50,8 @@
       check: session.check
     };
 
-    localStorage.setItem('report_fen', session.fen);
-    try {
-      localStorage.setItem('report_state', JSON.stringify(currentState, null, 2));
-    } catch (e) {
-      logger.error(e, 'Failed to serialize game state');
-      localStorage.setItem('report_state', 'Error serializing state');
-    }
+    setStoredValue('report_fen', session.fen);
+    setStoredValue('report_state', currentState);
 
     goto('/report-issue');
   }

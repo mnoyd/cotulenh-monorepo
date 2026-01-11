@@ -6,6 +6,7 @@
   import DeploySessionPanel from '$lib/components/DeploySessionPanel.svelte';
   import MoveHistory from '$lib/components/MoveHistory.svelte';
   import GameControls from '$lib/components/GameControls.svelte';
+  import ErrorBoundary from '$lib/components/ErrorBoundary.svelte';
   import { GameSession } from '$lib/game-session.svelte';
   import { logger } from '@cotulenh/common';
 
@@ -27,7 +28,12 @@
       }
     }
 
-    session = new GameSession(initialFen);
+    try {
+      session = new GameSession(initialFen);
+    } catch (error) {
+      logger.error(error, 'Failed to initialize game session:');
+      throw error;
+    }
 
     window.addEventListener('keydown', session.handleKeydown);
 
@@ -45,59 +51,61 @@
   });
 </script>
 
-<main class="game-page">
-  <div class="game-container">
-    <div class="game-layout">
-      <!-- Board Section -->
-      <div class="board-section">
-        {#if session}
-          <BoardContainer
-            bind:this={boardComponent}
-            config={session.boardConfig}
-            onApiReady={(api) => session?.setBoardApi(api)}
-          />
-        {:else}
-          <div class="board-placeholder">
-            <div class="loading-spinner"></div>
-          </div>
-        {/if}
-      </div>
+<ErrorBoundary>
+  <main class="game-page">
+    <div class="game-container">
+      <div class="game-layout">
+        <!-- Board Section -->
+        <div class="board-section">
+          {#if session}
+            <BoardContainer
+              bind:this={boardComponent}
+              config={session.boardConfig}
+              onApiReady={(api) => session?.setBoardApi(api)}
+            />
+          {:else}
+            <div class="board-placeholder">
+              <div class="loading-spinner"></div>
+            </div>
+          {/if}
+        </div>
 
-      <!-- Controls Section -->
-      <div class="controls-section">
-        <header class="controls-header">
-          <h1>
-            <span class="title-green">Cotulenh</span>
-            <span class="title-cyan">Online</span>
-          </h1>
-        </header>
+        <!-- Controls Section -->
+        <div class="controls-section">
+          <header class="controls-header">
+            <h1>
+              <span class="title-green">Cotulenh</span>
+              <span class="title-cyan">Online</span>
+            </h1>
+          </header>
 
-        <div class="controls-grid">
-          <div class="controls-left">
-            {#if session}
-              <GameInfo {session} />
-            {/if}
-          </div>
-          <div class="controls-right">
-            {#if session}
-              <GameControls {session} />
-            {/if}
-          </div>
-          <div class="controls-full">
-            {#if session}
-              <DeploySessionPanel {session} />
-            {/if}
-          </div>
-          <div class="controls-history">
-            {#if session}
-              <MoveHistory {session} />
-            {/if}
+          <div class="controls-grid">
+            <div class="controls-left">
+              {#if session}
+                <GameInfo {session} />
+              {/if}
+            </div>
+            <div class="controls-right">
+              {#if session}
+                <GameControls {session} />
+              {/if}
+            </div>
+            <div class="controls-full">
+              {#if session}
+                <DeploySessionPanel {session} />
+              {/if}
+            </div>
+            <div class="controls-history">
+              {#if session}
+                <MoveHistory {session} />
+              {/if}
+            </div>
           </div>
         </div>
       </div>
     </div>
-  </div>
-</main>
+  </main>
+</ErrorBoundary>
 
 <style>
   /* Minimal static styles */
