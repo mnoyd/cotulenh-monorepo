@@ -7,7 +7,7 @@
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
   import SettingsDialog from '$lib/components/SettingsDialog.svelte';
   import ShortcutsDialog from '$lib/components/ShortcutsDialog.svelte';
-  import { Menu, Home, PenSquare, Settings, Keyboard, BookOpen } from 'lucide-svelte';
+  import { Menu, Home, PenSquare, Settings, Keyboard, BookOpen, Puzzle } from 'lucide-svelte';
   import { themeStore } from '$lib/stores/theme.svelte';
 
   interface Props {
@@ -84,18 +84,27 @@
     </div>
 
     <nav class="sidebar-nav">
-      <a
-        href="/intro"
-        class="sidebar-link"
-        class:active={$page.url.pathname === '/intro'}
-        title="Introduction"
-      >
+      <a href="/" class="sidebar-link" class:active={$page.url.pathname === '/'} title="Introduction">
         <BookOpen class="sidebar-icon" />
         <span class="sidebar-label">Intro</span>
       </a>
-      <a href="/" class="sidebar-link" class:active={$page.url.pathname === '/'} title="Deploy">
+      <a
+        href="/play"
+        class="sidebar-link"
+        class:active={$page.url.pathname === '/play'}
+        title="Play"
+      >
         <Home class="sidebar-icon" />
-        <span class="sidebar-label">Deploy</span>
+        <span class="sidebar-label">Play</span>
+      </a>
+      <a
+        href="/puzzles"
+        class="sidebar-link"
+        class:active={$page.url.pathname === '/puzzles'}
+        title="Puzzles"
+      >
+        <Puzzle class="sidebar-icon" />
+        <span class="sidebar-label">Puzzles</span>
       </a>
       <a
         href="/board-editor"
@@ -136,7 +145,7 @@
         <DropdownMenu.Content align="start" side="bottom">
           <DropdownMenu.Item>
             {#snippet child({ props })}
-              <a href="/intro" {...props}>
+              <a href="/" {...props}>
                 <BookOpen size={16} />
                 Introduction
               </a>
@@ -144,9 +153,17 @@
           </DropdownMenu.Item>
           <DropdownMenu.Item>
             {#snippet child({ props })}
-              <a href="/" {...props}>
+              <a href="/play" {...props}>
                 <Home size={16} />
-                Deploy
+                Play
+              </a>
+            {/snippet}
+          </DropdownMenu.Item>
+          <DropdownMenu.Item>
+            {#snippet child({ props })}
+              <a href="/puzzles" {...props}>
+                <Puzzle size={16} />
+                Puzzles
               </a>
             {/snippet}
           </DropdownMenu.Item>
