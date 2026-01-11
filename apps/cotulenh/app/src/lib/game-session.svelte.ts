@@ -2,8 +2,8 @@ import { tick } from 'svelte';
 import { logger } from '@cotulenh/common';
 import { logRender } from '$lib/debug';
 import type { Api, Config, DestMove, OrigMove, Key } from '@cotulenh/board';
-import { CoTuLenh, BITS, BLUE, RED } from '@cotulenh/core';
-import type { Color, Square, Piece, MoveResult } from '@cotulenh/core';
+import { CoTuLenh, BLUE, RED, type CoTuLenhInterface, type DeployStateView } from '@cotulenh/core';
+import type { Color, Square, MoveResult } from '@cotulenh/core';
 import { makeCoreMove } from '$lib/utils';
 import { toast } from 'svelte-sonner';
 import {
@@ -12,15 +12,8 @@ import {
   mapPossibleMovesToDests,
   mapLastMoveToBoardFormat
 } from '$lib/features/game/utils.js';
-import type {
-  GameStatus,
-  UIDeployState,
-  HistoryMove,
-  DeploySession,
-  DeployAction
-} from '$lib/types/game';
-import { hasExtendedGameMethods } from '$lib/types/type-guards';
-import { flattenPiece, extractLastMoveSquares } from './game-session-helpers';
+import type { GameStatus, HistoryMove } from '$lib/types/game';
+import { extractLastMoveSquares } from './game-session-helpers';
 
 /**
  * GameSession - Unified reactive state management using the Reactive Adapter Pattern.
@@ -37,7 +30,7 @@ import { flattenPiece, extractLastMoveSquares } from './game-session-helpers';
  */
 export class GameSession {
   // The imperative game engine (the real source of truth for game logic)
-  #game: CoTuLenh;
+  #game: CoTuLenhInterface;
 
   // The "heartbeat" - bump this on any mutation to trigger reactivity
   #version = $state(0);
@@ -96,14 +89,12 @@ export class GameSession {
       return 'playing';
     }
 
-    // Use type guard instead of unsafe casting
-    if (hasExtendedGameMethods(this.#game)) {
-      if (this.#game.isGameOver()) {
-        if (this.#game.isCheckmate()) return 'checkmate';
-        if (this.#game.isStalemate?.()) return 'stalemate';
-        if (this.#game.isDraw?.()) return 'draw';
-        return 'checkmate';
-      }
+    // All CoTuLenh instances have these methods
+    if (this.#game.isGameOver()) {
+      if (this.#game.isCheckmate()) return 'checkmate';
+      if (this.#game.isStalemate()) return 'stalemate';
+      if (this.#game.isDraw()) return 'draw';
+      return 'checkmate';
     }
     return 'playing';
   }
@@ -155,32 +146,9 @@ export class GameSession {
     return this.#cachedPossibleMoves;
   }
 
-  get deployState(): UIDeployState | null {
+  get deployState(): DeployStateView | null {
     void this.#version;
-    const session = this.#game.getSession();
-    if (!session || !session.isDeploy) return null;
-
-    const deploySession = session as unknown as DeploySession;
-    const moves = deploySession.moves || [];
-
-    const movedPieces = moves
-      .filter(
-        (move: DeployAction) => move.from === deploySession.stackSquare && move.flags & BITS.DEPLOY
-      )
-      .flatMap((move: DeployAction) => flattenPiece(move.piece));
-
-    const remainingPieces = deploySession.remaining || [];
-    const stayPiece = remainingPieces.length > 0 ? remainingPieces[0] : undefined;
-
-    return {
-      stackSquare: deploySession.stackSquare,
-      turn: deploySession.turn,
-      originalPiece: deploySession.originalPiece,
-      movedPieces,
-      stay: stayPiece,
-      actions: moves,
-      remainingPieces
-    };
+    return this.#game.getDeployState();
   }
 
   get originalFen(): string | undefined {

@@ -63,7 +63,12 @@ import {
   getCheckAirDefenseZone,
   updateAirDefensePiecesPosition,
 } from './air-defense.js'
-import { MoveSession, handleMove, MoveResult } from './move-session.js'
+import {
+  MoveSession,
+  handleMove,
+  MoveResult,
+  DeployStateView,
+} from './move-session.js'
 import {
   createError,
   ErrorCode,
@@ -72,6 +77,8 @@ import {
 } from '@cotulenh/common'
 
 export { MoveResult } from './move-session.js'
+export type { DeployStateView } from './move-session.js'
+export { flattenPiece } from './utils.js'
 
 // Structure for storing history states
 interface History {
@@ -109,8 +116,86 @@ const HEADER_TEMPLATE: Record<string, string | null> = {
 
 // Public Move class moved to move-session.ts
 
+/**
+ * Public interface for the CoTuLenh game engine.
+ * Defines all methods available for game state management, move execution, and validation.
+ */
+export interface CoTuLenhInterface {
+  // Game state queries
+  fen(): string
+  turn(): Color
+  isCheck(): boolean
+
+  // Game ending conditions
+  isGameOver(): boolean
+  isCheckmate(): boolean
+  isStalemate(): boolean
+  isDraw(): boolean
+  isDrawByFiftyMoves(): boolean
+  isThreefoldRepetition(): boolean
+  isCommanderCaptured(): boolean
+
+  // Move operations
+  move(
+    move:
+      | string
+      | {
+          from: Square | number
+          to: Square | number
+          piece?: PieceSymbol
+          stay?: boolean
+          deploy?: boolean
+        }
+      | InternalMove,
+  ): MoveResult | null
+  moves(options?: {
+    verbose?: boolean
+    square?: Square
+    pieceType?: PieceSymbol
+  }): string[] | MoveResult[]
+  undo(): void
+
+  // Session operations
+  getSession(): MoveSession | null
+  setSession(session: MoveSession | null): void
+  getDeployState(): DeployStateView | null
+  commitSession(): { success: boolean; reason?: string; result?: MoveResult }
+  cancelSession(): void
+  canCommitSession(): boolean
+
+  // Board state
+  get(square: Square | number): Piece | undefined
+  put(piece: Piece, square: Square | number): boolean
+  remove(square: Square | number): Piece | undefined
+  clear(options?: { preserveHeaders?: boolean }): void
+
+  // History
+  history(): string[]
+  history(options: { verbose: true }): MoveResult[]
+  history(options: { verbose: false }): string[]
+  history(options?: { verbose?: boolean }): string[] | MoveResult[]
+
+  // Utility
+  getAirDefenseInfluence(): AirDefenseInfluence
+  getMetadata(): GameStateMetadata
+  setMetadata(metadata: Partial<GameStateMetadata>): void
+
+  // Position validation
+  isCommanderInDanger(color: Color): boolean
+
+  // FEN operations
+  load(
+    fen: string,
+    options?: { skipValidation?: boolean; preserveHeaders?: boolean },
+  ): void
+
+  // Position tracking
+  incrementPositionCount(fen: string): void
+  decrementPositionCount(fen: string): void
+}
+
 // --- CoTuLenh Class (Additions) ---
-export class CoTuLenh {
+export class CoTuLenh implements CoTuLenhInterface {
   private _movesCache = new QuickLRU<string, InternalMove[]>({ maxSize: 1000 })
   private _board = new Array<Piece | undefined>(256)
   private _turn: Color = RED // Default to Red
@@ -897,11 +982,14 @@ export class CoTuLenh {
   }
 
   /**
-   * Undoes the last move made on the board, restoring the previous position.
-   * Reverts all changes including piece positions, game state, and move counters.
+   * Undoes the last action.
    *
-   * If there's an active deploy session, undoes from the session first.
-   * Otherwise, undoes from history.
+   * Behavior (in priority order):
+   * 1. If in active deploy session: Undo last deploy move
+   * 2. If session is empty: Clear session (nothing to undo)
+   * 3. Otherwise: Undo last committed move from history
+   *
+   * Note: This method clears the moves cache and may clear empty sessions.
    */
   public undo(): void {
     // Priority 1: Check active session with moves
@@ -953,6 +1041,19 @@ export class CoTuLenh {
    */
   public setSession(session: MoveSession | null): void {
     this._session = session
+  }
+
+  /**
+   * Get current deploy session state for UI rendering.
+   * Returns null if no active deploy session.
+   *
+   * This provides a readonly view of the deploy state without exposing
+   * internal session mechanics. UI components should use this instead of
+   * directly accessing the session.
+   */
+  public getDeployState(): DeployStateView | null {
+    const session = this.getSession()
+    return session?.getDeployView() ?? null
   }
 
   /**

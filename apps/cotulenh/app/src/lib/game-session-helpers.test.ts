@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { flattenPiece, extractLastMoveSquares } from './game-session-helpers';
 import type { Piece, MoveResult } from '@cotulenh/core';
 
@@ -57,7 +57,7 @@ describe('game-session-helpers', () => {
       const move: Partial<MoveResult> = {
         from: 'a1',
         to: 'a2',
-        flags: []
+        flags: ''
       };
       const result = extractLastMoveSquares(move);
       expect(result).toEqual(['a1', 'a2']);
@@ -67,7 +67,7 @@ describe('game-session-helpers', () => {
       const move: Partial<MoveResult> = {
         from: 'a1',
         to: 'a2',
-        flags: ['d'],
+        flags: 'd',
         isDeploy: true
       };
       const result = extractLastMoveSquares(move);
@@ -75,14 +75,14 @@ describe('game-session-helpers', () => {
     });
 
     it('should extract squares from deploy move with Map destination', () => {
-      const destinations = new Map([
-        ['a2', {}],
-        ['a3', {}]
+      const destinations = new Map<string, Piece>([
+        ['a2', { type: 'i', color: 'r' }],
+        ['a3', { type: 'i', color: 'r' }]
       ]);
       const move: Partial<MoveResult> = {
         from: 'a1',
-        to: destinations as any,
-        flags: ['d'],
+        to: destinations,
+        flags: 'd',
         isDeploy: true
       };
       const result = extractLastMoveSquares(move);

@@ -34,6 +34,22 @@ interface RecombineOption {
 }
 
 /**
+ * Readonly view of deploy session state for UI rendering.
+ * Provides a safe, immutable interface to display deploy progress without
+ * exposing internal session mechanics.
+ */
+export interface DeployStateView {
+  readonly stackSquare: Square
+  readonly turn: Color
+  readonly originalPiece: Piece
+  readonly movedPieces: Piece[]
+  readonly remainingPieces: Piece[]
+  readonly stayPiece: Piece | undefined
+  readonly canCommit: boolean
+  readonly isComplete: boolean
+}
+
+/**
  * Modify moves array to apply a recombine option to the target move.
  */
 function applyRecombineToMoves(
@@ -119,6 +135,20 @@ export class MoveResult {
 
   get isSuicideCapture(): boolean {
     return this.flags.includes(FLAGS.SUICIDE_CAPTURE)
+  }
+
+  /**
+   * Get move squares for highlighting (from → to).
+   * For deploy moves, returns all deployed squares.
+   * For normal moves, returns [from, to].
+   */
+  getHighlightSquares(): Square[] {
+    if (this.isDeploy && this.to instanceof Map) {
+      const squares = [this.from]
+      squares.push(...this.to.keys())
+      return squares
+    }
+    return [this.from, this.to as Square]
   }
 
   /**
@@ -736,6 +766,31 @@ export class MoveSession {
     }
 
     return moves
+  }
+
+  /**
+   * Get a readonly view of deploy state for UI rendering.
+   * Returns null for non-deploy sessions.
+   *
+   * This method provides a safe interface for UI components to access deploy
+   * state without exposing internal session mechanics or allowing mutations.
+   */
+  getDeployView(): DeployStateView | null {
+    if (!this.isDeploy) return null
+
+    return {
+      stackSquare: algebraic(this.stackSquare),
+      turn: this.turn,
+      originalPiece: this.originalPiece,
+      movedPieces: this.moves.flatMap((m) => flattenPiece(m.piece)),
+      remainingPieces: this.remaining,
+      stayPiece:
+        this.remaining.length > 0
+          ? (combinePieces(this.remaining) ?? undefined)
+          : undefined,
+      canCommit: this.canCommit(),
+      isComplete: this.isComplete,
+    }
   }
 }
 

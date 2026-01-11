@@ -29,15 +29,6 @@ export interface DeploySession {
 }
 
 /**
- * Extended game interface with additional methods
- */
-export interface ExtendedGame {
-  isGameOver(): boolean;
-  isStalemate?(): boolean;
-  isDraw?(): boolean;
-}
-
-/**
  * Extended deploy state for UI with additional computed properties.
  * This is computed directly from the game instance, not stored in the store.
  */

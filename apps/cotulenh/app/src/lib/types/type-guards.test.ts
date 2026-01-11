@@ -1,12 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import {
-  isPieceSymbol,
-  isRole,
-  safeRoleToSymbol,
-  safeSymbolToRole,
-  isObject,
-  hasExtendedGameMethods
-} from './type-guards';
+import { isPieceSymbol, isRole, safeRoleToSymbol, safeSymbolToRole, isObject } from './type-guards';
 
 describe('type-guards', () => {
   describe('isPieceSymbol', () => {
@@ -90,24 +83,6 @@ describe('type-guards', () => {
       expect(isObject([])).toBe(false);
       expect(isObject('string')).toBe(false);
       expect(isObject(123)).toBe(false);
-    });
-  });
-
-  describe('hasExtendedGameMethods', () => {
-    it('should return true for objects with isGameOver method', () => {
-      const mockGame = {
-        isGameOver: () => false,
-        isStalemate: () => false,
-        isDraw: () => false
-      };
-      expect(hasExtendedGameMethods(mockGame)).toBe(true);
-    });
-
-    it('should return false for objects without isGameOver method', () => {
-      expect(hasExtendedGameMethods({})).toBe(false);
-      expect(hasExtendedGameMethods({ isStalemate: () => false })).toBe(false);
-      expect(hasExtendedGameMethods(null)).toBe(false);
-      expect(hasExtendedGameMethods('string')).toBe(false);
     });
   });
 });

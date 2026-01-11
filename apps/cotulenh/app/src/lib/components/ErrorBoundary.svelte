@@ -1,9 +1,10 @@
 <script lang="ts">
   import { logger } from '@cotulenh/common';
+  import type { Snippet } from 'svelte';
 
   interface Props {
-    fallback?: (error: Error) => any;
-    children?: any;
+    fallback?: Snippet<[Error]>;
+    children?: Snippet;
   }
 
   let { fallback, children }: Props = $props();

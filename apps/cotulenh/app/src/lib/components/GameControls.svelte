@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { logger } from '@cotulenh/common';
   import type { GameSession } from '$lib/game-session.svelte';
   import { goto } from '$app/navigation';
   import { logRender } from '$lib/debug';
@@ -105,7 +104,4 @@
   </Button>
 </div>
 
-<ShareDialog
-  bind:open={shareOpen}
-  fen={session.fen}
-/>
+<ShareDialog bind:open={shareOpen} fen={session.fen} />

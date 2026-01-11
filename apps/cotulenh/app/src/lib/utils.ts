@@ -13,7 +13,7 @@ export type WithElementRef<T, U extends HTMLElement = HTMLElement> = T & { ref?:
 
 import { type DestMove, type OrigMove } from '@cotulenh/board';
 import {
-  type CoTuLenh,
+  type CoTuLenhInterface,
   MoveResult as Move,
   type MoveResult,
   type Color as CoreColor
@@ -51,7 +51,7 @@ export {
  * @param game - The CoTuLenh game instance.
  * @returns A Map where keys are origin squares (e.g., 'e2') and values are arrays of destination squares (e.g., ['e3', 'e4']).
  */
-export function getPossibleMoves(game: CoTuLenh): Move[] {
+export function getPossibleMoves(game: CoTuLenhInterface): Move[] {
   return game.moves({ verbose: true }) as Move[];
 }
 
@@ -62,7 +62,7 @@ export function getPossibleMoves(game: CoTuLenh): Move[] {
  * @param square - The square to get moves for (e.g., 'e2')
  * @returns Array of verbose move objects from that square
  */
-export function getMovesForSquare(game: CoTuLenh, square: string): Move[] {
+export function getMovesForSquare(game: CoTuLenhInterface, square: string): Move[] {
   return game.moves({ verbose: true, square }) as Move[];
 }
 
@@ -72,7 +72,7 @@ export function getMovesForSquare(game: CoTuLenh, square: string): Move[] {
  * @param game - The CoTuLenh game instance
  * @returns Array of squares that have movable pieces
  */
-export function getMovableSquares(game: CoTuLenh): string[] {
+export function getMovableSquares(game: CoTuLenhInterface): string[] {
   const squares = new Set<string>();
 
   // Parse move strings to extract origin squares
@@ -95,7 +95,11 @@ export function getTurnColorName(turn: CoreColor): string {
   return turn === 'r' ? 'Red' : 'Blue';
 }
 
-export function makeCoreMove(game: CoTuLenh, orig: OrigMove, dest: DestMove): MoveResult | null {
+export function makeCoreMove(
+  game: CoTuLenhInterface,
+  orig: OrigMove,
+  dest: DestMove
+): MoveResult | null {
   try {
     const pieceAtSquare = game.get(orig.square);
     if (!pieceAtSquare) {
