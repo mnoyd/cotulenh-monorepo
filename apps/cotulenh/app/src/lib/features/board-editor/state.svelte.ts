@@ -293,7 +293,7 @@ export function createBoardEditorState() {
       }
 
       const encodedFen = encodeURIComponent(fenInput);
-      goto(`/?fen=${encodedFen}`);
+      goto(`/play?fen=${encodedFen}`);
     } catch (error) {
       validationError = error instanceof Error ? error.message : 'Invalid FEN';
     }

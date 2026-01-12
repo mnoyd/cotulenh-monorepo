@@ -1,189 +1,128 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
-  import { page } from '$app/stores';
-  import BoardContainer from '$lib/components/BoardContainer.svelte';
-  import GameInfo from '$lib/components/GameInfo.svelte';
-  import DeploySessionPanel from '$lib/components/DeploySessionPanel.svelte';
-  import MoveHistory from '$lib/components/MoveHistory.svelte';
-  import GameControls from '$lib/components/GameControls.svelte';
-  import ErrorBoundary from '$lib/components/ErrorBoundary.svelte';
-  import { GameSession } from '$lib/game-session.svelte';
-  import { logger } from '@cotulenh/common';
-
-  import '$lib/styles/board.css';
-
-  let boardComponent: BoardContainer | null = $state(null);
-  let session = $state<GameSession | null>(null);
-
-  onMount(() => {
-    const urlFen = $page.url.searchParams.get('fen');
-    let initialFen: string | undefined;
-
-    if (urlFen) {
-      try {
-        initialFen = decodeURIComponent(urlFen);
-        logger.debug('Loading game with custom FEN:', { fen: initialFen });
-      } catch (error) {
-        logger.error(error, 'Error decoding FEN from URL:');
-      }
-    }
-
-    try {
-      session = new GameSession(initialFen);
-    } catch (error) {
-      logger.error(error, 'Failed to initialize game session:');
-      throw error;
-    }
-
-    window.addEventListener('keydown', session.handleKeydown);
-
-    return () => {
-      if (session) {
-        window.removeEventListener('keydown', session.handleKeydown);
-      }
-    };
-  });
-
-  $effect(() => {
-    if (session) {
-      session.setupBoardEffect();
-    }
-  });
+  import { Info, Users, Share2, Puzzle, Bot, Gamepad2 } from 'lucide-svelte';
 </script>
 
-<ErrorBoundary>
-  <main class="game-page">
-    <div class="game-container">
-      <div class="game-layout">
-        <!-- Board Section -->
-        <div class="board-section">
-          {#if session}
-            <BoardContainer
-              bind:this={boardComponent}
-              config={session.boardConfig}
-              onApiReady={(api) => session?.setBoardApi(api)}
-            />
-          {:else}
-            <div class="board-placeholder">
-              <div class="loading-spinner"></div>
-            </div>
-          {/if}
+<main class="intro-page">
+  <div class="intro-container">
+    <header class="intro-header">
+      <div class="demo-badge">
+        <Info size={16} />
+        <span>Demo Application</span>
+      </div>
+      <h1>
+        <span class="title-green">Cờ Tư Lệnh</span>
+        <span class="title-cyan">Online</span>
+      </h1>
+      <p class="tagline">
+        A demonstration app showcasing the implementation of <strong>Cờ Tư Lệnh</strong> (Vietnamese
+        Commander Chess)
+      </p>
+    </header>
+
+    <section class="features-section">
+      <h2>What you can do</h2>
+
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon">
+            <Gamepad2 size={32} />
+          </div>
+          <h3>Review Your Games</h3>
+          <p>Replay and analyze your games move by move. Understand your strategies and learn from your mistakes.</p>
         </div>
 
-        <!-- Controls Section -->
-        <div class="controls-section">
-          <header class="controls-header">
-            <h1>
-              <span class="title-green">Cotulenh</span>
-              <span class="title-cyan">Online</span>
-            </h1>
-          </header>
+        <div class="feature-card">
+          <div class="feature-icon">
+            <Share2 size={32} />
+          </div>
+          <h3>Share with Friends</h3>
+          <p>Export game positions and share them with friends. Discuss strategies and memorable moments.</p>
+        </div>
 
-          <div class="controls-grid">
-            <div class="controls-left">
-              {#if session}
-                <GameInfo {session} />
-              {/if}
-            </div>
-            <div class="controls-right">
-              {#if session}
-                <GameControls {session} />
-              {/if}
-            </div>
-            <div class="controls-full">
-              {#if session}
-                <DeploySessionPanel {session} />
-              {/if}
-            </div>
-            <div class="controls-history">
-              {#if session}
-                <MoveHistory {session} />
-              {/if}
-            </div>
+        <div class="feature-card">
+          <div class="feature-icon">
+            <Puzzle size={32} />
+          </div>
+          <h3>Create Puzzles</h3>
+          <p>Use the board editor to create challenging puzzles for others to solve.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="coming-soon-section">
+      <h2>Coming Soon</h2>
+
+      <div class="coming-soon-grid">
+        <div class="coming-soon-card">
+          <div class="coming-icon">
+            <Users size={28} />
+          </div>
+          <div class="coming-content">
+            <h3>Multiplayer Mode</h3>
+            <p>Play online with friends or match with opponents worldwide.</p>
+          </div>
+        </div>
+
+        <div class="coming-soon-card">
+          <div class="coming-icon">
+            <Bot size={28} />
+          </div>
+          <div class="coming-content">
+            <h3>AI Bot</h3>
+            <p>Challenge yourself against an AI opponent with varying difficulty levels.</p>
           </div>
         </div>
       </div>
+    </section>
+
+    <div class="cta-section">
+      <a href="/play" class="cta-button">Start Playing</a>
+      <a href="/board-editor" class="cta-button secondary">Open Editor</a>
     </div>
-  </main>
-</ErrorBoundary>
+  </div>
+</main>
 
 <style>
-  /* Minimal static styles */
-  .game-page {
+  .intro-page {
     min-height: 100vh;
     display: flex;
     justify-content: center;
-    align-items: center;
+    align-items: flex-start;
     background: var(--theme-bg-dark, #000);
     color: var(--theme-text-primary, #eee);
     font-family: var(--font-ui);
+    padding: 2rem 1rem;
   }
 
-  .game-container {
+  .intro-container {
     width: 100%;
-    max-width: 1600px;
-    padding: 1.5rem;
+    max-width: 800px;
   }
 
-  .game-layout {
-    display: flex;
-    gap: 1.5rem;
-    align-items: stretch;
-    justify-content: center;
+  .intro-header {
+    text-align: center;
+    margin-bottom: 3rem;
   }
 
-  .board-section {
-    flex: none;
-    border: 1px solid var(--theme-border, #444);
-    padding: 0.25rem;
-    background: var(--theme-bg-base, #222);
-    width: min(760px, 100%);
-  }
-
-  .board-placeholder {
-    width: 100%;
-    aspect-ratio: 12 / 13;
-    background: #111;
-    display: flex;
+  .demo-badge {
+    display: inline-flex;
     align-items: center;
-    justify-content: center;
-  }
-
-  .loading-spinner {
-    width: 40px;
-    height: 40px;
-    border: 3px solid #333;
-    border-top-color: #22c55e;
-    border-radius: 50%;
-    /* NO animation */
-  }
-
-  .controls-section {
-    width: 340px;
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-    gap: 1rem;
-    background: var(--theme-bg-panel, #222);
+    gap: 0.5rem;
+    background: var(--theme-bg-elevated, #333);
     border: 1px solid var(--theme-border, #444);
-    padding: 1rem;
+    padding: 0.5rem 1rem;
+    border-radius: 9999px;
+    font-size: 0.875rem;
+    color: var(--theme-text-secondary, #aaa);
+    margin-bottom: 1.5rem;
   }
 
-  .controls-header {
-    border-bottom: 1px solid var(--theme-border, #444);
-    padding-bottom: 0.75rem;
-    margin-bottom: 0.5rem;
-  }
-
-  .controls-header h1 {
-    font-size: 1.5rem;
-    margin: 0;
+  .intro-header h1 {
+    font-size: 2.5rem;
+    margin: 0 0 1rem 0;
     font-weight: 800;
     letter-spacing: 0.05em;
     text-transform: uppercase;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
   }
 
   .title-green {
@@ -195,64 +134,138 @@
     font-weight: 300;
   }
 
-  .controls-grid {
+  .tagline {
+    font-size: 1.125rem;
+    color: var(--theme-text-secondary, #aaa);
+    max-width: 600px;
+    margin: 0 auto;
+    line-height: 1.6;
+  }
+
+  .tagline strong {
+    color: var(--theme-text-primary, #eee);
+  }
+
+  .features-section,
+  .coming-soon-section {
+    margin-bottom: 3rem;
+  }
+
+  h2 {
+    font-size: 1.25rem;
+    color: var(--theme-text-secondary, #aaa);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 1.5rem;
+    font-weight: 500;
+  }
+
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1rem;
+  }
+
+  .feature-card {
+    background: var(--theme-bg-panel, #222);
+    border: 1px solid var(--theme-border, #444);
+    border-radius: 12px;
+    padding: 1.5rem;
+  }
+
+  .feature-icon {
+    color: var(--theme-success, #22c55e);
+    margin-bottom: 1rem;
+  }
+
+  .feature-card h3 {
+    font-size: 1.125rem;
+    margin: 0 0 0.5rem 0;
+    color: var(--theme-text-primary, #eee);
+  }
+
+  .feature-card p {
+    font-size: 0.875rem;
+    color: var(--theme-text-secondary, #aaa);
+    margin: 0;
+    line-height: 1.5;
+  }
+
+  .coming-soon-grid {
     display: flex;
     flex-direction: column;
     gap: 1rem;
-    flex: 1;
   }
 
-  @media (max-width: 1024px) {
-    .game-layout {
-      flex-direction: column;
-      gap: 0;
+  .coming-soon-card {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    background: var(--theme-bg-panel, #222);
+    border: 1px dashed var(--theme-border, #444);
+    border-radius: 12px;
+    padding: 1.25rem;
+  }
+
+  .coming-icon {
+    color: var(--theme-primary, #06b6d4);
+    opacity: 0.7;
+  }
+
+  .coming-content h3 {
+    font-size: 1rem;
+    margin: 0 0 0.25rem 0;
+    color: var(--theme-text-primary, #eee);
+  }
+
+  .coming-content p {
+    font-size: 0.875rem;
+    color: var(--theme-text-secondary, #aaa);
+    margin: 0;
+  }
+
+  .cta-section {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .cta-button {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.875rem 2rem;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 1rem;
+    text-decoration: none;
+    background: var(--theme-success, #22c55e);
+    color: var(--theme-text-inverse, #000);
+    border: 1px solid var(--theme-success, #22c55e);
+  }
+
+  .cta-button:hover {
+    background: color-mix(in srgb, var(--theme-success) 85%, black);
+    border-color: color-mix(in srgb, var(--theme-success) 85%, black);
+  }
+
+  .cta-button.secondary {
+    background: transparent;
+    color: var(--theme-primary, #06b6d4);
+    border-color: var(--theme-primary, #06b6d4);
+  }
+
+  .cta-button.secondary:hover {
+    background: var(--theme-primary-dim, rgba(6, 182, 212, 0.2));
+  }
+
+  @media (max-width: 640px) {
+    .intro-header h1 {
+      font-size: 1.75rem;
     }
 
-    .board-section {
-      border: none;
-      background: var(--theme-bg-dark, #000);
-      flex: 1;
-      padding: 0;
-    }
-
-    .controls-section {
-      width: 100%;
-      flex: none;
-      background: var(--theme-bg-dark, #000);
-      border-top: 2px solid var(--theme-success, #22c55e);
-      padding: 0.75rem;
-      gap: 0.75rem;
-    }
-
-    .controls-header {
-      display: none;
-    }
-
-    .controls-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 0.5rem;
-    }
-
-    .controls-left {
-      grid-column: 1;
-    }
-
-    .controls-right {
-      grid-column: 2;
-    }
-
-    .controls-full {
-      grid-column: 1 / -1;
-      order: 3;
-    }
-
-    .controls-history {
-      grid-column: 1 / -1;
-      order: 4;
-      height: 120px;
-      min-height: 0;
-      overflow: hidden;
+    .tagline {
+      font-size: 1rem;
     }
   }
 </style>
