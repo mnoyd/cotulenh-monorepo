@@ -21,20 +21,20 @@
     },
     {
       id: 2,
-      title: 'Air Force Strike',
-      description: 'One move and checkmate.',
+      title: 'Combined Arms',
+      description: 'Must win in 2 moves.',
       difficulty: 'Medium',
-      fen: '2c8/3g3h3/4(FT)6/11/11/7C3/11/11/11/11/11/11 r - - 0 1',
-      hint: 'Stack piece can move all of its members at once.'
+      fen: '2c8/3g3h3/4FT5/3t7/11/5C5/11/11/11/11/11/11 r - - 0 1',
+      hint: 'Double attack is very powerful if you know how to create them.'
     },
     {
       id: 3,
-      title: 'Combined Arms',
-      description: 'Must win under 3 moves.',
+      title: 'Less vs More',
+      description: 'Must win in 3 moves.',
       difficulty: 'Hard',
-      fen: '2c8/3g3h3/4FT5/3t7/11/5C5/11/11/11/11/11/11 r - - 0 1',
-      hint: 'Double attack is very powerful if you know how to create them.'
-    }
+      fen: '2c1a1f4/11/2t1s1F4/11/2A8/11/11/11/11/11/3C7/11 r - - 0 1',
+      hint: 'Last piece from each side auto promoted.'
+    },
   ];
 
   function getDifficultyColor(difficulty: string): string {
