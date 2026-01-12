@@ -1,17 +1,16 @@
 <script lang="ts">
   import { browser } from '$app/environment';
   import { fade } from 'svelte/transition';
+  import { getStoredValue } from '$lib/stores/persisted.svelte';
 
-  let fen = $state('');
-  let gameState = $state('');
+  let gamePgn = $state('');
   let issueDescription = $state('');
   let copied = $state(false);
 
-  // Load data from localStorage on mount (browser only)
+  // Load PGN from localStorage on mount (browser only)
   $effect(() => {
     if (browser) {
-      fen = localStorage.getItem('report_fen') || '';
-      gameState = localStorage.getItem('report_state') || '';
+      gamePgn = getStoredValue('report_pgn', '');
     }
   });
 
@@ -20,18 +19,13 @@
 **Description**
 ${issueDescription}
 
-**FEN**
+**Game PGN**
 \`\`\`
-${fen}
-\`\`\`
-
-**Game State**
-\`\`\`json
-${gameState}
+${gamePgn}
 \`\`\`
     `.trim();
 
-    // Since URL length limits might prevent full pre-filling, we copy to clipboard first
+    // Copy to clipboard and open GitHub issues
     navigator.clipboard.writeText(body).then(() => {
       copied = true;
       setTimeout(() => (copied = false), 3000);
@@ -64,13 +58,9 @@ ${gameState}
     </div>
 
     <div class="form-group">
-      <label for="fen">Current FEN</label>
-      <input id="fen" type="text" value={fen} readonly />
-    </div>
-
-    <div class="form-group">
-      <label for="state">Game State (JSON)</label>
-      <textarea id="state" readonly value={gameState} rows="4"></textarea>
+      <label for="pgn">Game PGN</label>
+      <textarea id="pgn" readonly value={gamePgn} rows="10"></textarea>
+      <p class="helper-text">PGN contains complete game history including position, moves, and metadata</p>
     </div>
 
     <div class="form-group">
@@ -84,7 +74,11 @@ ${gameState}
     </div>
 
     <div class="actions">
-      <button class="submit-btn max-md:w-full max-md:min-w-0" onclick={createGithubIssue} disabled={!issueDescription}>
+      <button
+        class="submit-btn max-md:w-full max-md:min-w-0"
+        onclick={createGithubIssue}
+        disabled={!issueDescription}
+      >
         {#if copied}
           Copied to Clipboard & Opening GitHub...
         {:else}
@@ -216,6 +210,13 @@ ${gameState}
     margin-bottom: var(--spacing-lg);
   }
 
+  .helper-text {
+    font-size: 0.85rem;
+    color: var(--color-text-secondary);
+    margin-top: var(--spacing-xs);
+    font-style: italic;
+  }
+
   label {
     display: block;
     font-family: var(--font-display);
@@ -226,7 +227,6 @@ ${gameState}
     letter-spacing: 1px;
   }
 
-  input,
   textarea {
     width: 100%;
     padding: var(--spacing-md);
@@ -243,7 +243,6 @@ ${gameState}
     font-family: var(--font-ui);
   }
 
-  input:focus,
   textarea:focus {
     outline: none;
     border-color: var(--mw-primary);
@@ -251,7 +250,6 @@ ${gameState}
     box-shadow: 0 0 10px rgba(0, 243, 255, 0.1);
   }
 
-  input[readonly],
   textarea[readonly] {
     background: rgba(0, 0, 0, 0.6);
     color: #707070;

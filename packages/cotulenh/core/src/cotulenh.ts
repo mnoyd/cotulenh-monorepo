@@ -192,6 +192,13 @@ export interface CoTuLenhInterface {
   // Position tracking
   incrementPositionCount(fen: string): void
   decrementPositionCount(fen: string): void
+
+  // PGN
+  pgn(options?: { newline?: string; maxWidth?: number }): string
+  loadPgn(pgn: string, options?: { strict?: boolean }): boolean
+  setHeader(key: string, value: string): Record<string, string>
+  getHeaders(): Record<string, string>
+  removeHeader(key: string): boolean
 }
 
 // --- CoTuLenh Class (Additions) ---
@@ -2106,13 +2113,30 @@ export class CoTuLenh implements CoTuLenhInterface {
     // Extract moves section (after headers)
     let moveSection = normalizedPgn.slice(lastHeaderEnd).trim()
 
-    // Remove comments for parsing (we'll handle them separately)
-    const comments: { index: number; text: string }[] = []
+    // Extract comments and their positions for restoration
+    const commentsByPosition: Array<{ beforeToken: number; text: string }> = []
+    let tokenIndex = 0
+
+    // Track comments by counting tokens before them
+    const moveWithComments = moveSection
     moveSection = moveSection.replace(
       /\{([^}]*)\}/g,
       (match, comment, offset) => {
-        comments.push({ index: offset, text: comment })
-        return ''
+        // Count how many move tokens appear before this comment
+        const beforeComment = moveWithComments.slice(0, offset)
+        const tokensBeforeComment = beforeComment
+          .replace(/\d+\.\s+/g, '') // Remove move numbers
+          .replace(/\.\.\./g, '')
+          .split(/\s+/)
+          .filter(
+            (t) => t.length > 0 && !/^[!?]+$/.test(t) && !/^\$\d+$/.test(t),
+          ).length
+
+        commentsByPosition.push({
+          beforeToken: tokensBeforeComment,
+          text: comment,
+        })
+        return ' '
       },
     )
 
@@ -2120,14 +2144,21 @@ export class CoTuLenh implements CoTuLenhInterface {
     moveSection = moveSection.replace(/\s*(1-0|0-1|1\/2-1\/2|\*)\s*$/, '')
 
     // Parse move tokens
-    // Remove move numbers and clean up
+    // Remove move numbers and clean up (require space after period to avoid edge cases)
     const moveTokens = moveSection
-      .replace(/\d+\.\s*/g, '') // Remove move numbers
+      .replace(/\d+\.\s+/g, '') // Remove move numbers (require space)
       .replace(/\.\.\./g, '') // Remove continuation dots
       .split(/\s+/)
       .filter((token) => token.length > 0)
 
-    // Replay moves
+    // Check for comment at starting position (before any moves)
+    const startingComment = commentsByPosition.find((c) => c.beforeToken === 0)
+    if (startingComment) {
+      this.setComment(startingComment.text)
+    }
+
+    // Replay moves and restore comments
+    let moveIndex = 0
     for (const token of moveTokens) {
       // Skip empty tokens and annotations
       if (!token || /^[!?]+$/.test(token) || /^\$\d+$/.test(token)) {
@@ -2144,11 +2175,46 @@ export class CoTuLenh implements CoTuLenhInterface {
             { move: token },
           )
         }
+
+        moveIndex++
+
+        // Restore comment for this position (comment comes after the move)
+        const commentForPosition = commentsByPosition.find(
+          (c) => c.beforeToken === moveIndex,
+        )
+        if (commentForPosition) {
+          this.setComment(commentForPosition.text)
+        }
       } catch (error) {
         if (strict) {
           throw error
         }
         logger.warn(`Skipping invalid move in PGN: ${token}`)
+      }
+    }
+
+    // Validate Result header matches actual game state
+    const actualResult = this.isGameOver()
+      ? this.isCheckmate()
+        ? this._turn === RED
+          ? '0-1'
+          : '1-0'
+        : '1/2-1/2'
+      : '*'
+
+    if (this._header['Result'] && this._header['Result'] !== actualResult) {
+      if (strict) {
+        throw createError(
+          ErrorCode.FEN_INVALID_FORMAT,
+          `Result header "${this._header['Result']}" doesn't match game state "${actualResult}"`,
+          { headerResult: this._header['Result'], actualResult },
+        )
+      } else {
+        // In non-strict mode, update the Result to match actual state
+        logger.warn(
+          `Result header "${this._header['Result']}" doesn't match game state "${actualResult}", updating header`,
+        )
+        this._header['Result'] = actualResult
       }
     }
 

@@ -40,17 +40,8 @@
   }
 
   function reportIssue() {
-    // Capture current state for report
-    const currentState = {
-      fen: session.fen,
-      turn: session.turn,
-      history: session.history,
-      status: session.status,
-      check: session.check
-    };
-
-    setStoredValue('report_fen', session.fen);
-    setStoredValue('report_state', currentState);
+    // Capture current game state as PGN (includes FEN if non-standard position)
+    setStoredValue('report_pgn', session.pgn);
 
     goto('/report-issue');
   }

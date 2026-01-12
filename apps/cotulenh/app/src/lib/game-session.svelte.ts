@@ -155,6 +155,11 @@ export class GameSession {
     return this.#originalFen;
   }
 
+  get pgn(): string {
+    void this.#version;
+    return this.#game.pgn();
+  }
+
   get isViewingHistory(): boolean {
     return this.#historyViewIndex !== -1;
   }
