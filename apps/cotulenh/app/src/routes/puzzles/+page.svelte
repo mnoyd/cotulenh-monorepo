@@ -16,40 +16,24 @@
       title: 'Commander Capture',
       description: 'Red to move. Find the winning move to capture the blue commander.',
       difficulty: 'Easy',
-      fen: '6c4/4fh1hf2/3a2s2a1/2n1gt1tg2/2ie2m2ei/5C5/11/2IE2M2EI/2N1GT1TG2/3A2S2A1/1N2FH1HF2/11',
-      hint: 'Look for a direct attack on the commander.'
+      fen: '11/11/11/11/11/11/5+IC4/8c2/11/11/11/11 r - - 0 1',
+      hint: 'Try to conner the blue commander, mirror their moves. Avoid stalemate'
     },
     {
       id: 2,
       title: 'Air Force Strike',
-      description: 'Use the air force to break through enemy lines.',
+      description: 'One move and checkmate.',
       difficulty: 'Medium',
-      fen: '6c4/1n2fh1hf2/3a2s2a1/2n1gt1tg2/4e1m2ei/5F5/11/2IE2M2EI/2N1GT1TG2/3A2S2A1/1N2FH1HF2/6C4',
-      hint: 'Air force can fly over pieces but watch out for air defense.'
+      fen: '2c8/3g3h3/4(FT)6/11/11/7C3/11/11/11/11/11/11 r - - 0 1',
+      hint: 'Stack piece can move all of its members at once.'
     },
     {
       id: 3,
-      title: 'Tank Assault',
-      description: 'Position your tanks to dominate the center.',
-      difficulty: 'Medium',
-      fen: '6c4/1n2fh1hf2/3a2s2a1/4gt1tg2/2ie2m2ei/2T3T4/11/2IE2M2EI/2N1GT1TG2/3A2S2A1/1N2FH1HF2/6C4',
-      hint: 'Tanks are powerful in open terrain.'
-    },
-    {
-      id: 4,
-      title: 'Naval Blockade',
-      description: 'Use your navy to control the water zones.',
-      difficulty: 'Hard',
-      fen: '6c4/1n2fh1hf2/3a2s2a1/2n1gt1tg2/2ie2m2ei/11/11/2IE2M2EI/2N1GT1TG2/3A1NS2A1/4FH1HF2/6C4',
-      hint: 'Navy pieces have special movement on water terrain.'
-    },
-    {
-      id: 5,
       title: 'Combined Arms',
-      description: 'Coordinate multiple unit types for a decisive attack.',
+      description: 'Must win under 3 moves.',
       difficulty: 'Hard',
-      fen: '6c4/1n2fh1hf2/3a2s2a1/4gt1tg2/4e1m2ei/3TFN4/11/2IE2M2EI/2N1GT1TG2/3A2S2A1/1N2FH1HF2/6C4',
-      hint: 'Different pieces work together to overcome defenses.'
+      fen: '2c8/3gT2h3/4F6/3t7/11/5C5/11/11/11/11/11/11 r - - 0 1',
+      hint: 'Double attack is very powerful if you know how to create them.'
     }
   ];
 
