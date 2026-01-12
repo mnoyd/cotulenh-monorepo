@@ -32,7 +32,7 @@
       title: 'Combined Arms',
       description: 'Must win under 3 moves.',
       difficulty: 'Hard',
-      fen: '2c8/3gT2h3/4F6/3t7/11/5C5/11/11/11/11/11/11 r - - 0 1',
+      fen: '2c8/3g3h3/4FT5/3t7/11/5C5/11/11/11/11/11/11 r - - 0 1',
       hint: 'Double attack is very powerful if you know how to create them.'
     }
   ];
