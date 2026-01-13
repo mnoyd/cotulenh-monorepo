@@ -12,7 +12,7 @@
     type Settings,
     type ThemeId
   } from '$lib/stores/settings';
-  import { setAudioEnabled, setAudioVolume } from '$lib/utils/audio';
+  import { playSound, setAudioEnabled, setAudioVolume } from '$lib/utils/audio';
 
   interface Props {
     open: boolean;
@@ -118,9 +118,20 @@
               max="1"
               step="0.1"
               bind:value={soundVolume}
+              onchange={() => setAudioVolume(soundVolume)}
               class="volume-slider"
             />
             <span class="volume-value">{Math.round(soundVolume * 100)}%</span>
+            <button
+              type="button"
+              class="test-sound-btn"
+              onclick={() => {
+                setAudioVolume(soundVolume);
+                playSound('move');
+              }}
+            >
+              Test
+            </button>
           </div>
         {/if}
 
@@ -287,6 +298,23 @@
     text-align: right;
     font-size: 0.75rem;
     color: var(--theme-text-secondary);
+  }
+
+  .test-sound-btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.7rem;
+    font-weight: 500;
+    background: var(--theme-primary-dim);
+    border: 1px solid var(--theme-border-subtle);
+    border-radius: 0.25rem;
+    color: var(--theme-text-primary);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .test-sound-btn:hover {
+    background: var(--theme-primary);
+    border-color: var(--theme-primary);
   }
 
   @media (max-width: 480px) {
