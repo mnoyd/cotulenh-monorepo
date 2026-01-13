@@ -12,41 +12,16 @@
   <defs
      id="defs1">
     <!-- Battleground Decorations -->
-    <!-- Crater Gradient -->
-    <radialGradient id="craterGradient" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
-      <stop offset="0%" style="stop-color:#2a302a;stop-opacity:0.9" />
-      <stop offset="80%" style="stop-color:#3e473e;stop-opacity:0.4" />
-      <stop offset="100%" style="stop-color:#6b7a6b;stop-opacity:0" />
-    </radialGradient>
-    
-    <!-- Filters -->
-    <filter id="blurFilter">
-        <feGaussianBlur in="SourceGraphic" stdDeviation="2" />
-    </filter>
-    
-    <!-- Noise Filter for Gritty Texture -->
-    <filter id="noiseFilter">
-        <feTurbulence type="fractalNoise" baseFrequency="0.6" numOctaves="3" stitchTiles="stitch" />
-        <feColorMatrix type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 0.1 0"/>
-        <feComposite operator="in" in2="SourceGraphic" result="compositeNoise"/>
-        <feBlend mode="multiply" in="compositeNoise" in2="SourceGraphic" />
-    </filter>
     
     <!-- Patterns -->
-    <pattern id="trenchPattern" width="20" height="20" patternUnits="userSpaceOnUse">
-        <path d="M 0 10 L 10 0 L 20 10" fill="none" stroke="#2a302a" stroke-width="1" opacity="0.4"/>
-    </pattern>
     <pattern id="techGrid" width="40" height="40" patternUnits="userSpaceOnUse">
         <rect width="40" height="40" fill="none"/>
         <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#a3c2e0" stroke-width="0.5" opacity="0.1"/>
     </pattern>
-
-    <!-- Reticle -->
-    <g id="reticle">
-      <circle cx="0" cy="0" r="15" fill="none" stroke="#a3c2e0" stroke-width="1" stroke-opacity="0.8" />
-      <line x1="-20" y1="0" x2="20" y2="0" stroke="#a3c2e0" stroke-width="1" stroke-opacity="0.8" />
-      <line x1="0" y1="-20" x2="0" y2="20" stroke="#a3c2e0" stroke-width="1" stroke-opacity="0.8" />
-    </g>
+    <pattern id="hazardStripes" width="10" height="10" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+        <rect width="5" height="10" fill="#e0c000" opacity="0.8"/>
+        <rect x="5" width="5" height="10" fill="#202020" opacity="0.8"/>
+    </pattern>
   </defs>
   
   <rect
@@ -75,7 +50,7 @@
 
     <!-- Water with Tech Grid -->
     <path
-       style="fill:#3a5a78;fill-opacity:1;fill-rule:evenodd;stroke:#5c7a99;stroke-width:1.5;stroke-linecap:round;stroke-dasharray:none;stroke-dashoffset:6.05737"
+       style="fill:#376175;fill-opacity:1;fill-rule:evenodd;stroke:#5c7a99;stroke-width:1.5;stroke-linecap:round;stroke-dasharray:none;stroke-dashoffset:6.05737"
        id="path6"
        width="599.42963"
        height="659.42963"
@@ -84,9 +59,8 @@
        transform="translate(48.629454,-85.498419)"
        d="m -887.83569,-154.24654 h 599.42962 v 659.42963 h -599.42962 z" />
     
-    <!-- Water Overlay for Tech Feel -->
-     <rect x="-840" y="-240" width="120" height="720" fill="url(#techGrid)" opacity="0.3" pointer-events="none"/>
-     <rect x="-840" y="60" width="660" height="120" fill="url(#techGrid)" opacity="0.3" pointer-events="none" transform="rotate(90 -510 120)"/>
+    <!-- Water Overlay (REMOVED as per request for clean water) -->
+    
   </g>
   
   <g
@@ -110,86 +84,184 @@
        y="-239.54292" />
   </g>
   
-  <!-- HEAVY CONTEXT LAYER -->
   <g id="battleground-context" transform="translate(899.72226,300.07242)">
-      
-      <!-- Scorched Earth -->
-      <path d="M -600 200 Q -550 250 -500 200 T -400 220" stroke="none" fill="#2a302a" opacity="0.25" filter="url(#blurFilter)"/>
-      <path d="M -700 -100 Q -650 -50 -600 -100 T -500 -80" stroke="none" fill="#2a302a" opacity="0.25" filter="url(#blurFilter)"/>
-      <circle cx="-550" cy="50" r="70" fill="#2a302a" opacity="0.15" filter="url(#blurFilter)" />
-      
-      <!-- Trenches -->
-      <path d="M -800 -150 L -780 -140 L -760 -160 L -740 -140 L -720 -150" stroke="#2a302a" stroke-width="2" fill="none" opacity="0.6"/>
-      <path d="M -300 300 L -320 310 L -340 290 L -360 310 L -380 300" stroke="#2a302a" stroke-width="2" fill="none" opacity="0.6"/>
-      
-      <!-- Craters -->
-      <circle cx="-600" cy="100" r="15" fill="url(#craterGradient)" opacity="0.8" />
-      <circle cx="-580" cy="120" r="10" fill="url(#craterGradient)" opacity="0.7" />
-      <circle cx="-400" cy="-50" r="25" fill="url(#craterGradient)" opacity="0.6" />
-      <circle cx="-750" cy="-100" r="12" fill="url(#craterGradient)" opacity="0.8" />
-      <circle cx="-680" cy="-80" r="8" fill="url(#craterGradient)" opacity="0.7" />
-      <circle cx="-500" cy="250" r="18" fill="url(#craterGradient)" opacity="0.7" />
-      
-      <!-- Tactical Overlays -->
-      <rect x="-800" y="-150" width="100" height="100" fill="url(#trenchPattern)" opacity="0.3" />
-      
-      <!-- Reticles -->
-      <use href="#reticle" x="-590" y="175" />
-      <use href="#reticle" x="-479" y="-239" />
-      <use href="#reticle" x="-479" y="120" /> 
-      <use href="#reticle" x="-700" y="0" />
-      <use href="#reticle" x="-350" y="-100" />
+      <!-- Hazard Borders -->
+      <path d="M -719 120 L -239 120" stroke="#a3c2e0" stroke-width="1.5" stroke-dasharray="8,8" opacity="0.3" />
+      <path d="M -719 -239 L -239 -239" stroke="#a3c2e0" stroke-width="1.5" stroke-dasharray="8,8" opacity="0.3" />
+  </g>
 
-      <!-- Text/Values -->
-      <path d="M -710 130 h 50 v 5 h -50 z" fill="#a3c2e0" opacity="0.5" />
-      <path d="M -710 -229 h 50 v 5 h -50 z" fill="#a3c2e0" opacity="0.5" />
-      <text x="-708" y="134" font-family="monospace" font-size="4" fill="#003300">SEC-A</text>
-      
-      <!-- Compass Rose -->
-      <g transform="translate(-800, -200)">
-        <!-- Outer Circle -->
-        <circle r="30" fill="none" stroke="#bdcfe0" stroke-width="1" opacity="0.4" />
-        <circle r="25" fill="none" stroke="#bdcfe0" stroke-width="0.5" stroke-dasharray="2 2" opacity="0.3" />
-        
-        <!-- Crosshairs -->
-        <line x1="0" y1="-35" x2="0" y2="35" stroke="#bdcfe0" stroke-width="0.5" opacity="0.3" />
-        <line x1="-35" y1="0" x2="35" y2="0" stroke="#bdcfe0" stroke-width="0.5" opacity="0.3" />
-
-        <!-- North Arrow -->
-        <path d="M 0 -25 L 5 0 L 0 5 L -5 0 Z" fill="#bdcfe0" opacity="0.8" />
-        <path d="M 0 -25 L 0 5" stroke="#2a302a" stroke-width="0.5" opacity="0.5" />
-        
-        <!-- Letters -->
-        <text x="-3" y="-32" font-family="monospace" font-size="8" fill="#bdcfe0" font-weight="bold" opacity="0.8">N</text>
-        <text x="-3" y="40" font-family="monospace" font-size="8" fill="#bdcfe0" opacity="0.5">S</text>
-        <text x="32" y="3" font-family="monospace" font-size="8" fill="#bdcfe0" opacity="0.5">E</text>
-        <text x="-40" y="3" font-family="monospace" font-size="8" fill="#bdcfe0" opacity="0.5">W</text>
+  <g id="battleground-terrain" transform="translate(899.72226,300.07242)">
+      <!-- Trenches: Dug-in fortifications (Double stroke for depth) -->
+      <g id="trenches-group" opacity="0.8">
+          <!-- Top Base Defense (y ~ 20-30) -->
+          <!-- Shadow/Bottom of trench -->
+          <path d="M -540,30 l 10,5 l 10,-5 l 15,5 l 10,-5 
+                   M -460,20 l 10,5 l 10,-5 l 10,5 l 10,-5
+                   M -320,30 l 10,5 l 10,-5" 
+                fill="none" stroke="#2f3f2f" stroke-width="3" stroke-linecap="square" />
+          <!-- Highlight/Lip of trench -->
+          <path d="M -540,29 l 10,5 l 10,-5 l 15,5 l 10,-5 
+                   M -460,19 l 10,5 l 10,-5 l 10,5 l 10,-5
+                   M -320,29 l 10,5 l 10,-5" 
+                fill="none" stroke="#5e6e5e" stroke-width="1" stroke-linecap="square" />
+                
+          <!-- Bottom Base Defense (y ~ 150-160) -->
+          <!-- Shadow -->
+          <path d="M -540,150 l 10,5 l 10,-5 l 15,5 l 10,-5 
+                   M -460,160 l 10,5 l 10,-5 l 10,5 l 10,-5
+                   M -320,150 l 10,5 l 10,-5" 
+                fill="none" stroke="#2f3f2f" stroke-width="3" stroke-linecap="square" />
+          <!-- Highlight -->
+          <path d="M -540,151 l 10,5 l 10,-5 l 15,5 l 10,-5 
+                   M -460,161 l 10,5 l 10,-5 l 10,5 l 10,-5
+                   M -320,151 l 10,5 l 10,-5" 
+                fill="none" stroke="#5e6e5e" stroke-width="1" stroke-linecap="square" />
       </g>
 
-      <!-- Hazard Borders -->
-      <path d="M -719 120 L -239 120" stroke="#a3c2e0" stroke-width="2" stroke-dasharray="10,10" opacity="0.5" />
-      <path d="M -719 -239 L -239 -239" stroke="#a3c2e0" stroke-width="2" stroke-dasharray="10,10" opacity="0.5" />
+      <!-- Barbed Wire: Jagged thin lines near trenches -->
+      <path
+        id="barbed-wire"
+        style="fill:none;stroke:#2f2f2f;stroke-width:0.8;opacity:0.6"
+        d="M -550,15 l 5,-5 l 5,5 l 5,-5 l 5,5 l 5,-5 l 5,5
+           M -470,40 l 5,-5 l 5,5 l 5,-5 l 5,5 l 5,-5
+           M -330,140 l -5,5 l -5,-5 l -5,5 l -5,-5
+           M -450,180 l 5,-5 l 5,5 l 5,-5 l 5,5" />
+
+      <!-- High Ground: Layered elevation for strategy feel -->
+      <g id="hills-bottom" style="opacity:0.6">
+        <!-- Top Merged Hill (Ridge Line) -->
+        <!-- Base Layer -->
+        <path style="fill:#586b58;stroke:none"
+          d="M -680,-120 C -660,-180 -580,-200 -500,-180 C -420,-160 -360,-200 -300,-140 C -280,-120 -280,-80 -320,-80 C -380,-90 -450,-70 -480,-60 C -520,-50 -600,-60 -680,-120 Z" />
+        <!-- Mid Layer -->
+        <path style="fill:#6b826b;stroke:none"
+          d="M -650,-130 C -630,-170 -570,-185 -500,-170 C -430,-155 -380,-180 -330,-140 C -320,-130 -340,-100 -380,-100 C -420,-100 -460,-80 -500,-80 C -550,-80 -600,-90 -650,-130 Z" />
+        <!-- Peak Layer -->
+        <path style="fill:#7e967e;stroke:none"
+          d="M -620,-140 C -600,-160 -560,-170 -510,-160 C -460,-150 -420,-165 -380,-140 C -390,-120 -440,-110 -500,-100 C -540,-95 -580,-110 -620,-140 Z" />
+
+        <!-- Bottom Left Hill (3 Tiers) -->
+        <path style="fill:#586b58;stroke:none" d="m -630,200 c 35,-20 85,-10 105,20 20,40 -5,90 -45,100 -45,10 -90,-30 -100,-70 -5,-35 20,-60 40,-50 z" />
+        <path style="fill:#6b826b;stroke:none" d="m -615,215 c 30,-15 70,-5 85,20 15,35 -5,75 -40,85 -35,10 -75,-25 -85,-60 -5,-30 15,-50 40,-45 z" />
+        <path style="fill:#7e967e;stroke:none" d="m -600,230 c 20,-10 50,-5 60,15 10,25 -5,50 -30,55 -25,5 -55,-20 -60,-40 -5,-15 10,-25 30,-30 z" />
+
+        <!-- Bottom Right Hill (3 Tiers) -->
+        <path style="fill:#586b58;stroke:none" d="m -380,220 c 30,-25 90,-15 110,15 25,35 5,85 -35,100 -45,15 -105,-5 -120,-45 -10,-35 15,-60 45,-70 z" />
+        <path style="fill:#6b826b;stroke:none" d="m -370,230 c 25,-20 75,-10 90,15 20,30 5,70 -30,85 -35,15 -90,-5 -105,-40 -10,-30 10,-50 45,-60 z" />
+        <path style="fill:#7e967e;stroke:none" d="m -355,245 c 15,-10 50,-5 60,10 15,20 5,50 -25,60 -30,10 -65,-5 -75,-30 -5,-20 10,-30 40,-40 z" />
+      </g>
+        
+      <!-- Battle Damage & Tactical Overlay -->
+      <g id="battle-details" style="opacity:0.8">
+          <!-- Blast Scars: Irregular shapes (Explosions) -->
+          <path d="M -545 30 Q -530 15 -515 30 Q -530 45 -545 30 Z" fill="#2f3f2f" opacity="0.7"/> <!-- Left Crater -->
+          <path d="M -335 150 Q -320 135 -305 150 Q -320 165 -335 150 Z" fill="#2f3f2f" opacity="0.7"/> <!-- Right Crater -->
+          <path d="M -610 -60 Q -600 -70 -590 -60 Q -600 -50 -610 -60 Z" fill="#2f3f2f" opacity="0.7"/> <!-- Top Crater -->
+          
+          <!-- Scorch Marks (Removed ones in water zone y=60 to 120) -->
+          <circle cx="-450" cy="-40" r="3" fill="#1a2b1a" opacity="0.5"/>
+          <path d="M -455 -35 l 2 2 l -1 1 z" fill="#1a2b1a" opacity="0.5"/>
+          
+          <!-- Tactical HUD Markers (Crosshairs) -->
+          <g stroke="#a3c2e0" stroke-width="0.5" opacity="0.4">
+             <path d="M -600 -240 L -600 -230 M -605 -235 L -595 -235" /> <!-- Top Left -->
+             <path d="M -300 -240 L -300 -230 M -305 -235 L -295 -235" /> <!-- Top Right -->
+             <!-- Mid Left -->
+             <path d="M -450 -60 L -450 -50 M -455 -55 L -445 -55" />     <!-- Center -->
+          </g>
+      </g>
   </g>
 
   <g
      id="layer3"
      transform="translate(899.72226,300.07242)">
-    <!-- Special Zones (Dashed) -->
-    <rect
-       style="opacity:1;fill:none;fill-opacity:1;fill-rule:evenodd;stroke:#bdcfe0;stroke-width:1;stroke-linecap:round;stroke-dasharray:2.95799, 2.95799;stroke-dashoffset:0"
-       id="rect5"
-       width="4.7963333"
-       height="55.254379"
-       x="-541.6908"
-       y="62.215183" />
-    <rect
-       style="opacity:1;fill:none;fill-opacity:1;fill-rule:evenodd;stroke:#bdcfe0;stroke-width:1;stroke-linecap:round;stroke-dasharray:2.95799, 2.95799;stroke-dashoffset:0"
-       id="rect6"
-       width="4.7963333"
-       height="55.254379"
-       x="-422.19763"
-       y="62.096256" />
+    <!-- Bailey Bridges (Truss/Lattice Structure) -->
+    <g id="bridge-left">
+        <!-- Deck Surface (Wood/Steel Planking) -->
+        <rect
+           style="fill:#6b7c6b;stroke:none"
+           id="bridge-deck-1"
+           width="22"
+           height="62"
+           x="-550"
+           y="59" />
+           
+        <!-- Truss Side Panels (The Bailey Look - ZigZag/Lattice) -->
+        <g stroke="#2f3f2f" stroke-width="2" stroke-linecap="round">
+            <!-- Left Truss -->
+            <path d="M -550 59 V 121" stroke-width="3" /> <!-- Main Chord -->
+            <path d="M -550 59 l 0,10 l 4,10 l -4,10 l 4,10 l -4,10 l 4,10" fill="none" stroke-width="1.5" /> <!-- Lattice -->
+            
+            <!-- Right Truss -->
+            <path d="M -528 59 V 121" stroke-width="3" /> <!-- Main Chord -->
+            <path d="M -528 59 l 0,10 l -4,10 l 4,10 l -4,10 l 4,10 l -4,10" fill="none" stroke-width="1.5" /> <!-- Lattice -->
+        </g>
+        
+        <!-- Cross Bracing / Transoms (structural lines across deck) -->
+        <path d="M -550 65 h 22 M -550 75 h 22 M -550 85 h 22 M -550 95 h 22 M -550 105 h 22 M -550 115 h 22" 
+              stroke="#3a4c3a" stroke-width="1.5" opacity="0.6" />
+        
+        <!-- Ramp/Entry details -->
+        <rect x="-552" y="58" width="26" height="3" fill="#4a5c4a" />
+        <rect x="-552" y="119" width="26" height="3" fill="#4a5c4a" />
+    </g>
+    
+    <g id="bridge-right">
+        <!-- Deck Surface -->
+        <rect
+           style="fill:#6b7c6b;stroke:none"
+           id="bridge-deck-2"
+           width="22"
+           height="62"
+           x="-430"
+           y="59" />
+           
+        <!-- Truss Side Panels -->
+        <g stroke="#2f3f2f" stroke-width="2" stroke-linecap="round">
+            <!-- Left Truss -->
+            <path d="M -430 59 V 121" stroke-width="3" />
+            <path d="M -430 59 l 0,10 l 4,10 l -4,10 l 4,10 l -4,10 l 4,10" fill="none" stroke-width="1.5" />
+            
+            <!-- Right Truss -->
+            <path d="M -408 59 V 121" stroke-width="3" />
+            <path d="M -408 59 l 0,10 l -4,10 l 4,10 l -4,10 l 4,10 l -4,10" fill="none" stroke-width="1.5" />
+        </g>
+        
+        <!-- Cross Bracing -->
+        <path d="M -430 65 h 22 M -430 75 h 22 M -430 85 h 22 M -430 95 h 22 M -430 105 h 22 M -430 115 h 22" 
+              stroke="#3a4c3a" stroke-width="1.5" opacity="0.6" />
+
+        <!-- Ramp/Entry details -->
+        <rect x="-432" y="58" width="26" height="3" fill="#4a5c4a" />
+        <rect x="-432" y="119" width="26" height="3" fill="#4a5c4a" />
+    </g>
   </g>
+
+  <!-- Thematic Decorations -->
+  <g id="decorations" transform="translate(899.72226,300.07242)" pointer-events="none">
+      <!-- 1. Bridge Hazard Striping -->
+      <rect x="-552" y="58" width="26" height="3" fill="url(#hazardStripes)" />
+      <rect x="-552" y="119" width="26" height="3" fill="url(#hazardStripes)" />
+      <rect x="-432" y="58" width="26" height="3" fill="url(#hazardStripes)" />
+      <rect x="-432" y="119" width="26" height="3" fill="url(#hazardStripes)" />
+
+      <!-- 2. Sector Stencils (REMOVED: Flipping issue) -->
+
+      <!-- 3. HQ Command Markers (REMOVED: Flipping issue) -->
+
+      <!-- 4. Deployment Zone Corners (HUD Brackets) -->
+      <g stroke="#00ffff" stroke-width="2" opacity="0.4" fill="none">
+          <!-- Top Left -->
+          <path d="M -709 -229 h 20 M -709 -229 v 20" />
+          <!-- Top Right -->
+          <path d="M -249 -229 h -20 M -249 -229 v 20" />
+          <!-- Bottom Left -->
+          <path d="M -709 409 h 20 M -709 409 v -20" />
+          <!-- Bottom Right -->
+          <path d="M -249 409 h -20 M -249 409 v -20" />
+      </g>
+  </g>
+
   <g
      id="layer5"
      transform="translate(899.72226,300.07242)">
