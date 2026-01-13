@@ -1,37 +1,85 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
   <defs>
-    <linearGradient id="bodyGradRed" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#8a5a4a"/>
-      <stop offset="50%" stop-color="#50322c"/>
+    <!-- Metallic Body Gradient -->
+    <linearGradient id="bodyGradRed" x1="50%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%" stop-color="#aa6a5a"/> <!-- Highlights -->
+      <stop offset="40%" stop-color="#8a5a4a"/>
       <stop offset="100%" stop-color="#34201a"/>
     </linearGradient>
-    <filter id="afterburnerRed">
-      <feGaussianBlur stdDeviation="2"/>
-    </filter>
+    
+    <!-- Canopy Glass Gradient -->
+    <linearGradient id="canopyGrad" x1="30%" y1="20%" x2="70%" y2="80%">
+      <stop offset="0%" stop-color="#ffeeaa"/>
+      <stop offset="50%" stop-color="#ff9500"/>
+      <stop offset="100%" stop-color="#cc7000"/>
+    </linearGradient>
+
+    <!-- Missile Body Gradient -->
+    <linearGradient id="missileGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#e0e0e0"/>
+      <stop offset="100%" stop-color="#909090"/>
+    </linearGradient>
   </defs>
   <g>
-    <!-- Afterburner Trails (Action) -->
-    <path d="M20 80 Q10 85, 0 90" stroke="#ff9500" stroke-width="3" stroke-linecap="round" filter="url(#afterburnerRed)" opacity="0.8"/>
-    <path d="M30 75 Q20 80, 10 90" stroke="#ff9500" stroke-width="3" stroke-linecap="round" filter="url(#afterburnerRed)" opacity="0.8"/>
+    <!-- Shadow (Offset for floating effect) - SOLID SHAPE NOW -->
+    <path d="M50 20 L85 70 L60 90 L40 90 L15 70 Z" fill="#000000" opacity="0.3" transform="translate(6, 10) scale(0.95)"/>
 
-    <!-- Jet Body (Isometric/Banking) -->
-    <!-- Left Wing -->
-    <path d="M10 50 L40 40 L45 60 L10 50" fill="#34201a" stroke="#1a2634"/>
+    <!-- Wing Under-mount Missiles (Visible armament) -->
+    <!-- Left Missile -->
+    <g transform="rotate(-15 25 65)">
+        <rect x="22" y="55" width="6" height="20" rx="2" fill="url(#missileGrad)" stroke="#555" stroke-width="1"/>
+        <path d="M22 75 L25 50 L28 75 Z" fill="#ccc"/> <!-- Warhead tip (implied) -->
+        <line x1="25" y1="55" x2="25" y2="75" stroke="#777" stroke-width="1"/>
+    </g>
+    <!-- Right Missile -->
+    <g transform="rotate(15 75 65)">
+        <rect x="72" y="55" width="6" height="20" rx="2" fill="url(#missileGrad)" stroke="#555" stroke-width="1"/>
+        <path d="M72 75 L75 50 L78 75 Z" fill="#ccc"/>
+        <line x1="75" y1="55" x2="75" y2="75" stroke="#777" stroke-width="1"/>
+    </g>
+
+    <!-- Jet Body (Stealth Fighter Shape) -->
+    <!-- Main Fuselage with sharper angles -->
+    <path d="M50 8 L68 35 L96 68 L78 85 L60 80 L60 95 L40 95 L40 80 L22 85 L4 68 L32 35 Z" fill="url(#bodyGradRed)" stroke="#1a2634" stroke-width="1.5"/>
+
+    <!-- Air Intakes (Aggressive geometry) -->
+    <path d="M35 40 L40 55 L32 58 Z" fill="#20100a" stroke="#1a2634" stroke-width="1"/>
+    <path d="M65 40 L60 55 L68 58 Z" fill="#20100a" stroke="#1a2634" stroke-width="1"/>
+
+    <!-- Bevels / Highlights (Sharper, more metallic) -->
+    <path d="M50 8 L32 35 L4 68" fill="none" stroke="#d48a7a" stroke-width="1.5" stroke-linecap="butt" opacity="0.8"/>
+    <path d="M50 8 L68 35 L96 68" fill="none" stroke="#50322c" stroke-width="1.5" stroke-linecap="butt" opacity="0.8"/> 
     
-    <!-- Fuselage -->
-    <path d="M40 40 L80 20 L90 25 L50 80 L40 70 Z" fill="url(#bodyGradRed)" stroke="#34201a" />
-    
-    <!-- Right Wing (Tilted up) -->
-    <path d="M80 20 L95 10 L90 40 L80 20" fill="#50322c" stroke="#34201a"/>
-    
-    <!-- Cockpit Canopy (Reflective) -->
-    <path d="M60 35 L75 30 L72 35 Z" fill="#ffeeaa" stroke="#ff9500" stroke-width="0.5"/>
-    
-    <!-- Vertical Stabilizers -->
-    <path d="M45 65 L35 75 L50 75 Z" fill="#34201a"/>
-    <path d="M55 25 L65 15 L70 25 Z" fill="#34201a"/>
-    
-    <!-- Team Glow (Rim Light) -->
-    <path d="M80 20 L90 25 L50 80" fill="none" stroke="#ff9500" stroke-width="1.5" stroke-opacity="0.8"/>
+    <!-- Cockpit Canopy -->
+    <path d="M45 42 Q50 36 55 42 L55 58 Q50 64 45 58 Z" fill="url(#canopyGrad)" stroke="#ffcc88" stroke-width="1"/>
+    <!-- Canopy Glint -->
+    <path d="M48 45 Q50 43 52 45" fill="none" stroke="#ffffff" stroke-width="2" opacity="0.8" stroke-linecap="round"/>
+
+    <!-- Tech Markings / Warnings -->
+    <circle cx="35" cy="70" r="1" fill="#ffcc00"/>
+    <circle cx="65" cy="70" r="1" fill="#ffcc00"/>
+    <rect x="48" y="25" width="4" height="2" fill="#aa0000" opacity="0.7"/>
+
+    <!-- Engine Details -->
+    <g stroke="#1a2634" stroke-width="1" opacity="0.4">
+        <!-- Panel Lines -->
+        <line x1="50" y1="12" x2="50" y2="35"/>
+        <line x1="22" y1="85" x2="38" y2="80"/>
+        <line x1="78" y1="85" x2="62" y2="80"/>
+    </g>
+
+    <!-- Nozzles (More detailed) -->
+    <rect x="42" y="95" width="6" height="3" fill="#1a1a1a" stroke="#000" stroke-width="1"/>
+    <rect x="52" y="95" width="6" height="3" fill="#1a1a1a" stroke="#000" stroke-width="1"/>
+
+    <!-- Afterburners -->
+    <circle cx="45" cy="97" r="3.5" fill="#ff4400">
+       <animate attributeName="opacity" values="0.7;1;0.7" dur="0.1s" repeatCount="indefinite"/>
+       <animate attributeName="r" values="3.5;4;3.5" dur="0.1s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="55" cy="97" r="3.5" fill="#ff4400">
+       <animate attributeName="opacity" values="0.7;1;0.7" dur="0.1s" repeatCount="indefinite"/>
+       <animate attributeName="r" values="3.5;4;3.5" dur="0.1s" repeatCount="indefinite"/>
+    </circle>
   </g>
 </svg>

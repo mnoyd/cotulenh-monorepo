@@ -1,24 +1,44 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
   <defs>
-    <filter id="shadow">
-      <feDropShadow dx="1" dy="1" stdDeviation="1" flood-opacity="0.5"/>
-    </filter>
+    <linearGradient id="blue_cloth" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#4a6b8a;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#2c3e50;stop-opacity:1" />
+    </linearGradient>
   </defs>
-  <g filter="url(#shadow)">
-    <!-- Bandana Head -->
-    <circle cx="50" cy="40" r="11" fill="#d4aa7d" /> <!-- Skin tone -->
-    <path d="M38 30 Q50 25, 62 30 L62 42 Q50 38, 38 42 Z" fill="#00b4ff" stroke="#111" stroke-width="0.5"/> <!-- Bandana -->
+
+  <g>
+    <!-- Body/Shirt -->
+    <path d="M30 55 Q50 50, 70 55 L75 85 Q50 90, 25 85 Z" fill="url(#blue_cloth)" stroke="#111" stroke-width="1.5"/>
     
-    <!-- Shoulders / Vest -->
-    <path d="M32 50 Q50 48, 68 50 L72 75 L28 75 Z" fill="#ccc" stroke="#111"/> <!-- Civ clothes -->
-    <rect x="35" y="52" width="30" height="20" rx="3" fill="#2c3e50" /> <!-- Tac Vest -->
+    <!-- Chest Rig (Tan/Khaki) -->
+    <path d="M35 55 L65 55 L62 75 L38 75 Z" fill="#d4aa7d" stroke="#5d4037" stroke-width="1.5"/>
+    <rect x="40" y="58" width="6" height="12" fill="#5d4037" rx="1" /> <!-- Mag pouch 1 -->
+    <rect x="47" y="58" width="6" height="12" fill="#5d4037" rx="1" /> <!-- Mag pouch 2 -->
+    <rect x="54" y="58" width="6" height="12" fill="#5d4037" rx="1" /> <!-- Mag pouch 3 -->
+    <path d="M35 55 L30 40 M65 55 L70 40" stroke="#5d4037" stroke-width="3" /> <!-- Straps -->
+
+    <!-- Head -->
+    <circle cx="50" cy="35" r="12" fill="#e0c2a8" /> <!-- Skin -->
     
+    <!-- Bandana (Blue Team Color) -->
+    <path d="M36 28 Q50 20, 64 28 L64 36 Q50 42, 36 36 Z" fill="#00b4ff" stroke="#007acc" stroke-width="1.5"/>
+    <path d="M62 30 L70 35 L68 42 Z" fill="#00b4ff" /> <!-- Knot -->
+
     <!-- Arms -->
-    <ellipse cx="28" cy="55" rx="7" ry="12" fill="#4a6b8a" />
-    <ellipse cx="72" cy="55" rx="7" ry="12" fill="#4a6b8a" />
+    <ellipse cx="28" cy="62" rx="7" ry="14" fill="url(#blue_cloth)" transform="rotate(10 28 62)"/>
+    <ellipse cx="72" cy="62" rx="7" ry="14" fill="url(#blue_cloth)" transform="rotate(-10 72 62)"/>
+
+    <!-- AK-47 Rifle -->
+    <!-- Stock -->
+    <path d="M65 70 L85 55 L88 60 L68 75 Z" fill="#8d6e63" stroke="#3e2723" stroke-width="1"/>
+    <!-- Body -->
+    <rect x="55" y="65" width="25" height="6" transform="rotate(-20 67 68)" fill="#212121" />
+    <!-- Curved Mag -->
+    <path d="M60 72 Q65 85, 55 90 L50 88 Q58 83, 55 70" fill="#d84315" stroke="#111" stroke-width="1" />
+    <!-- Barrel -->
+    <rect x="40" y="72" width="20" height="3" transform="rotate(-20 50 73)" fill="#212121" />
     
-    <!-- Weapon (AK Style) -->
-    <path d="M60 70 L85 45 L90 50 L65 75 Z" fill="#5d4037" /> <!-- Stock -->
-    <rect x="75" y="45" width="4" height="20" transform="rotate(45 77 55)" fill="#111" /> <!-- Receiver -->
+    <!-- Sunglasses -->
+    <path d="M43 36 L57 36 L55 40 L45 40 Z" fill="#111" />
   </g>
 </svg>

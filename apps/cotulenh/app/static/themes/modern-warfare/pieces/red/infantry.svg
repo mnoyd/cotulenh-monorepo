@@ -1,26 +1,44 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
   <defs>
-    <filter id="shadowRed">
-      <feDropShadow dx="1" dy="1" stdDeviation="1" flood-opacity="0.5"/>
-    </filter>
+    <linearGradient id="plate_carrier_red" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#50322c;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#654236;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#50322c;stop-opacity:1" />
+    </linearGradient>
   </defs>
-  <g filter="url(#shadowRed)">
-    <!-- Helmet -->
-    <circle cx="50" cy="40" r="12" fill="#8a5a4a" stroke="#34201a" />
-    <path d="M42 45 Q50 50, 58 45" fill="none" stroke="#111" stroke-width="1.5" />
+
+  <g>
+    <!-- Uniform/Arms -->
+    <ellipse cx="25" cy="65" rx="8" ry="14" fill="#8a5a4a" transform="rotate(10 25 65)"/>
+    <ellipse cx="75" cy="65" rx="8" ry="14" fill="#8a5a4a" transform="rotate(-10 75 65)"/>
     
-    <!-- Shoulders / Body Armor -->
-    <path d="M30 50 Q50 45, 70 50 L75 75 Q50 80, 25 75 Z" fill="#50322c" stroke="#34201a"/>
+    <!-- Plate Carrier -->
+    <path d="M30 55 Q50 52, 70 55 L72 85 Q50 88, 28 85 Z" fill="url(#plate_carrier_red)" stroke="#34201a" stroke-width="1.5"/>
+    <!-- Molle/Pouch details -->
+    <rect x="35" y="60" width="8" height="15" fill="#34201a" rx="2"/>
+    <rect x="46" y="60" width="8" height="15" fill="#34201a" rx="2"/>
+    <rect x="57" y="60" width="8" height="15" fill="#34201a" rx="2"/>
+
+    <!-- Head/Helmet -->
+    <circle cx="50" cy="38" r="14" fill="#50322c" stroke="#111" stroke-width="1.5"/> <!-- Helmet Shell -->
+    <path d="M38 38 Q50 30, 62 38" fill="none" stroke="#6b453a" stroke-width="2.5" opacity="0.5"/> <!-- Helmet detail -->
+    <rect x="45" y="26" width="10" height="8" rx="1" fill="#111" /> <!-- NVG Mount -->
     
-    <!-- Arms -->
-    <ellipse cx="25" cy="55" rx="8" ry="12" fill="#8a5a4a" />
-    <ellipse cx="75" cy="55" rx="8" ry="12" fill="#8a5a4a" />
+    <!-- Headset/Comms -->
+    <rect x="34" y="32" width="6" height="12" rx="2" fill="#333" />
+    <rect x="60" y="32" width="6" height="12" rx="2" fill="#333" />
+    <path d="M40 35 Q50 20, 60 35" fill="none" stroke="#222" stroke-width="2.5"/> <!-- Headband under helmet -->
+
+    <!-- Goggles/Visor -->
+    <path d="M40 42 L60 42 L58 50 L42 50 Z" fill="#ff9500" stroke="#b36b00" stroke-width="1.5" opacity="0.9"/>
     
-    <!-- Weapon (Info) -->
-    <rect x="70" y="45" width="6" height="35" transform="rotate(20 73 62)" fill="#111" />
-    <rect x="68" y="75" width="12" height="4" transform="rotate(20 74 77)" fill="#111" />
+    <!-- Weapon (M4 Style) -->
+    <path d="M60 65 L80 60 L80 65 L60 75 Z" fill="#111" /> <!-- Stock -->
+    <rect x="40" y="68" width="30" height="6" transform="rotate(-10 55 71)" fill="#111" /> <!-- Receiver -->
+    <rect x="52" y="72" width="6" height="15" transform="rotate(-10 55 71)" fill="#222" /> <!-- Mag -->
+    <rect x="60" y="60" width="8" height="6" fill="#111" /> <!-- Optic -->
     
-    <!-- Visor / Goggles -->
-    <rect x="42" y="32" width="16" height="6" rx="2" fill="#ff9500" opacity="0.9"/>
+    <!-- Muzzle -->
+    <rect x="30" y="72" width="10" height="2" transform="rotate(-10 35 73)" fill="#111" />
   </g>
 </svg>

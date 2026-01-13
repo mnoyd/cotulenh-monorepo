@@ -1,44 +1,82 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
   <defs>
+    <!-- Metallics: Warm/Rusty Soviet Steel -->
     <linearGradient id="barrelGradRed" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#50322c"/>
-      <stop offset="50%" stop-color="#605050"/>
-      <stop offset="100%" stop-color="#50322c"/>
+      <stop offset="0%" stop-color="#3e2723"/> 
+      <stop offset="30%" stop-color="#6d4c41"/> <!-- Highlight -->
+      <stop offset="60%" stop-color="#4e342e"/>
+      <stop offset="100%" stop-color="#261a17"/>
     </linearGradient>
-    <filter id="shadowRed">
-      <feDropShadow dx="1" dy="1" stdDeviation="1" flood-opacity="0.5"/>
-    </filter>
+    
+    <linearGradient id="shieldGradRed" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#5d4037"/>
+      <stop offset="100%" stop-color="#3e2723"/>
+    </linearGradient>
+
+    <!-- Tire Tread Pattern -->
+    <pattern id="treadPat" x="0" y="0" width="4" height="2" patternUnits="userSpaceOnUse">
+      <rect x="0" y="0" width="4" height="1" fill="#1b1b1b"/>
+      <rect x="0" y="1" width="4" height="1" fill="#0d0d0d"/>
+    </pattern>
   </defs>
-  <g filter="url(#shadowRed)">
-    <!-- Split Trails (Deployed V-Shape) -->
-    <!-- Left Trail -->
-    <path d="M45 50 L20 90 L30 95 L50 60 Z" fill="#5e4034" stroke="#34201a"/>
-    <rect x="18" y="88" width="12" height="8" transform="rotate(-20 25 90)" fill="#111"/> <!-- Spade -->
+
+  <g>
     
-    <!-- Right Trail -->
-    <path d="M55 50 L80 90 L70 95 L50 60 Z" fill="#5e4034" stroke="#34201a"/>
-    <rect x="70" y="88" width="12" height="8" transform="rotate(20 75 90)" fill="#111"/> <!-- Spade -->
+    <!-- === Heavy Split Trails === -->
+    <!-- Trail texture/ribbing -->
+    <path d="M50 65 L20 95 L35 95 L50 75 Z" fill="#4e342e" stroke="#261a17"/>
+    <path d="M50 65 L80 95 L65 95 L50 75 Z" fill="#4e342e" stroke="#261a17"/>
     
-    <!-- Carriage Axle & Wheels -->
-    <rect x="25" y="45" width="50" height="6" rx="2" fill="#50322c"/>
-    <rect x="15" y="35" width="10" height="25" rx="2" fill="#111" stroke="#333"/> <!-- Left Wheel -->
-    <rect x="75" y="35" width="10" height="25" rx="2" fill="#111" stroke="#333"/> <!-- Right Wheel -->
+    <!-- Spades (Anchors) with "dirt" -->
+    <path d="M18 92 L38 92 L35 98 L18 98 Z" fill="#2d221f" stroke="#111"/>
+    <path d="M62 92 L82 92 L82 98 L65 98 Z" fill="#2d221f" stroke="#111"/>
+
+    <!-- === Wheels (Heavy with Treads) === -->
+    <!-- Left Wheel -->
+    <rect x="15" y="45" width="14" height="22" rx="4" fill="url(#treadPat)" stroke="#111"/>
+    <circle cx="22" cy="56" r="3" fill="#3e2723" stroke="#111"/> <!-- Hub -->
     
-    <!-- Gun Mount / Breech -->
-    <rect x="40" y="40" width="20" height="25" fill="#5e4034" stroke="#34201a"/>
-    <circle cx="50" cy="50" r="8" fill="#50322c"/>
+    <!-- Right Wheel -->
+    <rect x="71" y="45" width="14" height="22" rx="4" fill="url(#treadPat)" stroke="#111"/>
+    <circle cx="78" cy="56" r="3" fill="#3e2723" stroke="#111"/> <!-- Hub -->
+
+    <!-- Axle -->
+    <rect x="25" y="54" width="50" height="4" fill="#261a17"/>
+
+    <!-- === Gun Mount Area === -->
+    <!-- Lower Carriage -->
+    <path d="M38 52 L62 52 L60 65 L40 65 Z" fill="#3e2723" stroke="#1a1210"/>
     
-    <!-- Recoil Spades/System -->
-    <rect x="42" y="35" width="16" height="15" fill="#222"/>
+    <!-- === Massive Gun Shield === -->
+    <path d="M30 50 L70 50 L66 28 L34 28 Z" fill="url(#shieldGradRed)" stroke="#261a17" stroke-width="2"/>
+    <!-- Rivets on Shield -->
+    <circle cx="32" cy="30" r="1" fill="#261a17"/>
+    <circle cx="68" cy="30" r="1" fill="#261a17"/>
+    <circle cx="32" cy="48" r="1" fill="#261a17"/>
+    <circle cx="68" cy="48" r="1" fill="#261a17"/>
+    <!-- Viewing Port -->
+    <rect x="38" y="32" width="6" height="4" fill="#1a1210" stroke="#4e342e" stroke-width="1"/>
+
+    <!-- === Recoil System === -->
+    <!-- Main Recoil Block -->
+    <rect x="42" y="22" width="16" height="28" fill="#4e342e" stroke="#1a1210"/> 
+    <!-- Hydraulic Cylinders (Top) -->
+    <rect x="43" y="18" width="4" height="10" fill="#261a17"/>
+    <rect x="53" y="18" width="4" height="10" fill="#261a17"/>
     
-    <!-- LONG Barrel (175mm) -->
-    <rect x="46" y="5" width="8" height="60" fill="url(#barrelGradRed)" stroke="#34201a"/>
+    <!-- === The BARREL === -->
+    <rect x="45" y="4" width="10" height="46" fill="url(#barrelGradRed)" stroke="#1a1210"/>
     
-    <!-- Muzzle Brake -->
-    <rect x="44" y="5" width="12" height="10" fill="#111"/> 
-    <rect x="44" y="8" width="12" height="2" fill="#333"/>
+    <!-- Breech Block (Under Shield) -->
+    <rect x="42" y="50" width="16" height="14" fill="#261a17"/>
+
+    <!-- === Muzzle Brake (Detailed 2-Baffle) === -->
+    <path d="M43 4 L57 4 L58 12 L42 12 Z" fill="#1a1210"/>
+    <!-- Baffles -->
+    <path d="M42 6 H58 M42 9 H58" stroke="#333" stroke-width="1.5"/>
     
-    <!-- Gun Shield (Optional, small) -->
-    <path d="M35 45 L65 45 L60 35 L40 35 Z" fill="#8a5a4a" stroke="#111" opacity="0.8"/>
+    <!-- === Team ID / Marking (Red Star hint) === -->
+    <path d="M50 36 L51.5 40 L55 40 L52 42.5 L53 46 L50 44 L47 46 L48 42.5 L45 40 L48.5 40 Z" fill="#b71c1c" stroke="#1a1210" stroke-width="0.5"/>
+
   </g>
 </svg>

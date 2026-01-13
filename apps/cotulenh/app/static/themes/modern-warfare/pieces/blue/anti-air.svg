@@ -5,49 +5,61 @@
       <stop offset="50%" stop-color="#4a6b8a"/>
       <stop offset="100%" stop-color="#2c3e50"/>
     </linearGradient>
-    <filter id="shadow">
-      <feDropShadow dx="1" dy="1" stdDeviation="1" flood-opacity="0.5"/>
-    </filter>
+    <linearGradient id="metalGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#506070"/>
+      <stop offset="50%" stop-color="#708090"/>
+      <stop offset="100%" stop-color="#506070"/>
+    </linearGradient>
   </defs>
-  <g filter="url(#shadow)">
-    <!-- Deployed Outriggers (Cruciform Base) - "Static/Towed" look -->
-    <path d="M50 50 L20 80 L15 75 L45 45 Z" fill="#1a2634" stroke="#111"/> <!-- Rear Left -->
-    <path d="M50 50 L80 80 L85 75 L55 45 Z" fill="#1a2634" stroke="#111"/> <!-- Rear Right -->
-    <path d="M50 50 L20 20 L25 15 L55 45 Z" fill="#1a2634" stroke="#111"/> <!-- Front Left -->
-    <path d="M50 50 L80 20 L75 15 L45 45 Z" fill="#1a2634" stroke="#111"/> <!-- Front Right -->
-    
-    <!-- Spikes/ Feet on outriggers -->
-    <circle cx="18" cy="78" r="3" fill="#111"/>
-    <circle cx="82" cy="78" r="3" fill="#111"/>
-    <circle cx="22" cy="18" r="3" fill="#111"/>
-    <circle cx="78" cy="18" r="3" fill="#111"/>
+  <g>
+    <!-- Base: Heavy Hydraulic Stabilizers (Deployed) -->
+    <path d="M50 50 L20 85 L15 80 L45 45 Z" fill="#1a2634" stroke="#000" stroke-width="1.5"/> <!-- Rear Left -->
+    <path d="M50 50 L80 85 L85 80 L55 45 Z" fill="#1a2634" stroke="#000" stroke-width="1.5"/> <!-- Rear Right -->
+    <path d="M50 50 L20 15 L25 10 L55 45 Z" fill="#1a2634" stroke="#000" stroke-width="1.5"/> <!-- Front Left -->
+    <path d="M50 50 L80 15 L75 10 L45 45 Z" fill="#1a2634" stroke="#000" stroke-width="1.5"/> <!-- Front Right -->
 
-    <!-- Central Turret Platform -->
-    <circle cx="50" cy="50" r="15" fill="#34495e" stroke="#1a2634"/>
+    <!-- Hydraulic Pistons/Feet details -->
+    <rect x="15" y="80" width="8" height="8" rx="1" fill="#111" />
+    <rect x="77" y="80" width="8" height="8" rx="1" fill="#111" />
+    <rect x="19" y="8" width="8" height="8" rx="1" fill="#111" />
+    <rect x="73" y="8" width="8" height="8" rx="1" fill="#111" />
     
-    <!-- The AA GUNS (Twin Barrel) -->
-    <!-- Left Gun -->
-    <rect x="40" y="5" width="6" height="60" fill="#506070" stroke="#111"/>
-    <rect x="38" y="5" width="10" height="8" fill="#111"/> <!-- Muzzle Brake -->
-    <rect x="38" y="25" width="10" height="4" fill="#333"/> <!-- Clamp -->
+    <!-- Central Turret Base (Rotating Platform) -->
+    <circle cx="50" cy="50" r="18" fill="url(#bodyGradBlue)" stroke="#1a2634" stroke-width="2"/>
+    <circle cx="50" cy="50" r="12" fill="#1a2634" opacity="0.5"/>
+
+    <!-- WEAPON SYSTEM: Hybrid Gun/Missile -->
     
-    <!-- Right Gun -->
-    <rect x="54" y="5" width="6" height="60" fill="#506070" stroke="#111"/>
-    <rect x="52" y="5" width="10" height="8" fill="#111"/> <!-- Muzzle Brake -->
-    <rect x="52" y="25" width="10" height="4" fill="#333"/> <!-- Clamp -->
+    <!-- Rear Radar System (Folding Dish) -->
+    <path d="M40 70 Q50 85 60 70 L55 60 L45 60 Z" fill="#34495e" stroke="#111"/>
+    <ellipse cx="50" cy="72" rx="12" ry="4" fill="#6f8ca3" stroke="#2c3e50"/>
+    <circle cx="50" cy="72" r="2" fill="#aaffaa" opacity="0.8"/> <!-- Active blip -->
+
+    <!-- Main Cannons (Center Twin Autocannons) -->
+    <rect x="44" y="10" width="4" height="45" fill="url(#metalGrad)" stroke="#111"/>
+    <rect x="52" y="10" width="4" height="45" fill="url(#metalGrad)" stroke="#111"/>
+    <!-- Muzzle Brakes -->
+    <rect x="43" y="10" width="6" height="6" fill="#111"/>
+    <rect x="51" y="10" width="6" height="6" fill="#111"/>
     
-    <!-- Gun Breech / Mechanism -->
-    <rect x="35" y="45" width="30" height="20" rx="3" fill="#2c3e50" stroke="#111"/>
+    <!-- Missile Pods (Side Mounted) -->
+    <!-- Left Pod -->
+    <rect x="22" y="35" width="14" height="30" rx="2" fill="#2c3e50" stroke="#111"/>
+    <rect x="24" y="38" width="10" height="24" fill="#1a2634"/> <!-- Face -->
+    <circle cx="29" cy="44" r="3" fill="#ccc"/> <!-- Missile Tip 1 (Silver) -->
+    <circle cx="29" cy="56" r="3" fill="#ccc"/> <!-- Missile Tip 2 -->
     
-    <!-- Gunner Shield -->
-    <path d="M30 40 L70 40 L65 30 L35 30 Z" fill="#4a6b8a" stroke="#1a2634" opacity="0.9"/>
+    <!-- Right Pod -->
+    <rect x="64" y="35" width="14" height="30" rx="2" fill="#2c3e50" stroke="#111"/>
+    <rect x="66" y="38" width="10" height="24" fill="#1a2634"/> <!-- Face -->
+    <circle cx="71" cy="44" r="3" fill="#ccc"/> <!-- Missile Tip 1 -->
+    <circle cx="71" cy="56" r="3" fill="#ccc"/> <!-- Missile Tip 2 -->
+
+    <!-- Turret Housing/Armor -->
+    <path d="M36 45 L64 45 L60 65 L40 65 Z" fill="url(#bodyGradBlue)" stroke="#111"/>
+    <!-- Optics/Sensors -->
+    <rect x="46" y="45" width="8" height="6" fill="#111"/>
+    <circle cx="50" cy="48" r="2" fill="#0ff"/> <!-- Lens -->
     
-    <!-- Ammo Boxes -->
-    <rect x="25" y="45" width="10" height="15" fill="#2c3e50" stroke="#111"/>
-    <rect x="65" y="45" width="10" height="15" fill="#2c3e50" stroke="#111"/>
-    
-    <!-- Tow Hitch (Folded/Stowed at rear) -->
-    <rect x="48" y="65" width="4" height="15" fill="#333"/>
-    <circle cx="50" cy="80" r="3" fill="none" stroke="#333" stroke-width="2"/>
   </g>
 </svg>

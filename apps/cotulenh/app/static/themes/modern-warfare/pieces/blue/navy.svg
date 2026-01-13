@@ -5,50 +5,63 @@
       <stop offset="50%" stop-color="#4a6b8a"/>
       <stop offset="100%" stop-color="#2c3e50"/>
     </linearGradient>
-    <filter id="wake">
-      <feGaussianBlur stdDeviation="2"/>
-    </filter>
+    <linearGradient id="glassGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1a2634"/>
+      <stop offset="50%" stop-color="#34495e"/>
+      <stop offset="100%" stop-color="#1a2634"/>
+    </linearGradient>
   </defs>
   <g>
     <!-- Water Wake -->
-    <path d="M50 90 L10 100" stroke="#aeeeff" stroke-width="4" opacity="0.4" filter="url(#wake)"/>
-    <path d="M50 90 L90 100" stroke="#aeeeff" stroke-width="4" opacity="0.4" filter="url(#wake)"/>
+    <path d="M50 85 L20 100" stroke="#aeeeff" stroke-width="3" opacity="0.5"/>
+    <path d="M50 85 L80 100" stroke="#aeeeff" stroke-width="3" opacity="0.5"/>
 
-    <!-- Main Hull (Top Down) -->
-    <path d="M50 5 Q60 20, 70 45 L70 85 L50 95 L30 85 L30 45 Q40 20, 50 5 Z" 
+    <!-- Main Hull (Stealth Destroyer Shape) - WIDENED -->
+    <!-- Width: 38 (31 to 69) -->
+    <path d="M50 2 L69 25 L69 90 L50 98 L31 90 L31 25 Z" 
           fill="url(#hullGradBlue)" stroke="#1a2634" stroke-width="1.5"/>
     
-    <!-- Main Gun Turret 1 (Fore) -->
-    <circle cx="50" cy="25" r="8" fill="#34495e" stroke="#1a2634"/>
-    <rect x="46" y="10" width="2" height="15" fill="#111"/> <!-- Barrel 1 -->
-    <rect x="49" y="10" width="2" height="15" fill="#111"/> <!-- Barrel 2 -->
-    <rect x="52" y="10" width="2" height="15" fill="#111"/> <!-- Barrel 3 -->
-    
-    <!-- Main Gun Turret 2 (Fore - Superfiring) -->
-    <circle cx="50" cy="35" r="8" fill="#34495e" stroke="#1a2634"/>
-    <rect x="46" y="20" width="2" height="15" fill="#111"/>
-    <rect x="49" y="20" width="2" height="15" fill="#111"/>
-    <rect x="52" y="20" width="2" height="15" fill="#111"/>
+    <!-- Deck Detail -->
+    <path d="M35 28 L65 28 L65 88 L35 88 Z" fill="none" stroke="#1a2634" stroke-width="1" opacity="0.5"/>
 
-    <!-- Superstructure / Bridge -->
-    <rect x="35" y="45" width="30" height="25" fill="#2c3e50" stroke="#1a2634"/>
-    <rect x="40" y="50" width="20" height="10" fill="#111" opacity="0.5"/> <!-- Bridge Windows/Details -->
-    <circle cx="50" cy="55" r="3" fill="#00b4ff"/> <!-- Radar/Comms -->
+    <!-- Forward VLS (Vertical Launch System) -->
+    <g transform="translate(42, 30)">
+      <rect x="0" y="0" width="16" height="12" fill="#2c3e50" stroke="#1a2634" stroke-width="1"/>
+      <!-- VLS Cells -->
+      <path d="M4 0 V12 M8 0 V12 M12 0 V12 M0 4 H16 M0 8 H16" stroke="#1a2634" stroke-width="1"/>
+    </g>
 
-    <!-- Main Gun Turret 3 (Aft) -->
-    <circle cx="50" cy="78" r="8" fill="#34495e" stroke="#1a2634"/>
-    <rect x="46" y="80" width="2" height="15" fill="#111" transform="rotate(180 47 87.5)"/> <!-- Rear facing -->
-    <rect x="49" y="80" width="2" height="15" fill="#111" transform="rotate(180 50 87.5)"/>
-    <rect x="52" y="80" width="2" height="15" fill="#111" transform="rotate(180 53 87.5)"/>
+    <!-- Main Gun (5-inch style, faceted turret) -->
+    <g transform="translate(50, 20)">
+      <path d="M-4 -4 L4 -4 L5 2 L-5 2 Z" fill="#5a7b9a" stroke="#1a2634" stroke-width="0.5"/>
+      <rect x="-1" y="-12" width="2" height="10" fill="#111"/> <!-- Barrel -->
+    </g>
+
+    <!-- Superstructure (Stealth/Angled) - Widened slightly -->
+    <path d="M33 45 L40 45 L42 42 L58 42 L60 45 L67 45 L67 70 L33 70 Z" 
+          fill="#34495e" stroke="#1a2634" stroke-width="1"/>
     
-    <!-- Secondary Batteries -->
-    <circle cx="28" cy="50" r="3" fill="#506070" stroke="#111"/>
-    <circle cx="28" cy="60" r="3" fill="#506070" stroke="#111"/>
-    <circle cx="72" cy="50" r="3" fill="#506070" stroke="#111"/>
-    <circle cx="72" cy="60" r="3" fill="#506070" stroke="#111"/>
-    
-    <!-- Helipad (Tiny, at very stern) -->
-    <rect x="42" y="85" width="16" height="8" fill="#34495e"/>
-    <text x="50" y="91" font-family="Arial" font-size="6" fill="#00b4ff" text-anchor="middle">H</text>
+    <!-- Bridge Windows -->
+    <path d="M42 48 L58 48 L56 52 L44 52 Z" fill="#111"/>
+
+    <!-- Integrated Mast / Radar Arrays -->
+    <path d="M45 55 L55 55 L53 65 L47 65 Z" fill="#2c3e50" stroke="#1a2634" stroke-width="1"/>
+    <rect x="48" y="58" width="4" height="4" fill="#66ccff" opacity="0.8"/> <!-- Radar Plate -->
+
+    <!-- Midship Missile Canisters (Angled) -->
+    <rect x="34" y="60" width="8" height="6" fill="#2c3e50" stroke="#1a2634" stroke-width="1"/>
+    <rect x="58" y="60" width="8" height="6" fill="#2c3e50" stroke="#1a2634" stroke-width="1"/>
+
+    <!-- Rear VLS / Hangar Structure -->
+    <rect x="38" y="70" width="24" height="8" fill="#34495e" stroke="#1a2634" stroke-width="1"/>
+
+    <!-- Helipad -->
+    <rect x="35" y="80" width="30" height="14" fill="#2c3e50" stroke="#1a2634" stroke-width="1"/>
+    <circle cx="50" cy="87" r="4" fill="none" stroke="#fff" stroke-width="1.5" opacity="0.6"/>
+    <text x="50" y="89" font-family="Arial" font-size="4" fill="#fff" text-anchor="middle" opacity="0.8">H</text>
+
+    <!-- CIWS (Phalanx style - aft) -->
+    <circle cx="50" cy="74" r="2.5" fill="#fff" stroke="#1a2634" stroke-width="0.5"/>
+    <circle cx="50" cy="74" r="1" fill="#111"/>
   </g>
 </svg>

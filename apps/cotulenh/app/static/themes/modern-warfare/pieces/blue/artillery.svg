@@ -1,44 +1,66 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
   <defs>
-    <linearGradient id="barrelGradBlue" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#2c3e50"/>
-      <stop offset="50%" stop-color="#506070"/>
-      <stop offset="100%" stop-color="#2c3e50"/>
+    <!-- M777 Titanium / Aluminum Alloys -->
+    <linearGradient id="tiGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#546e7a"/>
+      <stop offset="40%" stop-color="#90a4ae"/> <!-- Bright metallic highlight -->
+      <stop offset="60%" stop-color="#78909c"/>
+      <stop offset="100%" stop-color="#455a64"/>
     </linearGradient>
-    <filter id="shadow">
-      <feDropShadow dx="1" dy="1" stdDeviation="1" flood-opacity="0.5"/>
-    </filter>
+    
+    <linearGradient id="cylGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#b0bec5"/>
+      <stop offset="50%" stop-color="#eceff1"/> <!-- Chrome/polished rod -->
+      <stop offset="100%" stop-color="#b0bec5"/>
+    </linearGradient>
   </defs>
-  <g filter="url(#shadow)">
-    <!-- Split Trails (Deployed V-Shape) -->
-    <!-- Left Trail -->
-    <path d="M45 50 L20 90 L30 95 L50 60 Z" fill="#34495e" stroke="#1a2634"/>
-    <rect x="18" y="88" width="12" height="8" transform="rotate(-20 25 90)" fill="#111"/> <!-- Spade -->
+
+  <g>
     
-    <!-- Right Trail -->
-    <path d="M55 50 L80 90 L70 95 L50 60 Z" fill="#34495e" stroke="#1a2634"/>
-    <rect x="70" y="88" width="12" height="8" transform="rotate(20 75 90)" fill="#111"/> <!-- Spade -->
+    <!-- === Complex Carriage (Titanium Frame) === -->
+    <!-- Trails -->
+    <path d="M50 68 L25 92 L32 96 L50 78 Z" fill="#607d8b" stroke="#37474f"/>
+    <path d="M50 68 L75 92 L68 96 L50 78 Z" fill="#607d8b" stroke="#37474f"/>
     
-    <!-- Carriage Axle & Wheels -->
-    <rect x="25" y="45" width="50" height="6" rx="2" fill="#2c3e50"/>
-    <rect x="15" y="35" width="10" height="25" rx="2" fill="#111" stroke="#333"/> <!-- Left Wheel -->
-    <rect x="75" y="35" width="10" height="25" rx="2" fill="#111" stroke="#333"/> <!-- Right Wheel -->
+    <!-- Trail Spades (sharp) -->
+    <path d="M22 90 L30 90 L25 98 Z" fill="#263238"/>
+    <path d="M78 90 L70 90 L75 98 Z" fill="#263238"/>
+
+    <!-- === Wheels (Smaller, Technical) === -->
+    <circle cx="30" cy="62" r="7" fill="#263238" stroke="#37474f"/>
+    <circle cx="30" cy="62" r="3" fill="#546e7a"/> <!-- Hub -->
     
-    <!-- Gun Mount / Breech -->
-    <rect x="40" y="40" width="20" height="25" fill="#34495e" stroke="#1a2634"/>
-    <circle cx="50" cy="50" r="8" fill="#2c3e50"/>
+    <circle cx="70" cy="62" r="7" fill="#263238" stroke="#37474f"/>
+    <circle cx="70" cy="62" r="3" fill="#546e7a"/> <!-- Hub -->
+
+    <!-- === Cradle & Recoil System === -->
+    <rect x="38" y="52" width="24" height="14" rx="2" fill="#546e7a" stroke="#37474f"/>
     
-    <!-- Recoil Spades/System -->
-    <rect x="42" y="35" width="16" height="15" fill="#222"/>
+    <!-- Hydraulic Dampers (Exposed Chrome) -->
+    <rect x="40" y="38" width="5" height="18" fill="url(#cylGrad)" stroke="#78909c"/>
+    <rect x="55" y="38" width="5" height="18" fill="url(#cylGrad)" stroke="#78909c"/>
+
+    <!-- Hydraulic Hoses (Details) -->
+    <path d="M38 58 C 30 58, 35 45, 41 40" fill="none" stroke="#263238" stroke-width="1.5"/>
+    <path d="M62 58 C 70 58, 65 45, 59 40" fill="none" stroke="#263238" stroke-width="1.5"/>
+
+    <!-- === Team Marking / Badge === -->
+    <rect x="45" y="60" width="10" height="3" fill="#0288d1"/>
+
+    <!-- === Digital Fire Control System (DFCS) === -->
+    <!-- The "Box" on the side (Left) -->
+    <rect x="32" y="48" width="6" height="8" fill="#263238" stroke="#111"/>
+    <rect x="33" y="49" width="4" height="4" fill="#00e5ff" opacity="0.6"/> <!-- Screen/Lens -->
+
+    <!-- === The BARREL === -->
+    <!-- Fluted barrel look (stripes) not easy, sticking to gradients -->
+    <rect x="46" y="5" width="8" height="55" fill="url(#tiGrad)" stroke="#37474f"/>
     
-    <!-- LONG Barrel (175mm) -->
-    <rect x="46" y="5" width="8" height="60" fill="url(#barrelGradBlue)" stroke="#1a2634"/>
+    <!-- Muzzle Brake (Typical 'Towing Eye' - Double Baffle) -->
+    <path d="M44 5H56 V12 H54 V8 H46 V12 H44 Z" fill="#37474f" stroke="#263238"/>
     
-    <!-- Muzzle Brake -->
-    <rect x="44" y="5" width="12" height="10" fill="#111"/> 
-    <rect x="44" y="8" width="12" height="2" fill="#333"/>
-    
-    <!-- Gun Shield (Optional, small) -->
-    <path d="M35 45 L65 45 L60 35 L40 35 Z" fill="#4a6b8a" stroke="#111" opacity="0.8"/>
+    <!-- Breech Block -->
+    <rect x="43" y="55" width="14" height="12" fill="#455a64" stroke="#263238"/>
+
   </g>
 </svg>

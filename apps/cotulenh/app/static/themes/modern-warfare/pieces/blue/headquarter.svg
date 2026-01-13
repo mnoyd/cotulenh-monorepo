@@ -1,28 +1,57 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
   <defs>
-    <linearGradient id="groundGradBlue" x1="0%" y1="0%" x2="0%" y2="100%">
+    <linearGradient id="bunkerGradBlue" x1="0%" y1="0%" x2="100%" y2="0%">
       <stop offset="0%" stop-color="#2c3e50"/>
-      <stop offset="100%" stop-color="#1a2634"/>
+      <stop offset="50%" stop-color="#4e7391"/>
+      <stop offset="100%" stop-color="#2c3e50"/>
+    </linearGradient>
+    <linearGradient id="flagGradBlue" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#154360"/>
+      <stop offset="20%" stop-color="#2980b9"/>
+      <stop offset="40%" stop-color="#5dade2"/>
+      <stop offset="60%" stop-color="#2980b9"/>
+      <stop offset="80%" stop-color="#1a5276"/>
+      <stop offset="100%" stop-color="#154360"/>
     </linearGradient>
   </defs>
   <g>
     <!-- Base Plate -->
-    <rect x="10" y="10" width="80" height="80" rx="5" fill="url(#groundGradBlue)" stroke="#00b4ff" stroke-width="2"/>
+    <path d="M10 75 L90 75 L95 85 L5 85 Z" fill="#1a2634" stroke="#111"/>
     
-    <!-- Walls -->
-    <path d="M15 15 L85 15 L85 85 L15 85 Z" fill="none" stroke="#34495e" stroke-width="4"/>
+    <!-- Main Bunker Body (Preserved Shape) -->
+    <g>
+        <path d="M20 75 L15 50 L30 35 L70 35 L85 50 L80 75 Z" fill="url(#bunkerGradBlue)" stroke="#1a2634" stroke-width="2"/>
+    </g>
     
-    <!-- Buildings -->
-    <rect x="20" y="20" width="25" height="25" fill="#4a6b8a" stroke="#111"/>
-    <rect x="55" y="20" width="25" height="25" fill="#4a6b8a" stroke="#111"/>
-    <rect x="20" y="55" width="25" height="25" fill="#4a6b8a" stroke="#111"/>
+    <!-- Shading for Depth (Side Faces) -->
+    <path d="M15 50 L30 35 L30 75 L20 75 Z" fill="#15202b" opacity="0.4"/> <!-- Left darker side -->
+    <path d="M85 50 L70 35 L70 75 L80 75 Z" fill="#15202b" opacity="0.4"/> <!-- Right darker side -->
+
+    <!-- Bunker Roof details -->
+    <path d="M30 35 L70 35 L65 55 L35 55 Z" fill="#34495e" stroke="#1a2634" opacity="0.8" stroke-width="1.5"/>
     
-    <!-- Helipad (Main Control) -->
-    <circle cx="67.5" cy="67.5" r="12" fill="#2c3e50" stroke="#00b4ff" stroke-width="1"/>
-    <text x="67.5" y="71" font-family="Arial" font-weight="bold" font-size="10" fill="#00b4ff" text-anchor="middle">H</text>
+    <!-- Firing Slits / Windows -->
+    <rect x="25" y="45" width="10" height="3" fill="#111" stroke="#1a2634" stroke-width="1"/>
+    <rect x="65" y="45" width="10" height="3" fill="#111" stroke="#1a2634" stroke-width="1"/>
+    <rect x="45" y="48" width="10" height="4" fill="#000" stroke="#1a2634" stroke-width="1"/> <!-- Central door/port -->
+
+    <!-- Flag Pole -->
+    <rect x="48" y="10" width="4" height="65" fill="#7f8c8d" stroke="#555" stroke-width="1"/>
+    <circle cx="50" cy="10" r="3" fill="#f1c40f" stroke="#b8860b" stroke-width="1"/> <!-- Gold Topper -->
+
+    <!-- The Flag (Dynamic & Complex) -->
+    <!-- Main Cloth -->
+    <path d="M52 12 Q70 5, 85 15 T98 30 L52 35 Z" fill="url(#flagGradBlue)" stroke="#0e2f44" stroke-width="1"/>
     
-    <!-- Flag / Antenna -->
-    <line x1="50" y1="50" x2="50" y2="30" stroke="#888" stroke-width="2"/>
-    <circle cx="50" cy="50" r="4" fill="#111"/>
+    <!-- Top Edge Highlight -->
+    <path d="M52 12 Q70 5, 85 15 T98 30" fill="none" stroke="#aed6f1" stroke-width="1.5" opacity="0.6"/>
+    
+    <!-- Deep Folds/Shadows -->
+    <path d="M52 12 C 65 15, 65 30, 55 35" fill="none" stroke="#0e2f44" stroke-width="1" opacity="0.3"/>
+    <path d="M70 10 C 75 20, 80 25, 75 33" fill="none" stroke="#0e2f44" stroke-width="1" opacity="0.3"/>
+    
+    <!-- Fabric Ripples -->
+    <path d="M60 15 Q75 10, 88 18" fill="none" stroke="#5dade2" stroke-width="1" opacity="0.5"/>
+    <path d="M55 25 Q70 20, 85 28" fill="none" stroke="#1a5276" stroke-width="1" opacity="0.5"/>
   </g>
 </svg>

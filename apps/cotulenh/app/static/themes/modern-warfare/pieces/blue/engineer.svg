@@ -7,38 +7,42 @@
     </linearGradient>
   </defs>
   <g>
-    <!-- Heavy Truck Chassis -->
-    <rect x="25" y="10" width="50" height="80" rx="3" fill="url(#bodyGradBlue)" stroke="#1a2634"/>
+    <!-- 6x6 Wheels -->
+    <rect x="25" y="15" width="8" height="14" rx="2" fill="#111"/>
+    <rect x="67" y="15" width="8" height="14" rx="2" fill="#111"/>
     
-    <!-- Wheels (6x6) -->
-    <rect x="15" y="15" width="10" height="15" rx="2" fill="#111"/>
-    <rect x="75" y="15" width="10" height="15" rx="2" fill="#111"/>
+    <rect x="25" y="50" width="8" height="14" rx="2" fill="#111"/>
+    <rect x="67" y="50" width="8" height="14" rx="2" fill="#111"/>
     
-    <rect x="15" y="55" width="10" height="15" rx="2" fill="#111"/>
-    <rect x="75" y="55" width="10" height="15" rx="2" fill="#111"/>
+    <rect x="25" y="75" width="8" height="14" rx="2" fill="#111"/>
+    <rect x="67" y="75" width="8" height="14" rx="2" fill="#111"/>
+
+    <!-- Armored Hull (V-Hull) -->
+    <path d="M35 10 L65 10 L68 85 L32 85 Z" fill="url(#bodyGradBlue)" stroke="#1a2634" stroke-width="2"/>
     
-    <rect x="15" y="75" width="10" height="15" rx="2" fill="#111"/>
-    <rect x="75" y="75" width="10" height="15" rx="2" fill="#111"/>
+    <!-- Cab Area -->
+    <path d="M35 10 L65 10 L65 35 L35 35 Z" fill="#34495e" stroke="#1a2634" opacity="0.8" stroke-width="1.5"/>
+    <rect x="38" y="15" width="24" height="10" rx="2" fill="#aeeeff" stroke="#1a2634" stroke-width="1"/> <!-- Windshield -->
     
-    <!-- Cab -->
-    <path d="M25 10 L75 10 L75 35 L25 35 Z" fill="#34495e" stroke="#1a2634"/>
-    <rect x="30" y="15" width="40" height="10" rx="2" fill="#aeeeff"/> <!-- Windshield -->
-    <rect x="35" y="8" width="30" height="4" fill="#f1c40f"/> <!-- Amber Warning Light Bar -->
+    <!-- Rear Storage / Equipment Box -->
+    <rect x="38" y="45" width="24" height="30" fill="#1a2634"/>
+    <rect x="40" y="47" width="20" height="26" fill="#2c3e50" stroke="#1a2634" stroke-dasharray="2 2" stroke-width="1"/>
     
-    <!-- Towing/Recovery Bed -->
-    <rect x="28" y="40" width="44" height="45" fill="#1a2634"/>
-    <rect x="30" y="42" width="40" height="41" fill="#2c3e50" stroke="#111" stroke-dasharray="2 2"/> <!-- Grip Plate -->
+    <!-- Robotic Arm Base -->
+    <circle cx="65" cy="25" r="5" fill="#333" stroke="#111" stroke-width="1"/>
     
-    <!-- Large Crane / Tow Boom -->
-    <path d="M40 50 L60 50 L55 85 L45 85 Z" fill="#34495e" stroke="#111"/> <!-- Boom Arm -->
-    <circle cx="50" cy="50" r="6" fill="#111"/> <!-- Pivot -->
+    <!-- Articulated Arm -->
+    <path d="M65 25 L85 15" stroke="#444" stroke-width="6" stroke-linecap="round"/> <!-- Segment 1 -->
+    <path d="M85 15 L80 35" stroke="#555" stroke-width="5" stroke-linecap="round"/> <!-- Segment 2 -->
+    <circle cx="85" cy="15" r="3" fill="#111"/> <!-- Joint -->
     
-    <!-- Winch / Hook -->
-    <path d="M48 85 L52 85 L52 95 L48 95 Z" fill="#111"/> <!-- Cable end -->
-    <path d="M45 92 Q50 100, 55 92" stroke="#111" stroke-width="3" fill="none"/> <!-- Hook -->
+    <!-- Claw / Manipulator -->
+    <path d="M78 35 L75 42" stroke="#222" stroke-width="3"/>
+    <path d="M82 35 L85 42" stroke="#222" stroke-width="3"/>
+    <path d="M75 42 Q80 48 85 42" fill="none" stroke="#222" stroke-width="2.5"/>
     
-    <!-- Stabilizers (Stowed) -->
-    <rect x="20" y="80" width="5" height="10" fill="#333"/>
-    <rect x="75" y="80" width="5" height="10" fill="#333"/>
+    <!-- Clearance Lights -->
+    <circle cx="37" cy="12" r="1.5" fill="#f1c40f" stroke="#b8860b" stroke-width="1"/>
+    <circle cx="63" cy="12" r="1.5" fill="#f1c40f" stroke="#b8860b" stroke-width="1"/>
   </g>
 </svg>
