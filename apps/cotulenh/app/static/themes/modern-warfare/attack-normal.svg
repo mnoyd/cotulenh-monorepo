@@ -1,26 +1,32 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
   <defs>
-    <g id="jet" transform="rotate(30 32 32)">
-      <path d="M32 10 L26 30 L16 34 L32 46 L48 34 L38 30 Z" fill="none" />
-      <path d="M28 46 L26 52 M36 46 L38 52" />
-    </g>
-    <g id="motion">
-      <path d="M10 50 Q 20 40 30 45" fill="none" />
-      <path d="M15 55 Q 25 45 35 50" fill="none" />
-    </g>
-    <g id="hud">
-      <path d="M50 14 L56 14 L56 20" fill="none" />
-      <path d="M50 20 L50 14" fill="none" />
+    <!-- Jet Shape -->
+    <g id="fighter-jet">
+      <path d="M0 0 L-4 8 L-12 10 L-2 14 L0 24 L2 14 L12 10 L4 8 Z" fill="white" />
     </g>
   </defs>
 
-  <!-- Outline -->
-  <use href="#jet" stroke="black" stroke-width="4" />
-  <use href="#motion" stroke="black" stroke-width="4" />
-  <use href="#hud" stroke="black" stroke-width="3" />
+  <!-- Jet 1: Swooping in from top-left -->
+  <g transform="translate(24, 24) rotate(135)">
+    <use href="#fighter-jet" transform="scale(0.8)" />
+    <!-- Trail -->
+    <path d="M0 -5 L0 -20" stroke="white" stroke-width="2" opacity="0.5" />
+  </g>
 
-  <!-- Main -->
-  <use href="#jet" stroke="white" stroke-width="2" />
-  <use href="#motion" stroke="white" stroke-width="2" opacity="0.8" />
-  <use href="#hud" stroke="white" stroke-width="1" />
+  <!-- Jet 2: Swooping in from bottom-right (Chasing/Engaging) -->
+  <g transform="translate(40, 40) rotate(-45)">
+    <use href="#fighter-jet" transform="scale(0.8)" />
+    <!-- Trail -->
+    <path d="M0 -5 L0 -20" stroke="white" stroke-width="2" opacity="0.5" />
+  </g>
+
+  <!-- Action/Crosshair Center -->
+  <g transform="translate(32, 32)">
+    <circle cx="0" cy="0" r="12" stroke="white" stroke-width="1" stroke-dasharray="2 2" fill="none" opacity="0.6" />
+    <path d="M-8 -8 L8 8" stroke="white" stroke-width="2" />
+    <path d="M8 -8 L-8 8" stroke="white" stroke-width="2" />
+  </g>
+  
+  <!-- Speed Lines -->
+  <path d="M10 50 Q 32 60 54 50" stroke="white" stroke-width="1" fill="none" opacity="0.3" />
 </svg>

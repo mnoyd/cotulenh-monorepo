@@ -13,6 +13,65 @@
      id="defs1">
     <!-- Battleground Decorations -->
     
+    <!-- Water Effects -->
+    <linearGradient id="waterGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%" style="stop-color:#3a6a85;stop-opacity:1" />
+        <stop offset="100%" style="stop-color:#1a3a4b;stop-opacity:1" />
+    </linearGradient>
+
+    <filter id="waterRealism" filterUnits="objectBoundingBox" x="0%" y="0%" width="100%" height="100%">
+        <!-- Turbulence for wave texture -->
+        <feTurbulence type="turbulence" baseFrequency="0.01 0.02" numOctaves="2" seed="2" result="turbulence"/>
+        
+        <!-- Displace the base water gradient -->
+        <feDisplacementMap in="SourceGraphic" in2="turbulence" scale="15" xChannelSelector="R" yChannelSelector="G" result="displaced"/>
+        
+        <!-- Create lighting effect -->
+        <feSpecularLighting in="turbulence" surfaceScale="2" specularConstant="0.5" specularExponent="20" lighting-color="#a3c2e0" result="highlights">
+            <feDistantLight azimuth="45" elevation="60"/>
+        </feSpecularLighting>
+        
+        <!-- Combine highlights with displaced water -->
+        <feComposite in="highlights" in2="displaced" operator="in" result="highlightsClipped"/>
+        <feComposite in="displaced" in2="highlightsClipped" operator="arithmetic" k1="0" k2="1" k3="0.6" k4="0" result="waterWithLight"/>
+        
+        <!-- Clip effectively to original shape -->
+        <feComposite operator="in" in="waterWithLight" in2="SourceGraphic"/>
+    </filter>
+
+    <pattern id="currentsPattern" width="100" height="100" patternUnits="userSpaceOnUse" viewBox="0 0 100 100">
+        <path d="M0,20 Q25,15 50,20 T100,20" stroke="#a3c2e0" stroke-width="0.5" fill="none" opacity="0.3"/>
+        <path d="M0,50 Q25,55 50,50 T100,50" stroke="#a3c2e0" stroke-width="0.5" fill="none" opacity="0.3"/>
+        <path d="M0,80 Q25,75 50,80 T100,80" stroke="#a3c2e0" stroke-width="0.5" fill="none" opacity="0.3"/>
+    </pattern>
+
+    <!-- Terrain Effects -->
+    <filter id="terrainRoughness" filterUnits="objectBoundingBox">
+        <feTurbulence type="fractalNoise" baseFrequency="0.01" numOctaves="4" seed="1" result="noise"/>
+        <feDiffuseLighting in="noise" lighting-color="#fff8e7" surfaceScale="2" result="diffuse">
+            <feDistantLight azimuth="45" elevation="25"/>
+        </feDiffuseLighting>
+        <feComposite operator="in" in="diffuse" in2="SourceGraphic" result="lighting"/>
+        <feComposite operator="arithmetic" in="SourceGraphic" in2="lighting" k1="0" k2="1" k3="0.4" k4="0"/>
+    </filter>
+
+    <filter id="hillDropShadow">
+        <feDropShadow dx="1" dy="2" stdDeviation="2" flood-color="#000000" flood-opacity="0.5"/>
+    </filter>
+
+    <linearGradient id="hillGradientBase" x1="0%" y1="100%" x2="0%" y2="0%">
+        <stop offset="0%" style="stop-color:#4a5c4a;stop-opacity:1" />
+        <stop offset="100%" style="stop-color:#586b58;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="hillGradientMid" x1="0%" y1="100%" x2="0%" y2="0%">
+        <stop offset="0%" style="stop-color:#586b58;stop-opacity:1" />
+        <stop offset="100%" style="stop-color:#6b826b;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="hillGradientPeak" x1="0%" y1="100%" x2="0%" y2="0%">
+        <stop offset="0%" style="stop-color:#6b826b;stop-opacity:1" />
+        <stop offset="100%" style="stop-color:#7e967e;stop-opacity:1" />
+    </linearGradient>
+
     <!-- Patterns -->
     <pattern id="techGrid" width="40" height="40" patternUnits="userSpaceOnUse">
         <rect width="40" height="40" fill="none"/>
@@ -39,7 +98,7 @@
      
     <!-- Land Mass with Noise Filter -->
     <path
-       style="display:inline;fill:#6b7a6b;fill-opacity:1;fill-rule:evenodd;stroke:#5c7a99;stroke-width:1.5;stroke-linecap:round;stroke-dasharray:none;stroke-dashoffset:6.05737"
+       style="display:inline;fill:#6b7a6b;fill-opacity:1;fill-rule:evenodd;stroke:#5c7a99;stroke-width:1.5;stroke-linecap:round;stroke-dasharray:none;stroke-dashoffset:6.05737;filter:url(#terrainRoughness)"
        id="rect3"
        width="599.42963"
        height="659.42963"
@@ -50,12 +109,19 @@
 
     <!-- Water with Tech Grid -->
     <path
-       style="fill:#376175;fill-opacity:1;fill-rule:evenodd;stroke:#5c7a99;stroke-width:1.5;stroke-linecap:round;stroke-dasharray:none;stroke-dashoffset:6.05737"
+       style="fill:url(#waterGradient);fill-opacity:1;fill-rule:evenodd;stroke:#5c7a99;stroke-width:1.5;stroke-linecap:round;stroke-dasharray:none;stroke-dashoffset:6.05737;filter:url(#waterRealism)"
        id="path6"
        width="599.42963"
        height="659.42963"
        x="-887.83569"
        y="-154.24654"
+       transform="translate(48.629454,-85.498419)"
+       d="m -887.83569,-154.24654 h 599.42962 v 659.42963 h -599.42962 z" />
+    
+    <!-- Water Currents Overlay -->
+    <path
+       style="fill:url(#currentsPattern);fill-opacity:1;stroke:none;opacity:0.4;pointer-events:none;mix-blend-mode:overlay"
+       id="path6-currents"
        transform="translate(48.629454,-85.498419)"
        d="m -887.83569,-154.24654 h 599.42962 v 659.42963 h -599.42962 z" />
     
@@ -91,6 +157,45 @@
   </g>
 
   <g id="battleground-terrain" transform="translate(899.72226,300.07242)">
+
+
+      <!-- High Ground: Layered elevation for strategy feel -->
+      <g id="hills-bottom" style="opacity:0.6; filter:url(#terrainRoughness) url(#hillDropShadow)">
+        <!-- Top Merged Hill (Ridge Line) -->
+        <!-- Base Layer -->
+        <path style="fill:url(#hillGradientBase);stroke:none"
+          d="M -680,-120 C -660,-180 -580,-200 -500,-180 C -420,-160 -360,-200 -300,-140 C -280,-120 -280,-80 -320,-80 C -380,-90 -450,-70 -480,-60 C -520,-50 -600,-60 -680,-120 Z" />
+        <!-- Mid Layer -->
+        <path style="fill:url(#hillGradientMid);stroke:none"
+          d="M -650,-130 C -630,-170 -570,-185 -500,-170 C -430,-155 -380,-180 -330,-140 C -320,-130 -340,-100 -380,-100 C -420,-100 -460,-80 -500,-80 C -550,-80 -600,-90 -650,-130 Z" />
+        <!-- Peak Layer -->
+        <path style="fill:url(#hillGradientPeak);stroke:none"
+          d="M -620,-140 C -600,-160 -560,-170 -510,-160 C -460,-150 -420,-165 -380,-140 C -390,-120 -440,-110 -500,-100 C -540,-95 -580,-110 -620,-140 Z" />
+
+        <!-- Bottom Left Hill (3 Tiers) -->
+        <!-- Bottom Left Hill (3 Tiers) -->
+        <path style="fill:url(#hillGradientBase);stroke:none" d="m -630,200 c 35,-20 85,-10 105,20 20,40 -5,90 -45,100 -45,10 -90,-30 -100,-70 -5,-35 20,-60 40,-50 z" />
+        <path style="fill:url(#hillGradientMid);stroke:none" d="m -615,215 c 30,-15 70,-5 85,20 15,35 -5,75 -40,85 -35,10 -75,-25 -85,-60 -5,-30 15,-50 40,-45 z" />
+        <path style="fill:url(#hillGradientPeak);stroke:none" d="m -600,230 c 20,-10 50,-5 60,15 10,25 -5,50 -30,55 -25,5 -55,-20 -60,-40 -5,-15 10,-25 30,-30 z" />
+
+        <!-- Bottom Mountain Range (Stretching from Right Corner) - Smoothed -->
+        <!-- Base Layer -->
+        <path style="fill:url(#hillGradientBase);stroke:none" 
+              d="M -500,409 C -480,380 -470,370 -440,375 C -410,380 -380,360 -350,320 C -320,280 -280,320 -249,300 V 409 H -500 Z" />
+        <!-- Mid Layer -->
+        <path style="fill:url(#hillGradientMid);stroke:none" 
+              d="M -480,409 C -460,390 -450,380 -430,385 C -400,390 -370,370 -345,335 C -315,300 -270,340 -249,320 V 409 H -480 Z" />
+        <!-- Peak Layer -->
+        <path style="fill:url(#hillGradientPeak);stroke:none" 
+              d="M -460,409 C -440,400 -430,390 -410,395 C -390,400 -360,380 -340,350 C -310,320 -260,360 -249,340 V 409 H -460 Z" />
+      </g>
+        
+  </g>
+  
+  <g id="war-objects-layer" transform="translate(899.72226,300.07242)">
+      <!-- War Objects Group: Reduced distraction via opacity -->
+      <g id="war-objects-content" style="opacity:0.6; mix-blend-mode: normal">
+          
       <!-- Trenches: Dug-in fortifications (Double stroke for depth) -->
       <g id="trenches-group" opacity="0.8">
           <!-- Top Base Defense (y ~ 20-30) -->
@@ -118,6 +223,53 @@
                 fill="none" stroke="#5e6e5e" stroke-width="1" stroke-linecap="square" />
       </g>
 
+      <!-- Sandbag Fortifications: Stacked defensive positions behind trenches -->
+      <g id="sandbag-fortifications" fill="#7c7050" stroke="#2b2b2b" stroke-width="0.8" opacity="0.9">
+          <!-- Top Rear Zone (Scattered) -->
+          <g id="sandbags-top-left" transform="translate(-700, -210)">
+              <!-- Bottom Row -->
+              <rect x="0" y="5" width="12" height="5" rx="2" />
+              <rect x="12" y="5" width="12" height="5" rx="2" />
+              <rect x="24" y="5" width="12" height="5" rx="2" />
+              <!-- Top Row -->
+              <rect x="6" y="0" width="12" height="5" rx="2" />
+              <rect x="18" y="0" width="12" height="5" rx="2" />
+          </g>
+          
+          <g id="sandbags-top-mid" transform="translate(-480, -230)">
+              <rect x="0" y="5" width="12" height="5" rx="2" />
+              <rect x="12" y="5" width="12" height="5" rx="2" />
+              <rect x="6" y="0" width="12" height="5" rx="2" />
+          </g>
+
+          <g id="sandbags-top-right" transform="translate(-280, -150)">
+              <rect x="0" y="5" width="12" height="5" rx="2" />
+              <rect x="12" y="5" width="12" height="5" rx="2" />
+              <rect x="6" y="0" width="12" height="5" rx="2" />
+          </g>
+
+          <!-- Bottom Rear Zone (Relocated to avoid hills) -->
+          <g id="sandbags-bottom-left" transform="translate(-450, 250)">
+              <rect x="0" y="5" width="12" height="5" rx="2" />
+              <rect x="12" y="5" width="12" height="5" rx="2" />
+              <rect x="6" y="0" width="12" height="5" rx="2" />
+          </g>
+
+          <g id="sandbags-bottom-mid" transform="translate(-380, 240)">
+              <rect x="0" y="5" width="12" height="5" rx="2" />
+              <rect x="12" y="5" width="12" height="5" rx="2" />
+              <rect x="24" y="5" width="12" height="5" rx="2" />
+              <rect x="6" y="0" width="12" height="5" rx="2" />
+              <rect x="18" y="0" width="12" height="5" rx="2" />
+          </g>
+
+          <g id="sandbags-bottom-right" transform="translate(-320, 260)">
+              <rect x="0" y="5" width="12" height="5" rx="2" />
+              <rect x="12" y="5" width="12" height="5" rx="2" />
+              <rect x="6" y="0" width="12" height="5" rx="2" />
+          </g>
+      </g>
+
       <!-- Barbed Wire: Jagged thin lines near trenches -->
       <path
         id="barbed-wire"
@@ -127,30 +279,36 @@
            M -330,140 l -5,5 l -5,-5 l -5,5 l -5,-5
            M -450,180 l 5,-5 l 5,5 l 5,-5 l 5,5" />
 
-      <!-- High Ground: Layered elevation for strategy feel -->
-      <g id="hills-bottom" style="opacity:0.6">
-        <!-- Top Merged Hill (Ridge Line) -->
-        <!-- Base Layer -->
-        <path style="fill:#586b58;stroke:none"
-          d="M -680,-120 C -660,-180 -580,-200 -500,-180 C -420,-160 -360,-200 -300,-140 C -280,-120 -280,-80 -320,-80 C -380,-90 -450,-70 -480,-60 C -520,-50 -600,-60 -680,-120 Z" />
-        <!-- Mid Layer -->
-        <path style="fill:#6b826b;stroke:none"
-          d="M -650,-130 C -630,-170 -570,-185 -500,-170 C -430,-155 -380,-180 -330,-140 C -320,-130 -340,-100 -380,-100 C -420,-100 -460,-80 -500,-80 C -550,-80 -600,-90 -650,-130 Z" />
-        <!-- Peak Layer -->
-        <path style="fill:#7e967e;stroke:none"
-          d="M -620,-140 C -600,-160 -560,-170 -510,-160 C -460,-150 -420,-165 -380,-140 C -390,-120 -440,-110 -500,-100 C -540,-95 -580,-110 -620,-140 Z" />
+      <!-- Land Decorations: Obstacles and Debris (Low opacity for less distraction) -->
+      <g id="land-decorations" opacity="0.6">
+        <!-- Tank Obstacles: Czech Hedgehogs (X-shapes) -->
+        <g id="tank-obstacles" stroke="#2f3f2f" stroke-width="2.5" stroke-linecap="round" opacity="0.9">
+            <!-- Top Land Zone (y < 60) -->
+            <path d="M -600,45 l 8,8 m -8,0 l 8,-8" />
+            <path d="M -580,40 l 8,8 m -8,0 l 8,-8" />
+            <path d="M -500,50 l 8,8 m -8,0 l 8,-8" />
+            <path d="M -400,45 l 8,8 m -8,0 l 8,-8" />
+            
+            <!-- Bottom Land Zone (y > 120) -->
+            <path d="M -620,135 l 8,8 m -8,0 l 8,-8" />
+            <path d="M -520,140 l 8,8 m -8,0 l 8,-8" />
+            <path d="M -440,135 l 8,8 m -8,0 l 8,-8" />
+            <path d="M -350,130 l 8,8 m -8,0 l 8,-8" />
+        </g>
 
-        <!-- Bottom Left Hill (3 Tiers) -->
-        <path style="fill:#586b58;stroke:none" d="m -630,200 c 35,-20 85,-10 105,20 20,40 -5,90 -45,100 -45,10 -90,-30 -100,-70 -5,-35 20,-60 40,-50 z" />
-        <path style="fill:#6b826b;stroke:none" d="m -615,215 c 30,-15 70,-5 85,20 15,35 -5,75 -40,85 -35,10 -75,-25 -85,-60 -5,-30 15,-50 40,-45 z" />
-        <path style="fill:#7e967e;stroke:none" d="m -600,230 c 20,-10 50,-5 60,15 10,25 -5,50 -30,55 -25,5 -55,-20 -60,-40 -5,-15 10,-25 30,-30 z" />
-
-        <!-- Bottom Right Hill (3 Tiers) -->
-        <path style="fill:#586b58;stroke:none" d="m -380,220 c 30,-25 90,-15 110,15 25,35 5,85 -35,100 -45,15 -105,-5 -120,-45 -10,-35 15,-60 45,-70 z" />
-        <path style="fill:#6b826b;stroke:none" d="m -370,230 c 25,-20 75,-10 90,15 20,30 5,70 -30,85 -35,15 -90,-5 -105,-40 -10,-30 10,-50 45,-60 z" />
-        <path style="fill:#7e967e;stroke:none" d="m -355,245 c 15,-10 50,-5 60,10 15,20 5,50 -25,60 -30,10 -65,-5 -75,-30 -5,-20 10,-30 40,-40 z" />
+        <!-- Burnt Debris: Charred ruins or wreckage -->
+        <g id="burnt-debris" fill="#1a1a1a" opacity="0.7">
+            <!-- Top Land Debris -->
+            <path d="M -560,50 l 6,-3 l 4,5 l -5,4 z" />
+            <circle cx="-555" cy="55" r="2" />
+            
+            <!-- Bottom Land Debris -->
+            <path d="M -480,135 l 5,3 l -3,5 l -4,-3 z" />
+            <path d="M -380,140 l 7,-2 l 3,6 l -6,3 z" />
+            <circle cx="-475" cy="130" r="1.5" />
+        </g>
       </g>
-        
+
       <!-- Battle Damage & Tactical Overlay -->
       <g id="battle-details" style="opacity:0.8">
           <!-- Blast Scars: Irregular shapes (Explosions) -->
@@ -169,6 +327,7 @@
              <!-- Mid Left -->
              <path d="M -450 -60 L -450 -50 M -455 -55 L -445 -55" />     <!-- Center -->
           </g>
+      </g>
       </g>
   </g>
 
@@ -251,14 +410,7 @@
 
       <!-- 4. Deployment Zone Corners (HUD Brackets) -->
       <g stroke="#00ffff" stroke-width="2" opacity="0.4" fill="none">
-          <!-- Top Left -->
-          <path d="M -709 -229 h 20 M -709 -229 v 20" />
-          <!-- Top Right -->
-          <path d="M -249 -229 h -20 M -249 -229 v 20" />
-          <!-- Bottom Left -->
-          <path d="M -709 409 h 20 M -709 409 v -20" />
-          <!-- Bottom Right -->
-          <path d="M -249 409 h -20 M -249 409 v -20" />
+          <!-- All Corners REMOVED as per user request -->
       </g>
   </g>
 
