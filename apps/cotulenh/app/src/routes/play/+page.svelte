@@ -6,14 +6,25 @@
   import DeploySessionPanel from '$lib/components/DeploySessionPanel.svelte';
   import MoveHistory from '$lib/components/MoveHistory.svelte';
   import GameControls from '$lib/components/GameControls.svelte';
+  import ClockPanel from '$lib/components/ClockPanel.svelte';
   import ErrorBoundary from '$lib/components/ErrorBoundary.svelte';
   import { GameSession } from '$lib/game-session.svelte';
+  import { createChessClock, TIME_PRESETS, type ClockColor } from '$lib/clock/clock.svelte';
   import { logger } from '@cotulenh/common';
 
   import '$lib/styles/board.css';
 
   let boardComponent: BoardContainer | null = $state(null);
   let session = $state<GameSession | null>(null);
+
+  const clock = createChessClock({
+    red: TIME_PRESETS.blitz5_3,
+    blue: TIME_PRESETS.blitz5_3
+  });
+
+  function handleTimeout(loser: ClockColor) {
+    logger.info(`${loser === 'r' ? 'Red' : 'Blue'} lost on time`);
+  }
 
   onMount(() => {
     const urlFen = $page.url.searchParams.get('fen');
@@ -30,6 +41,13 @@
 
     try {
       session = new GameSession(initialFen);
+      
+      session.onMove = () => {
+        if (clock.status === 'idle') {
+          clock.start('r');
+        }
+        clock.switchSide();
+      };
     } catch (error) {
       logger.error(error, 'Failed to initialize game session:');
       throw error;
@@ -41,12 +59,19 @@
       if (session) {
         window.removeEventListener('keydown', session.handleKeydown);
       }
+      clock.destroy();
     };
   });
 
   $effect(() => {
     if (session) {
       session.setupBoardEffect();
+    }
+  });
+
+  $effect(() => {
+    if (session && session.status !== 'playing') {
+      clock.stop();
     }
   });
 </script>
@@ -80,6 +105,9 @@
           </header>
 
           <div class="controls-grid">
+            <div class="controls-clock">
+              <ClockPanel {clock} onTimeout={handleTimeout} />
+            </div>
             <div class="controls-left">
               {#if session}
                 <GameInfo {session} />
@@ -200,6 +228,10 @@
     flex-direction: column;
     gap: 1rem;
     flex: 1;
+  }
+
+  .controls-clock {
+    margin-bottom: 0.5rem;
   }
 
   @media (max-width: 1024px) {
