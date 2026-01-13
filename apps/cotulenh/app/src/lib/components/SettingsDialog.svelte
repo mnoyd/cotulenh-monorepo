@@ -1,12 +1,18 @@
 <script lang="ts">
-  import { browser } from '$app/environment';
   import * as Dialog from '$lib/components/ui/dialog';
   import { onMount } from 'svelte';
   import { Button } from '$lib/components/ui/button';
   import { Separator } from '$lib/components/ui/separator';
   import { toast } from 'svelte-sonner';
-  import { isObject } from '$lib/types/type-guards';
-  import { themeStore, type ThemeId } from '$lib/stores/theme.svelte';
+  import { themeStore } from '$lib/stores/theme.svelte';
+  import {
+    loadSettings,
+    saveSettings as persistSettings,
+    DEFAULT_SETTINGS,
+    type Settings,
+    type ThemeId
+  } from '$lib/stores/settings';
+  import { playSound, setAudioEnabled, setAudioVolume } from '$lib/utils/audio';
 
   interface Props {
     open: boolean;
@@ -14,92 +20,37 @@
 
   let { open = $bindable() }: Props = $props();
 
-  // Settings interface for type safety
-  interface Settings {
-    soundsEnabled: boolean;
-    showMoveHints: boolean;
-    confirmReset: boolean;
-    theme: ThemeId;
-  }
-
-  // Default settings
-  const DEFAULT_SETTINGS: Settings = {
-    soundsEnabled: true,
-    showMoveHints: true,
-    confirmReset: true,
-    theme: 'modern-warfare'
-  };
-
-  // Settings state with localStorage persistence
   let soundsEnabled = $state(DEFAULT_SETTINGS.soundsEnabled);
+  let soundVolume = $state(DEFAULT_SETTINGS.soundVolume);
   let showMoveHints = $state(DEFAULT_SETTINGS.showMoveHints);
   let confirmReset = $state(DEFAULT_SETTINGS.confirmReset);
   let selectedTheme = $state<ThemeId>(themeStore.current);
 
-  /**
-   * Validates settings object from localStorage
-   */
-  function validateSettings(data: unknown): Settings {
-    if (!isObject(data)) {
-      throw new Error('Settings must be an object');
-    }
+  function loadFromStorage() {
+    const settings = loadSettings();
+    soundsEnabled = settings.soundsEnabled;
+    soundVolume = settings.soundVolume;
+    showMoveHints = settings.showMoveHints;
+    confirmReset = settings.confirmReset;
+    selectedTheme = settings.theme;
 
-    return {
-      soundsEnabled:
-        typeof data.soundsEnabled === 'boolean'
-          ? data.soundsEnabled
-          : DEFAULT_SETTINGS.soundsEnabled,
-      showMoveHints:
-        typeof data.showMoveHints === 'boolean'
-          ? data.showMoveHints
-          : DEFAULT_SETTINGS.showMoveHints,
-      confirmReset:
-        typeof data.confirmReset === 'boolean' ? data.confirmReset : DEFAULT_SETTINGS.confirmReset,
-      theme:
-        typeof data.theme === 'string' && themeStore.themes.some((t) => t.id === data.theme)
-          ? (data.theme as ThemeId)
-          : DEFAULT_SETTINGS.theme
-    };
+    setAudioEnabled(settings.soundsEnabled);
+    setAudioVolume(settings.soundVolume);
   }
 
-  function loadSettings() {
-    if (!browser) return;
-
-    const saved = localStorage.getItem('cotulenh_settings');
-    if (!saved) {
-      selectedTheme = themeStore.current;
-      return;
-    }
-
-    try {
-      const parsed = JSON.parse(saved);
-      const validated = validateSettings(parsed);
-
-      soundsEnabled = validated.soundsEnabled;
-      showMoveHints = validated.showMoveHints;
-      confirmReset = validated.confirmReset;
-      selectedTheme = validated.theme;
-    } catch (e) {
-      console.error('Failed to load settings, using defaults:', e);
-      // Reset to defaults on error
-      soundsEnabled = DEFAULT_SETTINGS.soundsEnabled;
-      showMoveHints = DEFAULT_SETTINGS.showMoveHints;
-      confirmReset = DEFAULT_SETTINGS.confirmReset;
-      selectedTheme = DEFAULT_SETTINGS.theme;
-    }
-  }
-
-  async function saveSettings() {
-    if (!browser) return;
+  async function handleSave() {
     const settings: Settings = {
       soundsEnabled,
+      soundVolume,
       showMoveHints,
       confirmReset,
       theme: selectedTheme
     };
-    localStorage.setItem('cotulenh_settings', JSON.stringify(settings));
+    persistSettings(settings);
 
-    // Apply theme change (async)
+    setAudioEnabled(soundsEnabled);
+    setAudioVolume(soundVolume);
+
     await themeStore.setTheme(selectedTheme);
 
     toast.success('Settings saved');
@@ -108,13 +59,11 @@
 
   async function handleThemeChange(themeId: ThemeId) {
     selectedTheme = themeId;
-    // Preview theme immediately (async with loading state)
     await themeStore.setTheme(themeId);
   }
 
-  // Load settings when component mounts (browser only)
   onMount(() => {
-    loadSettings();
+    loadFromStorage();
   });
 </script>
 
@@ -160,6 +109,32 @@
           <span>Sound Effects</span>
         </label>
 
+        {#if soundsEnabled}
+          <div class="setting-item volume-control">
+            <span>Volume</span>
+            <input
+              type="range"
+              min="0"
+              max="1"
+              step="0.1"
+              bind:value={soundVolume}
+              onchange={() => setAudioVolume(soundVolume)}
+              class="volume-slider"
+            />
+            <span class="volume-value">{Math.round(soundVolume * 100)}%</span>
+            <button
+              type="button"
+              class="test-sound-btn"
+              onclick={() => {
+                setAudioVolume(soundVolume);
+                playSound('move');
+              }}
+            >
+              Test
+            </button>
+          </div>
+        {/if}
+
         <label class="setting-item">
           <input type="checkbox" bind:checked={showMoveHints} />
           <span>Show Move Hints</span>
@@ -174,7 +149,7 @@
 
     <Dialog.Footer>
       <Button variant="outline" onclick={() => (open = false)}>Cancel</Button>
-      <Button onclick={saveSettings}>Save Settings</Button>
+      <Button onclick={handleSave}>Save Settings</Button>
     </Dialog.Footer>
   </Dialog.Content>
 </Dialog.Root>
@@ -305,6 +280,41 @@
     font-weight: 500;
     color: var(--theme-text-primary);
     font-family: var(--font-ui);
+  }
+
+  .volume-control {
+    padding-left: 2rem;
+  }
+
+  .volume-slider {
+    flex: 1;
+    height: 4px;
+    accent-color: var(--theme-primary);
+    cursor: pointer;
+  }
+
+  .volume-value {
+    min-width: 3rem;
+    text-align: right;
+    font-size: 0.75rem;
+    color: var(--theme-text-secondary);
+  }
+
+  .test-sound-btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.7rem;
+    font-weight: 500;
+    background: var(--theme-primary-dim);
+    border: 1px solid var(--theme-border-subtle);
+    border-radius: 0.25rem;
+    color: var(--theme-text-primary);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .test-sound-btn:hover {
+    background: var(--theme-primary);
+    border-color: var(--theme-primary);
   }
 
   @media (max-width: 480px) {
