@@ -443,3 +443,191 @@ export function perfMeasure(name: string, startMark: string, endMark: string): v
     }
   }
 }
+
+// ============================================================================
+// MOVE FLOW TRACKING - Track end-to-end move pipeline
+// ============================================================================
+
+/**
+ * Move flow phases for tracking the complete pipeline
+ */
+export enum MoveFlowPhase {
+  /** Board click event received */
+  BoardClick = 'board:click',
+  /** Board internal processing before firing event */
+  BoardProcess = 'board:process',
+  /** Board fires 'after' event to app */
+  BoardToApp = 'board:to-app',
+  /** App receives and begins processing */
+  AppReceive = 'app:receive',
+  /** App prepares to call core */
+  AppToCore = 'app:to-core',
+  /** Core engine processing the move */
+  CoreMove = 'core:move',
+  /** Core returns result to app */
+  CoreToApp = 'core:to-app',
+  /** App processes result and updates state */
+  AppProcess = 'app:process',
+  /** App syncs state back to board */
+  AppToBoard = 'app:to-board',
+  /** Board updates rendering */
+  BoardRender = 'board:render',
+  /** Complete end-to-end flow */
+  EndToEnd = 'flow:end-to-end'
+}
+
+interface MoveFlowTimestamp {
+  phase: MoveFlowPhase;
+  time: number;
+}
+
+let currentMoveFlow: MoveFlowTimestamp[] | null = null;
+let moveFlowCounter = 0;
+
+/**
+ * Start tracking a new move flow. Call this at the beginning of the pipeline.
+ *
+ * @example
+ * // In board's click handler or app's move handler
+ * perfStartMoveFlow({ from: 'e2', to: 'e4' });
+ */
+export function perfStartMoveFlow(context?: Record<string, unknown>): void {
+  if (!isEnabled()) return;
+
+  moveFlowCounter++;
+  currentMoveFlow = [];
+
+  const startTime = isBrowser ? performance.now() : Date.now();
+  currentMoveFlow.push({ phase: MoveFlowPhase.BoardClick, time: startTime });
+
+  console.group(`🔄 [MOVE FLOW #${moveFlowCounter}] Starting`, context ?? '');
+}
+
+/**
+ * Mark a specific phase in the move flow.
+ *
+ * @example
+ * perfMarkMoveFlow(MoveFlowPhase.AppToCore, { from: 'e2', to: 'e4' });
+ */
+export function perfMarkMoveFlow(phase: MoveFlowPhase, context?: Record<string, unknown>): void {
+  if (!isEnabled() || !currentMoveFlow) return;
+
+  const now = isBrowser ? performance.now() : Date.now();
+  const startTime = currentMoveFlow[0]?.time ?? now;
+  const elapsed = now - startTime;
+
+  currentMoveFlow.push({ phase, time: now });
+
+  // Calculate duration since previous phase
+  let durationSincePrev = 0;
+  if (currentMoveFlow.length > 1) {
+    const prevTime = currentMoveFlow[currentMoveFlow.length - 2].time;
+    durationSincePrev = now - prevTime;
+  }
+
+  const phaseInfo = {
+    phase,
+    elapsed: elapsed.toFixed(2) + 'ms',
+    sincePrev: durationSincePrev.toFixed(2) + 'ms',
+    ...context
+  };
+
+  console.log(
+    `  ⏱️ ${phase} → +${durationSincePrev.toFixed(2)}ms (total: ${elapsed.toFixed(2)}ms)`,
+    context ?? ''
+  );
+}
+
+/**
+ * End the move flow tracking and display the waterfall timeline.
+ *
+ * @example
+ * perfEndMoveFlow({ from: 'e2', to: 'e4', success: true });
+ */
+export function perfEndMoveFlow(context?: Record<string, unknown>): void {
+  if (!isEnabled() || !currentMoveFlow) return;
+
+  const endTime = isBrowser ? performance.now() : Date.now();
+  const startTime = currentMoveFlow[0]?.time ?? endTime;
+  const totalDuration = endTime - startTime;
+
+  currentMoveFlow.push({ phase: MoveFlowPhase.EndToEnd, time: endTime });
+
+  console.log(
+    `  ✅ [MOVE FLOW #${moveFlowCounter}] Complete: ${totalDuration.toFixed(2)}ms`,
+    context ?? ''
+  );
+
+  // Display waterfall timeline
+  console.groupCollapsed(`  📊 Waterfall Timeline`);
+
+  for (let i = 0; i < currentMoveFlow.length; i++) {
+    const entry = currentMoveFlow[i]!;
+    const entryElapsed = entry.time - startTime;
+    let prevDuration = '';
+
+    if (i > 0) {
+      const prevTime = currentMoveFlow[i - 1]!.time;
+      prevDuration = ` (+${(entry.time - prevTime).toFixed(2)}ms)`;
+    }
+
+    // Create visual bar
+    const barWidth = Math.max(1, (entryElapsed / totalDuration) * 40);
+    const bar = '█'.repeat(Math.floor(barWidth)) + '░'.repeat(Math.floor(40 - barWidth));
+
+    console.log(
+      `  ${bar} ${entry.phase.padEnd(20)} ${entryElapsed.toFixed(2).padStart(8)}ms${prevDuration}`
+    );
+  }
+
+  console.groupEnd();
+
+  // Show breakdown
+  const breakdown = analyzeMoveFlow(currentMoveFlow);
+  console.groupCollapsed(`  📈 Phase Breakdown`);
+
+  for (const [phase, duration] of Object.entries(breakdown)) {
+    const pct = ((duration / totalDuration) * 100).toFixed(1);
+    console.log(`  ${phase}: ${duration.toFixed(2)}ms (${pct}%)`);
+  }
+
+  console.groupEnd();
+  console.groupEnd();
+
+  currentMoveFlow = null;
+}
+
+/**
+ * Analyze move flow to get duration per phase.
+ */
+function analyzeMoveFlow(flow: MoveFlowTimestamp[]): Record<string, number> {
+  const breakdown: Record<string, number> = {};
+
+  for (let i = 1; i < flow.length; i++) {
+    const current = flow[i]!;
+    const prev = flow[i - 1]!;
+    const duration = current.time - prev.time;
+    breakdown[current.phase] = (breakdown[current.phase] ?? 0) + duration;
+  }
+
+  return breakdown;
+}
+
+/**
+ * Track a phase with automatic start/end.
+ * Returns a function that marks the end of the phase.
+ *
+ * @example
+ * const endPhase = perfTrackMovePhase(MoveFlowPhase.AppToCore);
+ * // ... do work ...
+ * endPhase();
+ */
+export function perfTrackMovePhase(
+  phase: MoveFlowPhase,
+  context?: Record<string, unknown>
+): () => void {
+  perfMarkMoveFlow(phase, context);
+  return () => {
+    // Phase end is implicit when next phase starts or flow ends
+  };
+}

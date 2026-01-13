@@ -5,7 +5,11 @@ import {
   perfTimeSync,
   perfTime,
   logPerfSummary,
-  setPerfThreshold
+  setPerfThreshold,
+  perfStartMoveFlow,
+  perfMarkMoveFlow,
+  perfEndMoveFlow,
+  MoveFlowPhase
 } from '@cotulenh/common';
 import { logRender } from '$lib/debug';
 import type { Api, Config, DestMove, OrigMove, Key } from '@cotulenh/board';
@@ -245,6 +249,9 @@ export class GameSession {
       turnColor: this.turn
     });
 
+    // Mark board render phase in move flow
+    perfMarkMoveFlow(MoveFlowPhase.BoardRender, { fen: this.fen });
+
     logRender('🔄 [RENDER] game-session.svelte.ts - syncBoard() called', {
       hasBoardApi: !!this.#boardApi,
       turnColor: this.turn,
@@ -279,6 +286,11 @@ export class GameSession {
       return;
     }
 
+    // Start move flow tracking
+    perfStartMoveFlow({ from: orig.square, to: dest.square });
+    perfMarkMoveFlow(MoveFlowPhase.BoardToApp, { from: orig.square, to: dest.square });
+    perfMarkMoveFlow(MoveFlowPhase.AppReceive);
+
     const endPerf = perfStart('game:move', { orig, dest });
 
     try {
@@ -294,7 +306,16 @@ export class GameSession {
         this.#historyViewIndex = -1;
       }
 
-      const moveResult = perfTimeSync('game:move:core', () => makeCoreMove(this.#game, orig, dest));
+      perfMarkMoveFlow(MoveFlowPhase.AppToCore);
+
+      const moveResult = perfTimeSync('game:move:core', () => {
+        perfMarkMoveFlow(MoveFlowPhase.CoreMove);
+        const result = makeCoreMove(this.#game, orig, dest);
+        perfMarkMoveFlow(MoveFlowPhase.CoreToApp);
+        return result;
+      });
+
+      perfMarkMoveFlow(MoveFlowPhase.AppProcess);
 
       if (moveResult) {
         const session = this.#game.getSession();
@@ -307,17 +328,26 @@ export class GameSession {
           this.#onMove?.();
         }
         this.#version++;
+
+        perfMarkMoveFlow(MoveFlowPhase.AppToBoard);
       } else {
         logger.warn('Illegal move attempted on board', { orig, dest });
         toast.error('Illegal move');
+        perfEndMoveFlow({ success: false, reason: 'illegal' });
+        return;
       }
     } catch (error) {
       logger.error('Error making move in game engine:', { error });
       toast.error('Move failed');
       this.syncBoard();
+      perfEndMoveFlow({ success: false, error });
+      return;
     } finally {
       endPerf();
     }
+
+    // End move flow tracking (board sync will happen in the effect)
+    perfEndMoveFlow({ success: true });
   }
 
   undo(): void {
