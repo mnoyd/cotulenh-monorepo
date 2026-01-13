@@ -1,14 +1,12 @@
 import { browser } from '$app/environment';
 
-export type SoundType = 'move' | 'capture' | 'check' | 'gameEnd' | 'error' | 'deploy';
+export type SoundType = 'move' | 'capture' | 'check' | 'gameEnd';
 
 const SOUND_PATHS: Record<SoundType, string> = {
   move: '/sounds/move.mp3',
   capture: '/sounds/capture.mp3',
   check: '/sounds/check.mp3',
-  gameEnd: '/sounds/game-end.mp3',
-  error: '/sounds/error.mp3',
-  deploy: '/sounds/deploy.mp3'
+  gameEnd: '/sounds/game-end.mp3'
 };
 
 const POOL_SIZE = 5;
