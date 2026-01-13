@@ -2119,7 +2119,6 @@ export class CoTuLenh implements CoTuLenhInterface {
 
     // Extract comments and their positions for restoration
     const commentsByPosition: Array<{ beforeToken: number; text: string }> = []
-    let tokenIndex = 0
 
     // Track comments by counting tokens before them
     const moveWithComments = moveSection
