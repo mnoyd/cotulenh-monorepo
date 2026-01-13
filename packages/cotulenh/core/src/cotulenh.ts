@@ -1905,7 +1905,8 @@ export class CoTuLenh implements CoTuLenhInterface {
   pgn({
     newline = '\n',
     maxWidth = 0,
-  }: { newline?: string; maxWidth?: number } = {}): string {
+    clocks,
+  }: { newline?: string; maxWidth?: number; clocks?: string[] } = {}): string {
     const result: string[] = []
 
     // Ensure we have the required Seven Tag Roster headers
@@ -2009,6 +2010,9 @@ export class CoTuLenh implements CoTuLenhInterface {
 
       if (moveResult && moveResult.completed && moveResult.san) {
         const isRedMove = moveIndex % 2 === 0
+        const clockTag = clocks?.[moveIndex]
+          ? ` {[%clk ${clocks[moveIndex]}]}`
+          : ''
 
         if (isRedMove) {
           // Start new move pair
@@ -2016,10 +2020,10 @@ export class CoTuLenh implements CoTuLenhInterface {
             moveStrings.push(currentMoveString)
           }
           const moveNum = Math.floor(moveIndex / 2) + 1
-          currentMoveString = `${moveNum}. ${moveResult.san}`
+          currentMoveString = `${moveNum}. ${moveResult.san}${clockTag}`
         } else {
           // Add Blue's move to current pair
-          currentMoveString += ` ${moveResult.san}`
+          currentMoveString += ` ${moveResult.san}${clockTag}`
         }
 
         moveIndex++
@@ -2115,7 +2119,6 @@ export class CoTuLenh implements CoTuLenhInterface {
 
     // Extract comments and their positions for restoration
     const commentsByPosition: Array<{ beforeToken: number; text: string }> = []
-    let tokenIndex = 0
 
     // Track comments by counting tokens before them
     const moveWithComments = moveSection

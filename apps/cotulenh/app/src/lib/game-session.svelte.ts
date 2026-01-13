@@ -14,6 +14,7 @@ import {
 } from '$lib/features/game/utils.js';
 import type { GameStatus, HistoryMove } from '$lib/types/game';
 import { extractLastMoveSquares } from './game-session-helpers';
+import { playSound } from '$lib/utils/audio';
 
 /**
  * GameSession - Unified reactive state management using the Reactive Adapter Pattern.
@@ -237,6 +238,18 @@ export class GameSession {
   // ACTION METHODS - Mutate game and bump version
   // ============================================================
 
+  #playMoveSound(moveResult: MoveResult): void {
+    if (this.#game.isCheckmate() || this.#game.isStalemate() || this.#game.isDraw()) {
+      playSound('gameEnd');
+    } else if (this.#game.isCheck()) {
+      playSound('check');
+    } else if (moveResult.captured) {
+      playSound('capture');
+    } else {
+      playSound('move');
+    }
+  }
+
   #handleMove(orig: OrigMove, dest: DestMove): void {
     if (this.#isUpdatingBoard) {
       logger.warn('Move attempted while board is updating, ignoring');
@@ -265,6 +278,7 @@ export class GameSession {
         // Only add to history if not in an active deploy session
         if (!isDeploySession) {
           this.#history = [...this.#history, moveResult as HistoryMove];
+          this.#playMoveSound(moveResult);
         }
         this.#version++;
       } else {
@@ -329,6 +343,7 @@ export class GameSession {
       }
 
       this.#history = [...this.#history, result.result as HistoryMove];
+      this.#playMoveSound(result.result);
       this.#version++;
     } catch (error) {
       logger.error('❌ Failed to commit deploy session:', { error });
