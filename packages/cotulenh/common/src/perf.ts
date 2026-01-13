@@ -200,7 +200,6 @@ export function perfEnd(name: string, context?: Record<string, unknown>): void {
   // Check threshold
   const exceededThreshold = duration > currentMetric.threshold;
   const icon = exceededThreshold ? '⚠️' : '✅';
-  const style = exceededThreshold ? 'color: #ff6b6b; font-weight: bold;' : 'color: #51cf66;';
 
   const thresholdMsg = exceededThreshold
     ? ` (exceeded ${currentMetric.threshold}ms threshold)`
@@ -524,13 +523,6 @@ export function perfMarkMoveFlow(phase: MoveFlowPhase, context?: Record<string, 
     const prevTime = currentMoveFlow[currentMoveFlow.length - 2].time;
     durationSincePrev = now - prevTime;
   }
-
-  const phaseInfo = {
-    phase,
-    elapsed: elapsed.toFixed(2) + 'ms',
-    sincePrev: durationSincePrev.toFixed(2) + 'ms',
-    ...context
-  };
 
   console.log(
     `  ⏱️ ${phase} → +${durationSincePrev.toFixed(2)}ms (total: ${elapsed.toFixed(2)}ms)`,
