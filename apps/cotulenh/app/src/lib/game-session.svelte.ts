@@ -53,6 +53,9 @@ export class GameSession {
   #cachedPossibleMoves: MoveResult[] = [];
   #lastMovesVersion = -1;
 
+  // Event callbacks
+  #onMove: (() => void) | null = null;
+
   constructor(fen?: string) {
     this.#originalFen = fen;
     this.#game = fen ? new CoTuLenh(fen) : new CoTuLenh();
@@ -175,6 +178,10 @@ export class GameSession {
     return this.#game.canCommitSession();
   }
 
+  set onMove(callback: (() => void) | null) {
+    this.#onMove = callback;
+  }
+
   // ============================================================
   // BOARD CONFIGURATION - Derived config for the board component
   // ============================================================
@@ -279,6 +286,7 @@ export class GameSession {
         if (!isDeploySession) {
           this.#history = [...this.#history, moveResult as HistoryMove];
           this.#playMoveSound(moveResult);
+          this.#onMove?.();
         }
         this.#version++;
       } else {
@@ -344,6 +352,7 @@ export class GameSession {
 
       this.#history = [...this.#history, result.result as HistoryMove];
       this.#playMoveSound(result.result);
+      this.#onMove?.();
       this.#version++;
     } catch (error) {
       logger.error('❌ Failed to commit deploy session:', { error });
