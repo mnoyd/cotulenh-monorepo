@@ -18,7 +18,7 @@ import {
   type MoveResult,
   type Color as CoreColor
 } from '@cotulenh/core';
-import { createError, ErrorCode, logger } from '@cotulenh/common';
+import { createError, ErrorCode, logger, perfStart, perfTimeSync } from '@cotulenh/common';
 
 // Import centralized translation functions
 import {
@@ -52,7 +52,10 @@ export {
  * @returns A Map where keys are origin squares (e.g., 'e2') and values are arrays of destination squares (e.g., ['e3', 'e4']).
  */
 export function getPossibleMoves(game: CoTuLenhInterface): Move[] {
-  return game.moves({ verbose: true }) as Move[];
+  const endPerf = perfStart('moves:all');
+  const result = game.moves({ verbose: true }) as Move[];
+  endPerf();
+  return result;
 }
 
 /**
@@ -63,7 +66,10 @@ export function getPossibleMoves(game: CoTuLenhInterface): Move[] {
  * @returns Array of verbose move objects from that square
  */
 export function getMovesForSquare(game: CoTuLenhInterface, square: string): Move[] {
-  return game.moves({ verbose: true, square }) as Move[];
+  const endPerf = perfStart('moves:square', { square });
+  const result = game.moves({ verbose: true, square }) as Move[];
+  endPerf();
+  return result;
 }
 
 /**
@@ -100,6 +106,7 @@ export function makeCoreMove(
   orig: OrigMove,
   dest: DestMove
 ): MoveResult | null {
+  const endPerf = perfStart('game:move:makeCoreMove', { from: orig.square, to: dest.square });
   try {
     const pieceAtSquare = game.get(orig.square);
     if (!pieceAtSquare) {
@@ -130,15 +137,20 @@ export function makeCoreMove(
     // 2. OR explicit stack move indicated by board (start of new deploy)
     const isDeploy = !!game.getSession() || !!orig.stackMove;
 
-    const moveResult = game.move({
-      from: orig.square,
-      to: dest.square,
-      piece: pieceToMove.type,
-      ...(dest.stay !== undefined && { stay: dest.stay }),
-      deploy: isDeploy
-    });
+    const moveResult = perfTimeSync('game:move:engine', () =>
+      game.move({
+        from: orig.square,
+        to: dest.square,
+        piece: pieceToMove.type,
+        ...(dest.stay !== undefined && { stay: dest.stay }),
+        deploy: isDeploy
+      })
+    );
+
+    endPerf();
     return moveResult;
   } catch (error) {
+    endPerf();
     logger.error(error, 'Error in makeCoreMove:');
     throw error;
   }

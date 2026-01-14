@@ -1,5 +1,13 @@
 import { tick } from 'svelte';
-import { logger } from '@cotulenh/common';
+import {
+  logger,
+  perfStart,
+  perfTimeSync,
+  perfStartMoveFlow,
+  perfMarkMoveFlow,
+  perfEndMoveFlow,
+  MoveFlowPhase
+} from '@cotulenh/common';
 import { logRender } from '$lib/debug';
 import type { Api, Config, DestMove, OrigMove, Key } from '@cotulenh/board';
 import { CoTuLenh, BLUE, RED, type CoTuLenhInterface, type DeployStateView } from '@cotulenh/core';
@@ -144,9 +152,11 @@ export class GameSession {
       return this.#cachedPossibleMoves;
     }
 
-    // Compute and cache
+    // Compute and cache with performance tracking
+    const endPerf = perfStart('moves');
     this.#cachedPossibleMoves = this.#game.moves({ verbose: true }) as MoveResult[];
     this.#lastMovesVersion = this.#version;
+    endPerf();
     return this.#cachedPossibleMoves;
   }
 
@@ -231,6 +241,14 @@ export class GameSession {
   }
 
   syncBoard(): void {
+    const endPerf = perfStart('game:sync-board', {
+      hasBoardApi: !!this.#boardApi,
+      turnColor: this.turn
+    });
+
+    // Mark board render phase in move flow
+    perfMarkMoveFlow(MoveFlowPhase.BoardRender, { fen: this.fen });
+
     logRender('🔄 [RENDER] game-session.svelte.ts - syncBoard() called', {
       hasBoardApi: !!this.#boardApi,
       turnColor: this.turn,
@@ -239,6 +257,8 @@ export class GameSession {
     if (this.#boardApi) {
       this.#boardApi.set(this.boardConfig);
     }
+
+    endPerf();
   }
 
   // ============================================================
@@ -263,6 +283,13 @@ export class GameSession {
       return;
     }
 
+    // Start move flow tracking
+    perfStartMoveFlow({ from: orig.square, to: dest.square });
+    perfMarkMoveFlow(MoveFlowPhase.BoardToApp, { from: orig.square, to: dest.square });
+    perfMarkMoveFlow(MoveFlowPhase.AppReceive);
+
+    const endPerf = perfStart('game:move', { orig, dest });
+
     try {
       // If viewing history, truncate to that point first
       if (this.#historyViewIndex !== -1 && this.#historyViewIndex < this.#history.length - 1) {
@@ -276,7 +303,16 @@ export class GameSession {
         this.#historyViewIndex = -1;
       }
 
-      const moveResult = makeCoreMove(this.#game, orig, dest);
+      perfMarkMoveFlow(MoveFlowPhase.AppToCore);
+
+      const moveResult = perfTimeSync('game:move:core', () => {
+        perfMarkMoveFlow(MoveFlowPhase.CoreMove);
+        const result = makeCoreMove(this.#game, orig, dest);
+        perfMarkMoveFlow(MoveFlowPhase.CoreToApp);
+        return result;
+      });
+
+      perfMarkMoveFlow(MoveFlowPhase.AppProcess);
 
       if (moveResult) {
         const session = this.#game.getSession();
@@ -289,18 +325,30 @@ export class GameSession {
           this.#onMove?.();
         }
         this.#version++;
+
+        perfMarkMoveFlow(MoveFlowPhase.AppToBoard);
       } else {
         logger.warn('Illegal move attempted on board', { orig, dest });
         toast.error('Illegal move');
+        perfEndMoveFlow({ success: false, reason: 'illegal' });
+        return;
       }
     } catch (error) {
       logger.error('Error making move in game engine:', { error });
       toast.error('Move failed');
       this.syncBoard();
+      perfEndMoveFlow({ success: false, error });
+      return;
+    } finally {
+      endPerf();
     }
+
+    // End move flow tracking (board sync will happen in the effect)
+    perfEndMoveFlow({ success: true });
   }
 
   undo(): void {
+    const endPerf = perfStart('game:undo');
     try {
       const session = this.#game.getSession();
 
@@ -317,10 +365,13 @@ export class GameSession {
     } catch (error) {
       logger.error('Failed to undo move:', { error });
       toast.error('Undo failed');
+    } finally {
+      endPerf();
     }
   }
 
   reset(): void {
+    const endPerf = perfStart('game:reset');
     try {
       this.#game = this.#originalFen ? new CoTuLenh(this.#originalFen) : new CoTuLenh();
       this.#history = [];
@@ -330,10 +381,13 @@ export class GameSession {
     } catch (error) {
       logger.error('Failed to reset game:', { error });
       toast.error('Reset failed');
+    } finally {
+      endPerf();
     }
   }
 
   commitDeploy(): void {
+    const endPerf = perfStart('deploy:commit');
     try {
       const session = this.#game.getSession();
       if (!session || !session.isDeploy) {
@@ -358,10 +412,13 @@ export class GameSession {
       logger.error('❌ Failed to commit deploy session:', { error });
       const errorMsg = error instanceof Error ? error.message : 'Unknown error';
       toast.error(`Cannot finish deployment: ${errorMsg}`);
+    } finally {
+      endPerf();
     }
   }
 
   cancelDeploy(): void {
+    const endPerf = perfStart('deploy:cancel');
     try {
       this.#game.cancelSession();
       this.#version++;
@@ -369,6 +426,8 @@ export class GameSession {
       logger.error('❌ Failed to cancel deploy:', { error });
       const errorMsg = error instanceof Error ? error.message : 'Unknown error';
       toast.error(`Error cancelling deployment: ${errorMsg}`);
+    } finally {
+      endPerf();
     }
   }
 
@@ -468,6 +527,12 @@ export class GameSession {
       return;
     }
 
+    const endPerf = perfStart('render:effect', {
+      fen: currentFen,
+      hasDeployState: !!this.deployState,
+      historyViewIndex: currentHistoryIdx
+    });
+
     logRender('🔄 [RENDER] game-session.svelte.ts - setupBoardEffect triggered', {
       fen: currentFen,
       hasDeployState: !!this.deployState,
@@ -485,6 +550,8 @@ export class GameSession {
         this.#isUpdatingBoard = false;
       });
     }
+
+    endPerf();
   }
 }
 
