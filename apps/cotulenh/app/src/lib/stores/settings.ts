@@ -11,6 +11,7 @@ export const SettingsSchema = z.object({
   showMoveHints: z.boolean().default(true),
   confirmReset: z.boolean().default(true),
   showDeployButtons: z.boolean().default(true),
+  autoCompleteDeploy: z.boolean().default(true),
   theme: z.enum(THEME_IDS).default('modern-warfare')
 });
 
@@ -22,6 +23,7 @@ export const DEFAULT_SETTINGS: Settings = {
   showMoveHints: true,
   confirmReset: true,
   showDeployButtons: true,
+  autoCompleteDeploy: true,
   theme: 'modern-warfare'
 };
 

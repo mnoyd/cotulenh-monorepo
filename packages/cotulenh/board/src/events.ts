@@ -8,6 +8,18 @@ import { logRender } from './debug.js';
 type MouchBind = (e: cg.MouchEvent) => void;
 type StateMouchBind = (d: State, e: cg.MouchEvent) => void;
 
+function handleKeyDown(s: State, e: KeyboardEvent): void {
+  if (!s.deploySession || s.viewOnly) return;
+
+  if (e.key === 'Escape') {
+    e.preventDefault();
+    s.movable.events.session?.cancel?.();
+  } else if (e.key === 'Enter') {
+    e.preventDefault();
+    s.movable.events.session?.complete?.();
+  }
+}
+
 export function bindBoard(s: State, onResize: () => void): void {
   const boardEl = s.dom.elements.board;
 
@@ -52,6 +64,10 @@ export function bindDocument(s: State, onResize: () => void): cg.Unbind {
       unbindable(document, 'scroll', onScroll, { capture: true, passive: true }),
       unbindable(globalThis, 'resize', onScroll, { passive: true }),
     );
+
+    // Keyboard shortcuts for deploy session (Escape to cancel, Enter to complete)
+    const onKeyDown = (e: KeyboardEvent) => handleKeyDown(s, e);
+    unbinds.push(unbindable(document, 'keydown', onKeyDown as EventListener));
   }
 
   return () => {

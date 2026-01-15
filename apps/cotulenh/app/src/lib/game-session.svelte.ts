@@ -342,6 +342,18 @@ export class GameSession {
           this.#history = [...this.#history, moveResult as HistoryMove];
           this.#playMoveSound(moveResult);
           this.#onMove?.();
+        } else {
+          // Check for auto-complete deploy when no pieces remaining
+          const settings = loadSettings();
+          const deployState = this.#game.getDeployState();
+          if (
+            settings.autoCompleteDeploy &&
+            deployState &&
+            deployState.remainingPieces.length === 0
+          ) {
+            this.commitDeploy();
+            return;
+          }
         }
         this.#version++;
 
