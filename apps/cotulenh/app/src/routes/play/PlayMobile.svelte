@@ -231,7 +231,7 @@
 </ErrorBoundary>
 
 {#if session}
-  <ShareDialog bind:open={shareOpen} fen={session.fen} />
+  <ShareDialog bind:open={shareOpen} fen={session.fen} {session} />
 {/if}
 
 <style>

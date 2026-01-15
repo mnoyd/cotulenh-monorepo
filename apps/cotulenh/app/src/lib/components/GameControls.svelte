@@ -95,4 +95,4 @@
   </Button>
 </div>
 
-<ShareDialog bind:open={shareOpen} fen={session.fen} />
+<ShareDialog bind:open={shareOpen} fen={session.fen} {session} />
