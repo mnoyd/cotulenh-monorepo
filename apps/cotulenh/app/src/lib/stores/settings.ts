@@ -42,7 +42,7 @@ export function loadSettings(): Settings {
     logger.warn('Settings validation failed, using defaults', { issues: result.error.issues });
     return DEFAULT_SETTINGS;
   } catch (e) {
-    logger.error('Failed to parse settings JSON', e);
+    logger.error(e instanceof Error ? e : new Error(String(e)), 'Failed to parse settings JSON');
     return DEFAULT_SETTINGS;
   }
 }
@@ -63,7 +63,7 @@ export function saveSettings(settings: Partial<Settings>): Settings {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(result.data));
     return result.data;
   } catch (e) {
-    logger.error('Failed to save settings', e);
+    logger.error(e instanceof Error ? e : new Error(String(e)), 'Failed to save settings');
     return current;
   }
 }

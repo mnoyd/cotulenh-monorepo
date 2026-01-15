@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { browser } from '$app/environment';
   import { page } from '$app/stores';
   import BoardContainer from '$lib/components/BoardContainer.svelte';
   import GameInfo from '$lib/components/GameInfo.svelte';
@@ -27,6 +28,8 @@
   }
 
   onMount(() => {
+    if (!browser) return;
+
     const urlFen = $page.url.searchParams.get('fen');
     let initialFen: string | undefined;
 

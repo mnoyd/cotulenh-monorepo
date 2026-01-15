@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { browser } from '$app/environment';
   import { page } from '$app/stores';
   import { RotateCcw, Undo2, ArrowUpDown, Share2, Flag, ChevronUp, ChevronDown } from 'lucide-svelte';
   import BoardContainer from '$lib/components/BoardContainer.svelte';
@@ -41,6 +42,8 @@
   }
 
   onMount(() => {
+    if (!browser) return;
+
     const urlFen = $page.url.searchParams.get('fen');
     let initialFen: string | undefined;
 

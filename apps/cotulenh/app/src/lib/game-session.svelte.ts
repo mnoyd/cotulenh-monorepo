@@ -180,7 +180,10 @@ export class GameSession {
 
   get canUndo(): boolean {
     void this.#version;
-    return this.#game.history().length > 0 || this.#game.getSession() !== null;
+    // Check local history (much faster than calling game.history() which replays everything)
+    // or if there's an active session with moves to undo
+    const session = this.#game.getSession();
+    return this.#history.length > 0 || (session !== null && !session.isEmpty);
   }
 
   get canCommitSession(): boolean {

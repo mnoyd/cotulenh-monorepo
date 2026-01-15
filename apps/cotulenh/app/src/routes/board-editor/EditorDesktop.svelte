@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { browser } from '$app/environment';
   import { page } from '$app/stores';
   import { Trash2, Hand, Star } from 'lucide-svelte';
   import BoardContainer from '$lib/components/BoardContainer.svelte';
@@ -11,6 +12,8 @@
   const editor = createBoardEditorState();
 
   onMount(() => {
+    if (!browser) return;
+    
     const urlFen = $page.url.searchParams.get('fen');
     editor.initializeFromUrl(urlFen);
   });
