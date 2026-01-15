@@ -216,6 +216,10 @@ function createSetPopUp<T>(options: PopupFactoryOptions<T>): CTLPopup<T>['setPop
   return (s: State, items: T[], key: cg.Key): HTMLElement | undefined => {
     // Remove any existing popup first
     clearPopup(s);
+    // Don't create popup if there are no items
+    if (!items || items.length === 0) {
+      return undefined;
+    }
     const itemElements = items.map((item, index) => {
       const itemEl = options.renderItem(s, item, index);
       itemEl.classList.add('popup-item');
