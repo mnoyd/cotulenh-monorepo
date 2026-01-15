@@ -103,9 +103,7 @@
   }
 
   function undoLastMove() {
-    if (session?.canUndo) {
-      session.undo();
-    }
+    session?.undo();
   }
 
   function flipBoard() {

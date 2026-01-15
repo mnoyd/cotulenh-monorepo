@@ -178,10 +178,12 @@ export class GameSession {
     return this.#historyViewIndex !== -1;
   }
 
+  /**
+   * Check if there's anything to undo (for UI state only).
+   * Note: undo() itself is safe to call anytime - it's a no-op if nothing to undo.
+   */
   get canUndo(): boolean {
     void this.#version;
-    // Check local history (much faster than calling game.history() which replays everything)
-    // or if there's an active session with moves to undo
     const session = this.#game.getSession();
     return this.#history.length > 0 || (session !== null && !session.isEmpty);
   }
@@ -467,9 +469,7 @@ export class GameSession {
       case 'z':
       case 'Z':
         e.preventDefault();
-        if (this.canUndo) {
-          this.undo();
-        }
+        this.undo();
         break;
       case 'y':
       case 'Y':
