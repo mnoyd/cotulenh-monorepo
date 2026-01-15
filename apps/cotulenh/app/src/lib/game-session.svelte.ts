@@ -23,6 +23,7 @@ import {
 import type { GameStatus, HistoryMove } from '$lib/types/game';
 import { extractLastMoveSquares } from './game-session-helpers';
 import { playSound } from '$lib/utils/audio';
+import { loadSettings } from '$lib/stores/settings';
 
 /**
  * GameSession - Unified reactive state management using the Reactive Adapter Pattern.
@@ -213,6 +214,7 @@ export class GameSession {
   // ============================================================
 
   get boardConfig(): Config {
+    const settings = loadSettings();
     return {
       fen: this.fen,
       viewOnly: this.status !== 'playing' || this.#historyViewIndex !== -1,
@@ -224,6 +226,7 @@ export class GameSession {
         free: false,
         color: coreToBoardColor(this.turn),
         dests: mapPossibleMovesToDests(this.possibleMoves),
+        showDeployButtons: settings.showDeployButtons,
         events: {
           after: (orig: OrigMove, dest: DestMove) => this.#handleMove(orig, dest),
           session: {

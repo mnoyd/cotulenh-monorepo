@@ -26,6 +26,7 @@ export interface HeadlessState {
     color?: cg.Color | 'both'; // color that can move. white | black | both
     dests?: cg.Dests; // valid moves. {"a2" ["a3" "a4"] "b1" ["a3" "c3"]}
     showDests: boolean; // whether to add the move-dest class on squares
+    showDeployButtons: boolean; // whether to show cancel/complete buttons in deploy popup
     events: {
       after?: (orig: cg.OrigMove, dest: cg.DestMove, metadata: cg.MoveMetadata) => void; // called after the move has been played
       afterNewPiece?: (role: cg.Role, key: cg.Key, metadata: cg.MoveMetadata) => void; // called after a new piece is dropped on the board
@@ -156,6 +157,7 @@ export function defaults(): HeadlessState {
       free: true,
       color: 'both',
       showDests: true,
+      showDeployButtons: true,
       events: {},
     },
 
