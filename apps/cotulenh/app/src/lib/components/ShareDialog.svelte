@@ -3,13 +3,16 @@
   import { Button } from '$lib/components/ui/button';
   import { Separator } from '$lib/components/ui/separator';
   import { toast } from 'svelte-sonner';
+  import type { GameSession } from '$lib/game-session.svelte';
 
   interface Props {
     open: boolean;
     fen: string;
+    session: GameSession;
   }
 
-  let { open = $bindable(), fen }: Props = $props();
+  let { open = $bindable(), fen, session }: Props = $props();
+  let fileInput: HTMLInputElement;
 
   async function copyFen() {
     try {
@@ -25,13 +28,38 @@
     navigator.clipboard.writeText(url);
     toast.success('Share link copied!');
   }
+
+  function downloadPGN() {
+    session.exportPGN();
+  }
+
+  function triggerFileUpload() {
+    fileInput?.click();
+  }
+
+  async function handleFileUpload(event: Event) {
+    const target = event.target as HTMLInputElement;
+    const file = target.files?.[0];
+    
+    if (!file) return;
+
+    const success = await session.importPGNFile(file);
+    
+    if (success) {
+      // Close dialog after successful import
+      open = false;
+    }
+
+    // Reset input so same file can be uploaded again
+    target.value = '';
+  }
 </script>
 
 <Dialog.Root bind:open>
   <Dialog.Content class="share-dialog">
     <Dialog.Header>
-      <Dialog.Title>Share Game</Dialog.Title>
-      <Dialog.Description>Share this position with others</Dialog.Description>
+      <Dialog.Title>Share & Export Game</Dialog.Title>
+      <Dialog.Description>Share this position or export/import game data</Dialog.Description>
     </Dialog.Header>
 
     <div class="share-content">
@@ -47,6 +75,61 @@
         <span class="share-label">Share URL</span>
         <p class="share-desc">Copy a shareable link that will load this position when opened</p>
         <Button variant="default" onclick={copyShareUrl}>Copy Share Link</Button>
+      </div>
+
+      <Separator />
+
+      <div class="share-section">
+        <span class="share-label">PGN Export/Import</span>
+        <p class="share-desc">Download or upload game in PGN format (includes all moves and metadata)</p>
+        <div class="pgn-buttons">
+          <Button variant="default" onclick={downloadPGN}>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="7 10 12 15 17 10" />
+              <line x1="12" y1="15" x2="12" y2="3" />
+            </svg>
+            Download PGN
+          </Button>
+          
+          <Button variant="secondary" onclick={triggerFileUpload}>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="17 8 12 3 7 8" />
+              <line x1="12" y1="3" x2="12" y2="15" />
+            </svg>
+            Upload PGN
+          </Button>
+        </div>
+        
+        <!-- Hidden file input -->
+        <input
+          bind:this={fileInput}
+          type="file"
+          accept=".pgn"
+          onchange={handleFileUpload}
+          style="display: none;"
+        />
       </div>
     </div>
 
@@ -98,5 +181,25 @@
     max-height: 80px;
     overflow-y: auto;
     box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
+  }
+
+  .pgn-buttons {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .pgn-buttons :global(button) {
+    flex: 1;
+    min-width: 140px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+  }
+
+  .pgn-buttons :global(button svg) {
+    width: 16px;
+    height: 16px;
   }
 </style>

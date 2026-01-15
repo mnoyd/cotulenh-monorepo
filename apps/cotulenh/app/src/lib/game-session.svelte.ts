@@ -446,9 +446,245 @@ export class GameSession {
     this.#version++;
   }
 
+  /**
+   * Navigate backward one move in history
+   */
+  backward(): void {
+    if (this.#historyViewIndex === -1) {
+      // Not viewing history, go to last move
+      if (this.#history.length > 0) {
+        this.#historyViewIndex = this.#history.length - 1;
+        this.#version++;
+      }
+    } else if (this.#historyViewIndex > 0) {
+      // Go to previous move
+      this.#historyViewIndex--;
+      this.#version++;
+    }
+  }
+
+  /**
+   * Navigate forward one move in history
+   */
+  forward(): void {
+    if (this.#historyViewIndex !== -1) {
+      if (this.#historyViewIndex < this.#history.length - 1) {
+        // Go to next move
+        this.#historyViewIndex++;
+        this.#version++;
+      } else {
+        // At last move, return to live game
+        this.#historyViewIndex = -1;
+        this.#version++;
+      }
+    }
+  }
+
+  /**
+   * Check if can navigate backward
+   */
+  get canBackward(): boolean {
+    return (
+      this.#history.length > 0 && (this.#historyViewIndex === -1 || this.#historyViewIndex > 0)
+    );
+  }
+
+  /**
+   * Check if can navigate forward
+   */
+  get canForward(): boolean {
+    return this.#historyViewIndex !== -1 && this.#historyViewIndex < this.#history.length - 1;
+  }
+
   flipBoard(): void {
     if (this.#boardApi) {
       this.#boardApi.toggleOrientation();
+    }
+  }
+
+  // ============================================================
+  // PGN IMPORT/EXPORT
+  // ============================================================
+
+  /**
+   * Export current game as PGN file for download
+   */
+  exportPGN(): void {
+    try {
+      const currentFen = this.#game.fen();
+      const currentTurn = this.#game.turn();
+
+      // Determine starting FEN - either stored original or need to infer
+      let startingFen: string | undefined = this.#originalFen;
+
+      // If no original FEN stored but we have history, need to get starting FEN
+      // by undoing all moves temporarily
+      if (!startingFen && this.#history.length > 0) {
+        // Game has moves but no stored original FEN
+        // We need to extract starting FEN from the PGN that core generates
+        // (core's pgn() undoes and replays, so it knows the starting position)
+        const tempPgn = this.#game.pgn();
+        const fenMatch = tempPgn.match(/\[FEN "([^"]+)"\]/);
+        if (fenMatch) {
+          startingFen = fenMatch[1];
+        }
+      }
+
+      // Check if starting position is default
+      // Extract just the piece placement part (before space) for comparison
+      const defaultPiecePlacement =
+        '6c4/1n2fh1hf2/3a2s2a1/2n1gt1tg2/2ie2m3i/9e1/6M4/2IE5EI/2N1GT1TG2/3A2S2A1/1N2FH1HF2/6C4';
+      const startingPiecePlacement = startingFen?.split(' ')[0];
+      const isDefaultStart = !startingFen || startingPiecePlacement === defaultPiecePlacement;
+
+      // Debug: Log game state
+      logger.info('Exporting PGN:', {
+        historyLength: this.#game.history().length,
+        originalFen: this.#originalFen,
+        startingFen,
+        currentFen,
+        currentTurn,
+        isDefaultStart
+      });
+
+      // Generate PGN (this will undo and replay internally)
+      const pgnString = this.#game.pgn();
+
+      // Parse PGN to fix FEN header based on starting position
+      let fixedPgn = pgnString;
+
+      if (!isDefaultStart && startingFen) {
+        // Game started from custom position - ensure FEN is STARTING position
+        fixedPgn = pgnString.replace(/\[FEN "[^"]+"\]/, `[FEN "${startingFen}"]`);
+        // Ensure SetUp flag is present
+        if (!fixedPgn.includes('[SetUp "1"]')) {
+          const fenLineIndex = fixedPgn.indexOf('[FEN');
+          if (fenLineIndex > 0) {
+            fixedPgn =
+              fixedPgn.slice(0, fenLineIndex) + '[SetUp "1"]\n' + fixedPgn.slice(fenLineIndex);
+          }
+        }
+      } else {
+        // Game started from default position - REMOVE SetUp/FEN headers
+        fixedPgn = pgnString
+          .replace(/\[SetUp "[^"]*"\]\n?/g, '')
+          .replace(/\[FEN "[^"]+"\]\n?/g, '');
+      }
+
+      // Validate PGN has moves if history exists
+      if (this.#history.length > 0 && !fixedPgn.includes('1.')) {
+        logger.warn('PGN export missing moves despite history:', {
+          historyLength: this.#history.length,
+          pgn: fixedPgn
+        });
+      }
+
+      // Create blob and download
+      const blob = new Blob([fixedPgn], { type: 'application/x-chess-pgn' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+
+      // Generate filename with timestamp
+      const timestamp = new Date().toISOString().slice(0, 10);
+      a.download = `cotulenh-game-${timestamp}.pgn`;
+
+      a.click();
+      URL.revokeObjectURL(url);
+
+      toast.success('PGN file downloaded');
+      logger.info('PGN exported successfully:', { length: fixedPgn.length });
+    } catch (error) {
+      logger.error('Failed to export PGN:', { error });
+      toast.error('Failed to export PGN');
+    }
+  }
+
+  /**
+   * Load game from PGN string
+   * @param pgnString - PGN content to load
+   */
+  async loadFromPGN(pgnString: string): Promise<boolean> {
+    try {
+      // Validate PGN is not empty
+      if (!pgnString || pgnString.trim().length === 0) {
+        toast.error('PGN content is empty');
+        return false;
+      }
+
+      // Load PGN into game engine
+      const success = this.#game.loadPgn(pgnString, { strict: false });
+
+      if (!success) {
+        toast.error('Failed to load PGN');
+        return false;
+      }
+
+      logger.info('PGN loaded into core engine, rebuilding UI state...');
+
+      // Reset UI state
+      this.#historyViewIndex = -1;
+
+      // Rebuild history from game
+      // After loadPgn, game is at ending position with full history
+      const moveHistory = this.#game.history({ verbose: true });
+
+      logger.info('History rebuilt from core:', {
+        moveCount: moveHistory.length,
+        moves: moveHistory.map((m) => m.san).join(', ')
+      });
+
+      // Extract starting FEN from PGN headers if available
+      const fenMatch = pgnString.match(/\[FEN "([^"]+)"\]/);
+      const setupMatch = pgnString.match(/\[SetUp "1"\]/);
+      if (fenMatch && setupMatch) {
+        this.#originalFen = fenMatch[1];
+        logger.info('Extracted starting FEN from PGN:', { fen: this.#originalFen });
+      } else {
+        // Default starting position
+        this.#originalFen = undefined;
+      }
+
+      // Update history
+      this.#history = moveHistory as HistoryMove[];
+
+      // Bump version to trigger reactivity
+      this.#version++;
+
+      // Sync board
+      await tick();
+      this.syncBoard();
+
+      toast.success(`Game loaded from PGN (${moveHistory.length} moves)`);
+      return true;
+    } catch (error) {
+      logger.error('Failed to load PGN:', { error });
+      toast.error('Invalid PGN format');
+      return false;
+    }
+  }
+
+  /**
+   * Handle file upload for PGN import
+   * @param file - File object to read
+   */
+  async importPGNFile(file: File): Promise<boolean> {
+    try {
+      // Validate file type
+      if (!file.name.endsWith('.pgn')) {
+        toast.error('Please select a .pgn file');
+        return false;
+      }
+
+      // Read file content
+      const content = await file.text();
+
+      // Load the PGN
+      return await this.loadFromPGN(content);
+    } catch (error) {
+      logger.error('Failed to read PGN file:', { error });
+      toast.error('Failed to read file');
+      return false;
     }
   }
 

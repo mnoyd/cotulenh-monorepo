@@ -1909,12 +1909,43 @@ export class CoTuLenh implements CoTuLenhInterface {
   }: { newline?: string; maxWidth?: number; clocks?: string[] } = {}): string {
     const result: string[] = []
 
+    // Helper to append comments
+    const appendComment = (moveString: string, fen: string): string => {
+      const comment = this._comments[fen]
+      if (comment) {
+        const delimiter = moveString.length > 0 ? ' ' : ''
+        moveString = `${moveString}${delimiter}{${comment}}`
+      }
+      return moveString
+    }
+
+    // Get move history as SAN strings by replaying
+    const reversedHistory: (InternalMove | InternalMove[])[] = []
+
+    while (this._history.length > 0) {
+      const moves = this._undoMove()
+      if (moves) {
+        reversedHistory.unshift(moves)
+      }
+    }
+
+    // After undoing all moves, capture the STARTING FEN and turn
+    const startingFen = this.fen()
+    const startingTurn = this._turn
+
+    // Now build headers with correct starting FEN
     // Ensure we have the required Seven Tag Roster headers
     const headers: Record<string, string | null> = { ...HEADER_TEMPLATE }
 
     // Copy existing headers
     for (const [key, value] of Object.entries(this._header)) {
       headers[key] = value
+    }
+
+    // Override FEN/SetUp with starting position if game has moves
+    if (reversedHistory.length > 0) {
+      headers['SetUp'] = '1'
+      headers['FEN'] = startingFen
     }
 
     // Set default date if not provided
@@ -1955,39 +1986,23 @@ export class CoTuLenh implements CoTuLenhInterface {
     }
 
     // Add blank line between headers and moves
-    if (headerExists && this._history.length > 0) {
+    if (headerExists && reversedHistory.length > 0) {
       result.push(newline)
     }
 
-    // Helper to append comments
-    const appendComment = (moveString: string, fen: string): string => {
-      const comment = this._comments[fen]
-      if (comment) {
-        const delimiter = moveString.length > 0 ? ' ' : ''
-        moveString = `${moveString}${delimiter}{${comment}}`
-      }
-      return moveString
-    }
-
-    // Get move history as SAN strings by replaying
-    const reversedHistory: (InternalMove | InternalMove[])[] = []
-    while (this._history.length > 0) {
-      const moves = this._undoMove()
-      if (moves) {
-        reversedHistory.unshift(moves)
-      }
-    }
-
+    // moveStrings and currentMoveString already declared above with startingFen/startingTurn
     const moveStrings: string[] = []
     let currentMoveString = ''
 
     // Check for comment at starting position
     if (reversedHistory.length === 0) {
-      moveStrings.push(appendComment('', this.fen()))
+      moveStrings.push(appendComment('', startingFen))
     }
 
-    // Replay and build move notation
+    // Track which player moves first based on starting position
+    const redMovesFirst = startingTurn === RED
     let moveIndex = 0
+
     for (const item of reversedHistory) {
       currentMoveString = appendComment(currentMoveString, this.fen())
 
@@ -2009,7 +2024,11 @@ export class CoTuLenh implements CoTuLenhInterface {
       }
 
       if (moveResult && moveResult.completed && moveResult.san) {
-        const isRedMove = moveIndex % 2 === 0
+        // Determine if this is Red's or Blue's move based on starting turn
+        const isRedMove = redMovesFirst
+          ? moveIndex % 2 === 0 // If Red starts: even indices are Red
+          : moveIndex % 2 === 1 // If Blue starts: odd indices are Red
+
         const clockTag = clocks?.[moveIndex]
           ? ` {[%clk ${clocks[moveIndex]}]}`
           : ''
@@ -2023,7 +2042,13 @@ export class CoTuLenh implements CoTuLenhInterface {
           currentMoveString = `${moveNum}. ${moveResult.san}${clockTag}`
         } else {
           // Add Blue's move to current pair
-          currentMoveString += ` ${moveResult.san}${clockTag}`
+          // If this is the first move and Blue starts, use "1..." notation
+          if (moveIndex === 0 && !redMovesFirst) {
+            const moveNum = Math.floor(moveIndex / 2) + 1
+            currentMoveString = `${moveNum}... ${moveResult.san}${clockTag}`
+          } else {
+            currentMoveString += ` ${moveResult.san}${clockTag}`
+          }
         }
 
         moveIndex++
@@ -2234,6 +2259,17 @@ export class CoTuLenh implements CoTuLenhInterface {
 
     // Get all legal moves as MoveResult objects
     const legalMoves = this.moves({ verbose: true }) as MoveResult[]
+
+    // Debug: Log current state and available moves
+    logger.info(`Parsing SAN move: "${cleanSan}"`, {
+      currentTurn: this._turn,
+      currentFen: this.fen(),
+      legalMovesCount: legalMoves.length,
+      firstFewMoves: legalMoves
+        .slice(0, 5)
+        .map((m) => m.san)
+        .join(', '),
+    })
 
     // Try to find a matching move
     for (const move of legalMoves) {

@@ -39,3 +39,5 @@ build
 .netlify
 .idea
 /explain
+PGN_FEATURE_GUIDE.md
+PGN_TECHNICAL_ANALYSIS.md
