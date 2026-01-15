@@ -25,7 +25,7 @@
   <Button
     variant="secondary"
     size="sm"
-    class="h-8 text-xs flex-1 border border-mw-secondary/50 font-bold tracking-widest text-black uppercase transition-all hover:shadow-[0_0_15px_var(--color-mw-secondary)] hover:brightness-110 disabled:opacity-50"
+    class="h-8 text-xs flex-1 border border-mw-secondary/50 font-bold tracking-widest text-[var(--theme-text-inverse)] uppercase transition-all hover:shadow-[0_0_15px_var(--color-mw-secondary)] hover:brightness-110 disabled:opacity-50"
     onclick={() => session.commitSession()}
     disabled={!canCommit}
   >
@@ -49,8 +49,8 @@
     width: 100%;
     gap: 0.5rem;
     padding: 0.5rem;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-    background: rgba(0, 0, 0, 0.4);
+    border-top: 1px solid var(--theme-border);
+    background: var(--theme-bg-panel);
     backdrop-filter: blur(4px);
     visibility: hidden;
     pointer-events: none;
