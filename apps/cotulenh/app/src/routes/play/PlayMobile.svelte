@@ -20,6 +20,17 @@
   let bottomSheetExpanded = $state(false);
   let shareOpen = $state(false);
 
+  $effect(() => {
+    if (bottomSheetExpanded) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  });
+
   const clock = createChessClock({
     red: TIME_PRESETS.blitz5_3,
     blue: TIME_PRESETS.blitz5_3
@@ -145,24 +156,54 @@
       </div>
 
       <div class="quick-actions">
-        <button class="action-btn" onclick={undoLastMove} title="Undo" disabled={!session?.canUndo}>
+        <button 
+          class="action-btn" 
+          onclick={undoLastMove} 
+          title="Undo last move" 
+          aria-label="Undo last move"
+          disabled={!session?.canUndo}
+        >
           <Undo2 size={20} />
         </button>
-        <button class="action-btn" onclick={flipBoard} title="Flip">
+        <button 
+          class="action-btn" 
+          onclick={flipBoard} 
+          title="Flip board" 
+          aria-label="Flip board"
+        >
           <ArrowUpDown size={20} />
         </button>
-        <button class="action-btn" onclick={resetGame} title="Reset">
+        <button 
+          class="action-btn" 
+          onclick={resetGame} 
+          title="Reset game" 
+          aria-label="Reset game"
+        >
           <RotateCcw size={20} />
         </button>
-        <button class="action-btn" onclick={() => (shareOpen = true)} title="Share">
+        <button 
+          class="action-btn" 
+          onclick={() => (shareOpen = true)} 
+          title="Share game" 
+          aria-label="Share game"
+        >
           <Share2 size={20} />
         </button>
       </div>
     </div>
 
     <!-- Bottom Sheet -->
-    <div class="bottom-sheet" class:expanded={bottomSheetExpanded}>
-      <button class="sheet-handle" onclick={toggleBottomSheet}>
+    <div 
+      class="bottom-sheet" 
+      class:expanded={bottomSheetExpanded}
+      role="region"
+      aria-label="Game information panel"
+    >
+      <button 
+        class="sheet-handle" 
+        onclick={toggleBottomSheet}
+        aria-label={bottomSheetExpanded ? 'Collapse game info' : 'Expand game info'}
+      >
         <div class="handle-bar"></div>
         {#if bottomSheetExpanded}
           <ChevronDown size={16} />

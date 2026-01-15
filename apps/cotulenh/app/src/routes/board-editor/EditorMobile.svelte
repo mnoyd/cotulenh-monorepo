@@ -15,6 +15,17 @@
   let activeTeam = $state<'red' | 'blue'>('red');
   let showFenPanel = $state(false);
 
+  $effect(() => {
+    if (bottomSheetExpanded) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  });
+
   onMount(() => {
     const urlFen = $page.url.searchParams.get('fen');
     editor.initializeFromUrl(urlFen);
@@ -98,9 +109,18 @@
   </section>
 
   <!-- Bottom Sheet -->
-  <div class="bottom-sheet" class:expanded={bottomSheetExpanded}>
+  <div 
+    class="bottom-sheet" 
+    class:expanded={bottomSheetExpanded}
+    role="region"
+    aria-label="Piece palette panel"
+  >
     <!-- Handle bar -->
-    <button class="sheet-handle" onclick={toggleBottomSheet}>
+    <button 
+      class="sheet-handle" 
+      onclick={toggleBottomSheet}
+      aria-label={bottomSheetExpanded ? 'Collapse piece palette' : 'Expand piece palette'}
+    >
       <div class="handle-bar"></div>
       {#if bottomSheetExpanded}
         <ChevronDown size={16} />
@@ -121,13 +141,28 @@
 
       <div class="action-divider"></div>
 
-      <button class="action-btn" onclick={editor.loadStartingPosition} title="Reset">
+      <button 
+        class="action-btn" 
+        onclick={editor.loadStartingPosition} 
+        title="Reset to starting position" 
+        aria-label="Reset to starting position"
+      >
         <RotateCcw size={18} />
       </button>
-      <button class="action-btn" onclick={editor.clearBoard} title="Clear">
+      <button 
+        class="action-btn" 
+        onclick={editor.clearBoard} 
+        title="Clear board" 
+        aria-label="Clear board"
+      >
         <Eraser size={18} />
       </button>
-      <button class="action-btn" onclick={editor.flipBoard} title="Flip">
+      <button 
+        class="action-btn" 
+        onclick={editor.flipBoard} 
+        title="Flip board" 
+        aria-label="Flip board"
+      >
         <ArrowUpDown size={18} />
       </button>
 
@@ -136,7 +171,8 @@
       <button
         class="turn-btn-compact {editor.currentTurn}"
         onclick={editor.toggleTurn}
-        title="Toggle turn"
+        title="Toggle turn: {editor.currentTurn === 'red' ? 'Red' : 'Blue'}"
+        aria-label="Toggle turn between Red and Blue. Current: {editor.currentTurn === 'red' ? 'Red' : 'Blue'}"
       >
         <span class="turn-dot {editor.currentTurn}"></span>
       </button>
@@ -146,11 +182,14 @@
     {#if bottomSheetExpanded}
       <div class="sheet-content">
         <!-- Team Tabs -->
-        <div class="team-tabs">
+        <div class="team-tabs" role="tablist" aria-label="Select team pieces">
           <button
             class="team-tab red"
             class:active={activeTeam === 'red'}
             onclick={() => (activeTeam = 'red')}
+            role="tab"
+            aria-selected={activeTeam === 'red'}
+            aria-label="Red team pieces"
           >
             🔴 Red
           </button>
@@ -158,6 +197,9 @@
             class="team-tab blue"
             class:active={activeTeam === 'blue'}
             onclick={() => (activeTeam = 'blue')}
+            role="tab"
+            aria-selected={activeTeam === 'blue'}
+            aria-label="Blue team pieces"
           >
             🔵 Blue
           </button>

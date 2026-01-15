@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount, type Component } from 'svelte';
+  import { onMount, onDestroy, type Component } from 'svelte';
 
   interface Props {
     /**
@@ -11,7 +11,7 @@
      */
     mobile: Component;
     /**
-     * Breakpoint in pixels. Defaults to 1024 (matches Tailwind's lg:)
+     * Breakpoint in pixels. Defaults to 768 (matches Tailwind's md:)
      */
     breakpoint?: number;
     /**
@@ -20,21 +20,31 @@
     loading?: import('svelte').Snippet;
   }
 
-  let { desktop, mobile, breakpoint = 1024, loading }: Props = $props();
+  let { desktop, mobile, breakpoint = 768, loading }: Props = $props();
 
-  // undefined = not yet determined (SSR/hydration)
-  let isMobile = $state<boolean | undefined>(undefined);
+  // Start with null to minimize SSR flash
+  let isMobile = $state<boolean | null>(null);
+
+  function checkViewport() {
+    isMobile = window.innerWidth < breakpoint;
+  }
 
   onMount(() => {
-    isMobile = window.innerWidth < breakpoint;
+    checkViewport();
+    window.addEventListener('resize', checkViewport);
+  });
+
+  onDestroy(() => {
+    window.removeEventListener('resize', checkViewport);
   });
 </script>
 
-{#if isMobile === undefined}
+{#if isMobile === null}
   {#if loading}
     {@render loading()}
   {:else}
-    <div class="responsive-loading">
+    <!-- Minimal SSR placeholder -->
+    <div class="responsive-loading" aria-live="polite" aria-busy="true">
       <div class="responsive-spinner"></div>
     </div>
   {/if}
