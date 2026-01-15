@@ -460,12 +460,13 @@ export class CoTuLenh implements CoTuLenhInterface {
   /**
    * Generates the FEN (Forsyth-Edwards Notation) string representing the current board position.
    * The FEN includes piece placement, active color, and move counters in a standardized format.
+   * If there's an active deploy session and includeDeployState is true (default), includes the deploy state.
+   * @param includeDeployState - Whether to include deploy session state in FEN (default: true when session active)
    * @returns The FEN string for the current position
    */
-  fen(deployMode = false): string {
-    // If there's an active move session, return extended FEN with CURRENT board state
-    // Check this FIRST to avoid unnecessary board calculation
-    if (deployMode && this._session) {
+  fen(includeDeployState = true): string {
+    // If there's an active deploy session and we want deploy state, return extended FEN
+    if (includeDeployState && this._session?.isDeploy) {
       return this._session.toFenString()
     }
 

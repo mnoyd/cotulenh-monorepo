@@ -497,6 +497,8 @@ export class MoveSession {
     command: CTLMoveSequenceCommandInterface
     result: MoveResult
   } {
+    // For completed deploys, exclude deploy state from FEN (pass false)
+    // For incomplete deploys, include the deploy state in FEN (pass true)
     const afterFEN = this._game.fen(!completed)
     const remaining = this.remaining
     const stay =
