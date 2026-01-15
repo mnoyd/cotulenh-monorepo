@@ -21,43 +21,43 @@
   });
 </script>
 
-<div class="move-confirm-panel" class:visible={isDeploySession}>
-  <Button
-    variant="secondary"
-    size="sm"
-    class="h-8 text-xs flex-1 border border-mw-secondary/50 font-bold tracking-widest text-[var(--theme-text-inverse)] uppercase transition-all hover:shadow-[0_0_15px_var(--color-mw-secondary)] hover:brightness-110 disabled:opacity-50"
-    onclick={() => session.commitSession()}
-    disabled={!canCommit}
-  >
-    <CheckCircle2 class="w-3.5 h-3.5 mr-1.5" />
-    Commit
-  </Button>
-  <Button
-    variant="destructive"
-    size="sm"
-    class="h-8 text-xs flex-1 border border-destructive/50 font-bold tracking-widest uppercase transition-all hover:shadow-[0_0_15px_var(--color-destructive)] hover:brightness-110"
-    onclick={() => session.cancelSession()}
-  >
-    <XCircle class="w-3.5 h-3.5 mr-1.5" />
-    Cancel
-  </Button>
+<div class="move-confirm-panel">
+  {#if isDeploySession}
+    <Button
+      variant="secondary"
+      size="sm"
+      class="h-8 text-xs flex-1 border border-mw-secondary/50 font-bold tracking-widest text-black uppercase transition-all hover:shadow-[0_0_15px_var(--color-mw-secondary)] hover:brightness-110 disabled:opacity-50"
+      onclick={() => session.commitSession()}
+      disabled={!canCommit}
+    >
+      <CheckCircle2 class="w-3.5 h-3.5 mr-1.5" />
+      Commit
+    </Button>
+    <Button
+      variant="destructive"
+      size="sm"
+      class="h-8 text-xs flex-1 border border-destructive/50 font-bold tracking-widest uppercase transition-all hover:shadow-[0_0_15px_var(--color-destructive)] hover:brightness-110"
+      onclick={() => session.cancelSession()}
+    >
+      <XCircle class="w-3.5 h-3.5 mr-1.5" />
+      Cancel
+    </Button>
+  {/if}
 </div>
 
 <style>
   .move-confirm-panel {
     display: flex;
     width: 100%;
+    min-height: 2.5rem;
     gap: 0.5rem;
     padding: 0.5rem;
-    border-top: 1px solid var(--theme-border);
-    background: var(--theme-bg-panel);
-    backdrop-filter: blur(4px);
-    visibility: hidden;
-    pointer-events: none;
-  }
-
-  .move-confirm-panel.visible {
-    visibility: visible;
-    pointer-events: auto;
+    background: linear-gradient(180deg, rgba(30, 30, 35, 0.85) 0%, rgba(15, 15, 20, 0.95) 100%);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid var(--mw-border-color, rgba(255, 255, 255, 0.1));
+    border-radius: 6px;
+    margin-top: 0.25rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
   }
 </style>
