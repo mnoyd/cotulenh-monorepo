@@ -8,9 +8,10 @@
 
   interface Props {
     session: GameSession;
+    onReset?: () => void;
   }
 
-  let { session }: Props = $props();
+  let { session, onReset }: Props = $props();
 
   let shareOpen = $state(false);
 
@@ -22,6 +23,7 @@
   function resetGame() {
     if (confirm('Are you sure you want to reset the game?')) {
       session.reset();
+      onReset?.();
     }
   }
 

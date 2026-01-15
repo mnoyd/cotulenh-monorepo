@@ -211,7 +211,9 @@ export function createBoardEditorState() {
     const target = e.target as HTMLElement;
     if (
       target.closest('.board-container') ||
+      target.closest('.board-section') ||
       target.closest('.palette-section') ||
+      target.closest('.editor-panel') ||
       target.closest('.sidebar')
     ) {
       return;
