@@ -49,7 +49,7 @@
   .move-confirm-panel {
     display: flex;
     width: 100%;
-    min-height: 2.5rem;
+    height: 3rem; /* Fixed: h-8 buttons (2rem) + padding (1rem) */
     gap: 0.5rem;
     padding: 0.5rem;
     background: linear-gradient(180deg, rgba(30, 30, 35, 0.85) 0%, rgba(15, 15, 20, 0.95) 100%);
@@ -59,5 +59,6 @@
     border-radius: 6px;
     margin-top: 0.25rem;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+    box-sizing: border-box;
   }
 </style>
