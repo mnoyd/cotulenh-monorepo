@@ -2,7 +2,7 @@
   import { onMount } from 'svelte';
   import { browser } from '$app/environment';
   import { page } from '$app/stores';
-  import { Trash2, Hand, Star, RotateCcw, Eraser, ArrowUpDown, Copy, Play, ChevronUp, ChevronDown } from 'lucide-svelte';
+  import { Trash2, RotateCcw, Eraser, ArrowUpDown, Copy, Play, ChevronUp, ChevronDown } from 'lucide-svelte';
   import BoardContainer from '$lib/components/BoardContainer.svelte';
   import PiecePalette from './PiecePalette.svelte';
   import PaletteControls from './PaletteControls.svelte';

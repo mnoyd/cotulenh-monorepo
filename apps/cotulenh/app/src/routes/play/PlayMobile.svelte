@@ -2,16 +2,15 @@
   import { onMount } from 'svelte';
   import { browser } from '$app/environment';
   import { page } from '$app/stores';
-  import { RotateCcw, Undo2, ArrowUpDown, Share2, Flag, ChevronUp, ChevronDown } from 'lucide-svelte';
+  import { RotateCcw, Undo2, ArrowUpDown, Share2, ChevronUp, ChevronDown } from 'lucide-svelte';
   import BoardContainer from '$lib/components/BoardContainer.svelte';
   import GameInfo from '$lib/components/GameInfo.svelte';
   import DeploySessionPanel from '$lib/components/DeploySessionPanel.svelte';
   import MoveHistory from '$lib/components/MoveHistory.svelte';
-  import ClockPanel from '$lib/components/ClockPanel.svelte';
   import ShareDialog from '$lib/components/ShareDialog.svelte';
   import ErrorBoundary from '$lib/components/ErrorBoundary.svelte';
   import { GameSession } from '$lib/game-session.svelte';
-  import { createChessClock, TIME_PRESETS, formatClockTime, type ClockColor } from '$lib/clock/clock.svelte';
+  import { createChessClock, TIME_PRESETS, formatClockTime } from '$lib/clock/clock.svelte';
   import { logger } from '@cotulenh/common';
 
   import '$lib/styles/board.css';
@@ -37,9 +36,6 @@
     blue: TIME_PRESETS.blitz5_3
   });
 
-  function handleTimeout(loser: ClockColor) {
-    logger.info(`${loser === 'r' ? 'Red' : 'Blue'} lost on time`);
-  }
 
   onMount(() => {
     if (!browser) return;
