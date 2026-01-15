@@ -24,6 +24,8 @@
   let soundVolume = $state(DEFAULT_SETTINGS.soundVolume);
   let showMoveHints = $state(DEFAULT_SETTINGS.showMoveHints);
   let confirmReset = $state(DEFAULT_SETTINGS.confirmReset);
+  let showDeployButtons = $state(DEFAULT_SETTINGS.showDeployButtons);
+  let autoCompleteDeploy = $state(DEFAULT_SETTINGS.autoCompleteDeploy);
   let selectedTheme = $state<ThemeId>(themeStore.current);
 
   function loadFromStorage() {
@@ -32,6 +34,8 @@
     soundVolume = settings.soundVolume;
     showMoveHints = settings.showMoveHints;
     confirmReset = settings.confirmReset;
+    showDeployButtons = settings.showDeployButtons;
+    autoCompleteDeploy = settings.autoCompleteDeploy;
     selectedTheme = settings.theme;
 
     setAudioEnabled(settings.soundsEnabled);
@@ -44,6 +48,8 @@
       soundVolume,
       showMoveHints,
       confirmReset,
+      showDeployButtons,
+      autoCompleteDeploy,
       theme: selectedTheme
     };
     persistSettings(settings);
@@ -143,6 +149,16 @@
         <label class="setting-item">
           <input type="checkbox" bind:checked={confirmReset} />
           <span>Confirm Before Reset</span>
+        </label>
+
+        <label class="setting-item">
+          <input type="checkbox" bind:checked={showDeployButtons} />
+          <span>Show Deploy Confirm Buttons</span>
+        </label>
+
+        <label class="setting-item">
+          <input type="checkbox" bind:checked={autoCompleteDeploy} />
+          <span>Auto-Complete Deploy</span>
         </label>
       </div>
     </div>

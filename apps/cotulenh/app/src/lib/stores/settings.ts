@@ -10,6 +10,8 @@ export const SettingsSchema = z.object({
   soundVolume: z.number().min(0).max(1).default(0.5),
   showMoveHints: z.boolean().default(true),
   confirmReset: z.boolean().default(true),
+  showDeployButtons: z.boolean().default(true),
+  autoCompleteDeploy: z.boolean().default(true),
   theme: z.enum(THEME_IDS).default('modern-warfare')
 });
 
@@ -20,6 +22,8 @@ export const DEFAULT_SETTINGS: Settings = {
   soundVolume: 0.5,
   showMoveHints: true,
   confirmReset: true,
+  showDeployButtons: true,
+  autoCompleteDeploy: true,
   theme: 'modern-warfare'
 };
 

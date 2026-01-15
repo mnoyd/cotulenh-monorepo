@@ -179,7 +179,7 @@ export function prepareCombinedPopup(
     .filter(p => board.canSelectStackPiece(state, { square: key, type: p.role }))
     .map(p => ({ type: 'piece' as const, piece: p }));
 
-  if (!state.deploySession) return movablePieces;
+  if (!state.deploySession || !state.movable.showDeployButtons) return movablePieces;
 
   return [
     ...movablePieces,

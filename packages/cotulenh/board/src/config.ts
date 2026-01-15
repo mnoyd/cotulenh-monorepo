@@ -21,6 +21,7 @@ export interface Config {
     color?: cg.Color | 'both'; // color that can move. white | black | both | undefined
     dests?: cg.Dests; // valid moves. {"a2" ["a3" "a4"] "b1" ["a3" "c3"]}
     showDests?: boolean; // whether to add the move-dest class on squares
+    showDeployButtons?: boolean; // whether to show cancel/complete buttons in deploy popup
     events?: {
       after?: (orig: cg.OrigMove, dest: cg.DestMove, metadata: cg.MoveMetadata) => void; // called after the move has been played
       session?: {
