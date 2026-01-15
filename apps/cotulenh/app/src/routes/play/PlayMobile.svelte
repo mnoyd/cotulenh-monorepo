@@ -5,7 +5,7 @@
   import { RotateCcw, Undo2, ArrowUpDown, Share2, ChevronUp, ChevronDown } from 'lucide-svelte';
   import BoardContainer from '$lib/components/BoardContainer.svelte';
   import GameInfo from '$lib/components/GameInfo.svelte';
-  import DeploySessionPanel from '$lib/components/DeploySessionPanel.svelte';
+  import MoveConfirmPanel from '$lib/components/MoveConfirmPanel.svelte';
   import MoveHistory from '$lib/components/MoveHistory.svelte';
   import ShareDialog from '$lib/components/ShareDialog.svelte';
   import ErrorBoundary from '$lib/components/ErrorBoundary.svelte';
@@ -139,6 +139,8 @@
           config={session.boardConfig}
           onApiReady={(api) => session?.setBoardApi(api)}
         />
+        <!-- Move confirmation panel directly under the board -->
+        <MoveConfirmPanel {session} />
       {:else}
         <div class="board-placeholder">
           <div class="loading-spinner"></div>
@@ -216,10 +218,6 @@
           {#if session}
             <div class="info-section">
               <GameInfo {session} />
-            </div>
-
-            <div class="deploy-section">
-              <DeploySessionPanel {session} />
             </div>
 
             <div class="history-section">
@@ -332,6 +330,7 @@
     flex: 1;
     min-height: 0;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
     background: #000;
@@ -458,8 +457,7 @@
     overflow-y: auto;
   }
 
-  .info-section,
-  .deploy-section {
+  .info-section {
     flex-shrink: 0;
   }
 
