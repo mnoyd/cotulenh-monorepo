@@ -4,7 +4,7 @@
   import { page } from '$app/stores';
   import BoardContainer from '$lib/components/BoardContainer.svelte';
   import GameInfo from '$lib/components/GameInfo.svelte';
-  import DeploySessionPanel from '$lib/components/DeploySessionPanel.svelte';
+  import MoveConfirmPanel from '$lib/components/MoveConfirmPanel.svelte';
   import MoveHistory from '$lib/components/MoveHistory.svelte';
   import GameControls from '$lib/components/GameControls.svelte';
   import ClockPanel from '$lib/components/ClockPanel.svelte';
@@ -91,6 +91,8 @@
               config={session.boardConfig}
               onApiReady={(api) => session?.setBoardApi(api)}
             />
+            <!-- Move confirmation panel directly under the board -->
+            <MoveConfirmPanel {session} />
           {:else}
             <div class="board-placeholder">
               <div class="loading-spinner"></div>
@@ -119,11 +121,6 @@
             <div class="controls-right">
               {#if session}
                 <GameControls {session} onReset={() => clock.reset()} />
-              {/if}
-            </div>
-            <div class="controls-full">
-              {#if session}
-                <DeploySessionPanel {session} />
               {/if}
             </div>
             <div class="controls-history">
@@ -164,6 +161,8 @@
 
   .board-section {
     flex: none;
+    display: flex;
+    flex-direction: column;
     border: 1px solid var(--theme-border, #444);
     padding: 0.25rem;
     background: var(--theme-bg-base, #222);

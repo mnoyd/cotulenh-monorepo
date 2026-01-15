@@ -104,7 +104,8 @@ export function getTurnColorName(turn: CoreColor): string {
 export function makeCoreMove(
   game: CoTuLenhInterface,
   orig: OrigMove,
-  dest: DestMove
+  dest: DestMove,
+  options?: { autoCommit?: boolean }
 ): MoveResult | null {
   const endPerf = perfStart('game:move:makeCoreMove', { from: orig.square, to: dest.square });
   try {
@@ -143,7 +144,8 @@ export function makeCoreMove(
         to: dest.square,
         piece: pieceToMove.type,
         ...(dest.stay !== undefined && { stay: dest.stay }),
-        deploy: isDeploy
+        deploy: isDeploy,
+        ...(options?.autoCommit !== undefined && { autoCommit: options.autoCommit })
       })
     );
 

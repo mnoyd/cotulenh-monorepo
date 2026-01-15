@@ -147,6 +147,7 @@ export interface CoTuLenhInterface {
           deploy?: boolean
         }
       | InternalMove,
+    options?: { strict?: boolean; autoCommit?: boolean },
   ): MoveResult | null
   moves(options?: {
     verbose?: boolean
@@ -1563,7 +1564,10 @@ export class CoTuLenh implements CoTuLenhInterface {
           deploy?: boolean
         }
       | InternalMove,
-    { strict = false }: { strict?: boolean } = {},
+    {
+      strict = false,
+      autoCommit = true,
+    }: { strict?: boolean; autoCommit?: boolean } = {},
   ): MoveResult | null {
     let internalMove: InternalMove | null = null
 
@@ -1581,7 +1585,7 @@ export class CoTuLenh implements CoTuLenhInterface {
     }
 
     // 4. Execute move
-    return handleMove(this, internalMove)
+    return handleMove(this, internalMove, autoCommit)
   }
 
   /**

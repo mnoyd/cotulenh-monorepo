@@ -193,6 +193,17 @@ export class GameSession {
     return this.#game.canCommitSession();
   }
 
+  get hasPendingSession(): boolean {
+    void this.#version;
+    return this.#game.getSession() !== null;
+  }
+
+  get isDeploySession(): boolean {
+    void this.#version;
+    const session = this.#game.getSession();
+    return session !== null && session.isDeploy;
+  }
+
   set onMove(callback: (() => void) | null) {
     this.#onMove = callback;
   }
@@ -391,12 +402,12 @@ export class GameSession {
     }
   }
 
-  commitDeploy(): void {
-    const endPerf = perfStart('deploy:commit');
+  commitSession(): void {
+    const endPerf = perfStart('session:commit');
     try {
       const session = this.#game.getSession();
-      if (!session || !session.isDeploy) {
-        logger.error('❌ No deploy session active');
+      if (!session) {
+        logger.error('❌ No session active');
         return;
       }
 
@@ -405,7 +416,7 @@ export class GameSession {
       if (!result.success || !result.result) {
         const reason = result.reason || 'Unknown error';
         logger.error('❌ Failed to commit:', reason);
-        toast.error(`Cannot finish deployment: ${reason}`);
+        toast.error(`Cannot commit move: ${reason}`);
         return;
       }
 
@@ -414,26 +425,34 @@ export class GameSession {
       this.#onMove?.();
       this.#version++;
     } catch (error) {
-      logger.error('❌ Failed to commit deploy session:', { error });
+      logger.error('❌ Failed to commit session:', { error });
       const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-      toast.error(`Cannot finish deployment: ${errorMsg}`);
+      toast.error(`Cannot commit move: ${errorMsg}`);
+    } finally {
+      endPerf();
+    }
+  }
+
+  commitDeploy(): void {
+    this.commitSession();
+  }
+
+  cancelSession(): void {
+    const endPerf = perfStart('session:cancel');
+    try {
+      this.#game.cancelSession();
+      this.#version++;
+    } catch (error) {
+      logger.error('❌ Failed to cancel session:', { error });
+      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+      toast.error(`Error cancelling: ${errorMsg}`);
     } finally {
       endPerf();
     }
   }
 
   cancelDeploy(): void {
-    const endPerf = perfStart('deploy:cancel');
-    try {
-      this.#game.cancelSession();
-      this.#version++;
-    } catch (error) {
-      logger.error('❌ Failed to cancel deploy:', { error });
-      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-      toast.error(`Error cancelling deployment: ${errorMsg}`);
-    } finally {
-      endPerf();
-    }
+    this.cancelSession();
   }
 
   // ============================================================
