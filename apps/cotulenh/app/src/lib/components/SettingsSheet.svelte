@@ -1,6 +1,5 @@
 <script lang="ts">
-  import * as Dialog from '$lib/components/ui/dialog';
-  import { onMount } from 'svelte';
+  import { Dialog as DialogPrimitive } from 'bits-ui';
   import { Button } from '$lib/components/ui/button';
   import { Separator } from '$lib/components/ui/separator';
   import { toast } from 'svelte-sonner';
@@ -14,6 +13,9 @@
     type ThemeId
   } from '$lib/stores/settings';
   import { playSound, setAudioEnabled, setAudioVolume } from '$lib/utils/audio';
+  import { onMount } from 'svelte';
+  import X from 'lucide-svelte/icons/x';
+  import { cn } from '$lib/utils';
 
   interface Props {
     open: boolean;
@@ -25,8 +27,6 @@
   let soundVolume = $state(DEFAULT_SETTINGS.soundVolume);
   let showMoveHints = $state(DEFAULT_SETTINGS.showMoveHints);
   let confirmReset = $state(DEFAULT_SETTINGS.confirmReset);
-  let showDeployButtons = $state(DEFAULT_SETTINGS.showDeployButtons);
-  let autoCompleteDeploy = $state(DEFAULT_SETTINGS.autoCompleteDeploy);
   let selectedTheme = $state<ThemeId>(themeStore.current);
 
   function loadFromStorage() {
@@ -35,8 +35,6 @@
     soundVolume = settings.soundVolume;
     showMoveHints = settings.showMoveHints;
     confirmReset = settings.confirmReset;
-    showDeployButtons = settings.showDeployButtons;
-    autoCompleteDeploy = settings.autoCompleteDeploy;
     selectedTheme = settings.theme;
 
     setAudioEnabled(settings.soundsEnabled);
@@ -49,8 +47,6 @@
       soundVolume,
       showMoveHints,
       confirmReset,
-      showDeployButtons,
-      autoCompleteDeploy,
       theme: selectedTheme
     };
     persistSettings(settings);
@@ -66,6 +62,14 @@
 
   async function handleThemeChange(themeId: ThemeId) {
     selectedTheme = themeId;
+    // Optional: immediate preview on mobile might be nice, or stick to save-to-apply
+    // For now, sticking to logic from Dialog: modify state, apply on Save.
+    // However, the original Dialog calls setTheme immediately on change?
+    // Let's check original...
+    // Original: onclick={() => handleThemeChange(theme.id)}
+    // And handleThemeChange calls themeStore.setTheme(themeId) IMMEDIATELY.
+    // And then handleSave calls it again.
+    // So yes, immediate effect.
     await themeStore.setTheme(themeId);
   }
 
@@ -74,167 +78,171 @@
   });
 </script>
 
-<Dialog.Root bind:open>
-  <Dialog.Content
-    class="settings-dialog p-0 gap-0 overflow-hidden border-border bg-background/95 backdrop-blur-xl sm:max-w-[600px] max-h-[85vh] sm:max-h-none flex flex-col shadow-2xl"
-  >
-    <Dialog.Header class="px-6 py-5 border-b border-border bg-muted/20">
-      <Dialog.Title class="text-xl tracking-wide font-bold text-foreground uppercase font-display"
-        >Settings</Dialog.Title
-      >
-      <Dialog.Description class="text-muted-foreground"
-        >Configure your battlefield experience</Dialog.Description
-      >
-    </Dialog.Header>
+<DialogPrimitive.Root bind:open>
+  <DialogPrimitive.Portal>
+    <DialogPrimitive.Overlay
+      class="fixed inset-0 z-50 bg-black/80 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0"
+    />
+    <DialogPrimitive.Content
+      class={cn(
+        'fixed inset-x-0 bottom-0 z-50 mt-24 flex h-auto max-h-[90%] flex-col rounded-t-[20px] border border-border bg-background shadow-2xl outline-none transition-transform duration-300 ease-in-out',
+        'data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom'
+      )}
+    >
+      <!-- Drag Handle Area -->
+      <div class="mx-auto mt-4 h-1.5 w-12 rounded-full bg-muted/50" />
 
-    <div class="settings-content flex-1 overflow-y-auto px-6 py-6">
-      <!-- Theme Selection -->
-      <div class="setting-section mb-8">
-        <h3 class="setting-section-title mb-4">Visual Theme</h3>
-        <div class="theme-grid">
-          {#each themeStore.themes as theme}
-            <button
-              class="theme-option group"
-              class:selected={selectedTheme === theme.id}
-              class:loading={themeStore.isLoading && selectedTheme === theme.id}
-              disabled={themeStore.isLoading}
-              onclick={() => handleThemeChange(theme.id)}
-            >
-              <div class="theme-preview-container">
-                <div class="theme-preview theme-preview-{theme.id}"></div>
-                {#if selectedTheme === theme.id}
-                  <div class="selected-badge">
-                    <div class="active-dot"></div>
-                    ACTIVE
+      <!-- Header -->
+      <div class="px-6 py-4 flex items-center justify-between">
+        <div>
+          <DialogPrimitive.Title
+            class="text-xl font-display font-bold text-foreground uppercase tracking-wide"
+          >
+            Settings
+          </DialogPrimitive.Title>
+          <DialogPrimitive.Description class="text-sm text-muted-foreground">
+            Configure your experience
+          </DialogPrimitive.Description>
+        </div>
+        <DialogPrimitive.Close
+          class="rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary"
+        >
+          <X class="h-6 w-6" />
+          <span class="sr-only">Close</span>
+        </DialogPrimitive.Close>
+      </div>
+
+      <Separator />
+
+      <!-- Content - Scrollable -->
+      <div class="flex-1 overflow-y-auto px-6 py-6 overscroll-contain">
+        <!-- Theme Selection -->
+        <div class="setting-section mb-8">
+          <h3 class="setting-section-title mb-4">Visual Theme</h3>
+          <!-- Mobile Theme Grid: 2 cols? or 1 col? Original was 1 col on mobile. -->
+          <div class="theme-grid">
+            {#each themeStore.themes as theme}
+              <button
+                class="theme-option group"
+                class:selected={selectedTheme === theme.id}
+                class:loading={themeStore.isLoading && selectedTheme === theme.id}
+                disabled={themeStore.isLoading}
+                onclick={() => handleThemeChange(theme.id)}
+              >
+                <div class="theme-preview-container">
+                  <div class="theme-preview theme-preview-{theme.id}"></div>
+                  {#if selectedTheme === theme.id}
+                    <div class="selected-badge">
+                      <div class="active-dot"></div>
+                      ACTIVE
+                    </div>
+                  {/if}
+                </div>
+                <div class="theme-info">
+                  <span class="theme-name">{theme.name}</span>
+                  <span class="theme-desc">{theme.description}</span>
+                </div>
+                {#if themeStore.isLoading && selectedTheme === theme.id}
+                  <div class="loading-overlay">
+                    <span class="loading-spinner"></span>
                   </div>
                 {/if}
+              </button>
+            {/each}
+          </div>
+        </div>
+
+        <Separator class="bg-border mb-8" />
+
+        <!-- Gameplay Settings -->
+        <div class="setting-section padding-bottom-safe">
+          <h3 class="setting-section-title mb-4">Combat Systems</h3>
+
+          <div class="space-y-4">
+            <label class="setting-row">
+              <div class="setting-info">
+                <span class="setting-label">Sound Effects</span>
+                <span class="setting-desc">Enable tactical audio cues</span>
               </div>
-              <div class="theme-info">
-                <span class="theme-name">{theme.name}</span>
-                <span class="theme-desc">{theme.description}</span>
-              </div>
-              {#if themeStore.isLoading && selectedTheme === theme.id}
-                <div class="loading-overlay">
-                  <span class="loading-spinner"></span>
+              <input type="checkbox" class="t-checkbox" bind:checked={soundsEnabled} />
+            </label>
+
+            {#if soundsEnabled}
+              <div class="volume-control-panel" transition:slide>
+                <div class="flex items-center justify-between mb-2">
+                  <span class="text-xs font-semibold uppercase text-muted-foreground tracking-wider"
+                    >Master Volume</span
+                  >
+                  <span class="text-xs font-mono text-primary"
+                    >{Math.round(soundVolume * 100)}%</span
+                  >
                 </div>
-              {/if}
-            </button>
-          {/each}
+                <div class="flex items-center gap-4">
+                  <input
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.05"
+                    bind:value={soundVolume}
+                    onchange={() => setAudioVolume(soundVolume)}
+                    class="t-slider flex-1"
+                  />
+                  <button
+                    type="button"
+                    class="test-sound-btn"
+                    onclick={() => {
+                      setAudioVolume(soundVolume);
+                      playSound('move');
+                    }}
+                  >
+                    TEST
+                  </button>
+                </div>
+              </div>
+            {/if}
+
+            <label class="setting-row">
+              <div class="setting-info">
+                <span class="setting-label">Move Hints</span>
+                <span class="setting-desc">Show available moves</span>
+              </div>
+              <input type="checkbox" class="t-checkbox" bind:checked={showMoveHints} />
+            </label>
+
+            <label class="setting-row">
+              <div class="setting-info">
+                <span class="setting-label">Confirm Reset</span>
+                <span class="setting-desc">Confirm mission restart</span>
+              </div>
+              <input type="checkbox" class="t-checkbox" bind:checked={confirmReset} />
+            </label>
+
+            <!-- Add extra padding at bottom for mobile scrolling -->
+            <div class="h-24"></div>
+          </div>
         </div>
       </div>
 
-      <Separator class="bg-border mb-8" />
-
-      <!-- Gameplay Settings -->
-      <div class="setting-section">
-        <h3 class="setting-section-title mb-4">Combat Systems</h3>
-
-        <div class="space-y-4">
-          <label class="setting-row">
-            <div class="setting-info">
-              <span class="setting-label">Sound Effects</span>
-              <span class="setting-desc">Enable tactical audio cues</span>
-            </div>
-            <input type="checkbox" class="t-checkbox" bind:checked={soundsEnabled} />
-          </label>
-
-          {#if soundsEnabled}
-            <div class="volume-control-panel" transition:slide>
-              <div class="flex items-center justify-between mb-2">
-                <span class="text-xs font-semibold uppercase text-muted-foreground tracking-wider"
-                  >Master Volume</span
-                >
-                <span class="text-xs font-mono text-primary">{Math.round(soundVolume * 100)}%</span>
-              </div>
-              <div class="flex items-center gap-4">
-                <input
-                  type="range"
-                  min="0"
-                  max="1"
-                  step="0.05"
-                  bind:value={soundVolume}
-                  onchange={() => setAudioVolume(soundVolume)}
-                  class="t-slider flex-1"
-                />
-                <button
-                  type="button"
-                  class="test-sound-btn"
-                  onclick={() => {
-                    setAudioVolume(soundVolume);
-                    playSound('move');
-                  }}
-                >
-                  TEST AUDIO
-                </button>
-              </div>
-            </div>
-          {/if}
-
-          <label class="setting-row">
-            <div class="setting-info">
-              <span class="setting-label">Move Hints</span>
-              <span class="setting-desc">Highlight available tactical positions</span>
-            </div>
-            <input type="checkbox" class="t-checkbox" bind:checked={showMoveHints} />
-          </label>
-
-          <label class="setting-row">
-            <div class="setting-info">
-              <span class="setting-label">Reset Confirmation</span>
-              <span class="setting-desc">Require authorization to restart mission</span>
-            </div>
-            <input type="checkbox" class="t-checkbox" bind:checked={confirmReset} />
-          </label>
-
-          <label class="setting-row">
-            <div class="setting-info">
-              <span class="setting-label">Deploy Confirm Buttons</span>
-              <span class="setting-desc">Show confirmation buttons for piece deployment</span>
-            </div>
-            <input type="checkbox" class="t-checkbox" bind:checked={showDeployButtons} />
-          </label>
-
-          <label class="setting-row">
-            <div class="setting-info">
-              <span class="setting-label">Auto-Complete Deploy</span>
-              <span class="setting-desc">Automatically complete deployment phase</span>
-            </div>
-            <input type="checkbox" class="t-checkbox" bind:checked={autoCompleteDeploy} />
-          </label>
-        </div>
+      <!-- Footer - Fixed at bottom of sheet container, or just end of flow? 
+           For a sheet, usually better to have action button sticky at bottom or just part of scroll.
+           Sticky bottom is good for "Apply".
+       -->
+      <div class="p-6 border-t border-border bg-background pb-safe">
+        <Button
+          class="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold tracking-wide h-12 text-lg"
+          onclick={handleSave}>APPLY CHANGES</Button
+        >
       </div>
-    </div>
-
-    <Dialog.Footer class="px-6 py-5 border-t border-border bg-muted/20 gap-3 sm:gap-0">
-      <Button
-        variant="ghost"
-        class="text-muted-foreground hover:text-foreground hover:bg-muted"
-        onclick={() => (open = false)}>DISMISS</Button
-      >
-      <Button
-        class="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold tracking-wide"
-        onclick={handleSave}>APPLY CHANGES</Button
-      >
-    </Dialog.Footer>
-  </Dialog.Content>
-</Dialog.Root>
+    </DialogPrimitive.Content>
+  </DialogPrimitive.Portal>
+</DialogPrimitive.Root>
 
 <style>
-  /* Custom Scrollbar for settings content */
-  .settings-content::-webkit-scrollbar {
-    width: 6px;
-  }
-  .settings-content::-webkit-scrollbar-track {
-    background: transparent;
-  }
-  .settings-content::-webkit-scrollbar-thumb {
-    background: var(--theme-border-subtle);
-    border-radius: 3px;
-  }
-  .settings-content::-webkit-scrollbar-thumb:hover {
-    background: var(--theme-border);
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 20px);
   }
 
+  /* Reuse styles from SettingsDialog */
   .setting-section-title {
     font-size: 0.7rem;
     font-weight: 700;
@@ -257,11 +265,6 @@
     display: grid;
     grid-template-columns: repeat(1, 1fr);
     gap: 1rem;
-  }
-  @media (min-width: 640px) {
-    .theme-grid {
-      grid-template-columns: repeat(3, 1fr);
-    }
   }
 
   /* Theme Option Card */

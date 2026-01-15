@@ -6,9 +6,11 @@
   import Sonner from '$lib/components/ui/sonner/sonner.svelte';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
   import SettingsDialog from '$lib/components/SettingsDialog.svelte';
+  import SettingsSheet from '$lib/components/SettingsSheet.svelte';
   import ShortcutsDialog from '$lib/components/ShortcutsDialog.svelte';
   import { Menu, Home, PenSquare, Settings, Keyboard, BookOpen, Puzzle } from 'lucide-svelte';
   import { themeStore } from '$lib/stores/theme.svelte';
+  import { onMount } from 'svelte';
 
   interface Props {
     children: import('svelte').Snippet;
@@ -18,11 +20,22 @@
 
   let settingsOpen = $state(false);
   let shortcutsOpen = $state(false);
+  let isMobile = $state(false);
+
+  function checkMobile() {
+    isMobile = window.innerWidth < 768; // 768px matches md breakpoint
+  }
 
   $effect(() => {
     if (browser) {
       themeStore.init();
     }
+  });
+
+  onMount(() => {
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
   });
 </script>
 
@@ -84,7 +97,12 @@
     </div>
 
     <nav class="sidebar-nav">
-      <a href="/" class="sidebar-link" class:active={$page.url.pathname === '/'} title="Introduction">
+      <a
+        href="/"
+        class="sidebar-link"
+        class:active={$page.url.pathname === '/'}
+        title="Introduction"
+      >
         <BookOpen class="sidebar-icon" />
         <span class="sidebar-label">Intro</span>
       </a>
@@ -190,7 +208,11 @@
   {/if}
 
   <!-- Dialogs -->
-  <SettingsDialog bind:open={settingsOpen} />
+  {#if isMobile}
+    <SettingsSheet bind:open={settingsOpen} />
+  {:else}
+    <SettingsDialog bind:open={settingsOpen} />
+  {/if}
   <ShortcutsDialog bind:open={shortcutsOpen} />
 
   <main class="app-content max-md:ml-0">
