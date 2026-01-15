@@ -95,6 +95,7 @@
   function resetGame() {
     if (confirm('Reset the game?')) {
       session?.reset();
+      clock.reset();
     }
   }
 

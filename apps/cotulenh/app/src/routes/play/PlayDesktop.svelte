@@ -118,7 +118,7 @@
             </div>
             <div class="controls-right">
               {#if session}
-                <GameControls {session} />
+                <GameControls {session} onReset={() => clock.reset()} />
               {/if}
             </div>
             <div class="controls-full">
