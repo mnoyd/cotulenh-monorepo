@@ -68,6 +68,15 @@ export const en: TranslationKeys = {
   'game.resetConfirm': 'Are you sure you want to reset the game?',
   'game.simpleResetConfirm': 'Reset the game?',
   'game.redTurn': "{color}'s turn",
+  'game.victory': 'VICTORY',
+  'game.winner': 'Winner',
+  'game.mateDetected': 'MATE DETECTED',
+  'game.draw': 'DRAW',
+  'game.noLegalMoves': 'No Legal Moves',
+  'game.operationTerminated': 'Operation Terminated',
+  'game.missionLog': 'Mission Log',
+  'game.live': 'LIVE',
+  'game.noDataRecorded': '-- NO DATA RECORDED --',
 
   // Share dialog
   'share.title': 'Share Game',
@@ -181,5 +190,13 @@ export const en: TranslationKeys = {
   'common.of': 'of',
   'common.copy': 'Copy',
   'common.copied': 'Copied',
-  'common.play': 'Play Position'
+  'common.play': 'Play Position',
+
+  // Clock
+  'clock.active': 'ACTIVE',
+  'clock.timeout': 'TIME OUT',
+  'clock.pause': 'PAUSE',
+  'clock.resume': 'RESUME',
+  'clock.start': 'START',
+  'clock.ranOutOfTime': '{color} ran out of time!'
 };

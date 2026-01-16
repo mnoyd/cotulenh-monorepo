@@ -6,6 +6,7 @@
     formatClockTime
   } from '$lib/clock/clock.svelte';
   import { Timer } from 'lucide-svelte';
+  import { getI18n } from '$lib/i18n/index.svelte';
 
   interface Props {
     clock: ChessClockState;
@@ -14,6 +15,14 @@
   }
 
   let { clock, side, class: className }: Props = $props();
+
+  const i18n = getI18n();
+
+  // Reactive translations
+  let tRed = $derived.by(() => i18n.t('common.red'));
+  let tBlue = $derived.by(() => i18n.t('common.blue'));
+  let tActive = $derived.by(() => i18n.t('clock.active'));
+  let tTimeout = $derived.by(() => i18n.t('clock.timeout'));
 
   let time = $derived(side === 'r' ? clock.redTime : clock.blueTime);
   let isActive = $derived(clock.activeSide === side && clock.isRunning);
@@ -28,7 +37,7 @@
   let isLowTime = $derived(time < 30_000 && time > 0);
   let isCriticalTime = $derived(time < 10_000 && time > 0);
 
-  let sideLabel = $derived(side === 'r' ? 'RED' : 'BLUE');
+  let sideLabel = $derived(side === 'r' ? tRed : tBlue);
   let sideColor = $derived(side === 'r' ? 'text-red-500' : 'text-mw-primary');
   let sideBg = $derived(side === 'r' ? 'bg-red-500' : 'bg-mw-primary');
   let sideBorder = $derived(side === 'r' ? 'border-red-500/30' : 'border-mw-primary/30');
@@ -64,7 +73,7 @@
     </div>
     {#if isActive}
       <span class="text-[0.5rem] font-mono uppercase tracking-wider text-muted-foreground animate-pulse">
-        ACTIVE
+        {tActive}
       </span>
     {/if}
   </div>
@@ -101,7 +110,7 @@
   <!-- Timeout Overlay -->
   {#if isTimeout}
     <div class="absolute inset-0 flex items-center justify-center bg-black/50">
-      <span class="font-mono text-xs uppercase tracking-widest text-red-500">TIME OUT</span>
+      <span class="font-mono text-xs uppercase tracking-widest text-red-500">{tTimeout}</span>
     </div>
   {/if}
 </div>

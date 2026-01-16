@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { GameSession } from '$lib/game-session.svelte';
   import { logRender } from '$lib/debug';
+  import { getI18n } from '$lib/i18n/index.svelte';
 
   import { Button } from '$lib/components/ui/button';
   import { cn } from '$lib/utils';
@@ -11,6 +12,13 @@
   }
 
   let { session }: Props = $props();
+
+  const i18n = getI18n();
+
+  // Reactive translations
+  let tMissionLog = $derived.by(() => i18n.t('game.missionLog'));
+  let tLive = $derived.by(() => i18n.t('game.live'));
+  let tNoDataRecorded = $derived.by(() => i18n.t('game.noDataRecorded'));
 
   let historyContainer: HTMLDivElement;
 
@@ -57,7 +65,7 @@
       class="text-[0.65rem] font-mono uppercase text-muted-foreground tracking-widest flex items-center gap-1.5"
     >
       <History class="w-3 h-3" />
-      Mission Log
+      {tMissionLog}
     </div>
     {#if historyViewIndex !== -1}
       <Button
@@ -67,7 +75,7 @@
         onclick={() => session.cancelPreview()}
       >
         <Eye class="w-2.5 h-2.5 mr-1" />
-        LIVE
+        {tLive}
       </Button>
     {/if}
   </div>
@@ -80,7 +88,7 @@
       <div
         class="h-full flex items-center justify-center text-[0.65rem] text-muted-foreground italic tracking-wide opacity-50"
       >
-        -- NO DATA RECORDED --
+        {tNoDataRecorded}
       </div>
     {:else}
       <div class="flex flex-wrap gap-1.5 content-start">

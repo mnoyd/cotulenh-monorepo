@@ -68,6 +68,15 @@ export const vi: TranslationKeys = {
   'game.resetConfirm': 'Bạn có chắc chắn muốn đặt lại ván cờ không?',
   'game.simpleResetConfirm': 'Đặt lại ván cờ?',
   'game.redTurn': 'Lượt {color}',
+  'game.victory': 'CHIẾN THẮNG',
+  'game.winner': 'Người chiến thắng',
+  'game.mateDetected': 'ĐÃ CHIẾU HẾT',
+  'game.draw': 'HÒA',
+  'game.noLegalMoves': 'Không có nước đi hợp lệ',
+  'game.operationTerminated': 'Hoạt động đã kết thúc',
+  'game.missionLog': 'Nhật ký nhiệm vụ',
+  'game.live': 'TRỰC TIẾP',
+  'game.noDataRecorded': '-- KHÔNG CÓ DỮ LIỆU --',
 
   // Share dialog
   'share.title': 'Chia sẻ ván cờ',
@@ -181,5 +190,13 @@ export const vi: TranslationKeys = {
   'common.of': 'trong số',
   'common.copy': 'Sao chép',
   'common.copied': 'Đã sao chép',
-  'common.play': 'Chơi thế cờ này'
+  'common.play': 'Chơi thế cờ này',
+
+  // Clock
+  'clock.active': 'ĐANG CHỜ',
+  'clock.timeout': 'HẾT GIỜ',
+  'clock.pause': 'TẠM DỪNG',
+  'clock.resume': 'TIẾP TỤC',
+  'clock.start': 'BẮT ĐẦU',
+  'clock.ranOutOfTime': '{color} đã hết giờ!'
 };

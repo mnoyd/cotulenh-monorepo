@@ -1,10 +1,7 @@
 <script lang="ts">
   import { getI18n } from '$lib/i18n/index.svelte';
-  import { getTurnColorName } from '$lib/utils';
   import type { GameSession } from '$lib/game-session.svelte';
   import { logRender } from '$lib/debug';
-
-  const i18n = getI18n();
 
   import { Badge } from '$lib/components/ui/badge';
   import * as Card from '$lib/components/ui/card';
@@ -18,6 +15,25 @@
   }
 
   let { session }: Props = $props();
+
+  // Get i18n instance - needs to be module level, but we'll use derived values for reactivity
+  const i18n = getI18n();
+
+  // Track locale for reactivity
+  let locale = $derived(i18n.locale);
+
+  // Reactive translations that update when locale changes
+  let tMissionStatus = $derived.by(() => i18n.t('game.missionStatus'));
+  let tCurrentTurn = $derived.by(() => i18n.t('game.currentTurn'));
+  let tRed = $derived.by(() => i18n.t('game.red'));
+  let tBlue = $derived.by(() => i18n.t('game.blue'));
+  let tVictory = $derived.by(() => i18n.t('game.victory'));
+  let tWinner = $derived.by(() => i18n.t('game.winner'));
+  let tMateDetected = $derived.by(() => i18n.t('game.mateDetected'));
+  let tStalemate = $derived.by(() => i18n.t('game.stalemate'));
+  let tNoLegalMoves = $derived.by(() => i18n.t('game.noLegalMoves'));
+  let tDraw = $derived.by(() => i18n.t('game.draw'));
+  let tOperationTerminated = $derived.by(() => i18n.t('game.operationTerminated'));
 
   // Derive from session
   let turn = $derived(session.turn);
@@ -35,9 +51,15 @@
   let winnerBg = $derived(winner === 'r' ? 'bg-red-500/10' : 'bg-mw-primary/10');
   let winnerBorder = $derived(winner === 'r' ? 'border-red-500/30' : 'border-mw-primary/30');
 
+  // Helper for turn color name using i18n
+  function getTurnColorName(color: 'r' | 'b' | null | undefined): string {
+    if (!color) return '...';
+    return color === 'r' ? tRed : tBlue;
+  }
+
   // Log renders in effect to track reactive changes
   $effect(() => {
-    logRender('🔄 [RENDER] GameInfo.svelte component rendered', { turn, winner, check, status });
+    logRender('🔄 [RENDER] GameInfo.svelte component rendered', { turn, winner, check, status, locale });
   });
 </script>
 
@@ -52,14 +74,14 @@
       class="flex items-center gap-1.5 md:gap-2 text-[0.65rem] md:text-xs font-mono uppercase text-muted-foreground tracking-widest"
     >
       <Timer class="w-3 h-3 md:w-3.5 md:h-3.5" />
-      <span>{i18n.t('game.missionStatus')}</span>
+      <span>{tMissionStatus}</span>
     </div>
 
     {#if status === 'playing'}
       <div class="flex items-center gap-1.5 md:gap-2">
         <span
           class="hidden sm:inline-block text-[0.6rem] md:text-[0.65rem] uppercase text-muted-foreground font-mono tracking-wider"
-          >{i18n.t('game.currentTurn')}</span
+          >{tCurrentTurn}</span
         >
         <Badge
           variant="outline"
@@ -80,7 +102,7 @@
       <div class="p-2 md:p-4">
         {#if status === 'checkmate' && winner}
           <MissionResult
-            title="VICTORY"
+            title={tVictory}
             icon={Trophy}
             textColor={winnerColor}
             bgColor={winnerBg}
@@ -91,18 +113,18 @@
             <p
               class="text-xs md:text-sm font-mono uppercase tracking-[0.2em] text-muted-foreground"
             >
-              Winner: <span class="font-bold {winnerColor}">{getTurnColorName(winner)}</span>
+              {tWinner}: <span class="font-bold {winnerColor}">{getTurnColorName(winner)}</span>
             </p>
 
             <div
               class="mt-2 md:mt-4 px-2 py-0.5 md:px-3 md:py-1 bg-black/40 rounded text-[0.55rem] md:text-[0.6rem] font-mono text-muted-foreground border border-white/5"
             >
-              MATE DETECTED
+              {tMateDetected}
             </div>
           </MissionResult>
         {:else if status === 'stalemate'}
           <MissionResult
-            title="STALEMATE"
+            title={tStalemate}
             icon={Handshake}
             textColor="text-amber-500"
             bgColor="bg-amber-500/10"
@@ -111,19 +133,19 @@
             <p
               class="text-[0.65rem] md:text-xs font-mono uppercase tracking-widest text-amber-500/70"
             >
-              No Legal Moves
+              {tNoLegalMoves}
             </p>
           </MissionResult>
         {:else}
           <MissionResult
-            title="DRAW"
+            title={tDraw}
             icon={Skull}
             textColor="text-zinc-400"
             bgColor="bg-zinc-500/10"
             borderColor="border-zinc-500/30"
           >
             <p class="text-[0.65rem] md:text-xs font-mono uppercase tracking-widest text-zinc-500">
-              Operation Terminated
+              {tOperationTerminated}
             </p>
           </MissionResult>
         {/if}

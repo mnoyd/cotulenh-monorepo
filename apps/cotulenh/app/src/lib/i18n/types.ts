@@ -67,6 +67,15 @@ export interface TranslationKeys {
   'game.resetConfirm': string;
   'game.simpleResetConfirm': string;
   'game.redTurn': string;
+  'game.victory': string;
+  'game.winner': string;
+  'game.mateDetected': string;
+  'game.draw': string;
+  'game.noLegalMoves': string;
+  'game.operationTerminated': string;
+  'game.missionLog': string;
+  'game.live': string;
+  'game.noDataRecorded': string;
 
   // Share dialog
   'share.title': string;
@@ -154,6 +163,14 @@ export interface TranslationKeys {
   'common.copy': string;
   'common.copied': string;
   'common.play': string;
+
+  // Clock
+  'clock.active': string;
+  'clock.timeout': string;
+  'clock.pause': string;
+  'clock.resume': string;
+  'clock.start': string;
+  'clock.ranOutOfTime': string;
 
   // Error page
   'error.pageNotFound': string;
