@@ -7,9 +7,11 @@
   import PiecePalette from './PiecePalette.svelte';
   import PaletteControls from './PaletteControls.svelte';
   import { createBoardEditorState } from '$lib/features/board-editor';
+  import { getI18n } from '$lib/i18n/index.svelte';
 
   import '$lib/styles/board.css';
 
+  const i18n = getI18n();
   const editor = createBoardEditorState();
 
   let bottomSheetExpanded = $state(true);
@@ -56,8 +58,8 @@
   <!-- Compact Header -->
   <header class="mobile-header">
     <h1>
-      <span class="text-mw-secondary">Board</span>
-      <span class="text-mw-primary font-light">Editor</span>
+      <span class="text-mw-secondary">{i18n.t('editor.board')}</span>
+      <span class="text-mw-primary font-light">{i18n.t('editor.title')}</span>
     </h1>
     <div class="header-actions">
       <button
@@ -81,7 +83,7 @@
         class="fen-input"
       />
       <div class="fen-actions">
-        <button class="fen-btn" onclick={editor.applyFEN}>Apply</button>
+        <button class="fen-btn" onclick={editor.applyFEN}>{i18n.t('editor.apply')}</button>
         <button class="fen-btn" onclick={editor.copyFEN}>
           <Copy size={14} />
           {editor.copyButtonText}
@@ -106,7 +108,7 @@
       />
     {:else}
       <div class="board-loading">
-        <p>Loading board...</p>
+        <p>{i18n.t('editor.loadingBoard')}</p>
       </div>
     {/if}
   </section>

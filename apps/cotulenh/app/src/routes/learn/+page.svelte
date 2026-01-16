@@ -2,6 +2,9 @@
   import { BookOpen } from 'lucide-svelte';
   import CategoryCard from '$lib/learn/components/CategoryCard.svelte';
   import { categories } from '$lib/learn/lessons';
+  import { getI18n } from '$lib/i18n/index.svelte';
+
+  const i18n = getI18n();
 </script>
 
 <main class="learn-page">
@@ -12,10 +15,10 @@
       </div>
       <div class="header-content">
         <h1>
-          <span class="title-green">Learn</span>
+          <span class="title-green">{i18n.t('learn.title')}</span>
           <span class="title-cyan">Cờ Tư Lệnh</span>
         </h1>
-        <p class="tagline">Master Commander Chess step by step with interactive lessons</p>
+        <p class="tagline">{i18n.t('learn.tagline')}</p>
       </div>
     </header>
 

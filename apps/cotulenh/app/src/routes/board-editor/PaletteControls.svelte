@@ -1,5 +1,8 @@
 <script lang="ts">
   import { Hand, Star, Trash2 } from 'lucide-svelte';
+  import { getI18n } from '$lib/i18n/index.svelte';
+
+  const i18n = getI18n();
 
   type EditorMode = 'hand' | 'drop' | 'delete';
 
@@ -42,7 +45,7 @@
     >
       <span class="control-emoji"><Star size={20} /></span>
     </div>
-    <span class="piece-label max-lg:hidden">Heroic</span>
+    <span class="piece-label max-lg:hidden">{i18n.t('editor.heroic')}</span>
   </div>
 
   <!-- Hand button -->
@@ -68,7 +71,7 @@
     >
       <span class="control-emoji"><Hand size={20} /></span>
     </div>
-    <span class="piece-label max-lg:hidden">Hand</span>
+    <span class="piece-label max-lg:hidden">{i18n.t('editor.hand')}</span>
   </div>
 
   <!-- Delete button -->
@@ -94,7 +97,7 @@
     >
       <span class="control-emoji"><Trash2 size={20} /></span>
     </div>
-    <span class="piece-label max-lg:hidden">Delete</span>
+    <span class="piece-label max-lg:hidden">{i18n.t('editor.delete')}</span>
   </div>
 </div>
 

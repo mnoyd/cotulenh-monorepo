@@ -29,9 +29,9 @@
           <div class="feature-icon learn-icon">
             <BookOpen size={32} />
           </div>
-          <h3>Learn to Play</h3>
-          <p>Interactive lessons to master Cờ Tư Lệnh step by step. Perfect for beginners!</p>
-          <a href="/learn" class="feature-link">Start Learning →</a>
+          <h3>{i18n.t('home.learnToPlay.title')}</h3>
+          <p>{i18n.t('home.learnToPlay.desc')}</p>
+          <a href="/learn" class="feature-link">{i18n.t('home.learnToPlay.link')}</a>
         </div>
 
         <div class="feature-card">

@@ -12,6 +12,9 @@
   import { GameSession } from '$lib/game-session.svelte';
   import { createChessClock, TIME_PRESETS, formatClockTime } from '$lib/clock/clock.svelte';
   import { logger } from '@cotulenh/common';
+  import { getI18n } from '$lib/i18n/index.svelte';
+
+  const i18n = getI18n();
 
   import '$lib/styles/board.css';
 
@@ -113,19 +116,19 @@
     <!-- Top Bar: Clock for opponent -->
     <header class="top-bar">
       <div class="clock-mini blue">
-        <span class="clock-label">Blue</span>
+        <span class="clock-label">{i18n.t('game.blue')}</span>
         <span class="clock-time">{formatClockTime(clock.blueTime)}</span>
       </div>
       <div class="game-status">
         {#if session}
           {#if session.status === 'playing'}
             <span class="turn-indicator {session.turn === 'r' ? 'red' : 'blue'}">
-              {session.turn === 'r' ? 'Red' : 'Blue'}'s turn
+              {session.turn === 'r' ? i18n.t('game.red') : i18n.t('game.blue')}'s turn
             </span>
           {:else if session.status === 'checkmate'}
-            <span class="status-end">Checkmate!</span>
+            <span class="status-end">{i18n.t('game.checkmate')}</span>
           {:else if session.status === 'stalemate'}
-            <span class="status-end">Stalemate</span>
+            <span class="status-end">{i18n.t('game.stalemate')}</span>
           {/if}
         {/if}
       </div>
@@ -151,7 +154,7 @@
     <!-- Bottom Bar: Clock for player + Quick Actions -->
     <div class="bottom-bar">
       <div class="clock-mini red">
-        <span class="clock-label">Red</span>
+        <span class="clock-label">{i18n.t('game.red')}</span>
         <span class="clock-time">{formatClockTime(clock.redTime)}</span>
       </div>
 
@@ -210,7 +213,7 @@
         {:else}
           <ChevronUp size={16} />
         {/if}
-        <span class="handle-label">Game Info</span>
+        <span class="handle-label">{i18n.t('game.gameInfo')}</span>
       </button>
 
       {#if bottomSheetExpanded}

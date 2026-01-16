@@ -2,6 +2,9 @@
   import { browser } from '$app/environment';
   import { fade } from 'svelte/transition';
   import { getStoredValue } from '$lib/stores/persisted.svelte';
+  import { getI18n } from '$lib/i18n/index.svelte';
+
+  const i18n = getI18n();
 
   let gamePgn = $state('');
   let issueDescription = $state('');
@@ -39,32 +42,32 @@ ${gamePgn}
 <div class="report-container max-md:p-4" in:fade>
   <div class="report-card max-md:p-6">
     <div class="header">
-      <h1>Report an Issue</h1>
-      <p>Found a bug? Help us improve Co Tu Lenh.</p>
+      <h1>{i18n.t('report.title')}</h1>
+      <p>{i18n.t('report.subtitle')}</p>
     </div>
 
     <div class="connect-section max-md:grid-cols-1">
       <div class="info-box">
         <h3>🌟 Support the Project</h3>
-        <p>Please consider giving a star to our repository to support open source development.</p>
+        <p>{i18n.t('report.starRepo')}</p>
         <a href="https://github.com/mnoyd/cotulenh-monorepo" target="_blank" class="github-link">
           Visit Repository
         </a>
       </div>
       <div class="info-box">
         <h3>📝 GitHub Account</h3>
-        <p>You'll need a GitHub account to report issues. It's free and owned by Microsoft.</p>
+        <p>{i18n.t('report.githubAccount')}</p>
       </div>
     </div>
 
     <div class="form-group">
-      <label for="pgn">Game PGN</label>
+      <label for="pgn">{i18n.t('report.gamePgn')}</label>
       <textarea id="pgn" readonly value={gamePgn} rows="10"></textarea>
       <p class="helper-text">PGN contains complete game history including position, moves, and metadata</p>
     </div>
 
     <div class="form-group">
-      <label for="desc">Issue Description</label>
+      <label for="desc">{i18n.t('report.issueDescription')}</label>
       <textarea
         id="desc"
         bind:value={issueDescription}
@@ -85,7 +88,7 @@ ${gamePgn}
           Copy Data & Create GitHub Issue
         {/if}
       </button>
-      <a href="/" class="cancel-link">Back to Game</a>
+      <a href="/" class="cancel-link">{i18n.t('report.backToGame')}</a>
     </div>
   </div>
 </div>

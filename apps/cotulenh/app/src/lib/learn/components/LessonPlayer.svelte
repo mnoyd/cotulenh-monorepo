@@ -4,6 +4,9 @@
   import { ArrowLeft, RotateCcw, ArrowRight, Star, CheckCircle } from 'lucide-svelte';
   import BoardContainer from '$lib/components/BoardContainer.svelte';
   import { LearnSession } from '../learn-session.svelte';
+  import { getI18n } from '$lib/i18n/index.svelte';
+
+  const i18n = getI18n();
 
   type Props = {
     lessonId: string;
@@ -33,7 +36,7 @@
     <header class="lesson-header">
       <a href="/learn" class="back-button">
         <ArrowLeft size={20} />
-        <span>Back to Lessons</span>
+        <span>{i18n.t('learn.backToLessons')}</span>
       </a>
       <h1>{session.lesson.title}</h1>
     </header>
@@ -58,7 +61,7 @@
         {#if session.status === 'completed'}
           <div class="completion-panel">
             <CheckCircle size={48} class="completion-icon" />
-            <h2>Lesson Complete!</h2>
+            <h2>{i18n.t('learn.lessonComplete')}</h2>
             <div class="stars-earned">
               {#each [1, 2, 3] as i}
                 <Star 
@@ -68,7 +71,7 @@
                 />
               {/each}
             </div>
-            <p>Mistakes: {session.mistakes}</p>
+            <p>{i18n.t('learn.mistakes')}: {session.mistakes}</p>
             <div class="completion-actions">
               <button class="btn secondary" onclick={() => session?.restart()}>
                 <RotateCcw size={16} />
@@ -95,7 +98,7 @@
     </div>
   </div>
 {:else}
-  <div class="loading">Loading lesson...</div>
+  <div class="loading">{i18n.t('learn.loadingLesson')}</div>
 {/if}
 
 <style>

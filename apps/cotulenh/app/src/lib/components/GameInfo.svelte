@@ -1,7 +1,10 @@
 <script lang="ts">
+  import { getI18n } from '$lib/i18n/index.svelte';
   import { getTurnColorName } from '$lib/utils';
   import type { GameSession } from '$lib/game-session.svelte';
   import { logRender } from '$lib/debug';
+
+  const i18n = getI18n();
 
   import { Badge } from '$lib/components/ui/badge';
   import * as Card from '$lib/components/ui/card';
@@ -49,14 +52,14 @@
       class="flex items-center gap-1.5 md:gap-2 text-[0.65rem] md:text-xs font-mono uppercase text-muted-foreground tracking-widest"
     >
       <Timer class="w-3 h-3 md:w-3.5 md:h-3.5" />
-      <span>Mission Status</span>
+      <span>{i18n.t('game.missionStatus')}</span>
     </div>
 
     {#if status === 'playing'}
       <div class="flex items-center gap-1.5 md:gap-2">
         <span
           class="hidden sm:inline-block text-[0.6rem] md:text-[0.65rem] uppercase text-muted-foreground font-mono tracking-wider"
-          >Current Turn</span
+          >{i18n.t('game.currentTurn')}</span
         >
         <Badge
           variant="outline"

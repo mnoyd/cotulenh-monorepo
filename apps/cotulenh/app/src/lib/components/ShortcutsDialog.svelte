@@ -1,6 +1,9 @@
 <script lang="ts">
+  import { getI18n } from '$lib/i18n/index.svelte';
   import * as Dialog from '$lib/components/ui/dialog';
   import { Button } from '$lib/components/ui/button';
+
+  const i18n = getI18n();
 
   interface Props {
     open: boolean;
@@ -21,8 +24,8 @@
 <Dialog.Root bind:open>
   <Dialog.Content class="shortcuts-dialog">
     <Dialog.Header>
-      <Dialog.Title>⌨️ Keyboard Shortcuts</Dialog.Title>
-      <Dialog.Description>Master these shortcuts for faster play</Dialog.Description>
+      <Dialog.Title>⌨️ {i18n.t('shortcuts.title')}</Dialog.Title>
+      <Dialog.Description>{i18n.t('shortcuts.description')}</Dialog.Description>
     </Dialog.Header>
 
     <div class="shortcuts-list">
@@ -35,7 +38,7 @@
     </div>
 
     <Dialog.Footer>
-      <Button onclick={() => (open = false)}>Got it!</Button>
+      <Button onclick={() => (open = false)}>{i18n.t('shortcuts.gotIt')}</Button>
     </Dialog.Footer>
   </Dialog.Content>
 </Dialog.Root>

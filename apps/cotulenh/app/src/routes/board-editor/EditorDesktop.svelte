@@ -6,9 +6,11 @@
   import BoardContainer from '$lib/components/BoardContainer.svelte';
   import PiecePalettesContainer from './PiecePalettesContainer.svelte';
   import { createBoardEditorState } from '$lib/features/board-editor';
+  import { getI18n } from '$lib/i18n/index.svelte';
 
   import '$lib/styles/board.css';
 
+  const i18n = getI18n();
   const editor = createBoardEditorState();
 
   onMount(() => {
@@ -25,8 +27,8 @@
   <!-- Header -->
   <header class="editor-header">
     <h1>
-      <span class="text-mw-secondary">Board</span>
-      <span class="text-mw-primary font-light">Editor</span>
+      <span class="text-mw-secondary">{i18n.t('editor.board')}</span>
+      <span class="text-mw-primary font-light">{i18n.t('editor.title')}</span>
     </h1>
   </header>
 
@@ -48,7 +50,7 @@
           />
         {:else}
           <div class="board-container">
-            <p class="text-mw-primary">Loading board...</p>
+            <p class="text-mw-primary">{i18n.t('editor.loadingBoard')}</p>
           </div>
         {/if}
       </section>
@@ -106,7 +108,7 @@
             class="fen-input"
           />
           <div class="fen-buttons">
-            <button class="fen-btn" onclick={editor.applyFEN}>Apply</button>
+            <button class="fen-btn" onclick={editor.applyFEN}>{i18n.t('editor.apply')}</button>
             <button class="fen-btn" onclick={editor.copyFEN}>{editor.copyButtonText}</button>
           </div>
         </div>
@@ -125,13 +127,13 @@
 
         <!-- Quick Tips (collapsible) -->
         <details class="tips-section">
-          <summary>Quick Tips</summary>
+          <summary>{i18n.t('editor.quickTips')}</summary>
           <ul>
             <li class="flex items-center gap-1">
               <strong><Hand size={14} class="inline" /> Hand:</strong> Drag pieces on board
             </li>
             <li class="flex items-center gap-1">
-              <strong>Click piece:</strong> Select, then click to place
+              <strong>{i18n.t('editor.tipClickPiece')}</strong>
             </li>
             <li class="flex items-center gap-1">
               <strong><Trash2 size={14} class="inline" /> Delete:</strong> Click to remove pieces
