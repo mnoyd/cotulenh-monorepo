@@ -366,10 +366,12 @@
 
   .volume-control {
     padding-left: 2rem;
+    flex-wrap: wrap;
   }
 
   .volume-slider {
     flex: 1;
+    min-width: 80px;
     height: 4px;
     accent-color: var(--theme-primary);
     cursor: pointer;

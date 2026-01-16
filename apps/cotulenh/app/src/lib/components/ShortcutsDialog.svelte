@@ -74,8 +74,10 @@
   }
 
   .shortcut-action {
-    font-size: 0.875rem;
+    font-size: 0.8rem;
     color: #94a3b8;
     font-family: var(--font-ui);
+    flex: 1;
+    min-width: 0;
   }
 </style>

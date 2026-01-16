@@ -310,18 +310,21 @@
   }
 
   .ctrl-btn {
-    padding: 0.5rem;
+    padding: 0.5rem 0.25rem;
     font-family: var(--font-ui);
-    font-size: 0.7rem;
+    font-size: 0.65rem;
     font-weight: 500;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.25px;
     background: rgba(0, 243, 255, 0.05);
     border: 1px solid var(--color-mw-border);
     color: var(--color-mw-primary);
     border-radius: 4px;
     cursor: pointer;
     transition: all 0.2s;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .ctrl-btn:hover {
@@ -336,12 +339,13 @@
     gap: 0.5rem;
     padding: 0.5rem;
     font-family: var(--font-ui);
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     font-weight: 500;
     text-transform: uppercase;
     border-radius: 4px;
     cursor: pointer;
     transition: all 0.2s;
+    white-space: nowrap;
   }
 
   .turn-btn.red {

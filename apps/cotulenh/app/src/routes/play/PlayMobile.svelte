@@ -304,12 +304,13 @@
   }
 
   .turn-indicator {
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.03em;
     padding: 0.25rem 0.5rem;
     border-radius: 4px;
+    white-space: nowrap;
   }
 
   .turn-indicator.red {
@@ -446,9 +447,10 @@
   }
 
   .handle-label {
-    font-size: 0.7rem;
+    font-size: 0.65rem;
     text-transform: uppercase;
-    letter-spacing: 0.1em;
+    letter-spacing: 0.08em;
+    white-space: nowrap;
   }
 
   .sheet-content {

@@ -363,9 +363,9 @@
     align-items: center;
     justify-content: center;
     gap: 0.25rem;
-    padding: 0.4rem;
+    padding: 0.4rem 0.25rem;
     font-family: var(--font-ui);
-    font-size: 0.7rem;
+    font-size: 0.65rem;
     font-weight: 500;
     text-transform: uppercase;
     background: rgba(0, 243, 255, 0.1);
@@ -373,6 +373,9 @@
     color: var(--color-mw-primary);
     border-radius: 4px;
     cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .validation-error {
@@ -552,9 +555,9 @@
   }
 
   .team-tab {
-    padding: 0.5rem;
+    padding: 0.5rem 0.25rem;
     font-family: var(--font-display);
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     font-weight: 600;
     text-transform: uppercase;
     background: rgba(0, 0, 0, 0.3);
@@ -563,6 +566,9 @@
     border-radius: 4px;
     cursor: pointer;
     transition: all 0.2s;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .team-tab.red.active {

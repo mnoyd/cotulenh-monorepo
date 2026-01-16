@@ -223,7 +223,7 @@
     left: 0;
     top: 0;
     bottom: 0;
-    width: 72px;
+    width: 80px;
     background: var(--theme-bg-panel, #222);
     border-right: 1px solid var(--theme-border, #444);
     display: flex;
@@ -267,16 +267,16 @@
     flex-direction: column;
     align-items: center;
     gap: 0.25rem;
-    padding: 0.75rem 0.5rem;
+    padding: 0.75rem 0.25rem;
     border-radius: 8px;
     text-decoration: none;
     color: var(--theme-text-secondary, #aaa);
     font-weight: 500;
-    font-size: 0.65rem;
+    font-size: 0.6rem;
     border: 1px solid transparent;
     font-family: var(--font-mono);
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.02em;
     background: transparent;
     cursor: pointer;
   }
@@ -301,6 +301,10 @@
 
   .sidebar-label {
     white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+    text-align: center;
   }
 
   /* Mobile Menu */
@@ -337,7 +341,7 @@
     flex: 1;
     display: flex;
     flex-direction: column;
-    margin-left: 72px;
+    margin-left: 80px;
     min-height: 100vh;
   }
 

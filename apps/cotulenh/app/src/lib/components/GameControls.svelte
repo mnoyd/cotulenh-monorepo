@@ -50,13 +50,13 @@
   }
 </script>
 
-<div class="grid grid-cols-2 lg:grid-cols-5 gap-2 mt-2">
+<div class="grid grid-cols-2 gap-2 mt-2">
   <Button
     variant="default"
     size="sm"
     onclick={resetGame}
     title={i18n.t('common.reset')}
-    class="btn-game-primary"
+    class="btn-game-primary text-xs whitespace-nowrap"
   >
     {i18n.t('common.reset')}
   </Button>
@@ -65,7 +65,7 @@
     size="sm"
     onclick={undoLastMove}
     title={i18n.t('common.undo')}
-    class="btn-game-alert"
+    class="btn-game-alert text-xs whitespace-nowrap"
   >
     {i18n.t('common.undo')}
   </Button>
@@ -74,7 +74,7 @@
     size="sm"
     onclick={flipBoard}
     title={i18n.t('common.flip')}
-    class="btn-game-secondary"
+    class="btn-game-secondary text-xs whitespace-nowrap"
   >
     {i18n.t('common.flip')}
   </Button>
@@ -83,7 +83,7 @@
     size="sm"
     onclick={openShare}
     title={i18n.t('common.share')}
-    class="btn-game-subtle"
+    class="btn-game-subtle text-xs whitespace-nowrap"
   >
     {i18n.t('common.share')}
   </Button>
@@ -92,7 +92,7 @@
     size="sm"
     onclick={reportIssue}
     title={i18n.t('common.report')}
-    class="btn-game-ghost"
+    class="btn-game-ghost text-xs whitespace-nowrap"
   >
     {i18n.t('common.report')}
   </Button>

@@ -215,13 +215,17 @@
   }
 
   .piece-label {
-    font-size: 0.7rem;
+    font-size: 0.65rem;
     color: #a0a0a0;
     text-align: center;
     line-height: 1.1;
     font-family: var(--font-ui);
     text-transform: uppercase;
-    letter-spacing: 1px;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
   }
 
   .palette-piece-wrapper:hover .piece-label {
