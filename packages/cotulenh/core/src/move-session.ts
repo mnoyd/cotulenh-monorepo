@@ -603,6 +603,11 @@ export class MoveSession {
       }
     }
 
+    // Skip commander safety check if no commander on board (e.g., learn mode)
+    if (game.getCommanderSquare(us) === -1) {
+      return true
+    }
+
     // DELAYED VALIDATION: Check commander safety after all moves
     // This allows deploy sequences to escape check
     return !game.isCommanderInDanger(us)
