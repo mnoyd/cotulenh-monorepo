@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
-  import { ArrowLeft, RotateCcw, ArrowRight, Star, CheckCircle } from 'lucide-svelte';
+  import { ArrowLeft, RotateCcw, ArrowRight, Star, CheckCircle, HelpCircle } from 'lucide-svelte';
   import BoardContainer from '$lib/components/BoardContainer.svelte';
   import { LearnSession } from '../learn-session.svelte';
   import { getI18n } from '$lib/i18n/index.svelte';
@@ -29,6 +29,12 @@
   function handleNext() {
     goto('/learn');
   }
+
+  function handleHint() {
+    session?.showHint();
+    // Auto-hide after 3 seconds
+    setTimeout(() => session?.hideHint(), 3000);
+  }
 </script>
 
 {#if session && session.lesson}
@@ -50,14 +56,6 @@
       </div>
 
       <div class="instruction-section">
-        <div class="progress-bar">
-          <div class="progress-fill" style="width: {session.progress}%"></div>
-        </div>
-        
-        <div class="step-counter">
-          {i18n.t('common.step')} {session.currentStepIndex + 1} {i18n.t('common.of')} {session.totalSteps}
-        </div>
-
         {#if session.status === 'completed'}
           <div class="completion-panel">
             <CheckCircle size={48} class="completion-icon" />
@@ -71,7 +69,10 @@
                 />
               {/each}
             </div>
-            <p>{i18n.t('learn.mistakes')}: {session.mistakes}</p>
+            <p class="move-count">Moves: {session.moveCount}</p>
+            {#if session.showFeedback}
+              <p class="success-message">{session.feedbackMessage}</p>
+            {/if}
             <div class="completion-actions">
               <button class="btn secondary" onclick={() => session?.restart()}>
                 <RotateCcw size={16} />
@@ -83,12 +84,25 @@
               </button>
             </div>
           </div>
-        {:else if session.currentStep}
+        {:else}
           <div class="instruction-panel">
-            <p class="instruction-text">{session.currentStep.instruction}</p>
+            <p class="instruction-text">{session.instruction}</p>
             
+            <div class="lesson-controls">
+              <button class="btn hint-btn" onclick={handleHint} disabled={!session.hint}>
+                <HelpCircle size={16} />
+                Hint
+              </button>
+              <button class="btn secondary" onclick={() => session?.restart()}>
+                <RotateCcw size={16} />
+                Reset
+              </button>
+            </div>
+            
+            <div class="move-counter">Moves: {session.moveCount}</div>
+
             {#if session.showFeedback}
-              <div class="feedback" class:correct={session.status === 'correct'} class:incorrect={session.status === 'incorrect'}>
+              <div class="feedback hint">
                 {session.feedbackMessage}
               </div>
             {/if}
@@ -161,24 +175,6 @@
     gap: 1rem;
   }
 
-  .progress-bar {
-    height: 8px;
-    background: var(--theme-bg-elevated, #333);
-    border-radius: 4px;
-    overflow: hidden;
-  }
-
-  .progress-fill {
-    height: 100%;
-    background: var(--theme-success, #22c55e);
-    transition: width 0.3s ease;
-  }
-
-  .step-counter {
-    font-size: 0.875rem;
-    color: var(--theme-text-secondary, #aaa);
-  }
-
   .instruction-panel {
     background: var(--theme-bg-panel, #222);
     border: 1px solid var(--theme-border, #444);
@@ -189,7 +185,30 @@
   .instruction-text {
     font-size: 1.125rem;
     line-height: 1.6;
-    margin: 0;
+    margin: 0 0 1rem 0;
+  }
+
+  .lesson-controls {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .move-counter {
+    font-size: 0.875rem;
+    color: var(--theme-text-secondary, #aaa);
+    margin-bottom: 0.5rem;
+  }
+
+  .move-count {
+    color: var(--theme-text-secondary, #aaa);
+    margin: 0.5rem 0;
+  }
+
+  .success-message {
+    color: var(--theme-success, #22c55e);
+    font-weight: 500;
+    margin: 0.5rem 0;
   }
 
   .feedback {
@@ -199,16 +218,10 @@
     font-weight: 500;
   }
 
-  .feedback.correct {
-    background: rgba(34, 197, 94, 0.2);
-    color: #22c55e;
-    border: 1px solid #22c55e;
-  }
-
-  .feedback.incorrect {
-    background: rgba(239, 68, 68, 0.2);
-    color: #ef4444;
-    border: 1px solid #ef4444;
+  .feedback.hint {
+    background: rgba(59, 130, 246, 0.2);
+    color: #3b82f6;
+    border: 1px solid #3b82f6;
   }
 
   .completion-panel {
@@ -254,6 +267,11 @@
     font-size: 0.875rem;
   }
 
+  .btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
   .btn.primary {
     background: var(--theme-success, #22c55e);
     color: #000;
@@ -263,6 +281,12 @@
     background: transparent;
     border: 1px solid var(--theme-border, #444);
     color: var(--theme-text-primary, #eee);
+  }
+
+  .btn.hint-btn {
+    background: rgba(59, 130, 246, 0.2);
+    border: 1px solid #3b82f6;
+    color: #3b82f6;
   }
 
   .loading {

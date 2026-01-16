@@ -8,40 +8,39 @@ export type LessonCategory =
   | 'deployment'
   | 'tactics';
 
-export interface LessonStep {
-  /** FEN position for this step */
-  fen: string;
-  /** Instruction text shown to user */
-  instruction: string;
-  /** Expected move(s) - user must make one of these to progress */
-  expectedMoves: { from: Square; to: Square }[];
-  /** Hint text if user makes wrong move */
-  hint?: string;
-  /** Success message when correct move is made */
-  successMessage?: string;
-  /** If true, any legal move is accepted (for exploration) */
-  freePlay?: boolean;
-  /** Highlight these squares */
-  highlights?: Square[];
-  /** Arrows to draw on board */
-  arrows?: { from: Square; to: Square; color?: string }[];
-}
-
+/**
+ * Goal-based lesson: user makes any legal moves until reaching goalFen
+ */
 export interface Lesson {
   id: string;
   category: LessonCategory;
   title: string;
   description: string;
   difficulty: 1 | 2 | 3;
-  steps: LessonStep[];
+
+  /** Starting position FEN */
+  startFen: string;
+  /** Target position FEN - lesson complete when board matches this */
+  goalFen: string;
+  /** Instruction text shown to user */
+  instruction: string;
+  /** Hint text (shown on button press) */
+  hint?: string;
+  /** Success message when goal is reached */
+  successMessage?: string;
+
+  /** Optional: highlight these squares */
+  highlightSquares?: Square[];
+  /** Optional: arrows to draw on board */
+  arrows?: { from: Square; to: Square; color?: string }[];
 }
 
 export interface LessonProgress {
   lessonId: string;
-  completedSteps: number;
   completed: boolean;
+  /** Number of moves used to complete */
+  moveCount: number;
   stars: 0 | 1 | 2 | 3;
-  mistakes: number;
 }
 
 export interface CategoryInfo {

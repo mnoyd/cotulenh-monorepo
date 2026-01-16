@@ -2,18 +2,17 @@ import { logger } from '@cotulenh/common';
 import type { Api, Config, OrigMove, DestMove } from '@cotulenh/board';
 import { CoTuLenh } from '@cotulenh/core';
 import type { Square, MoveResult } from '@cotulenh/core';
-import type { Lesson, LessonStep, LessonProgress } from './types';
+import type { Lesson, LessonProgress } from './types';
 import { getLessonById } from './lessons';
 import { getStoredValue, setStoredValue } from '$lib/stores/persisted.svelte';
 import { coreToBoardColor, mapPossibleMovesToDests } from '$lib/features/game/utils';
 
-export type LearnStatus = 'loading' | 'ready' | 'correct' | 'incorrect' | 'completed';
+export type LearnStatus = 'loading' | 'ready' | 'completed';
 
 export class LearnSession {
   #lesson: Lesson | null = $state(null);
-  #currentStepIndex = $state(0);
   #status: LearnStatus = $state('loading');
-  #mistakes = $state(0);
+  #moveCount = $state(0);
   #version = $state(0);
 
   #game: CoTuLenh | null = $state(null);
@@ -38,32 +37,13 @@ export class LearnSession {
     return this.#lesson;
   }
 
-  get currentStep(): LessonStep | null {
-    void this.#version;
-    if (!this.#lesson) return null;
-    return this.#lesson.steps[this.#currentStepIndex] ?? null;
-  }
-
-  get currentStepIndex(): number {
-    return this.#currentStepIndex;
-  }
-
-  get totalSteps(): number {
-    return this.#lesson?.steps.length ?? 0;
-  }
-
-  get progress(): number {
-    if (!this.#lesson) return 0;
-    return Math.round((this.#currentStepIndex / this.#lesson.steps.length) * 100);
-  }
-
   get status(): LearnStatus {
     void this.#version;
     return this.#status;
   }
 
-  get mistakes(): number {
-    return this.#mistakes;
+  get moveCount(): number {
+    return this.#moveCount;
   }
 
   get feedbackMessage(): string {
@@ -76,14 +56,24 @@ export class LearnSession {
 
   get fen(): string {
     void this.#version;
-    return this.currentStep?.fen ?? '';
+    return this.#game?.fen() ?? this.#lesson?.startFen ?? '';
   }
 
   get stars(): 0 | 1 | 2 | 3 {
-    if (this.#mistakes === 0) return 3;
-    if (this.#mistakes <= 2) return 2;
-    if (this.#mistakes <= 5) return 1;
+    // Star rating based on move count efficiency
+    // For now: 3 stars if solved in minimal moves, fewer stars for more moves
+    if (this.#moveCount <= 1) return 3;
+    if (this.#moveCount <= 3) return 2;
+    if (this.#moveCount <= 5) return 1;
     return 0;
+  }
+
+  get instruction(): string {
+    return this.#lesson?.instruction ?? '';
+  }
+
+  get hint(): string {
+    return this.#lesson?.hint ?? '';
   }
 
   // ============================================================
@@ -91,8 +81,7 @@ export class LearnSession {
   // ============================================================
 
   get boardConfig(): Config {
-    const step = this.currentStep;
-    if (!step || !this.#game) {
+    if (!this.#lesson || !this.#game) {
       return {
         fen: '',
         viewOnly: true
@@ -102,8 +91,8 @@ export class LearnSession {
     const moves = this.#game.moves({ verbose: true, legal: false }) as MoveResult[];
 
     return {
-      fen: step.fen,
-      viewOnly: this.#status === 'completed' || this.#status === 'correct',
+      fen: this.#game.fen(),
+      viewOnly: this.#status === 'completed',
       turnColor: coreToBoardColor(this.#game.turn()),
       movable: {
         free: false,
@@ -128,92 +117,83 @@ export class LearnSession {
     }
 
     this.#lesson = lesson;
-    this.#currentStepIndex = 0;
-    this.#mistakes = 0;
+    this.#moveCount = 0;
     this.#status = 'ready';
-    this.#loadStep(0);
-    this.#version++;
+    this.#showFeedback = false;
+
+    try {
+      this.#game = new CoTuLenh(lesson.startFen);
+      this.#version++;
+    } catch (error) {
+      logger.error('Failed to load lesson FEN:', { error, fen: lesson.startFen });
+      return false;
+    }
+
     return true;
   }
 
-  #loadStep(index: number): void {
-    const step = this.#lesson?.steps[index];
-    if (!step) return;
-
-    try {
-      this.#game = new CoTuLenh(step.fen);
-      this.#status = 'ready';
-      this.#showFeedback = false;
-      this.#version++;
-    } catch (error) {
-      logger.error('Failed to load step FEN:', { error, fen: step.fen });
-    }
-  }
-
   #handleMove(orig: OrigMove, dest: DestMove): void {
-    const step = this.currentStep;
-    if (!step || !this.#game) return;
+    if (!this.#lesson || !this.#game) return;
 
     const from = orig as unknown as Square;
     const to = dest as unknown as Square;
 
-    // Check if move matches expected
-    const isCorrect =
-      step.freePlay || step.expectedMoves.some((m) => m.from === from && m.to === to);
-
-    if (isCorrect) {
-      // Make the move in the game
-      try {
-        this.#game.move({ from, to }, { legal: false });
-      } catch {
-        // Move might fail if position changed
-      }
-
-      this.#status = 'correct';
-      this.#feedbackMessage = step.successMessage ?? 'Correct!';
-      this.#showFeedback = true;
-      this.#version++;
-
-      // Auto-advance after delay
-      setTimeout(() => this.nextStep(), 1000);
-    } else {
-      this.#mistakes++;
-      this.#status = 'incorrect';
-      this.#feedbackMessage = step.hint ?? 'Try again!';
-      this.#showFeedback = true;
-      this.#version++;
-
-      // Sync board back to correct position
-      setTimeout(() => {
-        this.#showFeedback = false;
-        this.#status = 'ready';
-        this.syncBoard();
-        this.#version++;
-      }, 1500);
+    // Make the move
+    try {
+      this.#game.move({ from, to }, { legal: false });
+      this.#moveCount++;
+    } catch (error) {
+      logger.error('Move failed:', { error, from, to });
+      return;
     }
+
+    // Check if goal reached by comparing position parts of FEN
+    const currentPosition = this.#extractPositionFen(this.#game.fen());
+    const goalPosition = this.#extractPositionFen(this.#lesson.goalFen);
+
+    if (currentPosition === goalPosition) {
+      this.#status = 'completed';
+      this.#feedbackMessage = this.#lesson.successMessage ?? 'Well done!';
+      this.#showFeedback = true;
+      this.#saveProgress();
+    }
+
+    this.#version++;
   }
 
-  nextStep(): void {
-    if (!this.#lesson) return;
-
-    const nextIndex = this.#currentStepIndex + 1;
-
-    if (nextIndex >= this.#lesson.steps.length) {
-      // Lesson complete!
-      this.#status = 'completed';
-      this.#saveProgress();
-      this.#version++;
-    } else {
-      this.#currentStepIndex = nextIndex;
-      this.#loadStep(nextIndex);
-    }
+  /**
+   * Extract only the position part of FEN (before first space)
+   * This allows comparison regardless of turn, castling rights, etc.
+   */
+  #extractPositionFen(fen: string): string {
+    return fen.split(' ')[0];
   }
 
   restart(): void {
-    this.#currentStepIndex = 0;
-    this.#mistakes = 0;
+    if (!this.#lesson) return;
+
+    this.#moveCount = 0;
     this.#status = 'ready';
-    this.#loadStep(0);
+    this.#showFeedback = false;
+
+    try {
+      this.#game = new CoTuLenh(this.#lesson.startFen);
+      this.#version++;
+    } catch (error) {
+      logger.error('Failed to restart lesson:', { error });
+    }
+  }
+
+  showHint(): void {
+    if (this.#lesson?.hint) {
+      this.#feedbackMessage = this.#lesson.hint;
+      this.#showFeedback = true;
+      this.#version++;
+    }
+  }
+
+  hideHint(): void {
+    this.#showFeedback = false;
     this.#version++;
   }
 
@@ -227,15 +207,17 @@ export class LearnSession {
     const key = 'learn-progress';
     const allProgress = getStoredValue<Record<string, LessonProgress>>(key, {});
 
-    allProgress[this.#lesson.id] = {
-      lessonId: this.#lesson.id,
-      completedSteps: this.#lesson.steps.length,
-      completed: true,
-      stars: this.stars,
-      mistakes: this.#mistakes
-    };
-
-    setStoredValue(key, allProgress);
+    // Only save if new completion or better star rating
+    const existing = allProgress[this.#lesson.id];
+    if (!existing || this.stars > existing.stars) {
+      allProgress[this.#lesson.id] = {
+        lessonId: this.#lesson.id,
+        completed: true,
+        moveCount: this.#moveCount,
+        stars: this.stars
+      };
+      setStoredValue(key, allProgress);
+    }
   }
 
   static getProgress(lessonId: string): LessonProgress | null {
@@ -257,14 +239,14 @@ export class LearnSession {
   }
 
   syncBoard(): void {
-    if (!this.#boardApi || !this.currentStep) return;
+    if (!this.#boardApi || !this.#lesson) return;
 
     this.#boardApi.set(this.boardConfig);
   }
 
   setupBoardEffect(): void {
     void this.#version;
-    void this.currentStep;
+    void this.#lesson;
 
     if (this.#boardApi) {
       this.syncBoard();
