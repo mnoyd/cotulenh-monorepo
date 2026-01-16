@@ -1,5 +1,8 @@
 <script lang="ts">
   import { Info, Users, Share2, Puzzle, Bot, Gamepad2, BookOpen } from 'lucide-svelte';
+  import { getI18n } from '$lib/i18n';
+
+  const i18n = getI18n();
 </script>
 
 <main class="intro-page">
@@ -7,20 +10,19 @@
     <header class="intro-header">
       <div class="demo-badge">
         <Info size={16} />
-        <span>Demo Application</span>
+        <span>{i18n.t('home.demoBadge')}</span>
       </div>
       <h1>
-        <span class="title-green">Cờ Tư Lệnh</span>
-        <span class="title-cyan">Online</span>
+        <span class="title-green">{i18n.t('home.title')}</span>
+        <span class="title-cyan">{i18n.t('home.titleOnline')}</span>
       </h1>
       <p class="tagline">
-        A demonstration app showcasing the implementation of <strong>Cờ Tư Lệnh</strong> (Vietnamese
-        Commander Chess)
+        {i18n.t('home.tagline')}
       </p>
     </header>
 
     <section class="features-section">
-      <h2>What you can do</h2>
+      <h2>{i18n.t('home.whatYouCanDo')}</h2>
 
       <div class="features-grid">
         <div class="feature-card">
@@ -36,30 +38,30 @@
           <div class="feature-icon">
             <Gamepad2 size={32} />
           </div>
-          <h3>Review Your Games</h3>
-          <p>Replay and analyze your games move by move. Understand your strategies and learn from your mistakes.</p>
+          <h3>{i18n.t('home.reviewGames.title')}</h3>
+          <p>{i18n.t('home.reviewGames.desc')}</p>
         </div>
 
         <div class="feature-card">
           <div class="feature-icon">
             <Share2 size={32} />
           </div>
-          <h3>Share with Friends</h3>
-          <p>Export game positions and share them with friends. Discuss strategies and memorable moments.</p>
+          <h3>{i18n.t('home.shareWithFriends.title')}</h3>
+          <p>{i18n.t('home.shareWithFriends.desc')}</p>
         </div>
 
         <div class="feature-card">
           <div class="feature-icon">
             <Puzzle size={32} />
           </div>
-          <h3>Create Puzzles</h3>
-          <p>Use the board editor to create challenging puzzles for others to solve.</p>
+          <h3>{i18n.t('home.createPuzzles.title')}</h3>
+          <p>{i18n.t('home.createPuzzles.desc')}</p>
         </div>
       </div>
     </section>
 
     <section class="coming-soon-section">
-      <h2>Coming Soon</h2>
+      <h2>{i18n.t('home.comingSoon')}</h2>
 
       <div class="coming-soon-grid">
         <div class="coming-soon-card">
@@ -67,8 +69,8 @@
             <Users size={28} />
           </div>
           <div class="coming-content">
-            <h3>Multiplayer Mode</h3>
-            <p>Play online with friends or match with opponents worldwide.</p>
+            <h3>{i18n.t('home.multiplayer.title')}</h3>
+            <p>{i18n.t('home.multiplayer.desc')}</p>
           </div>
         </div>
 
@@ -77,16 +79,16 @@
             <Bot size={28} />
           </div>
           <div class="coming-content">
-            <h3>AI Bot</h3>
-            <p>Challenge yourself against an AI opponent with varying difficulty levels.</p>
+            <h3>{i18n.t('home.aiBot.title')}</h3>
+            <p>{i18n.t('home.aiBot.desc')}</p>
           </div>
         </div>
       </div>
     </section>
 
     <div class="cta-section">
-      <a href="/play" class="cta-button">Start Playing</a>
-      <a href="/board-editor" class="cta-button secondary">Open Editor</a>
+      <a href="/play" class="cta-button">{i18n.t('home.startPlaying')}</a>
+      <a href="/board-editor" class="cta-button secondary">{i18n.t('home.openEditor')}</a>
     </div>
   </div>
 </main>

@@ -9,12 +9,15 @@
   import ShortcutsDialog from '$lib/components/ShortcutsDialog.svelte';
   import { Menu, Home, PenSquare, Settings, Keyboard, BookOpen, Puzzle } from 'lucide-svelte';
   import { themeStore } from '$lib/stores/theme.svelte';
+  import { getI18n } from '$lib/i18n';
 
   interface Props {
     children: import('svelte').Snippet;
   }
 
   let { children }: Props = $props();
+
+  const i18n = getI18n();
 
   let settingsOpen = $state(false);
   let shortcutsOpen = $state(false);
@@ -84,36 +87,36 @@
     </div>
 
     <nav class="sidebar-nav">
-      <a href="/" class="sidebar-link" class:active={$page.url.pathname === '/'} title="Introduction">
+      <a href="/" class="sidebar-link" class:active={$page.url.pathname === '/'} title={i18n.t('nav.introduction')}>
         <BookOpen class="sidebar-icon" />
-        <span class="sidebar-label">Intro</span>
+        <span class="sidebar-label">{i18n.t('nav.intro')}</span>
       </a>
       <a
         href="/play"
         class="sidebar-link"
         class:active={$page.url.pathname === '/play'}
-        title="Play"
+        title={i18n.t('nav.play')}
       >
         <Home class="sidebar-icon" />
-        <span class="sidebar-label">Play</span>
+        <span class="sidebar-label">{i18n.t('nav.play')}</span>
       </a>
       <a
         href="/puzzles"
         class="sidebar-link"
         class:active={$page.url.pathname === '/puzzles'}
-        title="Puzzles"
+        title={i18n.t('nav.puzzles')}
       >
         <Puzzle class="sidebar-icon" />
-        <span class="sidebar-label">Puzzles</span>
+        <span class="sidebar-label">{i18n.t('nav.puzzles')}</span>
       </a>
       <a
         href="/board-editor"
         class="sidebar-link"
         class:active={$page.url.pathname === '/board-editor'}
-        title="Editor"
+        title={i18n.t('nav.editor')}
       >
         <PenSquare class="sidebar-icon" />
-        <span class="sidebar-label">Editor</span>
+        <span class="sidebar-label">{i18n.t('nav.editor')}</span>
       </a>
     </nav>
 
@@ -121,14 +124,14 @@
       <button
         class="sidebar-link"
         onclick={() => (shortcutsOpen = true)}
-        title="Keyboard Shortcuts"
+        title={i18n.t('nav.keyboardShortcuts')}
       >
         <Keyboard class="sidebar-icon" />
-        <span class="sidebar-label">Shortcuts</span>
+        <span class="sidebar-label">{i18n.t('nav.shortcuts')}</span>
       </button>
-      <button class="sidebar-link" onclick={() => (settingsOpen = true)} title="Settings">
+      <button class="sidebar-link" onclick={() => (settingsOpen = true)} title={i18n.t('nav.settings')}>
         <Settings class="sidebar-icon" />
-        <span class="sidebar-label">Settings</span>
+        <span class="sidebar-label">{i18n.t('nav.settings')}</span>
       </button>
     </div>
   </aside>
@@ -147,7 +150,7 @@
             {#snippet child({ props })}
               <a href="/" {...props}>
                 <BookOpen size={16} />
-                Introduction
+                {i18n.t('nav.introduction')}
               </a>
             {/snippet}
           </DropdownMenu.Item>
@@ -155,7 +158,7 @@
             {#snippet child({ props })}
               <a href="/play" {...props}>
                 <Home size={16} />
-                Play
+                {i18n.t('nav.play')}
               </a>
             {/snippet}
           </DropdownMenu.Item>
@@ -163,7 +166,7 @@
             {#snippet child({ props })}
               <a href="/puzzles" {...props}>
                 <Puzzle size={16} />
-                Puzzles
+                {i18n.t('nav.puzzles')}
               </a>
             {/snippet}
           </DropdownMenu.Item>
@@ -171,18 +174,18 @@
             {#snippet child({ props })}
               <a href="/board-editor" {...props}>
                 <PenSquare size={16} />
-                Editor
+                {i18n.t('nav.editor')}
               </a>
             {/snippet}
           </DropdownMenu.Item>
           <DropdownMenu.Separator />
           <DropdownMenu.Item onclick={() => (shortcutsOpen = true)}>
             <Keyboard size={16} />
-            Keyboard Shortcuts
+            {i18n.t('nav.keyboardShortcuts')}
           </DropdownMenu.Item>
           <DropdownMenu.Item onclick={() => (settingsOpen = true)}>
             <Settings size={16} />
-            Settings
+            {i18n.t('nav.settings')}
           </DropdownMenu.Item>
         </DropdownMenu.Content>
       </DropdownMenu.Root>
