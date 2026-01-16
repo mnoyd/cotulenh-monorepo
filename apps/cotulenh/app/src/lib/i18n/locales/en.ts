@@ -15,7 +15,7 @@ export const en: TranslationKeys = {
 
   // Home page
   'home.demoBadge': 'Demo',
-  'home.title': 'Cờ Tư Lệnh',
+  'home.title': 'Cotulenh',
   'home.titleOnline': 'Online',
   'home.tagline': 'The Vietnamese strategy game of military command',
   'home.gameName': 'Cờ Tư Lệnh',
