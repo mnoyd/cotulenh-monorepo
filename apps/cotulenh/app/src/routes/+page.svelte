@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Info, Users, Share2, Puzzle, Bot, Gamepad2, BookOpen } from 'lucide-svelte';
-  import { getI18n } from '$lib/i18n';
+  import { getI18n } from '$lib/i18n/index.svelte';
 
   const i18n = getI18n();
 </script>

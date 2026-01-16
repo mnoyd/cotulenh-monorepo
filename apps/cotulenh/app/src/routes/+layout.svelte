@@ -9,7 +9,7 @@
   import ShortcutsDialog from '$lib/components/ShortcutsDialog.svelte';
   import { Menu, Home, PenSquare, Settings, Keyboard, BookOpen, Puzzle } from 'lucide-svelte';
   import { themeStore } from '$lib/stores/theme.svelte';
-  import { getI18n } from '$lib/i18n';
+  import { getI18n } from '$lib/i18n/index.svelte';
 
   interface Props {
     children: import('svelte').Snippet;

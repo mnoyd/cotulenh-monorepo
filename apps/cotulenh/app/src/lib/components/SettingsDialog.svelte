@@ -13,7 +13,7 @@
     type ThemeId
   } from '$lib/stores/settings';
   import { playSound, setAudioEnabled, setAudioVolume } from '$lib/utils/audio';
-  import { getI18n, LOCALES, type Locale } from '$lib/i18n';
+  import { getI18n, LOCALES, type Locale } from '$lib/i18n/index.svelte';
 
   interface Props {
     open: boolean;
