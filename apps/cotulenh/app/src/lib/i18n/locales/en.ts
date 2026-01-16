@@ -11,10 +11,11 @@ export const en: TranslationKeys = {
   'nav.introduction': 'Introduction',
   'nav.keyboardShortcuts': 'Keyboard Shortcuts',
   'nav.learn': 'Learn',
+  'nav.appName': 'Cotulenh Online',
 
   // Home page
   'home.demoBadge': 'Demo',
-  'home.title': 'Cờ Tư Lệnh',
+  'home.title': 'Cotulenh',
   'home.titleOnline': 'Online',
   'home.tagline': 'The Vietnamese strategy game of military command',
   'home.gameName': 'Cờ Tư Lệnh',

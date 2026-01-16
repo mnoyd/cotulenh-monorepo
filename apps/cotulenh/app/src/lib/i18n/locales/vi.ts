@@ -11,6 +11,7 @@ export const vi: TranslationKeys = {
   'nav.introduction': 'Giới thiệu',
   'nav.keyboardShortcuts': 'Phím tắt bàn phím',
   'nav.learn': 'Học chơi',
+  'nav.appName': 'Cờ Tư Lệnh Online',
 
   // Home page
   'home.demoBadge': 'Demo',

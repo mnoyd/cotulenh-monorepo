@@ -11,6 +11,7 @@ export interface TranslationKeys {
   'nav.introduction': string;
   'nav.keyboardShortcuts': string;
   'nav.learn': string;
+  'nav.appName': string;
 
   // Home page
   'home.demoBadge': string;

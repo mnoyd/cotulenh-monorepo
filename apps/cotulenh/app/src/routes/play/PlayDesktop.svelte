@@ -12,8 +12,11 @@
   import { GameSession } from '$lib/game-session.svelte';
   import { createChessClock, TIME_PRESETS, type ClockColor } from '$lib/clock/clock.svelte';
   import { logger } from '@cotulenh/common';
+  import { getI18n } from '$lib/i18n/index.svelte';
 
   import '$lib/styles/board.css';
+
+  const i18n = getI18n();
 
   let boardComponent: BoardContainer | null = $state(null);
   let session = $state<GameSession | null>(null);
@@ -44,7 +47,7 @@
 
     try {
       session = new GameSession(initialFen);
-      
+
       session.onMove = () => {
         if (clock.status === 'idle') {
           clock.start('r');
@@ -104,8 +107,8 @@
         <div class="controls-section">
           <header class="controls-header">
             <h1>
-              <span class="title-green">Cotulenh</span>
-              <span class="title-cyan">Online</span>
+              <span class="title-green">{i18n.t('home.title')}</span>
+              <span class="title-cyan">{i18n.t('home.titleOnline')}</span>
             </h1>
           </header>
 
