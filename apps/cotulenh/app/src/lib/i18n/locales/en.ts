@@ -50,10 +50,8 @@ export const en: TranslationKeys = {
   'settings.confirmBeforeReset': 'Confirm before reset',
   'settings.showDeployButtons': 'Show deploy buttons',
   'settings.autoCompleteDeploy': 'Auto-complete deployment',
-  'settings.cancel': 'Cancel',
   'settings.save': 'Save',
   'settings.saved': 'Saved!',
-  'settings.loading': 'Loading...',
 
   // Game
   'game.missionStatus': 'Mission Status',
@@ -62,8 +60,6 @@ export const en: TranslationKeys = {
   'game.stalemate': 'Stalemate',
   'game.commanderUnderThreat': 'Commander Under Threat',
   'game.warning': 'Warning',
-  'game.blue': 'Blue',
-  'game.red': 'Red',
   'game.gameInfo': 'Game Info',
   'game.resetConfirm': 'Are you sure you want to reset the game?',
   'game.simpleResetConfirm': 'Reset the game?',
@@ -135,8 +131,6 @@ export const en: TranslationKeys = {
   'editor.deleteMode': 'Delete Mode - Click pieces to delete',
   'editor.toggleHeroic': 'Toggle Heroic Mode',
   'editor.toggleTurn': 'Toggle current turn',
-  'editor.redTeam': 'Red',
-  'editor.blueTeam': 'Blue',
 
   // Error page
   'error.pageNotFound': 'Page Not Found',
@@ -144,7 +138,6 @@ export const en: TranslationKeys = {
   'error.goHome': 'Go Home',
   'error.goBack': 'Go Back',
   'error.somethingWentWrong': 'Something went wrong',
-  'error.tryAgain': 'Try again',
   'error.reloadPage': 'Reload page',
 
   // Report issue

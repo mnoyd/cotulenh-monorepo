@@ -49,10 +49,8 @@ export interface TranslationKeys {
   'settings.confirmBeforeReset': string;
   'settings.showDeployButtons': string;
   'settings.autoCompleteDeploy': string;
-  'settings.cancel': string;
   'settings.save': string;
   'settings.saved': string;
-  'settings.loading': string;
 
   // Game
   'game.missionStatus': string;
@@ -61,8 +59,6 @@ export interface TranslationKeys {
   'game.stalemate': string;
   'game.commanderUnderThreat': string;
   'game.warning': string;
-  'game.blue': string;
-  'game.red': string;
   'game.gameInfo': string;
   'game.resetConfirm': string;
   'game.simpleResetConfirm': string;
@@ -134,8 +130,6 @@ export interface TranslationKeys {
   'editor.deleteMode': string;
   'editor.toggleHeroic': string;
   'editor.toggleTurn': string;
-  'editor.redTeam': string;
-  'editor.blueTeam': string;
 
   // Common
   'common.loading': string;
@@ -201,7 +195,6 @@ export interface TranslationKeys {
   'error.goHome': string;
   'error.goBack': string;
   'error.somethingWentWrong': string;
-  'error.tryAgain': string;
   'error.reloadPage': string;
 
   // Report issue

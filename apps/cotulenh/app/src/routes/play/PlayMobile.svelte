@@ -125,7 +125,7 @@
     <!-- Top Bar: Clock for opponent -->
     <header class="top-bar">
       <div class="clock-mini blue">
-        <span class="clock-label">{i18n.t('game.blue')}</span>
+        <span class="clock-label">{i18n.t('common.blue')}</span>
         <span class="clock-time">{formatClockTime(clock.blueTime)}</span>
       </div>
       <div class="game-status">
@@ -163,7 +163,7 @@
     <!-- Bottom Bar: Clock for player + Quick Actions -->
     <div class="bottom-bar">
       <div class="clock-mini red">
-        <span class="clock-label">{i18n.t('game.red')}</span>
+        <span class="clock-label">{i18n.t('common.red')}</span>
         <span class="clock-time">{formatClockTime(clock.redTime)}</span>
       </div>
 

@@ -122,7 +122,7 @@
               <span class="theme-name">{theme.name}</span>
               <span class="theme-desc">{theme.description}</span>
               {#if themeStore.isLoading && selectedTheme === theme.id}
-                <span class="loading-indicator">{i18n.t('settings.loading')}</span>
+                <span class="loading-indicator">{i18n.t('common.loading')}</span>
               {/if}
             </button>
           {/each}
@@ -189,7 +189,7 @@
     </div>
 
     <Dialog.Footer>
-      <Button variant="outline" onclick={() => (open = false)}>{i18n.t('settings.cancel')}</Button>
+      <Button variant="outline" onclick={() => (open = false)}>{i18n.t('common.cancel')}</Button>
       <Button onclick={handleSave}>{i18n.t('settings.save')}</Button>
     </Dialog.Footer>
   </Dialog.Content>

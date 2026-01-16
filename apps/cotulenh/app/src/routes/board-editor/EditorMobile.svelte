@@ -211,7 +211,7 @@
             aria-selected={activeTeam === 'red'}
             aria-label={tRedTeamPieces}
           >
-            🔴 {i18n.t('editor.redTeam')}
+            🔴 {i18n.t('common.red')}
           </button>
           <button
             class="team-tab blue"
@@ -221,7 +221,7 @@
             aria-selected={activeTeam === 'blue'}
             aria-label={tBlueTeamPieces}
           >
-            🔵 {i18n.t('editor.blueTeam')}
+            🔵 {i18n.t('common.blue')}
           </button>
         </div>
 

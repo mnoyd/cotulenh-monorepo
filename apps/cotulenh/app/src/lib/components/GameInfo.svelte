@@ -25,8 +25,8 @@
   // Reactive translations that update when locale changes
   let tMissionStatus = $derived.by(() => i18n.t('game.missionStatus'));
   let tCurrentTurn = $derived.by(() => i18n.t('game.currentTurn'));
-  let tRed = $derived.by(() => i18n.t('game.red'));
-  let tBlue = $derived.by(() => i18n.t('game.blue'));
+  let tRed = $derived.by(() => i18n.t('common.red'));
+  let tBlue = $derived.by(() => i18n.t('common.blue'));
   let tVictory = $derived.by(() => i18n.t('game.victory'));
   let tWinner = $derived.by(() => i18n.t('game.winner'));
   let tMateDetected = $derived.by(() => i18n.t('game.mateDetected'));

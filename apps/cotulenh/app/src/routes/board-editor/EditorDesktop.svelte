@@ -98,7 +98,7 @@
             title={i18n.t('editor.toggleTurn')}
           >
             <span class="turn-indicator {editor.currentTurn}"></span>
-            {i18n.t('editor.turn')}: {editor.currentTurn === 'red' ? i18n.t('editor.redTeam') : i18n.t('editor.blueTeam')}
+            {i18n.t('editor.turn')}: {editor.currentTurn === 'red' ? i18n.t('common.red') : i18n.t('common.blue')}
           </button>
         </div>
 

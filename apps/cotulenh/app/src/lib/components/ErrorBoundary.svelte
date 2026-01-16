@@ -33,7 +33,7 @@
       <div class="error-content">
         <h2>{i18n.t('error.somethingWentWrong')}</h2>
         <p>{error.message}</p>
-        <button onclick={() => (error = null)}>{i18n.t('error.tryAgain')}</button>
+        <button onclick={() => (error = null)}>{i18n.t('common.tryAgain')}</button>
         <button onclick={() => window.location.reload()}>{i18n.t('error.reloadPage')}</button>
       </div>
     </div>

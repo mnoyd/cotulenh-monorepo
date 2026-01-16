@@ -50,10 +50,8 @@ export const vi: TranslationKeys = {
   'settings.confirmBeforeReset': 'Xác nhận trước khi đặt lại',
   'settings.showDeployButtons': 'Hiển thị nút bày quân',
   'settings.autoCompleteDeploy': 'Tự động hoàn thành bày quân',
-  'settings.cancel': 'Hủy',
   'settings.save': 'Lưu',
   'settings.saved': 'Đã lưu!',
-  'settings.loading': 'Đang tải...',
 
   // Game
   'game.missionStatus': 'Trạng thái nhiệm vụ',
@@ -62,8 +60,6 @@ export const vi: TranslationKeys = {
   'game.stalemate': 'Hòa cờ',
   'game.commanderUnderThreat': 'Tư Lệnh bị đe dọa',
   'game.warning': 'Cảnh báo',
-  'game.blue': 'Xanh',
-  'game.red': 'Đỏ',
   'game.gameInfo': 'Thông tin ván đấu',
   'game.resetConfirm': 'Bạn có chắc chắn muốn đặt lại ván cờ không?',
   'game.simpleResetConfirm': 'Đặt lại ván cờ?',
@@ -135,8 +131,6 @@ export const vi: TranslationKeys = {
   'editor.deleteMode': 'Chế độ Xóa - Nhấp để xóa quân',
   'editor.toggleHeroic': 'Bật/tắt chế độ Anh hùng',
   'editor.toggleTurn': 'Đổi lượt hiện tại',
-  'editor.redTeam': 'Đỏ',
-  'editor.blueTeam': 'Xanh',
 
   // Error page
   'error.pageNotFound': 'Không tìm thấy trang',
@@ -144,7 +138,6 @@ export const vi: TranslationKeys = {
   'error.goHome': 'Về trang chủ',
   'error.goBack': 'Quay lại',
   'error.somethingWentWrong': 'Đã xảy ra lỗi',
-  'error.tryAgain': 'Thử lại',
   'error.reloadPage': 'Tải lại trang',
 
   // Report issue
