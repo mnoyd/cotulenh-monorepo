@@ -1,21 +1,24 @@
 <script lang="ts">
+  import { getI18n } from '$lib/i18n/index.svelte';
   import { Home, ArrowLeft } from 'lucide-svelte';
+
+  const i18n = getI18n();
 </script>
 
 <main class="error-page">
   <div class="error-container">
     <div class="error-code">404</div>
-    <h1>Page Not Found</h1>
-    <p>The page you're looking for doesn't exist or has been moved.</p>
+    <h1>{i18n.t('error.pageNotFound')}</h1>
+    <p>{i18n.t('error.pageNotFoundDesc')}</p>
 
     <div class="error-actions">
       <a href="/" class="action-button primary">
         <Home size={18} />
-        <span>Go Home</span>
+        <span>{i18n.t('error.goHome')}</span>
       </a>
       <button class="action-button secondary" onclick={() => history.back()}>
         <ArrowLeft size={18} />
-        <span>Go Back</span>
+        <span>{i18n.t('error.goBack')}</span>
       </button>
     </div>
   </div>

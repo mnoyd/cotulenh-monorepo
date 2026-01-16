@@ -1,6 +1,9 @@
 <script lang="ts">
+  import { getI18n } from '$lib/i18n/index.svelte';
   import { logger } from '@cotulenh/common';
   import type { Snippet } from 'svelte';
+
+  const i18n = getI18n();
 
   interface Props {
     fallback?: Snippet<[Error]>;
@@ -28,10 +31,10 @@
   {:else}
     <div class="error-boundary">
       <div class="error-content">
-        <h2>Something went wrong</h2>
+        <h2>{i18n.t('error.somethingWentWrong')}</h2>
         <p>{error.message}</p>
-        <button onclick={() => (error = null)}>Try again</button>
-        <button onclick={() => window.location.reload()}>Reload page</button>
+        <button onclick={() => (error = null)}>{i18n.t('common.tryAgain')}</button>
+        <button onclick={() => window.location.reload()}>{i18n.t('error.reloadPage')}</button>
       </div>
     </div>
   {/if}

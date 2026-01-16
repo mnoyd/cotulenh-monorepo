@@ -1,6 +1,9 @@
 <script lang="ts">
+  import { getI18n } from '$lib/i18n/index.svelte';
   import * as Dialog from '$lib/components/ui/dialog';
   import { Button } from '$lib/components/ui/button';
+
+  const i18n = getI18n();
 
   interface Props {
     open: boolean;
@@ -9,20 +12,20 @@
   let { open = $bindable() }: Props = $props();
 
   const shortcuts = [
-    { key: 'Z', action: 'Undo last move' },
-    { key: 'Y', action: 'Redo move' },
-    { key: 'R', action: 'Reset game' },
-    { key: 'Esc', action: 'Cancel deployment' },
-    { key: '←/→', action: 'Navigate move history' },
-    { key: '?', action: 'Show this help' }
+    { key: 'Z', action: i18n.t('shortcuts.undoMove') },
+    { key: 'Y', action: i18n.t('shortcuts.redoMove') },
+    { key: 'R', action: i18n.t('shortcuts.resetGame') },
+    { key: 'Esc', action: i18n.t('shortcuts.cancelDeploy') },
+    { key: '←/→', action: i18n.t('shortcuts.navigateHistory') },
+    { key: '?', action: i18n.t('shortcuts.showHelp') }
   ];
 </script>
 
 <Dialog.Root bind:open>
   <Dialog.Content class="shortcuts-dialog">
     <Dialog.Header>
-      <Dialog.Title>⌨️ Keyboard Shortcuts</Dialog.Title>
-      <Dialog.Description>Master these shortcuts for faster play</Dialog.Description>
+      <Dialog.Title>⌨️ {i18n.t('shortcuts.title')}</Dialog.Title>
+      <Dialog.Description>{i18n.t('shortcuts.description')}</Dialog.Description>
     </Dialog.Header>
 
     <div class="shortcuts-list">
@@ -35,7 +38,7 @@
     </div>
 
     <Dialog.Footer>
-      <Button onclick={() => (open = false)}>Got it!</Button>
+      <Button onclick={() => (open = false)}>{i18n.t('shortcuts.gotIt')}</Button>
     </Dialog.Footer>
   </Dialog.Content>
 </Dialog.Root>
@@ -71,8 +74,10 @@
   }
 
   .shortcut-action {
-    font-size: 0.875rem;
+    font-size: 0.8rem;
     color: #94a3b8;
     font-family: var(--font-ui);
+    flex: 1;
+    min-width: 0;
   }
 </style>

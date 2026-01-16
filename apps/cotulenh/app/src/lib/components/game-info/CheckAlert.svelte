@@ -1,6 +1,9 @@
 <script lang="ts">
+  import { getI18n } from '$lib/i18n/index.svelte';
   import { ShieldAlert } from 'lucide-svelte';
   import { logRender } from '$lib/debug';
+
+  const i18n = getI18n();
 
   // Log renders
   logRender('🔄 [RENDER] CheckAlert.svelte component rendered');
@@ -18,10 +21,10 @@
       <div class="flex flex-col">
         <span
           class="text-[0.6rem] md:text-xs font-mono text-[color:var(--theme-error)]/80 uppercase tracking-widest"
-          >Warning</span
+          >{i18n.t('game.warning')}</span
         >
         <span class="text-xs md:text-sm font-bold text-[color:var(--theme-error)] uppercase tracking-wide"
-          >Commander Under Threat</span
+          >{i18n.t('game.commanderUnderThreat')}</span
         >
       </div>
     </div>

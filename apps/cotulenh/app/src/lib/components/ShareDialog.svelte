@@ -1,8 +1,11 @@
 <script lang="ts">
+  import { getI18n } from '$lib/i18n/index.svelte';
   import * as Dialog from '$lib/components/ui/dialog';
   import { Button } from '$lib/components/ui/button';
   import { Separator } from '$lib/components/ui/separator';
   import { toast } from 'svelte-sonner';
+
+  const i18n = getI18n();
 
   interface Props {
     open: boolean;
@@ -30,28 +33,28 @@
 <Dialog.Root bind:open>
   <Dialog.Content class="share-dialog">
     <Dialog.Header>
-      <Dialog.Title>Share Game</Dialog.Title>
-      <Dialog.Description>Share this position with others</Dialog.Description>
+      <Dialog.Title>{i18n.t('share.title')}</Dialog.Title>
+      <Dialog.Description>{i18n.t('share.description')}</Dialog.Description>
     </Dialog.Header>
 
     <div class="share-content">
       <div class="share-section">
         <span class="share-label">FEN String</span>
         <code class="fen-display">{fen}</code>
-        <Button variant="secondary" size="sm" onclick={copyFen}>Copy FEN</Button>
+        <Button variant="secondary" size="sm" onclick={copyFen}>{i18n.t('share.copyFen')}</Button>
       </div>
 
       <Separator />
 
       <div class="share-section">
-        <span class="share-label">Share URL</span>
-        <p class="share-desc">Copy a shareable link that will load this position when opened</p>
-        <Button variant="default" onclick={copyShareUrl}>Copy Share Link</Button>
+        <span class="share-label">{i18n.t('share.shareUrl')}</span>
+        <p class="share-desc">{i18n.t('share.shareUrlDesc')}</p>
+        <Button variant="default" onclick={copyShareUrl}>{i18n.t('share.copyLink')}</Button>
       </div>
     </div>
 
     <Dialog.Footer>
-      <Button variant="outline" onclick={() => (open = false)}>Close</Button>
+      <Button variant="outline" onclick={() => (open = false)}>{i18n.t('common.close')}</Button>
     </Dialog.Footer>
   </Dialog.Content>
 </Dialog.Root>

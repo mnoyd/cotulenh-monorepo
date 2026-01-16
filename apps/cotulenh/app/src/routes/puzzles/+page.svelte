@@ -1,5 +1,8 @@
 <script lang="ts">
+  import { getI18n } from '$lib/i18n/index.svelte';
   import { Puzzle, Play, ChevronRight } from 'lucide-svelte';
+
+  const i18n = getI18n();
 
   interface PuzzleData {
     id: number;
@@ -61,8 +64,8 @@
       <div class="header-icon">
         <Puzzle size={32} />
       </div>
-      <h1>Puzzles</h1>
-      <p class="subtitle">Practice your tactical skills with these positions</p>
+      <h1>{i18n.t('puzzles.title')}</h1>
+      <p class="subtitle">{i18n.t('puzzles.subtitle')}</p>
     </header>
 
     <div class="puzzles-grid">
@@ -80,14 +83,14 @@
 
           {#if puzzle.hint}
             <details class="puzzle-hint">
-              <summary>Show hint</summary>
+              <summary>{i18n.t('puzzles.showHint')}</summary>
               <p>{puzzle.hint}</p>
             </details>
           {/if}
 
           <a href={getPlayUrl(puzzle.fen)} class="play-button">
             <Play size={18} />
-            <span>Play</span>
+            <span>{i18n.t('puzzles.play')}</span>
             <ChevronRight size={18} />
           </a>
         </article>
@@ -95,8 +98,8 @@
     </div>
 
     <div class="puzzles-footer">
-      <p>More puzzles coming soon!</p>
-      <a href="/board-editor" class="create-link">Create your own puzzle →</a>
+      <p>{i18n.t('puzzles.comingSoon')}</p>
+      <a href="/board-editor" class="create-link">{i18n.t('puzzles.createOwn')}</a>
     </div>
   </div>
 </main>

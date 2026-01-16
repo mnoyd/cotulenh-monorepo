@@ -6,10 +6,17 @@
   import BoardContainer from '$lib/components/BoardContainer.svelte';
   import PiecePalettesContainer from './PiecePalettesContainer.svelte';
   import { createBoardEditorState } from '$lib/features/board-editor';
+  import { getI18n } from '$lib/i18n/index.svelte';
 
   import '$lib/styles/board.css';
 
+  const i18n = getI18n();
   const editor = createBoardEditorState();
+
+  // Reactive translations for quick tips
+  let tHand = $derived.by(() => i18n.t('a11y.hand'));
+  let tDelete = $derived.by(() => i18n.t('a11y.delete'));
+  let tHeroic = $derived.by(() => i18n.t('a11y.heroic'));
 
   onMount(() => {
     if (!browser) return;
@@ -25,8 +32,8 @@
   <!-- Header -->
   <header class="editor-header">
     <h1>
-      <span class="text-mw-secondary">Board</span>
-      <span class="text-mw-primary font-light">Editor</span>
+      <span class="text-mw-secondary">{i18n.t('editor.board')}</span>
+      <span class="text-mw-primary font-light">{i18n.t('editor.title')}</span>
     </h1>
   </header>
 
@@ -48,7 +55,7 @@
           />
         {:else}
           <div class="board-container">
-            <p class="text-mw-primary">Loading board...</p>
+            <p class="text-mw-primary">{i18n.t('editor.loadingBoard')}</p>
           </div>
         {/if}
       </section>
@@ -73,40 +80,40 @@
             <button
               class="ctrl-btn"
               onclick={editor.loadStartingPosition}
-              title="Reset to starting position"
+              title={i18n.t('editor.reset')}
             >
-              ↺ Reset
+              ↺ {i18n.t('editor.reset')}
             </button>
-            <button class="ctrl-btn" onclick={editor.clearBoard} title="Clear all pieces">
-              🧹 Clear
+            <button class="ctrl-btn" onclick={editor.clearBoard} title={i18n.t('editor.clear')}>
+              🧹 {i18n.t('editor.clear')}
             </button>
-            <button class="ctrl-btn" onclick={editor.flipBoard} title="Flip board orientation">
-              ⇅ Flip
+            <button class="ctrl-btn" onclick={editor.flipBoard} title={i18n.t('editor.flip')}>
+              ⇅ {i18n.t('editor.flip')}
             </button>
           </div>
 
           <button
             class="turn-btn {editor.currentTurn}"
             onclick={editor.toggleTurn}
-            title="Toggle current turn"
+            title={i18n.t('editor.toggleTurn')}
           >
             <span class="turn-indicator {editor.currentTurn}"></span>
-            Turn: {editor.currentTurn === 'red' ? 'Red' : 'Blue'}
+            {i18n.t('editor.turn')}: {editor.currentTurn === 'red' ? i18n.t('common.red') : i18n.t('common.blue')}
           </button>
         </div>
 
         <!-- FEN Section -->
         <div class="fen-section">
-          <label for="fen-input">FEN Position</label>
+          <label for="fen-input">{i18n.t('editor.fenPosition')}</label>
           <input
             id="fen-input"
             type="text"
             bind:value={editor.fenInput}
-            placeholder="Enter FEN string..."
+            placeholder={i18n.t('editor.fenPlaceholder')}
             class="fen-input"
           />
           <div class="fen-buttons">
-            <button class="fen-btn" onclick={editor.applyFEN}>Apply</button>
+            <button class="fen-btn" onclick={editor.applyFEN}>{i18n.t('editor.apply')}</button>
             <button class="fen-btn" onclick={editor.copyFEN}>{editor.copyButtonText}</button>
           </div>
         </div>
@@ -114,7 +121,7 @@
         <!-- Play Button -->
         <button class="play-btn" onclick={editor.validateAndPlay} disabled={!editor.isFenValid}>
           <span class="play-icon">▶</span>
-          Play This Position
+          {i18n.t('editor.playPosition')}
         </button>
 
         {#if editor.validationError}
@@ -125,19 +132,19 @@
 
         <!-- Quick Tips (collapsible) -->
         <details class="tips-section">
-          <summary>Quick Tips</summary>
+          <summary>{i18n.t('editor.quickTips')}</summary>
           <ul>
             <li class="flex items-center gap-1">
-              <strong><Hand size={14} class="inline" /> Hand:</strong> Drag pieces on board
+              <strong><Hand size={14} class="inline" /> {tHand}:</strong> Drag pieces on board
             </li>
             <li class="flex items-center gap-1">
-              <strong>Click piece:</strong> Select, then click to place
+              <strong>{i18n.t('editor.tipClickPiece')}</strong>
             </li>
             <li class="flex items-center gap-1">
-              <strong><Trash2 size={14} class="inline" /> Delete:</strong> Click to remove pieces
+              <strong><Trash2 size={14} class="inline" /> {tDelete}:</strong> Click to remove pieces
             </li>
             <li class="flex items-center gap-1">
-              <strong><Star size={14} class="inline" /> Heroic:</strong> Toggle promotion status
+              <strong><Star size={14} class="inline" /> {tHeroic}:</strong> Toggle promotion status
             </li>
           </ul>
         </details>
@@ -308,18 +315,21 @@
   }
 
   .ctrl-btn {
-    padding: 0.5rem;
+    padding: 0.5rem 0.25rem;
     font-family: var(--font-ui);
-    font-size: 0.7rem;
+    font-size: 0.65rem;
     font-weight: 500;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.25px;
     background: rgba(0, 243, 255, 0.05);
     border: 1px solid var(--color-mw-border);
     color: var(--color-mw-primary);
     border-radius: 4px;
     cursor: pointer;
     transition: all 0.2s;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .ctrl-btn:hover {
@@ -334,12 +344,13 @@
     gap: 0.5rem;
     padding: 0.5rem;
     font-family: var(--font-ui);
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     font-weight: 500;
     text-transform: uppercase;
     border-radius: 4px;
     cursor: pointer;
     transition: all 0.2s;
+    white-space: nowrap;
   }
 
   .turn-btn.red {

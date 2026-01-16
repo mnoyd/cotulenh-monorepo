@@ -5,6 +5,9 @@
   import { setStoredValue } from '$lib/stores/persisted.svelte';
   import { Button } from '$lib/components/ui/button';
   import ShareDialog from './ShareDialog.svelte';
+  import { getI18n } from '$lib/i18n/index.svelte';
+
+  const i18n = getI18n();
 
   interface Props {
     session: GameSession;
@@ -21,7 +24,7 @@
   });
 
   function resetGame() {
-    if (confirm('Are you sure you want to reset the game?')) {
+    if (confirm(i18n.t('game.resetConfirm'))) {
       session.reset();
       onReset?.();
     }
@@ -47,51 +50,51 @@
   }
 </script>
 
-<div class="grid grid-cols-2 lg:grid-cols-5 gap-2 mt-2">
+<div class="grid grid-cols-2 gap-2 mt-2">
   <Button
     variant="default"
     size="sm"
     onclick={resetGame}
-    title="Reset Game"
-    class="btn-game-primary"
+    title={i18n.t('common.reset')}
+    class="btn-game-primary text-xs whitespace-nowrap"
   >
-    RESET
+    {i18n.t('common.reset')}
   </Button>
   <Button
     variant="destructive"
     size="sm"
     onclick={undoLastMove}
-    title="Undo Last Move"
-    class="btn-game-alert"
+    title={i18n.t('common.undo')}
+    class="btn-game-alert text-xs whitespace-nowrap"
   >
-    UNDO
+    {i18n.t('common.undo')}
   </Button>
   <Button
     variant="outline"
     size="sm"
     onclick={flipBoard}
-    title="Flip Board"
-    class="btn-game-secondary"
+    title={i18n.t('common.flip')}
+    class="btn-game-secondary text-xs whitespace-nowrap"
   >
-    FLIP
+    {i18n.t('common.flip')}
   </Button>
   <Button
     variant="outline"
     size="sm"
     onclick={openShare}
-    title="Share Game"
-    class="btn-game-subtle"
+    title={i18n.t('common.share')}
+    class="btn-game-subtle text-xs whitespace-nowrap"
   >
-    SHARE
+    {i18n.t('common.share')}
   </Button>
   <Button
     variant="ghost"
     size="sm"
     onclick={reportIssue}
-    title="Report Issue"
-    class="btn-game-ghost"
+    title={i18n.t('common.report')}
+    class="btn-game-ghost text-xs whitespace-nowrap"
   >
-    REPORT
+    {i18n.t('common.report')}
   </Button>
 </div>
 

@@ -1,5 +1,8 @@
 <script lang="ts">
   import { Hand, Star, Trash2 } from 'lucide-svelte';
+  import { getI18n } from '$lib/i18n/index.svelte';
+
+  const i18n = getI18n();
 
   type EditorMode = 'hand' | 'drop' | 'delete';
 
@@ -23,7 +26,7 @@
   <div
     class="palette-piece-wrapper control-button heroic-button"
     class:heroic-active={heroicMode}
-    title="Toggle Heroic Mode"
+    title={i18n.t('editor.toggleHeroic')}
   >
     <div
       class="palette-piece-container control-icon"
@@ -42,14 +45,14 @@
     >
       <span class="control-emoji"><Star size={20} /></span>
     </div>
-    <span class="piece-label max-lg:hidden">Heroic</span>
+    <span class="piece-label max-lg:hidden">{i18n.t('editor.heroic')}</span>
   </div>
 
   <!-- Hand button -->
   <div
     class="palette-piece-wrapper control-button"
     class:selected={editorMode === 'hand'}
-    title="Hand Mode - Drag pieces on board"
+    title={i18n.t('editor.handMode')}
   >
     <div
       class="palette-piece-container control-icon"
@@ -68,14 +71,14 @@
     >
       <span class="control-emoji"><Hand size={20} /></span>
     </div>
-    <span class="piece-label max-lg:hidden">Hand</span>
+    <span class="piece-label max-lg:hidden">{i18n.t('editor.hand')}</span>
   </div>
 
   <!-- Delete button -->
   <div
     class="palette-piece-wrapper control-button"
     class:selected={editorMode === 'delete'}
-    title="Delete Mode - Click pieces to delete"
+    title={i18n.t('editor.deleteMode')}
   >
     <div
       class="palette-piece-container control-icon delete-icon"
@@ -94,7 +97,7 @@
     >
       <span class="control-emoji"><Trash2 size={20} /></span>
     </div>
-    <span class="piece-label max-lg:hidden">Delete</span>
+    <span class="piece-label max-lg:hidden">{i18n.t('editor.delete')}</span>
   </div>
 </div>
 
@@ -212,13 +215,17 @@
   }
 
   .piece-label {
-    font-size: 0.7rem;
+    font-size: 0.65rem;
     color: #a0a0a0;
     text-align: center;
     line-height: 1.1;
     font-family: var(--font-ui);
     text-transform: uppercase;
-    letter-spacing: 1px;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
   }
 
   .palette-piece-wrapper:hover .piece-label {

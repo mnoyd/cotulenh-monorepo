@@ -11,6 +11,7 @@
   import { Button } from '$lib/components/ui/button';
   import { Play, Pause, RotateCcw } from 'lucide-svelte';
   import { toast } from 'svelte-sonner';
+  import { getI18n } from '$lib/i18n/index.svelte';
 
   interface Props {
     clock?: ChessClockState;
@@ -20,6 +21,17 @@
   }
 
   let { clock: externalClock, onTimeout, flipped = false, class: className }: Props = $props();
+
+  const i18n = getI18n();
+
+  // Reactive translations
+  let tPause = $derived.by(() => i18n.t('clock.pause'));
+  let tResume = $derived.by(() => i18n.t('clock.resume'));
+  let tStart = $derived.by(() => i18n.t('clock.start'));
+  let tReset = $derived.by(() => i18n.t('common.reset'));
+  let tRed = $derived.by(() => i18n.t('common.red'));
+  let tBlue = $derived.by(() => i18n.t('common.blue'));
+  let tRanOutOfTime = $derived.by(() => i18n.t('clock.ranOutOfTime'));
 
   const defaultConfig: ClockConfig = {
     red: TIME_PRESETS.blitz5_3,
@@ -38,7 +50,8 @@
   $effect(() => {
     if (onTimeout) {
       clock.onTimeout = (loser: ClockColor) => {
-        toast.error(`${loser === 'r' ? 'Red' : 'Blue'} ran out of time!`);
+        const color = loser === 'r' ? tRed : tBlue;
+        toast.error(tRanOutOfTime.replace('{color}', color));
         onTimeout(loser);
       };
     }
@@ -92,16 +105,16 @@
     >
       {#if clock.isRunning}
         <Pause class="w-3.5 h-3.5" />
-        <span class="text-xs">PAUSE</span>
+        <span class="text-xs">{tPause}</span>
       {:else}
         <Play class="w-3.5 h-3.5" />
-        <span class="text-xs">{clock.status === 'paused' ? 'RESUME' : 'START'}</span>
+        <span class="text-xs">{clock.status === 'paused' ? tResume : tStart}</span>
       {/if}
     </Button>
 
     <Button variant="ghost" size="sm" onclick={handleReset} class="gap-1.5">
       <RotateCcw class="w-3.5 h-3.5" />
-      <span class="text-xs">RESET</span>
+      <span class="text-xs">{tReset}</span>
     </Button>
   </div>
 

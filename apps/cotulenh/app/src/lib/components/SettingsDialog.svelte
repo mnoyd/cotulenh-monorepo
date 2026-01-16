@@ -13,12 +13,15 @@
     type ThemeId
   } from '$lib/stores/settings';
   import { playSound, setAudioEnabled, setAudioVolume } from '$lib/utils/audio';
+  import { getI18n, LOCALES, type Locale } from '$lib/i18n/index.svelte';
 
   interface Props {
     open: boolean;
   }
 
   let { open = $bindable() }: Props = $props();
+
+  const i18n = getI18n();
 
   let soundsEnabled = $state(DEFAULT_SETTINGS.soundsEnabled);
   let soundVolume = $state(DEFAULT_SETTINGS.soundVolume);
@@ -27,6 +30,7 @@
   let showDeployButtons = $state(DEFAULT_SETTINGS.showDeployButtons);
   let autoCompleteDeploy = $state(DEFAULT_SETTINGS.autoCompleteDeploy);
   let selectedTheme = $state<ThemeId>(themeStore.current);
+  let selectedLocale = $state<Locale>(i18n.locale);
 
   function loadFromStorage() {
     const settings = loadSettings();
@@ -37,6 +41,7 @@
     showDeployButtons = settings.showDeployButtons;
     autoCompleteDeploy = settings.autoCompleteDeploy;
     selectedTheme = settings.theme;
+    selectedLocale = i18n.locale;
 
     setAudioEnabled(settings.soundsEnabled);
     setAudioVolume(settings.soundVolume);
@@ -58,8 +63,9 @@
     setAudioVolume(soundVolume);
 
     await themeStore.setTheme(selectedTheme);
+    i18n.setLocale(selectedLocale);
 
-    toast.success('Settings saved');
+    toast.success(i18n.t('settings.saved'));
     open = false;
   }
 
@@ -76,14 +82,33 @@
 <Dialog.Root bind:open>
   <Dialog.Content class="settings-dialog">
     <Dialog.Header>
-      <Dialog.Title>Settings</Dialog.Title>
-      <Dialog.Description>Configure your game experience</Dialog.Description>
+      <Dialog.Title>{i18n.t('settings.title')}</Dialog.Title>
+      <Dialog.Description>{i18n.t('settings.description')}</Dialog.Description>
     </Dialog.Header>
 
     <div class="settings-content">
+      <!-- Language Selection -->
+      <div class="setting-section">
+        <h3 class="setting-section-title">{i18n.t('settings.language')}</h3>
+        <div class="language-grid">
+          {#each LOCALES as locale}
+            <button
+              class="language-option"
+              class:selected={selectedLocale === locale.id}
+              onclick={() => (selectedLocale = locale.id)}
+            >
+              <span class="language-name">{locale.nativeName}</span>
+              <span class="language-english">{locale.name}</span>
+            </button>
+          {/each}
+        </div>
+      </div>
+
+      <Separator />
+
       <!-- Theme Selection -->
       <div class="setting-section">
-        <h3 class="setting-section-title">Theme</h3>
+        <h3 class="setting-section-title">{i18n.t('settings.theme')}</h3>
         <div class="theme-grid">
           {#each themeStore.themes as theme}
             <button
@@ -97,7 +122,7 @@
               <span class="theme-name">{theme.name}</span>
               <span class="theme-desc">{theme.description}</span>
               {#if themeStore.isLoading && selectedTheme === theme.id}
-                <span class="loading-indicator">Loading...</span>
+                <span class="loading-indicator">{i18n.t('common.loading')}</span>
               {/if}
             </button>
           {/each}
@@ -108,16 +133,16 @@
 
       <!-- Gameplay Settings -->
       <div class="setting-section">
-        <h3 class="setting-section-title">Gameplay</h3>
+        <h3 class="setting-section-title">{i18n.t('settings.gameplay')}</h3>
 
         <label class="setting-item">
           <input type="checkbox" bind:checked={soundsEnabled} />
-          <span>Sound Effects</span>
+          <span>{i18n.t('settings.soundEffects')}</span>
         </label>
 
         {#if soundsEnabled}
           <div class="setting-item volume-control">
-            <span>Volume</span>
+            <span>{i18n.t('settings.volume')}</span>
             <input
               type="range"
               min="0"
@@ -136,36 +161,36 @@
                 playSound('move');
               }}
             >
-              Test
+              {i18n.t('settings.test')}
             </button>
           </div>
         {/if}
 
         <label class="setting-item">
           <input type="checkbox" bind:checked={showMoveHints} />
-          <span>Show Move Hints</span>
+          <span>{i18n.t('settings.showMoveHints')}</span>
         </label>
 
         <label class="setting-item">
           <input type="checkbox" bind:checked={confirmReset} />
-          <span>Confirm Before Reset</span>
+          <span>{i18n.t('settings.confirmBeforeReset')}</span>
         </label>
 
         <label class="setting-item">
           <input type="checkbox" bind:checked={showDeployButtons} />
-          <span>Show Deploy Confirm Buttons</span>
+          <span>{i18n.t('settings.showDeployButtons')}</span>
         </label>
 
         <label class="setting-item">
           <input type="checkbox" bind:checked={autoCompleteDeploy} />
-          <span>Auto-Complete Deploy</span>
+          <span>{i18n.t('settings.autoCompleteDeploy')}</span>
         </label>
       </div>
     </div>
 
     <Dialog.Footer>
-      <Button variant="outline" onclick={() => (open = false)}>Cancel</Button>
-      <Button onclick={handleSave}>Save Settings</Button>
+      <Button variant="outline" onclick={() => (open = false)}>{i18n.t('common.cancel')}</Button>
+      <Button onclick={handleSave}>{i18n.t('settings.save')}</Button>
     </Dialog.Footer>
   </Dialog.Content>
 </Dialog.Root>
@@ -191,6 +216,47 @@
     letter-spacing: 0.05em;
     color: var(--theme-text-secondary);
     margin: 0;
+  }
+
+  .language-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+  }
+
+  .language-option {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.75rem;
+    background: transparent;
+    border: 1px solid var(--theme-border-subtle);
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .language-option:hover {
+    border-color: var(--theme-border);
+    background: var(--theme-primary-dim);
+  }
+
+  .language-option.selected {
+    border-color: var(--theme-primary);
+    background: var(--theme-primary-dim);
+    box-shadow: var(--theme-glow-primary);
+  }
+
+  .language-name {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--theme-text-primary);
+  }
+
+  .language-english {
+    font-size: 0.7rem;
+    color: var(--theme-text-muted);
   }
 
   .theme-grid {
@@ -300,10 +366,12 @@
 
   .volume-control {
     padding-left: 2rem;
+    flex-wrap: wrap;
   }
 
   .volume-slider {
     flex: 1;
+    min-width: 80px;
     height: 4px;
     accent-color: var(--theme-primary);
     cursor: pointer;

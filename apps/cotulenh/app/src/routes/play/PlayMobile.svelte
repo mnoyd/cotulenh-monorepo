@@ -12,6 +12,18 @@
   import { GameSession } from '$lib/game-session.svelte';
   import { createChessClock, TIME_PRESETS, formatClockTime } from '$lib/clock/clock.svelte';
   import { logger } from '@cotulenh/common';
+  import { getI18n } from '$lib/i18n/index.svelte';
+
+  const i18n = getI18n();
+
+  // Reactive translations for aria-labels
+  let tUndoMove = $derived.by(() => i18n.t('a11y.undoMove'));
+  let tFlipBoard = $derived.by(() => i18n.t('a11y.flipBoard'));
+  let tResetGame = $derived.by(() => i18n.t('a11y.resetGame'));
+  let tShareGame = $derived.by(() => i18n.t('a11y.shareGame'));
+  let tGameInfoPanel = $derived.by(() => i18n.t('a11y.gameInfoPanel'));
+  let tCollapseGameInfo = $derived.by(() => i18n.t('a11y.collapseGameInfo'));
+  let tExpandGameInfo = $derived.by(() => i18n.t('a11y.expandGameInfo'));
 
   import '$lib/styles/board.css';
 
@@ -93,7 +105,7 @@
   }
 
   function resetGame() {
-    if (confirm('Reset the game?')) {
+    if (confirm(i18n.t('game.simpleResetConfirm'))) {
       session?.reset();
       clock.reset();
     }
@@ -113,19 +125,19 @@
     <!-- Top Bar: Clock for opponent -->
     <header class="top-bar">
       <div class="clock-mini blue">
-        <span class="clock-label">Blue</span>
+        <span class="clock-label">{i18n.t('common.blue')}</span>
         <span class="clock-time">{formatClockTime(clock.blueTime)}</span>
       </div>
       <div class="game-status">
         {#if session}
           {#if session.status === 'playing'}
             <span class="turn-indicator {session.turn === 'r' ? 'red' : 'blue'}">
-              {session.turn === 'r' ? 'Red' : 'Blue'}'s turn
+              {i18n.t('game.redTurn').replace('{color}', session.turn === 'r' ? i18n.t('common.red') : i18n.t('common.blue'))}
             </span>
           {:else if session.status === 'checkmate'}
-            <span class="status-end">Checkmate!</span>
+            <span class="status-end">{i18n.t('game.checkmate')}</span>
           {:else if session.status === 'stalemate'}
-            <span class="status-end">Stalemate</span>
+            <span class="status-end">{i18n.t('game.stalemate')}</span>
           {/if}
         {/if}
       </div>
@@ -151,41 +163,41 @@
     <!-- Bottom Bar: Clock for player + Quick Actions -->
     <div class="bottom-bar">
       <div class="clock-mini red">
-        <span class="clock-label">Red</span>
+        <span class="clock-label">{i18n.t('common.red')}</span>
         <span class="clock-time">{formatClockTime(clock.redTime)}</span>
       </div>
 
       <div class="quick-actions">
-        <button 
-          class="action-btn" 
-          onclick={undoLastMove} 
-          title="Undo last move" 
-          aria-label="Undo last move"
+        <button
+          class="action-btn"
+          onclick={undoLastMove}
+          title={tUndoMove}
+          aria-label={tUndoMove}
           disabled={!session?.canUndo}
         >
           <Undo2 size={20} />
         </button>
-        <button 
-          class="action-btn" 
-          onclick={flipBoard} 
-          title="Flip board" 
-          aria-label="Flip board"
+        <button
+          class="action-btn"
+          onclick={flipBoard}
+          title={tFlipBoard}
+          aria-label={tFlipBoard}
         >
           <ArrowUpDown size={20} />
         </button>
-        <button 
-          class="action-btn" 
-          onclick={resetGame} 
-          title="Reset game" 
-          aria-label="Reset game"
+        <button
+          class="action-btn"
+          onclick={resetGame}
+          title={tResetGame}
+          aria-label={tResetGame}
         >
           <RotateCcw size={20} />
         </button>
-        <button 
-          class="action-btn" 
-          onclick={() => (shareOpen = true)} 
-          title="Share game" 
-          aria-label="Share game"
+        <button
+          class="action-btn"
+          onclick={() => (shareOpen = true)}
+          title={tShareGame}
+          aria-label={tShareGame}
         >
           <Share2 size={20} />
         </button>
@@ -193,16 +205,16 @@
     </div>
 
     <!-- Bottom Sheet -->
-    <div 
-      class="bottom-sheet" 
+    <div
+      class="bottom-sheet"
       class:expanded={bottomSheetExpanded}
       role="region"
-      aria-label="Game information panel"
+      aria-label={tGameInfoPanel}
     >
-      <button 
-        class="sheet-handle" 
+      <button
+        class="sheet-handle"
         onclick={toggleBottomSheet}
-        aria-label={bottomSheetExpanded ? 'Collapse game info' : 'Expand game info'}
+        aria-label={bottomSheetExpanded ? tCollapseGameInfo : tExpandGameInfo}
       >
         <div class="handle-bar"></div>
         {#if bottomSheetExpanded}
@@ -210,7 +222,7 @@
         {:else}
           <ChevronUp size={16} />
         {/if}
-        <span class="handle-label">Game Info</span>
+        <span class="handle-label">{i18n.t('game.gameInfo')}</span>
       </button>
 
       {#if bottomSheetExpanded}
@@ -301,12 +313,13 @@
   }
 
   .turn-indicator {
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.03em;
     padding: 0.25rem 0.5rem;
     border-radius: 4px;
+    white-space: nowrap;
   }
 
   .turn-indicator.red {
@@ -443,9 +456,10 @@
   }
 
   .handle-label {
-    font-size: 0.7rem;
+    font-size: 0.65rem;
     text-transform: uppercase;
-    letter-spacing: 0.1em;
+    letter-spacing: 0.08em;
+    white-space: nowrap;
   }
 
   .sheet-content {
