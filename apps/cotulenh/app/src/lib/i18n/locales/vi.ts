@@ -198,5 +198,28 @@ export const vi: TranslationKeys = {
   'clock.pause': 'TẠM DỪNG',
   'clock.resume': 'TIẾP TỤC',
   'clock.start': 'BẮT ĐẦU',
-  'clock.ranOutOfTime': '{color} đã hết giờ!'
+  'clock.ranOutOfTime': '{color} đã hết giờ!',
+
+  // Accessibility / aria-labels
+  'a11y.gameBoard': 'Bàn cờ',
+  'a11y.undoMove': 'Hoàn tác nước đi',
+  'a11y.flipBoard': 'Lật bàn cờ',
+  'a11y.resetGame': 'Đặt lại ván cờ',
+  'a11y.shareGame': 'Chia sẻ ván cờ',
+  'a11y.gameInfoPanel': 'Bảng thông tin ván cờ',
+  'a11y.collapseGameInfo': 'Thu gọn thông tin',
+  'a11y.expandGameInfo': 'Mở rộng thông tin',
+  'a11y.piecePalettePanel': 'Bảng chọn quân cờ',
+  'a11y.collapsePiecePalette': 'Thu gọn bảng chọn quân',
+  'a11y.expandPiecePalette': 'Mở rộng bảng chọn quân',
+  'a11y.resetToStarting': 'Đặt lại vị trí ban đầu',
+  'a11y.clearBoard': 'Xóa bàn cờ',
+  'a11y.toggleTurn': 'Đổi lượt',
+  'a11y.currentTurn': 'Hiện tại: {color}',
+  'a11y.selectTeamPieces': 'Chọn quân đội',
+  'a11y.redTeamPieces': 'Quân đội Đỏ',
+  'a11y.blueTeamPieces': 'Quân đội Xanh',
+  'a11y.hand': 'Bàn tay',
+  'a11y.delete': 'Xóa',
+  'a11y.heroic': 'Anh hùng'
 };

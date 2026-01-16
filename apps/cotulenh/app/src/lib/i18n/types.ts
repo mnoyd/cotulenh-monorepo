@@ -172,6 +172,29 @@ export interface TranslationKeys {
   'clock.start': string;
   'clock.ranOutOfTime': string;
 
+  // Accessibility / aria-labels
+  'a11y.gameBoard': string;
+  'a11y.undoMove': string;
+  'a11y.flipBoard': string;
+  'a11y.resetGame': string;
+  'a11y.shareGame': string;
+  'a11y.gameInfoPanel': string;
+  'a11y.collapseGameInfo': string;
+  'a11y.expandGameInfo': string;
+  'a11y.piecePalettePanel': string;
+  'a11y.collapsePiecePalette': string;
+  'a11y.expandPiecePalette': string;
+  'a11y.resetToStarting': string;
+  'a11y.clearBoard': string;
+  'a11y.toggleTurn': string;
+  'a11y.currentTurn': string;
+  'a11y.selectTeamPieces': string;
+  'a11y.redTeamPieces': string;
+  'a11y.blueTeamPieces': string;
+  'a11y.hand': string;
+  'a11y.delete': string;
+  'a11y.heroic': string;
+
   // Error page
   'error.pageNotFound': string;
   'error.pageNotFoundDesc': string;

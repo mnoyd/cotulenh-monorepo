@@ -198,5 +198,28 @@ export const en: TranslationKeys = {
   'clock.pause': 'PAUSE',
   'clock.resume': 'RESUME',
   'clock.start': 'START',
-  'clock.ranOutOfTime': '{color} ran out of time!'
+  'clock.ranOutOfTime': '{color} ran out of time!',
+
+  // Accessibility / aria-labels
+  'a11y.gameBoard': 'Game board',
+  'a11y.undoMove': 'Undo last move',
+  'a11y.flipBoard': 'Flip board',
+  'a11y.resetGame': 'Reset game',
+  'a11y.shareGame': 'Share game',
+  'a11y.gameInfoPanel': 'Game information panel',
+  'a11y.collapseGameInfo': 'Collapse game info',
+  'a11y.expandGameInfo': 'Expand game info',
+  'a11y.piecePalettePanel': 'Piece palette panel',
+  'a11y.collapsePiecePalette': 'Collapse piece palette',
+  'a11y.expandPiecePalette': 'Expand piece palette',
+  'a11y.resetToStarting': 'Reset to starting position',
+  'a11y.clearBoard': 'Clear board',
+  'a11y.toggleTurn': 'Toggle turn',
+  'a11y.currentTurn': 'Current: {color}',
+  'a11y.selectTeamPieces': 'Select team pieces',
+  'a11y.redTeamPieces': 'Red team pieces',
+  'a11y.blueTeamPieces': 'Blue team pieces',
+  'a11y.hand': 'Hand',
+  'a11y.delete': 'Delete',
+  'a11y.heroic': 'Heroic'
 };

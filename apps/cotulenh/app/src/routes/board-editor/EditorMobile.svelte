@@ -14,6 +14,21 @@
   const i18n = getI18n();
   const editor = createBoardEditorState();
 
+  // Reactive translations for aria-labels
+  let tResetToStarting = $derived.by(() => i18n.t('a11y.resetToStarting'));
+  let tClearBoard = $derived.by(() => i18n.t('a11y.clearBoard'));
+  let tFlipBoard = $derived.by(() => i18n.t('a11y.flipBoard'));
+  let tToggleTurn = $derived.by(() => i18n.t('a11y.toggleTurn'));
+  let tCurrentTurn = $derived.by(() => i18n.t('a11y.currentTurn'));
+  let tPiecePalettePanel = $derived.by(() => i18n.t('a11y.piecePalettePanel'));
+  let tCollapsePiecePalette = $derived.by(() => i18n.t('a11y.collapsePiecePalette'));
+  let tExpandPiecePalette = $derived.by(() => i18n.t('a11y.expandPiecePalette'));
+  let tSelectTeamPieces = $derived.by(() => i18n.t('a11y.selectTeamPieces'));
+  let tRedTeamPieces = $derived.by(() => i18n.t('a11y.redTeamPieces'));
+  let tBlueTeamPieces = $derived.by(() => i18n.t('a11y.blueTeamPieces'));
+  let tRed = $derived.by(() => i18n.t('common.red'));
+  let tBlue = $derived.by(() => i18n.t('common.blue'));
+
   let bottomSheetExpanded = $state(true);
   let activeTeam = $state<'red' | 'blue'>('red');
   let showFenPanel = $state(false);
@@ -114,17 +129,17 @@
   </section>
 
   <!-- Bottom Sheet -->
-  <div 
-    class="bottom-sheet" 
+  <div
+    class="bottom-sheet"
     class:expanded={bottomSheetExpanded}
     role="region"
-    aria-label="Piece palette panel"
+    aria-label={tPiecePalettePanel}
   >
     <!-- Handle bar -->
-    <button 
-      class="sheet-handle" 
+    <button
+      class="sheet-handle"
       onclick={toggleBottomSheet}
-      aria-label={bottomSheetExpanded ? 'Collapse piece palette' : 'Expand piece palette'}
+      aria-label={bottomSheetExpanded ? tCollapsePiecePalette : tExpandPiecePalette}
     >
       <div class="handle-bar"></div>
       {#if bottomSheetExpanded}
@@ -146,27 +161,27 @@
 
       <div class="action-divider"></div>
 
-      <button 
-        class="action-btn" 
-        onclick={editor.loadStartingPosition} 
-        title="Reset to starting position" 
-        aria-label="Reset to starting position"
+      <button
+        class="action-btn"
+        onclick={editor.loadStartingPosition}
+        title={tResetToStarting}
+        aria-label={tResetToStarting}
       >
         <RotateCcw size={18} />
       </button>
-      <button 
-        class="action-btn" 
-        onclick={editor.clearBoard} 
-        title="Clear board" 
-        aria-label="Clear board"
+      <button
+        class="action-btn"
+        onclick={editor.clearBoard}
+        title={tClearBoard}
+        aria-label={tClearBoard}
       >
         <Eraser size={18} />
       </button>
-      <button 
-        class="action-btn" 
-        onclick={editor.flipBoard} 
-        title="Flip board" 
-        aria-label="Flip board"
+      <button
+        class="action-btn"
+        onclick={editor.flipBoard}
+        title={tFlipBoard}
+        aria-label={tFlipBoard}
       >
         <ArrowUpDown size={18} />
       </button>
@@ -176,8 +191,8 @@
       <button
         class="turn-btn-compact {editor.currentTurn}"
         onclick={editor.toggleTurn}
-        title="Toggle turn: {editor.currentTurn === 'red' ? 'Red' : 'Blue'}"
-        aria-label="Toggle turn between Red and Blue. Current: {editor.currentTurn === 'red' ? 'Red' : 'Blue'}"
+        title="{tToggleTurn}: {editor.currentTurn === 'red' ? tRed : tBlue}"
+        aria-label="{tToggleTurn}. {tCurrentTurn.replace('{color}', editor.currentTurn === 'red' ? tRed : tBlue)}"
       >
         <span class="turn-dot {editor.currentTurn}"></span>
       </button>
@@ -187,14 +202,14 @@
     {#if bottomSheetExpanded}
       <div class="sheet-content">
         <!-- Team Tabs -->
-        <div class="team-tabs" role="tablist" aria-label="Select team pieces">
+        <div class="team-tabs" role="tablist" aria-label={tSelectTeamPieces}>
           <button
             class="team-tab red"
             class:active={activeTeam === 'red'}
             onclick={() => (activeTeam = 'red')}
             role="tab"
             aria-selected={activeTeam === 'red'}
-            aria-label="Red team pieces"
+            aria-label={tRedTeamPieces}
           >
             🔴 {i18n.t('editor.redTeam')}
           </button>
@@ -204,7 +219,7 @@
             onclick={() => (activeTeam = 'blue')}
             role="tab"
             aria-selected={activeTeam === 'blue'}
-            aria-label="Blue team pieces"
+            aria-label={tBlueTeamPieces}
           >
             🔵 {i18n.t('editor.blueTeam')}
           </button>

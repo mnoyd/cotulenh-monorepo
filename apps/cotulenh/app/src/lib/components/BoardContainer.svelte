@@ -5,6 +5,10 @@
   import { logRender } from '$lib/debug';
   import { CotulenhBoard } from '@cotulenh/board';
   import type { Api, Config } from '@cotulenh/board';
+  import { getI18n } from '$lib/i18n/index.svelte';
+
+  const i18n = getI18n();
+  let tGameBoard = $derived.by(() => i18n.t('a11y.gameBoard'));
 
   /**
    * BoardContainer - Centralized board presentation component
@@ -161,7 +165,7 @@
   bind:this={containerElement}
   class="board-container cg-wrap {className}"
   role="application"
-  aria-label="Game board"
+  aria-label={tGameBoard}
 >
   {#if isLoading && showLoading}
     <div class="board-loading">

@@ -16,6 +16,15 @@
 
   const i18n = getI18n();
 
+  // Reactive translations for aria-labels
+  let tUndoMove = $derived.by(() => i18n.t('a11y.undoMove'));
+  let tFlipBoard = $derived.by(() => i18n.t('a11y.flipBoard'));
+  let tResetGame = $derived.by(() => i18n.t('a11y.resetGame'));
+  let tShareGame = $derived.by(() => i18n.t('a11y.shareGame'));
+  let tGameInfoPanel = $derived.by(() => i18n.t('a11y.gameInfoPanel'));
+  let tCollapseGameInfo = $derived.by(() => i18n.t('a11y.collapseGameInfo'));
+  let tExpandGameInfo = $derived.by(() => i18n.t('a11y.expandGameInfo'));
+
   import '$lib/styles/board.css';
 
   let boardComponent: BoardContainer | null = $state(null);
@@ -159,36 +168,36 @@
       </div>
 
       <div class="quick-actions">
-        <button 
-          class="action-btn" 
-          onclick={undoLastMove} 
-          title="Undo last move" 
-          aria-label="Undo last move"
+        <button
+          class="action-btn"
+          onclick={undoLastMove}
+          title={tUndoMove}
+          aria-label={tUndoMove}
           disabled={!session?.canUndo}
         >
           <Undo2 size={20} />
         </button>
-        <button 
-          class="action-btn" 
-          onclick={flipBoard} 
-          title="Flip board" 
-          aria-label="Flip board"
+        <button
+          class="action-btn"
+          onclick={flipBoard}
+          title={tFlipBoard}
+          aria-label={tFlipBoard}
         >
           <ArrowUpDown size={20} />
         </button>
-        <button 
-          class="action-btn" 
-          onclick={resetGame} 
-          title="Reset game" 
-          aria-label="Reset game"
+        <button
+          class="action-btn"
+          onclick={resetGame}
+          title={tResetGame}
+          aria-label={tResetGame}
         >
           <RotateCcw size={20} />
         </button>
-        <button 
-          class="action-btn" 
-          onclick={() => (shareOpen = true)} 
-          title="Share game" 
-          aria-label="Share game"
+        <button
+          class="action-btn"
+          onclick={() => (shareOpen = true)}
+          title={tShareGame}
+          aria-label={tShareGame}
         >
           <Share2 size={20} />
         </button>
@@ -196,16 +205,16 @@
     </div>
 
     <!-- Bottom Sheet -->
-    <div 
-      class="bottom-sheet" 
+    <div
+      class="bottom-sheet"
       class:expanded={bottomSheetExpanded}
       role="region"
-      aria-label="Game information panel"
+      aria-label={tGameInfoPanel}
     >
-      <button 
-        class="sheet-handle" 
+      <button
+        class="sheet-handle"
         onclick={toggleBottomSheet}
-        aria-label={bottomSheetExpanded ? 'Collapse game info' : 'Expand game info'}
+        aria-label={bottomSheetExpanded ? tCollapseGameInfo : tExpandGameInfo}
       >
         <div class="handle-bar"></div>
         {#if bottomSheetExpanded}

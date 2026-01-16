@@ -13,6 +13,11 @@
   const i18n = getI18n();
   const editor = createBoardEditorState();
 
+  // Reactive translations for quick tips
+  let tHand = $derived.by(() => i18n.t('a11y.hand'));
+  let tDelete = $derived.by(() => i18n.t('a11y.delete'));
+  let tHeroic = $derived.by(() => i18n.t('a11y.heroic'));
+
   onMount(() => {
     if (!browser) return;
     
@@ -130,16 +135,16 @@
           <summary>{i18n.t('editor.quickTips')}</summary>
           <ul>
             <li class="flex items-center gap-1">
-              <strong><Hand size={14} class="inline" /> Hand:</strong> Drag pieces on board
+              <strong><Hand size={14} class="inline" /> {tHand}:</strong> Drag pieces on board
             </li>
             <li class="flex items-center gap-1">
               <strong>{i18n.t('editor.tipClickPiece')}</strong>
             </li>
             <li class="flex items-center gap-1">
-              <strong><Trash2 size={14} class="inline" /> Delete:</strong> Click to remove pieces
+              <strong><Trash2 size={14} class="inline" /> {tDelete}:</strong> Click to remove pieces
             </li>
             <li class="flex items-center gap-1">
-              <strong><Star size={14} class="inline" /> Heroic:</strong> Toggle promotion status
+              <strong><Star size={14} class="inline" /> {tHeroic}:</strong> Toggle promotion status
             </li>
           </ul>
         </details>
