@@ -5,6 +5,9 @@
   import { setStoredValue } from '$lib/stores/persisted.svelte';
   import { Button } from '$lib/components/ui/button';
   import ShareDialog from './ShareDialog.svelte';
+  import { getI18n } from '$lib/i18n/index.svelte';
+
+  const i18n = getI18n();
 
   interface Props {
     session: GameSession;
@@ -21,7 +24,7 @@
   });
 
   function resetGame() {
-    if (confirm('Are you sure you want to reset the game?')) {
+    if (confirm(i18n.t('game.resetConfirm'))) {
       session.reset();
       onReset?.();
     }
@@ -52,46 +55,46 @@
     variant="default"
     size="sm"
     onclick={resetGame}
-    title="Reset Game"
+    title={i18n.t('common.reset')}
     class="btn-game-primary"
   >
-    RESET
+    {i18n.t('common.reset')}
   </Button>
   <Button
     variant="destructive"
     size="sm"
     onclick={undoLastMove}
-    title="Undo Last Move"
+    title={i18n.t('common.undo')}
     class="btn-game-alert"
   >
-    UNDO
+    {i18n.t('common.undo')}
   </Button>
   <Button
     variant="outline"
     size="sm"
     onclick={flipBoard}
-    title="Flip Board"
+    title={i18n.t('common.flip')}
     class="btn-game-secondary"
   >
-    FLIP
+    {i18n.t('common.flip')}
   </Button>
   <Button
     variant="outline"
     size="sm"
     onclick={openShare}
-    title="Share Game"
+    title={i18n.t('common.share')}
     class="btn-game-subtle"
   >
-    SHARE
+    {i18n.t('common.share')}
   </Button>
   <Button
     variant="ghost"
     size="sm"
     onclick={reportIssue}
-    title="Report Issue"
+    title={i18n.t('common.report')}
     class="btn-game-ghost"
   >
-    REPORT
+    {i18n.t('common.report')}
   </Button>
 </div>
 

@@ -12,12 +12,12 @@
   let { open = $bindable() }: Props = $props();
 
   const shortcuts = [
-    { key: 'Z', action: 'Undo last move' },
-    { key: 'Y', action: 'Redo move' },
-    { key: 'R', action: 'Reset game' },
-    { key: 'Esc', action: 'Cancel deployment' },
-    { key: '←/→', action: 'Navigate move history' },
-    { key: '?', action: 'Show this help' }
+    { key: 'Z', action: i18n.t('shortcuts.undoMove') },
+    { key: 'Y', action: i18n.t('shortcuts.redoMove') },
+    { key: 'R', action: i18n.t('shortcuts.resetGame') },
+    { key: 'Esc', action: i18n.t('shortcuts.cancelDeploy') },
+    { key: '←/→', action: i18n.t('shortcuts.navigateHistory') },
+    { key: '?', action: i18n.t('shortcuts.showHelp') }
   ];
 </script>
 

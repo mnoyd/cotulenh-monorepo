@@ -3,6 +3,9 @@
   import { logRender } from '$lib/debug';
   import { Button } from '$lib/components/ui/button';
   import { CheckCircle2, XCircle } from 'lucide-svelte';
+  import { getI18n } from '$lib/i18n/index.svelte';
+
+  const i18n = getI18n();
 
   interface Props {
     session: GameSession;
@@ -31,7 +34,7 @@
       disabled={!canCommit}
     >
       <CheckCircle2 class="w-3.5 h-3.5 mr-1.5" />
-      Commit
+      {i18n.t('common.commit')}
     </Button>
     <Button
       variant="destructive"
@@ -40,7 +43,7 @@
       onclick={() => session.cancelSession()}
     >
       <XCircle class="w-3.5 h-3.5 mr-1.5" />
-      Cancel
+      {i18n.t('common.cancel')}
     </Button>
   {/if}
 </div>

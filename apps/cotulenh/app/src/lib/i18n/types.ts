@@ -64,6 +64,9 @@ export interface TranslationKeys {
   'game.blue': string;
   'game.red': string;
   'game.gameInfo': string;
+  'game.resetConfirm': string;
+  'game.simpleResetConfirm': string;
+  'game.redTurn': string;
 
   // Share dialog
   'share.title': string;
@@ -77,6 +80,12 @@ export interface TranslationKeys {
   'shortcuts.title': string;
   'shortcuts.description': string;
   'shortcuts.gotIt': string;
+  'shortcuts.undoMove': string;
+  'shortcuts.redoMove': string;
+  'shortcuts.resetGame': string;
+  'shortcuts.cancelDeploy': string;
+  'shortcuts.navigateHistory': string;
+  'shortcuts.showHelp': string;
 
   // Puzzles page
   'puzzles.title': string;
@@ -105,6 +114,46 @@ export interface TranslationKeys {
   'editor.heroic': string;
   'editor.hand': string;
   'editor.delete': string;
+  'editor.turn': string;
+  'editor.fenPosition': string;
+  'editor.fenPlaceholder': string;
+  'editor.reset': string;
+  'editor.clear': string;
+  'editor.flip': string;
+  'editor.playPosition': string;
+  'editor.handMode': string;
+  'editor.deleteMode': string;
+  'editor.toggleHeroic': string;
+  'editor.toggleTurn': string;
+  'editor.redTeam': string;
+  'editor.blueTeam': string;
+
+  // Common
+  'common.loading': string;
+  'common.error': string;
+  'common.close': string;
+  'common.easy': string;
+  'common.medium': string;
+  'common.hard': string;
+  'common.reset': string;
+  'common.undo': string;
+  'common.flip': string;
+  'common.share': string;
+  'common.report': string;
+  'common.commit': string;
+  'common.cancel': string;
+  'common.tryAgain': string;
+  'common.continue': string;
+  'common.red': string;
+  'common.blue': string;
+  'common.turn': string;
+  'common.back': string;
+  'common.backToHome': string;
+  'common.step': string;
+  'common.of': string;
+  'common.copy': string;
+  'common.copied': string;
+  'common.play': string;
 
   // Error page
   'error.pageNotFound': string;
@@ -123,11 +172,13 @@ export interface TranslationKeys {
   'report.gamePgn': string;
   'report.issueDescription': string;
   'report.backToGame': string;
-
-  // Common
-  'common.loading': string;
-  'common.error': string;
-  'common.close': string;
+  'report.supportProject': string;
+  'report.visitRepository': string;
+  'report.githubAccountLabel': string;
+  'report.pgnHelper': string;
+  'report.placeholder': string;
+  'report.submit': string;
+  'report.submitting': string;
 }
 
 export type TranslationKey = keyof TranslationKeys;

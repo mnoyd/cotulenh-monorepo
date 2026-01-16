@@ -75,36 +75,36 @@
             <button
               class="ctrl-btn"
               onclick={editor.loadStartingPosition}
-              title="Reset to starting position"
+              title={i18n.t('editor.reset')}
             >
-              ↺ Reset
+              ↺ {i18n.t('editor.reset')}
             </button>
-            <button class="ctrl-btn" onclick={editor.clearBoard} title="Clear all pieces">
-              🧹 Clear
+            <button class="ctrl-btn" onclick={editor.clearBoard} title={i18n.t('editor.clear')}>
+              🧹 {i18n.t('editor.clear')}
             </button>
-            <button class="ctrl-btn" onclick={editor.flipBoard} title="Flip board orientation">
-              ⇅ Flip
+            <button class="ctrl-btn" onclick={editor.flipBoard} title={i18n.t('editor.flip')}>
+              ⇅ {i18n.t('editor.flip')}
             </button>
           </div>
 
           <button
             class="turn-btn {editor.currentTurn}"
             onclick={editor.toggleTurn}
-            title="Toggle current turn"
+            title={i18n.t('editor.toggleTurn')}
           >
             <span class="turn-indicator {editor.currentTurn}"></span>
-            Turn: {editor.currentTurn === 'red' ? 'Red' : 'Blue'}
+            {i18n.t('editor.turn')}: {editor.currentTurn === 'red' ? i18n.t('editor.redTeam') : i18n.t('editor.blueTeam')}
           </button>
         </div>
 
         <!-- FEN Section -->
         <div class="fen-section">
-          <label for="fen-input">FEN Position</label>
+          <label for="fen-input">{i18n.t('editor.fenPosition')}</label>
           <input
             id="fen-input"
             type="text"
             bind:value={editor.fenInput}
-            placeholder="Enter FEN string..."
+            placeholder={i18n.t('editor.fenPlaceholder')}
             class="fen-input"
           />
           <div class="fen-buttons">
@@ -116,7 +116,7 @@
         <!-- Play Button -->
         <button class="play-btn" onclick={editor.validateAndPlay} disabled={!editor.isFenValid}>
           <span class="play-icon">▶</span>
-          Play This Position
+          {i18n.t('editor.playPosition')}
         </button>
 
         {#if editor.validationError}

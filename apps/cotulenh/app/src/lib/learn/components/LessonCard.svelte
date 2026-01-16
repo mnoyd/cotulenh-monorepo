@@ -1,6 +1,7 @@
 <script lang="ts">
   import { Star, CheckCircle } from 'lucide-svelte';
   import type { Lesson, LessonProgress } from '../types';
+  import { getI18n } from '$lib/i18n/index.svelte';
 
   type Props = {
     lesson: Lesson;
@@ -9,8 +10,11 @@
 
   let { lesson, progress }: Props = $props();
 
+  const i18n = getI18n();
+
   function getDifficultyLabel(d: number): string {
-    return ['Easy', 'Medium', 'Hard'][d - 1] ?? 'Easy';
+    const difficulties = ['common.easy', 'common.medium', 'common.hard'];
+    return i18n.t(difficulties[d - 1] as any);
   }
 </script>
 

@@ -55,7 +55,7 @@
         </div>
         
         <div class="step-counter">
-          Step {session.currentStepIndex + 1} of {session.totalSteps}
+          {i18n.t('common.step')} {session.currentStepIndex + 1} {i18n.t('common.of')} {session.totalSteps}
         </div>
 
         {#if session.status === 'completed'}
@@ -75,11 +75,11 @@
             <div class="completion-actions">
               <button class="btn secondary" onclick={() => session?.restart()}>
                 <RotateCcw size={16} />
-                Try Again
+                {i18n.t('common.tryAgain')}
               </button>
               <button class="btn primary" onclick={handleNext}>
                 <ArrowRight size={16} />
-                Continue
+                {i18n.t('common.continue')}
               </button>
             </div>
           </div>

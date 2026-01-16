@@ -48,14 +48,14 @@ ${gamePgn}
 
     <div class="connect-section max-md:grid-cols-1">
       <div class="info-box">
-        <h3>🌟 Support the Project</h3>
+        <h3>🌟 {i18n.t('report.supportProject')}</h3>
         <p>{i18n.t('report.starRepo')}</p>
         <a href="https://github.com/mnoyd/cotulenh-monorepo" target="_blank" class="github-link">
-          Visit Repository
+          {i18n.t('report.visitRepository')}
         </a>
       </div>
       <div class="info-box">
-        <h3>📝 GitHub Account</h3>
+        <h3>📝 {i18n.t('report.githubAccountLabel')}</h3>
         <p>{i18n.t('report.githubAccount')}</p>
       </div>
     </div>
@@ -63,7 +63,7 @@ ${gamePgn}
     <div class="form-group">
       <label for="pgn">{i18n.t('report.gamePgn')}</label>
       <textarea id="pgn" readonly value={gamePgn} rows="10"></textarea>
-      <p class="helper-text">PGN contains complete game history including position, moves, and metadata</p>
+      <p class="helper-text">{i18n.t('report.pgnHelper')}</p>
     </div>
 
     <div class="form-group">
@@ -71,7 +71,7 @@ ${gamePgn}
       <textarea
         id="desc"
         bind:value={issueDescription}
-        placeholder="Describe what happened, what you expected, and steps to reproduce..."
+        placeholder={i18n.t('report.placeholder')}
         rows="6"
       ></textarea>
     </div>
@@ -83,9 +83,9 @@ ${gamePgn}
         disabled={!issueDescription}
       >
         {#if copied}
-          Copied to Clipboard & Opening GitHub...
+          {i18n.t('report.submitting')}
         {:else}
-          Copy Data & Create GitHub Issue
+          {i18n.t('report.submit')}
         {/if}
       </button>
       <a href="/" class="cancel-link">{i18n.t('report.backToGame')}</a>

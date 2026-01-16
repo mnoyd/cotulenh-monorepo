@@ -96,7 +96,7 @@
   }
 
   function resetGame() {
-    if (confirm('Reset the game?')) {
+    if (confirm(i18n.t('game.simpleResetConfirm'))) {
       session?.reset();
       clock.reset();
     }
@@ -123,7 +123,7 @@
         {#if session}
           {#if session.status === 'playing'}
             <span class="turn-indicator {session.turn === 'r' ? 'red' : 'blue'}">
-              {session.turn === 'r' ? i18n.t('game.red') : i18n.t('game.blue')}'s turn
+              {i18n.t('game.redTurn').replace('{color}', session.turn === 'r' ? i18n.t('common.red') : i18n.t('common.blue'))}
             </span>
           {:else if session.status === 'checkmate'}
             <span class="status-end">{i18n.t('game.checkmate')}</span>

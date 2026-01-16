@@ -26,7 +26,7 @@
   <div
     class="palette-piece-wrapper control-button heroic-button"
     class:heroic-active={heroicMode}
-    title="Toggle Heroic Mode"
+    title={i18n.t('editor.toggleHeroic')}
   >
     <div
       class="palette-piece-container control-icon"
@@ -52,7 +52,7 @@
   <div
     class="palette-piece-wrapper control-button"
     class:selected={editorMode === 'hand'}
-    title="Hand Mode - Drag pieces on board"
+    title={i18n.t('editor.handMode')}
   >
     <div
       class="palette-piece-container control-icon"
@@ -78,7 +78,7 @@
   <div
     class="palette-piece-wrapper control-button"
     class:selected={editorMode === 'delete'}
-    title="Delete Mode - Click pieces to delete"
+    title={i18n.t('editor.deleteMode')}
   >
     <div
       class="palette-piece-container control-icon delete-icon"

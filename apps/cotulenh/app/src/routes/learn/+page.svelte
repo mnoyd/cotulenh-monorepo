@@ -29,7 +29,7 @@
     </div>
 
     <div class="back-link">
-      <a href="/">← Back to Home</a>
+      <a href="/">{i18n.t('common.backToHome')}</a>
     </div>
   </div>
 </main>

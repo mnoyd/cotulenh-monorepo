@@ -79,7 +79,7 @@
       <input
         type="text"
         bind:value={editor.fenInput}
-        placeholder="Enter FEN..."
+        placeholder={i18n.t('editor.fenPlaceholder')}
         class="fen-input"
       />
       <div class="fen-actions">
@@ -196,7 +196,7 @@
             aria-selected={activeTeam === 'red'}
             aria-label="Red team pieces"
           >
-            🔴 Red
+            🔴 {i18n.t('editor.redTeam')}
           </button>
           <button
             class="team-tab blue"
@@ -206,7 +206,7 @@
             aria-selected={activeTeam === 'blue'}
             aria-label="Blue team pieces"
           >
-            🔵 Blue
+            🔵 {i18n.t('editor.blueTeam')}
           </button>
         </div>
 
@@ -240,7 +240,7 @@
           disabled={!editor.isFenValid}
         >
           <Play size={18} />
-          Play Position
+          {i18n.t('common.play')}
         </button>
       </div>
     {/if}
