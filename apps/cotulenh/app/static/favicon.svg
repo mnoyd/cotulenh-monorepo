@@ -1,50 +1,173 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" fill="#111" rx="64"/>
-  <g transform="translate(0, -30) scale(1.1)">
+  <defs>
+    <!-- Dome Gradient -->
+    <radialGradient id="domeGrad" cx="30%" cy="30%" r="80%" fx="30%" fy="30%">
+      <stop offset="0%" stop-color="#43a047" />
+      <stop offset="60%" stop-color="#2e7d32" />
+      <stop offset="100%" stop-color="#1b5e20" />
+    </radialGradient>
+    
+    <!-- Brim Gradient -->
+    <linearGradient id="brimGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#2e7d32" />
+      <stop offset="100%" stop-color="#1b5e20" />
+    </linearGradient>
+
+    <!-- Strap Gradient -->
+    <linearGradient id="strapGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#5d4037" />
+      <stop offset="40%" stop-color="#8d6e63" />
+      <stop offset="60%" stop-color="#8d6e63" />
+      <stop offset="100%" stop-color="#5d4037" />
+    </linearGradient>
+
+    <!-- Badge Gradient -->
+    <radialGradient id="badgeGrad" cx="50%" cy="40%" r="60%">
+      <stop offset="50%" stop-color="#ef5350" />
+      <stop offset="100%" stop-color="#b71c1c" />
+    </radialGradient>
+
+    <!-- Star Gradient -->
+    <linearGradient id="starGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffff00" />
+      <stop offset="50%" stop-color="#ffeb3b" />
+      <stop offset="100%" stop-color="#fbc02d" />
+    </linearGradient>
+
+    <filter id="drop-shadow">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="12" />
+      <feOffset dx="0" dy="8" result="offsetblur" />
+      <feComponentTransfer>
+         <feFuncA type="linear" slope="0.6"/>
+      </feComponentTransfer>
+      <feMerge> 
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <g transform="translate(256, 280)" filter="url(#drop-shadow)">
+    
+    <!-- 1. Brim (Back) -->
     <path
-      d="M 176 340 C 176 420 336 420 336 340"
-      fill="none"
-      stroke="#2a4d36"
-      stroke-width="8"
-      stroke-linecap="round"
+      d="M -230 40 Q -230 110 0 110 Q 230 110 230 40"
+      fill="#1b5e20"
     />
-    <rect
-      x="241"
-      y="395"
-      width="30"
-      height="14"
-      rx="4"
-      fill="#6b7c4b"
-      stroke="#2a4d36"
-      stroke-width="2"
-    />
-    <path d="M 160 300 C 160 140 352 140 352 300 Z" fill="#3c7a46" />
-    <line x1="256" y1="180" x2="256" y2="300" stroke="#204526" stroke-width="4" />
-    <path d="M 256 182 Q 200 180 196 300" fill="none" stroke="#204526" stroke-width="4" />
-    <path d="M 256 182 Q 312 180 316 300" fill="none" stroke="#204526" stroke-width="4" />
+
+    <!-- 2. Dome -->
     <path
-      d="M 160 280 Q 256 260 352 280 L 352 300 Q 256 280 160 300 Z"
-      fill="#33683b"
-      stroke="#204526"
-      stroke-width="3"
+      d="M -180 40 
+         C -180 -120 -120 -210 0 -210 
+         C 120 -210 180 -120 180 40
+         Z"
+      fill="url(#domeGrad)"
     />
+    
+    <!-- Dome Ribs -->
+    <path d="M 0 -210 L 0 40" stroke="#1b5e20" stroke-width="2" opacity="0.3" />
+    <path d="M -90 -160 Q 0 -210 90 -160" fill="none" stroke="#1b5e20" stroke-width="2" opacity="0.2" transform="rotate(30)" />
+
+    <!-- Top Button -->
+    <ellipse cx="0" cy="-210" rx="30" ry="12" fill="#1b5e20" />
+    <ellipse cx="0" cy="-212" rx="25" ry="8" fill="#388e3c" />
+
+    <!-- 3. Brim (Front) -->
     <path
-      d="M 130 310 Q 256 270 382 310 L 370 345 Q 256 315 142 345 Z"
-      fill="#3c7a46"
-      stroke="#204526"
-      stroke-width="4"
-      stroke-linejoin="round"
+      d="M -240 40 
+         Q -240 130 0 130 
+         Q 240 130 240 40 
+         Q 240 0 0 0 
+         Q -240 0 -240 40 Z"
+      fill="url(#brimGrad)"
     />
-    <circle cx="256" cy="245" r="28" fill="#fdd835" stroke="#e65100" stroke-width="2" />
-    <polygon
-      points="256,227 263,243 280,243 266,254 271,270 256,260 241,270 246,254 232,243 249,243"
-      fill="#d32f2f"
-    />
+
+    <!-- Band -->
     <path
-      d="M 246 180 Q 256 170 266 180 Z"
-      fill="#3c7a46"
-      stroke="#204526"
-      stroke-width="3"
+      d="M -184 30 Q 0 65 184 30 L 184 52 Q 0 87 -184 52 Z"
+      fill="#1b5e20"
+      opacity="0.8"
     />
+
+    <!-- 4. Leather Strap -->
+    <g>
+      <!-- Main Strap Body -->
+      <path
+        id="strapPath"
+        d="M -210 50 C -150 140 150 140 210 50"
+        fill="none"
+        stroke="url(#strapGrad)"
+        stroke-width="22"
+        stroke-linecap="round"
+      />
+      <!-- Stitching -->
+      <path
+        d="M -200 52 C -145 130 145 130 200 52"
+        fill="none"
+        stroke="#5d4037"
+        stroke-width="2"
+        stroke-dasharray="6 4"
+        opacity="0.8"
+      />
+      <path
+        d="M -200 48 C -145 126 145 126 200 48"
+        fill="none"
+        stroke="#5d4037"
+        stroke-width="2"
+        stroke-dasharray="6 4"
+        opacity="0.8"
+      />
+    </g>
+    
+    <!-- Buckles -->
+    <g transform="translate(-165, 80) rotate(25)">
+      <rect x="-14" y="-20" width="28" height="40" rx="4" fill="none" stroke="#ffb300" stroke-width="4" />
+      <line x1="0" y1="-20" x2="0" y2="20" stroke="#ffb300" stroke-width="3" />
+    </g>
+    <g transform="translate(165, 80) rotate(-25)">
+      <rect x="-14" y="-20" width="28" height="40" rx="4" fill="none" stroke="#ffb300" stroke-width="4" />
+      <line x1="0" y1="-20" x2="0" y2="20" stroke="#ffb300" stroke-width="3" />
+    </g>
+
+    <!-- 5. Badge -->
+    <g transform="translate(0, 15)">
+        <!-- Outer Gold Rim -->
+        <circle cx="0" cy="0" r="56" fill="#ffb300" />
+        
+        <!-- Gear / Cog Detail at Bottom -->
+        <path
+            d="M -30 45 L -25 55 L -15 50 L -10 60 L 0 56 L 10 60 L 15 50 L 25 55 L 30 45"
+            fill="none"
+            stroke="#ffb300"
+            stroke-width="6"
+            stroke-linejoin="round"
+            transform="translate(0, -6)"
+        />
+        
+        <!-- Red Background -->
+        <circle cx="0" cy="0" r="50" fill="url(#badgeGrad)" />
+        
+        <!-- Inner Ring -->
+        <circle cx="0" cy="0" r="48" fill="none" stroke="#b71c1c" stroke-width="1" />
+
+        <!-- Star -->
+        <g transform="translate(0, 2)">
+            <polygon
+              points="0,-35 11,-10 38,-10 16,6 24,32 0,16 -24,32 -16,6 -38,-10 -11,-10"
+              fill="url(#starGrad)"
+            />
+            <!-- Facets -->
+            <path d="M 0 -35 L 0 16" stroke="#f57f17" stroke-width="1" opacity="0.4" />
+            <path d="M 11 -10 L -16 6" stroke="#f57f17" stroke-width="1" opacity="0.4" />
+            <path d="M 38 -10 L -24 32" stroke="#f57f17" stroke-width="1" opacity="0.4" />
+            <path d="M 16 6 L -38 -10" stroke="#f57f17" stroke-width="1" opacity="0.4" />
+            <path d="M 24 32 L -11 -10" stroke="#f57f17" stroke-width="1" opacity="0.4" />
+        </g>
+    </g>
+    
+    <!-- Grommets -->
+    <circle cx="-80" cy="-100" r="6" fill="#1a237e" stroke="#ffb300" stroke-width="2" />
+    <circle cx="80" cy="-100" r="6" fill="#1a237e" stroke="#ffb300" stroke-width="2" />
+
   </g>
 </svg>
