@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Info, Users, Share2, Puzzle, Bot, Gamepad2 } from 'lucide-svelte';
+  import { Info, Users, Share2, Puzzle, Bot, Gamepad2, BookOpen } from 'lucide-svelte';
 </script>
 
 <main class="intro-page">
@@ -23,6 +23,15 @@
       <h2>What you can do</h2>
 
       <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon learn-icon">
+            <BookOpen size={32} />
+          </div>
+          <h3>Learn to Play</h3>
+          <p>Interactive lessons to master Cờ Tư Lệnh step by step. Perfect for beginners!</p>
+          <a href="/learn" class="feature-link">Start Learning →</a>
+        </div>
+
         <div class="feature-card">
           <div class="feature-icon">
             <Gamepad2 size={32} />
@@ -176,6 +185,23 @@
   .feature-icon {
     color: var(--theme-success, #22c55e);
     margin-bottom: 1rem;
+  }
+
+  .feature-icon.learn-icon {
+    color: var(--theme-primary, #06b6d4);
+  }
+
+  .feature-link {
+    display: inline-block;
+    margin-top: 0.75rem;
+    color: var(--theme-primary, #06b6d4);
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 0.875rem;
+  }
+
+  .feature-link:hover {
+    text-decoration: underline;
   }
 
   .feature-card h3 {

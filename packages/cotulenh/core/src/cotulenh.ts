@@ -147,12 +147,13 @@ export interface CoTuLenhInterface {
           deploy?: boolean
         }
       | InternalMove,
-    options?: { strict?: boolean; autoCommit?: boolean },
+    options?: { strict?: boolean; autoCommit?: boolean; legal?: boolean },
   ): MoveResult | null
   moves(options?: {
     verbose?: boolean
     square?: Square
     pieceType?: PieceSymbol
+    legal?: boolean
   }): string[] | MoveResult[]
   undo(): void
 
@@ -917,15 +918,17 @@ export class CoTuLenh implements CoTuLenhInterface {
     verbose = false,
     square = undefined,
     pieceType = undefined,
+    legal = true,
   }: {
     verbose?: boolean
     square?: Square
     pieceType?: PieceSymbol
+    legal?: boolean
   } = {}): string[] | MoveResult[] {
     const internalMoves = this._moves({
       square,
       pieceType,
-      legal: true,
+      legal,
     })
 
     if (verbose) {
@@ -1448,6 +1451,7 @@ export class CoTuLenh implements CoTuLenhInterface {
           deploy?: boolean
         }
       | InternalMove,
+    { legal = true }: { legal?: boolean } = {},
   ): InternalMove {
     // Check if this is an InternalMove (has numeric from/to properties)
     const isInternalMove =
@@ -1497,7 +1501,7 @@ export class CoTuLenh implements CoTuLenhInterface {
 
     // Find matching move in legal moves
     const legalMoves = this._moves({
-      legal: true,
+      legal,
       square: algebraic(fromSq),
       ...(pieceType && { pieceType }),
     })
@@ -1568,7 +1572,8 @@ export class CoTuLenh implements CoTuLenhInterface {
     {
       strict = false,
       autoCommit = true,
-    }: { strict?: boolean; autoCommit?: boolean } = {},
+      legal = true,
+    }: { strict?: boolean; autoCommit?: boolean; legal?: boolean } = {},
   ): MoveResult | null {
     let internalMove: InternalMove | null = null
 
@@ -1577,7 +1582,7 @@ export class CoTuLenh implements CoTuLenhInterface {
     if (typeof move === 'string') {
       internalMove = this._moveFromSan(move, strict)
     } else if (typeof move === 'object') {
-      internalMove = this._moveFromObject(move)
+      internalMove = this._moveFromObject(move, { legal })
     }
 
     // 2. Validate move
