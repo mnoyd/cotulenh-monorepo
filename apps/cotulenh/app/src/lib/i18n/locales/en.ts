@@ -11,6 +11,7 @@ export const en: TranslationKeys = {
   'nav.introduction': 'Introduction',
   'nav.keyboardShortcuts': 'Keyboard Shortcuts',
   'nav.learn': 'Learn',
+  'nav.appName': 'Cotulenh Online',
 
   // Home page
   'home.demoBadge': 'Demo',
