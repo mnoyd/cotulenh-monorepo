@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { CategoryInfo, LessonProgress } from '../types';
+  import type { CategoryInfo } from '../types';
   import { LearnSession } from '../learn-session.svelte';
   import LessonCard from './LessonCard.svelte';
 
