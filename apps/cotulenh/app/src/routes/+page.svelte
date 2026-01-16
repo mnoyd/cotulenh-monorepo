@@ -96,6 +96,7 @@
 <style>
   .intro-page {
     min-height: 100vh;
+    min-height: 100dvh;
     display: flex;
     justify-content: center;
     align-items: flex-start;
@@ -103,6 +104,8 @@
     color: var(--theme-text-primary, #eee);
     font-family: var(--font-ui);
     padding: 2rem 1rem;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   .intro-container {
