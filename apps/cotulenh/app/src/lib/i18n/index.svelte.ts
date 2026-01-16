@@ -6,7 +6,7 @@ import { vi } from './locales/vi';
 export type { Locale, TranslationKey, TranslationKeys };
 
 const LOCALE_STORAGE_KEY = 'cotulenh-locale';
-const DEFAULT_LOCALE: Locale = 'en';
+const DEFAULT_LOCALE: Locale = 'vi';
 
 const translations: Record<Locale, TranslationKeys> = {
   en,
