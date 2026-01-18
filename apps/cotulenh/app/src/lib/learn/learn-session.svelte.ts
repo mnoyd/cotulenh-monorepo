@@ -1,7 +1,12 @@
-import { logger } from '@cotulenh/common';
 import type { Api, Config, OrigMove, DestMove } from '@cotulenh/board';
 import type { Square, MoveResult } from '@cotulenh/core';
-import { LearnEngine, type Lesson, type LessonProgress, type LearnStatus } from '@cotulenh/learn';
+import {
+  LearnEngine,
+  type Lesson,
+  type LessonProgress,
+  type LearnStatus,
+  type BoardShape
+} from '@cotulenh/learn';
 import { getStoredValue, setStoredValue } from '$lib/stores/persisted.svelte';
 import { coreToBoardColor, mapPossibleMovesToDests } from '$lib/features/game/utils';
 
@@ -9,6 +14,7 @@ import { coreToBoardColor, mapPossibleMovesToDests } from '$lib/features/game/ut
  * LearnSession - Svelte 5 reactive wrapper around LearnEngine
  *
  * Provides reactive state for the learning system using Svelte 5 runes.
+ * Handles scenario-based lessons with opponent responses.
  */
 export class LearnSession {
   #engine: LearnEngine;
@@ -18,19 +24,45 @@ export class LearnSession {
   // Feedback messages
   #feedbackMessage = $state('');
   #showFeedback = $state(false);
+  #isFailed = $state(false);
+
+  // Board shapes (arrows, highlights)
+  #shapes = $state<BoardShape[]>([]);
 
   constructor(lessonId?: string) {
     this.#engine = new LearnEngine({
       onMove: () => {
         this.#version++;
+        this.syncBoard();
       },
       onComplete: (result) => {
         this.#feedbackMessage = this.#engine.successMessage;
         this.#showFeedback = true;
+        this.#isFailed = false;
         this.#saveProgress(result);
         this.#version++;
+        this.syncBoard();
       },
-      onStateChange: () => {
+      onStateChange: (status) => {
+        if (status === 'failed') {
+          this.#isFailed = true;
+          this.#feedbackMessage = this.#engine.failureMessage;
+          this.#showFeedback = true;
+        }
+        this.#version++;
+      },
+      onOpponentMove: () => {
+        this.#version++;
+        this.syncBoard();
+      },
+      onFail: () => {
+        this.#isFailed = true;
+        this.#feedbackMessage = this.#engine.failureMessage;
+        this.#showFeedback = true;
+        this.#version++;
+      },
+      onShapes: (shapes) => {
+        this.#shapes = shapes;
         this.#version++;
       }
     });
@@ -67,6 +99,10 @@ export class LearnSession {
     return this.#showFeedback;
   }
 
+  get isFailed(): boolean {
+    return this.#isFailed;
+  }
+
   get fen(): string {
     void this.#version;
     return this.#engine.fen;
@@ -85,6 +121,14 @@ export class LearnSession {
     return this.#engine.hint;
   }
 
+  get hasScenario(): boolean {
+    return this.#engine.hasScenario;
+  }
+
+  get shapes(): BoardShape[] {
+    return this.#shapes;
+  }
+
   // ============================================================
   // BOARD CONFIGURATION
   // ============================================================
@@ -100,16 +144,17 @@ export class LearnSession {
       };
     }
 
+    const isInteractive = this.#engine.status === 'ready' && !this.#isFailed;
     const moves = this.#engine.getPossibleMoves();
 
     return {
       fen: this.#engine.fen,
-      viewOnly: this.#engine.status === 'completed',
+      viewOnly: !isInteractive,
       turnColor: coreToBoardColor(game.turn()),
       movable: {
         free: false,
-        color: coreToBoardColor(game.turn()),
-        dests: mapPossibleMovesToDests(moves as MoveResult[]),
+        color: isInteractive ? coreToBoardColor(game.turn()) : undefined,
+        dests: isInteractive ? mapPossibleMovesToDests(moves as MoveResult[]) : new Map(),
         events: {
           after: (orig: OrigMove, dest: DestMove) => this.#handleMove(orig, dest)
         }
@@ -123,7 +168,15 @@ export class LearnSession {
 
   loadLesson(lessonId: string): boolean {
     this.#showFeedback = false;
+    this.#isFailed = false;
+    this.#shapes = [];
     const result = this.#engine.loadLesson(lessonId);
+
+    // Load initial shapes from lesson arrows
+    if (this.#engine.lesson?.arrows) {
+      this.#shapes = this.#engine.lesson.arrows;
+    }
+
     this.#version++;
     return result;
   }
@@ -136,8 +189,24 @@ export class LearnSession {
 
   restart(): void {
     this.#showFeedback = false;
+    this.#isFailed = false;
+    this.#shapes = [];
     this.#engine.restart();
+
+    // Reload initial shapes
+    if (this.#engine.lesson?.arrows) {
+      this.#shapes = this.#engine.lesson.arrows;
+    }
+
     this.#version++;
+    this.syncBoard();
+  }
+
+  /**
+   * Retry after failure (alias for restart)
+   */
+  retry(): void {
+    this.restart();
   }
 
   showHint(): void {
@@ -212,4 +281,10 @@ export function createLearnSession(lessonId?: string): LearnSession {
 
 // Re-export from package for convenience
 export { categories, getLessonById, getCategoryById, getNextLesson } from '@cotulenh/learn';
-export type { Lesson, LessonProgress, CategoryInfo, LearnStatus } from '@cotulenh/learn';
+export type {
+  Lesson,
+  LessonProgress,
+  CategoryInfo,
+  LearnStatus,
+  BoardShape
+} from '@cotulenh/learn';

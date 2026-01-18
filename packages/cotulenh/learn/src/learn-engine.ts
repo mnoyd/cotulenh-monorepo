@@ -9,11 +9,12 @@ import type {
   LessonResult
 } from './types';
 import { getLessonById } from './lessons';
+import { Scenario } from './scenario';
 
 /**
  * LearnEngine - Framework-agnostic learning session manager.
  *
- * Handles lesson state, move validation, goal checking, and scoring.
+ * Handles lesson state, move validation, goal checking, scoring, and scenarios.
  * UI frameworks should wrap this with their own reactive layer.
  */
 export class LearnEngine {
@@ -22,6 +23,8 @@ export class LearnEngine {
   #moveCount = 0;
   #game: CoTuLenh | null = null;
   #callbacks: LearnEngineCallbacks;
+  #scenario: Scenario | null = null;
+  #opponentMoveTimeout: ReturnType<typeof setTimeout> | null = null;
 
   constructor(callbacks: LearnEngineCallbacks = {}) {
     this.#callbacks = callbacks;
@@ -48,10 +51,8 @@ export class LearnEngine {
   }
 
   get stars(): 0 | 1 | 2 | 3 {
-    if (this.#moveCount <= 1) return 3;
-    if (this.#moveCount <= 3) return 2;
-    if (this.#moveCount <= 5) return 1;
-    return 0;
+    const optimal = this.#lesson?.optimalMoves ?? this.#getDefaultOptimalMoves();
+    return LearnEngine.calculateStars(this.#moveCount, optimal);
   }
 
   get instruction(): string {
@@ -66,8 +67,33 @@ export class LearnEngine {
     return this.#lesson?.successMessage ?? 'Well done!';
   }
 
+  get failureMessage(): string {
+    return this.#lesson?.failureMessage ?? "That's not the right move. Try again!";
+  }
+
   get game(): CoTuLenh | null {
     return this.#game;
+  }
+
+  get scenario(): Scenario | null {
+    return this.#scenario;
+  }
+
+  /**
+   * Check if this lesson uses a scenario
+   */
+  get hasScenario(): boolean {
+    return this.#scenario !== null;
+  }
+
+  /**
+   * Get default optimal moves based on scenario or lesson type
+   */
+  #getDefaultOptimalMoves(): number {
+    if (this.#scenario) {
+      return this.#scenario.playerMoveCount;
+    }
+    return 3; // Default for free-form lessons
   }
 
   /**
@@ -89,9 +115,21 @@ export class LearnEngine {
       return false;
     }
 
+    // Clear any pending opponent move
+    this.#clearOpponentTimeout();
+
     this.#lesson = lesson;
     this.#moveCount = 0;
     this.#status = 'ready';
+
+    // Initialize scenario if present
+    if (lesson.scenario && lesson.scenario.length > 0) {
+      this.#scenario = new Scenario(lesson.scenario, {
+        onShapes: (shapes) => this.#callbacks.onShapes?.(shapes)
+      });
+    } else {
+      this.#scenario = null;
+    }
 
     try {
       this.#game = new CoTuLenh(lesson.startFen);
@@ -110,6 +148,66 @@ export class LearnEngine {
    */
   makeMove(from: Square, to: Square): boolean {
     if (!this.#lesson || !this.#game) return false;
+    if (this.#status !== 'ready') return false;
+
+    const uci = Scenario.toUci(from, to);
+
+    // Handle scenario-based lessons
+    if (this.#scenario) {
+      return this.#handleScenarioMove(from, to, uci);
+    }
+
+    // Handle free-form lessons (goal-based)
+    return this.#handleFreeFormMove(from, to);
+  }
+
+  /**
+   * Handle a move in a scenario-based lesson
+   */
+  #handleScenarioMove(from: Square, to: Square, uci: string): boolean {
+    if (!this.#scenario || !this.#game) return false;
+
+    const expectedMove = this.#scenario.expectedMove;
+
+    // Validate move against scenario
+    if (!this.#scenario.player(uci)) {
+      // Wrong move
+      this.#status = 'failed';
+      this.#callbacks.onFail?.(expectedMove ?? '', uci);
+      this.#callbacks.onStateChange?.(this.#status);
+      return false;
+    }
+
+    // Correct move - execute it
+    try {
+      this.#game.move({ from, to }, { legal: false });
+      this.#moveCount++;
+    } catch (error) {
+      logger.error('Move failed:', { error, from, to });
+      return false;
+    }
+
+    this.#callbacks.onMove?.(this.#moveCount, this.fen);
+
+    // Check if scenario is complete
+    if (this.#scenario.isComplete) {
+      this.#completeLesson();
+      return true;
+    }
+
+    // Schedule opponent move if needed
+    if (this.#scenario.shouldOpponentMove()) {
+      this.#scheduleOpponentMove();
+    }
+
+    return true;
+  }
+
+  /**
+   * Handle a move in a free-form (goal-based) lesson
+   */
+  #handleFreeFormMove(from: Square, to: Square): boolean {
+    if (!this.#game) return false;
 
     try {
       this.#game.move({ from, to }, { legal: false });
@@ -123,12 +221,65 @@ export class LearnEngine {
 
     // Check if goal reached
     if (this.#checkGoalReached()) {
-      this.#status = 'completed';
-      this.#callbacks.onStateChange?.(this.#status);
-      this.#callbacks.onComplete?.(this.#getResult());
+      this.#completeLesson();
     }
 
     return true;
+  }
+
+  /**
+   * Schedule the opponent's move with a delay
+   */
+  #scheduleOpponentMove(): void {
+    if (!this.#scenario) return;
+
+    const opponentMove = this.#scenario.getOpponentMove();
+    if (!opponentMove) return;
+
+    this.#opponentMoveTimeout = setTimeout(() => {
+      this.#executeOpponentMove(opponentMove);
+    }, 500);
+  }
+
+  /**
+   * Execute the opponent's move
+   */
+  #executeOpponentMove(move: { from: Square; to: Square }): void {
+    if (!this.#game || !this.#scenario) return;
+
+    try {
+      this.#game.move({ from: move.from, to: move.to }, { legal: false });
+      this.#scenario.confirmOpponentMove();
+
+      const uci = Scenario.toUci(move.from, move.to);
+      this.#callbacks.onOpponentMove?.(uci, this.fen);
+
+      // Check if scenario is complete after opponent move
+      if (this.#scenario.isComplete) {
+        this.#completeLesson();
+      }
+    } catch (error) {
+      logger.error('Opponent move failed:', { error, move });
+    }
+  }
+
+  /**
+   * Clear any pending opponent move timeout
+   */
+  #clearOpponentTimeout(): void {
+    if (this.#opponentMoveTimeout) {
+      clearTimeout(this.#opponentMoveTimeout);
+      this.#opponentMoveTimeout = null;
+    }
+  }
+
+  /**
+   * Complete the lesson successfully
+   */
+  #completeLesson(): void {
+    this.#status = 'completed';
+    this.#callbacks.onStateChange?.(this.#status);
+    this.#callbacks.onComplete?.(this.#getResult());
   }
 
   #checkGoalReached(): boolean {
@@ -159,8 +310,13 @@ export class LearnEngine {
   restart(): void {
     if (!this.#lesson) return;
 
+    this.#clearOpponentTimeout();
     this.#moveCount = 0;
     this.#status = 'ready';
+
+    if (this.#scenario) {
+      this.#scenario.reset();
+    }
 
     try {
       this.#game = new CoTuLenh(this.#lesson.startFen);
@@ -173,10 +329,15 @@ export class LearnEngine {
   undo(): boolean {
     if (!this.#game || this.#moveCount === 0) return false;
 
+    // Undo not supported for scenario lessons
+    if (this.#scenario) {
+      return false;
+    }
+
     this.#game.undo();
     this.#moveCount--;
 
-    if (this.#status === 'completed') {
+    if (this.#status === 'completed' || this.#status === 'failed') {
       this.#status = 'ready';
       this.#callbacks.onStateChange?.(this.#status);
     }
@@ -184,17 +345,24 @@ export class LearnEngine {
     return true;
   }
 
+  /**
+   * Retry after failure (for scenario lessons)
+   */
+  retry(): void {
+    this.restart();
+  }
+
   // ============================================================
   // STATIC PROGRESS HELPERS
   // ============================================================
 
   /**
-   * Calculate star rating from move count
+   * Calculate star rating from move count and optimal moves
    */
-  static calculateStars(moveCount: number): 0 | 1 | 2 | 3 {
-    if (moveCount <= 1) return 3;
-    if (moveCount <= 3) return 2;
-    if (moveCount <= 5) return 1;
+  static calculateStars(moveCount: number, optimalMoves: number = 3): 0 | 1 | 2 | 3 {
+    if (moveCount <= optimalMoves) return 3;
+    if (moveCount <= optimalMoves + Math.ceil(optimalMoves / 2)) return 2;
+    if (moveCount <= optimalMoves * 2) return 1;
     return 0;
   }
 
