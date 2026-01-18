@@ -49,3 +49,5 @@ export function getNextLesson(currentId: string): Lesson | undefined {
   }
   return undefined;
 }
+
+export { basicsLessons, piecesLessons, terrainLessons };

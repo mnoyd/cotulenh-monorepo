@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { CategoryInfo } from '../types';
+  import type { CategoryInfo, Lesson } from '@cotulenh/learn';
   import { LearnSession } from '../learn-session.svelte';
   import LessonCard from './LessonCard.svelte';
 
@@ -16,7 +16,7 @@
   });
 
   function getCompletedCount(): number {
-    return category.lessons.filter(l => allProgress[l.id]?.completed).length;
+    return category.lessons.filter((l: Lesson) => allProgress[l.id]?.completed).length;
   }
 </script>
 

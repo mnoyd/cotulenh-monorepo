@@ -1,21 +1,18 @@
 import { logger } from '@cotulenh/common';
 import type { Api, Config, OrigMove, DestMove } from '@cotulenh/board';
-import { CoTuLenh } from '@cotulenh/core';
 import type { Square, MoveResult } from '@cotulenh/core';
-import type { Lesson, LessonProgress } from './types';
-import { getLessonById } from './lessons';
+import { LearnEngine, type Lesson, type LessonProgress, type LearnStatus } from '@cotulenh/learn';
 import { getStoredValue, setStoredValue } from '$lib/stores/persisted.svelte';
 import { coreToBoardColor, mapPossibleMovesToDests } from '$lib/features/game/utils';
 
-export type LearnStatus = 'loading' | 'ready' | 'completed';
-
+/**
+ * LearnSession - Svelte 5 reactive wrapper around LearnEngine
+ *
+ * Provides reactive state for the learning system using Svelte 5 runes.
+ */
 export class LearnSession {
-  #lesson: Lesson | null = $state(null);
-  #status: LearnStatus = $state('loading');
-  #moveCount = $state(0);
+  #engine: LearnEngine;
   #version = $state(0);
-
-  #game: CoTuLenh | null = $state(null);
   #boardApi: Api | null = $state(null);
 
   // Feedback messages
@@ -23,6 +20,21 @@ export class LearnSession {
   #showFeedback = $state(false);
 
   constructor(lessonId?: string) {
+    this.#engine = new LearnEngine({
+      onMove: () => {
+        this.#version++;
+      },
+      onComplete: (result) => {
+        this.#feedbackMessage = this.#engine.successMessage;
+        this.#showFeedback = true;
+        this.#saveProgress(result);
+        this.#version++;
+      },
+      onStateChange: () => {
+        this.#version++;
+      }
+    });
+
     if (lessonId) {
       this.loadLesson(lessonId);
     }
@@ -34,16 +46,17 @@ export class LearnSession {
 
   get lesson(): Lesson | null {
     void this.#version;
-    return this.#lesson;
+    return this.#engine.lesson;
   }
 
   get status(): LearnStatus {
     void this.#version;
-    return this.#status;
+    return this.#engine.status;
   }
 
   get moveCount(): number {
-    return this.#moveCount;
+    void this.#version;
+    return this.#engine.moveCount;
   }
 
   get feedbackMessage(): string {
@@ -56,24 +69,20 @@ export class LearnSession {
 
   get fen(): string {
     void this.#version;
-    return this.#game?.fen() ?? this.#lesson?.startFen ?? '';
+    return this.#engine.fen;
   }
 
   get stars(): 0 | 1 | 2 | 3 {
-    // Star rating based on move count efficiency
-    // For now: 3 stars if solved in minimal moves, fewer stars for more moves
-    if (this.#moveCount <= 1) return 3;
-    if (this.#moveCount <= 3) return 2;
-    if (this.#moveCount <= 5) return 1;
-    return 0;
+    void this.#version;
+    return this.#engine.stars;
   }
 
   get instruction(): string {
-    return this.#lesson?.instruction ?? '';
+    return this.#engine.instruction;
   }
 
   get hint(): string {
-    return this.#lesson?.hint ?? '';
+    return this.#engine.hint;
   }
 
   // ============================================================
@@ -81,23 +90,26 @@ export class LearnSession {
   // ============================================================
 
   get boardConfig(): Config {
-    if (!this.#lesson || !this.#game) {
+    void this.#version;
+
+    const game = this.#engine.game;
+    if (!this.#engine.lesson || !game) {
       return {
         fen: '',
         viewOnly: true
       };
     }
 
-    const moves = this.#game.moves({ verbose: true, legal: false }) as MoveResult[];
+    const moves = this.#engine.getPossibleMoves();
 
     return {
-      fen: this.#game.fen(),
-      viewOnly: this.#status === 'completed',
-      turnColor: coreToBoardColor(this.#game.turn()),
+      fen: this.#engine.fen,
+      viewOnly: this.#engine.status === 'completed',
+      turnColor: coreToBoardColor(game.turn()),
       movable: {
         free: false,
-        color: coreToBoardColor(this.#game.turn()),
-        dests: mapPossibleMovesToDests(moves),
+        color: coreToBoardColor(game.turn()),
+        dests: mapPossibleMovesToDests(moves as MoveResult[]),
         events: {
           after: (orig: OrigMove, dest: DestMove) => this.#handleMove(orig, dest)
         }
@@ -110,83 +122,27 @@ export class LearnSession {
   // ============================================================
 
   loadLesson(lessonId: string): boolean {
-    const lesson = getLessonById(lessonId);
-    if (!lesson) {
-      logger.error('Lesson not found:', { lessonId });
-      return false;
-    }
-
-    this.#lesson = lesson;
-    this.#moveCount = 0;
-    this.#status = 'ready';
     this.#showFeedback = false;
-
-    try {
-      this.#game = new CoTuLenh(lesson.startFen);
-      this.#version++;
-    } catch (error) {
-      logger.error('Failed to load lesson FEN:', { error, fen: lesson.startFen });
-      return false;
-    }
-
-    return true;
+    const result = this.#engine.loadLesson(lessonId);
+    this.#version++;
+    return result;
   }
 
   #handleMove(orig: OrigMove, dest: DestMove): void {
-    if (!this.#lesson || !this.#game) return;
-
     const from = orig as unknown as Square;
     const to = dest as unknown as Square;
-
-    // Make the move
-    try {
-      this.#game.move({ from, to }, { legal: false });
-      this.#moveCount++;
-    } catch (error) {
-      logger.error('Move failed:', { error, from, to });
-      return;
-    }
-
-    // Check if goal reached by comparing position parts of FEN
-    const currentPosition = this.#extractPositionFen(this.#game.fen());
-    const goalPosition = this.#extractPositionFen(this.#lesson.goalFen);
-
-    if (currentPosition === goalPosition) {
-      this.#status = 'completed';
-      this.#feedbackMessage = this.#lesson.successMessage ?? 'Well done!';
-      this.#showFeedback = true;
-      this.#saveProgress();
-    }
-
-    this.#version++;
-  }
-
-  /**
-   * Extract only the position part of FEN (before first space)
-   * This allows comparison regardless of turn, castling rights, etc.
-   */
-  #extractPositionFen(fen: string): string {
-    return fen.split(' ')[0];
+    this.#engine.makeMove(from, to);
   }
 
   restart(): void {
-    if (!this.#lesson) return;
-
-    this.#moveCount = 0;
-    this.#status = 'ready';
     this.#showFeedback = false;
-
-    try {
-      this.#game = new CoTuLenh(this.#lesson.startFen);
-      this.#version++;
-    } catch (error) {
-      logger.error('Failed to restart lesson:', { error });
-    }
+    this.#engine.restart();
+    this.#version++;
   }
 
   showHint(): void {
-    if (this.#lesson?.hint) {
-      this.#feedbackMessage = this.#lesson.hint;
+    if (this.#engine.hint) {
+      this.#feedbackMessage = this.#engine.hint;
       this.#showFeedback = true;
       this.#version++;
     }
@@ -201,20 +157,17 @@ export class LearnSession {
   // PROGRESS PERSISTENCE
   // ============================================================
 
-  #saveProgress(): void {
-    if (!this.#lesson) return;
-
+  #saveProgress(result: { lessonId: string; moveCount: number; stars: 0 | 1 | 2 | 3 }): void {
     const key = 'learn-progress';
     const allProgress = getStoredValue<Record<string, LessonProgress>>(key, {});
 
-    // Only save if new completion or better star rating
-    const existing = allProgress[this.#lesson.id];
-    if (!existing || this.stars > existing.stars) {
-      allProgress[this.#lesson.id] = {
-        lessonId: this.#lesson.id,
+    const existing = allProgress[result.lessonId];
+    if (!existing || result.stars > existing.stars) {
+      allProgress[result.lessonId] = {
+        lessonId: result.lessonId,
         completed: true,
-        moveCount: this.#moveCount,
-        stars: this.stars
+        moveCount: result.moveCount,
+        stars: result.stars
       };
       setStoredValue(key, allProgress);
     }
@@ -239,14 +192,13 @@ export class LearnSession {
   }
 
   syncBoard(): void {
-    if (!this.#boardApi || !this.#lesson) return;
-
+    if (!this.#boardApi || !this.#engine.lesson) return;
     this.#boardApi.set(this.boardConfig);
   }
 
   setupBoardEffect(): void {
     void this.#version;
-    void this.#lesson;
+    void this.#engine.lesson;
 
     if (this.#boardApi) {
       this.syncBoard();
@@ -257,3 +209,7 @@ export class LearnSession {
 export function createLearnSession(lessonId?: string): LearnSession {
   return new LearnSession(lessonId);
 }
+
+// Re-export from package for convenience
+export { categories, getLessonById, getCategoryById, getNextLesson } from '@cotulenh/learn';
+export type { Lesson, LessonProgress, CategoryInfo, LearnStatus } from '@cotulenh/learn';

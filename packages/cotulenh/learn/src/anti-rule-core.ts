@@ -4,7 +4,6 @@ import type {
   MoveResult,
   Color,
   Piece,
-  MoveSession,
   DeployStateView,
   GameStateMetadata,
   AirDefenseInfluence,
@@ -53,8 +52,8 @@ export class AntiRuleCore {
     move:
       | string
       | {
-          from: Square | number;
-          to: Square | number;
+          from: Square;
+          to: Square;
           piece?: PieceSymbol;
           stay?: boolean;
           deploy?: boolean;
@@ -96,15 +95,15 @@ export class AntiRuleCore {
     }
   }
 
-  get(square: Square | number): Piece | undefined {
+  get(square: Square): Piece | undefined {
     return this.#game.get(square);
   }
 
-  put(piece: Piece, square: Square | number): boolean {
+  put(piece: Piece, square: Square): boolean {
     return this.#game.put(piece, square);
   }
 
-  remove(square: Square | number): Piece | undefined {
+  remove(square: Square): Piece | undefined {
     return this.#game.remove(square);
   }
 
@@ -121,11 +120,11 @@ export class AntiRuleCore {
     }
   }
 
-  getSession(): MoveSession | null {
+  getSession(): ReturnType<CoTuLenh['getSession']> {
     return this.#game.getSession();
   }
 
-  setSession(session: MoveSession | null): void {
+  setSession(session: Parameters<CoTuLenh['setSession']>[0]): void {
     this.#game.setSession(session);
   }
 

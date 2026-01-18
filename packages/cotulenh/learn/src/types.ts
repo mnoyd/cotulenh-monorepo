@@ -50,3 +50,21 @@ export interface CategoryInfo {
   icon: string;
   lessons: Lesson[];
 }
+
+export type LearnStatus = 'loading' | 'ready' | 'completed';
+
+/**
+ * Callback interface for LearnEngine events
+ */
+export interface LearnEngineCallbacks {
+  onMove?: (moveCount: number, fen: string) => void;
+  onComplete?: (result: LessonResult) => void;
+  onStateChange?: (status: LearnStatus) => void;
+}
+
+export interface LessonResult {
+  lessonId: string;
+  moveCount: number;
+  stars: 0 | 1 | 2 | 3;
+  completed: boolean;
+}
