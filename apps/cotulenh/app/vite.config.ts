@@ -17,7 +17,7 @@ export default defineConfig(({ mode }) => {
       // All packages now work with source debugging (circular dependency fixed)
       exclude:
         mode === 'development'
-          ? ['@cotulenh/core', '@cotulenh/board', '@cotulenh/combine-piece']
+          ? ['@cotulenh/core', '@cotulenh/board', '@cotulenh/combine-piece', '@cotulenh/learn']
           : []
     },
     ssr: {
@@ -25,7 +25,8 @@ export default defineConfig(({ mode }) => {
         '@cotulenh/core',
         '@cotulenh/board',
         '@cotulenh/common',
-        '@cotulenh/combine-piece'
+        '@cotulenh/combine-piece',
+        '@cotulenh/learn'
       ],
       external: []
     },
@@ -72,7 +73,8 @@ export default defineConfig(({ mode }) => {
         '@cotulenh/common': path.resolve(
           __dirname,
           '../../../packages/cotulenh/common/src/index.ts'
-        )
+        ),
+        '@cotulenh/learn': path.resolve(__dirname, '../../../packages/cotulenh/learn/src/index.ts')
       }
     };
   }
