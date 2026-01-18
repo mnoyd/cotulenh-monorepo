@@ -1,4 +1,3 @@
-import { CoTuLenh } from '@cotulenh/core';
 import { logger } from '@cotulenh/common';
 import type { Square, MoveResult } from '@cotulenh/core';
 import type {
@@ -10,6 +9,7 @@ import type {
 } from './types';
 import { getLessonById } from './lessons';
 import { Scenario } from './scenario';
+import { AntiRuleCore } from './anti-rule-core';
 
 /**
  * LearnEngine - Framework-agnostic learning session manager.
@@ -21,7 +21,7 @@ export class LearnEngine {
   #lesson: Lesson | null = null;
   #status: LearnStatus = 'loading';
   #moveCount = 0;
-  #game: CoTuLenh | null = null;
+  #game: AntiRuleCore | null = null;
   #callbacks: LearnEngineCallbacks;
   #scenario: Scenario | null = null;
   #opponentMoveTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -71,7 +71,7 @@ export class LearnEngine {
     return this.#lesson?.failureMessage ?? "That's not the right move. Try again!";
   }
 
-  get game(): CoTuLenh | null {
+  get game(): AntiRuleCore | null {
     return this.#game;
   }
 
@@ -101,7 +101,7 @@ export class LearnEngine {
    */
   getPossibleMoves(): MoveResult[] {
     if (!this.#game) return [];
-    return this.#game.moves({ verbose: true, legal: false }) as MoveResult[];
+    return this.#game.moves({ verbose: true }) as MoveResult[];
   }
 
   // ============================================================
@@ -132,7 +132,7 @@ export class LearnEngine {
     }
 
     try {
-      this.#game = new CoTuLenh(lesson.startFen);
+      this.#game = new AntiRuleCore(lesson.startFen);
       this.#callbacks.onStateChange?.(this.#status);
     } catch (error) {
       logger.error('Failed to load lesson FEN:', { error, fen: lesson.startFen });
@@ -180,7 +180,7 @@ export class LearnEngine {
 
     // Correct move - execute it
     try {
-      this.#game.move({ from, to }, { legal: false });
+      this.#game.move({ from, to });
       this.#moveCount++;
     } catch (error) {
       logger.error('Move failed:', { error, from, to });
@@ -210,7 +210,7 @@ export class LearnEngine {
     if (!this.#game) return false;
 
     try {
-      this.#game.move({ from, to }, { legal: false });
+      this.#game.move({ from, to });
       this.#moveCount++;
     } catch (error) {
       logger.error('Move failed:', { error, from, to });
@@ -248,7 +248,7 @@ export class LearnEngine {
     if (!this.#game || !this.#scenario) return;
 
     try {
-      this.#game.move({ from: move.from, to: move.to }, { legal: false });
+      this.#game.move({ from: move.from, to: move.to });
       this.#scenario.confirmOpponentMove();
 
       const uci = Scenario.toUci(move.from, move.to);
@@ -285,17 +285,20 @@ export class LearnEngine {
   #checkGoalReached(): boolean {
     if (!this.#lesson || !this.#game) return false;
 
-    const currentPosition = this.#extractPositionFen(this.#game.fen());
-    const goalPosition = this.#extractPositionFen(this.#lesson.goalFen);
+    const currentPosition = this.#normalizePositionFen(this.#game.fen());
+    const goalPosition = this.#normalizePositionFen(this.#lesson.goalFen);
 
     return currentPosition === goalPosition;
   }
 
   /**
-   * Extract only the position part of FEN (before first space)
+   * Extract and normalize the position part of FEN (before first space).
+   * Removes the '+' heroic marker for comparison purposes.
    */
-  #extractPositionFen(fen: string): string {
-    return fen.split(' ')[0];
+  #normalizePositionFen(fen: string): string {
+    const position = fen.split(' ')[0];
+    // Remove '+' heroic markers for comparison
+    return position.replace(/\+/g, '');
   }
 
   #getResult(): LessonResult {
@@ -319,7 +322,7 @@ export class LearnEngine {
     }
 
     try {
-      this.#game = new CoTuLenh(this.#lesson.startFen);
+      this.#game = new AntiRuleCore(this.#lesson.startFen);
       this.#callbacks.onStateChange?.(this.#status);
     } catch (error) {
       logger.error('Failed to restart lesson:', { error });

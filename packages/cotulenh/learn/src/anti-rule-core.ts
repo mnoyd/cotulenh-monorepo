@@ -36,7 +36,7 @@ export class AntiRuleCore {
     this.#game = new CoTuLenh(fen);
     this.#options = {
       legalMoves: options.legalMoves ?? false,
-      infiniteTurnFor: options.infiniteTurnFor ?? RED
+      infiniteTurnFor: 'infiniteTurnFor' in options ? (options.infiniteTurnFor ?? null) : RED
     };
   }
 

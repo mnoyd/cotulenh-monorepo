@@ -146,14 +146,16 @@ export class LearnSession {
 
     const isInteractive = this.#engine.status === 'ready' && !this.#isFailed;
     const moves = this.#engine.getPossibleMoves();
+    // In learn mode, the player can always move (infinite turns for their color)
+    const playerColor = coreToBoardColor(game.turn());
 
     return {
       fen: this.#engine.fen,
       viewOnly: !isInteractive,
-      turnColor: coreToBoardColor(game.turn()),
+      turnColor: playerColor,
       movable: {
         free: false,
-        color: isInteractive ? coreToBoardColor(game.turn()) : undefined,
+        color: isInteractive ? playerColor : undefined,
         dests: isInteractive ? mapPossibleMovesToDests(moves as MoveResult[]) : new Map(),
         events: {
           after: (orig: OrigMove, dest: DestMove) => this.#handleMove(orig, dest)
