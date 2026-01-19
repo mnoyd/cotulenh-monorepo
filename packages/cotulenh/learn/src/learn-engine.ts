@@ -238,7 +238,7 @@ export class LearnEngine {
 
     this.#opponentMoveTimeout = setTimeout(() => {
       this.#executeOpponentMove(opponentMove);
-    }, 500);
+    }, this.#scenario.opponentDelay);
   }
 
   /**

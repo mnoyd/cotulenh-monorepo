@@ -29,6 +29,12 @@ export class LearnSession {
   // Board shapes (arrows, highlights)
   #shapes = $state<BoardShape[]>([]);
 
+  // Hint auto-hide timeout
+  #hintTimeoutId: ReturnType<typeof setTimeout> | null = null;
+
+  /** Default duration for hint auto-hide in milliseconds */
+  static readonly HINT_AUTO_HIDE_DURATION = 3000;
+
   constructor(lessonId?: string) {
     this.#engine = new LearnEngine({
       onMove: () => {
@@ -184,8 +190,8 @@ export class LearnSession {
   }
 
   #handleMove(orig: OrigMove, dest: DestMove): void {
-    const from = orig as unknown as Square;
-    const to = dest as unknown as Square;
+    const from = orig.square as Square;
+    const to = dest.square as Square;
     this.#engine.makeMove(from, to);
   }
 
@@ -211,15 +217,31 @@ export class LearnSession {
     this.restart();
   }
 
-  showHint(): void {
+  showHint(autoHideDuration: number = LearnSession.HINT_AUTO_HIDE_DURATION): void {
     if (this.#engine.hint) {
       this.#feedbackMessage = this.#engine.hint;
       this.#showFeedback = true;
       this.#version++;
+
+      // Clear any existing timeout
+      if (this.#hintTimeoutId) {
+        clearTimeout(this.#hintTimeoutId);
+      }
+
+      // Auto-hide after specified duration
+      if (autoHideDuration > 0) {
+        this.#hintTimeoutId = setTimeout(() => {
+          this.hideHint();
+        }, autoHideDuration);
+      }
     }
   }
 
   hideHint(): void {
+    if (this.#hintTimeoutId) {
+      clearTimeout(this.#hintTimeoutId);
+      this.#hintTimeoutId = null;
+    }
     this.#showFeedback = false;
     this.#version++;
   }

@@ -1,5 +1,5 @@
 import type { Square } from '@cotulenh/core';
-import type { ScenarioBlueprint, ScenarioStep, BoardShape } from './types';
+import type { ScenarioBlueprint, BoardShape } from './types';
 
 /**
  * Normalized step with guaranteed structure
@@ -95,6 +95,13 @@ export class Scenario {
 
   get totalSteps(): number {
     return this.#steps.length;
+  }
+
+  /**
+   * Get the opponent move delay in milliseconds
+   */
+  get opponentDelay(): number {
+    return this.#options.opponentDelay;
   }
 
   /**

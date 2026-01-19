@@ -32,8 +32,6 @@
 
   function handleHint() {
     session?.showHint();
-    // Auto-hide after 3 seconds
-    setTimeout(() => session?.hideHint(), 3000);
   }
 </script>
 
