@@ -22,7 +22,7 @@ describe('LearnEngine', () => {
       expect(piece).toBeDefined();
       expect(piece?.type).toBe('i'); // Infantry
 
-      // Make the correct move: f7 -> f8
+      // Make the move: f7 -> f8
       const success = engine.makeMove('f7', 'f8');
       expect(success).toBe(true);
 
@@ -32,48 +32,43 @@ describe('LearnEngine', () => {
       expect(onComplete.mock.calls[0][0].stars).toBe(3); // Optimal in 1 move
     });
 
-    it('should still complete with more moves (but fewer stars)', () => {
+    it('should allow any path to destination (no wrong moves)', () => {
       const onComplete = vi.fn();
       const engine = new LearnEngine({ onComplete });
 
       engine.loadLesson('basics-1');
 
-      // Move right first (not optimal)
-      engine.makeMove('f7', 'g7');
-      expect(engine.status).toBe('ready'); // Not complete yet
+      // Move right first (not direct path)
+      const success = engine.makeMove('f7', 'g7');
+      expect(success).toBe(true);
+      expect(engine.status).toBe('ready'); // Still in progress
 
       // Move up
       engine.makeMove('g7', 'g8');
-      expect(engine.status).toBe('ready'); // Still not at goal
+      expect(engine.status).toBe('ready');
 
       // Move left to reach f8 goal
       engine.makeMove('g8', 'f8');
       expect(engine.status).toBe('completed');
 
-      // 3 moves instead of optimal 1, should get fewer stars
       const result = onComplete.mock.calls[0][0];
       expect(result.moveCount).toBe(3);
     });
   });
 
-  describe('basics-2: Capturing Pieces', () => {
-    it('should complete when capturing enemy infantry', () => {
+  describe('basics-2: Commander Movement', () => {
+    it('should complete when moving commander forward', () => {
       const onComplete = vi.fn();
       const engine = new LearnEngine({ onComplete });
 
       engine.loadLesson('basics-2');
 
-      // Red infantry at f7, blue infantry at f8
-      // Goal: Red infantry at f8 (capturing blue)
-      const redInfantry = engine.game?.get('f7');
-      expect(redInfantry?.type).toBe('i');
-      expect(redInfantry?.color).toBe('r');
+      // Commander at f7
+      const commander = engine.game?.get('f7');
+      expect(commander?.type).toBe('c');
+      expect(commander?.color).toBe('r');
 
-      const blueInfantry = engine.game?.get('f8');
-      expect(blueInfantry?.type).toBe('i');
-      expect(blueInfantry?.color).toBe('b');
-
-      // Capture! f7 -> f8
+      // Move: f7 -> f8
       engine.makeMove('f7', 'f8');
       expect(engine.status).toBe('completed');
       expect(onComplete).toHaveBeenCalled();

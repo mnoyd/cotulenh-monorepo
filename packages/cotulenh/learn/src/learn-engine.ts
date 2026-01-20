@@ -333,6 +333,7 @@ export class LearnEngine {
 
   #checkGoalReached(): boolean {
     if (!this.#lesson || !this.#game) return false;
+    if (!this.#lesson.goalFen) return false;
 
     const currentPosition = this.#normalizePositionFen(this.#game.fen());
     const goalPosition = this.#normalizePositionFen(this.#lesson.goalFen);
