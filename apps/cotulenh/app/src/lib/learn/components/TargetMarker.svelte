@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { onMount, onDestroy } from 'svelte';
-  import type { Api } from '@cotulenh/board';
+  import { onDestroy } from 'svelte';
+  import { key2pos, posToTranslate, type Api } from '@cotulenh/board';
 
   type Props = {
     /** Target square in algebraic notation (e.g., 'f8') */
@@ -13,18 +13,9 @@
 
   let markerElement: HTMLElement | null = null;
 
-  // Convert square to position using same logic as board's key2pos
-  function key2pos(k: string): [number, number] {
-    return [k.charCodeAt(0) - 97, Number(k.substring(1)) - 1];
-  }
-
-  // Calculate position using same formula as board's posToTranslate
+  // Calculate position using board's positioning utilities
   function getTranslatePosition(bounds: DOMRectReadOnly, asRed: boolean): [number, number] {
-    const pos = key2pos(square);
-    return [
-      ((asRed ? pos[0] : 10 - pos[0]) * bounds.width) / 12 + bounds.width / 24,
-      ((asRed ? 11 - pos[1] : pos[1]) * bounds.height) / 13 + bounds.height / 26,
-    ];
+    return posToTranslate(bounds)(key2pos(square), asRed);
   }
 
   function createMarker() {

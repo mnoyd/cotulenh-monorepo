@@ -37,6 +37,28 @@ describe('Last Guard Promotion', () => {
     expect(game.get('d2')?.color).toBe(BLUE)
   })
 
+  it('Skips promotion when skipLastGuardPromotion is enabled', () => {
+    const skipGame = new CoTuLenh(undefined, { skipLastGuardPromotion: true })
+    skipGame.clear()
+
+    // Red: Commander + 2 Infantry
+    skipGame.put({ type: COMMANDER, color: RED }, 'e1')
+    skipGame.put({ type: INFANTRY, color: RED }, 'd2')
+    skipGame.put({ type: INFANTRY, color: RED }, 'f2')
+
+    // Blue: Commander + Tank attacker
+    skipGame.put({ type: COMMANDER, color: BLUE }, 'g12')
+    skipGame.put({ type: TANK, color: BLUE }, 'd3')
+
+    skipGame['_turn'] = BLUE
+
+    // Blue Tank captures Red Infantry at d2
+    skipGame.move({ from: 'd3', to: 'd2', piece: TANK })
+
+    // Promotion is skipped, remaining infantry should not be heroic
+    expect(skipGame.get('f2')?.heroic).toBe(false)
+  })
+
   it('Does NOT promote if more than 1 non-commander remains', () => {
     // Red: Commander + 3 Infantry
     game.put({ type: COMMANDER, color: RED }, 'e1')

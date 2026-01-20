@@ -101,7 +101,7 @@ export class LearnEngine {
    */
   getPossibleMoves(): MoveResult[] {
     if (!this.#game) return [];
-    return this.#game.moves({ verbose: true }) as MoveResult[];
+    return this.#game.moves({ verbose: true });
   }
 
   // ============================================================

@@ -1,5 +1,5 @@
 import type { Api, Config, OrigMove, DestMove } from '@cotulenh/board';
-import type { Square, MoveResult } from '@cotulenh/core';
+import type { Square } from '@cotulenh/core';
 import {
   LearnEngine,
   type Lesson,
@@ -170,7 +170,7 @@ export class LearnSession {
       movable: {
         free: false,
         color: isInteractive ? playerColor : undefined,
-        dests: isInteractive ? mapPossibleMovesToDests(moves as MoveResult[]) : new Map(),
+        dests: isInteractive ? mapPossibleMovesToDests(moves) : new Map(),
         events: {
           after: (orig: OrigMove, dest: DestMove) => this.#handleMove(orig, dest)
         }
@@ -200,7 +200,12 @@ export class LearnSession {
   #handleMove(orig: OrigMove, dest: DestMove): void {
     const from = orig.square as Square;
     const to = dest.square as Square;
-    this.#engine.makeMove(from, to);
+    const success = this.#engine.makeMove(from, to);
+    if (!success && this.#engine.status === 'ready') {
+      this.#feedbackMessage = 'Invalid move. Try again.';
+      this.#showFeedback = true;
+      this.#version++;
+    }
   }
 
   restart(): void {

@@ -13,6 +13,7 @@ import type {
 
 export interface AntiRuleOptions {
   legalMoves?: boolean;
+  /** Color that should keep the turn. Use null to disable; defaults to RED when undefined. */
   infiniteTurnFor?: Color | null;
   /** Skip automatic Last Guard promotion */
   skipLastGuard?: boolean;
@@ -38,9 +39,11 @@ export class AntiRuleCore {
     this.#game = new CoTuLenh(fen, {
       skipLastGuardPromotion: options.skipLastGuard ?? false
     });
+    const infiniteTurnFor =
+      options.infiniteTurnFor === null ? null : (options.infiniteTurnFor ?? RED);
     this.#options = {
       legalMoves: options.legalMoves ?? false,
-      infiniteTurnFor: options.infiniteTurnFor !== undefined ? options.infiniteTurnFor : RED,
+      infiniteTurnFor,
       skipLastGuard: options.skipLastGuard ?? false
     };
   }
@@ -80,6 +83,8 @@ export class AntiRuleCore {
     return result;
   }
 
+  moves(options: { verbose: true; square?: Square; pieceType?: PieceSymbol }): MoveResult[];
+  moves(options?: { verbose?: false; square?: Square; pieceType?: PieceSymbol }): string[];
   moves(options?: {
     verbose?: boolean;
     square?: Square;
