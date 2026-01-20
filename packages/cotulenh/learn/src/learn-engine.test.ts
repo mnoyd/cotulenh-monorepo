@@ -1,14 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
 import { LearnEngine } from './learn-engine';
-import { basicsLessons } from './lessons/basics';
-
-// Helper to create a test lesson with multiple targets
-const multiTargetLesson = {
-  ...basicsLessons[0],
-  id: 'test-multi-target',
-  targetSquares: ['f8', 'g8'] as const,
-  instruction: 'Visit both f8 and g8 to complete.'
-};
 
 describe('LearnEngine', () => {
   describe('basics-1: Moving Infantry (multi-target)', () => {
