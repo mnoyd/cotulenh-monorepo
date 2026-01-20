@@ -8,11 +8,10 @@ export const basicsLessons: Lesson[] = [
     description: 'Learn how to move the Infantry',
     difficulty: 1,
     startFen: '11/11/11/11/11/5I5/11/11/11/11/11/11 r - - 0 1',
-    goalFen: '11/11/11/11/5I5/11/11/11/11/11/11/11 r - - 0 1',
-    instruction: 'Move the Infantry one square forward.',
-    hint: 'Drag the Infantry to the highlighted square.',
+    instruction: 'Move the Infantry to all highlighted squares.',
+    hint: 'Infantry moves 1 square orthogonally (up, down, left, right).',
     successMessage: 'Great! Infantry moves 1 square orthogonally.',
-    targetSquares: ['f8']
+    targetSquares: ['f8', 'f9', 'f10']
   },
   {
     id: 'basics-2',
@@ -21,11 +20,10 @@ export const basicsLessons: Lesson[] = [
     description: 'Learn how to move the Commander',
     difficulty: 1,
     startFen: '11/11/11/11/11/5C5/11/11/11/11/11/11 r - - 0 1',
-    goalFen: '11/11/11/11/5C5/11/11/11/11/11/11/11 r - - 0 1',
-    instruction: 'Move the Commander one square forward.',
-    hint: 'Drag the Commander to the highlighted square.',
+    instruction: 'Move the Commander to all highlighted squares.',
+    hint: 'The Commander moves 1 square in any direction.',
     successMessage: 'Well done! The Commander moves 1 square in any direction.',
-    targetSquares: ['f8']
+    targetSquares: ['f8', 'g9']
   },
   {
     id: 'basics-3',
@@ -34,11 +32,10 @@ export const basicsLessons: Lesson[] = [
     description: 'Learn how to move the Militia',
     difficulty: 1,
     startFen: '11/11/11/11/11/5M5/11/11/11/11/11/11 r - - 0 1',
-    goalFen: '11/11/11/11/11/6M4/11/11/11/11/11/11 r - - 0 1',
-    instruction: 'Move the Militia one square diagonally.',
-    hint: 'Drag the Militia to the highlighted square.',
+    instruction: 'Move the Militia to all highlighted squares.',
+    hint: 'Militia moves 1 square in any direction.',
     successMessage: 'Nice! Militia moves 1 square in any direction.',
-    targetSquares: ['g7']
+    targetSquares: ['g8', 'h9']
   },
   {
     id: 'basics-4',
@@ -47,11 +44,10 @@ export const basicsLessons: Lesson[] = [
     description: 'Learn how to move the Engineer',
     difficulty: 1,
     startFen: '11/11/11/11/11/5E5/11/11/11/11/11/11 r - - 0 1',
-    goalFen: '11/11/11/11/5E5/11/11/11/11/11/11/11 r - - 0 1',
-    instruction: 'Move the Engineer one square forward.',
-    hint: 'Drag the Engineer to the highlighted square.',
+    instruction: 'Move the Engineer to all highlighted squares.',
+    hint: 'Engineers move 1 square orthogonally.',
     successMessage: 'Good job! Engineers move 1 square orthogonally.',
-    targetSquares: ['f8']
+    targetSquares: ['f8', 'g8']
   },
   {
     id: 'basics-5',
@@ -60,11 +56,10 @@ export const basicsLessons: Lesson[] = [
     description: 'Learn how to move the Anti-Air',
     difficulty: 1,
     startFen: '11/11/11/11/11/5Y5/11/11/11/11/11/11 r - - 0 1',
-    goalFen: '11/11/11/11/5Y5/11/11/11/11/11/11/11 r - - 0 1',
-    instruction: 'Move the Anti-Air one square forward.',
-    hint: 'Drag the Anti-Air to the highlighted square.',
+    instruction: 'Move the Anti-Air to all highlighted squares.',
+    hint: 'Anti-Air moves 1 square orthogonally.',
     successMessage: 'Great! Anti-Air moves 1 square orthogonally.',
-    targetSquares: ['f8']
+    targetSquares: ['f8', 'e8']
   },
   {
     id: 'basics-6',

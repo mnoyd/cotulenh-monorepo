@@ -143,6 +143,16 @@ export class LearnSession {
     return this.#shapes;
   }
 
+  get remainingTargets(): Square[] {
+    void this.#version;
+    return this.#engine.remainingTargets;
+  }
+
+  get visitedTargets(): Square[] {
+    void this.#version;
+    return this.#engine.visitedTargets;
+  }
+
   get boardApi(): Api | null {
     return this.#boardApi;
   }

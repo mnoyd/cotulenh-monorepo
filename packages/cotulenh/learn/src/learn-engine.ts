@@ -26,6 +26,7 @@ export class LearnEngine {
   #callbacks: LearnEngineCallbacks;
   #scenario: Scenario | null = null;
   #opponentMoveTimeout: ReturnType<typeof setTimeout> | null = null;
+  #visitedTargets: Set<Square> = new Set();
 
   constructor(callbacks: LearnEngineCallbacks = {}) {
     this.#callbacks = callbacks;
@@ -85,6 +86,21 @@ export class LearnEngine {
    */
   get hasScenario(): boolean {
     return this.#scenario !== null;
+  }
+
+  /**
+   * Get the remaining target squares that haven't been visited yet
+   */
+  get remainingTargets(): Square[] {
+    const targets = this.#lesson?.targetSquares ?? [];
+    return targets.filter((t) => !this.#visitedTargets.has(t));
+  }
+
+  /**
+   * Get all visited target squares
+   */
+  get visitedTargets(): Square[] {
+    return Array.from(this.#visitedTargets);
   }
 
   /**
@@ -170,6 +186,7 @@ export class LearnEngine {
     this.#lesson = lesson;
     this.#moveCount = 0;
     this.#status = 'ready';
+    this.#visitedTargets.clear();
 
     // Initialize scenario if present
     if (lesson.scenario && lesson.scenario.length > 0) {
@@ -266,6 +283,11 @@ export class LearnEngine {
       return false;
     }
 
+    // Track if we landed on a target square
+    if (this.#lesson?.targetSquares?.includes(to)) {
+      this.#visitedTargets.add(to);
+    }
+
     this.#callbacks.onMove?.(this.#moveCount, this.fen);
 
     // Check if goal reached
@@ -333,6 +355,13 @@ export class LearnEngine {
 
   #checkGoalReached(): boolean {
     if (!this.#lesson || !this.#game) return false;
+
+    // If targetSquares defined, check if all have been visited
+    if (this.#lesson.targetSquares && this.#lesson.targetSquares.length > 0) {
+      return this.#lesson.targetSquares.every((t) => this.#visitedTargets.has(t));
+    }
+
+    // Fall back to goalFen check
     if (!this.#lesson.goalFen) return false;
 
     const currentPosition = this.#normalizePositionFen(this.#game.fen());
@@ -366,6 +395,7 @@ export class LearnEngine {
     this.#clearOpponentTimeout();
     this.#moveCount = 0;
     this.#status = 'ready';
+    this.#visitedTargets.clear();
 
     if (this.#scenario) {
       this.#scenario.reset();

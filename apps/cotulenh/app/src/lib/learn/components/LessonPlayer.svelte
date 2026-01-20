@@ -36,12 +36,12 @@
     session?.showHint();
   }
 
-  // Get target squares that should be shown (only when lesson is active, not completed)
+  // Get target squares that should be shown (only remaining unvisited targets)
   const visibleTargets = $derived.by(() => {
-    if (!session || session.status !== 'ready' || !session.lesson?.targetSquares) {
+    if (!session || session.status !== 'ready') {
       return [];
     }
-    return session.lesson.targetSquares;
+    return session.remainingTargets;
   });
 </script>
 
