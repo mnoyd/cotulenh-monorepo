@@ -52,7 +52,11 @@ export const piecesLessons: Lesson[] = [
     hint: 'Click the Missile and move it two squares straight up (not diagonal).',
     successMessage:
       'Excellent! Missiles have a circular reach: 2 squares in straight lines, 1 square diagonally.',
-    targetSquares: ['f9']
+    targetSquares: ['f9'],
+    feedback: {
+      onTarget: 'This is your destination! Move the Missile here.',
+      onPiece: 'Good! The Missile can move 2 squares orthogonally or 1 diagonally.'
+    }
   },
   {
     id: 'pieces-5',
@@ -67,6 +71,10 @@ export const piecesLessons: Lesson[] = [
     hint: 'Navy can only navigate on water. Move it one square up along the a-file.',
     successMessage:
       'Well done! Navy is essential for controlling water zones and supporting coastal operations.',
-    targetSquares: ['a3']
+    targetSquares: ['a3'],
+    feedback: {
+      onTarget: 'Move to this water square to complete the lesson!',
+      onPiece: 'Navy can only move on water tiles (a-b files).'
+    }
   }
 ];

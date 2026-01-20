@@ -5,7 +5,8 @@ import type {
   LessonProgress,
   LearnStatus,
   LearnEngineCallbacks,
-  LessonResult
+  LessonResult,
+  SquareInfo
 } from './types';
 import { getLessonById } from './lessons';
 import { Scenario } from './scenario';
@@ -102,6 +103,54 @@ export class LearnEngine {
   getPossibleMoves(): MoveResult[] {
     if (!this.#game) return [];
     return this.#game.moves({ verbose: true });
+  }
+
+  /**
+   * Get information about a square for feedback purposes
+   */
+  getSquareInfo(square: Square): SquareInfo {
+    const lesson = this.#lesson;
+    const game = this.#game;
+
+    const hasPiece = game?.get(square) !== undefined;
+    const isTarget = lesson?.targetSquares?.includes(square) ?? false;
+
+    // Check if square is a valid destination for any selected piece
+    const moves = this.getPossibleMoves();
+    const isValidDest = moves.some((m) => m.to === square);
+
+    // Determine feedback message
+    let message: string | null = null;
+
+    // Priority 1: Custom message for this specific square
+    if (lesson?.feedback?.onSelect?.[square]) {
+      message = lesson.feedback.onSelect[square];
+    }
+    // Priority 2: Target square message
+    else if (isTarget) {
+      message = lesson?.feedback?.onTarget ?? 'Move here to complete the lesson!';
+    }
+    // Priority 3: Piece message (if clicking on movable piece)
+    else if (hasPiece && moves.some((m) => m.from === square)) {
+      message = lesson?.feedback?.onPiece ?? null;
+    }
+
+    return {
+      square,
+      hasPiece,
+      isTarget,
+      isValidDest,
+      message
+    };
+  }
+
+  /**
+   * Handle square selection - call this from UI when a square is clicked
+   */
+  handleSelect(square: Square): SquareInfo {
+    const info = this.getSquareInfo(square);
+    this.#callbacks.onSelect?.(info);
+    return info;
   }
 
   // ============================================================

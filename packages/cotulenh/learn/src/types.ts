@@ -71,6 +71,20 @@ export interface Lesson {
   targetSquares?: Square[];
 
   /**
+   * Optional feedback messages for interactive hints
+   */
+  feedback?: {
+    /** Message when clicking a target square */
+    onTarget?: string;
+    /** Message when clicking the piece to move */
+    onPiece?: string;
+    /** Custom messages for specific squares */
+    onSelect?: Record<string, string>;
+    /** Message when attempting an invalid move */
+    onWrongMove?: string;
+  };
+
+  /**
    * Optional scenario: scripted sequence of moves.
    * If provided, user must follow this exact sequence.
    * Odd-indexed moves are played by the opponent automatically.
@@ -105,6 +119,21 @@ export type LearnStatus = 'loading' | 'ready' | 'completed' | 'failed';
 /**
  * Callback interface for LearnEngine events
  */
+/**
+ * Information about a selected square for feedback
+ */
+export interface SquareInfo {
+  square: Square;
+  /** Whether this square has a piece that can move */
+  hasPiece: boolean;
+  /** Whether this is a target square for the lesson */
+  isTarget: boolean;
+  /** Whether this square is a valid destination for the selected piece */
+  isValidDest: boolean;
+  /** Feedback message to display, if any */
+  message: string | null;
+}
+
 export interface LearnEngineCallbacks {
   onMove?: (moveCount: number, fen: string) => void;
   onComplete?: (result: LessonResult) => void;
@@ -115,6 +144,8 @@ export interface LearnEngineCallbacks {
   onFail?: (expectedMove: string, actualMove: string) => void;
   /** Called when shapes should be displayed */
   onShapes?: (shapes: BoardShape[]) => void;
+  /** Called when a square is selected/clicked */
+  onSelect?: (info: SquareInfo) => void;
 }
 
 export interface LessonResult {
