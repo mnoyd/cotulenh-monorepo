@@ -31,6 +31,7 @@ import {
   VALID_SQUARES,
   rank,
   GameStateMetadata,
+  GameOptions,
 } from './type.js'
 import {
   printBoard,
@@ -220,9 +221,20 @@ export class CoTuLenh implements CoTuLenhInterface {
     [RED]: new Map<number, number[]>(),
     [BLUE]: new Map<number, number[]>(),
   }
+  private _options: Required<GameOptions>
 
-  constructor(fen = DEFAULT_POSITION) {
+  constructor(fen = DEFAULT_POSITION, options: GameOptions = {}) {
+    this._options = {
+      skipLastGuardPromotion: options.skipLastGuardPromotion ?? false,
+    }
     this.load(fen)
+  }
+
+  /**
+   * Get current game options
+   */
+  getOptions(): Readonly<Required<GameOptions>> {
+    return this._options
   }
 
   /**

@@ -132,7 +132,7 @@ export class LearnEngine {
     }
 
     try {
-      this.#game = new AntiRuleCore(lesson.startFen);
+      this.#game = new AntiRuleCore(lesson.startFen, { skipLastGuard: true });
       this.#callbacks.onStateChange?.(this.#status);
     } catch (error) {
       logger.error('Failed to load lesson FEN:', { error, fen: lesson.startFen });
@@ -322,7 +322,7 @@ export class LearnEngine {
     }
 
     try {
-      this.#game = new AntiRuleCore(this.#lesson.startFen);
+      this.#game = new AntiRuleCore(this.#lesson.startFen, { skipLastGuard: true });
       this.#callbacks.onStateChange?.(this.#status);
     } catch (error) {
       logger.error('Failed to restart lesson:', { error });

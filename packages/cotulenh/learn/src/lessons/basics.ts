@@ -40,6 +40,7 @@ export const basicsLessons: Lesson[] = [
       'The Commander (G) is your most important piece. Capture one enemy infantry and escape!',
     hint: 'The Commander moves one square in any direction. Capture an infantry to create an escape route, then move forward.',
     successMessage:
-      'The Commander escaped! Protect your Commander at all costs - if captured, you lose!'
+      'The Commander escaped! Protect your Commander at all costs - if captured, you lose!',
+    targetSquares: ['e7', 'g7']
   }
 ];

@@ -14,6 +14,8 @@ import type {
 export interface AntiRuleOptions {
   legalMoves?: boolean;
   infiniteTurnFor?: Color | null;
+  /** Skip automatic Last Guard promotion */
+  skipLastGuard?: boolean;
 }
 
 /**
@@ -33,10 +35,13 @@ export class AntiRuleCore {
   readonly #options: Required<AntiRuleOptions>;
 
   constructor(fen?: string, options: AntiRuleOptions = {}) {
-    this.#game = new CoTuLenh(fen);
+    this.#game = new CoTuLenh(fen, {
+      skipLastGuardPromotion: options.skipLastGuard ?? false
+    });
     this.#options = {
       legalMoves: options.legalMoves ?? false,
-      infiniteTurnFor: options.infiniteTurnFor !== undefined ? options.infiniteTurnFor : RED
+      infiniteTurnFor: options.infiniteTurnFor !== undefined ? options.infiniteTurnFor : RED,
+      skipLastGuard: options.skipLastGuard ?? false
     };
   }
 
