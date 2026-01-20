@@ -73,5 +73,66 @@ export const basicsLessons: Lesson[] = [
     hint: 'Just click anywhere.',
     successMessage: 'Correct! Headquarters cannot move.',
     optimalMoves: 0
+  },
+  {
+    id: 'basics-7',
+    category: 'basics',
+    title: 'Tank Movement',
+    description: 'Learn how to move the Tank',
+    difficulty: 1,
+    startFen: '11/11/11/11/11/5T5/11/11/11/11/11/11 r - - 0 1',
+    instruction: 'Move the Tank to all highlighted squares.',
+    hint: 'The Tank moves up to 2 squares orthogonally (up, down, left, right).',
+    successMessage: 'Excellent! Tanks can move 1 or 2 squares in a straight line.',
+    targetSquares: ['f8', 'f10', 'e9', 'g9']
+  },
+  {
+    id: 'basics-8',
+    category: 'basics',
+    title: 'Artillery Movement',
+    description: 'Learn how to move the Artillery',
+    difficulty: 1,
+    startFen: '11/11/11/11/11/11/11/11/3A7/11/11/11 r - - 0 1',
+    instruction: 'Move the Artillery to all highlighted squares.',
+    hint: 'Artillery can move any number of squares orthogonally, like a Rook in chess.',
+    successMessage: 'Artillery has unlimited range in straight lines!',
+    targetSquares: ['f8', 'f12', 'e9', 'd6']
+  },
+  {
+    id: 'basics-9',
+    category: 'basics',
+    title: 'Air Force Movement',
+    description: 'Learn how to move the Air Force',
+    difficulty: 1,
+    startFen: '11/11/11/11/11/5F5/11/11/11/11/11/11 r - - 0 1',
+    instruction: 'Move the Air Force to all highlighted squares.',
+    hint: 'Air Force can fly anywhere on the board - it ignores terrain and other pieces.',
+    successMessage: 'Amazing! Air Force has ultimate mobility - it can reach any square.',
+    targetSquares: ['d3', 'k2', 'k12', 'e11']
+  },
+  {
+    id: 'basics-10',
+    category: 'basics',
+    title: 'Missile Movement',
+    description: 'Learn how to move the Missile',
+    difficulty: 1,
+    startFen: '11/11/11/11/11/5S5/11/11/11/11/11/11 r - - 0 1',
+    instruction: 'Move the Missile to all highlighted squares.',
+    hint: 'Missiles move up to 2 squares orthogonally or 1 square diagonally (circular pattern).',
+    successMessage:
+      'Great! Missiles have a circular reach: 2 squares straight or 1 square diagonal.',
+    targetSquares: ['f8', 'e8', 'g8', 'e9']
+  },
+  {
+    id: 'basics-11',
+    category: 'basics',
+    title: 'Navy Movement',
+    description: 'Learn how to move the Navy',
+    difficulty: 1,
+    startFen: '11/11/11/11/11/11/11/11/11/11/N10/11 r - - 0 1',
+    instruction: 'Move the Navy to all highlighted squares.',
+    hint: 'Navy ships only move on water (a-b files and coastal areas).',
+    successMessage: 'Well done! Navy is essential for controlling water zones.',
+    targetSquares: ['c4', 'd6', 'b8', 'b12']
   }
 ];
