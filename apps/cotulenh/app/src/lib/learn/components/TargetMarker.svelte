@@ -49,15 +49,6 @@
     board.appendChild(markerElement);
   }
 
-  function updatePosition() {
-    if (!boardApi || !markerElement) return;
-
-    const bounds = boardApi.state.dom.bounds();
-    const asRed = boardApi.state.orientation === 'red';
-    const [x, y] = getTranslatePosition(bounds, asRed);
-    markerElement.style.transform = `translate(${x}px, ${y}px)`;
-  }
-
   // Watch for changes
   $effect(() => {
     if (boardApi && square) {
