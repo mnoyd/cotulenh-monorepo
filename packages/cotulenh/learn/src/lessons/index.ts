@@ -1,6 +1,7 @@
 import type { CategoryInfo, Lesson } from '../types';
 import { basicsLessons } from './basics';
 import { piecesLessons } from './pieces';
+import { heroicLessons } from './heroic';
 import { terrainLessons } from './terrain';
 import { tacticsLessons } from './tactics';
 
@@ -11,6 +12,13 @@ export const categories: CategoryInfo[] = [
     description: 'Learn how pieces move and capture',
     icon: '♟',
     lessons: basicsLessons
+  },
+  {
+    id: 'heroic',
+    title: 'Heroic Pieces',
+    description: 'Learn how heroic status enhances movement',
+    icon: '⭐',
+    lessons: heroicLessons
   },
   {
     id: 'pieces',
@@ -58,4 +66,4 @@ export function getNextLesson(currentId: string): Lesson | undefined {
   return undefined;
 }
 
-export { basicsLessons, piecesLessons, terrainLessons, tacticsLessons };
+export { basicsLessons, piecesLessons, heroicLessons, terrainLessons, tacticsLessons };

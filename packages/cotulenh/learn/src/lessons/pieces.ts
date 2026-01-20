@@ -38,5 +38,43 @@ export const piecesLessons: Lesson[] = [
     instruction: 'The Air Force can fly anywhere on the board! Fly it to the far corner at k12.',
     hint: 'Air Force ignores terrain and other pieces. Click and move directly to k12.',
     successMessage: 'Amazing! Air Force has ultimate mobility - it can reach any square.'
+  },
+  {
+    id: 'pieces-4',
+    category: 'pieces',
+    title: 'The Missile',
+    description: 'Master the Missile circular movement',
+    difficulty: 2,
+    startFen: '11/11/11/11/11/5S5/11/11/11/11/11/11 r - - 0 1',
+    goalFen: '11/11/11/5S5/11/11/11/11/11/11/11/11 r - - 0 1',
+    instruction:
+      'The Missile moves in a unique circular pattern: up to 2 squares straight (orthogonal) or 1 square diagonally. Move the Missile two squares forward!',
+    hint: 'Click the Missile and move it two squares straight up (not diagonal).',
+    successMessage:
+      'Excellent! Missiles have a circular reach: 2 squares in straight lines, 1 square diagonally.',
+    targetSquares: ['f9'],
+    feedback: {
+      onTarget: 'This is your destination! Move the Missile here.',
+      onPiece: 'Good! The Missile can move 2 squares orthogonally or 1 diagonally.'
+    }
+  },
+  {
+    id: 'pieces-5',
+    category: 'pieces',
+    title: 'The Navy',
+    description: 'Navigate the waters with Navy',
+    difficulty: 2,
+    startFen: '11/11/11/11/11/11/11/11/11/11/N10/11 r - - 0 1',
+    goalFen: '11/11/11/11/11/11/11/11/11/N10/11/11 r - - 0 1',
+    instruction:
+      'Navy ships only move on water (a-b files and coastal areas). Move the Navy one square up along the water!',
+    hint: 'Navy can only navigate on water. Move it one square up along the a-file.',
+    successMessage:
+      'Well done! Navy is essential for controlling water zones and supporting coastal operations.',
+    targetSquares: ['a3'],
+    feedback: {
+      onTarget: 'Move to this water square to complete the lesson!',
+      onPiece: 'Navy can only move on water tiles (a-b files).'
+    }
   }
 ];

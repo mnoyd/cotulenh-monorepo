@@ -5,7 +5,8 @@ import {
   type Lesson,
   type LessonProgress,
   type LearnStatus,
-  type BoardShape
+  type BoardShape,
+  type SquareInfo
 } from '@cotulenh/learn';
 import { getStoredValue, setStoredValue } from '$lib/stores/persisted.svelte';
 import { coreToBoardColor, mapPossibleMovesToDests } from '$lib/features/game/utils';
@@ -70,6 +71,13 @@ export class LearnSession {
       onShapes: (shapes) => {
         this.#shapes = shapes;
         this.#version++;
+      },
+      onSelect: (info: SquareInfo) => {
+        if (info.message) {
+          this.#feedbackMessage = info.message;
+          this.#showFeedback = true;
+          this.#version++;
+        }
       }
     });
 
@@ -135,6 +143,16 @@ export class LearnSession {
     return this.#shapes;
   }
 
+  get remainingTargets(): Square[] {
+    void this.#version;
+    return this.#engine.remainingTargets;
+  }
+
+  get visitedTargets(): Square[] {
+    void this.#version;
+    return this.#engine.visitedTargets;
+  }
+
   get boardApi(): Api | null {
     return this.#boardApi;
   }
@@ -166,6 +184,9 @@ export class LearnSession {
       highlight: {
         lastMove: true,
         check: true
+      },
+      events: {
+        select: (key: OrigMove) => this.#handleSelect(key)
       },
       movable: {
         free: false,
@@ -206,6 +227,11 @@ export class LearnSession {
       this.#showFeedback = true;
       this.#version++;
     }
+  }
+
+  #handleSelect(key: OrigMove): void {
+    const square = key.square as Square;
+    this.#engine.handleSelect(square);
   }
 
   restart(): void {
@@ -323,5 +349,6 @@ export type {
   LessonProgress,
   CategoryInfo,
   LearnStatus,
-  BoardShape
+  BoardShape,
+  SquareInfo
 } from '@cotulenh/learn';

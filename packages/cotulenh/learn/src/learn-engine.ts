@@ -5,7 +5,8 @@ import type {
   LessonProgress,
   LearnStatus,
   LearnEngineCallbacks,
-  LessonResult
+  LessonResult,
+  SquareInfo
 } from './types';
 import { getLessonById } from './lessons';
 import { Scenario } from './scenario';
@@ -25,6 +26,7 @@ export class LearnEngine {
   #callbacks: LearnEngineCallbacks;
   #scenario: Scenario | null = null;
   #opponentMoveTimeout: ReturnType<typeof setTimeout> | null = null;
+  #visitedTargets: Set<Square> = new Set();
 
   constructor(callbacks: LearnEngineCallbacks = {}) {
     this.#callbacks = callbacks;
@@ -87,6 +89,21 @@ export class LearnEngine {
   }
 
   /**
+   * Get the remaining target squares that haven't been visited yet
+   */
+  get remainingTargets(): Square[] {
+    const targets = this.#lesson?.targetSquares ?? [];
+    return targets.filter((t) => !this.#visitedTargets.has(t));
+  }
+
+  /**
+   * Get all visited target squares
+   */
+  get visitedTargets(): Square[] {
+    return Array.from(this.#visitedTargets);
+  }
+
+  /**
    * Get default optimal moves based on scenario or lesson type
    */
   #getDefaultOptimalMoves(): number {
@@ -102,6 +119,54 @@ export class LearnEngine {
   getPossibleMoves(): MoveResult[] {
     if (!this.#game) return [];
     return this.#game.moves({ verbose: true });
+  }
+
+  /**
+   * Get information about a square for feedback purposes
+   */
+  getSquareInfo(square: Square): SquareInfo {
+    const lesson = this.#lesson;
+    const game = this.#game;
+
+    const hasPiece = game?.get(square) !== undefined;
+    const isTarget = lesson?.targetSquares?.includes(square) ?? false;
+
+    // Check if square is a valid destination for any selected piece
+    const moves = this.getPossibleMoves();
+    const isValidDest = moves.some((m) => m.to === square);
+
+    // Determine feedback message
+    let message: string | null = null;
+
+    // Priority 1: Custom message for this specific square
+    if (lesson?.feedback?.onSelect?.[square]) {
+      message = lesson.feedback.onSelect[square];
+    }
+    // Priority 2: Target square message
+    else if (isTarget) {
+      message = lesson?.feedback?.onTarget ?? 'Move here to complete the lesson!';
+    }
+    // Priority 3: Piece message (if clicking on movable piece)
+    else if (hasPiece && moves.some((m) => m.from === square)) {
+      message = lesson?.feedback?.onPiece ?? null;
+    }
+
+    return {
+      square,
+      hasPiece,
+      isTarget,
+      isValidDest,
+      message
+    };
+  }
+
+  /**
+   * Handle square selection - call this from UI when a square is clicked
+   */
+  handleSelect(square: Square): SquareInfo {
+    const info = this.getSquareInfo(square);
+    this.#callbacks.onSelect?.(info);
+    return info;
   }
 
   // ============================================================
@@ -121,6 +186,7 @@ export class LearnEngine {
     this.#lesson = lesson;
     this.#moveCount = 0;
     this.#status = 'ready';
+    this.#visitedTargets.clear();
 
     // Initialize scenario if present
     if (lesson.scenario && lesson.scenario.length > 0) {
@@ -217,6 +283,11 @@ export class LearnEngine {
       return false;
     }
 
+    // Track if we landed on a target square
+    if (this.#lesson?.targetSquares?.includes(to)) {
+      this.#visitedTargets.add(to);
+    }
+
     this.#callbacks.onMove?.(this.#moveCount, this.fen);
 
     // Check if goal reached
@@ -285,6 +356,14 @@ export class LearnEngine {
   #checkGoalReached(): boolean {
     if (!this.#lesson || !this.#game) return false;
 
+    // If targetSquares defined, check if all have been visited
+    if (this.#lesson.targetSquares && this.#lesson.targetSquares.length > 0) {
+      return this.#lesson.targetSquares.every((t) => this.#visitedTargets.has(t));
+    }
+
+    // Fall back to goalFen check
+    if (!this.#lesson.goalFen) return false;
+
     const currentPosition = this.#normalizePositionFen(this.#game.fen());
     const goalPosition = this.#normalizePositionFen(this.#lesson.goalFen);
 
@@ -316,6 +395,7 @@ export class LearnEngine {
     this.#clearOpponentTimeout();
     this.#moveCount = 0;
     this.#status = 'ready';
+    this.#visitedTargets.clear();
 
     if (this.#scenario) {
       this.#scenario.reset();

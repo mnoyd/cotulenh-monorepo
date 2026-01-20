@@ -10,7 +10,8 @@ export type {
   Uci,
   ScenarioStep,
   ScenarioBlueprint,
-  BoardShape
+  BoardShape,
+  SquareInfo
 } from './types';
 
 // Anti-rule core for relaxed game rules

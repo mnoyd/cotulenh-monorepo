@@ -3,6 +3,7 @@ import type { Square } from '@cotulenh/core';
 export type LessonCategory =
   | 'basics'
   | 'pieces'
+  | 'heroic'
   | 'terrain'
   | 'combining'
   | 'deployment'
@@ -52,8 +53,8 @@ export interface Lesson {
 
   /** Starting position FEN */
   startFen: string;
-  /** Target position FEN - lesson complete when board matches this */
-  goalFen: string;
+  /** Target position FEN - lesson complete when board matches this (optional if using scenario) */
+  goalFen?: string;
   /** Instruction text shown to user */
   instruction: string;
   /** Hint text (shown on button press) */
@@ -69,6 +70,20 @@ export interface Lesson {
   arrows?: BoardShape[];
   /** Optional: target destination square(s) to highlight for learning */
   targetSquares?: Square[];
+
+  /**
+   * Optional feedback messages for interactive hints
+   */
+  feedback?: {
+    /** Message when clicking a target square */
+    onTarget?: string;
+    /** Message when clicking the piece to move */
+    onPiece?: string;
+    /** Custom messages for specific squares */
+    onSelect?: Record<string, string>;
+    /** Message when attempting an invalid move */
+    onWrongMove?: string;
+  };
 
   /**
    * Optional scenario: scripted sequence of moves.
@@ -105,6 +120,21 @@ export type LearnStatus = 'loading' | 'ready' | 'completed' | 'failed';
 /**
  * Callback interface for LearnEngine events
  */
+/**
+ * Information about a selected square for feedback
+ */
+export interface SquareInfo {
+  square: Square;
+  /** Whether this square has a piece that can move */
+  hasPiece: boolean;
+  /** Whether this is a target square for the lesson */
+  isTarget: boolean;
+  /** Whether this square is a valid destination for the selected piece */
+  isValidDest: boolean;
+  /** Feedback message to display, if any */
+  message: string | null;
+}
+
 export interface LearnEngineCallbacks {
   onMove?: (moveCount: number, fen: string) => void;
   onComplete?: (result: LessonResult) => void;
@@ -115,6 +145,8 @@ export interface LearnEngineCallbacks {
   onFail?: (expectedMove: string, actualMove: string) => void;
   /** Called when shapes should be displayed */
   onShapes?: (shapes: BoardShape[]) => void;
+  /** Called when a square is selected/clicked */
+  onSelect?: (info: SquareInfo) => void;
 }
 
 export interface LessonResult {
