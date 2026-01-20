@@ -215,10 +215,15 @@ export abstract class CTLMoveCommand implements CTLMoveCommandInteface {
   protected abstract buildActions(): void
 
   private injectDefaultPostActions(): void {
-    const defaultPostMoveActions = [
+    const defaultPostMoveActions: CTLAtomicMoveAction[] = [
       new LazyAction(() => checkAndPromoteAttackers(this.game, this.move)),
-      new LazyAction(() => checkAndPromoteLastGuard(this.game)),
     ]
+    // Only add Last Guard promotion if not skipped in game options
+    if (!this.game.getOptions().skipLastGuardPromotion) {
+      defaultPostMoveActions.push(
+        new LazyAction(() => checkAndPromoteLastGuard(this.game)),
+      )
+    }
     this.actions.push(...defaultPostMoveActions)
   }
 

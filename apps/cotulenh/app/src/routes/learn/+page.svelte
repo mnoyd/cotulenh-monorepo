@@ -1,7 +1,7 @@
 <script lang="ts">
   import { BookOpen } from 'lucide-svelte';
   import CategoryCard from '$lib/learn/components/CategoryCard.svelte';
-  import { categories } from '$lib/learn/lessons';
+  import { categories } from '@cotulenh/learn';
   import { getI18n } from '$lib/i18n/index.svelte';
 
   const i18n = getI18n();

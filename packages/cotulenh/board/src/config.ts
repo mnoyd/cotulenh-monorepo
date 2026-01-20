@@ -16,6 +16,11 @@ export interface Config {
     enabled?: boolean;
     duration?: number;
   };
+  highlight?: {
+    lastMove?: boolean;
+    check?: boolean;
+    custom?: cg.SquareClasses;
+  };
   movable?: {
     free?: boolean; // all moves are valid - board editor
     color?: cg.Color | 'both'; // color that can move. white | black | both | undefined
@@ -106,6 +111,10 @@ export function configure(state: HeadlessState, config: Config): void {
   // don't merge destinations and autoShapes. Just override.
   if (config.movable?.dests) state.movable.dests = undefined;
   if (config.drawable?.autoShapes) state.drawable.autoShapes = [];
+  // Custom highlights is a Map, override it directly
+  if (config.highlight?.custom && config.highlight.custom.size > 0) {
+    state.highlight.custom = config.highlight.custom;
+  }
 
   deepMerge(state, config);
 

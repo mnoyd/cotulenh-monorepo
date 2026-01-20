@@ -54,6 +54,7 @@
     "@cotulenh/board": "workspace:^",
     "@cotulenh/common": "workspace:^",
     "@cotulenh/core": "workspace:^",
+    "@cotulenh/learn": "workspace:^",
     "immer": "^10.1.1",
     "zod": "^3.25.76"
   }

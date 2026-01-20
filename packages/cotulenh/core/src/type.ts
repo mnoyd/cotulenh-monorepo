@@ -195,6 +195,11 @@ export interface GameStateMetadata {
   moveNumber: number
   fen: string
 }
+
+export interface GameOptions {
+  /** Skip automatic Last Guard promotion (useful for learn mode) */
+  skipLastGuardPromotion?: boolean
+}
 // DeployState type removed - use DeploySession instead
 // Generic container for Air Defense data (internal or display)
 export type AirDefenseData<T> = {

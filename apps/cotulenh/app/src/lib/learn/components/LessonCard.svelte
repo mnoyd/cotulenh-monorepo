@@ -1,6 +1,6 @@
 <script lang="ts">
   import { Star, CheckCircle } from 'lucide-svelte';
-  import type { Lesson, LessonProgress } from '../types';
+  import type { Lesson, LessonProgress } from '@cotulenh/learn';
   import { getI18n } from '$lib/i18n/index.svelte';
   import type { TranslationKey } from '$lib/i18n/types';
 

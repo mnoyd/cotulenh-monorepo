@@ -2,6 +2,7 @@ import type { CategoryInfo, Lesson } from '../types';
 import { basicsLessons } from './basics';
 import { piecesLessons } from './pieces';
 import { terrainLessons } from './terrain';
+import { tacticsLessons } from './tactics';
 
 export const categories: CategoryInfo[] = [
   {
@@ -24,6 +25,13 @@ export const categories: CategoryInfo[] = [
     description: 'Understand land, navy, and air zones',
     icon: '🗺',
     lessons: terrainLessons
+  },
+  {
+    id: 'tactics',
+    title: 'Tactics',
+    description: 'Master tactical patterns and combinations',
+    icon: '🎯',
+    lessons: tacticsLessons
   }
 ];
 
@@ -49,3 +57,5 @@ export function getNextLesson(currentId: string): Lesson | undefined {
   }
   return undefined;
 }
+
+export { basicsLessons, piecesLessons, terrainLessons, tacticsLessons };
