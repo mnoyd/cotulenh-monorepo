@@ -12,7 +12,8 @@ export const basicsLessons: Lesson[] = [
     instruction:
       'The Infantry moves one square orthogonally (up, down, left, or right). Move the Infantry one square forward!',
     hint: 'Click the Infantry and drag it one square up toward the enemy side.',
-    successMessage: 'Excellent! Infantry advances one square at a time.'
+    successMessage: 'Excellent! Infantry advances one square at a time.',
+    targetSquares: ['f8']
   },
   {
     id: 'basics-2',
@@ -24,7 +25,8 @@ export const basicsLessons: Lesson[] = [
     goalFen: '11/11/11/11/5I5/11/11/11/11/11/11/11 r - - 0 1',
     instruction: "To capture, move your piece to the enemy's square. Capture the blue infantry!",
     hint: 'Move your Infantry (red) onto the enemy infantry (blue) to capture it.',
-    successMessage: 'Victory! You captured the enemy piece.'
+    successMessage: 'Victory! You captured the enemy piece.',
+    targetSquares: ['f8']
   },
   {
     id: 'basics-3',

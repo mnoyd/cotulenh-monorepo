@@ -459,7 +459,7 @@ function computeSquareClasses(s: State): cg.SquareClasses {
     }
   }
 
-  if (s.highlight.custom) {
+  if (s.highlight.custom && s.highlight.custom.size > 0) {
     s.highlight.custom.forEach((v: string, k: cg.Key) => {
       if (k && typeof k === 'string') {
         addSquare(squares, k, v);

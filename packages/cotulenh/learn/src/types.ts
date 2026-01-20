@@ -67,6 +67,8 @@ export interface Lesson {
   highlightSquares?: Square[];
   /** Optional: arrows to draw on board */
   arrows?: BoardShape[];
+  /** Optional: target destination square(s) to highlight for learning */
+  targetSquares?: Square[];
 
   /**
    * Optional scenario: scripted sequence of moves.

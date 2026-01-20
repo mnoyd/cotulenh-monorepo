@@ -3,8 +3,10 @@
   import { goto } from '$app/navigation';
   import { ArrowLeft, RotateCcw, ArrowRight, Star, CheckCircle, HelpCircle } from 'lucide-svelte';
   import BoardContainer from '$lib/components/BoardContainer.svelte';
+  import TargetMarker from './TargetMarker.svelte';
   import { LearnSession } from '../learn-session.svelte';
   import { getI18n } from '$lib/i18n/index.svelte';
+  import '$lib/styles/board.css';
 
   const i18n = getI18n();
 
@@ -33,6 +35,14 @@
   function handleHint() {
     session?.showHint();
   }
+
+  // Get target squares that should be shown (only when lesson is active, not completed)
+  const visibleTargets = $derived.by(() => {
+    if (!session || session.status !== 'ready' || !session.lesson?.targetSquares) {
+      return [];
+    }
+    return session.lesson.targetSquares;
+  });
 </script>
 
 {#if session && session.lesson}
@@ -51,6 +61,10 @@
           config={session.boardConfig}
           onApiReady={(api) => session?.setBoardApi(api)}
         />
+        <!-- Target markers are injected into board DOM -->
+        {#each visibleTargets as targetSquare (targetSquare)}
+          <TargetMarker square={targetSquare} boardApi={session.boardApi} />
+        {/each}
       </div>
 
       <div class="instruction-section">

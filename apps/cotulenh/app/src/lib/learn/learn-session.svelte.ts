@@ -135,6 +135,10 @@ export class LearnSession {
     return this.#shapes;
   }
 
+  get boardApi(): Api | null {
+    return this.#boardApi;
+  }
+
   // ============================================================
   // BOARD CONFIGURATION
   // ============================================================
@@ -159,6 +163,10 @@ export class LearnSession {
       fen: this.#engine.fen,
       viewOnly: !isInteractive,
       turnColor: playerColor,
+      highlight: {
+        lastMove: true,
+        check: true
+      },
       movable: {
         free: false,
         color: isInteractive ? playerColor : undefined,
