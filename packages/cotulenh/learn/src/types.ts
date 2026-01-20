@@ -3,6 +3,7 @@ import type { Square } from '@cotulenh/core';
 export type LessonCategory =
   | 'basics'
   | 'pieces'
+  | 'heroic'
   | 'terrain'
   | 'combining'
   | 'deployment'
