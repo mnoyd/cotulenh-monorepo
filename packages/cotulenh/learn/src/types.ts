@@ -1,4 +1,9 @@
-import type { Square } from '@cotulenh/core';
+import type { Square, InternalMove } from '@cotulenh/core';
+import type { AntiRuleCore } from './anti-rule-core';
+import type { LearnEngine } from './learn-engine';
+
+export type SubjectId = string;
+export type SectionId = string;
 
 export type LessonCategory =
   | 'basics'
@@ -42,11 +47,58 @@ export interface BoardShape {
 }
 
 /**
+ * Feedback data for validation errors
+ */
+export interface FeedbackData {
+  type: 'terrain' | 'capture' | 'stacking' | 'air-defense' | 'scenario' | 'generic';
+  severity: 'error' | 'warning' | 'info';
+  code: string;
+  context: Record<string, unknown>;
+}
+
+/**
+ * Move validation result
+ */
+export interface MoveValidationResult {
+  valid: boolean;
+  feedbackData?: FeedbackData;
+}
+
+/**
+ * Feedback messages for different error types
+ */
+export interface LessonFeedback {
+  terrain?: Record<string, string>;
+  capture?: Record<string, string>;
+  stacking?: Record<string, string>;
+  airDefense?: Record<string, string>;
+  scenario?: Record<string, string>;
+  targets?: Record<string, string>;
+  generic?: Record<string, string>;
+}
+
+/**
+ * Feedback style configuration
+ */
+export type FeedbackStyle = 'silent' | 'toast' | 'modal' | 'inline';
+
+/**
+ * Grading system type
+ */
+export type GradingSystem = 'none' | 'pass-fail' | 'stars';
+
+/**
  * Goal-based lesson: user makes any legal moves until reaching goalFen
  */
 export interface Lesson {
   id: string;
   category: LessonCategory;
+
+  /** Parent subject (for new structure) */
+  subjectId?: SubjectId;
+  /** Parent section (for new structure) */
+  sectionId?: SectionId;
+
   title: string;
   description: string;
   difficulty: 1 | 2 | 3;
@@ -70,20 +122,13 @@ export interface Lesson {
   arrows?: BoardShape[];
   /** Optional: target destination square(s) to highlight for learning */
   targetSquares?: Square[];
+  /** Whether targets must be visited in order */
+  orderedTargets?: boolean;
 
   /**
    * Optional feedback messages for interactive hints
    */
-  feedback?: {
-    /** Message when clicking a target square */
-    onTarget?: string;
-    /** Message when clicking the piece to move */
-    onPiece?: string;
-    /** Custom messages for specific squares */
-    onSelect?: Record<string, string>;
-    /** Message when attempting an invalid move */
-    onWrongMove?: string;
-  };
+  feedback?: LessonFeedback;
 
   /**
    * Optional scenario: scripted sequence of moves.
@@ -97,6 +142,38 @@ export interface Lesson {
    * If not provided, defaults based on scenario length or a fixed value.
    */
   optimalMoves?: number;
+
+  // Validation configuration
+  /** Validate basic move legality (default: true) */
+  validateLegality?: boolean;
+  /** Validate terrain restrictions (default: false) */
+  validateTerrain?: boolean;
+  /** Require exact scenario sequence (default: false) */
+  strictScenario?: boolean;
+
+  // Feedback configuration
+  /** How to display feedback */
+  feedbackStyle?: FeedbackStyle;
+
+  // Grading configuration
+  /** How to grade performance */
+  grading?: GradingSystem;
+
+  // UI configuration
+  /** Allow undo (default: true) */
+  allowUndo?: boolean;
+  /** Allow hints (default: true) */
+  allowHints?: boolean;
+  /** Show move count (default: false) */
+  showMoveCount?: boolean;
+  /** Show valid moves highlight (default: true) */
+  showValidMoves?: boolean;
+
+  // Custom validators
+  /** Custom completion checker */
+  customCompletion?: (engine: LearnEngine) => boolean;
+  /** Custom move validator (return error message or null) */
+  customMoveValidator?: (move: InternalMove, engine: LearnEngine) => string | null;
 }
 
 export interface LessonProgress {
@@ -154,4 +231,45 @@ export interface LessonResult {
   moveCount: number;
   stars: 0 | 1 | 2 | 3;
   completed: boolean;
+}
+
+/**
+ * Subject - top-level learning unit
+ */
+export interface Subject {
+  id: SubjectId;
+  title: string;
+  description: string;
+  icon: string;
+  /** Markdown introduction/walkthrough */
+  introduction: string;
+  /** Subject IDs that must be completed before this unlocks */
+  prerequisites: SubjectId[];
+  /** Sections within this subject */
+  sections: Section[];
+}
+
+/**
+ * Section - group of related lessons within a subject
+ */
+export interface Section {
+  id: SectionId;
+  title: string;
+  description: string;
+  /** Optional section introduction */
+  introduction?: string;
+  /** Lessons in this section */
+  lessons: Lesson[];
+}
+
+/**
+ * Subject progress tracking
+ */
+export interface SubjectProgress {
+  subjectId: SubjectId;
+  completed: boolean;
+  /** Section completion map */
+  sections: Record<SectionId, boolean>;
+  /** Overall progress percentage (0-100) */
+  progress: number;
 }

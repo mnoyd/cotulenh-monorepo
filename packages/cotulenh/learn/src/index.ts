@@ -11,8 +11,44 @@ export type {
   ScenarioStep,
   ScenarioBlueprint,
   BoardShape,
-  SquareInfo
+  SquareInfo,
+  Subject,
+  SubjectId,
+  Section,
+  SectionId,
+  SubjectProgress,
+  FeedbackData,
+  MoveValidationResult,
+  LessonFeedback,
+  FeedbackStyle,
+  GradingSystem
 } from './types';
+
+// Validators
+export { CompositeValidator } from './validators/composite-validator';
+export { TargetValidator } from './validators/target-validator';
+export { CustomValidator } from './validators/custom-validator';
+export { ValidatorFactory } from './validators/validator-factory';
+export type { MoveValidator } from './validators/move-validator';
+
+// Completion checkers
+export { GoalCompletionChecker } from './completion/goal-completion';
+export { TargetCompletionChecker } from './completion/target-completion';
+export { CustomCompletionChecker } from './completion/custom-completion';
+export { CompletionFactory } from './completion/completion-factory';
+export type { CompletionChecker } from './completion/completion-checker';
+
+// Graders
+export { NoGrader } from './grading/no-grader';
+export { PassFailGrader } from './grading/pass-fail-grader';
+export { StarGrader } from './grading/star-grader';
+export { GraderFactory } from './grading/grader-factory';
+export type { Grader } from './grading/grader';
+
+// Feedback providers
+export { SilentFeedbackProvider } from './feedback/silent-feedback';
+export { FeedbackFactory } from './feedback/feedback-factory';
+export type { FeedbackProvider } from './feedback/feedback-provider';
 
 // Anti-rule core for relaxed game rules
 export { AntiRuleCore, createAntiRuleCore } from './anti-rule-core';
