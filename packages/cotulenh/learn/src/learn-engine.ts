@@ -11,6 +11,16 @@ import type {
 import { getLessonById } from './lessons';
 import { Scenario } from './scenario';
 import { AntiRuleCore } from './anti-rule-core';
+import { ValidatorFactory } from './validators/validator-factory';
+import { CompletionFactory } from './completion/completion-factory';
+import { GraderFactory } from './grading/grader-factory';
+import { FeedbackFactory } from './feedback/feedback-factory';
+import type { MoveValidator } from './validators/move-validator';
+import type { CompletionChecker } from './completion/completion-checker';
+import type { Grader } from './grading/grader';
+import type { FeedbackProvider } from './feedback/feedback-provider';
+import { CompositeValidator } from './validators/composite-validator';
+import { TargetValidator } from './validators/target-validator';
 
 /**
  * LearnEngine - Framework-agnostic learning session manager.
@@ -27,6 +37,12 @@ export class LearnEngine {
   #scenario: Scenario | null = null;
   #opponentMoveTimeout: ReturnType<typeof setTimeout> | null = null;
   #visitedTargets: Set<Square> = new Set();
+
+  // Component-based architecture
+  #validator: MoveValidator | null = null;
+  #completionChecker: CompletionChecker | null = null;
+  #grader: Grader | null = null;
+  #feedbackProvider: FeedbackProvider | null = null;
 
   constructor(callbacks: LearnEngineCallbacks = {}) {
     this.#callbacks = callbacks;
@@ -53,6 +69,11 @@ export class LearnEngine {
   }
 
   get stars(): 0 | 1 | 2 | 3 {
+    if (this.#grader && this.#lesson) {
+      const result = this.#grader.grade(this.#moveCount, this.#lesson);
+      return result.stars;
+    }
+    // Fallback for backward compatibility
     const optimal = this.#lesson?.optimalMoves ?? this.#getDefaultOptimalMoves();
     return LearnEngine.calculateStars(this.#moveCount, optimal);
   }
@@ -92,6 +113,14 @@ export class LearnEngine {
    * Get the remaining target squares that haven't been visited yet
    */
   get remainingTargets(): Square[] {
+    // Use TargetValidator if available
+    if (this.#validator) {
+      const targetValidator = this.#findTargetValidator();
+      if (targetValidator) {
+        return targetValidator.remainingTargets;
+      }
+    }
+    // Fallback for backward compatibility
     const targets = this.#lesson?.targetSquares ?? [];
     return targets.filter((t) => !this.#visitedTargets.has(t));
   }
@@ -100,7 +129,38 @@ export class LearnEngine {
    * Get all visited target squares
    */
   get visitedTargets(): Square[] {
+    // Use TargetValidator if available
+    if (this.#validator) {
+      const targetValidator = this.#findTargetValidator();
+      if (targetValidator) {
+        // TargetValidator doesn't expose visited targets directly,
+        // calculate from total - remaining
+        const allTargets = this.#lesson?.targetSquares ?? [];
+        const remaining = targetValidator.remainingTargets;
+        return allTargets.filter((t) => !remaining.includes(t));
+      }
+    }
+    // Fallback for backward compatibility
     return Array.from(this.#visitedTargets);
+  }
+
+  /**
+   * Helper to find TargetValidator in the validator chain
+   */
+  #findTargetValidator(): TargetValidator | null {
+    if (!this.#validator) return null;
+
+    // If it's a CompositeValidator, search for TargetValidator
+    if (this.#validator instanceof CompositeValidator) {
+      return this.#validator.findValidator(TargetValidator);
+    }
+
+    // If it's directly a TargetValidator
+    if (this.#validator instanceof TargetValidator) {
+      return this.#validator;
+    }
+
+    return null;
   }
 
   /**
@@ -199,6 +259,13 @@ export class LearnEngine {
 
     try {
       this.#game = new AntiRuleCore(lesson.startFen, { skipLastGuard: true });
+
+      // Initialize components using factories
+      this.#validator = ValidatorFactory.create(lesson, this);
+      this.#completionChecker = CompletionFactory.create(lesson, [this.#validator]);
+      this.#grader = GraderFactory.create(lesson);
+      this.#feedbackProvider = FeedbackFactory.create(lesson);
+
       this.#callbacks.onStateChange?.(this.#status);
     } catch (error) {
       logger.error('Failed to load lesson FEN:', { error, fen: lesson.startFen });
@@ -354,6 +421,12 @@ export class LearnEngine {
   }
 
   #checkGoalReached(): boolean {
+    // Use CompletionChecker if available
+    if (this.#completionChecker) {
+      return this.#completionChecker.check(this);
+    }
+
+    // Fallback for backward compatibility
     if (!this.#lesson || !this.#game) return false;
 
     // If targetSquares defined, check if all have been visited
