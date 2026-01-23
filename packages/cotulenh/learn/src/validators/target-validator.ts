@@ -1,4 +1,5 @@
 import type { InternalMove, Square } from '@cotulenh/core';
+import { algebraic, SQUARE_MAP } from '@cotulenh/core';
 import type { AntiRuleCore } from '../anti-rule-core';
 import type { MoveValidationResult } from '../types';
 import type { MoveValidator } from './move-validator';
@@ -8,13 +9,17 @@ import type { MoveValidator } from './move-validator';
  * Can be ordered (must visit in sequence) or unordered (any order)
  */
 export class TargetValidator implements MoveValidator {
-  private visitedTargets = new Set<Square>();
+  private visitedTargets = new Set<number>();
   private currentIndex = 0;
+  private targetIndices: number[];
 
   constructor(
     private targets: Square[],
     private ordered: boolean = false
-  ) {}
+  ) {
+    // Convert Square strings to numeric indices for comparison
+    this.targetIndices = targets.map((sq) => SQUARE_MAP[sq]);
+  }
 
   validate(move: InternalMove, game: AntiRuleCore): MoveValidationResult {
     if (this.ordered) {
@@ -24,14 +29,14 @@ export class TargetValidator implements MoveValidator {
   }
 
   private validateOrdered(move: InternalMove): MoveValidationResult {
-    const expectedTarget = this.targets[this.currentIndex];
+    const expectedTargetIndex = this.targetIndices[this.currentIndex];
 
-    if (!expectedTarget) {
+    if (expectedTargetIndex === undefined) {
       return { valid: true };
     }
 
-    if (move.to === expectedTarget) {
-      this.visitedTargets.add(expectedTarget);
+    if (move.to === expectedTargetIndex) {
+      this.visitedTargets.add(expectedTargetIndex);
       this.currentIndex++;
 
       return {
@@ -41,8 +46,8 @@ export class TargetValidator implements MoveValidator {
           severity: 'info',
           code: 'TARGET_REACHED',
           context: {
-            target: expectedTarget,
-            remaining: this.targets.length - this.currentIndex
+            target: algebraic(expectedTargetIndex),
+            remaining: this.targetIndices.length - this.currentIndex
           }
         }
       };
@@ -55,15 +60,15 @@ export class TargetValidator implements MoveValidator {
         severity: 'error',
         code: 'WRONG_TARGET',
         context: {
-          expected: expectedTarget,
-          actual: move.to
+          expected: algebraic(expectedTargetIndex),
+          actual: algebraic(move.to)
         }
       }
     };
   }
 
   private validateUnordered(move: InternalMove): MoveValidationResult {
-    if (this.targets.includes(move.to) && !this.visitedTargets.has(move.to)) {
+    if (this.targetIndices.includes(move.to) && !this.visitedTargets.has(move.to)) {
       this.visitedTargets.add(move.to);
 
       return {
@@ -73,8 +78,8 @@ export class TargetValidator implements MoveValidator {
           severity: 'info',
           code: 'TARGET_REACHED',
           context: {
-            target: move.to,
-            remaining: this.targets.length - this.visitedTargets.size
+            target: algebraic(move.to),
+            remaining: this.targetIndices.length - this.visitedTargets.size
           }
         }
       };
@@ -84,14 +89,16 @@ export class TargetValidator implements MoveValidator {
   }
 
   get isComplete(): boolean {
-    return this.visitedTargets.size === this.targets.length;
+    return this.visitedTargets.size === this.targetIndices.length;
   }
 
   get remainingTargets(): Square[] {
     if (this.ordered) {
-      return this.targets.slice(this.currentIndex);
+      return this.targetIndices.slice(this.currentIndex).map((idx) => algebraic(idx));
     }
-    return this.targets.filter((t) => !this.visitedTargets.has(t));
+    return this.targetIndices
+      .filter((idx) => !this.visitedTargets.has(idx))
+      .map((idx) => algebraic(idx));
   }
 
   reset(): void {

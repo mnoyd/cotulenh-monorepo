@@ -75,6 +75,16 @@ export interface LessonFeedback {
   scenario?: Record<string, string>;
   targets?: Record<string, string>;
   generic?: Record<string, string>;
+
+  // Backward compatibility (deprecated)
+  /** @deprecated Use targets.reached */
+  onTarget?: string;
+  /** @deprecated Use generic.pieceSelected */
+  onPiece?: string;
+  /** @deprecated Use generic object with square keys */
+  onSelect?: Record<string, string>;
+  /** @deprecated Use generic.invalid */
+  onWrongMove?: string;
 }
 
 /**
