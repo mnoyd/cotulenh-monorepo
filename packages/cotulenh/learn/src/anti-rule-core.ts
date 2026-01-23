@@ -69,7 +69,10 @@ export class AntiRuleCore {
       | InternalMove,
     options?: { strict?: boolean; autoCommit?: boolean }
   ): MoveResult | null {
-    const result = this.#game.move(move, options);
+    const result = this.#game.move(move, {
+      ...options,
+      legal: this.#options.legalMoves
+    });
 
     if (result && this.#options.infiniteTurnFor) {
       this.#game.setMetadata({
