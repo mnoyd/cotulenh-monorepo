@@ -38,6 +38,7 @@ export class LearnEngine {
   #scenario: Scenario | null = null;
   #opponentMoveTimeout: ReturnType<typeof setTimeout> | null = null;
   #visitedTargets: Set<Square> = new Set();
+  #interactionCount = 0; // Tracks moves + selections
 
   // Component-based architecture
   #validator: MoveValidator | null = null;
@@ -226,8 +227,19 @@ export class LearnEngine {
    */
   handleSelect(square: Square): SquareInfo {
     const info = this.getSquareInfo(square);
+    this.#interactionCount++;
     this.#callbacks.onSelect?.(info);
+
+    // Check if goal reached (useful for non-moving lessons like HQ)
+    if (this.#checkGoalReached()) {
+      this.#completeLesson();
+    }
+
     return info;
+  }
+
+  get interactionCount(): number {
+    return this.#interactionCount;
   }
 
   // ============================================================
@@ -520,6 +532,7 @@ export class LearnEngine {
 
     this.#clearOpponentTimeout();
     this.#moveCount = 0;
+    this.#interactionCount = 0;
     this.#status = 'ready';
     this.#visitedTargets.clear();
 

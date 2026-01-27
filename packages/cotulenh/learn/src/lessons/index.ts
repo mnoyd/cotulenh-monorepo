@@ -45,10 +45,20 @@ export const categories: CategoryInfo[] = [
 ];
 
 export function getLessonById(id: string): Lesson | undefined {
+  // Search in categories (legacy)
   for (const category of categories) {
     const lesson = category.lessons.find((l) => l.id === id);
     if (lesson) return lesson;
   }
+
+  // Search in subjects (new)
+  for (const subject of subjects) {
+    for (const section of subject.sections) {
+      const lesson = section.lessons.find((l) => l.id === id);
+      if (lesson) return lesson;
+    }
+  }
+
   return undefined;
 }
 
