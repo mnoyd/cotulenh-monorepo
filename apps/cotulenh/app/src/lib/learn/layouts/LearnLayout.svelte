@@ -52,16 +52,27 @@
     line-height: 1.7;
   }
 
+  .prose :global(h1) {
+    font-size: 1.75rem;
+    margin: 0 0 1.5rem;
+    color: var(--primary);
+    font-weight: 700;
+  }
+
   .prose :global(h2) {
-    font-size: 1.5rem;
-    margin: 2rem 0 1rem;
+    font-size: 1.4rem;
+    margin: 2.5rem 0 1rem;
     padding-bottom: 0.5rem;
-    border-bottom: 1px solid var(--border);
+    border-bottom: 2px solid var(--primary);
+    color: var(--primary);
+    font-weight: 600;
   }
 
   .prose :global(h3) {
-    font-size: 1.25rem;
+    font-size: 1.15rem;
     margin: 1.5rem 0 0.75rem;
+    color: var(--secondary, #10b981);
+    font-weight: 600;
   }
 
   .prose :global(p) {
@@ -119,8 +130,15 @@
   }
 
   .prose :global(strong) {
-    color: var(--text-primary);
+    color: var(--primary);
     font-weight: 600;
+  }
+
+  /* Highlighted text for emphasis */
+  .prose :global(em) {
+    font-style: normal;
+    color: var(--secondary, #10b981);
+    font-weight: 500;
   }
 
   .prose :global(a) {
@@ -136,17 +154,31 @@
     width: 100%;
     border-collapse: collapse;
     margin: 1.5rem 0;
+    border-radius: 8px;
+    overflow: hidden;
   }
 
   .prose :global(th), .prose :global(td) {
     border: 1px solid var(--border);
-    padding: 0.75rem;
+    padding: 0.75rem 1rem;
     text-align: left;
   }
 
   .prose :global(th) {
-    background: var(--surface-1);
+    background: linear-gradient(135deg, var(--primary) 0%, var(--secondary, #10b981) 100%);
+    color: white;
     font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    letter-spacing: 0.05em;
+  }
+
+  .prose :global(tr:nth-child(even) td) {
+    background: var(--surface-1);
+  }
+
+  .prose :global(tr:hover td) {
+    background: var(--surface-2);
   }
 
   .prose :global(hr) {
