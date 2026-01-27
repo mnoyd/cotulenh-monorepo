@@ -12,12 +12,13 @@ Terrain controls where each unit can operate. Understanding terrain restrictions
 
 ## Quick Reference
 
-| Zone | Files/Squares | Who Can Enter |
-|------|---------------|---------------|
-| Pure Water | a, b | Navy, Air Force only |
-| Mixed/Coastal | c, d6, e6, d7, e7 | Navy AND Land units |
-| Land | d-k (except river) | All land units |
-| Bridge | f6/f7, h6/h7 | Heavy units cross here |
+**Pure Water (a, b)**: Navy and Air Force only
+
+**Mixed/Coastal (c, d6, e6, d7, e7)**: Navy AND Land units
+
+**Land (d-k except river)**: All land units
+
+**Bridge (f6/f7, h6/h7)**: Heavy units cross here
 
 ## Key Rules
 
@@ -100,14 +101,17 @@ The **river** divides the board into northern and southern territories:
 
 ## Terrain by Unit Type
 
-| Unit | Water (a-b) | Coastal (c) | River Squares | Land (d-k) | Bridges |
-|------|-------------|-------------|---------------|------------|---------|
-| Navy | Yes | Yes | Yes | No | No |
-| Infantry | No | Yes | No | Yes | Yes |
-| Tank | No | Yes | Cross freely | Yes | Yes |
-| Artillery | No | Yes | Bridge only | Yes | Required |
-| Air Force | Yes | Yes | Yes | Yes | Yes |
-| Commander | No | Yes | Cross freely | Yes | Yes |
+**Navy**: Water (a-b) Yes, Coastal Yes, River Yes, Land No
+
+**Infantry**: Water No, Coastal Yes, River No, Land Yes
+
+**Tank**: Water No, Coastal Yes, River Cross freely, Land Yes
+
+**Artillery**: Water No, Coastal Yes, River Bridge only, Land Yes
+
+**Air Force**: Water Yes, Coastal Yes, River Yes, Land Yes (ignores all terrain!)
+
+**Commander**: Water No, Coastal Yes, River Cross freely, Land Yes
 
 ## Why Terrain Matters
 

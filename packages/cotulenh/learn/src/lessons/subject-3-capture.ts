@@ -12,11 +12,11 @@ Capturing removes enemy pieces from the board. Cotulenh features multiple captur
 
 ## Capture Types Overview
 
-| Type | How It Works | Which Units |
-|------|--------------|-------------|
-| Normal | Move onto enemy square | All units |
-| Stay | Destroy target without moving | Artillery, Air Force, Navy, Missile |
-| Suicide | Both pieces destroyed | Air Force (kamikaze) |
+**Normal Capture**: Move onto enemy square - all units can do this
+
+**Stay Capture**: Destroy target without moving - Artillery, Air Force, Navy, Missile
+
+**Suicide Capture**: Both pieces destroyed - Air Force (kamikaze)
 
 ## Key Concepts
 
@@ -75,11 +75,11 @@ In rare cases, both the attacker and defender are destroyed:
 
 Some pieces have **different ranges for capture vs movement**:
 
-| Unit | Move Range | Capture Range | Notes |
-|------|------------|---------------|-------|
-| Commander | Unlimited | 1 square | Moves like a Rook, but captures only adjacent squares |
-| Heroic Commander | Unlimited | 2 squares | Enhanced capture range when heroic |
-| All others | Same | Same | Move and capture ranges are identical |
+**Commander**: Moves unlimited squares, but captures only 1 square adjacent
+
+**Heroic Commander**: Moves unlimited, captures up to 2 squares
+
+**All other units**: Move and capture ranges are identical
 
 This means the Commander is powerful for mobility but must get close to capture.
 
