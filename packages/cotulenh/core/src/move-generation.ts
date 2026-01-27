@@ -397,7 +397,7 @@ function isRangeExceeded(
   }
 
   // Commander has board-limited range
-  return currentRange >= 11
+  return currentRange > 11
 }
 
 // ========================================================================
