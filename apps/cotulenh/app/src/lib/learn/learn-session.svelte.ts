@@ -226,7 +226,7 @@ export class LearnSession {
   #handleMove(orig: OrigMove, dest: DestMove): void {
     const from = orig.square as Square;
     const to = dest.square as Square;
-    const success = this.#engine.makeMove(from, to);
+    const success = this.#engine.makeMove(from, to, dest.stay);
     if (!success && this.#engine.status === 'ready') {
       this.#feedbackMessage = 'Invalid move. Try again.';
       this.#showFeedback = true;

@@ -5,6 +5,8 @@ import { heroicLessons } from './heroic';
 import { terrainLessons } from './terrain';
 import { tacticsLessons } from './tactics';
 import { subject1BasicMovement } from './subject-1-basic-movement';
+import { subject2Terrain } from './subject-2-terrain';
+import { subject3Capture } from './subject-3-capture';
 
 export const categories: CategoryInfo[] = [
   {
@@ -81,7 +83,7 @@ export function getNextLesson(currentId: string): Lesson | undefined {
 // SUBJECTS (New curriculum structure)
 // ============================================================
 
-export const subjects: Subject[] = [subject1BasicMovement];
+export const subjects: Subject[] = [subject1BasicMovement, subject2Terrain, subject3Capture];
 
 export function getSubjectById(id: string): Subject | undefined {
   return subjects.find((s) => s.id === id);

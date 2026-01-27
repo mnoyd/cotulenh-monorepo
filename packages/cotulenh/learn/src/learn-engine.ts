@@ -292,7 +292,7 @@ export class LearnEngine {
    * Make a move on the board
    * Returns true if the move was successful
    */
-  makeMove(from: Square, to: Square): boolean {
+  makeMove(from: Square, to: Square, stay?: boolean): boolean {
     if (!this.#lesson || !this.#game) return false;
     if (this.#status !== 'ready') return false;
 
@@ -304,7 +304,7 @@ export class LearnEngine {
     }
 
     // Handle free-form lessons (goal-based)
-    return this.#handleFreeFormMove(from, to);
+    return this.#handleFreeFormMove(from, to, stay);
   }
 
   /**
@@ -352,7 +352,7 @@ export class LearnEngine {
   /**
    * Handle a move in a free-form (goal-based) lesson
    */
-  #handleFreeFormMove(from: Square, to: Square): boolean {
+  #handleFreeFormMove(from: Square, to: Square, stay?: boolean): boolean {
     if (!this.#game) return false;
 
     const validation = this.#validateMove(from, to);
@@ -361,7 +361,7 @@ export class LearnEngine {
     }
 
     try {
-      this.#game.move({ from, to });
+      this.#game.move({ from, to, ...(stay !== undefined && { stay }) });
       this.#moveCount++;
     } catch (error) {
       logger.error('Move failed:', { error, from, to });
