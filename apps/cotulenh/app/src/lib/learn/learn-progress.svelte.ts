@@ -118,6 +118,25 @@ export class SubjectProgressManager {
     return this.#lessonProgress[lessonId]?.stars ?? 0;
   }
 
+  /**
+   * Get the next incomplete lesson in a subject (for "Continue" functionality)
+   */
+  getNextIncompleteLesson(
+    subjectId: SubjectId
+  ): { lessonId: string; sectionId: string; title: string } | null {
+    const subject = getSubjectById(subjectId);
+    if (!subject) return null;
+
+    for (const section of subject.sections) {
+      for (const lesson of section.lessons) {
+        if (!this.isLessonCompleted(lesson.id)) {
+          return { lessonId: lesson.id, sectionId: section.id, title: lesson.title };
+        }
+      }
+    }
+    return null;
+  }
+
   // ============================================================
   // INTERNAL
   // ============================================================
