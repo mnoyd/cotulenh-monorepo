@@ -72,3 +72,6 @@ export {
   terrainLessons,
   tacticsLessons
 } from './lessons';
+
+// Subjects (new curriculum structure)
+export { subjects, getSubjectById, getLessonInSubject, getNextLessonInSubject } from './lessons';

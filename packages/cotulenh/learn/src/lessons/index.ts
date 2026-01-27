@@ -1,9 +1,10 @@
-import type { CategoryInfo, Lesson } from '../types';
+import type { CategoryInfo, Lesson, Subject } from '../types';
 import { basicsLessons } from './basics';
 import { piecesLessons } from './pieces';
 import { heroicLessons } from './heroic';
 import { terrainLessons } from './terrain';
 import { tacticsLessons } from './tactics';
+import { subject1BasicMovement } from './subject-1-basic-movement';
 
 export const categories: CategoryInfo[] = [
   {
@@ -59,6 +60,41 @@ export function getNextLesson(currentId: string): Lesson | undefined {
   let foundCurrent = false;
   for (const category of categories) {
     for (const lesson of category.lessons) {
+      if (foundCurrent) return lesson;
+      if (lesson.id === currentId) foundCurrent = true;
+    }
+  }
+  return undefined;
+}
+
+// ============================================================
+// SUBJECTS (New curriculum structure)
+// ============================================================
+
+export const subjects: Subject[] = [subject1BasicMovement];
+
+export function getSubjectById(id: string): Subject | undefined {
+  return subjects.find((s) => s.id === id);
+}
+
+export function getLessonInSubject(subjectId: string, lessonId: string): Lesson | undefined {
+  const subject = getSubjectById(subjectId);
+  if (!subject) return undefined;
+
+  for (const section of subject.sections) {
+    const lesson = section.lessons.find((l) => l.id === lessonId);
+    if (lesson) return lesson;
+  }
+  return undefined;
+}
+
+export function getNextLessonInSubject(subjectId: string, currentId: string): Lesson | undefined {
+  const subject = getSubjectById(subjectId);
+  if (!subject) return undefined;
+
+  let foundCurrent = false;
+  for (const section of subject.sections) {
+    for (const lesson of section.lessons) {
       if (foundCurrent) return lesson;
       if (lesson.id === currentId) foundCurrent = true;
     }
