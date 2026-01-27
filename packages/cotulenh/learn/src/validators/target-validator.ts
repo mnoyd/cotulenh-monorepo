@@ -21,7 +21,8 @@ export class TargetValidator implements MoveValidator {
     this.targetIndices = targets.map((sq) => SQUARE_MAP[sq]);
   }
 
-  validate(move: InternalMove, game: AntiRuleCore): MoveValidationResult {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  validate(move: InternalMove, _game: AntiRuleCore): MoveValidationResult {
     if (this.ordered) {
       return this.validateOrdered(move);
     }

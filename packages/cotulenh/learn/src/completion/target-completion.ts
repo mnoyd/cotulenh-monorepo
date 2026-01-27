@@ -8,11 +8,13 @@ import type { CompletionChecker } from './completion-checker';
 export class TargetCompletionChecker implements CompletionChecker {
   constructor(private targetValidator: TargetValidator) {}
 
-  check(engine: LearnEngine): boolean {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  check(_engine: LearnEngine): boolean {
     return this.targetValidator.isComplete;
   }
 
-  getProgress(engine: LearnEngine): number {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  getProgress(_engine: LearnEngine): number {
     const total = this.targetValidator.remainingTargets.length;
     if (total === 0) return 100;
 

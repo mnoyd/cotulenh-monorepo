@@ -1,12 +1,11 @@
 <script lang="ts">
   import { page } from '$app/stores';
   import LessonPlayer from '$lib/learn/components/LessonPlayer.svelte';
-  import { getNextLessonInSubject, getSubjectById } from '@cotulenh/learn';
+  import { getNextLessonInSubject } from '@cotulenh/learn';
 
   const params = $derived($page.params);
   const lessonId = $derived(params.lessonId);
   const subjectId = $derived(params.subjectId);
-  const sectionId = $derived(params.sectionId);
 
   // Calculate Next URL
   const nextUrl = $derived.by(() => {

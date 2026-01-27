@@ -1,4 +1,5 @@
 import type { Subject, Section, Lesson } from '../types';
+import type { LearnEngine } from '../learn-engine';
 
 /**
  * Subject 1: Basic Movement
@@ -7,8 +8,8 @@ import type { Subject, Section, Lesson } from '../types';
  * Covers all 11 piece types with guided exercises.
  */
 
-const INTERACTION_COMPLETION = (engine: any) => engine.interactionCount > 0;
-const MOVES_COMPLETION = (engine: any) => engine.moveCount > 0;
+const INTERACTION_COMPLETION = (engine: LearnEngine) => engine.interactionCount > 0;
+const MOVES_COMPLETION = (engine: LearnEngine) => engine.moveCount > 0;
 
 // ============================================================
 // SECTION 1: Basic Unit Movement (1-square pieces)

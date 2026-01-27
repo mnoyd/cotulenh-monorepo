@@ -30,6 +30,7 @@ export class CompositeValidator implements MoveValidator {
   /**
    * Find a validator of a specific type
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   findValidator<T extends MoveValidator>(type: new (...args: any[]) => T): T | null {
     for (const validator of this.validators) {
       if (validator instanceof type) {

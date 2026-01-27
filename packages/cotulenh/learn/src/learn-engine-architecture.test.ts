@@ -1,9 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
 import { LearnEngine } from './learn-engine';
-import { TargetValidator } from './validators/target-validator';
-import { GoalCompletionChecker } from './completion/goal-completion';
-import { StarGrader } from './grading/star-grader';
-import { PassFailGrader } from './grading/pass-fail-grader';
 
 /**
  * Tests for Phase 2 refactored LearnEngine architecture
@@ -48,7 +44,7 @@ describe('LearnEngine - Component Architecture', () => {
       };
 
       // Manually inject lesson for testing
-      (engine as any)['#lesson'] = testLesson;
+      (engine as unknown as { '#lesson': typeof testLesson })['#lesson'] = testLesson;
 
       // Should use StarGrader logic
       expect(engine.stars).toBeDefined();
@@ -71,7 +67,7 @@ describe('LearnEngine - Component Architecture', () => {
         grading: 'pass-fail' as const
       };
 
-      (engine as any)['#lesson'] = testLesson;
+      (engine as unknown as { '#lesson': typeof testLesson })['#lesson'] = testLesson;
 
       // Stars should be 1 for pass-fail
       const stars = engine.stars;
@@ -122,7 +118,7 @@ describe('LearnEngine - Component Architecture', () => {
         grading: 'pass-fail' as const
       };
 
-      (engine as any)['#lesson'] = testLesson;
+      (engine as unknown as { '#lesson': typeof testLesson })['#lesson'] = testLesson;
 
       // Should track targets
       expect(engine.remainingTargets).toBeDefined();
@@ -223,7 +219,7 @@ describe('LearnEngine - Component Architecture', () => {
         optimalMoves: 5
       };
 
-      (engine as any)['#lesson'] = starLesson;
+      (engine as unknown as { '#lesson': typeof starLesson })['#lesson'] = starLesson;
 
       // Stars should be calculated based on move count vs optimal
       const initialStars = engine.stars;
@@ -271,7 +267,7 @@ describe('LearnEngine - Component Architecture', () => {
       engine.loadLesson('basics-1');
 
       // Simulate some moves (move count increment)
-      (engine as any)['#moveCount'] = 5;
+      (engine as unknown as { '#moveCount': number })['#moveCount'] = 5;
 
       engine.restart();
 

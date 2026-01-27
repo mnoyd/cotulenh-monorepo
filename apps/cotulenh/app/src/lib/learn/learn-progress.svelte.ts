@@ -1,11 +1,9 @@
 import { getStoredValue, setStoredValue } from '$lib/stores/persisted.svelte';
 import {
-  type Subject,
   type SubjectId,
   type LessonProgress,
   type SubjectProgress,
-  getSubjectById,
-  subjects
+  getSubjectById
 } from '@cotulenh/learn';
 
 /**

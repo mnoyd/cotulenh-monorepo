@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { Section, Lesson } from '@cotulenh/learn';
   import { subjectProgress } from '../learn-progress.svelte';
-  import { ChevronRight, CheckCircle, Play } from 'lucide-svelte';
+  import { CheckCircle, Play } from 'lucide-svelte';
 
   interface Props {
     section: Section;
@@ -60,6 +60,7 @@
         <div class="lesson-info">
           <span class="title">{lesson.title}</span>
           <span class="difficulty">
+            <!-- eslint-disable-next-line @typescript-eslint/no-unused-vars -->
             {#each Array(lesson.difficulty) as _}
               <span class="dot"></span>
             {/each}
@@ -70,6 +71,7 @@
           {#if completed}
             {#if showStars(lesson)}
               <div class="stars">
+                <!-- eslint-disable-next-line @typescript-eslint/no-unused-vars -->
                 {#each Array(3) as _, i}
                   <span class="star" class:filled={i < stars}>★</span>
                 {/each}

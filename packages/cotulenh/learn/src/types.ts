@@ -1,5 +1,4 @@
 import type { Square, InternalMove } from '@cotulenh/core';
-import type { AntiRuleCore } from './anti-rule-core';
 import type { LearnEngine } from './learn-engine';
 
 export type SubjectId = string;

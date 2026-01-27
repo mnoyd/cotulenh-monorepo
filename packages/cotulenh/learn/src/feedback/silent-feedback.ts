@@ -1,4 +1,3 @@
-import type { FeedbackData, LessonFeedback } from '../types';
 import type { FeedbackProvider } from './feedback-provider';
 
 /**

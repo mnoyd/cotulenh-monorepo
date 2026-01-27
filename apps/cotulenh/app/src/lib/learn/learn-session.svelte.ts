@@ -10,7 +10,6 @@ import {
   type GradingSystem
 } from '@cotulenh/learn';
 import { subjectProgress } from './learn-progress.svelte';
-import { getStoredValue, setStoredValue } from '$lib/stores/persisted.svelte';
 import { coreToBoardColor, mapPossibleMovesToDests } from '$lib/features/game/utils';
 
 /**

@@ -13,7 +13,8 @@ export class CustomValidator implements MoveValidator {
     private engine: LearnEngine
   ) {}
 
-  validate(move: InternalMove, game: AntiRuleCore): MoveValidationResult {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  validate(move: InternalMove, _game: AntiRuleCore): MoveValidationResult {
     const error = this.validatorFn(move, this.engine);
 
     if (error) {
