@@ -1,126 +1,55 @@
 <script lang="ts">
-  import { BookOpen } from 'lucide-svelte';
-  import CategoryCard from '$lib/learn/components/CategoryCard.svelte';
-  import { categories } from '@cotulenh/learn';
+  import { subjects } from '@cotulenh/learn';
+  import SubjectCard from '$lib/learn/components/SubjectCard.svelte';
+  import { subjectProgress } from '$lib/learn/learn-progress.svelte';
   import { getI18n } from '$lib/i18n/index.svelte';
 
   const i18n = getI18n();
 </script>
 
-<main class="learn-page">
-  <div class="learn-container">
-    <header class="learn-header">
-      <div class="header-icon">
-        <BookOpen size={32} />
-      </div>
-      <div class="header-content">
-        <h1>
-          <span class="title-green">{i18n.t('learn.title')}</span>
-          <span class="title-cyan">Cờ Tư Lệnh</span>
-        </h1>
-        <p class="tagline">{i18n.t('learn.tagline')}</p>
-      </div>
-    </header>
-
-    <div class="categories">
-      {#each categories as category}
-        <CategoryCard {category} />
-      {/each}
-    </div>
-
-    <div class="back-link">
-      <a href="/">{i18n.t('common.backToHome')}</a>
-    </div>
+<div class="learn-container">
+  <div class="header">
+    <h1>{i18n.t('learn.title')}</h1>
+    <p>{i18n.t('learn.description')}</p>
   </div>
-</main>
+
+  <div class="subjects-grid">
+    {#each subjects as subject}
+      {@const progress = subjectProgress.getSubjectProgress(subject.id)}
+      {@const isLocked = !subjectProgress.isSubjectUnlocked(subject.id)}
+      <SubjectCard {subject} {progress} {isLocked} />
+    {/each}
+  </div>
+</div>
 
 <style>
-  .learn-page {
-    min-height: 100vh;
-    background: var(--theme-bg-dark, #000);
-    color: var(--theme-text-primary, #eee);
-    font-family: var(--font-ui);
+  .learn-container {
+    max-width: 1000px;
+    margin: 0 auto;
     padding: 2rem 1rem;
   }
 
-  .learn-container {
-    width: 100%;
-    max-width: 900px;
-    margin: 0 auto;
-  }
-
-  .learn-header {
-    display: flex;
-    align-items: center;
-    gap: 1.5rem;
-    margin-bottom: 2rem;
-    padding-bottom: 1.5rem;
-    border-bottom: 1px solid var(--theme-border, #444);
-  }
-
-  .header-icon {
-    width: 64px;
-    height: 64px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--theme-bg-elevated, #333);
-    border-radius: 12px;
-    color: var(--theme-success, #22c55e);
-  }
-
-  .header-content h1 {
-    font-size: 2rem;
-    margin: 0;
-    font-weight: 800;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-  }
-
-  .title-green {
-    color: #22c55e;
-  }
-
-  .title-cyan {
-    color: #06b6d4;
-    font-weight: 300;
-  }
-
-  .tagline {
-    font-size: 1rem;
-    color: var(--theme-text-secondary, #aaa);
-    margin: 0.5rem 0 0;
-  }
-
-  .categories {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-  }
-
-  .back-link {
-    margin-top: 2rem;
+  .header {
     text-align: center;
+    margin-bottom: 3rem;
   }
 
-  .back-link a {
-    color: var(--theme-text-secondary, #aaa);
-    text-decoration: none;
-    font-size: 0.875rem;
+  h1 {
+    font-size: 2.5rem;
+    margin-bottom: 0.5rem;
+    background: linear-gradient(to right, var(--primary), var(--secondary));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
   }
 
-  .back-link a:hover {
-    color: var(--theme-primary, #06b6d4);
+  p {
+    color: var(--text-secondary);
+    font-size: 1.1rem;
   }
 
-  @media (max-width: 640px) {
-    .learn-header {
-      flex-direction: column;
-      text-align: center;
-    }
-
-    .header-content h1 {
-      font-size: 1.5rem;
-    }
+  .subjects-grid {
+    display: grid;
+    gap: 1.5rem;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   }
 </style>

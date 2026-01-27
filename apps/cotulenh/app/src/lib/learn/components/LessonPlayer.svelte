@@ -12,9 +12,11 @@
 
   type Props = {
     lessonId: string;
+    nextUrl?: string;
+    backUrl?: string;
   };
 
-  let { lessonId }: Props = $props();
+  let { lessonId, nextUrl, backUrl = '/learn' }: Props = $props();
 
   let session = $state<LearnSession | null>(null);
 
@@ -29,7 +31,11 @@
   });
 
   function handleNext() {
-    goto('/learn');
+    if (nextUrl) {
+      goto(nextUrl);
+    } else {
+      goto('/learn');
+    }
   }
 
   function handleHint() {
@@ -48,7 +54,7 @@
 {#if session && session.lesson}
   <div class="lesson-player">
     <header class="lesson-header">
-      <a href="/learn" class="back-button">
+      <a href={backUrl} class="back-button">
         <ArrowLeft size={20} />
         <span>{i18n.t('learn.backToLessons')}</span>
       </a>
@@ -74,8 +80,8 @@
             <h2>{i18n.t('learn.lessonComplete')}</h2>
             <div class="stars-earned">
               {#each [1, 2, 3] as i}
-                <Star 
-                  size={32} 
+                <Star
+                  size={32}
                   fill={i <= session.stars ? '#fbbf24' : 'none'}
                   color={i <= session.stars ? '#fbbf24' : '#666'}
                 />
@@ -99,7 +105,7 @@
         {:else}
           <div class="instruction-panel">
             <p class="instruction-text">{session.instruction}</p>
-            
+
             <div class="lesson-controls">
               <button class="btn hint-btn" onclick={handleHint} disabled={!session.hint}>
                 <HelpCircle size={16} />
@@ -110,7 +116,7 @@
                 Reset
               </button>
             </div>
-            
+
             <div class="move-counter">Moves: {session.moveCount}</div>
 
             {#if session.showFeedback}

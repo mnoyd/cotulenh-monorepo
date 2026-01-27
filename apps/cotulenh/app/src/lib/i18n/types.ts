@@ -104,7 +104,9 @@ export interface TranslationKeys {
   // Learn page
   'learn.title': string;
   'learn.tagline': string;
+  'learn.description': string;
   'learn.backToLessons': string;
+  'learn.backToSubjects': string;
   'learn.lessonComplete': string;
   'learn.mistakes': string;
   'learn.loadingLesson': string;
