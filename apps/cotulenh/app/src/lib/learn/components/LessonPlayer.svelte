@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import { ArrowLeft, RotateCcw, ArrowRight, Star, CheckCircle, HelpCircle } from 'lucide-svelte';
   import BoardContainer from '$lib/components/BoardContainer.svelte';
@@ -12,13 +11,16 @@
 
   type Props = {
     lessonId: string;
+    nextUrl?: string;
+    backUrl?: string;
   };
 
-  let { lessonId }: Props = $props();
+  let { lessonId, nextUrl, backUrl = '/learn' }: Props = $props();
 
   let session = $state<LearnSession | null>(null);
 
-  onMount(() => {
+  // Recreate session when lessonId changes (not just on mount)
+  $effect(() => {
     session = new LearnSession(lessonId);
   });
 
@@ -29,7 +31,7 @@
   });
 
   function handleNext() {
-    goto('/learn');
+    goto(nextUrl ?? '/learn');
   }
 
   function handleHint() {
@@ -48,7 +50,7 @@
 {#if session && session.lesson}
   <div class="lesson-player">
     <header class="lesson-header">
-      <a href="/learn" class="back-button">
+      <a href={backUrl} class="back-button">
         <ArrowLeft size={20} />
         <span>{i18n.t('learn.backToLessons')}</span>
       </a>
@@ -57,14 +59,16 @@
 
     <div class="lesson-content">
       <div class="board-section">
-        <BoardContainer
-          config={session.boardConfig}
-          onApiReady={(api) => session?.setBoardApi(api)}
-        />
-        <!-- Target markers are injected into board DOM -->
-        {#each visibleTargets as targetSquare (targetSquare)}
-          <TargetMarker square={targetSquare} boardApi={session.boardApi} />
-        {/each}
+        {#key lessonId}
+          <BoardContainer
+            config={session.boardConfig}
+            onApiReady={(api) => session?.setBoardApi(api)}
+          />
+          <!-- Target markers are injected into board DOM -->
+          {#each visibleTargets as targetSquare (targetSquare)}
+            <TargetMarker square={targetSquare} boardApi={session.boardApi} />
+          {/each}
+        {/key}
       </div>
 
       <div class="instruction-section">
@@ -72,16 +76,18 @@
           <div class="completion-panel">
             <CheckCircle size={48} class="completion-icon" />
             <h2>{i18n.t('learn.lessonComplete')}</h2>
-            <div class="stars-earned">
-              {#each [1, 2, 3] as i}
-                <Star 
-                  size={32} 
-                  fill={i <= session.stars ? '#fbbf24' : 'none'}
-                  color={i <= session.stars ? '#fbbf24' : '#666'}
-                />
-              {/each}
-            </div>
-            <p class="move-count">Moves: {session.moveCount}</p>
+            {#if session.gradingSystem === 'stars'}
+              <div class="stars-earned">
+                {#each [1, 2, 3] as i}
+                  <Star
+                    size={32}
+                    fill={i <= session.stars ? '#fbbf24' : 'none'}
+                    color={i <= session.stars ? '#fbbf24' : '#666'}
+                  />
+                {/each}
+              </div>
+              <p class="move-count">Moves: {session.moveCount}</p>
+            {/if}
             {#if session.showFeedback}
               <p class="success-message">{session.feedbackMessage}</p>
             {/if}
@@ -90,7 +96,7 @@
                 <RotateCcw size={16} />
                 {i18n.t('common.tryAgain')}
               </button>
-              <button class="btn primary" onclick={handleNext}>
+              <button class="btn primary" onclick={() => handleNext()}>
                 <ArrowRight size={16} />
                 {i18n.t('common.continue')}
               </button>
@@ -99,7 +105,7 @@
         {:else}
           <div class="instruction-panel">
             <p class="instruction-text">{session.instruction}</p>
-            
+
             <div class="lesson-controls">
               <button class="btn hint-btn" onclick={handleHint} disabled={!session.hint}>
                 <HelpCircle size={16} />
@@ -110,8 +116,10 @@
                 Reset
               </button>
             </div>
-            
-            <div class="move-counter">Moves: {session.moveCount}</div>
+
+            {#if session.gradingSystem === 'stars'}
+              <div class="move-counter">Moves: {session.moveCount}</div>
+            {/if}
 
             {#if session.showFeedback}
               <div class="feedback hint">

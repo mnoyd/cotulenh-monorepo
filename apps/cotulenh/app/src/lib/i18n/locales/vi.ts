@@ -105,7 +105,9 @@ export const vi: TranslationKeys = {
   // Learn page
   'learn.title': 'Học chơi',
   'learn.tagline': 'Thành thạo Cờ Tư Lệnh từng bước với bài học tương tác',
+  'learn.description': 'Master Co Tu Lenh step by step with interactive lessons.',
   'learn.backToLessons': 'Quay lại bài học',
+  'learn.backToSubjects': 'Back to Subjects',
   'learn.lessonComplete': 'Hoàn thành bài học!',
   'learn.mistakes': 'Số lỗi',
   'learn.loadingLesson': 'Đang tải bài học...',

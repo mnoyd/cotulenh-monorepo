@@ -6,9 +6,10 @@ import {
   type LessonProgress,
   type LearnStatus,
   type BoardShape,
-  type SquareInfo
+  type SquareInfo,
+  type GradingSystem
 } from '@cotulenh/learn';
-import { getStoredValue, setStoredValue } from '$lib/stores/persisted.svelte';
+import { subjectProgress } from './learn-progress.svelte';
 import { coreToBoardColor, mapPossibleMovesToDests } from '$lib/features/game/utils';
 
 /**
@@ -133,6 +134,10 @@ export class LearnSession {
 
   get hint(): string {
     return this.#engine.hint;
+  }
+
+  get gradingSystem(): GradingSystem {
+    return this.#engine.lesson?.grading ?? 'pass-fail';
   }
 
   get hasScenario(): boolean {
@@ -289,29 +294,25 @@ export class LearnSession {
   // PROGRESS PERSISTENCE
   // ============================================================
 
-  #saveProgress(result: { lessonId: string; moveCount: number; stars: 0 | 1 | 2 | 3 }): void {
-    const key = 'learn-progress';
-    const allProgress = getStoredValue<Record<string, LessonProgress>>(key, {});
+  // ============================================================
+  // PROGRESS PERSISTENCE
+  // ============================================================
 
-    const existing = allProgress[result.lessonId];
-    if (!existing || result.stars > existing.stars) {
-      allProgress[result.lessonId] = {
-        lessonId: result.lessonId,
-        completed: true,
-        moveCount: result.moveCount,
-        stars: result.stars
-      };
-      setStoredValue(key, allProgress);
-    }
+  #saveProgress(result: { lessonId: string; moveCount: number; stars: 0 | 1 | 2 | 3 }): void {
+    subjectProgress.saveLessonProgress(result.lessonId, result.stars, result.moveCount);
   }
 
   static getProgress(lessonId: string): LessonProgress | null {
-    const allProgress = getStoredValue<Record<string, LessonProgress>>('learn-progress', {});
-    return allProgress[lessonId] ?? null;
-  }
-
-  static getAllProgress(): Record<string, LessonProgress> {
-    return getStoredValue<Record<string, LessonProgress>>('learn-progress', {});
+    // Return a constructed object if completed, or null
+    if (subjectProgress.isLessonCompleted(lessonId)) {
+      return {
+        lessonId,
+        completed: true,
+        stars: subjectProgress.getLessonStars(lessonId),
+        moveCount: 0 // We don't expose moveCount in public check mostly
+      };
+    }
+    return null;
   }
 
   // ============================================================

@@ -34,7 +34,7 @@
       {getDifficultyLabel(lesson.difficulty)}
     </span>
     
-    {#if progress?.completed}
+    {#if progress?.completed && lesson.grading === 'stars'}
       <div class="stars">
         {#each [1, 2, 3] as i}
           <Star 

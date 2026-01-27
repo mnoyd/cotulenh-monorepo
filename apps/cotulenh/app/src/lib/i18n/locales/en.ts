@@ -105,7 +105,9 @@ export const en: TranslationKeys = {
   // Learn page
   'learn.title': 'Learn',
   'learn.tagline': 'Master Commander Chess step by step with interactive lessons',
+  'learn.description': 'Master Co Tu Lenh step by step with interactive lessons.',
   'learn.backToLessons': 'Back to Lessons',
+  'learn.backToSubjects': 'Back to Subjects',
   'learn.lessonComplete': 'Lesson Complete!',
   'learn.mistakes': 'Mistakes',
   'learn.loadingLesson': 'Loading lesson...',

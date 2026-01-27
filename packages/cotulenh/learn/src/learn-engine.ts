@@ -1,5 +1,6 @@
 import { logger } from '@cotulenh/common';
-import type { Square, MoveResult } from '@cotulenh/core';
+import { BITS, SQUARE_MAP } from '@cotulenh/core';
+import type { Square, MoveResult, InternalMove, Piece } from '@cotulenh/core';
 import type {
   Lesson,
   LessonProgress,
@@ -11,6 +12,16 @@ import type {
 import { getLessonById } from './lessons';
 import { Scenario } from './scenario';
 import { AntiRuleCore } from './anti-rule-core';
+import { ValidatorFactory } from './validators/validator-factory';
+import { CompletionFactory } from './completion/completion-factory';
+import { GraderFactory } from './grading/grader-factory';
+import { FeedbackFactory } from './feedback/feedback-factory';
+import type { MoveValidator } from './validators/move-validator';
+import type { CompletionChecker } from './completion/completion-checker';
+import type { Grader } from './grading/grader';
+import type { FeedbackProvider } from './feedback/feedback-provider';
+import { CompositeValidator } from './validators/composite-validator';
+import { TargetValidator } from './validators/target-validator';
 
 /**
  * LearnEngine - Framework-agnostic learning session manager.
@@ -27,6 +38,13 @@ export class LearnEngine {
   #scenario: Scenario | null = null;
   #opponentMoveTimeout: ReturnType<typeof setTimeout> | null = null;
   #visitedTargets: Set<Square> = new Set();
+  #interactionCount = 0; // Tracks moves + selections
+
+  // Component-based architecture
+  #validator: MoveValidator | null = null;
+  #completionChecker: CompletionChecker | null = null;
+  #grader: Grader | null = null;
+  #feedbackProvider: FeedbackProvider | null = null;
 
   constructor(callbacks: LearnEngineCallbacks = {}) {
     this.#callbacks = callbacks;
@@ -53,6 +71,11 @@ export class LearnEngine {
   }
 
   get stars(): 0 | 1 | 2 | 3 {
+    if (this.#grader && this.#lesson) {
+      const result = this.#grader.grade(this.#moveCount, this.#lesson);
+      return result.stars;
+    }
+    // Fallback for backward compatibility
     const optimal = this.#lesson?.optimalMoves ?? this.#getDefaultOptimalMoves();
     return LearnEngine.calculateStars(this.#moveCount, optimal);
   }
@@ -92,6 +115,14 @@ export class LearnEngine {
    * Get the remaining target squares that haven't been visited yet
    */
   get remainingTargets(): Square[] {
+    // Use TargetValidator if available
+    if (this.#validator) {
+      const targetValidator = this.#findTargetValidator();
+      if (targetValidator) {
+        return targetValidator.remainingTargets;
+      }
+    }
+    // Fallback for backward compatibility
     const targets = this.#lesson?.targetSquares ?? [];
     return targets.filter((t) => !this.#visitedTargets.has(t));
   }
@@ -100,7 +131,38 @@ export class LearnEngine {
    * Get all visited target squares
    */
   get visitedTargets(): Square[] {
+    // Use TargetValidator if available
+    if (this.#validator) {
+      const targetValidator = this.#findTargetValidator();
+      if (targetValidator) {
+        // TargetValidator doesn't expose visited targets directly,
+        // calculate from total - remaining
+        const allTargets = this.#lesson?.targetSquares ?? [];
+        const remaining = targetValidator.remainingTargets;
+        return allTargets.filter((t) => !remaining.includes(t));
+      }
+    }
+    // Fallback for backward compatibility
     return Array.from(this.#visitedTargets);
+  }
+
+  /**
+   * Helper to find TargetValidator in the validator chain
+   */
+  #findTargetValidator(): TargetValidator | null {
+    if (!this.#validator) return null;
+
+    // If it's a CompositeValidator, search for TargetValidator
+    if (this.#validator instanceof CompositeValidator) {
+      return this.#validator.findValidator(TargetValidator);
+    }
+
+    // If it's directly a TargetValidator
+    if (this.#validator instanceof TargetValidator) {
+      return this.#validator;
+    }
+
+    return null;
   }
 
   /**
@@ -165,8 +227,19 @@ export class LearnEngine {
    */
   handleSelect(square: Square): SquareInfo {
     const info = this.getSquareInfo(square);
+    this.#interactionCount++;
     this.#callbacks.onSelect?.(info);
+
+    // Check if goal reached (useful for non-moving lessons like HQ)
+    if (this.#checkGoalReached()) {
+      this.#completeLesson();
+    }
+
     return info;
+  }
+
+  get interactionCount(): number {
+    return this.#interactionCount;
   }
 
   // ============================================================
@@ -199,6 +272,13 @@ export class LearnEngine {
 
     try {
       this.#game = new AntiRuleCore(lesson.startFen, { skipLastGuard: true });
+
+      // Initialize components using factories
+      this.#validator = ValidatorFactory.create(lesson, this);
+      this.#completionChecker = CompletionFactory.create(lesson, [this.#validator]);
+      this.#grader = GraderFactory.create(lesson);
+      this.#feedbackProvider = FeedbackFactory.create(lesson);
+
       this.#callbacks.onStateChange?.(this.#status);
     } catch (error) {
       logger.error('Failed to load lesson FEN:', { error, fen: lesson.startFen });
@@ -275,6 +355,11 @@ export class LearnEngine {
   #handleFreeFormMove(from: Square, to: Square): boolean {
     if (!this.#game) return false;
 
+    const validation = this.#validateMove(from, to);
+    if (!validation.valid) {
+      return false;
+    }
+
     try {
       this.#game.move({ from, to });
       this.#moveCount++;
@@ -296,6 +381,53 @@ export class LearnEngine {
     }
 
     return true;
+  }
+
+  #validateMove(from: Square, to: Square): { valid: boolean } {
+    if (!this.#lesson || !this.#game || !this.#validator) return { valid: true };
+
+    const internalMove = this.#buildInternalMove(from, to);
+    if (!internalMove) {
+      return { valid: false };
+    }
+
+    const result = this.#validator.validate(internalMove, this.#game);
+    if (!result.valid && result.feedbackData && this.#lesson.feedback && this.#feedbackProvider) {
+      const messages = this.#lesson.feedback;
+      switch (result.feedbackData.severity) {
+        case 'error':
+          this.#feedbackProvider.showError(result.feedbackData, messages);
+          break;
+        case 'warning':
+          this.#feedbackProvider.showWarning(result.feedbackData, messages);
+          break;
+        case 'info':
+          this.#feedbackProvider.showInfo(result.feedbackData, messages);
+          break;
+        default:
+          break;
+      }
+    }
+
+    return { valid: result.valid };
+  }
+
+  #buildInternalMove(from: Square, to: Square): InternalMove | null {
+    if (!this.#game) return null;
+
+    const piece = this.#game.get(from);
+    if (!piece) return null;
+
+    const captured = this.#game.get(to);
+
+    return {
+      color: piece.color,
+      from: SQUARE_MAP[from],
+      to: SQUARE_MAP[to],
+      piece: piece as Piece,
+      captured,
+      flags: captured ? BITS.CAPTURE : BITS.NORMAL
+    };
   }
 
   /**
@@ -354,6 +486,12 @@ export class LearnEngine {
   }
 
   #checkGoalReached(): boolean {
+    // Use CompletionChecker if available
+    if (this.#completionChecker) {
+      return this.#completionChecker.check(this);
+    }
+
+    // Fallback for backward compatibility
     if (!this.#lesson || !this.#game) return false;
 
     // If targetSquares defined, check if all have been visited
@@ -394,6 +532,7 @@ export class LearnEngine {
 
     this.#clearOpponentTimeout();
     this.#moveCount = 0;
+    this.#interactionCount = 0;
     this.#status = 'ready';
     this.#visitedTargets.clear();
 
@@ -403,6 +542,10 @@ export class LearnEngine {
 
     try {
       this.#game = new AntiRuleCore(this.#lesson.startFen, { skipLastGuard: true });
+      this.#validator = ValidatorFactory.create(this.#lesson, this);
+      this.#completionChecker = CompletionFactory.create(this.#lesson, [this.#validator]);
+      this.#grader = GraderFactory.create(this.#lesson);
+      this.#feedbackProvider = FeedbackFactory.create(this.#lesson);
       this.#callbacks.onStateChange?.(this.#status);
     } catch (error) {
       logger.error('Failed to restart lesson:', { error });

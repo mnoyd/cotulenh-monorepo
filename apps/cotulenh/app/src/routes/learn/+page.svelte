@@ -1,126 +1,110 @@
 <script lang="ts">
-  import { BookOpen } from 'lucide-svelte';
-  import CategoryCard from '$lib/learn/components/CategoryCard.svelte';
-  import { categories } from '@cotulenh/learn';
+  import { subjects } from '@cotulenh/learn';
+  import SubjectCard from '$lib/learn/components/SubjectCard.svelte';
+  import { subjectProgress } from '$lib/learn/learn-progress.svelte';
   import { getI18n } from '$lib/i18n/index.svelte';
+  import { GraduationCap } from 'lucide-svelte';
 
   const i18n = getI18n();
 </script>
 
-<main class="learn-page">
-  <div class="learn-container">
-    <header class="learn-header">
-      <div class="header-icon">
-        <BookOpen size={32} />
-      </div>
-      <div class="header-content">
-        <h1>
-          <span class="title-green">{i18n.t('learn.title')}</span>
-          <span class="title-cyan">Cờ Tư Lệnh</span>
-        </h1>
-        <p class="tagline">{i18n.t('learn.tagline')}</p>
-      </div>
-    </header>
-
-    <div class="categories">
-      {#each categories as category}
-        <CategoryCard {category} />
-      {/each}
+<div class="learn-container">
+  <div class="header">
+    <div class="title-row">
+      <GraduationCap size={40} />
+      <h1>{i18n.t('learn.title')}</h1>
     </div>
-
-    <div class="back-link">
-      <a href="/">{i18n.t('common.backToHome')}</a>
-    </div>
+    <p class="subtitle">{i18n.t('learn.description')}</p>
+    <div class="header-line"></div>
   </div>
-</main>
+
+  <div class="section-label">
+    <span class="label">Available Subjects</span>
+    <span class="line"></span>
+  </div>
+
+  <div class="subjects-grid">
+    {#each subjects as subject}
+      {@const progress = subjectProgress.getSubjectProgress(subject.id)}
+      {@const isLocked = !subjectProgress.isSubjectUnlocked(subject.id)}
+      <SubjectCard {subject} {progress} {isLocked} />
+    {/each}
+  </div>
+</div>
 
 <style>
-  .learn-page {
-    min-height: 100vh;
-    background: var(--theme-bg-dark, #000);
-    color: var(--theme-text-primary, #eee);
-    font-family: var(--font-ui);
+  .learn-container {
+    max-width: 1000px;
+    margin: 0 auto;
     padding: 2rem 1rem;
   }
 
-  .learn-container {
-    width: 100%;
-    max-width: 900px;
-    margin: 0 auto;
-  }
-
-  .learn-header {
-    display: flex;
-    align-items: center;
-    gap: 1.5rem;
-    margin-bottom: 2rem;
-    padding-bottom: 1.5rem;
-    border-bottom: 1px solid var(--theme-border, #444);
-  }
-
-  .header-icon {
-    width: 64px;
-    height: 64px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--theme-bg-elevated, #333);
-    border-radius: 12px;
-    color: var(--theme-success, #22c55e);
-  }
-
-  .header-content h1 {
-    font-size: 2rem;
-    margin: 0;
-    font-weight: 800;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-  }
-
-  .title-green {
-    color: #22c55e;
-  }
-
-  .title-cyan {
-    color: #06b6d4;
-    font-weight: 300;
-  }
-
-  .tagline {
-    font-size: 1rem;
-    color: var(--theme-text-secondary, #aaa);
-    margin: 0.5rem 0 0;
-  }
-
-  .categories {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-  }
-
-  .back-link {
-    margin-top: 2rem;
+  .header {
     text-align: center;
+    margin-bottom: 3rem;
   }
 
-  .back-link a {
-    color: var(--theme-text-secondary, #aaa);
-    text-decoration: none;
-    font-size: 0.875rem;
+  .title-row {
+    display: inline-flex;
+    align-items: center;
+    gap: 1rem;
+    color: var(--theme-primary, #3b82f6);
+    margin-bottom: 0.75rem;
   }
 
-  .back-link a:hover {
-    color: var(--theme-primary, #06b6d4);
+  h1 {
+    font-size: 2.5rem;
+    margin: 0;
+    color: var(--theme-primary, #3b82f6);
+    text-shadow: var(--theme-glow-primary, 0 0 10px rgba(59, 130, 246, 0.5));
   }
 
-  @media (max-width: 640px) {
-    .learn-header {
-      flex-direction: column;
-      text-align: center;
-    }
+  .subtitle {
+    color: var(--theme-text-secondary, rgba(229, 231, 235, 0.7));
+    font-size: 1.1rem;
+    margin: 0;
+  }
 
-    .header-content h1 {
-      font-size: 1.5rem;
-    }
+  .header-line {
+    margin: 1.5rem auto 0;
+    width: 200px;
+    height: 2px;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      var(--theme-primary, #3b82f6) 50%,
+      transparent 100%
+    );
+  }
+
+  .section-label {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--theme-text-secondary, rgba(229, 231, 235, 0.7));
+  }
+
+  .section-label .label {
+    flex-shrink: 0;
+  }
+
+  .section-label .line {
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(
+      90deg,
+      var(--theme-border, rgba(59, 130, 246, 0.4)) 0%,
+      transparent 100%
+    );
+  }
+
+  .subjects-grid {
+    display: grid;
+    gap: 1.5rem;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   }
 </style>
