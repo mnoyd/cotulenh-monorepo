@@ -78,16 +78,18 @@
           <div class="completion-panel">
             <CheckCircle size={48} class="completion-icon" />
             <h2>{i18n.t('learn.lessonComplete')}</h2>
-            <div class="stars-earned">
-              {#each [1, 2, 3] as i}
-                <Star
-                  size={32}
-                  fill={i <= session.stars ? '#fbbf24' : 'none'}
-                  color={i <= session.stars ? '#fbbf24' : '#666'}
-                />
-              {/each}
-            </div>
-            <p class="move-count">Moves: {session.moveCount}</p>
+            {#if session.gradingSystem === 'stars'}
+              <div class="stars-earned">
+                {#each [1, 2, 3] as i}
+                  <Star
+                    size={32}
+                    fill={i <= session.stars ? '#fbbf24' : 'none'}
+                    color={i <= session.stars ? '#fbbf24' : '#666'}
+                  />
+                {/each}
+              </div>
+              <p class="move-count">Moves: {session.moveCount}</p>
+            {/if}
             {#if session.showFeedback}
               <p class="success-message">{session.feedbackMessage}</p>
             {/if}
@@ -117,7 +119,9 @@
               </button>
             </div>
 
-            <div class="move-counter">Moves: {session.moveCount}</div>
+            {#if session.gradingSystem === 'stars'}
+              <div class="move-counter">Moves: {session.moveCount}</div>
+            {/if}
 
             {#if session.showFeedback}
               <div class="feedback hint">

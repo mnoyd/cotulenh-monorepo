@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { Section } from '@cotulenh/learn';
+  import type { Section, Lesson } from '@cotulenh/learn';
   import { subjectProgress } from '../learn-progress.svelte';
   import { ChevronRight, CheckCircle, Play } from 'lucide-svelte';
 
@@ -15,6 +15,10 @@
 
   function isCompleted(lessonId: string) {
     return subjectProgress.isLessonCompleted(lessonId);
+  }
+
+  function showStars(lesson: Lesson): boolean {
+    return lesson.grading === 'stars';
   }
 
   const completedCount = $derived(
@@ -64,11 +68,13 @@
 
         <div class="status">
           {#if completed}
-            <div class="stars">
-              {#each Array(3) as _, i}
-                <span class="star" class:filled={i < stars}>★</span>
-              {/each}
-            </div>
+            {#if showStars(lesson)}
+              <div class="stars">
+                {#each Array(3) as _, i}
+                  <span class="star" class:filled={i < stars}>★</span>
+                {/each}
+              </div>
+            {/if}
             <CheckCircle size={16} class="check-icon" />
           {:else}
             <Play size={14} />

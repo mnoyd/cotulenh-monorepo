@@ -6,7 +6,8 @@ import {
   type LessonProgress,
   type LearnStatus,
   type BoardShape,
-  type SquareInfo
+  type SquareInfo,
+  type GradingSystem
 } from '@cotulenh/learn';
 import { subjectProgress } from './learn-progress.svelte';
 import { getStoredValue, setStoredValue } from '$lib/stores/persisted.svelte';
@@ -134,6 +135,10 @@ export class LearnSession {
 
   get hint(): string {
     return this.#engine.hint;
+  }
+
+  get gradingSystem(): GradingSystem {
+    return this.#engine.lesson?.grading ?? 'pass-fail';
   }
 
   get hasScenario(): boolean {

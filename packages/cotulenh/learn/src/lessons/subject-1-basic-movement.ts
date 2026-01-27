@@ -28,7 +28,7 @@ const section1Lessons: Lesson[] = [
       'Click that Infantry and move to any valid square (highlighted). Infantry moves 1 square orthogonally (up, down, left, right).',
     hint: 'Try moving the Infantry straight up, down, left, or right - but only 1 square at a time.',
     successMessage: 'Perfect! Infantry moves 1 square orthogonally.',
-    targetSquares: ['b5', 'c4', 'c6', 'd5'],
+    targetSquares: ['c4', 'c6', 'd5'],
     showValidMoves: true,
     showMoveCount: true,
     customCompletion: MOVES_COMPLETION,
