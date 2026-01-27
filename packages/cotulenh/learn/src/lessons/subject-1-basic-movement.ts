@@ -355,37 +355,86 @@ export const subject1BasicMovement: Subject = {
   introduction: `
 # Welcome to Cotulenh: Basic Movement
 
-In Cotulenh, each unit type has unique movement characteristics. Understanding these patterns is fundamental to mastering the game.
+Cotulenh is a sophisticated chess variant that combines traditional strategic gameplay with modern military-themed mechanics. Before you can command your army effectively, you must understand how each unit moves.
 
-## What You\'ll Learn
+## The Game Board
+
+Cotulenh is played on an **11×12 board** - larger than a chess board to accommodate the military theater of operations.
+
+**Coordinate System:**
+- **Files** (columns): Labeled **a** through **k** from left to right (11 files)
+- **Ranks** (rows): Numbered **1** through **12** from bottom to top (12 ranks)
+- Each square is identified by file + rank (e.g., e6, h9, c12)
+
+**Key Landmarks:**
+- **River**: Divides the board between ranks 6 and 7
+- **Bridges**: f6/f7 and h6/h7 - crucial crossing points for heavy units
+- **Water Zone**: Files a-b (Navy territory)
+- **Coastal Zone**: File c (mixed terrain)
+- **Land Zone**: Files d-k (ground operations)
+
+## The 11 Unit Types
+
+Cotulenh features 11 distinct military units, each with unique movement patterns:
+
+### Basic Units (1-square movement)
+- **Infantry (I)**: Moves 1 square orthogonally (up, down, left, right). The backbone of your army.
+- **Engineer (E)**: Moves 1 square orthogonally. Can carry heavy weapons like Artillery and Missiles.
+- **Militia (M)**: Moves 1 square in all 8 directions (including diagonals). More flexible than Infantry.
+- **Headquarters (H)**: Immobile - cannot move at all. Protects your Commander and must be defended.
+- **Anti-Air (G)**: Moves 1 square orthogonally. Provides crucial air defense coverage.
+
+### Medium-Range Units (2-3 squares)
+- **Tank (T)**: Moves up to 2 squares orthogonally. Can carry troops and shoot over obstacles.
+- **Missile (S)**: Unique circular pattern - 2 squares orthogonally OR 1 square diagonally. Also provides air defense.
+
+### Long-Range Units (3+ squares)
+- **Artillery (A)**: Moves up to 3 squares in all 8 directions. Ignores blocking pieces - can shoot over them!
+- **Commander (C)**: Moves unlimited squares orthogonally (like a chess Rook). Your most important piece - if captured, you lose!
+
+### Special Units
+- **Air Force (F)**: Flies up to 4 squares in any direction. Ignores terrain and blocking pieces - true mobility!
+- **Navy (N)**: Moves up to 4 squares in all directions. Restricted to water zones (files a-c and river squares).
+
+## Movement Terminology
+
+**Orthogonal Movement**: Straight lines only - up, down, left, or right. No diagonals.
+
+**All-Direction Movement**: Can move orthogonally AND diagonally - all 8 directions around a piece.
+
+**Range**: The maximum number of squares a piece can move. A piece can always move fewer squares than its maximum.
+
+**Blocking**: Most pieces cannot pass through other pieces. Exceptions include Artillery, Tank, Missile, Air Force, and Navy.
+
+## Why Movement Matters
+
+Understanding movement is the foundation of all strategy in Cotulenh:
+- **Positioning**: Place your pieces where they can threaten enemy units
+- **Defense**: Keep your Commander and Headquarters protected
+- **Coordination**: Combine different unit types for powerful attacks
+- **Terrain Control**: Use the right units for each zone of the board
+
+## What You'll Learn
 
 This subject covers all 11 piece types across three progressive sections:
 
-1. **Basic Units** - Infantry, Engineer, Militia, Commander, and Headquarters
-   - Master the foundation of unit movement
-   - Learn the differences between orthogonal and all-direction movement
+### Section 1: Basic Unit Movement
+Master the foundation with Infantry, Engineer, Militia, Commander, and Headquarters. Learn the differences between orthogonal and all-direction movement.
 
-2. **Medium Range Units** - Tanks, Anti-Air, and Missiles
-   - Expand your tactical options with 2-3 square ranges
-   - Discover the unique circular pattern of Missiles
+### Section 2: Medium Range Units
+Expand your tactical options with Tanks, Anti-Air, and Missiles. Discover the unique circular pattern of Missiles.
 
-3. **Advanced Units** - Artillery, Air Force, and Navy
-   - Harness unlimited range with Artillery
-   - Master the agile mobility of Air Force
-   - Control the seas with Navy
+### Section 3: Advanced & Special Units
+Harness the power of Artillery (shoots over pieces), Air Force (ignores terrain), and Navy (controls the seas).
 
-## Game Board
+## Learning Approach
 
-The board is **11 files × 12 ranks**:
-- Files: a through k (left to right)
-- Ranks: 1 through 12 (bottom to top)
-- River divides the board between ranks 6 and 7
+Each lesson focuses on a single unit type:
+1. Read the description to understand the movement pattern
+2. Practice by moving the piece to highlighted target squares
+3. Experiment freely to build intuition
 
-## Learning Path
-
-Complete each lesson in order. Each lesson teaches you a unit's movement through guided practice.
-
-**Ready to begin? Let's start with the basics!**
+**Ready to begin? Let's master your army, one unit at a time!**
   `,
   prerequisites: [],
   sections: [section1, section2, section3]
