@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import { ArrowLeft, RotateCcw, ArrowRight, Star, CheckCircle, HelpCircle } from 'lucide-svelte';
   import BoardContainer from '$lib/components/BoardContainer.svelte';
@@ -20,7 +19,8 @@
 
   let session = $state<LearnSession | null>(null);
 
-  onMount(() => {
+  // Recreate session when lessonId changes (not just on mount)
+  $effect(() => {
     session = new LearnSession(lessonId);
   });
 
@@ -31,11 +31,7 @@
   });
 
   function handleNext() {
-    if (nextUrl) {
-      goto(nextUrl);
-    } else {
-      goto('/learn');
-    }
+    goto(nextUrl ?? '/learn');
   }
 
   function handleHint() {
@@ -63,14 +59,16 @@
 
     <div class="lesson-content">
       <div class="board-section">
-        <BoardContainer
-          config={session.boardConfig}
-          onApiReady={(api) => session?.setBoardApi(api)}
-        />
-        <!-- Target markers are injected into board DOM -->
-        {#each visibleTargets as targetSquare (targetSquare)}
-          <TargetMarker square={targetSquare} boardApi={session.boardApi} />
-        {/each}
+        {#key lessonId}
+          <BoardContainer
+            config={session.boardConfig}
+            onApiReady={(api) => session?.setBoardApi(api)}
+          />
+          <!-- Target markers are injected into board DOM -->
+          {#each visibleTargets as targetSquare (targetSquare)}
+            <TargetMarker square={targetSquare} boardApi={session.boardApi} />
+          {/each}
+        {/key}
       </div>
 
       <div class="instruction-section">
@@ -98,7 +96,7 @@
                 <RotateCcw size={16} />
                 {i18n.t('common.tryAgain')}
               </button>
-              <button class="btn primary" onclick={handleNext}>
+              <button class="btn primary" onclick={() => handleNext()}>
                 <ArrowRight size={16} />
                 {i18n.t('common.continue')}
               </button>
