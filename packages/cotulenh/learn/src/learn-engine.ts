@@ -1,5 +1,6 @@
 import { logger } from '@cotulenh/common';
-import type { Square, MoveResult } from '@cotulenh/core';
+import { BITS, SQUARE_MAP } from '@cotulenh/core';
+import type { Square, MoveResult, InternalMove, Piece } from '@cotulenh/core';
 import type {
   Lesson,
   LessonProgress,
@@ -342,6 +343,11 @@ export class LearnEngine {
   #handleFreeFormMove(from: Square, to: Square): boolean {
     if (!this.#game) return false;
 
+    const validation = this.#validateMove(from, to);
+    if (!validation.valid) {
+      return false;
+    }
+
     try {
       this.#game.move({ from, to });
       this.#moveCount++;
@@ -363,6 +369,53 @@ export class LearnEngine {
     }
 
     return true;
+  }
+
+  #validateMove(from: Square, to: Square): { valid: boolean } {
+    if (!this.#lesson || !this.#game || !this.#validator) return { valid: true };
+
+    const internalMove = this.#buildInternalMove(from, to);
+    if (!internalMove) {
+      return { valid: false };
+    }
+
+    const result = this.#validator.validate(internalMove, this.#game);
+    if (!result.valid && result.feedbackData && this.#lesson.feedback && this.#feedbackProvider) {
+      const messages = this.#lesson.feedback;
+      switch (result.feedbackData.severity) {
+        case 'error':
+          this.#feedbackProvider.showError(result.feedbackData, messages);
+          break;
+        case 'warning':
+          this.#feedbackProvider.showWarning(result.feedbackData, messages);
+          break;
+        case 'info':
+          this.#feedbackProvider.showInfo(result.feedbackData, messages);
+          break;
+        default:
+          break;
+      }
+    }
+
+    return { valid: result.valid };
+  }
+
+  #buildInternalMove(from: Square, to: Square): InternalMove | null {
+    if (!this.#game) return null;
+
+    const piece = this.#game.get(from);
+    if (!piece) return null;
+
+    const captured = this.#game.get(to);
+
+    return {
+      color: piece.color,
+      from: SQUARE_MAP[from],
+      to: SQUARE_MAP[to],
+      piece: piece as Piece,
+      captured,
+      flags: captured ? BITS.CAPTURE : BITS.NORMAL
+    };
   }
 
   /**
@@ -476,6 +529,10 @@ export class LearnEngine {
 
     try {
       this.#game = new AntiRuleCore(this.#lesson.startFen, { skipLastGuard: true });
+      this.#validator = ValidatorFactory.create(this.#lesson, this);
+      this.#completionChecker = CompletionFactory.create(this.#lesson, [this.#validator]);
+      this.#grader = GraderFactory.create(this.#lesson);
+      this.#feedbackProvider = FeedbackFactory.create(this.#lesson);
       this.#callbacks.onStateChange?.(this.#status);
     } catch (error) {
       logger.error('Failed to restart lesson:', { error });
