@@ -2,6 +2,7 @@
   // BridgeDetail.svelte
   // Visualizes the River Barrier and the Bridges (f6/f7 and h6/h7)
   // Reuses the grid system from TerrainGuide for consistency
+  import BridgeSvg from './BridgeSvg.svelte';
 </script>
 
 <div class="bridge-detail">
@@ -9,6 +10,24 @@
     <img src="/assets/board-grid.svg" alt="Game Board Grid" class="board-grid" />
 
     <div class="overlay-container">
+      <!-- Shared Defs -->
+      <svg style="position: absolute; width: 0; height: 0; overflow: hidden;" aria-hidden="true">
+        <defs>
+          <filter id="wood-texture">
+            <feTurbulence type="fractalNoise" baseFrequency="0.5" numOctaves="3" result="noise" />
+            <feColorMatrix
+              type="matrix"
+              values="0 0 0 0 0.6  0 0 0 0 0.4  0 0 0 0 0.2  0 0 0 0.5 0"
+              in="noise"
+              result="coloredNoise"
+            />
+            <!-- Use lighter composite operation or just blend -->
+            <feComposite operator="in" in="coloredNoise" in2="SourceGraphic" result="composite" />
+            <feBlend mode="multiply" in="composite" in2="SourceGraphic" />
+          </filter>
+        </defs>
+      </svg>
+
       <!-- River Barrier: Blue strip across the board -->
       <!-- Between Rank 6 and 7.
            In grid (12 rows): Row 1=Rank 12 ... Row 6=Rank 7, Row 7=Rank 6.
@@ -23,14 +42,14 @@
            So Grid Col 6, Grid Rows 6-7.
       -->
       <div class="bridge" style="grid-column: 6; grid-row: 6;">
-        <div class="bridge-highlight"></div>
+        <BridgeSvg />
       </div>
 
       <!-- Bridge 2: h6/h7. File h is 8th column (a,b,c,d,e,f,g,h).
            Grid Col 8, Grid Rows 6-7.
       -->
       <div class="bridge" style="grid-column: 8; grid-row: 6;">
-        <div class="bridge-highlight"></div>
+        <BridgeSvg />
       </div>
 
       <!-- Labels with Arrows (Visualized via absolute positioning) -->
@@ -124,25 +143,58 @@
     grid-template-rows: repeat(11, 1fr);
   }
 
+  @keyframes river-flow {
+    0% {
+      transform: translateX(0);
+    }
+    100% {
+      transform: translateX(-56.57px); /* Move left towards sea */
+    }
+  }
+
   /* River Strip Design */
   .river-strip {
     grid-column: 3 / 11; /* Start from Coastal (Col 3) to end (Col 10 end) */
     grid-row: 6; /* Occupy exactly the river row (between Rank 7 and 6) */
     align-self: center;
-    height: 80%; /* Fill most of the row height */
+    height: 64%; /* Reduced height to avoid overflowing onto banks */
+    position: relative;
+    overflow: hidden; /* Clip the sliding texture */
 
-    background-color: rgba(59, 130, 246, 0.4); /* Blue-500 with alpha */
+    background-color: rgba(59, 130, 246, 0.3); /* Base color */
 
     margin-left: 0;
     margin-right: 0;
 
     border-radius: 4px;
-    box-shadow: 0 0 10px rgba(59, 130, 246, 0.2);
+    box-shadow: inset 0 0 10px rgba(29, 78, 216, 0.3); /* Inner glow for depth */
     z-index: 1;
 
     /* River Banks */
-    border-top: 2px solid rgba(29, 78, 216, 0.6);
-    border-bottom: 2px solid rgba(29, 78, 216, 0.6);
+    border-top: 2px solid rgba(30, 58, 138, 0.6);
+    border-bottom: 2px solid rgba(30, 58, 138, 0.6);
+  }
+
+  /* Animated Water Texture Layer */
+  .river-strip::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 200%; /* Extra width for sliding */
+    height: 100%;
+
+    background-image: repeating-linear-gradient(
+      -45deg,
+      rgba(59, 130, 246, 0.4) 0px,
+      rgba(59, 130, 246, 0.4) 20px,
+      rgba(37, 99, 235, 0.4) 20px,
+      rgba(37, 99, 235, 0.4) 40px
+    );
+    background-size: 50% 100%; /* Scale back down so pattern size looks same */
+
+    animation: river-flow 3s linear infinite;
+    will-change: transform; /* Hint to browser to promote to GPU layer */
   }
 
   /* Bridge Design */
@@ -156,37 +208,6 @@
     justify-self: start;
     transform: translateX(-50%);
     width: 0; /* Container has no width, children determine size centered on line */
-  }
-
-  .bridge-highlight {
-    /* Slightly narrower to look like a pathway */
-    width: 64px;
-    height: 100%;
-
-    /* Wooden plank base */
-    background-color: #b45309; /* Amber-700ish wood color */
-
-    /* Plank lines (gaps) */
-    background-image: repeating-linear-gradient(
-      180deg,
-      transparent 0px,
-      transparent 12px,
-      rgba(0, 0, 0, 0.3) 12px,
-      rgba(0, 0, 0, 0.3) 14px
-    );
-
-    /* Railings */
-    border-left: 6px solid #78350f; /* Darker amber-900 border */
-    border-right: 6px solid #78350f;
-
-    border-radius: 3px;
-
-    /* Drop shadow to lift it off the river */
-    box-shadow:
-      0 0 4px rgba(0, 0, 0, 0.5),
-      inset 0 1px 2px rgba(255, 255, 255, 0.2);
-
-    z-index: 10;
   }
 
   /* Labels */
