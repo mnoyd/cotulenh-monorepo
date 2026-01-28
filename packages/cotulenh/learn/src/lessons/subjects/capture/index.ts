@@ -1,6 +1,7 @@
-import type { Lesson } from '../types';
+import type { Subject, Section, Lesson } from '../../../types';
+import { subject3Introduction, section1CaptureBasicsIntro } from '../../../content';
 
-export const captureLessons: Lesson[] = [
+const captureLessons: Lesson[] = [
   {
     id: 'capture-1',
     category: 'basics',
@@ -25,10 +26,10 @@ export const captureLessons: Lesson[] = [
     title: 'Stay Capture',
     description: 'Destroy a target without leaving your square.',
     difficulty: 2,
-    startFen: '11/11/11/11/3t7/11/11/11/11/11/3A7/11 r - - 0 1',
+    startFen: '11/11/11/11/11/11/11/11/1n9/11/3A7/11 r - - 0 1',
     goalFen: '11/11/11/11/11/11/11/11/11/11/3A7/11 r - - 0 1',
     instruction:
-      'Stay capture destroys the target but the attacker stays. Use Artillery to destroy the target on d8 without moving.',
+      'Stay capture destroys the target but the attacker stays. Use Artillery to destroy the target on d5 without moving.',
     hint: 'Choose the stay-capture option when you attack the target square.',
     successMessage: 'Perfect! Stay captures remove the enemy while you hold position.',
     showValidMoves: true
@@ -39,14 +40,15 @@ export const captureLessons: Lesson[] = [
     subjectId: 'subject-3-capture',
     sectionId: 'section-1-capture-basics',
     title: 'Capture Across the River',
-    description: 'Tanks can capture across the river.',
+    description: 'Artillery can capture across the river.',
     difficulty: 2,
-    startFen: '11/11/11/11/11/11/4i6/11/4T6/11/11/11 r - - 0 1',
+    startFen: '11/11/11/11/9i1/11/11/9A1/11/11/11/11 r - - 0 1',
+    goalFen: '11/11/11/11/9A1/11/11/11/11/11/11/11 r - - 0 1',
     instruction:
-      'The river divides ranks 6 and 7. Tanks can cross and capture across it. Capture the enemy at e7.',
-    hint: 'From e5, the Tank can move two squares to e7.',
-    successMessage: 'Great! The Tank crossed the river to capture.',
-    targetSquares: ['e7'],
+      'The river divides ranks 6 and 7. Artillery can cross and capture across it. Capture the enemy at j8.',
+    hint: 'From j5, move the Artillery two squares to j8.',
+    successMessage: 'Great! The Artillery crossed the river to capture.',
+    targetSquares: ['j8'],
     showValidMoves: true
   },
   {
@@ -57,12 +59,32 @@ export const captureLessons: Lesson[] = [
     title: 'Air Force Capture',
     description: 'Air Force captures using its long-range flight.',
     difficulty: 2,
-    startFen: '11/11/11/5i5/11/11/11/5F5/11/11/11/11 r - - 0 1',
+    startFen: '11/11/11/3t7/11/11/11/3F7/11/11/11/7m3 r - - 0 1',
     instruction:
       'Air Force can capture within its flight range, ignoring terrain and blocking. Capture the target on f8.',
     hint: 'Move the Air Force straight up to f8 to capture.',
     successMessage: 'Excellent! Air Force captures from long range.',
-    targetSquares: ['f8'],
-    showValidMoves: true
+    targetSquares: ['d9', 'h1'],
+    showValidMoves: true,
+    optimalMoves: 2,
+    grading: 'stars'
   }
 ];
+
+const section1: Section = {
+  id: 'section-1-capture-basics',
+  title: 'Capture Basics',
+  description: 'Learn normal capture, stay capture, and special capture cases.',
+  introduction: section1CaptureBasicsIntro,
+  lessons: captureLessons
+};
+
+export const subject3Capture: Subject = {
+  id: 'subject-3-capture',
+  title: 'Capture',
+  description: 'Learn normal capture, stay capture, and special capture cases.',
+  icon: '⚔️',
+  introduction: subject3Introduction,
+  prerequisites: ['subject-1-basic-movement', 'subject-2-terrain'],
+  sections: [section1]
+};

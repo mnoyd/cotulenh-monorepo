@@ -1,11 +1,11 @@
-import type { Subject, Section, Lesson } from '../types';
-import type { LearnEngine } from '../learn-engine';
+import type { Subject, Section, Lesson } from '../../../types';
+import type { LearnEngine } from '../../../learn-engine';
 import {
   subject1Introduction,
   section1BasicUnitsIntro,
   section2MediumRangeIntro,
   section3AdvancedUnitsIntro
-} from '../content';
+} from '../../../content';
 
 /**
  * Subject 1: Basic Movement

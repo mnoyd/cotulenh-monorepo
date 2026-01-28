@@ -1,62 +1,67 @@
-import type { Lesson } from '../types';
+import type { Subject, Section, Lesson } from '../../../types';
+import {
+  subject4Introduction,
+  section1BlockedPiecesIntro,
+  section2UnblockedPiecesIntro
+} from '../../../content';
 
-export const blockingLessons: Lesson[] = [
+const blockingLessons: Lesson[] = [
   {
     id: 'blocking-1',
     category: 'basics',
     subjectId: 'subject-4-blocking',
-    sectionId: 'section-1-blocked-pieces',
-    title: 'Infantry Is Blocked',
-    description: 'Infantry cannot move through other pieces.',
+    sectionId: 'section-1-block-movement',
+    title: 'Tank Is Blocked',
+    description: 'Tank cannot move through other pieces.',
     difficulty: 1,
-    startFen: '11/11/11/11/11/11/11/4i6/4I6/4I6/11/11 r - - 0 1',
+    startFen: '11/11/11/11/11/11/11/11/4G6/4T6/11/11 r - - 0 1',
     instruction:
-      'The Infantry on e4 is blocked by the friendly Infantry on e5. Try moving it forward - you can only go to e5 if captured, but you cannot pass through.',
-    hint: 'Move the Infantry on e3 sideways to d3 or f3 since forward is blocked.',
-    successMessage: 'Correct! Infantry must go around blocking pieces.',
-    targetSquares: ['d3', 'f3'],
+      'The Tank on e4 is blocked by the friendly Infantry on e5. Try moving it forward - you can only go to e5 if captured, but you cannot pass through.',
+    hint: 'Move the Tank on e4 sideways to d4 or f4 since forward is blocked.',
+    successMessage: 'Correct! Tank must go around blocking pieces.',
+    targetSquares: ['e5'],
     showValidMoves: true
   },
   {
     id: 'blocking-2',
     category: 'basics',
     subjectId: 'subject-4-blocking',
-    sectionId: 'section-1-blocked-pieces',
-    title: 'Commander Blocked Despite Range',
-    description: 'Even the Commander with infinite range cannot pass through pieces.',
+    sectionId: 'section-1-block-movement',
+    title: 'Artillery Is Blocked',
+    description: 'Artillery cannot move through other pieces.',
     difficulty: 1,
-    startFen: '11/11/11/11/11/11/4I6/11/4C6/11/11/11 r - - 0 1',
+    startFen: '11/11/11/11/11/11/11/11/6I4/5A5/11/11 r - - 0 1',
     instruction:
-      'The Commander has unlimited movement range but cannot move through the Infantry at e7. Move the Commander sideways or backwards.',
-    hint: 'The Commander can move to d5, f5, or any empty square not blocked by Infantry.',
-    successMessage: 'Right! Even the Commander respects blocking.',
-    targetSquares: ['d5', 'f5'],
+      'The Artillery on e4 is blocked by the friendly Infantry on e5. Even though it is a long range unit, it cannot move through pieces.',
+    hint: 'Move the Artillery sideways to d4 or f4.',
+    successMessage: 'Good! Artillery needs an open path to move.',
+    targetSquares: ['i6'],
     showValidMoves: true
   },
   {
     id: 'blocking-3',
     category: 'basics',
     subjectId: 'subject-4-blocking',
-    sectionId: 'section-1-blocked-pieces',
-    title: 'Militia Diagonal Block',
-    description: 'Militia can move diagonally but is still blocked.',
+    sectionId: 'section-1-block-movement',
+    title: 'Commander Blocked Despite Range',
+    description: 'Even the Commander with infinite range cannot pass through pieces.',
     difficulty: 1,
-    startFen: '11/11/11/11/11/11/11/5I5/4M6/11/11/11 r - - 0 1',
+    startFen: '11/11/3ig6/11/11/11/4I6/11/4C6/11/11/11 r - - 0 1',
     instruction:
-      'The Militia can move in all 8 directions but is blocked diagonally by the Infantry at f6. Find an open path.',
-    hint: 'Move diagonally to d4 or d6, or orthogonally.',
-    successMessage: 'Good! Militia finds alternate diagonal paths.',
-    targetSquares: ['d4', 'd6', 'e4', 'e6'],
+      'The Commander has unlimited movement range but cannot move through the Infantry at e7. Move the Commander sideways or backwards.',
+    hint: 'The Commander can move to d5, f5, or any empty square not blocked by Infantry.',
+    successMessage: 'Right! Even the Commander respects blocking.',
+    targetSquares: ['i4', 'd12', 'e8'],
     showValidMoves: true
   }
 ];
 
-export const unblockedLessons: Lesson[] = [
+const unblockedLessons: Lesson[] = [
   {
     id: 'blocking-4',
     category: 'basics',
     subjectId: 'subject-4-blocking',
-    sectionId: 'section-2-unblocked-pieces',
+    sectionId: 'section-2-blocking-capture',
     title: 'Tank Shoots Over Blockers',
     description: 'Tank cannot move through pieces but CAN capture through them.',
     difficulty: 2,
@@ -72,7 +77,7 @@ export const unblockedLessons: Lesson[] = [
     id: 'blocking-5',
     category: 'basics',
     subjectId: 'subject-4-blocking',
-    sectionId: 'section-2-unblocked-pieces',
+    sectionId: 'section-2-blocking-capture',
     title: 'Artillery Long-Range Strike',
     description: 'Artillery ignores blocking for captures.',
     difficulty: 2,
@@ -88,7 +93,7 @@ export const unblockedLessons: Lesson[] = [
     id: 'blocking-6',
     category: 'basics',
     subjectId: 'subject-4-blocking',
-    sectionId: 'section-2-unblocked-pieces',
+    sectionId: 'section-2-blocking-capture',
     title: 'Air Force Flies Over All',
     description: 'Air Force ignores all blocking for both movement AND capture.',
     difficulty: 2,
@@ -104,7 +109,7 @@ export const unblockedLessons: Lesson[] = [
     id: 'blocking-7',
     category: 'basics',
     subjectId: 'subject-4-blocking',
-    sectionId: 'section-2-unblocked-pieces',
+    sectionId: 'section-2-blocking-capture',
     title: 'Navy Moves Through Pieces',
     description: 'Navy can move and capture through other pieces in water.',
     difficulty: 2,
@@ -120,7 +125,7 @@ export const unblockedLessons: Lesson[] = [
     id: 'blocking-8',
     category: 'basics',
     subjectId: 'subject-4-blocking',
-    sectionId: 'section-2-unblocked-pieces',
+    sectionId: 'section-2-blocking-capture',
     title: 'Missile Shoots Over',
     description: 'Missile can capture through blocking pieces.',
     difficulty: 2,
@@ -133,3 +138,29 @@ export const unblockedLessons: Lesson[] = [
     showValidMoves: true
   }
 ];
+
+const blockMovementSection: Section = {
+  id: 'section-1-block-movement',
+  title: 'Block Movement',
+  description: 'Learn how pieces are blocked from moving by obstacles.',
+  introduction: section1BlockedPiecesIntro,
+  lessons: blockingLessons
+};
+
+const blockingCaptureSection: Section = {
+  id: 'section-2-blocking-capture',
+  title: 'Blocking Capture',
+  description: 'Learn how pieces interact with blocking when capturing.',
+  introduction: section2UnblockedPiecesIntro,
+  lessons: unblockedLessons
+};
+
+export const subject4Blocking: Subject = {
+  id: 'subject-4-blocking',
+  title: 'Blocking Mechanism',
+  description: 'Learn which pieces can move or capture through other pieces.',
+  icon: '🚧',
+  introduction: subject4Introduction,
+  prerequisites: ['subject-1-basic-movement', 'subject-3-capture'],
+  sections: [blockMovementSection, blockingCaptureSection]
+};

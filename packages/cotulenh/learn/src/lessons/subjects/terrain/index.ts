@@ -1,6 +1,7 @@
-import type { Lesson } from '../types';
+import type { Subject, Section, Lesson } from '../../../types';
+import { subject2Introduction, section1TerrainBasicsIntro } from '../../../content';
 
-export const terrainLessons: Lesson[] = [
+const terrainLessons: Lesson[] = [
   {
     id: 'terrain-1',
     category: 'terrain',
@@ -47,3 +48,21 @@ export const terrainLessons: Lesson[] = [
     targetSquares: ['c6', 'd6', 'e6']
   }
 ];
+
+const section1: Section = {
+  id: 'section-1-terrain-basics',
+  title: 'Terrain Basics',
+  description: 'Learn water, land, river crossings, and mixed zones.',
+  introduction: section1TerrainBasicsIntro,
+  lessons: terrainLessons
+};
+
+export const subject2Terrain: Subject = {
+  id: 'subject-2-terrain',
+  title: 'Terrain',
+  description: 'Learn water, land, river crossings, and mixed zones.',
+  icon: '🌊',
+  introduction: subject2Introduction,
+  prerequisites: ['subject-1-basic-movement'],
+  sections: [section1]
+};

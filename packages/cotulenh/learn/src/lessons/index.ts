@@ -1,8 +1,13 @@
 import type { Lesson, Subject } from '../types';
-import { subject1BasicMovement } from './subject-1-basic-movement';
-import { subject2Terrain } from './subject-2-terrain';
-import { subject3Capture } from './subject-3-capture';
-import { subject4Blocking } from './subject-4-blocking';
+import { subject1BasicMovement } from './subjects/basic-movement/index';
+import { subject2Terrain } from './subjects/terrain/index';
+import { subject3Capture } from './subjects/capture/index';
+import { subject4Blocking } from './subjects/blocking/index';
+import { subject5AirDefense } from './subjects/air-defense/index';
+import { subject6CombinePiece } from './subjects/combine-piece/index';
+import { subject7DeployMove } from './subjects/deploy-move/index';
+import { subject8HeroicRule } from './subjects/heroic-rule/index';
+import { subject9FlyingGeneral } from './subjects/flying-general/index';
 
 // ============================================================
 // SUBJECTS (New curriculum structure)
@@ -12,7 +17,12 @@ export const subjects: Subject[] = [
   subject1BasicMovement,
   subject2Terrain,
   subject3Capture,
-  subject4Blocking
+  subject4Blocking,
+  subject5AirDefense,
+  subject6CombinePiece,
+  subject7DeployMove,
+  subject8HeroicRule,
+  subject9FlyingGeneral
 ];
 
 // ============================================================
