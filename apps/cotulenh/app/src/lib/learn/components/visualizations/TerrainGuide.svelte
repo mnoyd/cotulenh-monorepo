@@ -25,9 +25,9 @@
       </div>
 
       <!-- Land: Cols d-k (8 cols) -->
-      <div class="zone land-zone" style="grid-column: 3 / -1; grid-row: 2 / -1;">
-        <span class="label upper-land">UPPER LAND TERRITORY</span>
-        <span class="label lower-land">LOWER LAND TERRITORY</span>
+      <div class="zone land-zone" style="grid-column: 3 / -1; grid-row: 1 / -1;">
+        <span class="label north-land">NORTH LAND TERRITORY</span>
+        <span class="label south-land">SOUTH LAND TERRITORY</span>
       </div>
 
       <!-- River Barrier: Between Rank 6 & 7 (Row 6 from bottom, so Row 7 from top visually?) -->
@@ -146,18 +146,18 @@
     bottom: 1rem;
   }
 
-  .label.upper-land {
+  .label.north-land {
     top: 25%;
     width: 100%;
     text-align: center;
-    color: rgba(255, 165, 0, 0.9); /* Orange tint to match screenshot hint */
+    color: rgba(255, 255, 255, 0.9); /* Orange tint to match screenshot hint */
   }
 
-  .label.lower-land {
+  .label.south-land {
     bottom: 25%;
     width: 100%;
     text-align: center;
-    color: rgba(255, 165, 0, 0.9); /* Orange tint to match screenshot hint */
+    color: rgba(255, 255, 255, 0.9); /* Orange tint to match screenshot hint */
   }
 
   .river-label {

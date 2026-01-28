@@ -2,6 +2,7 @@
   import type { Subject } from '@cotulenh/learn';
   import { BookOpen, ChevronDown, ChevronUp } from 'lucide-svelte';
   import TerrainGuide from './visualizations/TerrainGuide.svelte';
+  import BridgeDetail from './visualizations/BridgeDetail.svelte';
 
   interface Props {
     subject: Subject;
@@ -102,6 +103,8 @@
         {:else if part.type === 'component'}
           {#if part.name === 'custom:terrain-guide'}
             <TerrainGuide />
+          {:else if part.name === 'custom:bridge-detail'}
+            <BridgeDetail />
           {/if}
         {/if}
       {/each}

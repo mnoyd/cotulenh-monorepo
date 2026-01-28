@@ -51,7 +51,7 @@ The 11×12 board is divided into distinct operational zones that simulate differ
 
 ### The River (Between Ranks 6 and 7)
 
-![River and Bridges](/learn/subject-2/river-bridges-map.svg)
+![River and Bridges](custom:bridge-detail)
 
 The **river** divides the board into northern and southern territories:
 - Runs horizontally across the entire board
