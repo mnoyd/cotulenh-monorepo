@@ -75,7 +75,6 @@
     justify-content: center;
     color: rgba(76, 175, 80, 0.9);
     filter: drop-shadow(0 0 4px rgba(76, 175, 80, 0.5));
-    animation: learn-target-pulse 1.5s ease-in-out infinite;
   }
 
   :global(.learn-target-marker svg) {
@@ -87,14 +86,4 @@
     transform: translate(-50%, -50%);
   }
 
-  @keyframes learn-target-pulse {
-    0%, 100% {
-      opacity: 0.7;
-      filter: drop-shadow(0 0 4px rgba(76, 175, 80, 0.5));
-    }
-    50% {
-      opacity: 1;
-      filter: drop-shadow(0 0 8px rgba(76, 175, 80, 0.8));
-    }
-  }
 </style>

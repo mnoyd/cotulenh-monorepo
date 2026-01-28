@@ -143,14 +143,6 @@
     grid-template-rows: repeat(11, 1fr);
   }
 
-  @keyframes river-flow {
-    0% {
-      transform: translateX(0);
-    }
-    100% {
-      transform: translateX(-56.57px); /* Move left towards sea */
-    }
-  }
 
   /* River Strip Design */
   .river-strip {
@@ -175,13 +167,13 @@
     border-bottom: 2px solid rgba(30, 58, 138, 0.6);
   }
 
-  /* Animated Water Texture Layer */
+  /* Static Water Texture Layer */
   .river-strip::before {
     content: '';
     position: absolute;
     top: 0;
     left: 0;
-    width: 200%; /* Extra width for sliding */
+    width: 100%;
     height: 100%;
 
     background-image: repeating-linear-gradient(
@@ -191,10 +183,7 @@
       rgba(37, 99, 235, 0.4) 20px,
       rgba(37, 99, 235, 0.4) 40px
     );
-    background-size: 50% 100%; /* Scale back down so pattern size looks same */
-
-    animation: river-flow 3s linear infinite;
-    will-change: transform; /* Hint to browser to promote to GPU layer */
+    background-size: 50% 100%;
   }
 
   /* Bridge Design */
