@@ -21,3 +21,9 @@ export {
   section1BlockedPiecesIntro,
   section2UnblockedPiecesIntro
 } from './subject-4-content';
+
+export {
+  subject5Introduction,
+  section1AvoidanceIntro,
+  section2KamikazeIntro
+} from './subject-5-content';
