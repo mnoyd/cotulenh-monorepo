@@ -1,6 +1,6 @@
-import type { Subject, Section } from '../types';
-import { terrainLessons } from './terrain';
-import { subject2Introduction, section1TerrainBasicsIntro } from '../content';
+import type { Subject, Section } from '../../types';
+import { terrainLessons } from '../definitions/terrain';
+import { subject2Introduction, section1TerrainBasicsIntro } from '../../content';
 
 const section1: Section = {
   id: 'section-1-terrain-basics',

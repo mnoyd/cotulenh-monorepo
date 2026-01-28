@@ -1,6 +1,6 @@
-import type { Subject, Section } from '../types';
-import { captureLessons } from './capture';
-import { subject3Introduction, section1CaptureBasicsIntro } from '../content';
+import type { Subject, Section } from '../../types';
+import { captureLessons } from '../definitions/capture';
+import { subject3Introduction, section1CaptureBasicsIntro } from '../../content';
 
 const section1: Section = {
   id: 'section-1-capture-basics',

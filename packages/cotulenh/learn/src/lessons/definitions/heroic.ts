@@ -1,4 +1,4 @@
-import type { Lesson } from '../types';
+import type { Lesson } from '../../types';
 
 /**
  * Heroic Lessons - Learn how heroic status enhances piece movement

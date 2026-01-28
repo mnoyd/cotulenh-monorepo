@@ -1,10 +1,10 @@
-import type { Subject, Section } from '../types';
-import { blockingLessons, unblockedLessons } from './blocking';
+import type { Subject, Section } from '../../types';
+import { blockingLessons, unblockedLessons } from '../definitions/blocking';
 import {
   subject4Introduction,
   section1BlockedPiecesIntro,
   section2UnblockedPiecesIntro
-} from '../content';
+} from '../../content';
 
 const section1: Section = {
   id: 'section-1-blocked-pieces',

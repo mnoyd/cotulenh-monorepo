@@ -1,9 +1,9 @@
 import type { Lesson, Subject } from '../types';
-import { subject1BasicMovement } from './subject-1-basic-movement';
-import { subject2Terrain } from './subject-2-terrain';
-import { subject3Capture } from './subject-3-capture';
-import { subject4Blocking } from './subject-4-blocking';
-import { subject5AirDefense } from './subject-5-air-defense';
+import { subject1BasicMovement } from './subjects/basic-movement';
+import { subject2Terrain } from './subjects/terrain';
+import { subject3Capture } from './subjects/capture';
+import { subject4Blocking } from './subjects/blocking';
+import { subject5AirDefense } from './subjects/air-defense';
 
 // ============================================================
 // SUBJECTS (New curriculum structure)

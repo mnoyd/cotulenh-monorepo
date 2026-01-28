@@ -1,6 +1,6 @@
-import type { Subject, Section } from '../types';
-import { airDefenseAvoidanceLessons, airDefenseKamikazeLessons } from './air-defense';
-import { subject5Introduction, section1AvoidanceIntro, section2KamikazeIntro } from '../content';
+import type { Subject, Section } from '../../types';
+import { airDefenseAvoidanceLessons, airDefenseKamikazeLessons } from '../definitions/air-defense';
+import { subject5Introduction, section1AvoidanceIntro, section2KamikazeIntro } from '../../content';
 
 const section1: Section = {
   id: 'section-1-avoid-air-defense',
