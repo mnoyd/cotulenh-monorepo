@@ -27,3 +27,9 @@ export {
   section1AvoidanceIntro,
   section2KamikazeIntro
 } from './subject-5-content';
+
+export {
+  subject6Introduction,
+  section1CombineBasicsIntro,
+  section2CarrierRulesIntro
+} from './subject-6-content';
