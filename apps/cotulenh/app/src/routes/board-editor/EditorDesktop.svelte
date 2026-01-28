@@ -475,7 +475,7 @@
   }
 
   .play-icon {
-    animation: pulse 2s infinite;
+    /* animation removed to reduce CPU */
   }
 
   .validation-error {
