@@ -5,6 +5,7 @@ import { subject3Capture } from './subjects/capture';
 import { subject4Blocking } from './subjects/blocking';
 import { subject5AirDefense } from './subjects/air-defense';
 import { subject6CombinePiece } from './subjects/combine-piece';
+import { subject7DeployMove } from './subjects/deploy-move';
 
 // ============================================================
 // SUBJECTS (New curriculum structure)
@@ -16,7 +17,8 @@ export const subjects: Subject[] = [
   subject3Capture,
   subject4Blocking,
   subject5AirDefense,
-  subject6CombinePiece
+  subject6CombinePiece,
+  subject7DeployMove
 ];
 
 // ============================================================

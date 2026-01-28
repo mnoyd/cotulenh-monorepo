@@ -33,3 +33,9 @@ export {
   section1CombineBasicsIntro,
   section2CarrierRulesIntro
 } from './subject-6-content';
+
+export {
+  subject7Introduction,
+  section1DeployBasicsIntro,
+  section2DeployCarrierIntro
+} from './subject-7-content';
