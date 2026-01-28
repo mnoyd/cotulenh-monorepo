@@ -21,7 +21,8 @@ export type {
   MoveValidationResult,
   LessonFeedback,
   FeedbackStyle,
-  GradingSystem
+  GradingSystem,
+  FeedbackCode
 } from './types';
 
 // Validators

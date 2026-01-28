@@ -20,9 +20,7 @@
   // Configure marked options for safety
   marked.use({
     gfm: true,
-    breaks: false,
-    headerIds: false,
-    mangle: false
+    breaks: false
   });
 
   function stripMarkdown(text: string): string {

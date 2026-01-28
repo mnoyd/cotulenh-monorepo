@@ -7,7 +7,8 @@ import type {
   LearnStatus,
   LearnEngineCallbacks,
   LessonResult,
-  SquareInfo
+  SquareInfo,
+  FeedbackCode
 } from './types';
 import { getLessonById } from './lessons';
 import { Scenario } from './scenario';
@@ -39,6 +40,7 @@ export class LearnEngine {
   #opponentMoveTimeout: ReturnType<typeof setTimeout> | null = null;
   #visitedTargets: Set<Square> = new Set();
   #interactionCount = 0; // Tracks moves + selections
+  #disposed = false;
 
   // Component-based architecture
   #validator: MoveValidator | null = null;
@@ -48,6 +50,12 @@ export class LearnEngine {
 
   constructor(callbacks: LearnEngineCallbacks = {}) {
     this.#callbacks = callbacks;
+  }
+
+  dispose(): void {
+    this.#disposed = true;
+    this.#clearOpponentTimeout();
+    this.#callbacks = {};
   }
 
   // ============================================================
@@ -88,12 +96,32 @@ export class LearnEngine {
     return this.#lesson?.hint ?? '';
   }
 
+  /**
+   * @deprecated Use successCode for i18n support
+   */
   get successMessage(): string {
     return this.#lesson?.successMessage ?? 'Well done!';
   }
 
+  /**
+   * @deprecated Use failureCode for i18n support
+   */
   get failureMessage(): string {
     return this.#lesson?.failureMessage ?? "That's not the right move. Try again!";
+  }
+
+  /**
+   * Get the success feedback code for i18n
+   */
+  get successCode(): FeedbackCode {
+    return 'success.default';
+  }
+
+  /**
+   * Get the failure feedback code for i18n
+   */
+  get failureCode(): FeedbackCode {
+    return 'failure.default';
   }
 
   get game(): AntiRuleCore | null {
@@ -197,20 +225,16 @@ export class LearnEngine {
     const moves = this.getPossibleMoves();
     const isValidDest = moves.some((m) => m.to === square);
 
-    // Determine feedback message
-    let message: string | null = null;
+    // Determine feedback code
+    let feedbackCode: FeedbackCode | null = null;
 
-    // Priority 1: Custom message for this specific square
-    if (lesson?.feedback?.onSelect?.[square]) {
-      message = lesson.feedback.onSelect[square];
+    // Priority 1: Target square hint
+    if (isTarget) {
+      feedbackCode = 'hint.moveToTarget';
     }
-    // Priority 2: Target square message
-    else if (isTarget) {
-      message = lesson?.feedback?.onTarget ?? 'Move here to complete the lesson!';
-    }
-    // Priority 3: Piece message (if clicking on movable piece)
+    // Priority 2: Piece selected hint (if clicking on movable piece)
     else if (hasPiece && moves.some((m) => m.from === square)) {
-      message = lesson?.feedback?.onPiece ?? null;
+      feedbackCode = 'hint.pieceSelected';
     }
 
     return {
@@ -218,7 +242,7 @@ export class LearnEngine {
       hasPiece,
       isTarget,
       isValidDest,
-      message
+      feedbackCode
     };
   }
 
@@ -434,6 +458,7 @@ export class LearnEngine {
    * Schedule the opponent's move with a delay
    */
   #scheduleOpponentMove(): void {
+    if (this.#disposed) return;
     if (!this.#scenario) return;
 
     const opponentMove = this.#scenario.getOpponentMove();
@@ -448,6 +473,7 @@ export class LearnEngine {
    * Execute the opponent's move
    */
   #executeOpponentMove(move: { from: Square; to: Square }): void {
+    if (this.#disposed) return;
     if (!this.#game || !this.#scenario) return;
 
     try {
@@ -455,7 +481,9 @@ export class LearnEngine {
       this.#scenario.confirmOpponentMove();
 
       const uci = Scenario.toUci(move.from, move.to);
-      this.#callbacks.onOpponentMove?.(uci, this.fen);
+      if (!this.#disposed) {
+        this.#callbacks.onOpponentMove?.(uci, this.fen);
+      }
 
       // Check if scenario is complete after opponent move
       if (this.#scenario.isComplete) {
@@ -480,6 +508,7 @@ export class LearnEngine {
    * Complete the lesson successfully
    */
   #completeLesson(): void {
+    if (this.#disposed) return;
     this.#status = 'completed';
     this.#callbacks.onStateChange?.(this.#status);
     this.#callbacks.onComplete?.(this.#getResult());

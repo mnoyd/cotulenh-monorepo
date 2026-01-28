@@ -111,6 +111,16 @@ export interface TranslationKeys {
   'learn.mistakes': string;
   'learn.loadingLesson': string;
   'learn.lessonNotFound': string;
+  'learn.hint': string;
+  'learn.reset': string;
+  'learn.moves': string;
+  'learn.invalidMove': string;
+  'learn.feedback.success.default': string;
+  'learn.feedback.failure.default': string;
+  'learn.feedback.hint.moveToTarget': string;
+  'learn.feedback.hint.pieceSelected': string;
+  'learn.feedback.error.invalidMove': string;
+  'learn.feedback.error.wrongScenarioMove': string;
 
   // Board editor
   'editor.title': string;

@@ -11,6 +11,7 @@ import {
 } from '@cotulenh/learn';
 import { subjectProgress } from './learn-progress.svelte';
 import { coreToBoardColor, mapPossibleMovesToDests } from '$lib/features/game/utils';
+import { getI18n } from '$lib/i18n/index.svelte';
 
 /**
  * LearnSession - Svelte 5 reactive wrapper around LearnEngine
@@ -74,8 +75,9 @@ export class LearnSession {
         this.#version++;
       },
       onSelect: (info: SquareInfo) => {
-        if (info.message) {
-          this.#feedbackMessage = info.message;
+        if (info.feedbackCode) {
+          const i18n = getI18n();
+          this.#feedbackMessage = i18n.t(`learn.feedback.${info.feedbackCode}`);
           this.#showFeedback = true;
           this.#version++;
         }
@@ -228,7 +230,8 @@ export class LearnSession {
     const to = dest.square as Square;
     const success = this.#engine.makeMove(from, to, dest.stay);
     if (!success && this.#engine.status === 'ready') {
-      this.#feedbackMessage = 'Invalid move. Try again.';
+      const i18n = getI18n();
+      this.#feedbackMessage = i18n.t('learn.invalidMove');
       this.#showFeedback = true;
       this.#version++;
     }
@@ -288,6 +291,14 @@ export class LearnSession {
     }
     this.#showFeedback = false;
     this.#version++;
+  }
+
+  dispose(): void {
+    if (this.#hintTimeoutId) {
+      clearTimeout(this.#hintTimeoutId);
+      this.#hintTimeoutId = null;
+    }
+    this.#engine.dispose();
   }
 
   // ============================================================

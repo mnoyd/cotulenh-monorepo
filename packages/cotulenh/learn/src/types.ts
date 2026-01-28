@@ -1,6 +1,14 @@
 import type { Square, InternalMove } from '@cotulenh/core';
 import type { LearnEngine } from './learn-engine';
 
+export type FeedbackCode =
+  | 'success.default'
+  | 'failure.default'
+  | 'hint.moveToTarget'
+  | 'hint.pieceSelected'
+  | 'error.invalidMove'
+  | 'error.wrongScenarioMove';
+
 export type SubjectId = string;
 export type SectionId = string;
 
@@ -217,8 +225,10 @@ export interface SquareInfo {
   isTarget: boolean;
   /** Whether this square is a valid destination for the selected piece */
   isValidDest: boolean;
-  /** Feedback message to display, if any */
-  message: string | null;
+  /** Feedback code for i18n lookup */
+  feedbackCode: FeedbackCode | null;
+  /** Additional context for feedback message interpolation */
+  feedbackContext?: Record<string, unknown>;
 }
 
 export interface LearnEngineCallbacks {

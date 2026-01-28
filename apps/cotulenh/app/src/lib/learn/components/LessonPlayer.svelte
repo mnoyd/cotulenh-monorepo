@@ -21,7 +21,11 @@
 
   // Recreate session when lessonId changes (not just on mount)
   $effect(() => {
-    session = new LearnSession(lessonId);
+    const newSession = new LearnSession(lessonId);
+    session = newSession;
+    return () => {
+      newSession.dispose();
+    };
   });
 
   $effect(() => {
@@ -86,7 +90,7 @@
                   />
                 {/each}
               </div>
-              <p class="move-count">Moves: {session.moveCount}</p>
+              <p class="move-count">{i18n.t('learn.moves')}: {session.moveCount}</p>
             {/if}
             {#if session.showFeedback}
               <p class="success-message">{session.feedbackMessage}</p>
@@ -109,16 +113,16 @@
             <div class="lesson-controls">
               <button class="btn hint-btn" onclick={handleHint} disabled={!session.hint}>
                 <HelpCircle size={16} />
-                Hint
+                {i18n.t('learn.hint')}
               </button>
               <button class="btn secondary" onclick={() => session?.restart()}>
                 <RotateCcw size={16} />
-                Reset
+                {i18n.t('learn.reset')}
               </button>
             </div>
 
             {#if session.gradingSystem === 'stars'}
-              <div class="move-counter">Moves: {session.moveCount}</div>
+              <div class="move-counter">{i18n.t('learn.moves')}: {session.moveCount}</div>
             {/if}
 
             {#if session.showFeedback}

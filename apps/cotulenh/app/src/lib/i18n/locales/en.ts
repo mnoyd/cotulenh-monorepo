@@ -112,6 +112,16 @@ export const en: TranslationKeys = {
   'learn.mistakes': 'Mistakes',
   'learn.loadingLesson': 'Loading lesson...',
   'learn.lessonNotFound': 'Lesson not found',
+  'learn.hint': 'Hint',
+  'learn.reset': 'Reset',
+  'learn.moves': 'Moves',
+  'learn.invalidMove': 'Invalid move. Try again.',
+  'learn.feedback.success.default': 'Well done!',
+  'learn.feedback.failure.default': "That's not the right move. Try again!",
+  'learn.feedback.hint.moveToTarget': 'Move here to complete the lesson!',
+  'learn.feedback.hint.pieceSelected': 'Good! Now find the best move.',
+  'learn.feedback.error.invalidMove': 'Invalid move. Try again.',
+  'learn.feedback.error.wrongScenarioMove': "That's not the expected move.",
 
   // Board editor
   'editor.title': 'Editor',
