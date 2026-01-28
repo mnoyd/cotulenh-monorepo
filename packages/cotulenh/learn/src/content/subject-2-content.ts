@@ -8,7 +8,7 @@
 export const subject2Introduction = `
 # Terrain in Cotulenh
 
-![Terrain Overview](/learn/subject-2/terrain-overview.svg)
+![Terrain Guide](custom:terrain-guide)
 
 The Cotulenh battlefield is not a uniform playing field. Terrain shapes every tactical decision, determining where your units can operate and how they must maneuver to achieve objectives.
 
@@ -112,7 +112,7 @@ In this subject, you'll master terrain through hands-on practice:
 export const section1TerrainBasicsIntro = `
 # Terrain Basics
 
-![Terrain Overview](/learn/subject-2/terrain-overview.svg)
+![Terrain Guide](custom:terrain-guide)
 
 Terrain controls where each unit can operate. Understanding terrain restrictions is essential for valid movement and strategic positioning.
 

@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { Subject } from '@cotulenh/learn';
   import { BookOpen, ChevronDown, ChevronUp } from 'lucide-svelte';
+  import TerrainGuide from './visualizations/TerrainGuide.svelte';
 
   interface Props {
     subject: Subject;
@@ -15,7 +16,10 @@
 
   function formatMarkdown(text: string): string {
     return text
-      .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" class="content-image" />')
+      .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (match, alt, src) => {
+        if (src.startsWith('custom:')) return match; // Leave custom markers for the splitter
+        return `<img src="${src}" alt="${alt}" class="content-image" />`;
+      })
       .replace(/^### (.+)$/gm, '<h4>$1</h4>')
       .replace(/^## (.+)$/gm, '<h3>$1</h3>')
       .replace(/^# (.+)$/gm, '<h2>$1</h2>')
@@ -30,6 +34,45 @@
       .replace(/<p>(<[hulo])/g, '$1')
       .replace(/(<\/[hulo][^>]*>)<\/p>/g, '$1');
   }
+
+  type ContentPart = { type: 'html'; content: string } | { type: 'component'; name: string };
+
+  const contentParts = $derived.by(() => {
+    const text = subject.introduction;
+    const parts: ContentPart[] = [];
+    const regex = /!\[.*?\]\((custom:[^)]+)\)/g;
+
+    let lastIndex = 0;
+    let match;
+
+    while ((match = regex.exec(text)) !== null) {
+      // Add text before the match
+      if (match.index > lastIndex) {
+        parts.push({
+          type: 'html',
+          content: formatMarkdown(text.slice(lastIndex, match.index))
+        });
+      }
+
+      // Add the component
+      parts.push({
+        type: 'component',
+        name: match[1]
+      });
+
+      lastIndex = regex.lastIndex;
+    }
+
+    // Add remaining text
+    if (lastIndex < text.length) {
+      parts.push({
+        type: 'html',
+        content: formatMarkdown(text.slice(lastIndex))
+      });
+    }
+
+    return parts;
+  });
 </script>
 
 <div class="subject-intro hud-corners" id="intro">
@@ -53,7 +96,15 @@
 
   {#if expanded}
     <div class="full-intro">
-      {@html formatMarkdown(subject.introduction)}
+      {#each contentParts as part}
+        {#if part.type === 'html'}
+          {@html part.content}
+        {:else if part.type === 'component'}
+          {#if part.name === 'custom:terrain-guide'}
+            <TerrainGuide />
+          {/if}
+        {/if}
+      {/each}
     </div>
   {/if}
 </div>
