@@ -3,6 +3,7 @@
   import { ArrowLeft, RotateCcw, ArrowRight, Star, CheckCircle, HelpCircle } from 'lucide-svelte';
   import BoardContainer from '$lib/components/BoardContainer.svelte';
   import TargetMarker from './TargetMarker.svelte';
+  import LessonContent from './LessonContent.svelte';
   import { LearnSession } from '../learn-session.svelte';
   import { getI18n } from '$lib/i18n/index.svelte';
   import '$lib/styles/board.css';
@@ -108,6 +109,9 @@
           </div>
         {:else}
           <div class="instruction-panel">
+            {#if session.lesson.content}
+              <LessonContent content={session.lesson.content} />
+            {/if}
             <p class="instruction-text">{session.instruction}</p>
 
             <div class="lesson-controls">

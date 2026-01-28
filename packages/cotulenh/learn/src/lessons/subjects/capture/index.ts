@@ -9,6 +9,11 @@ const captureLessons: Lesson[] = [
     sectionId: 'section-1-capture-basics',
     title: 'Normal Capture',
     description: 'Capture by moving onto an enemy piece.',
+    content: `## Normal Capture
+
+- Capture by **moving onto** an enemy piece.
+- Your unit replaces the enemy on that square.
+- Standard rule for most pieces and situations.`,
     difficulty: 1,
     startFen: '11/11/11/11/11/11/4i6/4I6/11/11/11/11 r - - 0 1',
     instruction:
@@ -25,6 +30,11 @@ const captureLessons: Lesson[] = [
     sectionId: 'section-1-capture-basics',
     title: 'Stay Capture',
     description: 'Destroy a target without leaving your square.',
+    content: `## Stay Capture
+
+- Some units (like **Artillery**) can **destroy a target without moving**.
+- The attacker stays in place while the enemy is removed.
+- Useful for holding key positions while striking.`,
     difficulty: 2,
     startFen: '11/11/11/11/11/11/11/11/1n9/11/3A7/11 r - - 0 1',
     goalFen: '11/11/11/11/11/11/11/11/11/11/3A7/11 r - - 0 1',
@@ -41,6 +51,11 @@ const captureLessons: Lesson[] = [
     sectionId: 'section-1-capture-basics',
     title: 'Capture Across the River',
     description: 'Artillery can capture across the river.',
+    content: `## Capture Across the River
+
+- The river divides ranks **6** and **7**.
+- **Artillery** can capture across the river when in range.
+- Heavy units still need **bridges** to *move* across.`,
     difficulty: 2,
     startFen: '11/11/11/11/9i1/11/11/9A1/11/11/11/11 r - - 0 1',
     goalFen: '11/11/11/11/9A1/11/11/11/11/11/11/11 r - - 0 1',
@@ -58,6 +73,11 @@ const captureLessons: Lesson[] = [
     sectionId: 'section-1-capture-basics',
     title: 'Air Force Capture',
     description: 'Air Force captures using its long-range flight.',
+    content: `## Air Force Capture
+
+- Air Force captures **within flight range**.
+- It **ignores terrain and blocking** while flying.
+- Be mindful of **air defense zones**.`,
     difficulty: 2,
     startFen: '11/11/11/3t7/11/11/11/3F7/11/11/11/7m3 r - - 0 1',
     instruction:

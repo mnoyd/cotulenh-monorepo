@@ -116,6 +116,8 @@ export interface Lesson {
   goalFen?: string;
   /** Instruction text shown to user */
   instruction: string;
+  /** Rich markdown content for lesson explanation (displayed above instruction) */
+  content?: string;
   /** Hint text (shown on button press) */
   hint?: string;
   /** Success message when goal is reached */
