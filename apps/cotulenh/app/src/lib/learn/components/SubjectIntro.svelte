@@ -99,6 +99,7 @@
     <div class="full-intro">
       {#each contentParts as part}
         {#if part.type === 'html'}
+          <!-- eslint-disable-next-line svelte/no-at-html-tags -->
           {@html part.content}
         {:else if part.type === 'component'}
           {#if part.name === 'custom:terrain-guide'}
