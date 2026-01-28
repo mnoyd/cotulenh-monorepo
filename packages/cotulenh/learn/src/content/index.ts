@@ -39,3 +39,9 @@ export {
   section1DeployBasicsIntro,
   section2DeployCarrierIntro
 } from './subject-7-content';
+
+export {
+  subject8Introduction,
+  section1HeroicPromotionIntro,
+  section2HeroicMovementIntro
+} from './subject-8-content';
