@@ -1,7 +1,9 @@
 <script lang="ts">
   import type { Subject, SubjectProgress } from '@cotulenh/learn';
   import ProgressIndicator from './ProgressIndicator.svelte';
-  import { Lock, ChevronRight } from 'lucide-svelte';
+  import { subjectProgress } from '../learn-progress.svelte';
+  import { Lock, ChevronRight, Play } from 'lucide-svelte';
+  import { goto } from '$app/navigation';
 
   interface Props {
     subject: Subject;
@@ -10,6 +12,18 @@
   }
 
   let { subject, progress, isLocked }: Props = $props();
+
+  const nextLesson = $derived(
+    !isLocked ? subjectProgress.getNextIncompleteLesson(subject.id) : null
+  );
+
+  function handleContinue(e: MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (nextLesson) {
+      goto(`/learn/${subject.id}/${nextLesson.sectionId}/${nextLesson.lessonId}`);
+    }
+  }
 </script>
 
 <a
@@ -45,9 +59,19 @@
           <ProgressIndicator value={progress.progress} size="sm" />
           <span class="progress-text">{progress.progress}%</span>
         </div>
-        <div class="go-arrow">
-          <ChevronRight size={20} />
-        </div>
+        {#if nextLesson}
+          <button
+            class="continue-btn"
+            onclick={handleContinue}
+          >
+            <Play size={14} />
+            Continue
+          </button>
+        {:else}
+          <div class="go-arrow">
+            <ChevronRight size={20} />
+          </div>
+        {/if}
       {/if}
     </div>
   </div>
@@ -176,5 +200,27 @@
 
   .completed .info h3 {
     color: var(--theme-secondary, #10b981);
+  }
+
+  .continue-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.4rem 0.75rem;
+    background: var(--theme-primary-dim, rgba(59, 130, 246, 0.2));
+    border: 1px solid var(--theme-primary, #3b82f6);
+    border-radius: 4px;
+    color: var(--theme-primary, #3b82f6);
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    text-decoration: none;
+    transition: all 0.15s ease;
+  }
+
+  .continue-btn:hover {
+    background: var(--theme-primary, #3b82f6);
+    color: white;
+    box-shadow: var(--theme-glow-primary, 0 0 10px rgba(59, 130, 246, 0.5));
   }
 </style>

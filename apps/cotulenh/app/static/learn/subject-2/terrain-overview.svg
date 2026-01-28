@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="720" height="780" viewBox="0 0 720 780" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+  <!-- Reuse existing board grid -->
+  <image href="/assets/board-grid.svg" width="720" height="780" />
+
+  <!-- Terrain Highlights (Layered OVER the grid) -->
+  <g style="opacity: 0.4;">
+     <!-- Water Zone (Files a-b) -->
+     <rect x="0" y="0" width="120" height="780" fill="#bfdbfe" />
+     
+     <!-- Coastal/Mixed Zone (File c) -->
+     <rect x="120" y="0" width="60" height="780" fill="#a7f3d0" />
+     
+     <!-- Land Zone (Files d-k) -->
+     <rect x="180" y="0" width="540" height="780" fill="#e5e7eb" />
+
+     <!-- River (Rank 6/7 boundary area) -->
+     <rect x="180" y="360" width="540" height="60" fill="#93c5fd" />
+  </g>
+  
+  <!-- Labels -->
+  <style>
+    .label { 
+      font-family: sans-serif; 
+      font-size: 24px; 
+      font-weight: bold; 
+      text-anchor: middle; 
+      fill: #1f2937;
+      text-shadow: 0 0 5px #ffffff;
+    }
+    .label-bg { 
+      fill: rgba(255, 255, 255, 0.7); 
+      mix-blend-mode: screen;
+    }
+    .zone-box { 
+      fill: none; 
+      stroke: #3b82f6; 
+      stroke-width: 3; 
+      opacity: 0.5; 
+      stroke-dasharray: 10,5; 
+    }
+  </style>
+
+  <!-- Water Label (A-B) -->
+  <text x="90" y="40" class="label" fill="#2563eb">WATER ZONE</text>
+  
+  <!-- Coastal Label (C) -->
+  <text x="180" y="40" class="label" fill="#059669">COASTAL</text>
+  
+  <!-- Land Label (D-K) -->
+  <text x="450" y="40" class="label" fill="#4b5563">LAND TERRITORY</text>
+  
+  <!-- River Label -->
+  <!-- Subtle background for text readability without blocking grid -->
+  <rect x="290" y="380" width="140" height="30" class="label-bg" rx="4" />
+  <text x="360" y="405" class="label" style="font-size: 22px;">RIVER BARRIER</text>
+
+</svg>

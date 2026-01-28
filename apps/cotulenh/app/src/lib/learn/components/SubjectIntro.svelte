@@ -1,31 +1,126 @@
 <script lang="ts">
   import type { Subject } from '@cotulenh/learn';
-  import { BookOpen, ChevronRight } from 'lucide-svelte';
+  import { BookOpen, ChevronDown, ChevronUp } from 'lucide-svelte';
+  import TerrainGuide from './visualizations/TerrainGuide.svelte';
+  import BridgeDetail from './visualizations/BridgeDetail.svelte';
+  import { marked } from 'marked';
+  import DOMPurify from 'dompurify';
 
   interface Props {
     subject: Subject;
   }
 
   let { subject }: Props = $props();
-  
-  // Show a brief excerpt instead of full intro
+  let expanded = $state(false);
+
   const excerpt = $derived(
-    subject.description || subject.introduction.slice(0, 200).replace(/[#*_]/g, '').trim() + '...'
+    subject.description || stripMarkdown(subject.introduction).slice(0, 200).trim() + '...'
   );
+
+  // Configure marked options for safety
+  marked.use({
+    gfm: true,
+    breaks: false,
+    headerIds: false,
+    mangle: false
+  });
+
+  function stripMarkdown(text: string): string {
+    return text
+      .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '') // Remove images
+      .replace(/[#*_`~\[\]()]/g, '') // Remove markdown syntax chars
+      .replace(/\n{2,}/g, ' ') // Normalize whitespace
+      .trim();
+  }
+
+  function formatMarkdown(text: string): string {
+    // Parse markdown to HTML using marked (safe parser)
+    const html = marked.parse(text) as string;
+
+    // Sanitize HTML to prevent XSS attacks
+    // Only allows safe tags and attributes
+    return DOMPurify.sanitize(html, {
+      ALLOWED_TAGS: ['p', 'br', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'strong', 'em', 'u', 's', 'code', 'pre', 'blockquote', 'ul', 'ol', 'li', 'a', 'img', 'hr'],
+      ALLOWED_ATTR: ['href', 'src', 'alt', 'class', 'id', 'title'],
+      ALLOW_DATA_ATTR: false
+    });
+  }
+
+  type ContentPart = { type: 'html'; content: string } | { type: 'component'; name: string };
+
+  const contentParts = $derived.by(() => {
+    const text = subject.introduction;
+    const parts: ContentPart[] = [];
+    const regex = /!\[.*?\]\((custom:[^)]+)\)/g;
+
+    let lastIndex = 0;
+    let match;
+
+    while ((match = regex.exec(text)) !== null) {
+      // Add text before the match
+      if (match.index > lastIndex) {
+        parts.push({
+          type: 'html',
+          content: formatMarkdown(text.slice(lastIndex, match.index))
+        });
+      }
+
+      // Add the component
+      parts.push({
+        type: 'component',
+        name: match[1]
+      });
+
+      lastIndex = regex.lastIndex;
+    }
+
+    // Add remaining text
+    if (lastIndex < text.length) {
+      parts.push({
+        type: 'html',
+        content: formatMarkdown(text.slice(lastIndex))
+      });
+    }
+
+    return parts;
+  });
 </script>
 
-<div class="subject-intro hud-corners">
-  <div class="intro-header">
-    <BookOpen size={20} />
-    <span>Introduction</span>
-  </div>
-  
-  <p class="excerpt">{excerpt}</p>
-  
-  <a href="/learn/{subject.id}/content" class="read-more btn-game-subtle">
-    Read Full Introduction
-    <ChevronRight size={16} />
-  </a>
+<div class="subject-intro hud-corners" id="intro">
+  <button class="intro-header" onclick={() => (expanded = !expanded)}>
+    <div class="header-left">
+      <BookOpen size={20} />
+      <span>Introduction</span>
+    </div>
+    <div class="toggle-icon">
+      {#if expanded}
+        <ChevronUp size={20} />
+      {:else}
+        <ChevronDown size={20} />
+      {/if}
+    </div>
+  </button>
+
+  {#if !expanded}
+    <p class="excerpt">{excerpt}</p>
+  {/if}
+
+  {#if expanded}
+    <div class="full-intro">
+      {#each contentParts as part}
+        {#if part.type === 'html'}
+          <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+          {@html part.content}
+        {:else if part.type === 'component'}
+          {#if part.name === 'custom:terrain-guide'}
+            <TerrainGuide />
+          {:else if part.name === 'custom:bridge-detail'}
+            <BridgeDetail />
+          {/if}
+        {/if}
+      {/each}
+    </div>
+  {/if}
 </div>
 
 <style>
@@ -40,7 +135,12 @@
   .intro-header {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    justify-content: space-between;
+    width: 100%;
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
     color: var(--theme-secondary, #10b981);
     font-size: 0.8rem;
     text-transform: uppercase;
@@ -48,21 +148,73 @@
     margin-bottom: 1rem;
   }
 
+  .intro-header:hover {
+    color: var(--theme-primary, #3b82f6);
+  }
+
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .toggle-icon {
+    opacity: 0.7;
+  }
+
   .excerpt {
     color: var(--theme-text-primary, #f3f4f6);
     line-height: 1.7;
-    margin: 0 0 1.5rem;
+    margin: 0;
   }
 
-  .read-more {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.5rem 1rem;
-    text-decoration: none;
+  .full-intro {
+    color: var(--theme-text-primary, #f3f4f6);
+    line-height: 1.8;
   }
 
-  .read-more:hover {
-    box-shadow: var(--theme-glow-primary, 0 0 10px rgba(59, 130, 246, 0.5));
+  .full-intro :global(h2) {
+    color: var(--theme-primary, #3b82f6);
+    font-size: 1.4rem;
+    margin: 1.5rem 0 1rem;
+    text-shadow: var(--theme-glow-primary, 0 0 10px rgba(59, 130, 246, 0.5));
+  }
+
+  .full-intro :global(h3) {
+    color: var(--theme-secondary, #10b981);
+    font-size: 1.1rem;
+    margin: 1.25rem 0 0.75rem;
+  }
+
+  .full-intro :global(h4) {
+    color: var(--theme-text-primary, #f3f4f6);
+    font-size: 1rem;
+    margin: 1rem 0 0.5rem;
+  }
+
+  .full-intro :global(p) {
+    margin: 0.75rem 0;
+  }
+
+  .full-intro :global(ul) {
+    margin: 0.75rem 0;
+    padding-left: 1.5rem;
+  }
+
+  .full-intro :global(li) {
+    margin: 0.35rem 0;
+  }
+
+  .full-intro :global(strong) {
+    color: var(--theme-primary, #3b82f6);
+  }
+
+  :global(.content-image) {
+    max-width: 100%;
+    height: auto;
+    border-radius: 4px;
+    margin: 1.5rem 0;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--theme-border-subtle, rgba(59, 130, 246, 0.2));
   }
 </style>

@@ -3,12 +3,15 @@
   import { getSubjectById } from '@cotulenh/learn';
   import SubjectIntro from '$lib/learn/components/SubjectIntro.svelte';
   import SectionCard from '$lib/learn/components/SectionCard.svelte';
-  import { ArrowLeft } from 'lucide-svelte';
+  import { subjectProgress } from '$lib/learn/learn-progress.svelte';
+  import { ArrowLeft, Play, RotateCcw } from 'lucide-svelte';
   import { getI18n } from '$lib/i18n/index.svelte';
 
   const i18n = getI18n();
   const subjectId = $derived($page.params.subjectId ?? '');
   const subject = $derived(subjectId ? getSubjectById(subjectId) : null);
+  const nextLesson = $derived(subjectId ? subjectProgress.getNextIncompleteLesson(subjectId) : null);
+  const progress = $derived(subjectId ? subjectProgress.getSubjectProgress(subjectId) : null);
 </script>
 
 <div class="subject-page">
@@ -26,6 +29,32 @@
         </div>
       </div>
     </header>
+
+    {#if nextLesson}
+      <a
+        href="/learn/{subjectId}/{nextLesson.sectionId}/{nextLesson.lessonId}"
+        class="continue-cta hud-corners"
+      >
+        <div class="cta-content">
+          <Play size={24} />
+          <div class="cta-text">
+            <span class="cta-label">Continue</span>
+            <span class="cta-lesson">{nextLesson.title}</span>
+          </div>
+        </div>
+        <span class="cta-progress">{progress?.progress ?? 0}% complete</span>
+      </a>
+    {:else if progress?.completed}
+      <div class="completed-banner hud-corners">
+        <div class="cta-content">
+          <RotateCcw size={24} />
+          <div class="cta-text">
+            <span class="cta-label">Subject Completed!</span>
+            <span class="cta-lesson">Review any lesson below</span>
+          </div>
+        </div>
+      </div>
+    {/if}
 
     <SubjectIntro {subject} />
 
@@ -144,5 +173,63 @@
     background: var(--theme-bg-panel, rgba(31, 41, 55, 0.95));
     border: 1px solid var(--theme-border, rgba(59, 130, 246, 0.4));
     border-radius: 4px;
+  }
+
+  .continue-cta,
+  .completed-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--theme-primary-dim, rgba(59, 130, 246, 0.15));
+    border: 1px solid var(--theme-primary, #3b82f6);
+    padding: 1rem 1.5rem;
+    margin-bottom: 2rem;
+    text-decoration: none;
+    color: inherit;
+    border-radius: 4px;
+  }
+
+  .continue-cta:hover {
+    background: var(--theme-primary-dim, rgba(59, 130, 246, 0.25));
+    box-shadow: var(--theme-glow-primary, 0 0 15px rgba(59, 130, 246, 0.4));
+  }
+
+  .completed-banner {
+    background: var(--theme-secondary-dim, rgba(16, 185, 129, 0.15));
+    border-color: var(--theme-secondary, #10b981);
+  }
+
+  .cta-content {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    color: var(--theme-primary, #3b82f6);
+  }
+
+  .completed-banner .cta-content {
+    color: var(--theme-secondary, #10b981);
+  }
+
+  .cta-text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+  }
+
+  .cta-label {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--theme-text-primary, #f3f4f6);
+  }
+
+  .cta-lesson {
+    font-size: 0.85rem;
+    color: var(--theme-text-secondary, rgba(229, 231, 235, 0.7));
+  }
+
+  .cta-progress {
+    font-family: var(--font-mono, 'Share Tech Mono', monospace);
+    font-size: 0.85rem;
+    color: var(--theme-secondary, #10b981);
   }
 </style>

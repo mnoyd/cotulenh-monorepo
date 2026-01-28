@@ -1,5 +1,11 @@
 import type { Subject, Section, Lesson } from '../types';
 import type { LearnEngine } from '../learn-engine';
+import {
+  subject1Introduction,
+  section1BasicUnitsIntro,
+  section2MediumRangeIntro,
+  section3AdvancedUnitsIntro
+} from '../content';
 
 /**
  * Subject 1: Basic Movement
@@ -132,17 +138,7 @@ const section1: Section = {
   title: 'Basic Unit Movement',
   description:
     'Master the fundamental movement of 1-square units: Infantry, Engineer, Militia, Commander, and Headquarters.',
-  introduction: `
-# Basic Unit Movement
-
-In Cotulenh, the simplest units move just 1 square at a time:
-- **Infantry** and **Engineer**: Move orthogonally (straight lines)
-- **Militia**: Moves in all 8 directions
-- **Commander**: Has unlimited orthogonal range
-- **Headquarters**: Cannot move (immobile)
-
-These units form the foundation of your army. Learn their movement patterns first!
-  `,
+  introduction: section1BasicUnitsIntro,
   lessons: section1Lessons
 };
 
@@ -211,16 +207,7 @@ const section2: Section = {
   id: 'section-2-medium-range',
   title: 'Medium Range Units',
   description: 'Learn the movement of units with 2-3 square range: Tanks, Anti-Air, and Missiles.',
-  introduction: `
-# Medium Range Units
-
-These units have more reach than basic units:
-- **Tank**: Moves up to 2 squares orthogonally (straight lines)
-- **Anti-Air**: Moves 1 square orthogonally (provides air defense)
-- **Missile**: Moves in a circular pattern - 2 squares straight or 1 diagonal
-
-They provide tactical flexibility between basic 1-square units and powerful long-range pieces.
-  `,
+  introduction: section2MediumRangeIntro,
   lessons: section2Lessons
 };
 
@@ -329,16 +316,7 @@ const section3: Section = {
   title: 'Advanced & Special Units',
   description:
     'Master the powerful units: Artillery (unlimited orthogonal), Air Force (long range), and Navy (water-based).',
-  introduction: `
-# Advanced & Special Units
-
-These units have powerful movement characteristics:
-- **Artillery**: Unlimited orthogonal range, can shoot over blocking pieces
-- **Air Force**: Fly over any obstacle with range 4
-- **Navy**: Restricted to water zones, 4-square range in all directions
-
-These are your most powerful pieces for controlling the board strategically.
-  `,
+  introduction: section3AdvancedUnitsIntro,
   lessons: section3Lessons
 };
 
@@ -352,41 +330,7 @@ export const subject1BasicMovement: Subject = {
   description:
     'Master the movement patterns of all 11 unit types in Cotulenh. From basic 1-square units to unlimited-range pieces.',
   icon: '🎯',
-  introduction: `
-# Welcome to Cotulenh: Basic Movement
-
-In Cotulenh, each unit type has unique movement characteristics. Understanding these patterns is fundamental to mastering the game.
-
-## What You\'ll Learn
-
-This subject covers all 11 piece types across three progressive sections:
-
-1. **Basic Units** - Infantry, Engineer, Militia, Commander, and Headquarters
-   - Master the foundation of unit movement
-   - Learn the differences between orthogonal and all-direction movement
-
-2. **Medium Range Units** - Tanks, Anti-Air, and Missiles
-   - Expand your tactical options with 2-3 square ranges
-   - Discover the unique circular pattern of Missiles
-
-3. **Advanced Units** - Artillery, Air Force, and Navy
-   - Harness unlimited range with Artillery
-   - Master the agile mobility of Air Force
-   - Control the seas with Navy
-
-## Game Board
-
-The board is **11 files × 12 ranks**:
-- Files: a through k (left to right)
-- Ranks: 1 through 12 (bottom to top)
-- River divides the board between ranks 6 and 7
-
-## Learning Path
-
-Complete each lesson in order. Each lesson teaches you a unit's movement through guided practice.
-
-**Ready to begin? Let's start with the basics!**
-  `,
+  introduction: subject1Introduction,
   prerequisites: [],
   sections: [section1, section2, section3]
 };
