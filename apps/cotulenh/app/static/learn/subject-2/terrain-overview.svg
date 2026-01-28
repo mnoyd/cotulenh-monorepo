@@ -2,6 +2,21 @@
 <svg width="720" height="780" viewBox="0 0 720 780" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
   <!-- Reuse existing board grid -->
   <image href="/assets/board-grid.svg" width="720" height="780" />
+
+  <!-- Terrain Highlights (Layered OVER the grid) -->
+  <g style="opacity: 0.4;">
+     <!-- Water Zone (Files a-b) -->
+     <rect x="0" y="0" width="120" height="780" fill="#bfdbfe" />
+     
+     <!-- Coastal/Mixed Zone (File c) -->
+     <rect x="120" y="0" width="60" height="780" fill="#a7f3d0" />
+     
+     <!-- Land Zone (Files d-k) -->
+     <rect x="180" y="0" width="540" height="780" fill="#e5e7eb" />
+
+     <!-- River (Rank 6/7 boundary area) -->
+     <rect x="180" y="360" width="540" height="60" fill="#93c5fd" />
+  </g>
   
   <!-- Labels -->
   <style>
