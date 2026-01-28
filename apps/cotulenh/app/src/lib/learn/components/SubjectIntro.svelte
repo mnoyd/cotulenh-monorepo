@@ -3,6 +3,8 @@
   import { BookOpen, ChevronDown, ChevronUp } from 'lucide-svelte';
   import TerrainGuide from './visualizations/TerrainGuide.svelte';
   import BridgeDetail from './visualizations/BridgeDetail.svelte';
+  import { marked } from 'marked';
+  import DOMPurify from 'dompurify';
 
   interface Props {
     subject: Subject;
@@ -12,28 +14,36 @@
   let expanded = $state(false);
 
   const excerpt = $derived(
-    subject.description || subject.introduction.slice(0, 200).replace(/[#*_]/g, '').trim() + '...'
+    subject.description || stripMarkdown(subject.introduction).slice(0, 200).trim() + '...'
   );
 
-  function formatMarkdown(text: string): string {
+  // Configure marked options for safety
+  marked.use({
+    gfm: true,
+    breaks: false,
+    headerIds: false,
+    mangle: false
+  });
+
+  function stripMarkdown(text: string): string {
     return text
-      .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (match, alt, src) => {
-        if (src.startsWith('custom:')) return match; // Leave custom markers for the splitter
-        return `<img src="${src}" alt="${alt}" class="content-image" />`;
-      })
-      .replace(/^### (.+)$/gm, '<h4>$1</h4>')
-      .replace(/^## (.+)$/gm, '<h3>$1</h3>')
-      .replace(/^# (.+)$/gm, '<h2>$1</h2>')
-      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-      .replace(/\*(.+?)\*/g, '<em>$1</em>')
-      .replace(/^- (.+)$/gm, '<li>$1</li>')
-      .replace(/(<li>.*<\/li>\n?)+/gs, '<ul>$&</ul>')
-      .replace(/\n\n/g, '</p><p>')
-      .replace(/^(?!<[hulo]|^<img)/gm, '<p>')
-      .replace(/(?<![>])$/gm, '</p>')
-      .replace(/<p><\/p>/g, '')
-      .replace(/<p>(<[hulo])/g, '$1')
-      .replace(/(<\/[hulo][^>]*>)<\/p>/g, '$1');
+      .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '') // Remove images
+      .replace(/[#*_`~\[\]()]/g, '') // Remove markdown syntax chars
+      .replace(/\n{2,}/g, ' ') // Normalize whitespace
+      .trim();
+  }
+
+  function formatMarkdown(text: string): string {
+    // Parse markdown to HTML using marked (safe parser)
+    const html = marked.parse(text) as string;
+
+    // Sanitize HTML to prevent XSS attacks
+    // Only allows safe tags and attributes
+    return DOMPurify.sanitize(html, {
+      ALLOWED_TAGS: ['p', 'br', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'strong', 'em', 'u', 's', 'code', 'pre', 'blockquote', 'ul', 'ol', 'li', 'a', 'img', 'hr'],
+      ALLOWED_ATTR: ['href', 'src', 'alt', 'class', 'id', 'title'],
+      ALLOW_DATA_ATTR: false
+    });
   }
 
   type ContentPart = { type: 'html'; content: string } | { type: 'component'; name: string };
