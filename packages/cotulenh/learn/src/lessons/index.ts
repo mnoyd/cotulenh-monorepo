@@ -1,13 +1,13 @@
 import type { Lesson, Subject } from '../types';
-import { subject1BasicMovement } from './subjects/basic-movement';
-import { subject2Terrain } from './subjects/terrain';
-import { subject3Capture } from './subjects/capture';
-import { subject4Blocking } from './subjects/blocking';
-import { subject5AirDefense } from './subjects/air-defense';
-import { subject6CombinePiece } from './subjects/combine-piece';
-import { subject7DeployMove } from './subjects/deploy-move';
-import { subject8HeroicRule } from './subjects/heroic-rule';
-import { subject9FlyingGeneral } from './subjects/flying-general';
+import { subject1BasicMovement } from './subjects/basic-movement/index';
+import { subject2Terrain } from './subjects/terrain/index';
+import { subject3Capture } from './subjects/capture/index';
+import { subject4Blocking } from './subjects/blocking/index';
+import { subject5AirDefense } from './subjects/air-defense/index';
+import { subject6CombinePiece } from './subjects/combine-piece/index';
+import { subject7DeployMove } from './subjects/deploy-move/index';
+import { subject8HeroicRule } from './subjects/heroic-rule/index';
+import { subject9FlyingGeneral } from './subjects/flying-general/index';
 
 // ============================================================
 // SUBJECTS (New curriculum structure)

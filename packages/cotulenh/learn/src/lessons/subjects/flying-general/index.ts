@@ -1,6 +1,7 @@
-import type { Lesson } from '../../types';
+import type { Subject, Section, Lesson } from '../../../types';
+import { subject9Introduction, section1FlyingGeneralIntro } from '../../../content';
 
-export const flyingGeneralLessons: Lesson[] = [
+const flyingGeneralLessons: Lesson[] = [
   {
     id: 'flying-general-1',
     category: 'tactics',
@@ -21,3 +22,21 @@ export const flyingGeneralLessons: Lesson[] = [
     grading: 'none'
   }
 ];
+
+const section1: Section = {
+  id: 'section-1-flying-general',
+  title: 'Commander Exposure',
+  description: 'Learn how the flying general rule restricts commander captures.',
+  introduction: section1FlyingGeneralIntro,
+  lessons: flyingGeneralLessons
+};
+
+export const subject9FlyingGeneral: Subject = {
+  id: 'subject-9-flying-general',
+  title: 'Flying General',
+  description: 'Prevent commander exposure and recognize illegal captures.',
+  icon: '⚔️',
+  introduction: subject9Introduction,
+  prerequisites: ['subject-3-capture'],
+  sections: [section1]
+};

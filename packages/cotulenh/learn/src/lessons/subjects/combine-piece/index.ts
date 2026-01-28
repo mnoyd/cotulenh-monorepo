@@ -1,6 +1,11 @@
-import type { Lesson } from '../../types';
+import type { Subject, Section, Lesson } from '../../../types';
+import {
+  subject6Introduction,
+  section1CombineBasicsIntro,
+  section2CarrierRulesIntro
+} from '../../../content';
 
-export const combineBasicsLessons: Lesson[] = [
+const combineBasicsLessons: Lesson[] = [
   {
     id: 'combine-1',
     category: 'combining',
@@ -57,7 +62,7 @@ export const combineBasicsLessons: Lesson[] = [
   }
 ];
 
-export const combineCarrierLessons: Lesson[] = [
+const combineCarrierLessons: Lesson[] = [
   {
     id: 'combine-4',
     category: 'combining',
@@ -95,3 +100,29 @@ export const combineCarrierLessons: Lesson[] = [
     grading: 'none'
   }
 ];
+
+const section1: Section = {
+  id: 'section-1-combine-basics',
+  title: 'Combination Basics',
+  description: 'Learn how to form stacks with standard carriers.',
+  introduction: section1CombineBasicsIntro,
+  lessons: combineBasicsLessons
+};
+
+const section2: Section = {
+  id: 'section-2-carrier-rules',
+  title: 'Carrier Rules',
+  description: 'Practice combinations that depend on special carrier rules.',
+  introduction: section2CarrierRulesIntro,
+  lessons: combineCarrierLessons
+};
+
+export const subject6CombinePiece: Subject = {
+  id: 'subject-6-combine-piece',
+  title: 'Combine Pieces',
+  description: 'Form stacks using the official combination blueprints.',
+  icon: '🧩',
+  introduction: subject6Introduction,
+  prerequisites: ['subject-2-terrain', 'subject-4-blocking'],
+  sections: [section1, section2]
+};

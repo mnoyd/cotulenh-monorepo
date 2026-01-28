@@ -1,6 +1,11 @@
-import type { Lesson } from '../../types';
+import type { Subject, Section, Lesson } from '../../../types';
+import {
+  subject4Introduction,
+  section1BlockedPiecesIntro,
+  section2UnblockedPiecesIntro
+} from '../../../content';
 
-export const blockingLessons: Lesson[] = [
+const blockingLessons: Lesson[] = [
   {
     id: 'blocking-1',
     category: 'basics',
@@ -51,7 +56,7 @@ export const blockingLessons: Lesson[] = [
   }
 ];
 
-export const unblockedLessons: Lesson[] = [
+const unblockedLessons: Lesson[] = [
   {
     id: 'blocking-4',
     category: 'basics',
@@ -133,3 +138,29 @@ export const unblockedLessons: Lesson[] = [
     showValidMoves: true
   }
 ];
+
+const blockMovementSection: Section = {
+  id: 'section-1-block-movement',
+  title: 'Block Movement',
+  description: 'Learn how pieces are blocked from moving by obstacles.',
+  introduction: section1BlockedPiecesIntro,
+  lessons: blockingLessons
+};
+
+const blockingCaptureSection: Section = {
+  id: 'section-2-blocking-capture',
+  title: 'Blocking Capture',
+  description: 'Learn how pieces interact with blocking when capturing.',
+  introduction: section2UnblockedPiecesIntro,
+  lessons: unblockedLessons
+};
+
+export const subject4Blocking: Subject = {
+  id: 'subject-4-blocking',
+  title: 'Blocking Mechanism',
+  description: 'Learn which pieces can move or capture through other pieces.',
+  icon: '🚧',
+  introduction: subject4Introduction,
+  prerequisites: ['subject-1-basic-movement', 'subject-3-capture'],
+  sections: [blockMovementSection, blockingCaptureSection]
+};

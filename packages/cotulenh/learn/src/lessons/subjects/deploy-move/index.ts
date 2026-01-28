@@ -1,8 +1,13 @@
-import type { Lesson } from '../../types';
+import type { Subject, Section, Lesson } from '../../../types';
+import {
+  subject7Introduction,
+  section1DeployBasicsIntro,
+  section2DeployCarrierIntro
+} from '../../../content';
 
 const deployStartFen = '11/11/11/11/11/11/11/11/4(FTI)6/11/11/11 r - - 0 1';
 
-export const deployBasicsLessons: Lesson[] = [
+const deployBasicsLessons: Lesson[] = [
   {
     id: 'deploy-1',
     category: 'deployment',
@@ -43,7 +48,7 @@ export const deployBasicsLessons: Lesson[] = [
   }
 ];
 
-export const deployCarrierLessons: Lesson[] = [
+const deployCarrierLessons: Lesson[] = [
   {
     id: 'deploy-3',
     category: 'deployment',
@@ -63,3 +68,29 @@ export const deployCarrierLessons: Lesson[] = [
     grading: 'none'
   }
 ];
+
+const section1: Section = {
+  id: 'section-1-deploy-basics',
+  title: 'Deployment Basics',
+  description: 'Deploy passengers from a combined piece in sequence.',
+  introduction: section1DeployBasicsIntro,
+  lessons: deployBasicsLessons
+};
+
+const section2: Section = {
+  id: 'section-2-deploy-carrier',
+  title: 'Deploying the Carrier',
+  description: 'Finish a deployment by moving the carrier.',
+  introduction: section2DeployCarrierIntro,
+  lessons: deployCarrierLessons
+};
+
+export const subject7DeployMove: Subject = {
+  id: 'subject-7-deploy-move',
+  title: 'Deploy Move',
+  description: 'Split a stack into multiple moves using the deployment system.',
+  icon: '🧭',
+  introduction: subject7Introduction,
+  prerequisites: ['subject-6-combine-piece'],
+  sections: [section1, section2]
+};

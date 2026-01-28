@@ -1,6 +1,11 @@
-import type { Lesson } from '../../types';
+import type { Subject, Section, Lesson } from '../../../types';
+import {
+  subject8Introduction,
+  section1HeroicPromotionIntro,
+  section2HeroicMovementIntro
+} from '../../../content';
 
-export const heroicPromotionLessons: Lesson[] = [
+const heroicPromotionLessons: Lesson[] = [
   {
     id: 'heroic-rule-1',
     category: 'heroic',
@@ -22,7 +27,7 @@ export const heroicPromotionLessons: Lesson[] = [
   }
 ];
 
-export const heroicMovementLessons: Lesson[] = [
+const heroicMovementLessons: Lesson[] = [
   {
     id: 'heroic-rule-2',
     category: 'heroic',
@@ -43,3 +48,29 @@ export const heroicMovementLessons: Lesson[] = [
     grading: 'none'
   }
 ];
+
+const section1: Section = {
+  id: 'section-1-heroic-promotion',
+  title: 'Heroic Promotion',
+  description: 'Give check to promote a piece to heroic status.',
+  introduction: section1HeroicPromotionIntro,
+  lessons: heroicPromotionLessons
+};
+
+const section2: Section = {
+  id: 'section-2-heroic-movement',
+  title: 'Heroic Movement',
+  description: 'Use upgraded movement after promotion.',
+  introduction: section2HeroicMovementIntro,
+  lessons: heroicMovementLessons
+};
+
+export const subject8HeroicRule: Subject = {
+  id: 'subject-8-heroic-rule',
+  title: 'Heroic Rule',
+  description: 'Promote pieces by giving check and use heroic movement.',
+  icon: '⭐',
+  introduction: subject8Introduction,
+  prerequisites: ['subject-3-capture'],
+  sections: [section1, section2]
+};
