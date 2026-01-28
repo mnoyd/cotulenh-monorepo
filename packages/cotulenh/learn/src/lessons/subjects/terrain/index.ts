@@ -9,6 +9,11 @@ const terrainLessons: Lesson[] = [
     sectionId: 'section-1-terrain-basics',
     title: 'Water vs Land',
     description: 'Learn which squares belong to water and land zones.',
+    content: `## Water vs Land
+
+- **Navy zones**: files **a-b** plus coastal **c-file** access.
+- **Land zones**: files **d-k**.
+- **Mixed zones** (c-file and river squares) allow both Navy and Land units.`,
     difficulty: 1,
     startFen: '11/11/11/11/11/11/11/11/1N4T4/11/11/11 r - - 0 1',
     instruction:
@@ -24,6 +29,11 @@ const terrainLessons: Lesson[] = [
     sectionId: 'section-1-terrain-basics',
     title: 'The River and Bridges',
     description: 'Cross the river with a Tank and use bridges for Artillery.',
+    content: `## River and Bridges
+
+- The river sits **between ranks 6 and 7**.
+- **Tanks** can cross normally.
+- **Heavy units** (Artillery/Anti-Air/Missile) must use **bridge squares**: f6/f7 or h6/h7.`,
     difficulty: 2,
     startFen: '11/11/11/11/11/11/11/4TA5/11/11/11/11 r - - 0 1',
     instruction:
@@ -39,6 +49,11 @@ const terrainLessons: Lesson[] = [
     sectionId: 'section-1-terrain-basics',
     title: 'Mixed Zones',
     description: 'Practice squares that both Navy and Land units can use.',
+    content: `## Mixed Zones
+
+- The **c-file** and **river squares** are shared terrain.
+- Both **Navy** and **Land** units can move through these squares.
+- Use mixed zones to transition between water and land operations.`,
     difficulty: 2,
     startFen: '11/11/11/11/11/11/1N9/3I7/11/11/11/11 r - - 0 1',
     instruction:

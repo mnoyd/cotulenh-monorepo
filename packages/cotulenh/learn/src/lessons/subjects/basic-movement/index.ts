@@ -29,6 +29,11 @@ const section1Lessons: Lesson[] = [
     sectionId: 'section-1-basic-units',
     title: 'Infantry Movement',
     description: 'The Infantry is a basic ground unit that moves 1 square orthogonally.',
+    content: `## Infantry
+
+- Moves **1 square orthogonally** (up, down, left, right).
+- Operates on **land zones** (files d-k), with access to mixed zones on the c-file and river banks.
+- Reliable, simple movement makes Infantry ideal for learning fundamentals.`,
     difficulty: 1,
     startFen: '11/11/11/11/11/11/11/2I8/11/11/11/11 r - - 0 1',
     instruction:
@@ -49,6 +54,11 @@ const section1Lessons: Lesson[] = [
     title: 'Engineer Movement',
     description:
       'Engineers are support units with the same movement as Infantry - 1 square orthogonally.',
+    content: `## Engineer
+
+- Moves **1 square orthogonally**, just like Infantry.
+- Stays on **land zones**, using mixed zones as shared terrain.
+- Often supports other units in combined operations.`,
     difficulty: 1,
     startFen: '11/11/11/11/11/11/11/3E7/11/11/11/11 r - - 0 1',
     instruction: 'Move the Engineer to any valid square. Engineers move 1 square orthogonally.',
@@ -66,6 +76,11 @@ const section1Lessons: Lesson[] = [
     title: 'Militia Movement',
     description:
       'Militia units are versatile and can move in all 8 directions, 1 square at a time.',
+    content: `## Militia
+
+- Moves **1 square in any direction** (orthogonal + diagonal).
+- Remains a **land unit**, limited to land and mixed zones.
+- Flexible angles make it great for quick tactical adjustments.`,
     difficulty: 1,
     startFen: '11/11/11/11/11/11/11/6M4/11/11/11/11 r - - 0 1',
     instruction:
@@ -84,6 +99,11 @@ const section1Lessons: Lesson[] = [
     title: 'Commander Movement',
     description:
       'The Commander is a special piece that moves unlimited squares orthogonally but only 1 square to capture.',
+    content: `## Commander
+
+- Moves **any distance orthogonally** (rook-like movement).
+- Captures **only adjacent squares** in base form.
+- Keep it safe — losing the Commander ends the game.`,
     difficulty: 2,
     startFen: '11/11/11/11/11/11/11/11/11/11/11/6C4 r - - 0 1',
     instruction:
@@ -122,6 +142,11 @@ const section1Lessons: Lesson[] = [
     sectionId: 'section-1-basic-units',
     title: 'Headquarters',
     description: 'Headquarters is an immobile piece - it cannot move on the board.',
+    content: `## Headquarters
+
+- **Immobile** in its base form (cannot move or capture).
+- Must be **carried in a stack** or become heroic to move.
+- Protect it as a key strategic asset.`,
     difficulty: 1,
     startFen: '11/11/11/11/11/11/11/11/11/11/5H5/11 r - - 0 1',
     instruction: 'The Headquarters cannot move. Click on it or any square to complete the lesson.',
@@ -154,6 +179,11 @@ const section2Lessons: Lesson[] = [
     sectionId: 'section-2-medium-range',
     title: 'Tank Movement',
     description: 'Tanks are armored units that move up to 2 squares orthogonally.',
+    content: `## Tank
+
+- Moves **1–2 squares orthogonally**.
+- Strong mid-range mobility for ground control.
+- Later lessons cover its ability to **shoot over blockers**.`,
     difficulty: 1,
     startFen: '11/11/11/11/11/11/11/11/5T5/11/11/11 r - - 0 1',
     instruction:
@@ -172,6 +202,11 @@ const section2Lessons: Lesson[] = [
     sectionId: 'section-2-medium-range',
     title: 'Anti-Air Movement',
     description: 'Anti-Air units move 1 square orthogonally and provide air defense.',
+    content: `## Anti-Air
+
+- Moves **1 square orthogonally**.
+- Creates a **1-square air defense zone** around it.
+- A key defender against Air Force threats.`,
     difficulty: 1,
     startFen: '11/11/11/11/11/11/11/11/4G6/11/11/11 r - - 0 1',
     instruction:
@@ -190,6 +225,11 @@ const section2Lessons: Lesson[] = [
     title: 'Missile Movement',
     description:
       'Missiles have a unique circular movement pattern: 2 squares orthogonally or 1 square diagonally.',
+    content: `## Missile
+
+- Moves **up to 2 squares orthogonally**.
+- Moves **1 square diagonally** (a compact circular reach).
+- Projects a **2-square air defense zone**.`,
     difficulty: 2,
     startFen: '11/11/11/11/11/11/11/11/11/6S4/11/11 r - - 0 1',
     instruction:
@@ -223,6 +263,11 @@ const section3Lessons: Lesson[] = [
     sectionId: 'section-3-advanced-units',
     title: 'Artillery Movement',
     description: 'Artillery can move unlimited squares orthogonally, ignoring blocking pieces.',
+    content: `## Artillery
+
+- Moves **any distance orthogonally**.
+- **Heavy unit**: must use **bridge squares** to cross the river.
+- Later lessons cover long-range capture rules.`,
     difficulty: 2,
     startFen: '11/11/11/11/11/11/11/11/11/3A7/11/11 r - - 0 1',
     instruction:
@@ -259,6 +304,11 @@ const section3Lessons: Lesson[] = [
     title: 'Air Force Movement',
     description:
       'Air Force units can fly to any LAND square within range 4, ignoring terrain and other pieces.',
+    content: `## Air Force
+
+- Flies **up to 4 squares** in any direction.
+- **Ignores terrain and blocking**, but can only **land on land zones**.
+- Subject to enemy **air defense zones**.`,
     difficulty: 2,
     startFen: '11/11/11/11/11/11/11/11/11/11/4F6/11 r - - 0 1',
     instruction:
@@ -298,6 +348,11 @@ const section3Lessons: Lesson[] = [
     title: 'Navy Movement',
     description:
       'Navy units move in water zones (files a-b and coastal areas). They have 4-square range in all directions.',
+    content: `## Navy
+
+- Moves **up to 4 squares** in any direction.
+- Restricted to **navy zones** (files a-c and river squares).
+- Can navigate congested waters by **ignoring blocking**.`,
     difficulty: 2,
     startFen: '11/11/11/11/11/11/11/11/2N8/11/11/11 r - - 0 1',
     instruction:

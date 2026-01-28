@@ -13,6 +13,11 @@ const blockingLessons: Lesson[] = [
     sectionId: 'section-1-block-movement',
     title: 'Tank Is Blocked',
     description: 'Tank cannot move through other pieces.',
+    content: `## Movement Blocking
+
+- Most ground units **cannot move through pieces**.
+- The Tank must stop before a blocking piece.
+- Plan around blockers to keep lanes open.`,
     difficulty: 1,
     startFen: '11/11/11/11/11/11/11/11/4G6/4T6/11/11 r - - 0 1',
     instruction:
@@ -29,6 +34,11 @@ const blockingLessons: Lesson[] = [
     sectionId: 'section-1-block-movement',
     title: 'Artillery Is Blocked',
     description: 'Artillery cannot move through other pieces.',
+    content: `## Artillery Movement
+
+- Artillery moves far, but **cannot pass through blockers**.
+- It needs a clear line for movement.
+- Later lessons show how it can **capture through blockers**.`,
     difficulty: 1,
     startFen: '11/11/11/11/11/11/11/11/6I4/5A5/11/11 r - - 0 1',
     instruction:
@@ -45,6 +55,11 @@ const blockingLessons: Lesson[] = [
     sectionId: 'section-1-block-movement',
     title: 'Commander Blocked Despite Range',
     description: 'Even the Commander with infinite range cannot pass through pieces.',
+    content: `## Commander Blocking
+
+- The Commander has **infinite range**.
+- It still **cannot move through pieces**.
+- Keep lanes clear if you need long-range movement.`,
     difficulty: 1,
     startFen: '11/11/3ig6/11/11/11/4I6/11/4C6/11/11/11 r - - 0 1',
     instruction:
@@ -61,6 +76,11 @@ const blockingLessons: Lesson[] = [
     sectionId: 'section-1-block-movement',
     title: 'Navy Coast Movement',
     description: 'Navy can pass land on coast but is blocked by other navy.',
+    content: `## Navy on the Coast
+
+- Navy ignores **land pieces** along the coast.
+- It **is blocked by other Navy** in water.
+- Use coastal lanes to slip past land congestion.`,
     difficulty: 2,
     startFen: '11/11/11/11/2N8/11/11/2I8/11/2N8/11/11 r - - 0 1',
     instruction:
@@ -79,6 +99,11 @@ const unblockedLessons: Lesson[] = [
     sectionId: 'section-2-blocking-capture',
     title: 'Tank Shoots Over Blockers',
     description: 'Tank cannot move through pieces but CAN shoot over them.',
+    content: `## Shooting Over Blockers
+
+- Tanks **cannot move through** pieces.
+- Tanks **can capture through** a single blocking piece.
+- This lets Tanks punish stacked defenses.`,
     difficulty: 2,
     startFen: '11/11/11/11/11/11/4i6/4I6/4T6/11/11/11 r - - 0 1',
     goalFen: '11/11/11/11/11/11/4T6/4I6/11/11/11/11 r - - 0 1',
@@ -95,6 +120,11 @@ const unblockedLessons: Lesson[] = [
     sectionId: 'section-2-blocking-capture',
     title: 'Artillery Long-Range Strike',
     description: 'Artillery ignores blocking for captures.',
+    content: `## Artillery Strike
+
+- Artillery **ignores blocking** when capturing.
+- Long-range shots can pass over friendly pieces.
+- Great for breaking defensive lines.`,
     difficulty: 2,
     startFen: '11/11/11/11/11/11/11/11/4AI1t3/11/11/11 r - - 0 1',
     goalFen: '11/11/11/11/11/11/11/11/5I1A3/11/11/11 r - - 0 1',
@@ -111,6 +141,11 @@ const unblockedLessons: Lesson[] = [
     sectionId: 'section-2-blocking-capture',
     title: 'Air Force Flies Over All',
     description: 'Air Force ignores all blocking for both movement AND capture.',
+    content: `## Air Force Overflight
+
+- Air Force **ignores all blocking** for movement and capture.
+- It can fly over friendly and enemy pieces alike.
+- Only air defense zones can stop it.`,
     difficulty: 2,
     startFen: '11/11/11/5i5/5I5/5I5/5F5/11/11/11/11/11 r - - 0 1',
     goalFen: '11/11/11/5F5/5I5/5I5/11/11/11/11/11/11 r - - 0 1',
@@ -127,6 +162,11 @@ const unblockedLessons: Lesson[] = [
     sectionId: 'section-2-blocking-capture',
     title: 'Navy Moves Through Pieces',
     description: 'Navy can move and capture through other pieces in water.',
+    content: `## Navy Navigation
+
+- Navy **ignores blocking** in water.
+- It can move and capture through other ships.
+- Powerful for lane control on files a-c.`,
     difficulty: 2,
     startFen: '11/11/11/11/N10/11/N10/11/n10/11/11/11 r - - 0 1',
     goalFen: '11/11/11/11/11/11/N10/11/N10/11/11/11 r - - 0 1',
@@ -143,6 +183,11 @@ const unblockedLessons: Lesson[] = [
     sectionId: 'section-2-blocking-capture',
     title: 'Missile Shoots Over',
     description: 'Missile can capture through blocking pieces.',
+    content: `## Missile Capture
+
+- Missiles **capture through blockers**.
+- Movement is still blocked by pieces.
+- Use missiles to pick off protected targets.`,
     difficulty: 2,
     startFen: '11/11/11/11/11/11/4i6/4I6/4S6/11/11/11 r - - 0 1',
     goalFen: '11/11/11/11/11/11/4S6/4I6/11/11/11/11 r - - 0 1',
