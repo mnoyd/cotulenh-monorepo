@@ -4,6 +4,7 @@ import type { MoveValidator } from './move-validator';
 import { CompositeValidator } from './composite-validator';
 import { TargetValidator } from './target-validator';
 import { CustomValidator } from './custom-validator';
+import { TerrainValidator } from './terrain-validator';
 
 /**
  * Factory for creating validators based on lesson configuration
@@ -20,6 +21,11 @@ export class ValidatorFactory {
     // Add custom validator if provided
     if (lesson.customMoveValidator) {
       validators.push(new CustomValidator(lesson.customMoveValidator, engine));
+    }
+
+    // Add terrain validator if requested
+    if (lesson.validateTerrain) {
+      validators.push(new TerrainValidator());
     }
 
     // Return composite validator

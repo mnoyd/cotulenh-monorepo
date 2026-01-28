@@ -6,7 +6,11 @@ import type { CompletionChecker } from './completion-checker';
  * Checks completion based on visiting all target squares
  */
 export class TargetCompletionChecker implements CompletionChecker {
-  constructor(private targetValidator: TargetValidator) {}
+  readonly #totalTargets: number;
+
+  constructor(private targetValidator: TargetValidator) {
+    this.#totalTargets = targetValidator.remainingTargets.length;
+  }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   check(_engine: LearnEngine): boolean {
@@ -15,10 +19,10 @@ export class TargetCompletionChecker implements CompletionChecker {
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   getProgress(_engine: LearnEngine): number {
-    const total = this.targetValidator.remainingTargets.length;
-    if (total === 0) return 100;
+    if (this.#totalTargets === 0) return 100;
 
-    const visited = total - this.targetValidator.remainingTargets.length;
-    return Math.floor((visited / total) * 100);
+    const remaining = this.targetValidator.remainingTargets.length;
+    const visited = this.#totalTargets - remaining;
+    return Math.floor((visited / this.#totalTargets) * 100);
   }
 }

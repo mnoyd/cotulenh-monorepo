@@ -27,6 +27,7 @@ export type {
 // Validators
 export { CompositeValidator } from './validators/composite-validator';
 export { TargetValidator } from './validators/target-validator';
+export { TerrainValidator } from './validators/terrain-validator';
 export { CustomValidator } from './validators/custom-validator';
 export { ValidatorFactory } from './validators/validator-factory';
 export type { MoveValidator } from './validators/move-validator';

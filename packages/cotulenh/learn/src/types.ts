@@ -151,7 +151,7 @@ export interface Lesson {
   optimalMoves?: number;
 
   // Validation configuration
-  /** Validate basic move legality (default: true) */
+  /** Validate basic move legality (default: false) */
   validateLegality?: boolean;
   /** Validate terrain restrictions (default: false) */
   validateTerrain?: boolean;

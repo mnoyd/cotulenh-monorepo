@@ -295,7 +295,11 @@ export class LearnEngine {
     }
 
     try {
-      this.#game = new AntiRuleCore(lesson.startFen, { skipLastGuard: true });
+      const validateLegality = lesson.validateLegality ?? false;
+      this.#game = new AntiRuleCore(lesson.startFen, {
+        skipLastGuard: true,
+        legalMoves: validateLegality
+      });
 
       // Initialize components using factories
       this.#validator = ValidatorFactory.create(lesson, this);
@@ -340,17 +344,34 @@ export class LearnEngine {
     const expectedMove = this.#scenario.expectedMove;
 
     // Validate move against scenario
-    if (!this.#scenario.player(uci)) {
-      // Wrong move
-      this.#status = 'failed';
-      this.#callbacks.onFail?.(expectedMove ?? '', uci);
-      this.#callbacks.onStateChange?.(this.#status);
-      return false;
+    const strictScenario = this.#lesson?.strictScenario ?? false;
+    let didAdvanceScenario = false;
+    if (strictScenario) {
+      if (!this.#scenario.player(uci)) {
+        // Wrong move
+        this.#status = 'failed';
+        this.#callbacks.onFail?.(expectedMove ?? '', uci);
+        this.#callbacks.onStateChange?.(this.#status);
+        return false;
+      }
+      didAdvanceScenario = true;
+    } else {
+      if (expectedMove && expectedMove !== uci) {
+        this.#callbacks.onFail?.(expectedMove, uci);
+      }
+
+      if (expectedMove === uci) {
+        this.#scenario.player(uci);
+        didAdvanceScenario = true;
+      }
     }
 
     // Correct move - execute it
     try {
-      this.#game.move({ from, to });
+      const result = this.#game.move({ from, to });
+      if (!result) {
+        return false;
+      }
       this.#moveCount++;
     } catch (error) {
       logger.error('Move failed:', { error, from, to });
@@ -360,14 +381,20 @@ export class LearnEngine {
     this.#callbacks.onMove?.(this.#moveCount, this.fen);
 
     // Check if scenario is complete
-    if (this.#scenario.isComplete) {
+    if (didAdvanceScenario && this.#scenario.isComplete) {
       this.#completeLesson();
       return true;
     }
 
     // Schedule opponent move if needed
-    if (this.#scenario.shouldOpponentMove()) {
+    if (didAdvanceScenario && this.#scenario.shouldOpponentMove()) {
       this.#scheduleOpponentMove();
+    }
+
+    // For non-strict scenarios, allow goal-based completion
+    if (!strictScenario && this.#checkGoalReached()) {
+      this.#completeLesson();
+      return true;
     }
 
     return true;
@@ -385,7 +412,10 @@ export class LearnEngine {
     }
 
     try {
-      this.#game.move({ from, to, ...(stay !== undefined && { stay }) });
+      const result = this.#game.move({ from, to, ...(stay !== undefined && { stay }) });
+      if (!result) {
+        return false;
+      }
       this.#moveCount++;
     } catch (error) {
       logger.error('Move failed:', { error, from, to });
@@ -489,6 +519,11 @@ export class LearnEngine {
       if (this.#scenario.isComplete) {
         this.#completeLesson();
       }
+
+      const strictScenario = this.#lesson?.strictScenario ?? false;
+      if (!strictScenario && this.#checkGoalReached()) {
+        this.#completeLesson();
+      }
     } catch (error) {
       logger.error('Opponent move failed:', { error, move });
     }
@@ -570,7 +605,11 @@ export class LearnEngine {
     }
 
     try {
-      this.#game = new AntiRuleCore(this.#lesson.startFen, { skipLastGuard: true });
+      const validateLegality = this.#lesson.validateLegality ?? false;
+      this.#game = new AntiRuleCore(this.#lesson.startFen, {
+        skipLastGuard: true,
+        legalMoves: validateLegality
+      });
       this.#validator = ValidatorFactory.create(this.#lesson, this);
       this.#completionChecker = CompletionFactory.create(this.#lesson, [this.#validator]);
       this.#grader = GraderFactory.create(this.#lesson);
