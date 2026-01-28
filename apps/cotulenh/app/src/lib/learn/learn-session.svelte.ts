@@ -305,10 +305,6 @@ export class LearnSession {
   // PROGRESS PERSISTENCE
   // ============================================================
 
-  // ============================================================
-  // PROGRESS PERSISTENCE
-  // ============================================================
-
   #saveProgress(result: { lessonId: string; moveCount: number; stars: 0 | 1 | 2 | 3 }): void {
     subjectProgress.saveLessonProgress(result.lessonId, result.stars, result.moveCount);
   }

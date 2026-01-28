@@ -34,6 +34,7 @@ export type { MoveValidator } from './validators/move-validator';
 
 // Completion checkers
 export { GoalCompletionChecker } from './completion/goal-completion';
+export { FirstMoveCompletionChecker } from './completion/first-move-completion';
 export { TargetCompletionChecker } from './completion/target-completion';
 export { CustomCompletionChecker } from './completion/custom-completion';
 export { CompletionFactory } from './completion/completion-factory';
