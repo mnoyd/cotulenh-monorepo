@@ -9,7 +9,7 @@ describe('LearnEngine - Component Architecture', () => {
   describe('Component Initialization', () => {
     it('should initialize components on loadLesson', () => {
       const engine = new LearnEngine();
-      const result = engine.loadLesson('basics-1');
+      const result = engine.loadLesson('terrain-2');
 
       expect(result).toBe(true);
       expect(engine.lesson).not.toBeNull();
@@ -80,7 +80,7 @@ describe('LearnEngine - Component Architecture', () => {
 
       // Lessons without explicit grading config default to pass-fail (1 star)
       // or fall back to star calculation
-      engine.loadLesson('basics-1');
+      engine.loadLesson('terrain-2');
 
       // Should return a valid star rating (0-3)
       expect(engine.stars).toBeGreaterThanOrEqual(0);
@@ -94,7 +94,7 @@ describe('LearnEngine - Component Architecture', () => {
       const engine = new LearnEngine({ onComplete });
 
       // Use an actual lesson that has goalFen
-      engine.loadLesson('basics-6'); // Headquarters (immobile) - has goalFen
+      engine.loadLesson('capture-2');
 
       expect(engine.lesson).not.toBeNull();
       expect(engine.status).toBe('ready');
@@ -131,7 +131,7 @@ describe('LearnEngine - Component Architecture', () => {
       const engine = new LearnEngine();
 
       // Load a lesson with targets
-      engine.loadLesson('basics-1');
+      engine.loadLesson('terrain-2');
 
       // Verify lesson was loaded
       expect(engine.lesson).not.toBeNull();
@@ -141,7 +141,7 @@ describe('LearnEngine - Component Architecture', () => {
 
     it('should track remaining targets', () => {
       const engine = new LearnEngine();
-      engine.loadLesson('basics-1');
+      engine.loadLesson('terrain-2');
 
       const remaining = engine.remainingTargets;
       expect(Array.isArray(remaining)).toBe(true);
@@ -154,7 +154,7 @@ describe('LearnEngine - Component Architecture', () => {
 
     it('should track visited targets', () => {
       const engine = new LearnEngine();
-      engine.loadLesson('basics-1');
+      engine.loadLesson('terrain-2');
 
       const visited = engine.visitedTargets;
       expect(Array.isArray(visited)).toBe(true);
@@ -167,7 +167,7 @@ describe('LearnEngine - Component Architecture', () => {
       const engine = new LearnEngine();
 
       // Load existing lesson
-      const result = engine.loadLesson('basics-1');
+      const result = engine.loadLesson('terrain-2');
 
       expect(result).toBe(true);
       expect(engine.lesson).not.toBeNull();
@@ -176,7 +176,7 @@ describe('LearnEngine - Component Architecture', () => {
 
     it('should provide fallback for lessons without grading config', () => {
       const engine = new LearnEngine();
-      engine.loadLesson('basics-1');
+      engine.loadLesson('terrain-2');
 
       // Should still calculate stars (fallback to old logic)
       expect(typeof engine.stars).toBe('number');
@@ -186,7 +186,7 @@ describe('LearnEngine - Component Architecture', () => {
 
     it('should handle lessons with only goalFen', () => {
       const engine = new LearnEngine();
-      engine.loadLesson('basics-6'); // Has goalFen, no targets
+      engine.loadLesson('capture-2');
 
       expect(engine.lesson?.goalFen).toBeDefined();
       expect(engine.status).toBe('ready');
@@ -194,7 +194,7 @@ describe('LearnEngine - Component Architecture', () => {
 
     it('should handle lessons with only targetSquares', () => {
       const engine = new LearnEngine();
-      engine.loadLesson('basics-1'); // Has targets, no goalFen
+      engine.loadLesson('terrain-2');
 
       expect(engine.lesson?.targetSquares).toBeDefined();
       expect(engine.lesson?.targetSquares?.length).toBeGreaterThan(0);
@@ -230,12 +230,12 @@ describe('LearnEngine - Component Architecture', () => {
       const engine = new LearnEngine();
 
       // Lesson with goalFen should use GoalCompletionChecker
-      engine.loadLesson('basics-6');
+      engine.loadLesson('capture-2');
       expect(engine.lesson?.goalFen).toBeDefined();
 
       // Lesson with targetSquares should use TargetCompletionChecker
       const engine2 = new LearnEngine();
-      engine2.loadLesson('basics-1');
+      engine2.loadLesson('terrain-2');
       expect(engine2.lesson?.targetSquares).toBeDefined();
     });
   });
@@ -248,7 +248,7 @@ describe('LearnEngine - Component Architecture', () => {
 
     it('should transition to ready after successful load', () => {
       const engine = new LearnEngine();
-      engine.loadLesson('basics-1');
+      engine.loadLesson('terrain-2');
       expect(engine.status).toBe('ready');
     });
 
@@ -256,7 +256,7 @@ describe('LearnEngine - Component Architecture', () => {
       const onStateChange = vi.fn();
       const engine = new LearnEngine({ onStateChange });
 
-      engine.loadLesson('basics-1');
+      engine.loadLesson('terrain-2');
       expect(onStateChange).toHaveBeenCalledWith('ready');
     });
   });
@@ -264,7 +264,7 @@ describe('LearnEngine - Component Architecture', () => {
   describe('Restart Functionality', () => {
     it('should reset state on restart', () => {
       const engine = new LearnEngine();
-      engine.loadLesson('basics-1');
+      engine.loadLesson('terrain-2');
 
       // Simulate some moves (move count increment)
       (engine as unknown as { '#moveCount': number })['#moveCount'] = 5;

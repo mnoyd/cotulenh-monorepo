@@ -112,6 +112,16 @@ export const vi: TranslationKeys = {
   'learn.mistakes': 'Số lỗi',
   'learn.loadingLesson': 'Đang tải bài học...',
   'learn.lessonNotFound': 'Không tìm thấy bài học',
+  'learn.hint': 'Gợi ý',
+  'learn.reset': 'Đặt lại',
+  'learn.moves': 'Nước đi',
+  'learn.invalidMove': 'Nước đi không hợp lệ. Thử lại.',
+  'learn.feedback.success.default': 'Tuyệt vời!',
+  'learn.feedback.failure.default': 'Nước đi chưa đúng. Thử lại!',
+  'learn.feedback.hint.moveToTarget': 'Di chuyển đến đây để hoàn thành bài học!',
+  'learn.feedback.hint.pieceSelected': 'Tốt! Hãy tìm nước đi tốt nhất.',
+  'learn.feedback.error.invalidMove': 'Nước đi không hợp lệ. Thử lại.',
+  'learn.feedback.error.wrongScenarioMove': 'Đó không phải là nước đi mong đợi.',
 
   // Board editor
   'editor.title': 'Soạn thảo',

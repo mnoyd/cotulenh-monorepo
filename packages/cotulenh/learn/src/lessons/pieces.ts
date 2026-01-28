@@ -54,8 +54,12 @@ export const piecesLessons: Lesson[] = [
       'Excellent! Missiles have a circular reach: 2 squares in straight lines, 1 square diagonally.',
     targetSquares: ['f9'],
     feedback: {
-      onTarget: 'This is your destination! Move the Missile here.',
-      onPiece: 'Good! The Missile can move 2 squares orthogonally or 1 diagonally.'
+      targets: {
+        reached: 'This is your destination! Move the Missile here.'
+      },
+      generic: {
+        pieceSelected: 'Good! The Missile can move 2 squares orthogonally or 1 diagonally.'
+      }
     }
   },
   {
@@ -73,8 +77,12 @@ export const piecesLessons: Lesson[] = [
       'Well done! Navy is essential for controlling water zones and supporting coastal operations.',
     targetSquares: ['a3'],
     feedback: {
-      onTarget: 'Move to this water square to complete the lesson!',
-      onPiece: 'Navy can only move on water tiles (a-b files).'
+      targets: {
+        reached: 'Move to this water square to complete the lesson!'
+      },
+      generic: {
+        pieceSelected: 'Navy can only move on water tiles (a-b files).'
+      }
     }
   }
 ];

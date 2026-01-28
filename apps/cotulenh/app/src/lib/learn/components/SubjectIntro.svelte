@@ -3,8 +3,9 @@
   import { BookOpen, ChevronDown, ChevronUp } from 'lucide-svelte';
   import TerrainGuide from './visualizations/TerrainGuide.svelte';
   import BridgeDetail from './visualizations/BridgeDetail.svelte';
+  import { browser } from '$app/environment';
   import { marked } from 'marked';
-  import DOMPurify from 'dompurify';
+  import createDOMPurify from 'dompurify';
 
   interface Props {
     subject: Subject;
@@ -20,10 +21,10 @@
   // Configure marked options for safety
   marked.use({
     gfm: true,
-    breaks: false,
-    headerIds: false,
-    mangle: false
+    breaks: false
   });
+
+  const domPurify = browser ? createDOMPurify(window) : null;
 
   function stripMarkdown(text: string): string {
     return text
@@ -39,7 +40,11 @@
 
     // Sanitize HTML to prevent XSS attacks
     // Only allows safe tags and attributes
-    return DOMPurify.sanitize(html, {
+    if (!domPurify) {
+      return html;
+    }
+
+    return domPurify.sanitize(html, {
       ALLOWED_TAGS: ['p', 'br', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'strong', 'em', 'u', 's', 'code', 'pre', 'blockquote', 'ul', 'ol', 'li', 'a', 'img', 'hr'],
       ALLOWED_ATTR: ['href', 'src', 'alt', 'class', 'id', 'title'],
       ALLOW_DATA_ATTR: false

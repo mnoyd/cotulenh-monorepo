@@ -3,7 +3,6 @@ export type {
   Lesson,
   LessonCategory,
   LessonProgress,
-  CategoryInfo,
   LearnStatus,
   LearnEngineCallbacks,
   LessonResult,
@@ -21,7 +20,8 @@ export type {
   MoveValidationResult,
   LessonFeedback,
   FeedbackStyle,
-  GradingSystem
+  GradingSystem,
+  FeedbackCode
 } from './types';
 
 // Validators
@@ -61,17 +61,12 @@ export type { ScenarioOptions } from './scenario';
 // Learn engine (framework-agnostic)
 export { LearnEngine, createLearnEngine } from './learn-engine';
 
-// Lessons and categories
-export {
-  categories,
-  getLessonById,
-  getCategoryById,
-  getNextLesson,
-  basicsLessons,
-  piecesLessons,
-  terrainLessons,
-  tacticsLessons
-} from './lessons';
+// Lessons and curriculum
+export { getLessonById } from './lessons';
 
-// Subjects (new curriculum structure)
+// Subjects (curriculum structure)
 export { subjects, getSubjectById, getLessonInSubject, getNextLessonInSubject } from './lessons';
+
+// Progress management (framework-agnostic)
+export { ProgressManager, createProgressManager } from './progress';
+export { type StorageAdapter, MemoryStorageAdapter, LocalStorageAdapter } from './progress';

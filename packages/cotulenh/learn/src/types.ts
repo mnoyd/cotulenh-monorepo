@@ -1,6 +1,14 @@
 import type { Square, InternalMove } from '@cotulenh/core';
 import type { LearnEngine } from './learn-engine';
 
+export type FeedbackCode =
+  | 'success.default'
+  | 'failure.default'
+  | 'hint.moveToTarget'
+  | 'hint.pieceSelected'
+  | 'error.invalidMove'
+  | 'error.wrongScenarioMove';
+
 export type SubjectId = string;
 export type SectionId = string;
 
@@ -74,16 +82,6 @@ export interface LessonFeedback {
   scenario?: Record<string, string>;
   targets?: Record<string, string>;
   generic?: Record<string, string>;
-
-  // Backward compatibility (deprecated)
-  /** @deprecated Use targets.reached */
-  onTarget?: string;
-  /** @deprecated Use generic.pieceSelected */
-  onPiece?: string;
-  /** @deprecated Use generic object with square keys */
-  onSelect?: Record<string, string>;
-  /** @deprecated Use generic.invalid */
-  onWrongMove?: string;
 }
 
 /**
@@ -193,14 +191,6 @@ export interface LessonProgress {
   stars: 0 | 1 | 2 | 3;
 }
 
-export interface CategoryInfo {
-  id: LessonCategory;
-  title: string;
-  description: string;
-  icon: string;
-  lessons: Lesson[];
-}
-
 export type LearnStatus = 'loading' | 'ready' | 'completed' | 'failed';
 
 /**
@@ -217,8 +207,10 @@ export interface SquareInfo {
   isTarget: boolean;
   /** Whether this square is a valid destination for the selected piece */
   isValidDest: boolean;
-  /** Feedback message to display, if any */
-  message: string | null;
+  /** Feedback code for i18n lookup */
+  feedbackCode: FeedbackCode | null;
+  /** Additional context for feedback message interpolation */
+  feedbackContext?: Record<string, unknown>;
 }
 
 export interface LearnEngineCallbacks {
