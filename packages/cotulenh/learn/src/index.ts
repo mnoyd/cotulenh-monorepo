@@ -76,3 +76,7 @@ export {
 
 // Subjects (new curriculum structure)
 export { subjects, getSubjectById, getLessonInSubject, getNextLessonInSubject } from './lessons';
+
+// Progress management (framework-agnostic)
+export { ProgressManager, createProgressManager } from './progress';
+export { type StorageAdapter, MemoryStorageAdapter, LocalStorageAdapter } from './progress';
