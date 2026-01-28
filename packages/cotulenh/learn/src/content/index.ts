@@ -15,3 +15,9 @@ export {
 export { subject2Introduction, section1TerrainBasicsIntro } from './subject-2-content';
 
 export { subject3Introduction, section1CaptureBasicsIntro } from './subject-3-content';
+
+export {
+  subject4Introduction,
+  section1BlockedPiecesIntro,
+  section2UnblockedPiecesIntro
+} from './subject-4-content';
