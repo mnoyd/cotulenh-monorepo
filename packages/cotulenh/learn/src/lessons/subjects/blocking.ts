@@ -6,19 +6,18 @@ import {
   section2UnblockedPiecesIntro
 } from '../../content';
 
-const section1: Section = {
-  id: 'section-1-blocked-pieces',
-  title: 'Blocked Pieces',
-  description:
-    'Learn how blocking affects Infantry, Commander, Militia, and other standard pieces.',
+const blockMovementSection: Section = {
+  id: 'section-1-block-movement',
+  title: 'Block Movement',
+  description: 'Learn how pieces are blocked from moving by obstacles.',
   introduction: section1BlockedPiecesIntro,
   lessons: blockingLessons
 };
 
-const section2: Section = {
-  id: 'section-2-unblocked-pieces',
-  title: 'Pieces That Ignore Blocking',
-  description: 'Master pieces that can shoot over or fly through blockers.',
+const blockingCaptureSection: Section = {
+  id: 'section-2-blocking-capture',
+  title: 'Blocking Capture',
+  description: 'Learn how pieces interact with blocking when capturing.',
   introduction: section2UnblockedPiecesIntro,
   lessons: unblockedLessons
 };
@@ -30,5 +29,5 @@ export const subject4Blocking: Subject = {
   icon: '🚧',
   introduction: subject4Introduction,
   prerequisites: ['subject-1-basic-movement', 'subject-3-capture'],
-  sections: [section1, section2]
+  sections: [blockMovementSection, blockingCaptureSection]
 };
