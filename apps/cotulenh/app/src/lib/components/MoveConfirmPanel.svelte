@@ -55,9 +55,7 @@
     height: 3rem; /* Fixed: h-8 buttons (2rem) + padding (1rem) */
     gap: 0.5rem;
     padding: 0.5rem;
-    background: linear-gradient(180deg, rgba(30, 30, 35, 0.85) 0%, rgba(15, 15, 20, 0.95) 100%);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
+    background: rgba(15, 15, 20, 0.95);
     border: 1px solid var(--mw-border-color, rgba(255, 255, 255, 0.1));
     border-radius: 6px;
     margin-top: 0.25rem;

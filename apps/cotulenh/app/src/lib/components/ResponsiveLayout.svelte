@@ -71,12 +71,5 @@
     border: 3px solid #333;
     border-top-color: var(--theme-primary, #22c55e);
     border-radius: 50%;
-    animation: spin 1s linear infinite;
-  }
-
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
   }
 </style>
