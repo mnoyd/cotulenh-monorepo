@@ -355,12 +355,5 @@ export function createLearnSession(lessonId?: string): LearnSession {
 }
 
 // Re-export from package for convenience
-export { categories, getLessonById, getCategoryById, getNextLesson } from '@cotulenh/learn';
-export type {
-  Lesson,
-  LessonProgress,
-  CategoryInfo,
-  LearnStatus,
-  BoardShape,
-  SquareInfo
-} from '@cotulenh/learn';
+export { getLessonById } from '@cotulenh/learn';
+export type { Lesson, LessonProgress, LearnStatus, BoardShape, SquareInfo } from '@cotulenh/learn';

@@ -82,16 +82,6 @@ export interface LessonFeedback {
   scenario?: Record<string, string>;
   targets?: Record<string, string>;
   generic?: Record<string, string>;
-
-  // Backward compatibility (deprecated)
-  /** @deprecated Use targets.reached */
-  onTarget?: string;
-  /** @deprecated Use generic.pieceSelected */
-  onPiece?: string;
-  /** @deprecated Use generic object with square keys */
-  onSelect?: Record<string, string>;
-  /** @deprecated Use generic.invalid */
-  onWrongMove?: string;
 }
 
 /**
@@ -199,14 +189,6 @@ export interface LessonProgress {
   /** Number of moves used to complete */
   moveCount: number;
   stars: 0 | 1 | 2 | 3;
-}
-
-export interface CategoryInfo {
-  id: LessonCategory;
-  title: string;
-  description: string;
-  icon: string;
-  lessons: Lesson[];
 }
 
 export type LearnStatus = 'loading' | 'ready' | 'completed' | 'failed';

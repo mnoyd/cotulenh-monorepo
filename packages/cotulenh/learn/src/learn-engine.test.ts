@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { LearnEngine } from './learn-engine';
 
 describe('LearnEngine', () => {
-  describe('basics-1: Moving Infantry (multi-target)', () => {
+  describe('terrain-2: The River and Bridges (multi-target)', () => {
     it('should complete when all targets are visited', () => {
       const onComplete = vi.fn();
       const onStateChange = vi.fn();
@@ -13,25 +13,26 @@ describe('LearnEngine', () => {
       });
 
       // Load the first lesson
-      const loaded = engine.loadLesson('basics-1');
+      const loaded = engine.loadLesson('terrain-2');
       expect(loaded).toBe(true);
       expect(engine.status).toBe('ready');
 
-      // Infantry is at f7, targets are f8, f9, f10
-      const piece = engine.game?.get('f7');
-      expect(piece).toBeDefined();
-      expect(piece?.type).toBe('i'); // Infantry
+      // Tank and Artillery start at e5 and f5
+      const tank = engine.game?.get('e5');
+      const artillery = engine.game?.get('f5');
+      expect(tank).toBeDefined();
+      expect(artillery).toBeDefined();
 
       // Visit first target
-      engine.makeMove('f7', 'f8');
+      engine.makeMove('e5', 'e7');
       expect(engine.status).toBe('ready'); // Not complete yet
 
       // Visit second target
-      engine.makeMove('f8', 'f9');
+      engine.makeMove('f5', 'f6');
       expect(engine.status).toBe('ready'); // Still not complete
 
       // Visit third target
-      engine.makeMove('f9', 'f10');
+      engine.makeMove('f6', 'f7');
       expect(engine.status).toBe('completed');
       expect(onComplete).toHaveBeenCalled();
     });
@@ -40,45 +41,44 @@ describe('LearnEngine', () => {
       const onComplete = vi.fn();
       const engine = new LearnEngine({ onComplete });
 
-      engine.loadLesson('basics-1');
+      engine.loadLesson('terrain-2');
 
       // Take a detour before hitting targets
-      engine.makeMove('f7', 'g7');
+      engine.makeMove('e5', 'e6');
       expect(engine.status).toBe('ready');
 
-      engine.makeMove('g7', 'f7');
+      engine.makeMove('e6', 'e7');
       expect(engine.status).toBe('ready');
 
       // Now visit all targets
-      engine.makeMove('f7', 'f8');
-      engine.makeMove('f8', 'f9');
-      engine.makeMove('f9', 'f10');
+      engine.makeMove('f5', 'f6');
+      engine.makeMove('f6', 'f7');
       expect(engine.status).toBe('completed');
     });
   });
 
-  describe('basics-2: Commander Movement (multi-target)', () => {
+  describe('terrain-3: Mixed Zones (multi-target)', () => {
     it('should complete when all targets are visited', () => {
       const onComplete = vi.fn();
       const engine = new LearnEngine({ onComplete });
 
-      engine.loadLesson('basics-2');
+      engine.loadLesson('terrain-3');
 
-      // Commander at f7, targets are f8, g9
-      const commander = engine.game?.get('f7');
-      expect(commander?.type).toBe('c');
-      expect(commander?.color).toBe('r');
+      const navy = engine.game?.get('b6');
+      const infantry = engine.game?.get('d5');
+      expect(navy).toBeDefined();
+      expect(infantry).toBeDefined();
 
       // Visit first target
-      engine.makeMove('f7', 'f8');
-      expect(engine.status).toBe('ready');
-
-      // Move toward second target
-      engine.makeMove('f8', 'g8');
+      engine.makeMove('b6', 'c6');
       expect(engine.status).toBe('ready');
 
       // Visit second target
-      engine.makeMove('g8', 'g9');
+      engine.makeMove('d5', 'd6');
+      expect(engine.status).toBe('ready');
+
+      // Visit third target
+      engine.makeMove('d6', 'e6');
       expect(engine.status).toBe('completed');
       expect(onComplete).toHaveBeenCalled();
     });
@@ -87,12 +87,12 @@ describe('LearnEngine', () => {
   describe('restart', () => {
     it('should reset the lesson to initial state', () => {
       const engine = new LearnEngine();
-      engine.loadLesson('basics-1');
+      engine.loadLesson('terrain-2');
 
       // Visit all targets to complete
-      engine.makeMove('f7', 'f8');
-      engine.makeMove('f8', 'f9');
-      engine.makeMove('f9', 'f10');
+      engine.makeMove('e5', 'e7');
+      engine.makeMove('f5', 'f6');
+      engine.makeMove('f6', 'f7');
       expect(engine.status).toBe('completed');
       expect(engine.moveCount).toBe(3);
 
@@ -101,23 +101,23 @@ describe('LearnEngine', () => {
       expect(engine.status).toBe('ready');
       expect(engine.moveCount).toBe(0);
 
-      // Infantry should be back at f7
-      const piece = engine.game?.get('f7');
-      expect(piece?.type).toBe('i');
+      // Tank should be back at e5
+      const piece = engine.game?.get('e5');
+      expect(piece).toBeDefined();
     });
   });
 
   describe('infinite turns for learning', () => {
     it('should allow selecting and moving the same piece multiple times', () => {
       const engine = new LearnEngine();
-      engine.loadLesson('basics-1');
+      engine.loadLesson('terrain-2');
 
       // Initial state - should have moves
       const initialMoves = engine.getPossibleMoves();
       expect(initialMoves.length).toBeGreaterThan(0);
 
       // Move right (not toward goal)
-      engine.makeMove('f7', 'g7');
+      engine.makeMove('e5', 'e6');
       expect(engine.status).toBe('ready');
 
       // After first move, should still have moves available
@@ -125,11 +125,11 @@ describe('LearnEngine', () => {
       expect(movesAfterFirst.length).toBeGreaterThan(0);
 
       // The piece at g7 should be movable
-      const movesFromG7 = movesAfterFirst.filter((m) => m.from === 'g7');
-      expect(movesFromG7.length).toBeGreaterThan(0);
+      const movesFromE6 = movesAfterFirst.filter((m) => m.from === 'e6');
+      expect(movesFromE6.length).toBeGreaterThan(0);
 
       // Move again
-      engine.makeMove('g7', 'h7');
+      engine.makeMove('e6', 'e5');
       expect(engine.status).toBe('ready');
 
       // Should still have moves
@@ -142,7 +142,7 @@ describe('LearnEngine', () => {
 
     it('should maintain correct state for board config simulation', () => {
       const engine = new LearnEngine();
-      engine.loadLesson('basics-1');
+      engine.loadLesson('terrain-2');
 
       // Simulate what boardConfig does
       const getSimulatedBoardState = () => {
@@ -164,7 +164,7 @@ describe('LearnEngine', () => {
       expect(state?.movesCount).toBeGreaterThan(0);
 
       // After first move
-      engine.makeMove('f7', 'g7');
+      engine.makeMove('e5', 'e6');
       state = getSimulatedBoardState();
       expect(state?.turnColor).toBe('r');
       expect(state?.fenTurn).toBe('r');
@@ -172,7 +172,7 @@ describe('LearnEngine', () => {
       expect(state?.status).toBe('ready');
 
       // After second move
-      engine.makeMove('g7', 'h7');
+      engine.makeMove('e6', 'e5');
       state = getSimulatedBoardState();
       expect(state?.turnColor).toBe('r');
       expect(state?.fenTurn).toBe('r');
@@ -203,48 +203,53 @@ describe('LearnEngine', () => {
   describe('multiple targets', () => {
     it('should track visited targets', () => {
       const engine = new LearnEngine();
-      engine.loadLesson('basics-1');
+      engine.loadLesson('terrain-2');
 
       expect(engine.visitedTargets).toEqual([]);
-      expect(engine.remainingTargets).toEqual(['f8', 'f9', 'f10']);
+      expect(engine.remainingTargets).toEqual(['e7', 'f6', 'f7']);
 
       // Visit first target
-      engine.makeMove('f7', 'f8');
-      expect(engine.visitedTargets).toEqual(['f8']);
-      expect(engine.remainingTargets).toEqual(['f9', 'f10']);
+      engine.makeMove('e5', 'e7');
+      expect(engine.visitedTargets).toEqual(['e7']);
+      expect(engine.remainingTargets).toEqual(['f6', 'f7']);
 
       // Visit second target
-      engine.makeMove('f8', 'f9');
-      expect(engine.visitedTargets).toEqual(['f8', 'f9']);
-      expect(engine.remainingTargets).toEqual(['f10']);
+      engine.makeMove('f5', 'f6');
+      expect(engine.visitedTargets).toEqual(['e7', 'f6']);
+      expect(engine.remainingTargets).toEqual(['f7']);
     });
 
     it('should complete only after all targets visited', () => {
       const onComplete = vi.fn();
       const engine = new LearnEngine({ onComplete });
-      engine.loadLesson('basics-3'); // Militia with targets g8, h9
+      engine.loadLesson('terrain-2');
 
       // Visit first target
-      engine.makeMove('f7', 'g8');
+      engine.makeMove('e5', 'e7');
       expect(engine.status).toBe('ready');
-      expect(engine.visitedTargets).toContain('g8');
+      expect(engine.visitedTargets).toContain('e7');
 
       // Visit second target
-      engine.makeMove('g8', 'h9');
+      engine.makeMove('f5', 'f6');
+      expect(engine.status).toBe('ready');
+      expect(engine.visitedTargets).toContain('f6');
+
+      // Visit third target
+      engine.makeMove('f6', 'f7');
       expect(engine.status).toBe('completed');
-      expect(engine.visitedTargets).toContain('h9');
+      expect(engine.visitedTargets).toContain('f7');
     });
 
     it('should clear visited targets on restart', () => {
       const engine = new LearnEngine();
-      engine.loadLesson('basics-1');
+      engine.loadLesson('terrain-2');
 
-      engine.makeMove('f7', 'f8');
-      expect(engine.visitedTargets).toEqual(['f8']);
+      engine.makeMove('e5', 'e7');
+      expect(engine.visitedTargets).toEqual(['e7']);
 
       engine.restart();
       expect(engine.visitedTargets).toEqual([]);
-      expect(engine.remainingTargets).toEqual(['f8', 'f9', 'f10']);
+      expect(engine.remainingTargets).toEqual(['e7', 'f6', 'f7']);
     });
   });
 });
