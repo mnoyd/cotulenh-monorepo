@@ -15,6 +15,7 @@
 
   function formatMarkdown(text: string): string {
     return text
+      .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" class="content-image" />')
       .replace(/^### (.+)$/gm, '<h4>$1</h4>')
       .replace(/^## (.+)$/gm, '<h3>$1</h3>')
       .replace(/^# (.+)$/gm, '<h2>$1</h2>')
@@ -23,7 +24,7 @@
       .replace(/^- (.+)$/gm, '<li>$1</li>')
       .replace(/(<li>.*<\/li>\n?)+/gs, '<ul>$&</ul>')
       .replace(/\n\n/g, '</p><p>')
-      .replace(/^(?!<[hulo])/gm, '<p>')
+      .replace(/^(?!<[hulo]|^<img)/gm, '<p>')
       .replace(/(?<![>])$/gm, '</p>')
       .replace(/<p><\/p>/g, '')
       .replace(/<p>(<[hulo])/g, '$1')
@@ -141,5 +142,14 @@
 
   .full-intro :global(strong) {
     color: var(--theme-primary, #3b82f6);
+  }
+
+  :global(.content-image) {
+    max-width: 100%;
+    height: auto;
+    border-radius: 4px;
+    margin: 1.5rem 0;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--theme-border-subtle, rgba(59, 130, 246, 0.2));
   }
 </style>

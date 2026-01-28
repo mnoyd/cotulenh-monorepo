@@ -8,6 +8,8 @@
 export const subject2Introduction = `
 # Terrain in Cotulenh
 
+![Terrain Overview](/learn/subject-2/terrain-overview.svg)
+
 The Cotulenh battlefield is not a uniform playing field. Terrain shapes every tactical decision, determining where your units can operate and how they must maneuver to achieve objectives.
 
 ## The Terrain System
@@ -15,6 +17,8 @@ The Cotulenh battlefield is not a uniform playing field. Terrain shapes every ta
 The 11×12 board is divided into distinct operational zones that simulate different environments - from open seas to contested coastlines to inland territory.
 
 ### Water Zones (Files a-b)
+
+![Water and Coastal Zones](/learn/subject-2/water-coastal-map.svg)
 
 **Pure Water** occupies the two leftmost files of the board:
 - Only **Navy** and **Air Force** can operate here
@@ -46,6 +50,8 @@ The 11×12 board is divided into distinct operational zones that simulate differ
 **Strategic Importance**: This is where most ground combat occurs. Position your infantry, tanks, and artillery effectively.
 
 ### The River (Between Ranks 6 and 7)
+
+![River and Bridges](/learn/subject-2/river-bridges-map.svg)
 
 The **river** divides the board into northern and southern territories:
 - Runs horizontally across the entire board
@@ -105,6 +111,8 @@ In this subject, you'll master terrain through hands-on practice:
 
 export const section1TerrainBasicsIntro = `
 # Terrain Basics
+
+![Terrain Overview](/learn/subject-2/terrain-overview.svg)
 
 Terrain controls where each unit can operate. Understanding terrain restrictions is essential for valid movement and strategic positioning.
 
