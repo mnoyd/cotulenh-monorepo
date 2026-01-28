@@ -4,6 +4,7 @@ import type { CompletionChecker } from './completion-checker';
 import { CustomCompletionChecker } from './custom-completion';
 import { GoalCompletionChecker } from './goal-completion';
 import { TargetCompletionChecker } from './target-completion';
+import { FirstMoveCompletionChecker } from './first-move-completion';
 import { TargetValidator } from '../validators/target-validator';
 import { CompositeValidator } from '../validators/composite-validator';
 
@@ -36,7 +37,7 @@ export class CompletionFactory {
       return new GoalCompletionChecker(lesson.goalFen);
     }
 
-    // Default: goal FEN or first move completion
-    return new GoalCompletionChecker(lesson.startFen);
+    // Default: complete after first move
+    return new FirstMoveCompletionChecker();
   }
 }

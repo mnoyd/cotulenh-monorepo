@@ -2,12 +2,18 @@ import type { Lesson, Subject } from '../types';
 import { subject1BasicMovement } from './subject-1-basic-movement';
 import { subject2Terrain } from './subject-2-terrain';
 import { subject3Capture } from './subject-3-capture';
+import { subject4Blocking } from './subject-4-blocking';
 
 // ============================================================
 // SUBJECTS (New curriculum structure)
 // ============================================================
 
-export const subjects: Subject[] = [subject1BasicMovement, subject2Terrain, subject3Capture];
+export const subjects: Subject[] = [
+  subject1BasicMovement,
+  subject2Terrain,
+  subject3Capture,
+  subject4Blocking
+];
 
 // ============================================================
 // Indexed maps for O(1) lookups
