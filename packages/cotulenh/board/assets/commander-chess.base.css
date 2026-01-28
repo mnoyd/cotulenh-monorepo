@@ -62,7 +62,6 @@ piece.dragging,
 .ghost-piece piece {
   position: absolute;
   z-index: 2;
-  will-change: transform;
   pointer-events: none;
   display: flex;
   justify-content: center;
@@ -91,7 +90,7 @@ cg-board square.move-dest {
 }
 
 cg-board square.last-move {
-  will-change: transform;
+  /* will-change removed to reduce GPU memory */
 }
 
 /* Piece states */

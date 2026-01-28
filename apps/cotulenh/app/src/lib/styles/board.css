@@ -85,7 +85,7 @@ cg-board cg-btn.cancel-stack-move:hover {
 
 /* --- Promoted Pieces (Heroic Star) --- */
 .cg-wrap piece.promoted {
-  filter: var(--theme-piece-heroic-filter, drop-shadow(0 0 8px rgba(255, 215, 0, 0.8)));
+  /* filter removed to reduce GPU cost */
 }
 
 .cg-wrap piece.promoted::before {
@@ -299,14 +299,14 @@ piece[class*='red'] {
 
 piece:hover {
   transform: none;
-  filter: brightness(1.2);
+  opacity: 0.9;
   z-index: 100;
 }
 
 piece.dragging {
   transition: none !important;
   transform: scale(1.1);
-  filter: brightness(1.3) !important;
+  opacity: 0.8 !important;
   z-index: 1000;
   cursor: grabbing;
 }
