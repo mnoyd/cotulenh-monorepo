@@ -45,3 +45,5 @@ export {
   section1HeroicPromotionIntro,
   section2HeroicMovementIntro
 } from './subject-8-content';
+
+export { subject9Introduction, section1FlyingGeneralIntro } from './subject-9-content';
