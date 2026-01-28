@@ -53,6 +53,22 @@ const blockingLessons: Lesson[] = [
     successMessage: 'Right! Even the Commander respects blocking.',
     targetSquares: ['i4', 'd12', 'e8'],
     showValidMoves: true
+  },
+  {
+    id: 'blocking-3a',
+    category: 'basics',
+    subjectId: 'subject-4-blocking',
+    sectionId: 'section-1-block-movement',
+    title: 'Navy Coast Movement',
+    description: 'Navy can pass land on coast but is blocked by other navy.',
+    difficulty: 2,
+    startFen: '11/11/11/11/2N8/11/11/2I8/11/2N8/11/11 r - - 0 1',
+    instruction:
+      'The Navy at a4 can move north past the land Infantry at c6 (coastal land does not block navy), but IS blocked by the friendly Navy at a5. Move the Navy on a4 sideways since forward is blocked.',
+    hint: 'Navy on water is blocked by other navy, not by land pieces on coast. Move sideways to b4.',
+    successMessage: 'Correct! Navy is blocked by other ships, not land pieces on the coast.',
+    targetSquares: ['c6', 'c10'],
+    showValidMoves: true
   }
 ];
 
@@ -63,12 +79,12 @@ const unblockedLessons: Lesson[] = [
     subjectId: 'subject-4-blocking',
     sectionId: 'section-2-blocking-capture',
     title: 'Tank Shoots Over Blockers',
-    description: 'Tank cannot move through pieces but CAN capture through them.',
+    description: 'Tank cannot shoot over a piece.',
     difficulty: 2,
     startFen: '11/11/11/11/11/11/4i6/4I6/4T6/11/11/11 r - - 0 1',
     goalFen: '11/11/11/11/11/11/4T6/4I6/11/11/11/11 r - - 0 1',
     instruction:
-      'The Tank at e4 cannot move through the Infantry at e5, but it CAN capture the enemy at e7 by shooting over the blocker.',
+      'The Tank at e4 cannot move through the Infantry at e5, and it cannot capture the enemy at e7 by shooting over the blocker.',
     hint: 'Select the Tank and capture the enemy infantry at e7.',
     successMessage: 'Excellent! Tank shoots over friendly pieces to capture.',
     showValidMoves: true
@@ -81,8 +97,8 @@ const unblockedLessons: Lesson[] = [
     title: 'Artillery Long-Range Strike',
     description: 'Artillery ignores blocking for captures.',
     difficulty: 2,
-    startFen: '11/11/11/11/4i6/11/4I6/11/4A6/11/11/11 r - - 0 1',
-    goalFen: '11/11/11/11/4A6/11/4I6/11/11/11/11/11 r - - 0 1',
+    startFen: '11/11/11/11/11/11/11/11/4AI1t3/11/11/11 r - - 0 1',
+    goalFen: '11/11/11/11/11/11/11/11/5I1A3/11/11/11 r - - 0 1',
     instruction:
       'Artillery at e4 can capture the enemy at e8 despite the friendly Infantry at e6. Shoot over the blocker!',
     hint: 'Artillery range is 3 squares and ignores blocking for capture.',
@@ -114,7 +130,7 @@ const unblockedLessons: Lesson[] = [
     description: 'Navy can move and capture through other pieces in water.',
     difficulty: 2,
     startFen: '11/11/11/11/N10/11/N10/11/n10/11/11/11 r - - 0 1',
-    goalFen: '11/11/11/11/N10/11/11/11/N10/11/11/11 r - - 0 1',
+    goalFen: '11/11/11/11/11/11/N10/11/N10/11/11/11 r - - 0 1',
     instruction:
       'The Navy at a6 can move through the friendly Navy at a8 to capture the enemy at a4. Navy ignores blocking.',
     hint: 'Select the Navy at a6 and capture at a4.',
