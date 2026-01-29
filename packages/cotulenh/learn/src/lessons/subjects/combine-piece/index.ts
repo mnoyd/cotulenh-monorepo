@@ -21,7 +21,6 @@ const combineBasicsLessons: Lesson[] = [
     targetSquares: ['e4'],
     showValidMoves: true,
     showMoveCount: true,
-    validateLegality: true,
     grading: 'none'
   },
   {
@@ -39,7 +38,6 @@ const combineBasicsLessons: Lesson[] = [
     targetSquares: ['e4'],
     showValidMoves: true,
     showMoveCount: true,
-    validateLegality: true,
     grading: 'none'
   },
   {
@@ -57,7 +55,6 @@ const combineBasicsLessons: Lesson[] = [
     targetSquares: ['e4'],
     showValidMoves: true,
     showMoveCount: true,
-    validateLegality: true,
     grading: 'none'
   }
 ];
