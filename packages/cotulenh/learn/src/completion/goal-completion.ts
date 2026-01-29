@@ -5,10 +5,12 @@ import type { CompletionChecker } from './completion-checker';
  * Checks completion based on reaching a goal FEN
  */
 export class GoalCompletionChecker implements CompletionChecker {
-  constructor(private goalFen: string) {}
+  constructor(private goalFen: string | string[]) {}
 
   check(engine: LearnEngine): boolean {
-    return this.#normalizeFen(engine.fen) === this.#normalizeFen(this.goalFen);
+    const current = this.#normalizeFen(engine.fen);
+    const goals = Array.isArray(this.goalFen) ? this.goalFen : [this.goalFen];
+    return goals.some((goal) => current === this.#normalizeFen(goal));
   }
 
   getProgress(engine: LearnEngine): number {

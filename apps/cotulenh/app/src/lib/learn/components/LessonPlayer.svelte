@@ -1,11 +1,22 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
-  import { ArrowLeft, RotateCcw, ArrowRight, Star, CheckCircle, HelpCircle } from 'lucide-svelte';
+  import {
+    RotateCcw,
+    ArrowRight,
+    ArrowLeft as ArrowLeftIcon,
+    Star,
+    CheckCircle,
+    HelpCircle
+  } from 'lucide-svelte';
   import BoardContainer from '$lib/components/BoardContainer.svelte';
   import TargetMarker from './TargetMarker.svelte';
   import LessonContent from './LessonContent.svelte';
+  import LessonStepper from './LessonStepper.svelte';
+  import LessonIntroModal from './LessonIntroModal.svelte';
   import { LearnSession } from '../learn-session.svelte';
   import { getI18n } from '$lib/i18n/index.svelte';
+  import { getLessonContext } from '@cotulenh/learn';
+  import { getStoredValue, setStoredValue } from '$lib/stores/persisted.svelte';
   import '$lib/styles/board.css';
 
   const i18n = getI18n();
@@ -13,17 +24,46 @@
   type Props = {
     lessonId: string;
     nextUrl?: string;
-    backUrl?: string;
   };
 
-  let { lessonId, nextUrl, backUrl = '/learn' }: Props = $props();
+  let { lessonId, nextUrl }: Props = $props();
 
   let session = $state<LearnSession | null>(null);
+  let showIntroModal = $state(false);
+
+  // Get lesson context for navigation
+  const lessonContext = $derived(getLessonContext(lessonId));
+  const prevUrl = $derived.by(() => {
+    if (!lessonContext?.prevLesson) return null;
+    const prev = lessonContext.prevLesson;
+    return `/learn/${prev.subjectId}/${prev.sectionId}/${prev.id}`;
+  });
+
+  // Check if user has seen this lesson's intro before
+  function hasSeenIntro(id: string): boolean {
+    const seen = getStoredValue<string[]>('learn-seen-intros', []);
+    return seen.includes(id);
+  }
+
+  function markIntroSeen(id: string): void {
+    const seen = getStoredValue<string[]>('learn-seen-intros', []);
+    if (!seen.includes(id)) {
+      setStoredValue('learn-seen-intros', [...seen, id]);
+    }
+  }
 
   // Recreate session when lessonId changes (not just on mount)
   $effect(() => {
     const newSession = new LearnSession(lessonId);
     session = newSession;
+
+    // Show intro modal for first-time visitors if lesson has content
+    if (newSession.lesson?.content && !hasSeenIntro(lessonId)) {
+      showIntroModal = true;
+    } else {
+      showIntroModal = false;
+    }
+
     return () => {
       newSession.dispose();
     };
@@ -35,8 +75,17 @@
     }
   });
 
+  function handleStartLesson() {
+    markIntroSeen(lessonId);
+    showIntroModal = false;
+  }
+
   function handleNext() {
     goto(nextUrl ?? '/learn');
+  }
+
+  function handlePrev() {
+    if (prevUrl) goto(prevUrl);
   }
 
   function handleHint() {
@@ -53,13 +102,31 @@
 </script>
 
 {#if session && session.lesson}
+  <!-- Intro modal for first-time visitors -->
+  {#if showIntroModal}
+    <LessonIntroModal lesson={session.lesson} onStart={handleStartLesson} />
+  {/if}
+
   <div class="lesson-player">
+    <!-- Progress stepper with breadcrumb navigation -->
+    <LessonStepper {lessonId} />
+
     <header class="lesson-header">
-      <a href={backUrl} class="back-button">
-        <ArrowLeft size={20} />
-        <span>{i18n.t('learn.backToLessons')}</span>
-      </a>
+      <div class="nav-controls">
+        {#if prevUrl}
+          <button class="nav-btn" onclick={handlePrev} title="Previous lesson">
+            <ArrowLeftIcon size={18} />
+          </button>
+        {/if}
+      </div>
       <h1>{session.lesson.title}</h1>
+      <div class="nav-controls">
+        {#if nextUrl && session.status !== 'completed'}
+          <button class="nav-btn" onclick={handleNext} title="Skip to next">
+            <ArrowRight size={18} />
+          </button>
+        {/if}
+      </div>
     </header>
 
     <div class="lesson-content">
@@ -154,30 +221,44 @@
   .lesson-header {
     display: flex;
     align-items: center;
+    justify-content: space-between;
     gap: 1rem;
     margin-bottom: 1rem;
     padding-bottom: 1rem;
     border-bottom: 1px solid var(--theme-border, #444);
   }
 
-  .back-button {
+  .nav-controls {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    color: var(--theme-text-secondary, #aaa);
-    text-decoration: none;
-    padding: 0.5rem;
-    border-radius: 4px;
+    min-width: 40px;
   }
 
-  .back-button:hover {
+  .nav-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    background: transparent;
+    border: 1px solid var(--theme-border, #444);
+    border-radius: 6px;
+    color: var(--theme-text-secondary, #aaa);
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .nav-btn:hover {
     background: var(--theme-bg-elevated, #333);
     color: var(--theme-text-primary, #eee);
+    border-color: var(--theme-primary, #3b82f6);
   }
 
   .lesson-header h1 {
     margin: 0;
     font-size: 1.5rem;
+    text-align: center;
+    flex: 1;
   }
 
   .lesson-content {

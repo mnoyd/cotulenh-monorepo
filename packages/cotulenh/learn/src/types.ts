@@ -112,8 +112,8 @@ export interface Lesson {
 
   /** Starting position FEN */
   startFen: string;
-  /** Target position FEN - lesson complete when board matches this (optional if using scenario) */
-  goalFen?: string;
+  /** Target position FEN(s) - lesson complete when board matches any (optional if using scenario) */
+  goalFen?: string | string[];
   /** Instruction text shown to user */
   instruction: string;
   /** Rich markdown content for lesson explanation (displayed above instruction) */

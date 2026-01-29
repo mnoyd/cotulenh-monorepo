@@ -64,7 +64,8 @@ export type { ScenarioOptions } from './scenario';
 export { LearnEngine, createLearnEngine } from './learn-engine';
 
 // Lessons and curriculum
-export { getLessonById } from './lessons';
+export { getLessonById, getLessonContext } from './lessons';
+export type { LessonContext } from './lessons';
 
 // Subjects (curriculum structure)
 export { subjects, getSubjectById, getLessonInSubject, getNextLessonInSubject } from './lessons';

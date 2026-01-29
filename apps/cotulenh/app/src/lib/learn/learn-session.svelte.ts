@@ -202,7 +202,22 @@ export class LearnSession {
         events: {
           after: (orig: OrigMove, dest: DestMove) => this.#handleMove(orig, dest)
         }
+      },
+      airDefense: {
+        influenceZone: this.#getAirDefense()
       }
+    };
+  }
+
+  #getAirDefense(): { red: Map<string, string[]>; blue: Map<string, string[]> } {
+    const game = this.#engine.game;
+    if (!game) {
+      return { red: new Map(), blue: new Map() };
+    }
+    const airDefense = game.getAirDefenseInfluence();
+    return {
+      red: airDefense['r'],
+      blue: airDefense['b']
     };
   }
 

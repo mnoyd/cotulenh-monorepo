@@ -34,7 +34,12 @@ export class CompletionFactory {
 
     // Goal FEN completion
     if (lesson.goalFen) {
-      return new GoalCompletionChecker(lesson.goalFen);
+      const hasGoalFen = Array.isArray(lesson.goalFen)
+        ? lesson.goalFen.length > 0
+        : lesson.goalFen.length > 0;
+      if (hasGoalFen) {
+        return new GoalCompletionChecker(lesson.goalFen);
+      }
     }
 
     // Default: complete after first move

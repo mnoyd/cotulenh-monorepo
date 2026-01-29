@@ -567,9 +567,11 @@ export class LearnEngine {
     if (!this.#lesson.goalFen) return false;
 
     const currentPosition = this.#normalizePositionFen(this.#game.fen());
-    const goalPosition = this.#normalizePositionFen(this.#lesson.goalFen);
+    const goalFens = Array.isArray(this.#lesson.goalFen)
+      ? this.#lesson.goalFen
+      : [this.#lesson.goalFen];
 
-    return currentPosition === goalPosition;
+    return goalFens.some((goalFen) => currentPosition === this.#normalizePositionFen(goalFen));
   }
 
   /**

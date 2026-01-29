@@ -1,4 +1,4 @@
-import type { Lesson, Subject } from '../types';
+import type { Lesson, Subject, Section } from '../types';
 import { subject1BasicMovement } from './subjects/basic-movement/index';
 import { subject2Terrain } from './subjects/terrain/index';
 import { subject3Capture } from './subjects/capture/index';
@@ -32,6 +32,23 @@ export const subjects: Subject[] = [
 export const lessonById: Map<string, Lesson> = new Map();
 export const subjectById: Map<string, Subject> = new Map();
 export const nextLessonMap: Map<string, Lesson | null> = new Map();
+export const prevLessonMap: Map<string, Lesson | null> = new Map();
+
+export interface LessonContext {
+  lesson: Lesson;
+  subject: Subject;
+  section: Section;
+  /** 1-indexed position in section */
+  positionInSection: number;
+  totalInSection: number;
+  /** 1-indexed position in subject (across all sections) */
+  positionInSubject: number;
+  totalInSubject: number;
+  prevLesson: Lesson | null;
+  nextLesson: Lesson | null;
+}
+
+export const lessonContextMap: Map<string, LessonContext> = new Map();
 
 function buildIndexes(): void {
   // Index subjects (new curriculum structure)
@@ -39,17 +56,40 @@ function buildIndexes(): void {
     subjectById.set(subject.id, subject);
 
     const allLessons: Lesson[] = [];
+    const lessonSectionMap: Map<string, Section> = new Map();
+    const lessonPositionInSection: Map<string, number> = new Map();
+    const sectionTotals: Map<Section, number> = new Map();
+
     for (const section of subject.sections) {
-      for (const lesson of section.lessons) {
+      sectionTotals.set(section, section.lessons.length);
+      for (let i = 0; i < section.lessons.length; i++) {
+        const lesson = section.lessons[i];
         lessonById.set(lesson.id, lesson);
+        lessonSectionMap.set(lesson.id, section);
+        lessonPositionInSection.set(lesson.id, i + 1); // 1-indexed
         allLessons.push(lesson);
       }
     }
 
     for (let i = 0; i < allLessons.length; i++) {
       const lesson = allLessons[i];
+      const prev = i > 0 ? allLessons[i - 1] : null;
       const next = i + 1 < allLessons.length ? allLessons[i + 1] : null;
+      prevLessonMap.set(lesson.id, prev);
       nextLessonMap.set(lesson.id, next);
+
+      const section = lessonSectionMap.get(lesson.id)!;
+      lessonContextMap.set(lesson.id, {
+        lesson,
+        subject,
+        section,
+        positionInSection: lessonPositionInSection.get(lesson.id)!,
+        totalInSection: sectionTotals.get(section)!,
+        positionInSubject: i + 1, // 1-indexed
+        totalInSubject: allLessons.length,
+        prevLesson: prev,
+        nextLesson: next
+      });
     }
   }
 }
@@ -85,6 +125,10 @@ export function getNextLessonInSubject(_subjectId: string, currentId: string): L
   return nextLessonMap.get(currentId) ?? undefined;
 }
 
+export function getLessonContext(lessonId: string): LessonContext | undefined {
+  return lessonContextMap.get(lessonId);
+}
+
 // ============================================================
 // Curriculum validation
 // ============================================================
@@ -111,7 +155,10 @@ export function validateCurriculum(): ValidationError[] {
         }
         seenIds.add(lesson.id);
 
-        const hasGoalFen = 'goalFen' in lesson && lesson.goalFen !== undefined;
+        const goalFenValue = lesson.goalFen;
+        const hasGoalFen =
+          goalFenValue !== undefined &&
+          (Array.isArray(goalFenValue) ? goalFenValue.length > 0 : goalFenValue.length > 0);
         const hasScenario = 'scenario' in lesson && lesson.scenario !== undefined;
         const hasCustomCompletion =
           'customCompletion' in lesson && lesson.customCompletion !== undefined;
