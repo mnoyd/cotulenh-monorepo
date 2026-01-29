@@ -24,10 +24,9 @@
   type Props = {
     lessonId: string;
     nextUrl?: string;
-    backUrl?: string;
   };
 
-  let { lessonId, nextUrl, backUrl = '/learn' }: Props = $props();
+  let { lessonId, nextUrl }: Props = $props();
 
   let session = $state<LearnSession | null>(null);
   let showIntroModal = $state(false);
