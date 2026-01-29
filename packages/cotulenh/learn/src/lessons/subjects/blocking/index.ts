@@ -87,7 +87,7 @@ const blockingLessons: Lesson[] = [
       'The Navy at a4 can move north past the land Infantry at c6 (coastal land does not block navy), but IS blocked by the friendly Navy at a8. Move the Navy on a4 sideways since forward is blocked.',
     hint: 'Navy on water is blocked by other navy, not by land pieces on coast. Move sideways to b4.',
     successMessage: 'Correct! Navy is blocked by other ships, not land pieces on the coast.',
-    targetSquares: ['c6', 'c10'],
+    targetSquares: ['b4'],
     showValidMoves: true
   }
 ];

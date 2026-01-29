@@ -27,14 +27,14 @@ const airDefenseAvoidanceLessons: Lesson[] = [
 
 ### Strategy
 
-To complete this lesson, you must:
-1. Navigate **around** the danger zone
-2. Reach both target squares in order
+    To complete this lesson, you must:
+    1. Navigate **around** the danger zone
+    2. Reach both target squares
 
 > **Tip:** Always check for missiles before planning your Air Force route!`,
     instruction:
-      'Move the Air Force to d5, then d7. Avoid the missile air defense zone centered on f6.',
-    hint: 'Stay on the c-file. The missile protects squares around f6.',
+      'Move the Air Force to d5 and d7. Avoid the missile air defense zone centered on f6.',
+    hint: 'Use the d-file to avoid the missile zone around f6.',
     successMessage: 'Great! You reached both targets while staying out of air defense.',
     targetSquares: ['d5', 'd7'],
     showValidMoves: true,
