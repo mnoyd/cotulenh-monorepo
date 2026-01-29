@@ -14,7 +14,7 @@ const airDefenseAvoidanceLessons: Lesson[] = [
     title: 'Avoid Air Defense Zones',
     description: 'Navigate the Air Force around missile coverage to reach multiple targets.',
     difficulty: 2,
-    startFen: '11/11/11/11/11/11/5s5/11/11/2F8/11/11 r - - 0 1',
+    startFen: '11/11/11/11/11/11/5s5/11/11/3F7/11/11 r - - 0 1',
     content: `## What is Air Defense?
 
 **Missiles** create a protective zone that threatens enemy aircraft. Any **Air Force** flying through this zone will be destroyed!
@@ -33,14 +33,13 @@ To complete this lesson, you must:
 
 > **Tip:** Always check for missiles before planning your Air Force route!`,
     instruction:
-      'Move the Air Force to c5, then c7. Avoid the missile air defense zone centered on f6.',
+      'Move the Air Force to d5, then d7. Avoid the missile air defense zone centered on f6.',
     hint: 'Stay on the c-file. The missile protects squares around f6.',
     successMessage: 'Great! You reached both targets while staying out of air defense.',
-    targetSquares: ['c5', 'c7'],
-    orderedTargets: true,
+    targetSquares: ['d5', 'd7'],
     showValidMoves: true,
     showMoveCount: true,
-    validateLegality: true,
+    validateLegality: false,
     grading: 'none'
   }
 ];
@@ -79,7 +78,7 @@ Kamikaze is valuable when:
     hint: 'Fly straight up from e1 to e5 to trigger a kamikaze capture.',
     successMessage: 'Confirmed: both units are removed after the kamikaze strike.',
     showValidMoves: true,
-    validateLegality: true,
+    validateLegality: false,
     grading: 'none'
   }
 ];
