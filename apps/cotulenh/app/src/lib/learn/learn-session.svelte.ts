@@ -10,7 +10,11 @@ import {
   type GradingSystem
 } from '@cotulenh/learn';
 import { subjectProgress } from './learn-progress.svelte';
-import { coreToBoardColor, mapPossibleMovesToDests } from '$lib/features/game/utils';
+import {
+  coreToBoardColor,
+  coreToBoardAirDefense,
+  mapPossibleMovesToDests
+} from '$lib/features/game/utils';
 import { getI18n } from '$lib/i18n/index.svelte';
 
 /**
@@ -202,7 +206,22 @@ export class LearnSession {
         events: {
           after: (orig: OrigMove, dest: DestMove) => this.#handleMove(orig, dest)
         }
+      },
+      airDefense: {
+        influenceZone: this.#getAirDefense()
       }
+    };
+  }
+
+  #getAirDefense(): { red: Map<string, string[]>; blue: Map<string, string[]> } {
+    const game = this.#engine.game;
+    if (!game) {
+      return { red: new Map(), blue: new Map() };
+    }
+    const airDefense = game.getAirDefenseInfluence();
+    return {
+      red: airDefense[0], // RED = 0
+      blue: airDefense[1] // BLUE = 1
     };
   }
 
