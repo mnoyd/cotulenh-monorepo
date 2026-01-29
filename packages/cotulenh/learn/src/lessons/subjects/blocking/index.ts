@@ -87,6 +87,7 @@ const blockingLessons: Lesson[] = [
       'The Navy at a4 can move north past the land Infantry at c6 (coastal land does not block navy), but IS blocked by the friendly Navy at a8. Move the Navy on a4 sideways since forward is blocked.',
     hint: 'Navy on water is blocked by other navy, not by land pieces on coast. Move sideways to b4.',
     successMessage: 'Correct! Navy is blocked by other ships, not land pieces on the coast.',
+    targetSquares: ['c6', 'c10'],
     showValidMoves: true
   }
 ];
@@ -98,19 +99,19 @@ const unblockedLessons: Lesson[] = [
     subjectId: 'subject-4-blocking',
     sectionId: 'section-2-blocking-capture',
     title: 'Tank Shoots Over Blockers',
-    description: 'Tank cannot move through pieces but CAN shoot over them.',
+    description: 'Tank cannot move through pieces AND cannot shoot over them.',
     content: `## Shooting Over Blockers
 
 - Tanks **cannot move through** pieces.
-- Tanks **can capture through** a single blocking piece.
+- Tanks **cannot capture through** a single blocking piece.
 - This lets Tanks punish stacked defenses.`,
     difficulty: 2,
-    startFen: '11/11/11/11/11/11/4i6/4I6/4T6/11/11/11 r - - 0 1',
-    goalFen: '11/11/11/11/11/11/4T6/4I6/11/11/11/11 r - - 0 1',
+    startFen: '11/11/11/11/11/11/4i6/4E6/4T6/11/11/11 r - - 0 1',
+    goalFen: '11/11/11/11/11/11/4T6/4E6/11/11/11/11 r - - 0 1',
     instruction:
-      'The Tank at e4 cannot move through the friendly Infantry at e5, but it CAN capture the enemy at e7 by shooting over the blocker.',
+      'The Tank at e4 cannot move through the friendly Infantry at e5, and it CANNOT capture the enemy at e7 by shooting over the blocker.',
     hint: 'Select the Tank and capture the enemy infantry at e7.',
-    successMessage: 'Excellent! Tank shoots over friendly pieces to capture.',
+    successMessage: 'Excellent! Tank move around to capture.',
     showValidMoves: true
   },
   {
@@ -148,7 +149,10 @@ const unblockedLessons: Lesson[] = [
 - Only air defense zones can stop it.`,
     difficulty: 2,
     startFen: '11/11/11/5i5/5I5/5I5/5F5/11/11/11/11/11 r - - 0 1',
-    goalFen: '11/11/11/5F5/5I5/5I5/11/11/11/11/11/11 r - - 0 1',
+    goalFen: [
+      '11/11/11/5F5/5I5/5I5/11/11/11/11/11/11 r - - 0 1',
+      '11/11/11/11/5I5/5I5/5F5/11/11/11/11/11 r - - 0 1'
+    ],
     instruction:
       'Air Force at f6 can fly over both friendly Infantry pieces to capture the enemy at f9. Air ignores all blocking!',
     hint: 'Select Air Force and capture the enemy at f9.',

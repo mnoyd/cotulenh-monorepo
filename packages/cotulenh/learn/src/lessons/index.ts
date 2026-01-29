@@ -111,7 +111,10 @@ export function validateCurriculum(): ValidationError[] {
         }
         seenIds.add(lesson.id);
 
-        const hasGoalFen = 'goalFen' in lesson && lesson.goalFen !== undefined;
+        const goalFenValue = lesson.goalFen;
+        const hasGoalFen =
+          goalFenValue !== undefined &&
+          (Array.isArray(goalFenValue) ? goalFenValue.length > 0 : goalFenValue.length > 0);
         const hasScenario = 'scenario' in lesson && lesson.scenario !== undefined;
         const hasCustomCompletion =
           'customCompletion' in lesson && lesson.customCompletion !== undefined;
