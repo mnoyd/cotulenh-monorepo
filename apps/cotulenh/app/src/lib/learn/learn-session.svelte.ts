@@ -164,6 +164,20 @@ export class LearnSession {
     return this.#boardApi;
   }
 
+  /**
+   * Get possible moves for the current position
+   */
+  getPossibleMoves() {
+    return this.#engine.getPossibleMoves();
+  }
+
+  /**
+   * Get information about a square (for tooltips and feedback)
+   */
+  getSquareInfo(square: Square): SquareInfo | null {
+    return this.#engine.getSquareInfo(square);
+  }
+
   // ============================================================
   // BOARD CONFIGURATION
   // ============================================================

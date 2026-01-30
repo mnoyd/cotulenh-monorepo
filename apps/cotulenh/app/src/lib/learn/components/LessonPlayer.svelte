@@ -10,6 +10,7 @@
   } from 'lucide-svelte';
   import BoardContainer from '$lib/components/BoardContainer.svelte';
   import TargetMarker from './TargetMarker.svelte';
+  import SquareTooltip from './SquareTooltip.svelte';
   import LessonContent from './LessonContent.svelte';
   import LessonStepper from './LessonStepper.svelte';
   import LessonIntroModal from './LessonIntroModal.svelte';
@@ -140,6 +141,8 @@
           {#each visibleTargets as targetSquare (targetSquare)}
             <TargetMarker square={targetSquare} boardApi={session.boardApi} />
           {/each}
+          <!-- Tooltip overlay for hover hints -->
+          <SquareTooltip {session} boardApi={session.boardApi} />
         {/key}
       </div>
 

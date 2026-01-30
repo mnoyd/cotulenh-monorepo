@@ -123,6 +123,11 @@ export const en: TranslationKeys = {
   'learn.feedback.error.invalidMove': 'Invalid move. Try again.',
   'learn.feedback.error.wrongScenarioMove': "That's not the expected move.",
 
+  // Learn tooltips
+  'learn.tooltip.target': '🎯 Move here',
+  'learn.tooltip.clickToMove': 'Click to select',
+  'learn.tooltip.validMove': 'Valid move destination',
+
   // Board editor
   'editor.title': 'Editor',
   'editor.board': 'Board',

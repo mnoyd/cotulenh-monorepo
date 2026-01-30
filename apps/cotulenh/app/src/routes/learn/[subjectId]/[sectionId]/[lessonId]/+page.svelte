@@ -17,10 +17,8 @@
     }
     return `/learn/${nextLesson.subjectId}/${nextLesson.sectionId}/${nextLesson.id}`;
   });
-
-  const backUrl = $derived(subjectId ? `/learn/${subjectId}` : '/learn');
 </script>
 
 {#if lessonId}
-  <LessonPlayer {lessonId} {nextUrl} {backUrl} />
+  <LessonPlayer {lessonId} {nextUrl} />
 {/if}

@@ -123,6 +123,11 @@ export const vi: TranslationKeys = {
   'learn.feedback.error.invalidMove': 'Nước đi không hợp lệ. Thử lại.',
   'learn.feedback.error.wrongScenarioMove': 'Đó không phải là nước đi mong đợi.',
 
+  // Learn tooltips
+  'learn.tooltip.target': '🎯 Di chuyển đến đây',
+  'learn.tooltip.clickToMove': 'Nhấp để chọn',
+  'learn.tooltip.validMove': 'Điểm đến hợp lệ',
+
   // Board editor
   'editor.title': 'Soạn thảo',
   'editor.board': 'Bàn cờ',

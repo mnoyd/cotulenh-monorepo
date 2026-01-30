@@ -122,6 +122,11 @@ export interface TranslationKeys {
   'learn.feedback.error.invalidMove': string;
   'learn.feedback.error.wrongScenarioMove': string;
 
+  // Learn tooltips
+  'learn.tooltip.target': string;
+  'learn.tooltip.clickToMove': string;
+  'learn.tooltip.validMove': string;
+
   // Board editor
   'editor.title': string;
   'editor.board': string;
