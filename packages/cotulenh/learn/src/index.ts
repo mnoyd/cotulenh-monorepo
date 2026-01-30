@@ -21,7 +21,9 @@ export type {
   LessonFeedback,
   FeedbackStyle,
   GradingSystem,
-  FeedbackCode
+  FeedbackCode,
+  HintLevel,
+  ProgressiveHintsConfig
 } from './types';
 
 // Validators
@@ -73,3 +75,7 @@ export { subjects, getSubjectById, getLessonInSubject, getNextLessonInSubject } 
 // Progress management (framework-agnostic)
 export { ProgressManager, createProgressManager } from './progress';
 export { type StorageAdapter, MemoryStorageAdapter, LocalStorageAdapter } from './progress';
+
+// Hint system (progressive hints)
+export { HintSystem, createHintSystem } from './hint-system';
+export type { HintSystemCallbacks } from './hint-system';

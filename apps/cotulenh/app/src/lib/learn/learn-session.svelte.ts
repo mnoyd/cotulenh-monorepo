@@ -7,7 +7,9 @@ import {
   type LearnStatus,
   type BoardShape,
   type SquareInfo,
-  type GradingSystem
+  type GradingSystem,
+  HintSystem,
+  type HintLevel
 } from '@cotulenh/learn';
 import { subjectProgress } from './learn-progress.svelte';
 import { coreToBoardColor, mapPossibleMovesToDests } from '$lib/features/game/utils';
@@ -31,6 +33,11 @@ export class LearnSession {
 
   // Board shapes (arrows, highlights)
   #shapes = $state<BoardShape[]>([]);
+
+  // Progressive hints
+  #hintSystem: HintSystem | null = null;
+  #currentHintLevel = $state<'none' | 'subtle' | 'medium' | 'explicit'>('none');
+  #currentHintType = $state<HintLevel | null>(null);
 
   // Hint auto-hide timeout
   #hintTimeoutId: ReturnType<typeof setTimeout> | null = null;
@@ -165,6 +172,20 @@ export class LearnSession {
   }
 
   /**
+   * Get current progressive hint level
+   */
+  get currentHintLevel(): 'none' | 'subtle' | 'medium' | 'explicit' {
+    return this.#currentHintLevel;
+  }
+
+  /**
+   * Get current progressive hint type
+   */
+  get currentHintType(): HintLevel | null {
+    return this.#currentHintType;
+  }
+
+  /**
    * Get possible moves for the current position
    */
   getPossibleMoves() {
@@ -243,11 +264,34 @@ export class LearnSession {
     this.#showFeedback = false;
     this.#isFailed = false;
     this.#shapes = [];
+
+    // Stop existing hint system
+    if (this.#hintSystem) {
+      this.#hintSystem.stop();
+      this.#hintSystem = null;
+    }
+
     const result = this.#engine.loadLesson(lessonId);
 
     // Load initial shapes from lesson arrows
     if (this.#engine.lesson?.arrows) {
       this.#shapes = this.#engine.lesson.arrows;
+    }
+
+    // Create hint system if lesson has hints config
+    if (this.#engine.lesson?.hints) {
+      this.#hintSystem = new HintSystem(this.#engine.lesson.hints, {
+        onHintChange: (level, type) => {
+          this.#currentHintLevel = level;
+          this.#currentHintType = type ?? null;
+          this.#version++;
+        },
+        onTutorialMode: () => {
+          // Could show a tutorial modal here in the future
+          console.log('Tutorial mode activated');
+        }
+      });
+      this.#hintSystem.start();
     }
 
     this.#version++;
@@ -258,7 +302,14 @@ export class LearnSession {
     const from = orig.square as Square;
     const to = dest.square as Square;
     const success = this.#engine.makeMove(from, to, dest.stay);
-    if (!success && this.#engine.status === 'ready') {
+
+    if (success) {
+      // Valid move - reset hint timer
+      this.#hintSystem?.onMove();
+    } else if (this.#engine.status === 'ready') {
+      // Invalid move - track for hint system
+      this.#hintSystem?.onWrongMove();
+
       const i18n = getI18n();
       this.#feedbackMessage = i18n.t('learn.invalidMove');
       this.#showFeedback = true;
@@ -276,6 +327,9 @@ export class LearnSession {
     this.#isFailed = false;
     this.#shapes = [];
     this.#engine.restart();
+
+    // Reset hint system
+    this.#hintSystem?.reset();
 
     // Reload initial shapes
     if (this.#engine.lesson?.arrows) {
@@ -327,6 +381,13 @@ export class LearnSession {
       clearTimeout(this.#hintTimeoutId);
       this.#hintTimeoutId = null;
     }
+
+    // Stop and cleanup hint system
+    if (this.#hintSystem) {
+      this.#hintSystem.stop();
+      this.#hintSystem = null;
+    }
+
     this.#engine.dispose();
   }
 

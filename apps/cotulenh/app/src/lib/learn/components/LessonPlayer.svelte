@@ -11,6 +11,7 @@
   import BoardContainer from '$lib/components/BoardContainer.svelte';
   import TargetMarker from './TargetMarker.svelte';
   import SquareTooltip from './SquareTooltip.svelte';
+  import HintVisuals from './HintVisuals.svelte';
   import LessonContent from './LessonContent.svelte';
   import LessonStepper from './LessonStepper.svelte';
   import LessonIntroModal from './LessonIntroModal.svelte';
@@ -143,6 +144,8 @@
           {/each}
           <!-- Tooltip overlay for hover hints -->
           <SquareTooltip {session} boardApi={session.boardApi} />
+          <!-- Progressive hint visuals -->
+          <HintVisuals {session} />
         {/key}
       </div>
 

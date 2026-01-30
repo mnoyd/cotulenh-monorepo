@@ -95,6 +95,56 @@ export type FeedbackStyle = 'silent' | 'toast' | 'modal' | 'inline';
 export type GradingSystem = 'none' | 'pass-fail' | 'stars';
 
 /**
+ * Progressive hint visual types
+ */
+export type HintLevel =
+  | 'none'
+  | 'pulse-target' // Subtle: Pulse animation on target squares
+  | 'highlight-piece' // Subtle: Highlight movable pieces
+  | 'show-arrow' // Medium: Draw arrow to target
+  | 'show-path' // Medium: Show move path
+  | 'show-instruction' // Explicit: Display text instruction
+  | 'show-tutorial'; // Explicit: Step-by-step guide
+
+/**
+ * Progressive hints configuration
+ */
+export interface ProgressiveHintsConfig {
+  /** Enable progressive hints for this lesson */
+  enabled: boolean;
+
+  /** Timing configuration in milliseconds */
+  timing?: {
+    /** Time before showing subtle hint (default: 15000ms / 15s) */
+    subtle?: number;
+    /** Time before showing medium hint (default: 30000ms / 30s) */
+    medium?: number;
+    /** Time before showing explicit hint (default: 45000ms / 45s) */
+    explicit?: number;
+  };
+
+  /** Visual hint levels to show */
+  levels?: {
+    /** Subtle hint type */
+    subtle?: HintLevel;
+    /** Medium hint type */
+    medium?: HintLevel;
+    /** Explicit hint type */
+    explicit?: HintLevel;
+  };
+
+  /** Show tutorial after N wrong moves (default: 3) */
+  wrongMoveThreshold?: number;
+
+  /** Custom hint messages */
+  messages?: {
+    subtle?: string;
+    medium?: string;
+    explicit?: string;
+  };
+}
+
+/**
  * Goal-based lesson: user makes any legal moves until reaching goalFen
  */
 export interface Lesson {
@@ -183,6 +233,13 @@ export interface Lesson {
   customCompletion?: (engine: LearnEngine) => boolean;
   /** Custom move validator (return error message or null) */
   customMoveValidator?: (move: InternalMove, engine: LearnEngine) => string | null;
+
+  // Progressive hints
+  /**
+   * Progressive hints configuration (optional)
+   * If not provided or enabled=false, no auto-hints are shown
+   */
+  hints?: ProgressiveHintsConfig;
 }
 
 export interface LessonProgress {
