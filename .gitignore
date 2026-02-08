@@ -37,4 +37,4 @@ tsconfig.tsbuildinfo
 build
 .vercel
 .netlify
-.idea
+.idea.beads/
