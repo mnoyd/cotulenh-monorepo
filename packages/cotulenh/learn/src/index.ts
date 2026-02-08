@@ -79,3 +79,35 @@ export { type StorageAdapter, MemoryStorageAdapter, LocalStorageAdapter } from '
 // Hint system (progressive hints)
 export { HintSystem, createHintSystem } from './hint-system';
 export type { HintSystemCallbacks } from './hint-system';
+
+// Internationalization for learn content
+export {
+  setLearnLocale,
+  getLearnLocale,
+  getSubjectTranslation,
+  getSectionTranslation,
+  getLessonTranslation,
+  tSubjectTitle,
+  tSubjectDescription,
+  tSubjectIntroduction,
+  tSectionTitle,
+  tSectionDescription,
+  tSectionIntroduction,
+  tLessonTitle,
+  tLessonDescription,
+  tLessonContent,
+  tLessonInstruction,
+  tLessonHint,
+  tLessonSuccessMessage,
+  tLessonFailureMessage,
+  translateSubject,
+  translateSection,
+  translateLesson
+} from './i18n';
+export type {
+  LearnLocale,
+  LessonTranslation,
+  SectionTranslation,
+  SubjectTranslation,
+  LearnTranslations
+} from './i18n';

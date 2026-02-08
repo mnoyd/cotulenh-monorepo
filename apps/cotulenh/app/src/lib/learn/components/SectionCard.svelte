@@ -1,13 +1,20 @@
 <script lang="ts">
   import type { Section, Lesson } from '@cotulenh/learn';
+  import { translateSection, translateLesson } from '@cotulenh/learn';
   import { subjectProgress } from '../learn-progress.svelte';
+  import { getLocale } from '$lib/i18n';
   import { CheckCircle, Play } from 'lucide-svelte';
 
   interface Props {
     section: Section;
+    subjectId: string;
   }
 
-  let { section }: Props = $props();
+  let { section, subjectId }: Props = $props();
+
+  // Reactive translations based on current locale
+  const locale = $derived(getLocale() as 'en' | 'vi');
+  const translatedSection = $derived(translateSection(subjectId, section, locale));
 
   function getStars(lessonId: string) {
     return subjectProgress.getLessonStars(lessonId);
@@ -19,6 +26,11 @@
 
   function showStars(lesson: Lesson): boolean {
     return lesson.grading === 'stars';
+  }
+
+  // Get translated lesson
+  function getTranslatedLesson(lesson: Lesson) {
+    return translateLesson(subjectId, lesson, locale);
   }
 
   const completedCount = $derived(
@@ -33,13 +45,13 @@
 <div class="section-card">
   <div class="header">
     <div class="title-row">
-      <h4>{section.title}</h4>
+      <h4>{translatedSection.title}</h4>
       <span class="progress-badge" class:complete={progressPercent === 100}>
         {completedCount}/{totalCount}
       </span>
     </div>
-    {#if section.description}
-      <p class="description">{section.description}</p>
+    {#if translatedSection.description}
+      <p class="description">{translatedSection.description}</p>
     {/if}
     <div class="progress-bar">
       <div class="progress-fill" style="width: {progressPercent}%"></div>
@@ -48,6 +60,7 @@
 
   <div class="lessons-grid">
     {#each section.lessons as lesson, index}
+      {@const translatedLesson = getTranslatedLesson(lesson)}
       {@const stars = getStars(lesson.id)}
       {@const completed = isCompleted(lesson.id)}
       <a
@@ -56,9 +69,9 @@
         class:completed
       >
         <div class="lesson-number">{String(index + 1).padStart(2, '0')}</div>
-        
+
         <div class="lesson-info">
-          <span class="title">{lesson.title}</span>
+          <span class="title">{translatedLesson.title}</span>
           <span class="difficulty">
             <!-- eslint-disable-next-line @typescript-eslint/no-unused-vars -->
             {#each Array(lesson.difficulty) as _}

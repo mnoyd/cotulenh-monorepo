@@ -1,7 +1,9 @@
 <script lang="ts">
   import type { Subject, SubjectProgress } from '@cotulenh/learn';
+  import { translateSubject } from '@cotulenh/learn';
   import ProgressIndicator from './ProgressIndicator.svelte';
   import { subjectProgress } from '../learn-progress.svelte';
+  import { getI18n } from '$lib/i18n';
   import { Lock, ChevronRight, Play } from 'lucide-svelte';
   import { goto } from '$app/navigation';
 
@@ -12,6 +14,12 @@
   }
 
   let { subject, progress, isLocked }: Props = $props();
+
+  const i18n = getI18n();
+
+  // Reactive translations based on current locale
+  const locale = $derived(i18n.getLocale() as 'en' | 'vi');
+  const translatedSubject = $derived(translateSubject(subject, locale));
 
   const nextLesson = $derived(
     !isLocked ? subjectProgress.getNextIncompleteLesson(subject.id) : null
@@ -43,8 +51,8 @@
         {/if}
       </div>
       <div class="info">
-        <h3>{subject.title}</h3>
-        <p>{subject.description}</p>
+        <h3>{translatedSubject.title}</h3>
+        <p>{translatedSubject.description}</p>
       </div>
     </div>
 
@@ -52,7 +60,7 @@
       {#if isLocked}
         <span class="status-locked">
           <Lock size={14} />
-          Locked
+          {i18n.t('learn.locked')}
         </span>
       {:else}
         <div class="progress">
@@ -65,7 +73,7 @@
             onclick={handleContinue}
           >
             <Play size={14} />
-            Continue
+            {i18n.t('learn.continue')}
           </button>
         {:else}
           <div class="go-arrow">

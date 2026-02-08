@@ -4,6 +4,9 @@
   // Each cell roughly: width ~65.45mm, height ~65mm
   export let maxWidth = '600px';
 
+  import { getI18n } from '$lib/i18n';
+
+  const i18n = getI18n();
   let activeTerritory: 'sea' | 'land-north' | 'land-south' | null = null;
 </script>
 
@@ -28,8 +31,8 @@
         on:mouseleave={() => (activeTerritory = null)}
         role="region"
       >
-        <span class="label top">WATER ZONE</span>
-        <span class="label bottom">WATER ZONE</span>
+        <span class="label top">{i18n.t('learn.diagram.waterZone')}</span>
+        <span class="label bottom">{i18n.t('learn.diagram.waterZone')}</span>
       </div>
 
       <!-- Coastal: Col c (1 col) - Intersection of SEA and LAND -->
@@ -41,8 +44,8 @@
         on:mouseenter={() => (activeTerritory = null)}
         role="region"
       >
-        <span class="label top">COASTAL</span>
-        <span class="label bottom">COASTAL</span>
+        <span class="label top">{i18n.t('learn.diagram.coastal')}</span>
+        <span class="label bottom">{i18n.t('learn.diagram.coastal')}</span>
       </div>
 
       <!-- North Land: Cols d-k, rows 1-6 (extended to river center) -->
@@ -55,7 +58,7 @@
         on:mouseleave={() => (activeTerritory = null)}
         role="region"
       >
-        <span class="label north-land">NORTH LAND TERRITORY</span>
+        <span class="label north-land">{i18n.t('learn.diagram.northLand')}</span>
       </div>
 
       <!-- South Land: Cols d-k, rows 7-12 (extended to river center) -->
@@ -68,7 +71,7 @@
         on:mouseleave={() => (activeTerritory = null)}
         role="region"
       >
-        <span class="label south-land">SOUTH LAND TERRITORY</span>
+        <span class="label south-land">{i18n.t('learn.diagram.southLand')}</span>
       </div>
 
       <!-- River Barrier: Between Rank 6 & 7 -->
@@ -77,7 +80,7 @@
         style="grid-column: 3 / -1; grid-row: 6 / span 2;"
         aria-label="River Barrier - between ranks 6 and 7"
       >
-        <div class="river-label">RIVER BARRIER</div>
+        <div class="river-label">{i18n.t('learn.diagram.riverBarrier')}</div>
       </div>
     </div>
   </div>

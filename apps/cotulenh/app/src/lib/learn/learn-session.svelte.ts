@@ -9,11 +9,14 @@ import {
   type SquareInfo,
   type GradingSystem,
   HintSystem,
-  type HintLevel
+  type HintLevel,
+  translateLesson,
+  setLearnLocale,
+  getLearnLocale
 } from '@cotulenh/learn';
 import { subjectProgress } from './learn-progress.svelte';
 import { coreToBoardColor, mapPossibleMovesToDests } from '$lib/features/game/utils';
-import { getI18n } from '$lib/i18n/index.svelte';
+import { getI18n, getLocale } from '$lib/i18n/index.svelte';
 
 /**
  * LearnSession - Svelte 5 reactive wrapper around LearnEngine
@@ -105,6 +108,42 @@ export class LearnSession {
     return this.#engine.lesson;
   }
 
+  /**
+   * Get translated lesson based on current locale
+   */
+  get translatedLesson(): Lesson | null {
+    void this.#version;
+    const lesson = this.#engine.lesson;
+    if (!lesson) return null;
+
+    // Sync learn locale with app locale
+    const appLocale = getLocale() as 'en' | 'vi';
+    setLearnLocale(appLocale);
+
+    return translateLesson(lesson.subjectId ?? '', lesson, appLocale);
+  }
+
+  /**
+   * Get lesson title (translated)
+   */
+  get lessonTitle(): string {
+    return this.translatedLesson?.title ?? this.#engine.lesson?.title ?? '';
+  }
+
+  /**
+   * Get lesson content (translated)
+   */
+  get lessonContent(): string | undefined {
+    return this.translatedLesson?.content ?? this.#engine.lesson?.content;
+  }
+
+  /**
+   * Get lesson instruction (translated)
+   */
+  get lessonInstruction(): string {
+    return this.translatedLesson?.instruction ?? this.#engine.lesson?.instruction ?? '';
+  }
+
   get status(): LearnStatus {
     void this.#version;
     return this.#engine.status;
@@ -138,11 +177,18 @@ export class LearnSession {
   }
 
   get instruction(): string {
-    return this.#engine.instruction;
+    return this.lessonInstruction;
+  }
+
+  /**
+   * Get hint (translated)
+   */
+  get translatedHint(): string {
+    return this.translatedLesson?.hint ?? this.#engine.lesson?.hint ?? '';
   }
 
   get hint(): string {
-    return this.#engine.hint;
+    return this.translatedHint;
   }
 
   get gradingSystem(): GradingSystem {

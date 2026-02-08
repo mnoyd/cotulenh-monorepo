@@ -116,15 +116,15 @@
     <header class="lesson-header">
       <div class="nav-controls">
         {#if prevUrl}
-          <button class="nav-btn" onclick={handlePrev} title="Previous lesson">
+          <button class="nav-btn" onclick={handlePrev} title={i18n.t('learn.previousLesson')}>
             <ArrowLeftIcon size={18} />
           </button>
         {/if}
       </div>
-      <h1>{session.lesson.title}</h1>
+      <h1>{session.lessonTitle}</h1>
       <div class="nav-controls">
         {#if nextUrl && session.status !== 'completed'}
-          <button class="nav-btn" onclick={handleNext} title="Skip to next">
+          <button class="nav-btn" onclick={handleNext} title={i18n.t('learn.skipToNext')}>
             <ArrowRight size={18} />
           </button>
         {/if}
@@ -182,8 +182,8 @@
           </div>
         {:else}
           <div class="instruction-panel">
-            {#if session.lesson.content}
-              <LessonContent content={session.lesson.content} />
+            {#if session.lessonContent}
+              <LessonContent content={session.lessonContent} />
             {/if}
             <p class="instruction-text">{session.instruction}</p>
 

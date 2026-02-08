@@ -107,8 +107,23 @@ export interface TranslationKeys {
   'learn.description': string;
   'learn.backToLessons': string;
   'learn.backToSubjects': string;
+  'learn.startLesson': string;
+  'learn.continue': string;
+  'learn.locked': string;
   'learn.lessonComplete': string;
+  'learn.lesson': string;
+  'learn.introduction': string;
+  'learn.previousLesson': string;
+  'learn.skipToNext': string;
   'learn.mistakes': string;
+  'learn.availableSubjects': string;
+  'learn.complete': string;
+  'learn.completeToContinue': string;
+  'learn.moveToTarget': string;
+  'learn.subjectCompleted': string;
+  'learn.reviewLessons': string;
+  'learn.curriculum': string;
+  'learn.subjectNotFound': string;
   'learn.loadingLesson': string;
   'learn.lessonNotFound': string;
   'learn.hint': string;
@@ -126,6 +141,15 @@ export interface TranslationKeys {
   'learn.tooltip.target': string;
   'learn.tooltip.clickToMove': string;
   'learn.tooltip.validMove': string;
+
+  // Learn visual diagram labels
+  'learn.diagram.waterZone': string;
+  'learn.diagram.coastal': string;
+  'learn.diagram.northLand': string;
+  'learn.diagram.southLand': string;
+  'learn.diagram.riverBarrier': string;
+  'learn.diagram.river': string;
+  'learn.diagram.bridge': string;
 
   // Board editor
   'editor.title': string;
