@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { Lesson } from '@cotulenh/learn';
+  import { getI18n } from '$lib/i18n/index.svelte';
   import { Play } from 'lucide-svelte';
 
   interface Props {
@@ -8,6 +9,8 @@
   }
 
   let { lesson, onStart }: Props = $props();
+
+  const i18n = getI18n();
 
   function stripMarkdown(text: string): string {
     return text
@@ -37,7 +40,7 @@
 
     <button class="start-button" onclick={onStart}>
       <Play size={20} />
-      <span>Start Lesson</span>
+      <span>{i18n.t('learn.startLesson')}</span>
     </button>
   </div>
 </div>

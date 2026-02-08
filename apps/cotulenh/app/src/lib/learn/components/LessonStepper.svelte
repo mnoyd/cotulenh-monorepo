@@ -1,13 +1,16 @@
 <script lang="ts">
   import { ChevronRight } from 'lucide-svelte';
-  import { getLessonContext } from '@cotulenh/learn';
+  import { getLessonContext, translateSubject, translateSection } from '@cotulenh/learn';
   import { subjectProgress } from '$lib/learn/learn-progress.svelte';
+  import { getI18n } from '$lib/i18n/index.svelte';
 
   interface Props {
     lessonId: string;
   }
 
   let { lessonId }: Props = $props();
+
+  const i18n = getI18n();
 
   const context = $derived(getLessonContext(lessonId));
   const subject = $derived(context?.subject);
@@ -16,6 +19,13 @@
   const totalInSection = $derived(context?.totalInSection ?? 0);
 
   const sectionLessons = $derived(section?.lessons ?? []);
+
+  // Reactive translations
+  const locale = $derived(i18n.getLocale() as 'en' | 'vi');
+  const translatedSubject = $derived(subject ? translateSubject(subject, locale) : null);
+  const translatedSection = $derived(
+    subject && section ? translateSection(subject.id, section, locale) : null
+  );
 
   function isLessonCompleted(id: string): boolean {
     return subjectProgress.isLessonCompleted(id);
@@ -26,11 +36,11 @@
   <div class="lesson-stepper">
     <div class="breadcrumb-row">
       <div class="breadcrumb">
-        <a href="/learn/{subject.id}" class="breadcrumb-link">{subject.title}</a>
+        <a href="/learn/{subject.id}" class="breadcrumb-link">{translatedSubject?.title}</a>
         <ChevronRight size={14} class="separator" />
-        <span class="breadcrumb-section">{section.title}</span>
+        <span class="breadcrumb-section">{translatedSection?.title}</span>
       </div>
-      <span class="lesson-count">Lesson {positionInSection}/{totalInSection}</span>
+      <span class="lesson-count">{i18n.t('learn.lesson')} {positionInSection}/{totalInSection}</span>
     </div>
     <div class="progress-dots">
       {#each sectionLessons as lesson, i}
@@ -40,7 +50,7 @@
           class="dot"
           class:current={isCurrent}
           class:completed={isCompleted}
-          title="Lesson {i + 1}"
+          title="{i18n.t('learn.lesson')} {i + 1}"
         ></span>
       {/each}
     </div>

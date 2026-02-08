@@ -1,6 +1,6 @@
 <script lang="ts">
   import { page } from '$app/stores';
-  import { getSubjectById } from '@cotulenh/learn';
+  import { getSubjectById, translateSubject, tLessonTitle } from '@cotulenh/learn';
   import SubjectIntro from '$lib/learn/components/SubjectIntro.svelte';
   import SectionCard from '$lib/learn/components/SectionCard.svelte';
   import { subjectProgress } from '$lib/learn/learn-progress.svelte';
@@ -10,8 +10,17 @@
   const i18n = getI18n();
   const subjectId = $derived($page.params.subjectId ?? '');
   const subject = $derived(subjectId ? getSubjectById(subjectId) : null);
-  const nextLesson = $derived(subjectId ? subjectProgress.getNextIncompleteLesson(subjectId) : null);
+  const nextLessonInfo = $derived(subjectId ? subjectProgress.getNextIncompleteLesson(subjectId) : null);
   const progress = $derived(subjectId ? subjectProgress.getSubjectProgress(subjectId) : null);
+
+  // Reactive translations
+  const locale = $derived(i18n.getLocale() as 'en' | 'vi');
+  const translatedSubject = $derived(subject ? translateSubject(subject, locale) : null);
+  const nextLessonTitle = $derived(
+    nextLessonInfo
+      ? tLessonTitle(subjectId, nextLessonInfo.lessonId, nextLessonInfo.title, locale)
+      : null
+  );
 </script>
 
 <div class="subject-page">
@@ -24,33 +33,33 @@
       <div class="title-row">
         <span class="icon">{subject.icon}</span>
         <div class="title-text">
-          <h1>{subject.title}</h1>
-          <p class="subtitle">{subject.description}</p>
+          <h1>{translatedSubject?.title}</h1>
+          <p class="subtitle">{translatedSubject?.description}</p>
         </div>
       </div>
     </header>
 
-    {#if nextLesson}
+    {#if nextLessonInfo}
       <a
-        href="/learn/{subjectId}/{nextLesson.sectionId}/{nextLesson.lessonId}"
+        href="/learn/{subjectId}/{nextLessonInfo.sectionId}/{nextLessonInfo.lessonId}"
         class="continue-cta hud-corners"
       >
         <div class="cta-content">
           <Play size={24} />
           <div class="cta-text">
-            <span class="cta-label">Continue</span>
-            <span class="cta-lesson">{nextLesson.title}</span>
+            <span class="cta-label">{i18n.t('learn.continue')}</span>
+            <span class="cta-lesson">{nextLessonTitle}</span>
           </div>
         </div>
-        <span class="cta-progress">{progress?.progress ?? 0}% complete</span>
+        <span class="cta-progress">{progress?.progress ?? 0}% {i18n.t('learn.complete')}</span>
       </a>
     {:else if progress?.completed}
       <div class="completed-banner hud-corners">
         <div class="cta-content">
           <RotateCcw size={24} />
           <div class="cta-text">
-            <span class="cta-label">Subject Completed!</span>
-            <span class="cta-lesson">Review any lesson below</span>
+            <span class="cta-label">{i18n.t('learn.subjectCompleted')}</span>
+            <span class="cta-lesson">{i18n.t('learn.reviewLessons')}</span>
           </div>
         </div>
       </div>
@@ -60,15 +69,15 @@
 
     <div class="sections-list">
       <h2>
-        <span class="label">Curriculum</span>
+        <span class="label">{i18n.t('learn.curriculum')}</span>
         <span class="line"></span>
       </h2>
       {#each subject.sections as section}
-        <SectionCard {section} />
+        <SectionCard {section} {subjectId} />
       {/each}
     </div>
   {:else}
-    <div class="error">Subject not found</div>
+    <div class="error">{i18n.t('learn.subjectNotFound')}</div>
   {/if}
 </div>
 

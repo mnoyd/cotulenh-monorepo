@@ -3,11 +3,14 @@
   // Visualizes the River Barrier and the Bridges (f6/f7 and h6/h7)
   // Reuses the grid system from TerrainGuide for consistency
   import BridgeSvg from './BridgeSvg.svelte';
+  import { getI18n } from '$lib/i18n/index.svelte';
+
+  const i18n = getI18n();
 </script>
 
 <div class="bridge-detail">
   <div class="board-container">
-    <img src="/assets/board-grid.svg" alt="Game Board Grid" class="board-grid" />
+    <img src="/assets/board-grid.svg" alt={i18n.t('learn.diagram.boardGrid')} class="board-grid" />
 
     <div class="overlay-container">
       <!-- Shared Defs -->
@@ -55,13 +58,13 @@
       <!-- Labels with Arrows (Visualized via absolute positioning) -->
       <!-- River Label -->
       <div class="label-container river-label-pos">
-        <div class="label-box">River</div>
+        <div class="label-box">{i18n.t('learn.diagram.river')}</div>
         <div class="arrow-down"></div>
       </div>
 
       <!-- Bridge Label -->
       <div class="label-container bridge-label-pos">
-        <div class="label-box">Bridge</div>
+        <div class="label-box">{i18n.t('learn.diagram.bridge')}</div>
         <div class="arrow-lines">
           <!-- Left arrow pointing to f-file bridge -->
           <svg width="60" height="40" viewBox="0 0 60 40" class="bridge-arrow-left">

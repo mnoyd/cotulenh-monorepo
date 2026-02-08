@@ -1,12 +1,15 @@
 <script lang="ts">
   import type { LearnSession } from '../learn-session.svelte';
-  
+  import { getI18n } from '$lib/i18n/index.svelte';
+
   interface Props {
     session: LearnSession;
   }
-  
+
   let { session }: Props = $props();
-  
+
+  const i18n = getI18n();
+
   const hintType = $derived(session.currentHintType);
   const targets = $derived(session.remainingTargets);
 </script>
@@ -21,14 +24,14 @@
   <!-- Medium: Show arrows to targets -->
   <div class="hint-arrow-container">
     <div class="hint-message">
-      Move to the highlighted square 🎯
+      {i18n.t('learn.moveToTarget')}
     </div>
   </div>
-  
+
 {:else if hintType === 'show-instruction'}
   <!-- Explicit: Show text instruction -->
   <div class="hint-instruction">
-    {session.lesson?.hints?.messages?.explicit || session.hint || 'Complete the objective to continue'}
+    {session.lesson?.hints?.messages?.explicit || session.hint || i18n.t('learn.completeToContinue')}
   </div>
 {/if}
 

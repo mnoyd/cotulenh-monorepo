@@ -1,11 +1,13 @@
 <script lang="ts">
   import type { Subject } from '@cotulenh/learn';
+  import { translateSubject } from '@cotulenh/learn';
   import { BookOpen, ChevronDown, ChevronUp } from 'lucide-svelte';
   import TerrainGuide from './visualizations/TerrainGuide.svelte';
   import BridgeDetail from './visualizations/BridgeDetail.svelte';
   import { browser } from '$app/environment';
   import { marked } from 'marked';
   import createDOMPurify from 'dompurify';
+  import { getI18n } from '$lib/i18n/index.svelte';
 
   interface Props {
     subject: Subject;
@@ -14,8 +16,14 @@
   let { subject }: Props = $props();
   let expanded = $state(false);
 
+  const i18n = getI18n();
+
+  // Reactive translations based on current locale
+  const locale = $derived(i18n.getLocale() as 'en' | 'vi');
+  const translatedSubject = $derived(translateSubject(subject, locale));
+
   const excerpt = $derived(
-    subject.description || stripMarkdown(subject.introduction).slice(0, 200).trim() + '...'
+    translatedSubject.description || stripMarkdown(translatedSubject.introduction).slice(0, 200).trim() + '...'
   );
 
   // Configure marked options for safety
@@ -54,7 +62,7 @@
   type ContentPart = { type: 'html'; content: string } | { type: 'component'; name: string };
 
   const contentParts = $derived.by(() => {
-    const text = subject.introduction;
+    const text = translatedSubject.introduction;
     const parts: ContentPart[] = [];
     const regex = /!\[.*?\]\((custom:[^)]+)\)/g;
 
@@ -95,7 +103,7 @@
   <button class="intro-header" onclick={() => (expanded = !expanded)}>
     <div class="header-left">
       <BookOpen size={20} />
-      <span>Introduction</span>
+      <span>{i18n.t('learn.introduction')}</span>
     </div>
     <div class="toggle-icon">
       {#if expanded}

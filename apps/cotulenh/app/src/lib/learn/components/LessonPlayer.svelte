@@ -62,7 +62,7 @@
     session = newSession;
 
     // Show intro modal for first-time visitors if lesson has content
-    if (newSession.lesson?.content && !hasSeenIntro(lessonId)) {
+    if ((newSession.translatedLesson?.content ?? newSession.lesson?.content) && !hasSeenIntro(lessonId)) {
       showIntroModal = true;
     } else {
       showIntroModal = false;
@@ -103,12 +103,17 @@
     }
     return session.remainingTargets;
   });
+
+  const introLesson = $derived.by(() => {
+    if (!session) return null;
+    return session.translatedLesson ?? session.lesson;
+  });
 </script>
 
 {#if session && session.lesson}
   <!-- Intro modal for first-time visitors -->
-  {#if showIntroModal}
-    <LessonIntroModal lesson={session.lesson} onStart={handleStartLesson} />
+  {#if showIntroModal && introLesson}
+    <LessonIntroModal lesson={introLesson} onStart={handleStartLesson} />
   {/if}
 
   {#if session.status === 'completed'}
@@ -122,15 +127,15 @@
     <header class="lesson-header">
       <div class="nav-controls">
         {#if prevUrl}
-          <button class="nav-btn" onclick={handlePrev} title="Previous lesson">
+          <button class="nav-btn" onclick={handlePrev} title={i18n.t('learn.previousLesson')}>
             <ArrowLeftIcon size={18} />
           </button>
         {/if}
       </div>
-      <h1>{session.lesson.title}</h1>
+      <h1>{session.lessonTitle}</h1>
       <div class="nav-controls">
         {#if nextUrl && session.status !== 'completed'}
-          <button class="nav-btn" onclick={handleNext} title="Skip to next">
+          <button class="nav-btn" onclick={handleNext} title={i18n.t('learn.skipToNext')}>
             <ArrowRight size={18} />
           </button>
         {/if}
@@ -203,8 +208,8 @@
           </div>
         {:else}
           <div class="instruction-panel" transition:fade={{ duration: 200 }}>
-            {#if session.lesson.content}
-              <LessonContent content={session.lesson.content} />
+            {#if session.lessonContent}
+              <LessonContent content={session.lessonContent} />
             {/if}
             <p class="instruction-text">{session.instruction}</p>
 

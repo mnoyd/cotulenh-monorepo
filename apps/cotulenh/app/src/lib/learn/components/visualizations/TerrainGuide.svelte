@@ -4,6 +4,9 @@
   // Each cell roughly: width ~65.45mm, height ~65mm
   export let maxWidth = '600px';
 
+  import { getI18n } from '$lib/i18n/index.svelte';
+
+  const i18n = getI18n();
   let activeTerritory: 'sea' | 'land-north' | 'land-south' | null = null;
 </script>
 
@@ -11,7 +14,7 @@
   class="terrain-guide"
   style="--max-width: {maxWidth}"
   role="img"
-  aria-label="Game board terrain guide showing water zone, coastal zone, land territories, and river barrier"
+  aria-label={i18n.t('learn.diagram.terrainGuideAria')}
 >
   <div class="board-container">
     <img src="/assets/board-grid.svg" alt="" class="board-grid" aria-hidden="true" />
@@ -23,13 +26,13 @@
         class="zone water-zone"
         class:active={activeTerritory === 'sea'}
         style="grid-column: 1 / span 2; grid-row: 1 / -1;"
-        aria-label="Water Zone - columns A and B"
+        aria-label={i18n.t('learn.diagram.waterZoneAria')}
         on:mouseenter={() => (activeTerritory = 'sea')}
         on:mouseleave={() => (activeTerritory = null)}
         role="region"
       >
-        <span class="label top">WATER ZONE</span>
-        <span class="label bottom">WATER ZONE</span>
+        <span class="label top">{i18n.t('learn.diagram.waterZone')}</span>
+        <span class="label bottom">{i18n.t('learn.diagram.waterZone')}</span>
       </div>
 
       <!-- Coastal: Col c (1 col) - Intersection of SEA and LAND -->
@@ -37,12 +40,12 @@
         class="zone coastal-zone"
         class:active={activeTerritory !== null}
         style="grid-column: 3 / span 1; grid-row: 1 / -1;"
-        aria-label="Coastal Zone - column C"
+        aria-label={i18n.t('learn.diagram.coastalZoneAria')}
         on:mouseenter={() => (activeTerritory = null)}
         role="region"
       >
-        <span class="label top">COASTAL</span>
-        <span class="label bottom">COASTAL</span>
+        <span class="label top">{i18n.t('learn.diagram.coastal')}</span>
+        <span class="label bottom">{i18n.t('learn.diagram.coastal')}</span>
       </div>
 
       <!-- North Land: Cols d-k, rows 1-6 (extended to river center) -->
@@ -50,12 +53,12 @@
         class="zone land-zone north"
         class:active={activeTerritory === 'land-north'}
         style="grid-column: 4 / -1; grid-row: 1 / 7;"
-        aria-label="North Land Territory - columns D through K, ranks 7-12"
+        aria-label={i18n.t('learn.diagram.northLandAria')}
         on:mouseenter={() => (activeTerritory = 'land-north')}
         on:mouseleave={() => (activeTerritory = null)}
         role="region"
       >
-        <span class="label north-land">NORTH LAND TERRITORY</span>
+        <span class="label north-land">{i18n.t('learn.diagram.northLand')}</span>
       </div>
 
       <!-- South Land: Cols d-k, rows 7-12 (extended to river center) -->
@@ -63,21 +66,21 @@
         class="zone land-zone south"
         class:active={activeTerritory === 'land-south'}
         style="grid-column: 4 / -1; grid-row: 7 / -1;"
-        aria-label="South Land Territory - columns D through K, ranks 1-5"
+        aria-label={i18n.t('learn.diagram.southLandAria')}
         on:mouseenter={() => (activeTerritory = 'land-south')}
         on:mouseleave={() => (activeTerritory = null)}
         role="region"
       >
-        <span class="label south-land">SOUTH LAND TERRITORY</span>
+        <span class="label south-land">{i18n.t('learn.diagram.southLand')}</span>
       </div>
 
       <!-- River Barrier: Between Rank 6 & 7 -->
       <div
         class="zone river-barrier"
         style="grid-column: 3 / -1; grid-row: 6 / span 2;"
-        aria-label="River Barrier - between ranks 6 and 7"
+        aria-label={i18n.t('learn.diagram.riverBarrierAria')}
       >
-        <div class="river-label">RIVER BARRIER</div>
+        <div class="river-label">{i18n.t('learn.diagram.riverBarrier')}</div>
       </div>
     </div>
   </div>

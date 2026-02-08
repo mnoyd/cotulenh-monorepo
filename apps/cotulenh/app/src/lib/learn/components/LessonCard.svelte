@@ -1,17 +1,23 @@
 <script lang="ts">
   import { Star, CheckCircle } from 'lucide-svelte';
   import type { Lesson, LessonProgress } from '@cotulenh/learn';
+  import { translateLesson } from '@cotulenh/learn';
   import { getI18n } from '$lib/i18n/index.svelte';
   import type { TranslationKey } from '$lib/i18n/types';
 
   type Props = {
     lesson: Lesson;
+    subjectId: string;
     progress?: LessonProgress | null;
   };
 
-  let { lesson, progress }: Props = $props();
+  let { lesson, subjectId, progress }: Props = $props();
 
   const i18n = getI18n();
+
+  // Reactive translations based on current locale
+  const locale = $derived(i18n.getLocale() as 'en' | 'vi');
+  const translatedLesson = $derived(translateLesson(subjectId, lesson, locale));
 
   function getDifficultyLabel(d: number): string {
     const difficulties: TranslationKey[] = ['common.easy', 'common.medium', 'common.hard'];
@@ -21,13 +27,13 @@
 
 <a href="/learn/{lesson.id}" class="lesson-card" class:completed={progress?.completed}>
   <div class="lesson-header">
-    <h3>{lesson.title}</h3>
+    <h3>{translatedLesson.title}</h3>
     {#if progress?.completed}
       <CheckCircle size={20} class="check-icon" />
     {/if}
   </div>
-  
-  <p class="lesson-description">{lesson.description}</p>
+
+  <p class="lesson-description">{translatedLesson.description}</p>
   
   <div class="lesson-footer">
     <span class="difficulty difficulty-{lesson.difficulty}">

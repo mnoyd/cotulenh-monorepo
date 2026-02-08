@@ -19,7 +19,7 @@
   </div>
 
   <div class="section-label">
-    <span class="label">Available Subjects</span>
+    <span class="label">{i18n.t('learn.availableSubjects')}</span>
     <span class="line"></span>
   </div>
 

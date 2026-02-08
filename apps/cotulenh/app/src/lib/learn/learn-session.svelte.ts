@@ -9,11 +9,13 @@ import {
   type SquareInfo,
   type GradingSystem,
   HintSystem,
-  type HintLevel
+  type HintLevel,
+  translateLesson,
+  setLearnLocale
 } from '@cotulenh/learn';
 import { subjectProgress } from './learn-progress.svelte';
 import { coreToBoardColor, mapPossibleMovesToDests } from '$lib/features/game/utils';
-import { getI18n } from '$lib/i18n/index.svelte';
+import { getI18n, getLocale } from '$lib/i18n/index.svelte';
 
 /**
  * LearnSession - Svelte 5 reactive wrapper around LearnEngine
@@ -52,7 +54,7 @@ export class LearnSession {
         this.syncBoard();
       },
       onComplete: (result) => {
-        this.#feedbackMessage = this.#engine.successMessage;
+        this.#feedbackMessage = this.#getSuccessFeedbackMessage();
         this.#showFeedback = true;
         this.#isFailed = false;
         this.#saveProgress(result);
@@ -62,7 +64,7 @@ export class LearnSession {
       onStateChange: (status) => {
         if (status === 'failed') {
           this.#isFailed = true;
-          this.#feedbackMessage = this.#engine.failureMessage;
+          this.#feedbackMessage = this.#getFailureFeedbackMessage();
           this.#showFeedback = true;
         }
         this.#version++;
@@ -73,7 +75,7 @@ export class LearnSession {
       },
       onFail: () => {
         this.#isFailed = true;
-        this.#feedbackMessage = this.#engine.failureMessage;
+        this.#feedbackMessage = this.#getFailureFeedbackMessage();
         this.#showFeedback = true;
         this.#version++;
       },
@@ -96,6 +98,32 @@ export class LearnSession {
     }
   }
 
+  #syncLearnLocaleWithApp(): 'en' | 'vi' {
+    const appLocale = getLocale() as 'en' | 'vi';
+    setLearnLocale(appLocale);
+    return appLocale;
+  }
+
+  #getCurrentTranslatedLesson(): Lesson | null {
+    const lesson = this.#engine.lesson;
+    if (!lesson) return null;
+
+    const appLocale = this.#syncLearnLocaleWithApp();
+    return translateLesson(lesson.subjectId ?? '', lesson, appLocale);
+  }
+
+  #getSuccessFeedbackMessage(): string {
+    const i18n = getI18n();
+    const translated = this.#getCurrentTranslatedLesson();
+    return translated?.successMessage ?? i18n.t(`learn.feedback.${this.#engine.successCode}`);
+  }
+
+  #getFailureFeedbackMessage(): string {
+    const i18n = getI18n();
+    const translated = this.#getCurrentTranslatedLesson();
+    return translated?.failureMessage ?? i18n.t(`learn.feedback.${this.#engine.failureCode}`);
+  }
+
   // ============================================================
   // REACTIVE GETTERS
   // ============================================================
@@ -103,6 +131,35 @@ export class LearnSession {
   get lesson(): Lesson | null {
     void this.#version;
     return this.#engine.lesson;
+  }
+
+  /**
+   * Get translated lesson based on current locale
+   */
+  get translatedLesson(): Lesson | null {
+    void this.#version;
+    return this.#getCurrentTranslatedLesson();
+  }
+
+  /**
+   * Get lesson title (translated)
+   */
+  get lessonTitle(): string {
+    return this.translatedLesson?.title ?? this.#engine.lesson?.title ?? '';
+  }
+
+  /**
+   * Get lesson content (translated)
+   */
+  get lessonContent(): string | undefined {
+    return this.translatedLesson?.content ?? this.#engine.lesson?.content;
+  }
+
+  /**
+   * Get lesson instruction (translated)
+   */
+  get lessonInstruction(): string {
+    return this.translatedLesson?.instruction ?? this.#engine.lesson?.instruction ?? '';
   }
 
   get status(): LearnStatus {
@@ -138,11 +195,18 @@ export class LearnSession {
   }
 
   get instruction(): string {
-    return this.#engine.instruction;
+    return this.lessonInstruction;
+  }
+
+  /**
+   * Get hint (translated)
+   */
+  get translatedHint(): string {
+    return this.translatedLesson?.hint ?? this.#engine.lesson?.hint ?? '';
   }
 
   get hint(): string {
-    return this.#engine.hint;
+    return this.translatedHint;
   }
 
   get gradingSystem(): GradingSystem {
@@ -348,8 +412,8 @@ export class LearnSession {
   }
 
   showHint(autoHideDuration: number = LearnSession.HINT_AUTO_HIDE_DURATION): void {
-    if (this.#engine.hint) {
-      this.#feedbackMessage = this.#engine.hint;
+    if (this.hint) {
+      this.#feedbackMessage = this.hint;
       this.#showFeedback = true;
       this.#version++;
 
