@@ -12,6 +12,7 @@ export const vi: TranslationKeys = {
   'nav.keyboardShortcuts': 'Phím tắt bàn phím',
   'nav.learn': 'Học chơi',
   'nav.appName': 'Cờ Tư Lệnh Online',
+  'nav.menu': 'Menu',
 
   // Home page
   'home.demoBadge': 'Demo',
@@ -74,6 +75,15 @@ export const vi: TranslationKeys = {
   'game.missionLog': 'Nhật ký nhiệm vụ',
   'game.live': 'TRỰC TIẾP',
   'game.noDataRecorded': '-- KHÔNG CÓ DỮ LIỆU --',
+  'game.toast.illegalMove': 'Nước đi không hợp lệ',
+  'game.toast.moveFailed': 'Đi nước thất bại',
+  'game.toast.undoSuccess': 'Hoàn tác thành công',
+  'game.toast.undoFailed': 'Hoàn tác thất bại',
+  'game.toast.resetSuccess': 'Đã đặt lại ván cờ',
+  'game.toast.resetFailed': 'Đặt lại thất bại',
+  'game.toast.commitMoveFailedPrefix': 'Không thể xác nhận nước đi',
+  'game.toast.cancelFailedPrefix': 'Lỗi khi hủy',
+  'game.toast.redoComingSoon': 'Tính năng làm lại sẽ sớm có',
 
   // Share dialog
   'share.title': 'Chia sẻ ván cờ',
@@ -82,6 +92,10 @@ export const vi: TranslationKeys = {
   'share.shareUrl': 'Đường dẫn chia sẻ',
   'share.shareUrlDesc': 'Sao chép đường dẫn để tải thế cờ này khi mở',
   'share.copyLink': 'Sao chép đường dẫn',
+  'share.fenString': 'Chuỗi FEN',
+  'share.fenCopied': 'Đã sao chép FEN vào bộ nhớ tạm',
+  'share.linkCopied': 'Đã sao chép liên kết chia sẻ!',
+  'share.copyFailed': 'Không thể sao chép',
 
   // Shortcuts dialog
   'shortcuts.title': 'Phím tắt bàn phím',
@@ -105,7 +119,7 @@ export const vi: TranslationKeys = {
   // Learn page
   'learn.title': 'Học chơi',
   'learn.tagline': 'Thành thạo Cờ Tư Lệnh từng bước với bài học tương tác',
-  'learn.description': 'Master Co Tu Lenh step by step with interactive lessons.',
+  'learn.description': 'Làm chủ Cờ Tư Lệnh từng bước với các bài học tương tác.',
   'learn.backToLessons': 'Quay lại bài học',
   'learn.backToSubjects': 'Quay lại danh sách',
   'learn.startLesson': 'Bắt đầu học',
@@ -181,6 +195,10 @@ export const vi: TranslationKeys = {
   'editor.deleteMode': 'Chế độ Xóa - Nhấp để xóa quân',
   'editor.toggleHeroic': 'Bật/tắt chế độ Anh hùng',
   'editor.toggleTurn': 'Đổi lượt hiện tại',
+  'editor.error.invalidFenFormat': 'Định dạng FEN không hợp lệ',
+  'editor.error.invalidFenPrefix': 'FEN không hợp lệ',
+  'editor.error.enterFenFirst': 'Vui lòng nhập vị trí FEN trước',
+  'editor.error.invalidFen': 'FEN không hợp lệ',
 
   // Error page
   'error.pageNotFound': 'Không tìm thấy trang',

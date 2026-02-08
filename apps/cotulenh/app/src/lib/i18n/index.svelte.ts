@@ -1,4 +1,5 @@
 import { getStoredValue, setStoredValue } from '$lib/stores/persisted.svelte';
+import { COTULENH_LOCALES, createLocaleRegistry, translateKey } from '@cotulenh/i18n';
 import type { Locale, TranslationKey, TranslationKeys } from './types';
 import { en } from './locales/en';
 import { vi } from './locales/vi';
@@ -13,25 +14,20 @@ const translations: Record<Locale, TranslationKeys> = {
   vi
 };
 
-export const LOCALES = [
-  { id: 'en' as Locale, name: 'English', nativeName: 'English' },
-  { id: 'vi' as Locale, name: 'Vietnamese', nativeName: 'Tiếng Việt' }
-] as const;
+const localeRegistry = createLocaleRegistry(COTULENH_LOCALES);
 
-function isValidLocale(locale: string): locale is Locale {
-  return locale === 'en' || locale === 'vi';
-}
+export const LOCALES = localeRegistry.locales;
 
 function getInitialLocale(): Locale {
   const stored = getStoredValue<string>(LOCALE_STORAGE_KEY, DEFAULT_LOCALE);
-  return isValidLocale(stored) ? stored : DEFAULT_LOCALE;
+  return localeRegistry.isValidLocale(stored) ? stored : DEFAULT_LOCALE;
 }
 
 export function createI18n() {
   let locale = $state<Locale>(getInitialLocale());
 
   function t(key: TranslationKey): string {
-    return translations[locale][key] ?? key;
+    return translateKey(translations, locale, key);
   }
 
   function setLocale(newLocale: Locale) {

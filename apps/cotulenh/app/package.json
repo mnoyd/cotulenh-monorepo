@@ -14,7 +14,8 @@
     "test:watch": "vitest",
     "build": "vite build",
     "preview": "vite preview",
-    "prepare": "svelte-kit sync || echo ''"
+    "prepare": "svelte-kit sync || echo ''",
+    "i18n:check": "vitest run src/lib/i18n/i18n-parity.test.ts src/lib/puzzles/puzzles-i18n.test.ts"
   },
   "devDependencies": {
     "@eslint/js": "^9.24.0",
@@ -57,6 +58,7 @@
     "@cotulenh/board": "workspace:^",
     "@cotulenh/common": "workspace:^",
     "@cotulenh/core": "workspace:^",
+    "@cotulenh/i18n": "workspace:^",
     "@cotulenh/learn": "workspace:^",
     "canvas-confetti": "^1.9.4",
     "dompurify": "^3.3.1",

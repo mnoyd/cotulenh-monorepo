@@ -12,12 +12,15 @@ import type {
   SectionTranslation,
   SubjectTranslation
 } from './types';
+import { COTULENH_LOCALES, createLocaleRegistry } from '@cotulenh/i18n';
 import { en } from './en';
 import { vi } from './vi';
 
 export type * from './types';
 
 const translations: Record<LearnLocale, LearnTranslations> = { en, vi };
+const learnLocaleRegistry = createLocaleRegistry(COTULENH_LOCALES);
+export const LEARN_LOCALES = learnLocaleRegistry.locales;
 
 /**
  * Get the current locale from the app's i18n system
@@ -29,7 +32,9 @@ let currentLocale: LearnLocale = 'vi'; // Default to Vietnamese
  * Set the current locale for learn content
  */
 export function setLearnLocale(locale: LearnLocale): void {
-  currentLocale = locale;
+  if (learnLocaleRegistry.isValidLocale(locale)) {
+    currentLocale = locale;
+  }
 }
 
 /**

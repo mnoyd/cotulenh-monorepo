@@ -11,14 +11,14 @@
 
   let { open = $bindable() }: Props = $props();
 
-  const shortcuts = [
+  const shortcuts = $derived.by(() => [
     { key: 'Z', action: i18n.t('shortcuts.undoMove') },
     { key: 'Y', action: i18n.t('shortcuts.redoMove') },
     { key: 'R', action: i18n.t('shortcuts.resetGame') },
     { key: 'Esc', action: i18n.t('shortcuts.cancelDeploy') },
     { key: '←/→', action: i18n.t('shortcuts.navigateHistory') },
     { key: '?', action: i18n.t('shortcuts.showHelp') }
-  ];
+  ]);
 </script>
 
 <Dialog.Root bind:open>

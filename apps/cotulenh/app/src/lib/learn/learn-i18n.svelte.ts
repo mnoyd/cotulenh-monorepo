@@ -11,6 +11,7 @@ import {
   translateSubject,
   translateSection,
   translateLesson,
+  type LearnLocale,
   type Subject,
   type Section,
   type Lesson
@@ -23,7 +24,7 @@ import {
 export function syncLearnLocale(): void {
   const appLocale = getLocale();
   // Learn locale matches app locale (both 'en' or 'vi')
-  setLearnLocale(appLocale as 'en' | 'vi');
+  setLearnLocale(appLocale as LearnLocale);
 }
 
 /**
@@ -70,7 +71,7 @@ export const learnLocale = $state(() => {
  * Watch for locale changes and update learn locale
  */
 export function watchLocale(locale: Locale): void {
-  setLearnLocale(locale as 'en' | 'vi');
+  setLearnLocale(locale as LearnLocale);
   // Trigger reactivity
   learnLocale();
 }

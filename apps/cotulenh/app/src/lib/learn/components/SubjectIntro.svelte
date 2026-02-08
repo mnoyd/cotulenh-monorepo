@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { Subject } from '@cotulenh/learn';
-  import { translateSubject } from '@cotulenh/learn';
+  import { translateSubject, type LearnLocale } from '@cotulenh/learn';
   import { BookOpen, ChevronDown, ChevronUp } from 'lucide-svelte';
   import TerrainGuide from './visualizations/TerrainGuide.svelte';
   import BridgeDetail from './visualizations/BridgeDetail.svelte';
@@ -19,7 +19,7 @@
   const i18n = getI18n();
 
   // Reactive translations based on current locale
-  const locale = $derived(i18n.getLocale() as 'en' | 'vi');
+  const locale = $derived(i18n.getLocale() as LearnLocale);
   const translatedSubject = $derived(translateSubject(subject, locale));
 
   const excerpt = $derived(
