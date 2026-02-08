@@ -151,6 +151,14 @@ export const vi: TranslationKeys = {
   'learn.diagram.riverBarrier': 'RÀO SÔNG',
   'learn.diagram.river': 'Sông',
   'learn.diagram.bridge': 'Cầu',
+  'learn.diagram.boardGrid': 'Lưới bàn cờ',
+  'learn.diagram.terrainGuideAria':
+    'Hướng dẫn địa hình bàn cờ hiển thị vùng nước, ven biển, lãnh thổ và rào sông',
+  'learn.diagram.waterZoneAria': 'Vùng nước - cột A và B',
+  'learn.diagram.coastalZoneAria': 'Vùng ven biển - cột C',
+  'learn.diagram.northLandAria': 'Lãnh thổ phía Bắc - cột D đến K, hàng 7-12',
+  'learn.diagram.southLandAria': 'Lãnh thổ phía Nam - cột D đến K, hàng 1-5',
+  'learn.diagram.riverBarrierAria': 'Rào sông - giữa hàng 6 và 7',
 
   // Board editor
   'editor.title': 'Soạn thảo',

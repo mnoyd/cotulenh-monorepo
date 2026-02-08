@@ -10,7 +10,7 @@
 
 <div class="bridge-detail">
   <div class="board-container">
-    <img src="/assets/board-grid.svg" alt="Game Board Grid" class="board-grid" />
+    <img src="/assets/board-grid.svg" alt={i18n.t('learn.diagram.boardGrid')} class="board-grid" />
 
     <div class="overlay-container">
       <!-- Shared Defs -->

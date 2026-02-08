@@ -14,7 +14,7 @@
   class="terrain-guide"
   style="--max-width: {maxWidth}"
   role="img"
-  aria-label="Game board terrain guide showing water zone, coastal zone, land territories, and river barrier"
+  aria-label={i18n.t('learn.diagram.terrainGuideAria')}
 >
   <div class="board-container">
     <img src="/assets/board-grid.svg" alt="" class="board-grid" aria-hidden="true" />
@@ -26,7 +26,7 @@
         class="zone water-zone"
         class:active={activeTerritory === 'sea'}
         style="grid-column: 1 / span 2; grid-row: 1 / -1;"
-        aria-label="Water Zone - columns A and B"
+        aria-label={i18n.t('learn.diagram.waterZoneAria')}
         on:mouseenter={() => (activeTerritory = 'sea')}
         on:mouseleave={() => (activeTerritory = null)}
         role="region"
@@ -40,7 +40,7 @@
         class="zone coastal-zone"
         class:active={activeTerritory !== null}
         style="grid-column: 3 / span 1; grid-row: 1 / -1;"
-        aria-label="Coastal Zone - column C"
+        aria-label={i18n.t('learn.diagram.coastalZoneAria')}
         on:mouseenter={() => (activeTerritory = null)}
         role="region"
       >
@@ -53,7 +53,7 @@
         class="zone land-zone north"
         class:active={activeTerritory === 'land-north'}
         style="grid-column: 4 / -1; grid-row: 1 / 7;"
-        aria-label="North Land Territory - columns D through K, ranks 7-12"
+        aria-label={i18n.t('learn.diagram.northLandAria')}
         on:mouseenter={() => (activeTerritory = 'land-north')}
         on:mouseleave={() => (activeTerritory = null)}
         role="region"
@@ -66,7 +66,7 @@
         class="zone land-zone south"
         class:active={activeTerritory === 'land-south'}
         style="grid-column: 4 / -1; grid-row: 7 / -1;"
-        aria-label="South Land Territory - columns D through K, ranks 1-5"
+        aria-label={i18n.t('learn.diagram.southLandAria')}
         on:mouseenter={() => (activeTerritory = 'land-south')}
         on:mouseleave={() => (activeTerritory = null)}
         role="region"
@@ -78,7 +78,7 @@
       <div
         class="zone river-barrier"
         style="grid-column: 3 / -1; grid-row: 6 / span 2;"
-        aria-label="River Barrier - between ranks 6 and 7"
+        aria-label={i18n.t('learn.diagram.riverBarrierAria')}
       >
         <div class="river-label">{i18n.t('learn.diagram.riverBarrier')}</div>
       </div>

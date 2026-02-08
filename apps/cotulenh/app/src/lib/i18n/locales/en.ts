@@ -151,6 +151,14 @@ export const en: TranslationKeys = {
   'learn.diagram.riverBarrier': 'RIVER BARRIER',
   'learn.diagram.river': 'River',
   'learn.diagram.bridge': 'Bridge',
+  'learn.diagram.boardGrid': 'Game board grid',
+  'learn.diagram.terrainGuideAria':
+    'Game board terrain guide showing water zone, coastal zone, land territories, and river barrier',
+  'learn.diagram.waterZoneAria': 'Water Zone - columns A and B',
+  'learn.diagram.coastalZoneAria': 'Coastal Zone - column C',
+  'learn.diagram.northLandAria': 'North Land Territory - columns D through K, ranks 7-12',
+  'learn.diagram.southLandAria': 'South Land Territory - columns D through K, ranks 1-5',
+  'learn.diagram.riverBarrierAria': 'River Barrier - between ranks 6 and 7',
 
   // Board editor
   'editor.title': 'Editor',

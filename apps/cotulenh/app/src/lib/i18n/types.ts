@@ -150,6 +150,13 @@ export interface TranslationKeys {
   'learn.diagram.riverBarrier': string;
   'learn.diagram.river': string;
   'learn.diagram.bridge': string;
+  'learn.diagram.boardGrid': string;
+  'learn.diagram.terrainGuideAria': string;
+  'learn.diagram.waterZoneAria': string;
+  'learn.diagram.coastalZoneAria': string;
+  'learn.diagram.northLandAria': string;
+  'learn.diagram.southLandAria': string;
+  'learn.diagram.riverBarrierAria': string;
 
   // Board editor
   'editor.title': string;
