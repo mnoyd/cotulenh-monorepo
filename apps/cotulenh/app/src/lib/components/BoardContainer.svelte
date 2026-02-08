@@ -119,15 +119,24 @@
       }
 
       // Ensure proper sizing after initialization
-      // Multiple timeouts handle various browser rendering timings
-      setTimeout(ensureBoardSize, 50);
-      setTimeout(ensureBoardSize, 200);
-      setTimeout(ensureBoardSize, 500);
+      // Multiple timeouts handle various browser rendering timings and PAGE TRANSITIONS
+      // transitions can shift the element (transform) without changing size,
+      // so we must force bounds recalculation after the transition ends (typically ~600ms).
+      const triggerResize = () => {
+        ensureBoardSize();
+        // Force chessground to recalculate bounds (it listens to window resize)
+        window.dispatchEvent(new Event('resize'));
+      };
+
+      setTimeout(triggerResize, 50);
+      setTimeout(triggerResize, 200);
+      setTimeout(triggerResize, 500);
+      setTimeout(triggerResize, 800); // After page transition
 
       // Add resize observer for responsive sizing
       if (window.ResizeObserver) {
         resizeObserver = new ResizeObserver(() => {
-          ensureBoardSize();
+          triggerResize();
         });
         resizeObserver.observe(containerElement);
       }
