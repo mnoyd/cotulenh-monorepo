@@ -4,7 +4,7 @@
  * Synchronizes the learn content locale with the app's UI locale
  */
 
-import { getLocale, type Locale } from '$lib/i18n';
+import { getLocale, type Locale } from '$lib/i18n/index.svelte';
 import {
   setLearnLocale,
   getLearnLocale,

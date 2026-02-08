@@ -4,7 +4,7 @@
   // Each cell roughly: width ~65.45mm, height ~65mm
   export let maxWidth = '600px';
 
-  import { getI18n } from '$lib/i18n';
+  import { getI18n } from '$lib/i18n/index.svelte';
 
   const i18n = getI18n();
   let activeTerritory: 'sea' | 'land-north' | 'land-south' | null = null;

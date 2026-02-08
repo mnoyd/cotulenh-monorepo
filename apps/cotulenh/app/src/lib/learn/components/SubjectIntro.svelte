@@ -7,7 +7,7 @@
   import { browser } from '$app/environment';
   import { marked } from 'marked';
   import createDOMPurify from 'dompurify';
-  import { getI18n } from '$lib/i18n';
+  import { getI18n } from '$lib/i18n/index.svelte';
 
   interface Props {
     subject: Subject;

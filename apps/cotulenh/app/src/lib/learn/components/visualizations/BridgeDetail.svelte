@@ -3,7 +3,7 @@
   // Visualizes the River Barrier and the Bridges (f6/f7 and h6/h7)
   // Reuses the grid system from TerrainGuide for consistency
   import BridgeSvg from './BridgeSvg.svelte';
-  import { getI18n } from '$lib/i18n';
+  import { getI18n } from '$lib/i18n/index.svelte';
 
   const i18n = getI18n();
 </script>

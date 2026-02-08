@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { LearnSession } from '../learn-session.svelte';
-  import { getI18n } from '$lib/i18n';
+  import { getI18n } from '$lib/i18n/index.svelte';
 
   interface Props {
     session: LearnSession;

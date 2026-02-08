@@ -3,7 +3,7 @@
   import { translateSubject } from '@cotulenh/learn';
   import ProgressIndicator from './ProgressIndicator.svelte';
   import { subjectProgress } from '../learn-progress.svelte';
-  import { getI18n } from '$lib/i18n';
+  import { getI18n } from '$lib/i18n/index.svelte';
   import { Lock, ChevronRight, Play } from 'lucide-svelte';
   import { goto } from '$app/navigation';
 

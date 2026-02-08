@@ -2,7 +2,7 @@
   import { ChevronRight } from 'lucide-svelte';
   import { getLessonContext, translateSubject, translateSection } from '@cotulenh/learn';
   import { subjectProgress } from '$lib/learn/learn-progress.svelte';
-  import { getI18n } from '$lib/i18n';
+  import { getI18n } from '$lib/i18n/index.svelte';
 
   interface Props {
     lessonId: string;

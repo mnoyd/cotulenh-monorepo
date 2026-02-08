@@ -2,7 +2,7 @@
   import type { Section, Lesson } from '@cotulenh/learn';
   import { translateSection, translateLesson } from '@cotulenh/learn';
   import { subjectProgress } from '../learn-progress.svelte';
-  import { getLocale } from '$lib/i18n';
+  import { getLocale } from '$lib/i18n/index.svelte';
   import { CheckCircle, Play } from 'lucide-svelte';
 
   interface Props {
