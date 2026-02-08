@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { Subject, SubjectProgress } from '@cotulenh/learn';
-  import { translateSubject } from '@cotulenh/learn';
+  import { translateSubject, type LearnLocale } from '@cotulenh/learn';
   import ProgressIndicator from './ProgressIndicator.svelte';
   import { subjectProgress } from '../learn-progress.svelte';
   import { getI18n } from '$lib/i18n/index.svelte';
@@ -18,7 +18,7 @@
   const i18n = getI18n();
 
   // Reactive translations based on current locale
-  const locale = $derived(i18n.getLocale() as 'en' | 'vi');
+  const locale = $derived(i18n.getLocale() as LearnLocale);
   const translatedSubject = $derived(translateSubject(subject, locale));
 
   const nextLesson = $derived(

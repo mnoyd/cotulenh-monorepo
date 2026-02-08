@@ -5,6 +5,7 @@ import {
   type Lesson,
   type LessonProgress,
   type LearnStatus,
+  type LearnLocale,
   type BoardShape,
   type SquareInfo,
   type GradingSystem,
@@ -98,8 +99,8 @@ export class LearnSession {
     }
   }
 
-  #syncLearnLocaleWithApp(): 'en' | 'vi' {
-    const appLocale = getLocale() as 'en' | 'vi';
+  #syncLearnLocaleWithApp(): LearnLocale {
+    const appLocale = getLocale() as LearnLocale;
     setLearnLocale(appLocale);
     return appLocale;
   }

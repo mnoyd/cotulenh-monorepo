@@ -1,4 +1,6 @@
-export type Locale = 'en' | 'vi';
+import type { CotulenhLocale } from '@cotulenh/i18n';
+
+export type Locale = CotulenhLocale;
 
 export interface TranslationKeys {
   // Navigation
@@ -74,6 +76,15 @@ export interface TranslationKeys {
   'game.missionLog': string;
   'game.live': string;
   'game.noDataRecorded': string;
+  'game.toast.illegalMove': string;
+  'game.toast.moveFailed': string;
+  'game.toast.undoSuccess': string;
+  'game.toast.undoFailed': string;
+  'game.toast.resetSuccess': string;
+  'game.toast.resetFailed': string;
+  'game.toast.commitMoveFailedPrefix': string;
+  'game.toast.cancelFailedPrefix': string;
+  'game.toast.redoComingSoon': string;
 
   // Share dialog
   'share.title': string;
@@ -184,6 +195,10 @@ export interface TranslationKeys {
   'editor.deleteMode': string;
   'editor.toggleHeroic': string;
   'editor.toggleTurn': string;
+  'editor.error.invalidFenFormat': string;
+  'editor.error.invalidFenPrefix': string;
+  'editor.error.enterFenFirst': string;
+  'editor.error.invalidFen': string;
 
   // Common
   'common.loading': string;

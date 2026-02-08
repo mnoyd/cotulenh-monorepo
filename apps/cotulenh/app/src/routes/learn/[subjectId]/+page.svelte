@@ -1,6 +1,6 @@
 <script lang="ts">
   import { page } from '$app/stores';
-  import { getSubjectById, translateSubject, tLessonTitle } from '@cotulenh/learn';
+  import { getSubjectById, translateSubject, tLessonTitle, type LearnLocale } from '@cotulenh/learn';
   import SubjectIntro from '$lib/learn/components/SubjectIntro.svelte';
   import SectionCard from '$lib/learn/components/SectionCard.svelte';
   import { subjectProgress } from '$lib/learn/learn-progress.svelte';
@@ -14,7 +14,7 @@
   const progress = $derived(subjectId ? subjectProgress.getSubjectProgress(subjectId) : null);
 
   // Reactive translations
-  const locale = $derived(i18n.getLocale() as 'en' | 'vi');
+  const locale = $derived(i18n.getLocale() as LearnLocale);
   const translatedSubject = $derived(subject ? translateSubject(subject, locale) : null);
   const nextLessonTitle = $derived(
     nextLessonInfo

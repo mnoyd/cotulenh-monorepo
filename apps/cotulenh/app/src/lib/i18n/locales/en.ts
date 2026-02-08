@@ -75,6 +75,15 @@ export const en: TranslationKeys = {
   'game.missionLog': 'Mission Log',
   'game.live': 'LIVE',
   'game.noDataRecorded': '-- NO DATA RECORDED --',
+  'game.toast.illegalMove': 'Illegal move',
+  'game.toast.moveFailed': 'Move failed',
+  'game.toast.undoSuccess': 'Undo successful',
+  'game.toast.undoFailed': 'Undo failed',
+  'game.toast.resetSuccess': 'Game reset',
+  'game.toast.resetFailed': 'Reset failed',
+  'game.toast.commitMoveFailedPrefix': 'Cannot commit move',
+  'game.toast.cancelFailedPrefix': 'Error cancelling',
+  'game.toast.redoComingSoon': 'Redo coming soon',
 
   // Share dialog
   'share.title': 'Share Game',
@@ -186,6 +195,10 @@ export const en: TranslationKeys = {
   'editor.deleteMode': 'Delete Mode - Click pieces to delete',
   'editor.toggleHeroic': 'Toggle Heroic Mode',
   'editor.toggleTurn': 'Toggle current turn',
+  'editor.error.invalidFenFormat': 'Invalid FEN format',
+  'editor.error.invalidFenPrefix': 'Invalid FEN',
+  'editor.error.enterFenFirst': 'Please enter a FEN position first',
+  'editor.error.invalidFen': 'Invalid FEN',
 
   // Error page
   'error.pageNotFound': 'Page Not Found',

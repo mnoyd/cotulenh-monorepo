@@ -1,7 +1,7 @@
 <script lang="ts">
   import { Star, CheckCircle } from 'lucide-svelte';
   import type { Lesson, LessonProgress } from '@cotulenh/learn';
-  import { translateLesson } from '@cotulenh/learn';
+  import { translateLesson, type LearnLocale } from '@cotulenh/learn';
   import { getI18n } from '$lib/i18n/index.svelte';
   import type { TranslationKey } from '$lib/i18n/types';
 
@@ -16,7 +16,7 @@
   const i18n = getI18n();
 
   // Reactive translations based on current locale
-  const locale = $derived(i18n.getLocale() as 'en' | 'vi');
+  const locale = $derived(i18n.getLocale() as LearnLocale);
   const translatedLesson = $derived(translateLesson(subjectId, lesson, locale));
 
   function getDifficultyLabel(d: number): string {

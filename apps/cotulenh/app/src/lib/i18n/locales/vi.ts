@@ -75,6 +75,15 @@ export const vi: TranslationKeys = {
   'game.missionLog': 'Nhật ký nhiệm vụ',
   'game.live': 'TRỰC TIẾP',
   'game.noDataRecorded': '-- KHÔNG CÓ DỮ LIỆU --',
+  'game.toast.illegalMove': 'Nước đi không hợp lệ',
+  'game.toast.moveFailed': 'Đi nước thất bại',
+  'game.toast.undoSuccess': 'Hoàn tác thành công',
+  'game.toast.undoFailed': 'Hoàn tác thất bại',
+  'game.toast.resetSuccess': 'Đã đặt lại ván cờ',
+  'game.toast.resetFailed': 'Đặt lại thất bại',
+  'game.toast.commitMoveFailedPrefix': 'Không thể xác nhận nước đi',
+  'game.toast.cancelFailedPrefix': 'Lỗi khi hủy',
+  'game.toast.redoComingSoon': 'Tính năng làm lại sẽ sớm có',
 
   // Share dialog
   'share.title': 'Chia sẻ ván cờ',
@@ -186,6 +195,10 @@ export const vi: TranslationKeys = {
   'editor.deleteMode': 'Chế độ Xóa - Nhấp để xóa quân',
   'editor.toggleHeroic': 'Bật/tắt chế độ Anh hùng',
   'editor.toggleTurn': 'Đổi lượt hiện tại',
+  'editor.error.invalidFenFormat': 'Định dạng FEN không hợp lệ',
+  'editor.error.invalidFenPrefix': 'FEN không hợp lệ',
+  'editor.error.enterFenFirst': 'Vui lòng nhập vị trí FEN trước',
+  'editor.error.invalidFen': 'FEN không hợp lệ',
 
   // Error page
   'error.pageNotFound': 'Không tìm thấy trang',

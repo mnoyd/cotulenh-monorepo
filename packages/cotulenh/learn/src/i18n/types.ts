@@ -1,10 +1,12 @@
+import type { CotulenhLocale } from '@cotulenh/i18n';
+
 /**
  * Learn system translation types
  *
  * Supports dual language (English/Vietnamese) for all learn content
  */
 
-export type LearnLocale = 'en' | 'vi';
+export type LearnLocale = CotulenhLocale;
 
 /**
  * Translation record for a single lesson

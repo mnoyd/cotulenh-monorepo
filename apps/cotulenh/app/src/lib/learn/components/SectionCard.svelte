@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { Section, Lesson } from '@cotulenh/learn';
-  import { translateSection, translateLesson } from '@cotulenh/learn';
+  import { translateSection, translateLesson, type LearnLocale } from '@cotulenh/learn';
   import { subjectProgress } from '../learn-progress.svelte';
   import { getLocale } from '$lib/i18n/index.svelte';
   import { CheckCircle, Play } from 'lucide-svelte';
@@ -13,7 +13,7 @@
   let { section, subjectId }: Props = $props();
 
   // Reactive translations based on current locale
-  const locale = $derived(getLocale() as 'en' | 'vi');
+  const locale = $derived(getLocale() as LearnLocale);
   const translatedSection = $derived(translateSection(subjectId, section, locale));
 
   function getStars(lessonId: string) {

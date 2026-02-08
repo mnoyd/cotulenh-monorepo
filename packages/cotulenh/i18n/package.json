@@ -1,7 +1,7 @@
 {
-  "name": "@cotulenh/learn",
+  "name": "@cotulenh/i18n",
   "version": "0.0.0",
-  "description": "Learning system for CoTuLenh - lessons, tutorials, and training",
+  "description": "Shared i18n utilities for CoTuLenh packages and apps",
   "license": "BSD-2-Clause",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -19,31 +19,20 @@
   ],
   "scripts": {
     "build": "vite build",
-    "check": "npm run format:check && npm run test && npm run build",
+    "check": "npm run format:check && npm run lint && npm run build",
     "check-types": "tsc --noEmit",
     "clean": "rm -rf ./dist",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "lint": "eslint .",
-    "test": "vitest run",
-    "i18n:check": "vitest run src/i18n/i18n-parity.test.ts"
+    "lint": "eslint ."
   },
-  "author": "Hoang Manh",
   "devDependencies": {
-    "@eslint/js": "^9.24.0",
+    "@cotulenh/common": "workspace:^",
     "@types/node": "^22.13.11",
     "eslint": "^9.24.0",
-    "globals": "^15.15.0",
     "prettier": "^3.5.3",
     "typescript": "^5.8.2",
-    "typescript-eslint": "^8.29.0",
     "vite": "^5.4.11",
-    "vite-plugin-dts": "^4.3.0",
-    "vitest": "^1.6.1"
-  },
-  "dependencies": {
-    "@cotulenh/i18n": "workspace:^",
-    "@cotulenh/core": "workspace:^",
-    "@cotulenh/common": "workspace:^"
+    "vite-plugin-dts": "^4.3.0"
   }
 }

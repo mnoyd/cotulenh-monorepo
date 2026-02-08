@@ -82,6 +82,7 @@ export type { HintSystemCallbacks } from './hint-system';
 
 // Internationalization for learn content
 export {
+  LEARN_LOCALES,
   setLearnLocale,
   getLearnLocale,
   getSubjectTranslation,

@@ -1,6 +1,11 @@
 <script lang="ts">
   import { ChevronRight } from 'lucide-svelte';
-  import { getLessonContext, translateSubject, translateSection } from '@cotulenh/learn';
+  import {
+    getLessonContext,
+    translateSubject,
+    translateSection,
+    type LearnLocale
+  } from '@cotulenh/learn';
   import { subjectProgress } from '$lib/learn/learn-progress.svelte';
   import { getI18n } from '$lib/i18n/index.svelte';
 
@@ -21,7 +26,7 @@
   const sectionLessons = $derived(section?.lessons ?? []);
 
   // Reactive translations
-  const locale = $derived(i18n.getLocale() as 'en' | 'vi');
+  const locale = $derived(i18n.getLocale() as LearnLocale);
   const translatedSubject = $derived(subject ? translateSubject(subject, locale) : null);
   const translatedSection = $derived(
     subject && section ? translateSection(subject.id, section, locale) : null
