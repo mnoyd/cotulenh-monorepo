@@ -81,7 +81,7 @@
         class="header-btn"
         class:active={showFenPanel}
         onclick={() => (showFenPanel = !showFenPanel)}
-        title="FEN"
+        title={i18n.t('editor.fenPosition')}
       >
         FEN
       </button>
@@ -191,8 +191,8 @@
       <button
         class="turn-btn-compact {editor.currentTurn}"
         onclick={editor.toggleTurn}
-        title="{tToggleTurn}: {editor.currentTurn === 'red' ? tRed : tBlue}"
-        aria-label="{tToggleTurn}. {tCurrentTurn.replace('{color}', editor.currentTurn === 'red' ? tRed : tBlue)}"
+        title={`${tToggleTurn}: ${editor.currentTurn === 'red' ? tRed : tBlue}`}
+        aria-label={`${tToggleTurn}. ${tCurrentTurn.replace('{color}', editor.currentTurn === 'red' ? tRed : tBlue)}`}
       >
         <span class="turn-dot {editor.currentTurn}"></span>
       </button>

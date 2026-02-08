@@ -12,6 +12,7 @@ export const vi: TranslationKeys = {
   'nav.keyboardShortcuts': 'Phím tắt bàn phím',
   'nav.learn': 'Học chơi',
   'nav.appName': 'Cờ Tư Lệnh Online',
+  'nav.menu': 'Menu',
 
   // Home page
   'home.demoBadge': 'Demo',
@@ -82,6 +83,10 @@ export const vi: TranslationKeys = {
   'share.shareUrl': 'Đường dẫn chia sẻ',
   'share.shareUrlDesc': 'Sao chép đường dẫn để tải thế cờ này khi mở',
   'share.copyLink': 'Sao chép đường dẫn',
+  'share.fenString': 'Chuỗi FEN',
+  'share.fenCopied': 'Đã sao chép FEN vào bộ nhớ tạm',
+  'share.linkCopied': 'Đã sao chép liên kết chia sẻ!',
+  'share.copyFailed': 'Không thể sao chép',
 
   // Shortcuts dialog
   'shortcuts.title': 'Phím tắt bàn phím',
@@ -105,7 +110,7 @@ export const vi: TranslationKeys = {
   // Learn page
   'learn.title': 'Học chơi',
   'learn.tagline': 'Thành thạo Cờ Tư Lệnh từng bước với bài học tương tác',
-  'learn.description': 'Master Co Tu Lenh step by step with interactive lessons.',
+  'learn.description': 'Làm chủ Cờ Tư Lệnh từng bước với các bài học tương tác.',
   'learn.backToLessons': 'Quay lại bài học',
   'learn.backToSubjects': 'Quay lại danh sách',
   'learn.startLesson': 'Bắt đầu học',

@@ -12,6 +12,7 @@ export const en: TranslationKeys = {
   'nav.keyboardShortcuts': 'Keyboard Shortcuts',
   'nav.learn': 'Learn',
   'nav.appName': 'Cotulenh Online',
+  'nav.menu': 'Menu',
 
   // Home page
   'home.demoBadge': 'Demo',
@@ -82,6 +83,10 @@ export const en: TranslationKeys = {
   'share.shareUrl': 'Share URL',
   'share.shareUrlDesc': 'Copy a shareable link that will load this position when opened',
   'share.copyLink': 'Copy Share Link',
+  'share.fenString': 'FEN String',
+  'share.fenCopied': 'FEN copied to clipboard',
+  'share.linkCopied': 'Share link copied!',
+  'share.copyFailed': 'Failed to copy',
 
   // Shortcuts dialog
   'shortcuts.title': 'Keyboard Shortcuts',

@@ -50,7 +50,7 @@
           class="dot"
           class:current={isCurrent}
           class:completed={isCompleted}
-          title="{i18n.t('learn.lesson')} {i + 1}"
+          title={`${i18n.t('learn.lesson')} ${i + 1}`}
         ></span>
       {/each}
     </div>

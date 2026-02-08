@@ -1,55 +1,36 @@
 <script lang="ts">
   import { getI18n } from '$lib/i18n/index.svelte';
+  import { getPuzzles, type PuzzleDifficulty } from '$lib/puzzles';
   import { Puzzle, Play, ChevronRight } from 'lucide-svelte';
 
   const i18n = getI18n();
 
-  interface PuzzleData {
-    id: number;
-    title: string;
-    description: string;
-    difficulty: 'Easy' | 'Medium' | 'Hard';
-    fen: string;
-    hint?: string;
-  }
+  const locale = $derived(i18n.getLocale());
+  const puzzles = $derived(getPuzzles(locale));
 
-  const puzzles: PuzzleData[] = [
-    {
-      id: 1,
-      title: 'Commander Capture',
-      description: 'Red to move. Find the winning move to capture the blue commander.',
-      difficulty: 'Easy',
-      fen: '11/11/11/11/11/11/5+IC4/8c2/11/11/11/11 r - - 0 1',
-      hint: 'Try to conner the blue commander, mirror their moves. Avoid stalemate'
-    },
-    {
-      id: 2,
-      title: 'Combined Arms',
-      description: 'Must win in 2 moves.',
-      difficulty: 'Medium',
-      fen: '2c8/3g3h3/4FT5/3t7/11/5C5/11/11/11/11/11/11 r - - 0 1',
-      hint: 'Double attack is very powerful if you know how to create them.'
-    },
-    {
-      id: 3,
-      title: 'Less vs More',
-      description: 'Must win in 3 moves.',
-      difficulty: 'Hard',
-      fen: '2c1a1f4/11/2t1s1F4/11/2A8/11/11/11/11/11/3C7/11 r - - 0 1',
-      hint: 'Last piece from each side auto promoted.'
-    },
-  ];
-
-  function getDifficultyColor(difficulty: string): string {
+  function getDifficultyColor(difficulty: PuzzleDifficulty): string {
     switch (difficulty) {
-      case 'Easy':
+      case 'easy':
         return 'difficulty-easy';
-      case 'Medium':
+      case 'medium':
         return 'difficulty-medium';
-      case 'Hard':
+      case 'hard':
         return 'difficulty-hard';
       default:
         return '';
+    }
+  }
+
+  function getDifficultyLabel(difficulty: PuzzleDifficulty): string {
+    switch (difficulty) {
+      case 'easy':
+        return i18n.t('common.easy');
+      case 'medium':
+        return i18n.t('common.medium');
+      case 'hard':
+        return i18n.t('common.hard');
+      default:
+        return difficulty;
     }
   }
 
@@ -74,7 +55,7 @@
           <div class="puzzle-header">
             <span class="puzzle-number">#{puzzle.id}</span>
             <span class="puzzle-difficulty {getDifficultyColor(puzzle.difficulty)}">
-              {puzzle.difficulty}
+              {getDifficultyLabel(puzzle.difficulty)}
             </span>
           </div>
 

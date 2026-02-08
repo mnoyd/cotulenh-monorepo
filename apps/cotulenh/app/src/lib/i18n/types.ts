@@ -12,6 +12,7 @@ export interface TranslationKeys {
   'nav.keyboardShortcuts': string;
   'nav.learn': string;
   'nav.appName': string;
+  'nav.menu': string;
 
   // Home page
   'home.demoBadge': string;
@@ -81,6 +82,10 @@ export interface TranslationKeys {
   'share.shareUrl': string;
   'share.shareUrlDesc': string;
   'share.copyLink': string;
+  'share.fenString': string;
+  'share.fenCopied': string;
+  'share.linkCopied': string;
+  'share.copyFailed': string;
 
   // Shortcuts dialog
   'shortcuts.title': string;
