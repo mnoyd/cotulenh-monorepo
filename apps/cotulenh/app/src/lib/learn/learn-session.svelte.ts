@@ -11,8 +11,7 @@ import {
   HintSystem,
   type HintLevel,
   translateLesson,
-  setLearnLocale,
-  getLearnLocale
+  setLearnLocale
 } from '@cotulenh/learn';
 import { subjectProgress } from './learn-progress.svelte';
 import { coreToBoardColor, mapPossibleMovesToDests } from '$lib/features/game/utils';

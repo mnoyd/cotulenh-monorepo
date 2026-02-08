@@ -1,6 +1,6 @@
 <script lang="ts">
   import { page } from '$app/stores';
-  import { getSubjectById, translateSubject, translateSection, getLessonById, tLessonTitle } from '@cotulenh/learn';
+  import { getSubjectById, translateSubject, tLessonTitle } from '@cotulenh/learn';
   import SubjectIntro from '$lib/learn/components/SubjectIntro.svelte';
   import SectionCard from '$lib/learn/components/SectionCard.svelte';
   import { subjectProgress } from '$lib/learn/learn-progress.svelte';
