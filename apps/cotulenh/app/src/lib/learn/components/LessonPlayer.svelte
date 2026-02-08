@@ -1,5 +1,6 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
+  import { fly, fade, slide } from 'svelte/transition';
   import {
     RotateCcw,
     ArrowRight,
@@ -15,6 +16,7 @@
   import LessonContent from './LessonContent.svelte';
   import LessonStepper from './LessonStepper.svelte';
   import LessonIntroModal from './LessonIntroModal.svelte';
+  import Celebration from './Celebration.svelte';
   import { LearnSession } from '../learn-session.svelte';
   import { getI18n } from '$lib/i18n/index.svelte';
   import { getLessonContext } from '@cotulenh/learn';
@@ -109,6 +111,10 @@
     <LessonIntroModal lesson={session.lesson} onStart={handleStartLesson} />
   {/if}
 
+  {#if session.status === 'completed'}
+    <Celebration />
+  {/if}
+
   <div class="lesson-player">
     <!-- Progress stepper with breadcrumb navigation -->
     <LessonStepper {lessonId} />
@@ -151,25 +157,40 @@
 
       <div class="instruction-section">
         {#if session.status === 'completed'}
-          <div class="completion-panel">
-            <CheckCircle size={48} class="completion-icon" />
-            <h2>{i18n.t('learn.lessonComplete')}</h2>
+          <div class="completion-panel" in:fly={{ y: 20, duration: 500, delay: 200 }}>
+            <div class="completion-icon-wrapper" in:fly={{ y: 20, duration: 400, delay: 400 }}>
+              <CheckCircle size={56} class="completion-icon" />
+            </div>
+
+            <h2 in:fade={{ duration: 400, delay: 500 }}>
+              {i18n.t('learn.lessonComplete')}
+            </h2>
+
             {#if session.gradingSystem === 'stars'}
               <div class="stars-earned">
                 {#each [1, 2, 3] as i}
-                  <Star
-                    size={32}
-                    fill={i <= session.stars ? '#fbbf24' : 'none'}
-                    color={i <= session.stars ? '#fbbf24' : '#666'}
-                  />
+                  <div class="star-wrapper" in:fly={{ y: 20, duration: 400, delay: 600 + i * 150 }}>
+                    <Star
+                      size={36}
+                      fill={i <= session.stars ? '#fbbf24' : 'none'}
+                      color={i <= session.stars ? '#fbbf24' : '#4b5563'}
+                      strokeWidth={1.5}
+                    />
+                  </div>
                 {/each}
               </div>
-              <p class="move-count">{i18n.t('learn.moves')}: {session.moveCount}</p>
+              <p class="move-count" in:fade={{ duration: 400, delay: 1100 }}>
+                {i18n.t('learn.moves')}: {session.moveCount}
+              </p>
             {/if}
+
             {#if session.showFeedback}
-              <p class="success-message">{session.feedbackMessage}</p>
+              <p class="success-message" in:fade={{ duration: 400, delay: 600 }}>
+                {session.feedbackMessage}
+              </p>
             {/if}
-            <div class="completion-actions">
+
+            <div class="completion-actions" in:fade={{ duration: 400, delay: 1200 }}>
               <button class="btn secondary" onclick={() => session?.restart()}>
                 <RotateCcw size={16} />
                 {i18n.t('common.tryAgain')}
@@ -181,7 +202,7 @@
             </div>
           </div>
         {:else}
-          <div class="instruction-panel">
+          <div class="instruction-panel" transition:fade={{ duration: 200 }}>
             {#if session.lessonContent}
               <LessonContent content={session.lessonContent} />
             {/if}
@@ -203,9 +224,13 @@
             {/if}
 
             {#if session.showFeedback}
-              <div class="feedback hint">
-                {session.feedbackMessage}
-              </div>
+              {#key session.feedbackMessage}
+                <div class="feedback hint" transition:slide={{ duration: 200 }}>
+                  <span class="feedback-text animate-pulse">
+                    {session.feedbackMessage}
+                  </span>
+                </div>
+              {/key}
             {/if}
           </div>
         {/if}
@@ -288,6 +313,7 @@
     display: flex;
     flex-direction: column;
     gap: 1rem;
+    position: relative; /* For transitions */
   }
 
   .instruction-panel {
@@ -343,31 +369,43 @@
     background: var(--theme-bg-panel, #222);
     border: 1px solid var(--theme-success, #22c55e);
     border-radius: 12px;
-    padding: 2rem;
+    padding: 2.5rem;
     text-align: center;
+    box-shadow: 0 10px 30px -5px rgba(34, 197, 94, 0.2);
+  }
+
+  .completion-icon-wrapper {
+    margin-bottom: 1rem;
   }
 
   .completion-panel :global(.completion-icon) {
     color: var(--theme-success, #22c55e);
+    filter: drop-shadow(0 0 10px rgba(34, 197, 94, 0.5));
   }
 
   .completion-panel h2 {
-    margin: 1rem 0;
+    margin: 0.5rem 0 1.5rem;
     color: var(--theme-success, #22c55e);
+    font-size: 1.75rem;
+    font-weight: 700;
   }
 
   .stars-earned {
     display: flex;
     justify-content: center;
-    gap: 0.5rem;
-    margin: 1rem 0;
+    gap: 0.75rem;
+    margin: 1.5rem 0 0.5rem;
+  }
+
+  .star-wrapper {
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
   }
 
   .completion-actions {
     display: flex;
     gap: 1rem;
     justify-content: center;
-    margin-top: 1.5rem;
+    margin-top: 2rem;
   }
 
   .btn {
@@ -380,6 +418,15 @@
     font-weight: 600;
     cursor: pointer;
     font-size: 0.875rem;
+    transition: all 0.2s ease;
+  }
+
+  .btn:hover {
+    transform: translateY(-1px);
+  }
+
+  .btn:active {
+    transform: translateY(0);
   }
 
   .btn:disabled {
@@ -392,16 +439,31 @@
     color: #000;
   }
 
+  .btn.primary:hover {
+    background: #16a34a;
+    box-shadow: 0 4px 12px rgba(34, 197, 94, 0.4);
+  }
+
   .btn.secondary {
     background: transparent;
     border: 1px solid var(--theme-border, #444);
     color: var(--theme-text-primary, #eee);
   }
 
+  .btn.secondary:hover {
+    border-color: var(--theme-text-secondary, #aaa);
+    background: rgba(255, 255, 255, 0.05);
+  }
+
   .btn.hint-btn {
     background: rgba(59, 130, 246, 0.2);
     border: 1px solid #3b82f6;
     color: #3b82f6;
+  }
+
+  .btn.hint-btn:hover {
+    background: rgba(59, 130, 246, 0.3);
+    box-shadow: 0 0 10px rgba(59, 130, 246, 0.3);
   }
 
   .loading {
@@ -420,5 +482,29 @@
     .board-section {
       width: 100%;
     }
+
+    .instruction-section {
+      min-width: 0;
+    }
+  }
+
+  @keyframes pulse {
+    0% {
+      opacity: 0.6;
+      transform: scale(0.98);
+    }
+    50% {
+      opacity: 1;
+      transform: scale(1.01);
+    }
+    100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  .animate-pulse {
+    display: block;
+    animation: pulse 0.3s ease-out;
   }
 </style>

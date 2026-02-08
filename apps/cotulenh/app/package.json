@@ -25,6 +25,7 @@
     "@sveltejs/kit": "^2.16.0",
     "@sveltejs/vite-plugin-svelte": "^5.0.0",
     "@tailwindcss/postcss": "^4",
+    "@types/canvas-confetti": "^1.9.0",
     "@types/dompurify": "^3.2.0",
     "@types/node": "^24.10.4",
     "@vitest/ui": "^1.6.1",
@@ -57,9 +58,11 @@
     "@cotulenh/common": "workspace:^",
     "@cotulenh/core": "workspace:^",
     "@cotulenh/learn": "workspace:^",
+    "canvas-confetti": "^1.9.4",
     "dompurify": "^3.3.1",
     "immer": "^10.1.1",
     "marked": "^17.0.1",
+    "svelte-portal": "^2.2.1",
     "zod": "^3.25.76"
   }
 }

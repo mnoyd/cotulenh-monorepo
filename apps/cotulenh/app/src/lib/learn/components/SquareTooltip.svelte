@@ -82,6 +82,10 @@
     }, 100);
   }
 
+  interface CgKeyElement extends HTMLElement {
+    cgKey?: string;
+  }
+
   function getSquareFromElement(element: HTMLElement): Square | null {
     // Try to find the square key from the element
     const square = element.closest('[data-square]');
@@ -90,9 +94,9 @@
     }
 
     // Fallback: try cgKey attribute
-    const elementWithCgKey = element as { cgKey?: string };
-    if (elementWithCgKey.cgKey && elementWithCgKey.cgKey !== 'a0') {
-      return elementWithCgKey.cgKey as Square;
+    const cgKey = (element as CgKeyElement).cgKey;
+    if (cgKey && cgKey !== 'a0') {
+      return cgKey as Square;
     }
 
     return null;
