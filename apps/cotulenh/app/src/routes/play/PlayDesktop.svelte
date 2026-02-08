@@ -26,6 +26,37 @@
     blue: TIME_PRESETS.blitz5_3
   });
 
+  function syncClockAfterMove() {
+    if (!session || session.status !== 'playing') return;
+
+    const nextTurn = session.turn;
+    if (!nextTurn) return;
+
+    if (clock.status === 'idle') {
+      clock.start(nextTurn);
+      return;
+    }
+
+    if (clock.status === 'paused') {
+      clock.resume();
+    }
+
+    const mover = nextTurn === 'r' ? 'b' : 'r';
+
+    if (clock.status === 'running') {
+      if (clock.activeSide === mover) {
+        clock.switchSide();
+      } else if (clock.activeSide !== nextTurn) {
+        clock.stop();
+        clock.start(nextTurn);
+      }
+    }
+  }
+
+  function resetClock() {
+    clock.reset();
+  }
+
   function handleTimeout(loser: ClockColor) {
     logger.info(`${loser === 'r' ? 'Red' : 'Blue'} lost on time`);
   }
@@ -49,10 +80,7 @@
       session = new GameSession(initialFen);
 
       session.onMove = () => {
-        if (clock.status === 'idle') {
-          clock.start('r');
-        }
-        clock.switchSide();
+        syncClockAfterMove();
       };
     } catch (error) {
       logger.error(error, 'Failed to initialize game session:');
@@ -76,8 +104,28 @@
   });
 
   $effect(() => {
-    if (session && session.status !== 'playing') {
+    if (!session) return;
+
+    const isPlaying = session.status === 'playing';
+    const hasMoves = session.history.length > 0;
+    const isViewingHistory = session.isViewingHistory;
+    const turn = session.turn;
+
+    if (!isPlaying || !hasMoves || isViewingHistory || !turn) {
+      if (clock.status !== 'idle') {
+        clock.stop();
+      }
+      return;
+    }
+
+    if (clock.status === 'idle') {
+      clock.start(turn);
+      return;
+    }
+
+    if (clock.status === 'running' && clock.activeSide !== turn) {
       clock.stop();
+      clock.start(turn);
     }
   });
 </script>
@@ -123,7 +171,7 @@
             </div>
             <div class="controls-right">
               {#if session}
-                <GameControls {session} onReset={() => clock.reset()} />
+                <GameControls {session} onReset={resetClock} />
               {/if}
             </div>
             <div class="controls-history">
