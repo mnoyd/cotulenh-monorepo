@@ -82,6 +82,10 @@
     }, 100);
   }
 
+  interface CgKeyElement extends HTMLElement {
+    cgKey?: string;
+  }
+
   function getSquareFromElement(element: HTMLElement): Square | null {
     // Try to find the square key from the element
     const square = element.closest('[data-square]');
@@ -90,29 +94,12 @@
     }
 
     // Fallback: try cgKey attribute
-    const cgKey = (element as any).cgKey;
+    const cgKey = (element as CgKeyElement).cgKey;
     if (cgKey && cgKey !== 'a0') {
       return cgKey as Square;
     }
 
     return null;
-  }
-
-  function getSquarePosition(square: Square): { x: number; y: number } | null {
-    if (!boardApi) return null;
-
-    const boardElement = boardApi.state.dom?.elements?.board;
-    if (!boardElement) return null;
-
-    // Find the square element
-    const squareEl = boardElement.querySelector(`square[data-square="${square}"]`) as HTMLElement;
-    if (!squareEl) return null;
-
-    const rect = squareEl.getBoundingClientRect();
-    return {
-      x: rect.left + rect.width / 2,
-      y: rect.top
-    };
   }
 
   function handleMouseMove(event: MouseEvent) {
