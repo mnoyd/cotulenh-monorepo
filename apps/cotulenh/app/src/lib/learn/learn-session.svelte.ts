@@ -54,7 +54,7 @@ export class LearnSession {
         this.syncBoard();
       },
       onComplete: (result) => {
-        this.#feedbackMessage = this.#engine.successMessage;
+        this.#feedbackMessage = this.#getSuccessFeedbackMessage();
         this.#showFeedback = true;
         this.#isFailed = false;
         this.#saveProgress(result);
@@ -64,7 +64,7 @@ export class LearnSession {
       onStateChange: (status) => {
         if (status === 'failed') {
           this.#isFailed = true;
-          this.#feedbackMessage = this.#engine.failureMessage;
+          this.#feedbackMessage = this.#getFailureFeedbackMessage();
           this.#showFeedback = true;
         }
         this.#version++;
@@ -75,7 +75,7 @@ export class LearnSession {
       },
       onFail: () => {
         this.#isFailed = true;
-        this.#feedbackMessage = this.#engine.failureMessage;
+        this.#feedbackMessage = this.#getFailureFeedbackMessage();
         this.#showFeedback = true;
         this.#version++;
       },
@@ -98,6 +98,32 @@ export class LearnSession {
     }
   }
 
+  #syncLearnLocaleWithApp(): 'en' | 'vi' {
+    const appLocale = getLocale() as 'en' | 'vi';
+    setLearnLocale(appLocale);
+    return appLocale;
+  }
+
+  #getCurrentTranslatedLesson(): Lesson | null {
+    const lesson = this.#engine.lesson;
+    if (!lesson) return null;
+
+    const appLocale = this.#syncLearnLocaleWithApp();
+    return translateLesson(lesson.subjectId ?? '', lesson, appLocale);
+  }
+
+  #getSuccessFeedbackMessage(): string {
+    const i18n = getI18n();
+    const translated = this.#getCurrentTranslatedLesson();
+    return translated?.successMessage ?? i18n.t(`learn.feedback.${this.#engine.successCode}`);
+  }
+
+  #getFailureFeedbackMessage(): string {
+    const i18n = getI18n();
+    const translated = this.#getCurrentTranslatedLesson();
+    return translated?.failureMessage ?? i18n.t(`learn.feedback.${this.#engine.failureCode}`);
+  }
+
   // ============================================================
   // REACTIVE GETTERS
   // ============================================================
@@ -112,14 +138,7 @@ export class LearnSession {
    */
   get translatedLesson(): Lesson | null {
     void this.#version;
-    const lesson = this.#engine.lesson;
-    if (!lesson) return null;
-
-    // Sync learn locale with app locale
-    const appLocale = getLocale() as 'en' | 'vi';
-    setLearnLocale(appLocale);
-
-    return translateLesson(lesson.subjectId ?? '', lesson, appLocale);
+    return this.#getCurrentTranslatedLesson();
   }
 
   /**
@@ -393,8 +412,8 @@ export class LearnSession {
   }
 
   showHint(autoHideDuration: number = LearnSession.HINT_AUTO_HIDE_DURATION): void {
-    if (this.#engine.hint) {
-      this.#feedbackMessage = this.#engine.hint;
+    if (this.hint) {
+      this.#feedbackMessage = this.hint;
       this.#showFeedback = true;
       this.#version++;
 

@@ -62,7 +62,7 @@
     session = newSession;
 
     // Show intro modal for first-time visitors if lesson has content
-    if (newSession.lesson?.content && !hasSeenIntro(lessonId)) {
+    if ((newSession.translatedLesson?.content ?? newSession.lesson?.content) && !hasSeenIntro(lessonId)) {
       showIntroModal = true;
     } else {
       showIntroModal = false;
@@ -103,12 +103,17 @@
     }
     return session.remainingTargets;
   });
+
+  const introLesson = $derived.by(() => {
+    if (!session) return null;
+    return session.translatedLesson ?? session.lesson;
+  });
 </script>
 
 {#if session && session.lesson}
   <!-- Intro modal for first-time visitors -->
-  {#if showIntroModal}
-    <LessonIntroModal lesson={session.lesson} onStart={handleStartLesson} />
+  {#if showIntroModal && introLesson}
+    <LessonIntroModal lesson={introLesson} onStart={handleStartLesson} />
   {/if}
 
   {#if session.status === 'completed'}
