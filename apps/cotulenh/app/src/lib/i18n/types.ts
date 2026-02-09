@@ -12,6 +12,7 @@ export interface TranslationKeys {
   'nav.keyboardShortcuts': string;
   'nav.learn': string;
   'nav.appName': string;
+  'nav.menu': string;
 
   // Home page
   'home.demoBadge': string;
@@ -52,6 +53,12 @@ export interface TranslationKeys {
   'settings.autoCompleteDeploy': string;
   'settings.save': string;
   'settings.saved': string;
+  'settings.theme.modernWarfare.name': string;
+  'settings.theme.modernWarfare.description': string;
+  'settings.theme.classic.name': string;
+  'settings.theme.classic.description': string;
+  'settings.theme.forest.name': string;
+  'settings.theme.forest.description': string;
 
   // Game
   'game.missionStatus': string;
@@ -73,6 +80,16 @@ export interface TranslationKeys {
   'game.missionLog': string;
   'game.live': string;
   'game.noDataRecorded': string;
+  'game.illegalMove': string;
+  'game.moveFailed': string;
+  'game.undoSuccess': string;
+  'game.undoFailed': string;
+  'game.resetSuccess': string;
+  'game.resetFailed': string;
+  'game.redoComingSoon': string;
+  'game.cannotCommitMove': string;
+  'game.errorCancelling': string;
+  'game.unknownError': string;
 
   // Share dialog
   'share.title': string;
@@ -81,6 +98,10 @@ export interface TranslationKeys {
   'share.shareUrl': string;
   'share.shareUrlDesc': string;
   'share.copyLink': string;
+  'share.fenLabel': string;
+  'share.toastFenCopied': string;
+  'share.toastCopyFailed': string;
+  'share.toastLinkCopied': string;
 
   // Shortcuts dialog
   'shortcuts.title': string;
@@ -179,6 +200,27 @@ export interface TranslationKeys {
   'editor.deleteMode': string;
   'editor.toggleHeroic': string;
   'editor.toggleTurn': string;
+  'editor.tipDragPieces': string;
+  'editor.tipClickRemovePieces': string;
+  'editor.tipTogglePromotionStatus': string;
+  'editor.invalidFenFormat': string;
+  'editor.invalidFenGeneric': string;
+  'editor.invalidFenWithReason': string;
+  'editor.enterFenFirst': string;
+  'editor.fenShort': string;
+
+  // Piece names
+  'piece.commander': string;
+  'piece.infantry': string;
+  'piece.tank': string;
+  'piece.militia': string;
+  'piece.engineer': string;
+  'piece.artillery': string;
+  'piece.antiAir': string;
+  'piece.missile': string;
+  'piece.airForce': string;
+  'piece.navy': string;
+  'piece.headquarter': string;
 
   // Common
   'common.loading': string;

@@ -81,9 +81,9 @@
         class="header-btn"
         class:active={showFenPanel}
         onclick={() => (showFenPanel = !showFenPanel)}
-        title="FEN"
+        title={i18n.t('editor.fenShort')}
       >
-        FEN
+        {i18n.t('editor.fenShort')}
       </button>
     </div>
   </header>

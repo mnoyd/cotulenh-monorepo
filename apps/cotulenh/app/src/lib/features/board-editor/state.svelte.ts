@@ -5,11 +5,12 @@ import { goto } from '$app/navigation';
 import { toast } from 'svelte-sonner';
 import type { EditorMode, SelectedPiece, GhostPosition } from './types.js';
 import { EMPTY_FEN, STARTING_FEN, DELETE_MARKER } from './constants.js';
+import { t } from '$lib/i18n/index.svelte';
 
 export function createBoardEditorState() {
   let boardApi = $state.raw<Api | null>(null);
   let fenInput = $state('');
-  let copyButtonText = $state('Copy');
+  let copyButtonTextKey = $state<'common.copy' | 'common.copied'>('common.copy');
   let boardOrientation = $state<'red' | 'blue'>('red');
   let editorMode = $state<EditorMode>('hand');
   let selectedPiece = $state<SelectedPiece | null>(null);
@@ -60,7 +61,7 @@ export function createBoardEditorState() {
         // Validate FEN before applying
         const isValid = validateFenString(normalizedFen);
         if (!isValid) {
-          throw new Error('Invalid FEN format');
+          throw new Error(t('editor.invalidFenFormat'));
         }
 
         boardApi.set({
@@ -71,9 +72,9 @@ export function createBoardEditorState() {
         fenInput = normalizedFen;
         validationError = ''; // Clear any previous errors
       } catch (error) {
-        const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+        const errorMsg = error instanceof Error ? error.message : t('editor.invalidFenGeneric');
         validationError = errorMsg;
-        toast.error('Invalid FEN: ' + errorMsg);
+        toast.error(t('editor.invalidFenWithReason').replace('{reason}', errorMsg));
       }
     }
   }
@@ -237,9 +238,9 @@ export function createBoardEditorState() {
   async function copyFEN() {
     try {
       await navigator.clipboard.writeText(fenInput);
-      copyButtonText = 'Copied!';
+      copyButtonTextKey = 'common.copied';
       setTimeout(() => {
-        copyButtonText = 'Copy';
+        copyButtonTextKey = 'common.copy';
       }, 2000);
     } catch {
       const textArea = document.createElement('textarea');
@@ -248,9 +249,9 @@ export function createBoardEditorState() {
       textArea.select();
       document.execCommand('copy');
       document.body.removeChild(textArea);
-      copyButtonText = 'Copied!';
+      copyButtonTextKey = 'common.copied';
       setTimeout(() => {
-        copyButtonText = 'Copy';
+        copyButtonTextKey = 'common.copy';
       }, 2000);
     }
   }
@@ -282,7 +283,7 @@ export function createBoardEditorState() {
     validationError = '';
 
     if (!fenInput) {
-      validationError = 'Please enter a FEN position first';
+      validationError = t('editor.enterFenFirst');
       return;
     }
 
@@ -290,14 +291,14 @@ export function createBoardEditorState() {
       const isValid = validateFenString(fenInput);
 
       if (!isValid) {
-        validationError = 'Invalid FEN format';
+        validationError = t('editor.invalidFenFormat');
         return;
       }
 
       const encodedFen = encodeURIComponent(fenInput);
       goto(`/play?fen=${encodedFen}`);
     } catch (error) {
-      validationError = error instanceof Error ? error.message : 'Invalid FEN';
+      validationError = error instanceof Error ? error.message : t('editor.invalidFenGeneric');
     }
   }
 
@@ -382,7 +383,7 @@ export function createBoardEditorState() {
       fenInput = v;
     },
     get copyButtonText() {
-      return copyButtonText;
+      return t(copyButtonTextKey);
     },
     get boardOrientation() {
       return boardOrientation;

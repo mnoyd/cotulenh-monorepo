@@ -24,6 +24,7 @@ import type { GameStatus, HistoryMove } from '$lib/types/game';
 import { extractLastMoveSquares } from './game-session-helpers';
 import { playSound } from '$lib/utils/audio';
 import { loadSettings } from '$lib/stores/settings';
+import { t } from '$lib/i18n/index.svelte';
 
 /**
  * GameSession - Unified reactive state management using the Reactive Adapter Pattern.
@@ -360,13 +361,13 @@ export class GameSession {
         perfMarkMoveFlow(MoveFlowPhase.AppToBoard);
       } else {
         logger.warn('Illegal move attempted on board', { orig, dest });
-        toast.error('Illegal move');
+        toast.error(t('game.illegalMove'));
         perfEndMoveFlow({ success: false, reason: 'illegal' });
         return;
       }
     } catch (error) {
       logger.error('Error making move in game engine:', { error });
-      toast.error('Move failed');
+      toast.error(t('game.moveFailed'));
       this.syncBoard();
       perfEndMoveFlow({ success: false, error });
       return;
@@ -392,10 +393,10 @@ export class GameSession {
 
       this.#historyViewIndex = -1;
       this.#version++;
-      toast.info('Undo successful');
+      toast.info(t('game.undoSuccess'));
     } catch (error) {
       logger.error('Failed to undo move:', { error });
-      toast.error('Undo failed');
+      toast.error(t('game.undoFailed'));
     } finally {
       endPerf();
     }
@@ -408,10 +409,10 @@ export class GameSession {
       this.#history = [];
       this.#historyViewIndex = -1;
       this.#version++;
-      toast.success('Game reset');
+      toast.success(t('game.resetSuccess'));
     } catch (error) {
       logger.error('Failed to reset game:', { error });
-      toast.error('Reset failed');
+      toast.error(t('game.resetFailed'));
     } finally {
       endPerf();
     }
@@ -429,9 +430,9 @@ export class GameSession {
       const result = this.#game.commitSession();
 
       if (!result.success || !result.result) {
-        const reason = result.reason || 'Unknown error';
+        const reason = result.reason || t('game.unknownError');
         logger.error('❌ Failed to commit:', reason);
-        toast.error(`Cannot commit move: ${reason}`);
+        toast.error(t('game.cannotCommitMove').replace('{reason}', reason));
         return;
       }
 
@@ -441,8 +442,8 @@ export class GameSession {
       this.#version++;
     } catch (error) {
       logger.error('❌ Failed to commit session:', { error });
-      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-      toast.error(`Cannot commit move: ${errorMsg}`);
+      const errorMsg = error instanceof Error ? error.message : t('game.unknownError');
+      toast.error(t('game.cannotCommitMove').replace('{reason}', errorMsg));
     } finally {
       endPerf();
     }
@@ -459,8 +460,8 @@ export class GameSession {
       this.#version++;
     } catch (error) {
       logger.error('❌ Failed to cancel session:', { error });
-      const errorMsg = error instanceof Error ? error.message : 'Unknown error';
-      toast.error(`Error cancelling: ${errorMsg}`);
+      const errorMsg = error instanceof Error ? error.message : t('game.unknownError');
+      toast.error(t('game.errorCancelling').replace('{reason}', errorMsg));
     } finally {
       endPerf();
     }
@@ -508,12 +509,12 @@ export class GameSession {
       case 'y':
       case 'Y':
         e.preventDefault();
-        toast.info('Redo coming soon');
+        toast.info(t('game.redoComingSoon'));
         break;
       case 'r':
       case 'R':
         e.preventDefault();
-        if (confirm('Are you sure you want to reset the game?')) {
+        if (confirm(t('game.resetConfirm'))) {
           this.reset();
         }
         break;

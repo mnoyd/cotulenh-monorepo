@@ -17,16 +17,16 @@
   async function copyFen() {
     try {
       await navigator.clipboard.writeText(fen);
-      toast.success('FEN copied to clipboard');
+      toast.success(i18n.t('share.toastFenCopied'));
     } catch {
-      toast.error('Failed to copy');
+      toast.error(i18n.t('share.toastCopyFailed'));
     }
   }
 
   function copyShareUrl() {
     const url = `${window.location.origin}/?fen=${encodeURIComponent(fen)}`;
     navigator.clipboard.writeText(url);
-    toast.success('Share link copied!');
+    toast.success(i18n.t('share.toastLinkCopied'));
   }
 </script>
 
@@ -39,7 +39,7 @@
 
     <div class="share-content">
       <div class="share-section">
-        <span class="share-label">FEN String</span>
+        <span class="share-label">{i18n.t('share.fenLabel')}</span>
         <code class="fen-display">{fen}</code>
         <Button variant="secondary" size="sm" onclick={copyFen}>{i18n.t('share.copyFen')}</Button>
       </div>
