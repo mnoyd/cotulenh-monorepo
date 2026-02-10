@@ -21,6 +21,9 @@
       ? tLessonTitle(subjectId, nextLessonInfo.lessonId, nextLessonInfo.title, locale)
       : null
   );
+  const progressPercentLabel = $derived(
+    i18n.t('learn.progressPercent').replace('{percent}', String(progress?.progress ?? 0))
+  );
 </script>
 
 <div class="subject-page">
@@ -51,7 +54,7 @@
             <span class="cta-lesson">{nextLessonTitle}</span>
           </div>
         </div>
-        <span class="cta-progress">{progress?.progress ?? 0}% {i18n.t('learn.complete')}</span>
+        <span class="cta-progress">{progressPercentLabel}</span>
       </a>
     {:else if progress?.completed}
       <div class="completed-banner hud-corners">

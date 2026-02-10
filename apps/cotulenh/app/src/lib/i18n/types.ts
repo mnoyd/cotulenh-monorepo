@@ -133,12 +133,15 @@ export interface TranslationKeys {
   'learn.locked': string;
   'learn.lessonComplete': string;
   'learn.lesson': string;
+  'learn.lessonNumber': string;
+  'learn.lessonProgress': string;
   'learn.introduction': string;
   'learn.previousLesson': string;
   'learn.skipToNext': string;
   'learn.mistakes': string;
   'learn.availableSubjects': string;
   'learn.complete': string;
+  'learn.progressPercent': string;
   'learn.completeToContinue': string;
   'learn.moveToTarget': string;
   'learn.subjectCompleted': string;
