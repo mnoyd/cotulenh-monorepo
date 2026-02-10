@@ -127,7 +127,12 @@
     <header class="lesson-header">
       <div class="nav-controls">
         {#if prevUrl}
-          <button class="nav-btn" onclick={handlePrev} title={i18n.t('learn.previousLesson')}>
+          <button
+            class="nav-btn"
+            onclick={handlePrev}
+            title={i18n.t('learn.previousLesson')}
+            aria-label={i18n.t('learn.previousLesson')}
+          >
             <ArrowLeftIcon size={18} />
           </button>
         {/if}
@@ -135,7 +140,12 @@
       <h1>{session.lessonTitle}</h1>
       <div class="nav-controls">
         {#if nextUrl && session.status !== 'completed'}
-          <button class="nav-btn" onclick={handleNext} title={i18n.t('learn.skipToNext')}>
+          <button
+            class="nav-btn"
+            onclick={handleNext}
+            title={i18n.t('learn.skipToNext')}
+            aria-label={i18n.t('learn.skipToNext')}
+          >
             <ArrowRight size={18} />
           </button>
         {/if}

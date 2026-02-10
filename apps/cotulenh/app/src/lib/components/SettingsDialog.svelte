@@ -13,7 +13,7 @@
     type ThemeId
   } from '$lib/stores/settings';
   import { playSound, setAudioEnabled, setAudioVolume } from '$lib/utils/audio';
-  import { getI18n, LOCALES, type Locale } from '$lib/i18n/index.svelte';
+  import { getI18n, LOCALES, type Locale, type TranslationKey } from '$lib/i18n/index.svelte';
 
   interface Props {
     open: boolean;
@@ -31,6 +31,18 @@
   let autoCompleteDeploy = $state(DEFAULT_SETTINGS.autoCompleteDeploy);
   let selectedTheme = $state<ThemeId>(themeStore.current);
   let selectedLocale = $state<Locale>(i18n.locale);
+
+  const themeNameKeys: Record<ThemeId, TranslationKey> = {
+    'modern-warfare': 'settings.theme.modernWarfare.name',
+    classic: 'settings.theme.classic.name',
+    forest: 'settings.theme.forest.name'
+  };
+
+  const themeDescriptionKeys: Record<ThemeId, TranslationKey> = {
+    'modern-warfare': 'settings.theme.modernWarfare.description',
+    classic: 'settings.theme.classic.description',
+    forest: 'settings.theme.forest.description'
+  };
 
   function loadFromStorage() {
     const settings = loadSettings();
@@ -119,8 +131,8 @@
               onclick={() => handleThemeChange(theme.id)}
             >
               <div class="theme-preview theme-preview-{theme.id}"></div>
-              <span class="theme-name">{theme.name}</span>
-              <span class="theme-desc">{theme.description}</span>
+              <span class="theme-name">{i18n.t(themeNameKeys[theme.id])}</span>
+              <span class="theme-desc">{i18n.t(themeDescriptionKeys[theme.id])}</span>
               {#if themeStore.isLoading && selectedTheme === theme.id}
                 <span class="loading-indicator">{i18n.t('common.loading')}</span>
               {/if}

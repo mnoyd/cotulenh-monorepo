@@ -12,6 +12,7 @@ export const vi: TranslationKeys = {
   'nav.keyboardShortcuts': 'Phím tắt bàn phím',
   'nav.learn': 'Học chơi',
   'nav.appName': 'Cờ Tư Lệnh Online',
+  'nav.menu': 'Menu',
 
   // Home page
   'home.demoBadge': 'Demo',
@@ -53,6 +54,12 @@ export const vi: TranslationKeys = {
   'settings.autoCompleteDeploy': 'Tự động hoàn thành bày quân',
   'settings.save': 'Lưu',
   'settings.saved': 'Đã lưu!',
+  'settings.theme.modernWarfare.name': 'Hiện đại',
+  'settings.theme.modernWarfare.description': 'HUD chiến thuật với điểm nhấn cyan/hổ phách',
+  'settings.theme.classic.name': 'Cổ điển',
+  'settings.theme.classic.description': 'Tông gỗ ấm truyền thống',
+  'settings.theme.forest.name': 'Rừng',
+  'settings.theme.forest.description': 'Phong cách quân sự xanh tự nhiên',
 
   // Game
   'game.missionStatus': 'Trạng thái nhiệm vụ',
@@ -74,6 +81,16 @@ export const vi: TranslationKeys = {
   'game.missionLog': 'Nhật ký nhiệm vụ',
   'game.live': 'TRỰC TIẾP',
   'game.noDataRecorded': '-- KHÔNG CÓ DỮ LIỆU --',
+  'game.illegalMove': 'Nước đi không hợp lệ',
+  'game.moveFailed': 'Nước đi thất bại',
+  'game.undoSuccess': 'Hoàn tác thành công',
+  'game.undoFailed': 'Hoàn tác thất bại',
+  'game.resetSuccess': 'Đã đặt lại ván cờ',
+  'game.resetFailed': 'Đặt lại thất bại',
+  'game.redoComingSoon': 'Tính năng làm lại sẽ sớm có',
+  'game.cannotCommitMove': 'Không thể xác nhận nước đi: {reason}',
+  'game.errorCancelling': 'Lỗi khi hủy: {reason}',
+  'game.unknownError': 'Lỗi không xác định',
 
   // Share dialog
   'share.title': 'Chia sẻ ván cờ',
@@ -82,6 +99,10 @@ export const vi: TranslationKeys = {
   'share.shareUrl': 'Đường dẫn chia sẻ',
   'share.shareUrlDesc': 'Sao chép đường dẫn để tải thế cờ này khi mở',
   'share.copyLink': 'Sao chép đường dẫn',
+  'share.fenLabel': 'Chuỗi FEN',
+  'share.toastFenCopied': 'Đã sao chép FEN vào bộ nhớ tạm',
+  'share.toastCopyFailed': 'Sao chép thất bại',
+  'share.toastLinkCopied': 'Đã sao chép liên kết chia sẻ!',
 
   // Shortcuts dialog
   'shortcuts.title': 'Phím tắt bàn phím',
@@ -105,7 +126,7 @@ export const vi: TranslationKeys = {
   // Learn page
   'learn.title': 'Học chơi',
   'learn.tagline': 'Thành thạo Cờ Tư Lệnh từng bước với bài học tương tác',
-  'learn.description': 'Master Co Tu Lenh step by step with interactive lessons.',
+  'learn.description': 'Thành thạo Cờ Tư Lệnh từng bước với các bài học tương tác.',
   'learn.backToLessons': 'Quay lại bài học',
   'learn.backToSubjects': 'Quay lại danh sách',
   'learn.startLesson': 'Bắt đầu học',
@@ -113,12 +134,15 @@ export const vi: TranslationKeys = {
   'learn.locked': 'Đã khóa',
   'learn.lessonComplete': 'Hoàn thành bài học!',
   'learn.lesson': 'Bài',
+  'learn.lessonNumber': 'Bài {number}',
+  'learn.lessonProgress': 'Bài {current}/{total}',
   'learn.introduction': 'Giới thiệu',
   'learn.previousLesson': 'Bài trước',
   'learn.skipToNext': 'Bỏ qua, bài tiếp',
   'learn.mistakes': 'Số lỗi',
   'learn.availableSubjects': 'Các môn học',
   'learn.complete': 'hoàn thành',
+  'learn.progressPercent': '{percent}% hoàn thành',
   'learn.completeToContinue': 'Hoàn thành mục tiêu để tiếp tục',
   'learn.moveToTarget': 'Di chuyển đến ô được đánh dấu 🎯',
   'learn.subjectCompleted': 'Hoàn thành môn học!',
@@ -181,6 +205,27 @@ export const vi: TranslationKeys = {
   'editor.deleteMode': 'Chế độ Xóa - Nhấp để xóa quân',
   'editor.toggleHeroic': 'Bật/tắt chế độ Anh hùng',
   'editor.toggleTurn': 'Đổi lượt hiện tại',
+  'editor.tipDragPieces': 'Kéo quân cờ trên bàn',
+  'editor.tipClickRemovePieces': 'Nhấp để xóa quân cờ',
+  'editor.tipTogglePromotionStatus': 'Bật/tắt trạng thái anh hùng',
+  'editor.invalidFenFormat': 'Định dạng FEN không hợp lệ',
+  'editor.invalidFenGeneric': 'FEN không hợp lệ',
+  'editor.invalidFenWithReason': 'FEN không hợp lệ: {reason}',
+  'editor.enterFenFirst': 'Vui lòng nhập vị trí FEN trước',
+  'editor.fenShort': 'FEN',
+
+  // Piece names
+  'piece.commander': 'Tư lệnh',
+  'piece.infantry': 'Bộ binh',
+  'piece.tank': 'Xe tăng',
+  'piece.militia': 'Dân quân',
+  'piece.engineer': 'Công binh',
+  'piece.artillery': 'Pháo binh',
+  'piece.antiAir': 'Phòng không',
+  'piece.missile': 'Tên lửa',
+  'piece.airForce': 'Không quân',
+  'piece.navy': 'Hải quân',
+  'piece.headquarter': 'Bộ tư lệnh',
 
   // Error page
   'error.pageNotFound': 'Không tìm thấy trang',

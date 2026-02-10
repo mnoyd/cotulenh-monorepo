@@ -12,6 +12,7 @@ export const en: TranslationKeys = {
   'nav.keyboardShortcuts': 'Keyboard Shortcuts',
   'nav.learn': 'Learn',
   'nav.appName': 'Cotulenh Online',
+  'nav.menu': 'Menu',
 
   // Home page
   'home.demoBadge': 'Demo',
@@ -53,6 +54,12 @@ export const en: TranslationKeys = {
   'settings.autoCompleteDeploy': 'Auto-complete deployment',
   'settings.save': 'Save',
   'settings.saved': 'Saved!',
+  'settings.theme.modernWarfare.name': 'Modern Warfare',
+  'settings.theme.modernWarfare.description': 'Tactical HUD with cyan/amber accents',
+  'settings.theme.classic.name': 'Classic',
+  'settings.theme.classic.description': 'Traditional warm wood tones',
+  'settings.theme.forest.name': 'Forest',
+  'settings.theme.forest.description': 'Natural green military aesthetic',
 
   // Game
   'game.missionStatus': 'Mission Status',
@@ -74,6 +81,16 @@ export const en: TranslationKeys = {
   'game.missionLog': 'Mission Log',
   'game.live': 'LIVE',
   'game.noDataRecorded': '-- NO DATA RECORDED --',
+  'game.illegalMove': 'Illegal move',
+  'game.moveFailed': 'Move failed',
+  'game.undoSuccess': 'Undo successful',
+  'game.undoFailed': 'Undo failed',
+  'game.resetSuccess': 'Game reset',
+  'game.resetFailed': 'Reset failed',
+  'game.redoComingSoon': 'Redo coming soon',
+  'game.cannotCommitMove': 'Cannot commit move: {reason}',
+  'game.errorCancelling': 'Error cancelling: {reason}',
+  'game.unknownError': 'Unknown error',
 
   // Share dialog
   'share.title': 'Share Game',
@@ -82,6 +99,10 @@ export const en: TranslationKeys = {
   'share.shareUrl': 'Share URL',
   'share.shareUrlDesc': 'Copy a shareable link that will load this position when opened',
   'share.copyLink': 'Copy Share Link',
+  'share.fenLabel': 'FEN String',
+  'share.toastFenCopied': 'FEN copied to clipboard',
+  'share.toastCopyFailed': 'Failed to copy',
+  'share.toastLinkCopied': 'Share link copied!',
 
   // Shortcuts dialog
   'shortcuts.title': 'Keyboard Shortcuts',
@@ -113,12 +134,15 @@ export const en: TranslationKeys = {
   'learn.locked': 'Locked',
   'learn.lessonComplete': 'Lesson Complete!',
   'learn.lesson': 'Lesson',
+  'learn.lessonNumber': 'Lesson {number}',
+  'learn.lessonProgress': 'Lesson {current}/{total}',
   'learn.introduction': 'Introduction',
   'learn.previousLesson': 'Previous lesson',
   'learn.skipToNext': 'Skip to next',
   'learn.mistakes': 'Mistakes',
   'learn.availableSubjects': 'Available Subjects',
   'learn.complete': 'complete',
+  'learn.progressPercent': '{percent}% complete',
   'learn.completeToContinue': 'Complete the objective to continue',
   'learn.moveToTarget': 'Move to the highlighted square 🎯',
   'learn.subjectCompleted': 'Subject Completed!',
@@ -181,6 +205,27 @@ export const en: TranslationKeys = {
   'editor.deleteMode': 'Delete Mode - Click pieces to delete',
   'editor.toggleHeroic': 'Toggle Heroic Mode',
   'editor.toggleTurn': 'Toggle current turn',
+  'editor.tipDragPieces': 'Drag pieces on board',
+  'editor.tipClickRemovePieces': 'Click to remove pieces',
+  'editor.tipTogglePromotionStatus': 'Toggle promotion status',
+  'editor.invalidFenFormat': 'Invalid FEN format',
+  'editor.invalidFenGeneric': 'Invalid FEN',
+  'editor.invalidFenWithReason': 'Invalid FEN: {reason}',
+  'editor.enterFenFirst': 'Please enter a FEN position first',
+  'editor.fenShort': 'FEN',
+
+  // Piece names
+  'piece.commander': 'Commander',
+  'piece.infantry': 'Infantry',
+  'piece.tank': 'Tank',
+  'piece.militia': 'Militia',
+  'piece.engineer': 'Engineer',
+  'piece.artillery': 'Artillery',
+  'piece.antiAir': 'Anti Air',
+  'piece.missile': 'Missile',
+  'piece.airForce': 'Air Force',
+  'piece.navy': 'Navy',
+  'piece.headquarter': 'Headquarter',
 
   // Error page
   'error.pageNotFound': 'Page Not Found',

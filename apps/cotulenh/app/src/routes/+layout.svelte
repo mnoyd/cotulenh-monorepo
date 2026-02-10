@@ -102,7 +102,11 @@
     <div class="mobile-menu hidden max-md:block">
       <DropdownMenu.Root>
         <DropdownMenu.Trigger>
-          <button class="mobile-menu-trigger" aria-label="Menu" title="Menu">
+          <button
+            class="mobile-menu-trigger"
+            aria-label={i18n.t('nav.menu')}
+            title={i18n.t('nav.menu')}
+          >
             <Menu size={24} />
           </button>
         </DropdownMenu.Trigger>

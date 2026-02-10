@@ -1,6 +1,9 @@
 <script lang="ts">
   import { logger } from '@cotulenh/common';
   import type { Api, Piece, Role, Color } from '@cotulenh/board';
+  import { getI18n, type TranslationKey } from '$lib/i18n/index.svelte';
+
+  const i18n = getI18n();
 
   let {
     boardApi = null,
@@ -31,6 +34,20 @@
     'navy',
     'headquarter'
   ];
+
+  const ROLE_LABEL_KEYS: Record<Role, TranslationKey> = {
+    commander: 'piece.commander',
+    infantry: 'piece.infantry',
+    tank: 'piece.tank',
+    militia: 'piece.militia',
+    engineer: 'piece.engineer',
+    artillery: 'piece.artillery',
+    anti_air: 'piece.antiAir',
+    missile: 'piece.missile',
+    air_force: 'piece.airForce',
+    navy: 'piece.navy',
+    headquarter: 'piece.headquarter'
+  };
 
   // Create piece objects with proper state
   let pieces = $derived(
@@ -64,10 +81,7 @@
   }
 
   function formatRoleName(role: Role): string {
-    return role
-      .split('_')
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(' ');
+    return i18n.t(ROLE_LABEL_KEYS[role]);
   }
 </script>
 

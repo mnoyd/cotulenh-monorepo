@@ -26,9 +26,19 @@
   const translatedSection = $derived(
     subject && section ? translateSection(subject.id, section, locale) : null
   );
+  const lessonCountLabel = $derived(
+    i18n
+      .t('learn.lessonProgress')
+      .replace('{current}', String(positionInSection))
+      .replace('{total}', String(totalInSection))
+  );
 
   function isLessonCompleted(id: string): boolean {
     return subjectProgress.isLessonCompleted(id);
+  }
+
+  function getLessonNumberLabel(index: number): string {
+    return i18n.t('learn.lessonNumber').replace('{number}', String(index + 1));
   }
 </script>
 
@@ -40,17 +50,19 @@
         <ChevronRight size={14} class="separator" />
         <span class="breadcrumb-section">{translatedSection?.title}</span>
       </div>
-      <span class="lesson-count">{i18n.t('learn.lesson')} {positionInSection}/{totalInSection}</span>
+      <span class="lesson-count">{lessonCountLabel}</span>
     </div>
     <div class="progress-dots">
       {#each sectionLessons as lesson, i}
         {@const isCurrent = lesson.id === lessonId}
         {@const isCompleted = isLessonCompleted(lesson.id)}
+        {@const lessonNumberLabel = getLessonNumberLabel(i)}
         <span
           class="dot"
           class:current={isCurrent}
           class:completed={isCompleted}
-          title="{i18n.t('learn.lesson')} {i + 1}"
+          title={lessonNumberLabel}
+          aria-label={lessonNumberLabel}
         ></span>
       {/each}
     </div>

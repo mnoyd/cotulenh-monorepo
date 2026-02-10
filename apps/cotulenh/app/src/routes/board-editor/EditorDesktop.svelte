@@ -135,16 +135,19 @@
           <summary>{i18n.t('editor.quickTips')}</summary>
           <ul>
             <li class="flex items-center gap-1">
-              <strong><Hand size={14} class="inline" /> {tHand}:</strong> Drag pieces on board
+              <strong><Hand size={14} class="inline" /> {tHand}:</strong>
+              {i18n.t('editor.tipDragPieces')}
             </li>
             <li class="flex items-center gap-1">
               <strong>{i18n.t('editor.tipClickPiece')}</strong>
             </li>
             <li class="flex items-center gap-1">
-              <strong><Trash2 size={14} class="inline" /> {tDelete}:</strong> Click to remove pieces
+              <strong><Trash2 size={14} class="inline" /> {tDelete}:</strong>
+              {i18n.t('editor.tipClickRemovePieces')}
             </li>
             <li class="flex items-center gap-1">
-              <strong><Star size={14} class="inline" /> {tHeroic}:</strong> Toggle promotion status
+              <strong><Star size={14} class="inline" /> {tHeroic}:</strong>
+              {i18n.t('editor.tipTogglePromotionStatus')}
             </li>
           </ul>
         </details>
