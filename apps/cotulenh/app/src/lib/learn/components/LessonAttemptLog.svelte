@@ -30,7 +30,6 @@
 
 <style>
   .attempt-log {
-    margin-top: 1rem;
     background: var(--theme-bg-panel, #111827);
     border: 1px solid var(--theme-border, rgba(59, 130, 246, 0.35));
     border-radius: 8px;

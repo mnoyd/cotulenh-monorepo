@@ -1,7 +1,7 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
   import { fade } from 'svelte/transition';
-  import { ArrowRight, ArrowLeft as ArrowLeftIcon, CheckCircle, Star } from 'lucide-svelte';
+  import { ArrowRight, ArrowLeft as ArrowLeftIcon } from 'lucide-svelte';
   import BoardContainer from '$lib/components/BoardContainer.svelte';
   import TargetMarker from './TargetMarker.svelte';
   import SquareTooltip from './SquareTooltip.svelte';
@@ -12,6 +12,7 @@
   import LessonObjectiveCard from './LessonObjectiveCard.svelte';
   import LessonAttemptPanel from './LessonAttemptPanel.svelte';
   import LessonAttemptLog from './LessonAttemptLog.svelte';
+  import LessonCompletionCard from './LessonCompletionCard.svelte';
   import { LearnSession } from '../learn-session.svelte';
   import { getI18n } from '$lib/i18n/index.svelte';
   import { getLessonContext } from '@cotulenh/learn';
@@ -26,12 +27,14 @@
   };
 
   type LearnMode = 'guided' | 'practice';
+  type MobilePanel = 'objective' | 'assist' | 'log';
 
   let { lessonId, nextUrl }: Props = $props();
 
   let session = $state<LearnSession | null>(null);
   let showIntroModal = $state(false);
   let mode = $state<LearnMode>(getStoredValue<LearnMode>('learn-player-mode', 'guided'));
+  let mobilePanel = $state<MobilePanel>('objective');
 
   const lessonContext = $derived(getLessonContext(lessonId));
   const prevUrl = $derived.by(() => {
@@ -50,13 +53,6 @@
   const introLesson = $derived.by(() => {
     if (!session) return null;
     return session.translatedLesson ?? session.lesson;
-  });
-
-  const masteryLabel = $derived.by(() => {
-    if (!session) return null;
-    if (session.mastery === 'efficient') return 'Efficient';
-    if (session.mastery === 'assisted') return 'Assisted';
-    return 'Needs Review';
   });
 
   function hasSeenIntro(id: string): boolean {
@@ -94,6 +90,18 @@
   $effect(() => {
     if (session) {
       session.setupBoardEffect();
+    }
+  });
+
+  $effect(() => {
+    if (session) {
+      session.setAssistanceMode(mode);
+    }
+  });
+
+  $effect(() => {
+    if (session?.status === 'completed' && mobilePanel === 'objective') {
+      mobilePanel = 'assist';
     }
   });
 
@@ -176,45 +184,64 @@
         {/key}
       </section>
 
-      <aside class="mission-side">
+      <aside class="mission-side desktop-side">
         <LessonObjectiveCard {session} {mode} />
         <LessonAttemptPanel {session} {mode} onHint={handleHint} onReset={() => session?.restart()} />
 
         {#if session.status === 'completed'}
-          <div class="completion-card" transition:fade={{ duration: 180 }}>
-            <div class="completion-head">
-              <CheckCircle size={24} />
-              <h2>{i18n.t('learn.lessonComplete')}</h2>
-            </div>
-
-            <div class="mastery-row">
-              <span class="mastery-label">Mastery</span>
-              <strong class="mastery-value {session.mastery}">{masteryLabel}</strong>
-            </div>
-
-            {#if session.gradingSystem === 'stars'}
-              <div class="stars-earned">
-                {#each [1, 2, 3] as i}
-                  <Star
-                    size={24}
-                    fill={i <= session.stars ? '#fbbf24' : 'none'}
-                    color={i <= session.stars ? '#fbbf24' : '#64748b'}
-                    strokeWidth={1.5}
-                  />
-                {/each}
-              </div>
-            {/if}
-
-            <div class="completion-actions">
-              <button class="btn secondary" onclick={() => session?.restart()}>{i18n.t('common.tryAgain')}</button>
-              <button class="btn primary" onclick={handleNext}>{i18n.t('common.continue')}</button>
-            </div>
+          <div transition:fade={{ duration: 180 }}>
+            <LessonCompletionCard {session} onRestart={() => session?.restart()} onContinue={handleNext} />
           </div>
         {/if}
       </aside>
     </div>
 
-    <LessonAttemptLog {session} />
+    <div class="desktop-log">
+      <LessonAttemptLog {session} />
+    </div>
+
+    <section class="mobile-dock">
+      <div class="mobile-tabs" role="tablist" aria-label="Lesson panels">
+        <button
+          role="tab"
+          aria-selected={mobilePanel === 'objective'}
+          class:active={mobilePanel === 'objective'}
+          onclick={() => (mobilePanel = 'objective')}
+        >
+          Objective
+        </button>
+        <button
+          role="tab"
+          aria-selected={mobilePanel === 'assist'}
+          class:active={mobilePanel === 'assist'}
+          onclick={() => (mobilePanel = 'assist')}
+        >
+          Hints
+        </button>
+        <button
+          role="tab"
+          aria-selected={mobilePanel === 'log'}
+          class:active={mobilePanel === 'log'}
+          onclick={() => (mobilePanel = 'log')}
+        >
+          Log
+        </button>
+      </div>
+
+      <div class="mobile-panel">
+        {#if mobilePanel === 'objective'}
+          <LessonObjectiveCard {session} {mode} />
+        {:else if mobilePanel === 'assist'}
+          <LessonAttemptPanel {session} {mode} onHint={handleHint} onReset={() => session?.restart()} />
+        {:else}
+          <LessonAttemptLog {session} />
+        {/if}
+      </div>
+
+      {#if session.status === 'completed'}
+        <LessonCompletionCard {session} onRestart={() => session?.restart()} onContinue={handleNext} />
+      {/if}
+    </section>
   </div>
 {:else}
   <div class="loading">{i18n.t('learn.loadingLesson')}</div>
@@ -311,89 +338,13 @@
     gap: 0.85rem;
   }
 
-  .completion-card {
-    border: 1px solid rgba(34, 197, 94, 0.55);
-    background: rgba(5, 46, 22, 0.42);
-    border-radius: 8px;
-    padding: 1rem;
-    display: flex;
-    flex-direction: column;
-    gap: 0.8rem;
+  .desktop-log {
+    display: block;
+    margin-top: 1rem;
   }
 
-  .completion-head {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    color: #22c55e;
-  }
-
-  .completion-head h2 {
-    margin: 0;
-    font-size: 1.1rem;
-  }
-
-  .mastery-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-
-  .mastery-label {
-    font-size: 0.72rem;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    color: var(--theme-text-secondary, #94a3b8);
-    font-family: var(--font-mono, monospace);
-  }
-
-  .mastery-value {
-    font-size: 0.9rem;
-    font-family: var(--font-mono, monospace);
-  }
-
-  .mastery-value.efficient {
-    color: #22c55e;
-  }
-
-  .mastery-value.assisted {
-    color: #f59e0b;
-  }
-
-  .mastery-value.needs-review {
-    color: #f97316;
-  }
-
-  .stars-earned {
-    display: flex;
-    align-items: center;
-    gap: 0.4rem;
-  }
-
-  .completion-actions {
-    display: grid;
-    gap: 0.5rem;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .btn {
-    border-radius: 6px;
-    padding: 0.55rem 0.65rem;
-    border: 1px solid transparent;
-    cursor: pointer;
-    font-size: 0.8rem;
-    font-weight: 600;
-  }
-
-  .btn.primary {
-    background: #22c55e;
-    color: #052e16;
-  }
-
-  .btn.secondary {
-    background: transparent;
-    border-color: rgba(148, 163, 184, 0.6);
-    color: #cbd5e1;
+  .mobile-dock {
+    display: none;
   }
 
   .loading {
@@ -428,6 +379,50 @@
 
     h1 {
       font-size: 1rem;
+    }
+
+    .desktop-side,
+    .desktop-log {
+      display: none;
+    }
+
+    .mobile-dock {
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+      margin-top: 0.75rem;
+      padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+    }
+
+    .mobile-tabs {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0.35rem;
+      border: 1px solid rgba(59, 130, 246, 0.35);
+      border-radius: 10px;
+      padding: 0.3rem;
+      background: rgba(15, 23, 42, 0.8);
+    }
+
+    .mobile-tabs button {
+      border: 0;
+      border-radius: 7px;
+      padding: 0.45rem 0.35rem;
+      background: transparent;
+      color: #94a3b8;
+      font-size: 0.67rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-family: var(--font-mono, monospace);
+    }
+
+    .mobile-tabs button.active {
+      background: rgba(59, 130, 246, 0.22);
+      color: #e2e8f0;
+    }
+
+    .mobile-panel {
+      min-height: 200px;
     }
   }
 </style>

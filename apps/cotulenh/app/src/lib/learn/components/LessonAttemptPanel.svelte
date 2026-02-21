@@ -15,22 +15,25 @@
 
   const modeTip = $derived(
     mode === 'guided'
-      ? 'Hints escalate automatically as you explore.'
-      : 'Minimal assistance mode for stronger mastery.'
+      ? 'Guided assist is active: hints can escalate while you explore.'
+      : 'Practice assist is minimal: request hints manually when needed.'
   );
 
   const hintLevel = $derived.by(() => {
+    if (mode === 'practice') return 'Manual';
     const level = session.currentHintLevel;
     if (level === 'none') return 'None';
     if (level === 'subtle') return 'Subtle';
     if (level === 'medium') return 'Medium';
     return 'Explicit';
   });
+
+  const hintActionLabel = $derived(mode === 'guided' ? i18n.t('learn.hint') : 'Reveal Hint');
 </script>
 
 <section class="attempt-card hud-corners">
   <header>
-    <span class="label">Attempt</span>
+    <span class="label">{mode === 'guided' ? 'Guided Assist' : 'Practice Assist'}</span>
     <span class="hint-level">{hintLevel}</span>
   </header>
 
@@ -54,7 +57,7 @@
   <div class="actions">
     <button class="btn hint" onclick={onHint} disabled={!session.hint}>
       <HelpCircle size={15} />
-      {i18n.t('learn.hint')}
+      {hintActionLabel}
     </button>
     <button class="btn reset" onclick={onReset}>
       <RotateCcw size={15} />

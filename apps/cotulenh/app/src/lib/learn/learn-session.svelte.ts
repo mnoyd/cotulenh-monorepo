@@ -18,6 +18,7 @@ import { coreToBoardColor, mapPossibleMovesToDests } from '$lib/features/game/ut
 import { getI18n, getLocale } from '$lib/i18n/index.svelte';
 
 export type AttemptLogTone = 'info' | 'success' | 'warning' | 'error';
+export type LearnAssistMode = 'guided' | 'practice';
 
 export interface AttemptLogItem {
   id: number;
@@ -52,6 +53,7 @@ export class LearnSession {
   #hintSystem: HintSystem | null = null;
   #currentHintLevel = $state<'none' | 'subtle' | 'medium' | 'explicit'>('none');
   #currentHintType = $state<HintLevel | null>(null);
+  #assistMode = $state<LearnAssistMode>('guided');
 
   // Hint auto-hide timeout
   #hintTimeoutId: ReturnType<typeof setTimeout> | null = null;
@@ -254,6 +256,15 @@ export class LearnSession {
     return this.#engine.stars;
   }
 
+  get effectiveStars(): 0 | 1 | 2 | 3 {
+    void this.#version;
+    return this.#computeEffectiveStars(this.#engine.stars);
+  }
+
+  get assistMode(): LearnAssistMode {
+    return this.#assistMode;
+  }
+
   get instruction(): string {
     return this.lessonInstruction;
   }
@@ -428,7 +439,9 @@ export class LearnSession {
           console.log('Tutorial mode activated');
         }
       });
-      this.#hintSystem.start();
+      if (this.#assistMode === 'guided') {
+        this.#hintSystem.start();
+      }
     }
 
     this.#pushAttemptLog('Mission started', 'info');
@@ -443,10 +456,14 @@ export class LearnSession {
 
     if (success) {
       // Valid move - reset hint timer
-      this.#hintSystem?.onMove();
+      if (this.#assistMode === 'guided') {
+        this.#hintSystem?.onMove();
+      }
     } else if (this.#engine.status === 'ready') {
       // Invalid move - track for hint system
-      this.#hintSystem?.onWrongMove();
+      if (this.#assistMode === 'guided') {
+        this.#hintSystem?.onWrongMove();
+      }
       this.#mistakeCount++;
       this.#pushAttemptLog('Invalid move', 'warning');
 
@@ -470,7 +487,13 @@ export class LearnSession {
     this.#engine.restart();
 
     // Reset hint system
-    this.#hintSystem?.reset();
+    if (this.#assistMode === 'guided') {
+      this.#hintSystem?.reset();
+    } else {
+      this.#hintSystem?.stop();
+      this.#currentHintLevel = 'none';
+      this.#currentHintType = null;
+    }
 
     // Reload initial shapes
     if (this.#engine.lesson?.arrows) {
@@ -487,6 +510,25 @@ export class LearnSession {
    */
   retry(): void {
     this.restart();
+  }
+
+  setAssistanceMode(mode: LearnAssistMode): void {
+    if (this.#assistMode === mode) return;
+
+    this.#assistMode = mode;
+    this.#pushAttemptLog(mode === 'guided' ? 'Switched to Guided mode' : 'Switched to Practice mode', 'info');
+
+    if (mode === 'guided') {
+      this.#hintSystem?.reset();
+      this.#hintSystem?.start();
+    } else {
+      this.hideHint();
+      this.#hintSystem?.stop();
+      this.#currentHintLevel = 'none';
+      this.#currentHintType = null;
+    }
+
+    this.#version++;
   }
 
   showHint(autoHideDuration: number = LearnSession.HINT_AUTO_HIDE_DURATION): void {
@@ -540,7 +582,33 @@ export class LearnSession {
   // ============================================================
 
   #saveProgress(result: { lessonId: string; moveCount: number; stars: 0 | 1 | 2 | 3 }): void {
-    subjectProgress.saveLessonProgress(result.lessonId, result.stars, result.moveCount);
+    subjectProgress.saveLessonProgress(
+      result.lessonId,
+      this.#computeEffectiveStars(result.stars),
+      result.moveCount
+    );
+  }
+
+  #computeEffectiveStars(baseStars: 0 | 1 | 2 | 3): 0 | 1 | 2 | 3 {
+    let stars = baseStars;
+
+    if (this.#assistMode === 'guided') {
+      if (this.#hintsUsed > 0) {
+        stars = Math.min(stars, 2) as 0 | 1 | 2 | 3;
+      }
+      if (this.#mistakeCount > 1) {
+        stars = Math.min(stars, 1) as 0 | 1 | 2 | 3;
+      }
+      return stars;
+    }
+
+    if (this.#hintsUsed === 0 && this.#mistakeCount === 0 && stars < 3) {
+      stars = (stars + 1) as 0 | 1 | 2 | 3;
+    } else if (this.#hintsUsed > 1 || this.#mistakeCount > 1) {
+      stars = Math.min(stars, 2) as 0 | 1 | 2 | 3;
+    }
+
+    return stars;
   }
 
   static getProgress(lessonId: string): LessonProgress | null {
