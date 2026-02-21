@@ -516,7 +516,10 @@ export class LearnSession {
     if (this.#assistMode === mode) return;
 
     this.#assistMode = mode;
-    this.#pushAttemptLog(mode === 'guided' ? 'Switched to Guided mode' : 'Switched to Practice mode', 'info');
+    this.#pushAttemptLog(
+      mode === 'guided' ? 'Switched to Guided mode' : 'Switched to Practice mode',
+      'info'
+    );
 
     if (mode === 'guided') {
       this.#hintSystem?.reset();
