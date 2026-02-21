@@ -17,6 +17,14 @@ import { subjectProgress } from './learn-progress.svelte';
 import { coreToBoardColor, mapPossibleMovesToDests } from '$lib/features/game/utils';
 import { getI18n, getLocale } from '$lib/i18n/index.svelte';
 
+export type AttemptLogTone = 'info' | 'success' | 'warning' | 'error';
+
+export interface AttemptLogItem {
+  id: number;
+  tone: AttemptLogTone;
+  message: string;
+}
+
 /**
  * LearnSession - Svelte 5 reactive wrapper around LearnEngine
  *
@@ -32,6 +40,10 @@ export class LearnSession {
   #feedbackMessage = $state('');
   #showFeedback = $state(false);
   #isFailed = $state(false);
+  #mistakeCount = $state(0);
+  #hintsUsed = $state(0);
+  #attemptLog = $state<AttemptLogItem[]>([]);
+  #attemptLogSeq = 0;
 
   // Board shapes (arrows, highlights)
   #shapes = $state<BoardShape[]>([]);
@@ -50,6 +62,7 @@ export class LearnSession {
   constructor(lessonId?: string) {
     this.#engine = new LearnEngine({
       onMove: () => {
+        this.#pushAttemptLog('Move accepted', 'success');
         this.#version++;
         this.syncBoard();
       },
@@ -57,26 +70,22 @@ export class LearnSession {
         this.#feedbackMessage = this.#getSuccessFeedbackMessage();
         this.#showFeedback = true;
         this.#isFailed = false;
+        this.#pushAttemptLog('Lesson objective completed', 'success');
         this.#saveProgress(result);
         this.#version++;
         this.syncBoard();
       },
       onStateChange: (status) => {
-        if (status === 'failed') {
-          this.#isFailed = true;
-          this.#feedbackMessage = this.#getFailureFeedbackMessage();
-          this.#showFeedback = true;
-        }
+        if (status === 'failed') this.#markFailure();
         this.#version++;
       },
       onOpponentMove: () => {
+        this.#pushAttemptLog('Opponent response played', 'info');
         this.#version++;
         this.syncBoard();
       },
       onFail: () => {
-        this.#isFailed = true;
-        this.#feedbackMessage = this.#getFailureFeedbackMessage();
-        this.#showFeedback = true;
+        this.#markFailure();
         this.#version++;
       },
       onShapes: (shapes) => {
@@ -122,6 +131,28 @@ export class LearnSession {
     const i18n = getI18n();
     const translated = this.#getCurrentTranslatedLesson();
     return translated?.failureMessage ?? i18n.t(`learn.feedback.${this.#engine.failureCode}`);
+  }
+
+  #resetAttemptState(): void {
+    this.#mistakeCount = 0;
+    this.#hintsUsed = 0;
+    this.#attemptLog = [];
+    this.#attemptLogSeq = 0;
+  }
+
+  #pushAttemptLog(message: string, tone: AttemptLogTone): void {
+    this.#attemptLogSeq++;
+    this.#attemptLog = [...this.#attemptLog, { id: this.#attemptLogSeq, tone, message }].slice(-30);
+  }
+
+  #markFailure(): void {
+    if (!this.#isFailed) {
+      this.#mistakeCount++;
+      this.#pushAttemptLog('Incorrect attempt', 'error');
+    }
+    this.#isFailed = true;
+    this.#feedbackMessage = this.#getFailureFeedbackMessage();
+    this.#showFeedback = true;
   }
 
   // ============================================================
@@ -170,6 +201,35 @@ export class LearnSession {
   get moveCount(): number {
     void this.#version;
     return this.#engine.moveCount;
+  }
+
+  get optimalMoves(): number {
+    void this.#version;
+    return this.#engine.lesson?.optimalMoves ?? 0;
+  }
+
+  get mistakeCount(): number {
+    return this.#mistakeCount;
+  }
+
+  get hintsUsed(): number {
+    return this.#hintsUsed;
+  }
+
+  get attemptLog(): AttemptLogItem[] {
+    return this.#attemptLog;
+  }
+
+  get mastery(): 'efficient' | 'assisted' | 'needs-review' {
+    const optimal = this.optimalMoves;
+    const efficientMoves = optimal <= 0 || this.moveCount <= optimal + 1;
+    if (this.#mistakeCount === 0 && this.#hintsUsed === 0 && efficientMoves) {
+      return 'efficient';
+    }
+    if (this.#mistakeCount <= 1 && this.#hintsUsed <= 1) {
+      return 'assisted';
+    }
+    return 'needs-review';
   }
 
   get feedbackMessage(): string {
@@ -224,6 +284,16 @@ export class LearnSession {
   get remainingTargets(): Square[] {
     void this.#version;
     return this.#engine.remainingTargets;
+  }
+
+  get totalTargets(): number {
+    void this.#version;
+    return this.#engine.lesson?.targetSquares?.length ?? 0;
+  }
+
+  get completedTargets(): number {
+    void this.#version;
+    return this.visitedTargets.length;
   }
 
   get visitedTargets(): Square[] {
@@ -325,9 +395,12 @@ export class LearnSession {
   // ============================================================
 
   loadLesson(lessonId: string): boolean {
+    this.#resetAttemptState();
     this.#showFeedback = false;
     this.#isFailed = false;
     this.#shapes = [];
+    this.#currentHintLevel = 'none';
+    this.#currentHintType = null;
 
     // Stop existing hint system
     if (this.#hintSystem) {
@@ -358,6 +431,7 @@ export class LearnSession {
       this.#hintSystem.start();
     }
 
+    this.#pushAttemptLog('Mission started', 'info');
     this.#version++;
     return result;
   }
@@ -373,6 +447,8 @@ export class LearnSession {
     } else if (this.#engine.status === 'ready') {
       // Invalid move - track for hint system
       this.#hintSystem?.onWrongMove();
+      this.#mistakeCount++;
+      this.#pushAttemptLog('Invalid move', 'warning');
 
       const i18n = getI18n();
       this.#feedbackMessage = i18n.t('learn.invalidMove');
@@ -387,6 +463,7 @@ export class LearnSession {
   }
 
   restart(): void {
+    this.#resetAttemptState();
     this.#showFeedback = false;
     this.#isFailed = false;
     this.#shapes = [];
@@ -400,6 +477,7 @@ export class LearnSession {
       this.#shapes = this.#engine.lesson.arrows;
     }
 
+    this.#pushAttemptLog('Mission restarted', 'info');
     this.#version++;
     this.syncBoard();
   }
@@ -413,6 +491,8 @@ export class LearnSession {
 
   showHint(autoHideDuration: number = LearnSession.HINT_AUTO_HIDE_DURATION): void {
     if (this.hint) {
+      this.#hintsUsed++;
+      this.#pushAttemptLog('Hint requested', 'info');
       this.#feedbackMessage = this.hint;
       this.#showFeedback = true;
       this.#version++;
