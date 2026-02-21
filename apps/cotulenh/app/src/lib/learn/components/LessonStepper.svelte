@@ -46,6 +46,8 @@
   <div class="lesson-stepper">
     <div class="breadcrumb-row">
       <div class="breadcrumb">
+        <a href="/learn" class="breadcrumb-link">{i18n.t('learn.title')}</a>
+        <ChevronRight size={14} class="separator" />
         <a href="/learn/{subject.id}" class="breadcrumb-link">{translatedSubject?.title}</a>
         <ChevronRight size={14} class="separator" />
         <span class="breadcrumb-section">{translatedSection?.title}</span>

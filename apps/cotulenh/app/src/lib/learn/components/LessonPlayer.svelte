@@ -42,6 +42,10 @@
     const prev = lessonContext.prevLesson;
     return `/learn/${prev.subjectId}/${prev.sectionId}/${prev.id}`;
   });
+  const subjectUrl = $derived.by(() => {
+    const subjectId = lessonContext?.subject?.id;
+    return subjectId ? `/learn/${subjectId}` : '/learn';
+  });
 
   const visibleTargets = $derived.by(() => {
     if (!session || session.status !== 'ready') {
@@ -152,6 +156,11 @@
       </div>
 
       <div class="right-actions">
+        <div class="exit-actions">
+          <a href={subjectUrl} class="escape-link">{i18n.t('learn.backToLessons')}</a>
+          <a href="/learn" class="escape-link home">{i18n.t('learn.backToSubjects')}</a>
+        </div>
+
         <div class="mode-toggle" role="tablist" aria-label="Learning mode">
           <button class:active={mode === 'guided'} onclick={() => setMode('guided')}>Guided</button>
           <button class:active={mode === 'practice'} onclick={() => setMode('practice')}>Practice</button>
@@ -267,6 +276,11 @@
     gap: 1rem;
     border-bottom: 1px solid var(--theme-border, rgba(59, 130, 246, 0.3));
     padding-bottom: 0.8rem;
+    position: sticky;
+    top: 0.5rem;
+    z-index: 15;
+    background: linear-gradient(180deg, rgba(2, 6, 23, 0.96), rgba(2, 6, 23, 0.9));
+    backdrop-filter: blur(8px);
   }
 
   .left-actions,
@@ -274,6 +288,36 @@
     display: flex;
     align-items: center;
     gap: 0.75rem;
+  }
+
+  .right-actions {
+    justify-content: flex-end;
+    flex-wrap: wrap;
+  }
+
+  .exit-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .escape-link {
+    border: 1px solid rgba(59, 130, 246, 0.45);
+    background: rgba(15, 23, 42, 0.78);
+    color: #bfdbfe;
+    border-radius: 999px;
+    padding: 0.34rem 0.62rem;
+    text-decoration: none;
+    font-size: 0.68rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-family: var(--font-mono, monospace);
+    white-space: nowrap;
+  }
+
+  .escape-link.home {
+    border-color: rgba(16, 185, 129, 0.45);
+    color: #86efac;
   }
 
   h1 {
@@ -389,6 +433,25 @@
     .left-actions,
     .right-actions {
       justify-content: space-between;
+    }
+
+    .right-actions {
+      width: 100%;
+      align-items: stretch;
+      gap: 0.45rem;
+    }
+
+    .exit-actions {
+      flex: 1;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.35rem;
+    }
+
+    .escape-link {
+      text-align: center;
+      padding: 0.4rem 0.5rem;
+      font-size: 0.63rem;
     }
 
     h1 {
