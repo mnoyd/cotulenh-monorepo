@@ -249,6 +249,7 @@
 
 <style>
   .lesson-player {
+    --board-height-budget: max(320px, calc(100dvh - 220px));
     min-height: 100vh;
     background: radial-gradient(circle at 20% 10%, rgba(34, 197, 94, 0.08), transparent 40%),
       radial-gradient(circle at 95% 20%, rgba(59, 130, 246, 0.12), transparent 45%),
@@ -330,6 +331,14 @@
     border: 1px solid var(--theme-border, rgba(59, 130, 246, 0.35));
     background: var(--theme-bg-base, #0f172a);
     padding: 0.25rem;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+  }
+
+  .board-zone :global(.board-container) {
+    width: min(100%, calc(var(--board-height-budget) * 12 / 13));
+    max-height: var(--board-height-budget);
   }
 
   .mission-side {
@@ -356,6 +365,10 @@
   }
 
   @media (max-width: 1100px) {
+    .lesson-player {
+      --board-height-budget: max(300px, calc(100dvh - 200px));
+    }
+
     .mission-layout {
       grid-template-columns: minmax(0, 1fr);
     }
@@ -363,6 +376,7 @@
 
   @media (max-width: 760px) {
     .lesson-player {
+      --board-height-budget: max(260px, calc(100dvh - 190px));
       padding: 0.75rem;
     }
 
