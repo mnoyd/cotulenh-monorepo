@@ -1,22 +1,18 @@
 <script lang="ts">
   import { goto } from '$app/navigation';
-  import { fly, fade, slide } from 'svelte/transition';
-  import {
-    RotateCcw,
-    ArrowRight,
-    ArrowLeft as ArrowLeftIcon,
-    Star,
-    CheckCircle,
-    HelpCircle
-  } from 'lucide-svelte';
+  import { fade } from 'svelte/transition';
+  import { ArrowRight, ArrowLeft as ArrowLeftIcon } from 'lucide-svelte';
   import BoardContainer from '$lib/components/BoardContainer.svelte';
   import TargetMarker from './TargetMarker.svelte';
   import SquareTooltip from './SquareTooltip.svelte';
   import HintVisuals from './HintVisuals.svelte';
-  import LessonContent from './LessonContent.svelte';
   import LessonStepper from './LessonStepper.svelte';
   import LessonIntroModal from './LessonIntroModal.svelte';
   import Celebration from './Celebration.svelte';
+  import LessonObjectiveCard from './LessonObjectiveCard.svelte';
+  import LessonAttemptPanel from './LessonAttemptPanel.svelte';
+  import LessonAttemptLog from './LessonAttemptLog.svelte';
+  import LessonCompletionCard from './LessonCompletionCard.svelte';
   import { LearnSession } from '../learn-session.svelte';
   import { getI18n } from '$lib/i18n/index.svelte';
   import { getLessonContext } from '@cotulenh/learn';
@@ -30,20 +26,39 @@
     nextUrl?: string;
   };
 
+  type LearnMode = 'guided' | 'practice';
+  type MobilePanel = 'objective' | 'assist' | 'log';
+
   let { lessonId, nextUrl }: Props = $props();
 
   let session = $state<LearnSession | null>(null);
   let showIntroModal = $state(false);
+  let mode = $state<LearnMode>(getStoredValue<LearnMode>('learn-player-mode', 'guided'));
+  let mobilePanel = $state<MobilePanel>('objective');
 
-  // Get lesson context for navigation
   const lessonContext = $derived(getLessonContext(lessonId));
   const prevUrl = $derived.by(() => {
     if (!lessonContext?.prevLesson) return null;
     const prev = lessonContext.prevLesson;
     return `/learn/${prev.subjectId}/${prev.sectionId}/${prev.id}`;
   });
+  const subjectUrl = $derived.by(() => {
+    const subjectId = lessonContext?.subject?.id;
+    return subjectId ? `/learn/${subjectId}` : '/learn';
+  });
 
-  // Check if user has seen this lesson's intro before
+  const visibleTargets = $derived.by(() => {
+    if (!session || session.status !== 'ready') {
+      return [];
+    }
+    return session.remainingTargets;
+  });
+
+  const introLesson = $derived.by(() => {
+    if (!session) return null;
+    return session.translatedLesson ?? session.lesson;
+  });
+
   function hasSeenIntro(id: string): boolean {
     const seen = getStoredValue<string[]>('learn-seen-intros', []);
     return seen.includes(id);
@@ -56,12 +71,15 @@
     }
   }
 
-  // Recreate session when lessonId changes (not just on mount)
+  function setMode(nextMode: LearnMode): void {
+    mode = nextMode;
+    setStoredValue('learn-player-mode', nextMode);
+  }
+
   $effect(() => {
     const newSession = new LearnSession(lessonId);
     session = newSession;
 
-    // Show intro modal for first-time visitors if lesson has content
     if ((newSession.translatedLesson?.content ?? newSession.lesson?.content) && !hasSeenIntro(lessonId)) {
       showIntroModal = true;
     } else {
@@ -79,6 +97,18 @@
     }
   });
 
+  $effect(() => {
+    if (session) {
+      session.setAssistanceMode(mode);
+    }
+  });
+
+  $effect(() => {
+    if (session?.status === 'completed' && mobilePanel === 'objective') {
+      mobilePanel = 'assist';
+    }
+  });
+
   function handleStartLesson() {
     markIntroSeen(lessonId);
     showIntroModal = false;
@@ -93,25 +123,12 @@
   }
 
   function handleHint() {
-    session?.showHint();
+    if (!session) return;
+    session.showHint(mode === 'guided' ? LearnSession.HINT_AUTO_HIDE_DURATION : 0);
   }
-
-  // Get target squares that should be shown (only remaining unvisited targets)
-  const visibleTargets = $derived.by(() => {
-    if (!session || session.status !== 'ready') {
-      return [];
-    }
-    return session.remainingTargets;
-  });
-
-  const introLesson = $derived.by(() => {
-    if (!session) return null;
-    return session.translatedLesson ?? session.lesson;
-  });
 </script>
 
 {#if session && session.lesson}
-  <!-- Intro modal for first-time visitors -->
   {#if showIntroModal && introLesson}
     <LessonIntroModal lesson={introLesson} onStart={handleStartLesson} />
   {/if}
@@ -121,11 +138,10 @@
   {/if}
 
   <div class="lesson-player">
-    <!-- Progress stepper with breadcrumb navigation -->
     <LessonStepper {lessonId} />
 
-    <header class="lesson-header">
-      <div class="nav-controls">
+    <header class="mission-header">
+      <div class="left-actions">
         {#if prevUrl}
           <button
             class="nav-btn"
@@ -133,12 +149,23 @@
             title={i18n.t('learn.previousLesson')}
             aria-label={i18n.t('learn.previousLesson')}
           >
-            <ArrowLeftIcon size={18} />
+            <ArrowLeftIcon size={17} />
           </button>
         {/if}
+        <h1>{session.lessonTitle}</h1>
       </div>
-      <h1>{session.lessonTitle}</h1>
-      <div class="nav-controls">
+
+      <div class="right-actions">
+        <div class="exit-actions">
+          <a href={subjectUrl} class="escape-link">{i18n.t('learn.backToLessons')}</a>
+          <a href="/learn" class="escape-link home">{i18n.t('learn.backToSubjects')}</a>
+        </div>
+
+        <div class="mode-toggle" role="tablist" aria-label="Learning mode">
+          <button class:active={mode === 'guided'} onclick={() => setMode('guided')}>Guided</button>
+          <button class:active={mode === 'practice'} onclick={() => setMode('practice')}>Practice</button>
+        </div>
+
         {#if nextUrl && session.status !== 'completed'}
           <button
             class="nav-btn"
@@ -146,111 +173,84 @@
             title={i18n.t('learn.skipToNext')}
             aria-label={i18n.t('learn.skipToNext')}
           >
-            <ArrowRight size={18} />
+            <ArrowRight size={17} />
           </button>
         {/if}
       </div>
     </header>
 
-    <div class="lesson-content">
-      <div class="board-section">
+    <div class="mission-layout">
+      <section class="board-zone">
         {#key lessonId}
-          <BoardContainer
-            config={session.boardConfig}
-            onApiReady={(api) => session?.setBoardApi(api)}
-          />
-          <!-- Target markers are injected into board DOM -->
+          <BoardContainer config={session.boardConfig} onApiReady={(api) => session?.setBoardApi(api)} />
           {#each visibleTargets as targetSquare (targetSquare)}
             <TargetMarker square={targetSquare} boardApi={session.boardApi} />
           {/each}
-          <!-- Tooltip overlay for hover hints -->
           <SquareTooltip {session} boardApi={session.boardApi} />
-          <!-- Progressive hint visuals -->
-          <HintVisuals {session} />
+          {#if mode === 'guided'}
+            <HintVisuals {session} />
+          {/if}
         {/key}
-      </div>
+      </section>
 
-      <div class="instruction-section">
+      <aside class="mission-side desktop-side">
+        <LessonObjectiveCard {session} {mode} />
+        <LessonAttemptPanel {session} {mode} onHint={handleHint} onReset={() => session?.restart()} />
+
         {#if session.status === 'completed'}
-          <div class="completion-panel" in:fly={{ y: 20, duration: 500, delay: 200 }}>
-            <div class="completion-icon-wrapper" in:fly={{ y: 20, duration: 400, delay: 400 }}>
-              <CheckCircle size={56} class="completion-icon" />
-            </div>
-
-            <h2 in:fade={{ duration: 400, delay: 500 }}>
-              {i18n.t('learn.lessonComplete')}
-            </h2>
-
-            {#if session.gradingSystem === 'stars'}
-              <div class="stars-earned">
-                {#each [1, 2, 3] as i}
-                  <div class="star-wrapper" in:fly={{ y: 20, duration: 400, delay: 600 + i * 150 }}>
-                    <Star
-                      size={36}
-                      fill={i <= session.stars ? '#fbbf24' : 'none'}
-                      color={i <= session.stars ? '#fbbf24' : '#4b5563'}
-                      strokeWidth={1.5}
-                    />
-                  </div>
-                {/each}
-              </div>
-              <p class="move-count" in:fade={{ duration: 400, delay: 1100 }}>
-                {i18n.t('learn.moves')}: {session.moveCount}
-              </p>
-            {/if}
-
-            {#if session.showFeedback}
-              <p class="success-message" in:fade={{ duration: 400, delay: 600 }}>
-                {session.feedbackMessage}
-              </p>
-            {/if}
-
-            <div class="completion-actions" in:fade={{ duration: 400, delay: 1200 }}>
-              <button class="btn secondary" onclick={() => session?.restart()}>
-                <RotateCcw size={16} />
-                {i18n.t('common.tryAgain')}
-              </button>
-              <button class="btn primary" onclick={() => handleNext()}>
-                <ArrowRight size={16} />
-                {i18n.t('common.continue')}
-              </button>
-            </div>
-          </div>
-        {:else}
-          <div class="instruction-panel" transition:fade={{ duration: 200 }}>
-            {#if session.lessonContent}
-              <LessonContent content={session.lessonContent} />
-            {/if}
-            <p class="instruction-text">{session.instruction}</p>
-
-            <div class="lesson-controls">
-              <button class="btn hint-btn" onclick={handleHint} disabled={!session.hint}>
-                <HelpCircle size={16} />
-                {i18n.t('learn.hint')}
-              </button>
-              <button class="btn secondary" onclick={() => session?.restart()}>
-                <RotateCcw size={16} />
-                {i18n.t('learn.reset')}
-              </button>
-            </div>
-
-            {#if session.gradingSystem === 'stars'}
-              <div class="move-counter">{i18n.t('learn.moves')}: {session.moveCount}</div>
-            {/if}
-
-            {#if session.showFeedback}
-              {#key session.feedbackMessage}
-                <div class="feedback hint" transition:slide={{ duration: 200 }}>
-                  <span class="feedback-text animate-pulse">
-                    {session.feedbackMessage}
-                  </span>
-                </div>
-              {/key}
-            {/if}
+          <div transition:fade={{ duration: 180 }}>
+            <LessonCompletionCard {session} onRestart={() => session?.restart()} onContinue={handleNext} />
           </div>
         {/if}
-      </div>
+      </aside>
     </div>
+
+    <div class="desktop-log">
+      <LessonAttemptLog {session} />
+    </div>
+
+    <section class="mobile-dock">
+      <div class="mobile-tabs" role="tablist" aria-label="Lesson panels">
+        <button
+          role="tab"
+          aria-selected={mobilePanel === 'objective'}
+          class:active={mobilePanel === 'objective'}
+          onclick={() => (mobilePanel = 'objective')}
+        >
+          Objective
+        </button>
+        <button
+          role="tab"
+          aria-selected={mobilePanel === 'assist'}
+          class:active={mobilePanel === 'assist'}
+          onclick={() => (mobilePanel = 'assist')}
+        >
+          Hints
+        </button>
+        <button
+          role="tab"
+          aria-selected={mobilePanel === 'log'}
+          class:active={mobilePanel === 'log'}
+          onclick={() => (mobilePanel = 'log')}
+        >
+          Log
+        </button>
+      </div>
+
+      <div class="mobile-panel">
+        {#if mobilePanel === 'objective'}
+          <LessonObjectiveCard {session} {mode} />
+        {:else if mobilePanel === 'assist'}
+          <LessonAttemptPanel {session} {mode} onHint={handleHint} onReset={() => session?.restart()} />
+        {:else}
+          <LessonAttemptLog {session} />
+        {/if}
+      </div>
+
+      {#if session.status === 'completed'}
+        <LessonCompletionCard {session} onRestart={() => session?.restart()} onContinue={handleNext} />
+      {/if}
+    </section>
   </div>
 {:else}
   <div class="loading">{i18n.t('learn.loadingLesson')}</div>
@@ -258,268 +258,248 @@
 
 <style>
   .lesson-player {
+    --board-height-budget: max(320px, calc(100dvh - 220px));
     min-height: 100vh;
-    background: var(--theme-bg-dark, #000);
-    color: var(--theme-text-primary, #eee);
+    background: radial-gradient(circle at 20% 10%, rgba(34, 197, 94, 0.08), transparent 40%),
+      radial-gradient(circle at 95% 20%, rgba(59, 130, 246, 0.12), transparent 45%),
+      var(--theme-bg-dark, #020617);
+    color: var(--theme-text-primary, #e2e8f0);
     padding: 1rem;
   }
 
-  .lesson-header {
+  .mission-header {
+    margin-top: 1rem;
+    margin-bottom: 1rem;
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 1rem;
-    margin-bottom: 1rem;
-    padding-bottom: 1rem;
-    border-bottom: 1px solid var(--theme-border, #444);
+    border-bottom: 1px solid var(--theme-border, rgba(59, 130, 246, 0.3));
+    padding-bottom: 0.8rem;
+    position: sticky;
+    top: 0.5rem;
+    z-index: 15;
+    background: linear-gradient(180deg, rgba(2, 6, 23, 0.96), rgba(2, 6, 23, 0.9));
+    backdrop-filter: blur(8px);
   }
 
-  .nav-controls {
+  .left-actions,
+  .right-actions {
     display: flex;
     align-items: center;
-    min-width: 40px;
+    gap: 0.75rem;
+  }
+
+  .right-actions {
+    justify-content: flex-end;
+    flex-wrap: wrap;
+  }
+
+  .exit-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .escape-link {
+    border: 1px solid rgba(59, 130, 246, 0.45);
+    background: rgba(15, 23, 42, 0.78);
+    color: #bfdbfe;
+    border-radius: 999px;
+    padding: 0.34rem 0.62rem;
+    text-decoration: none;
+    font-size: 0.68rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-family: var(--font-mono, monospace);
+    white-space: nowrap;
+  }
+
+  .escape-link.home {
+    border-color: rgba(16, 185, 129, 0.45);
+    color: #86efac;
+  }
+
+  h1 {
+    margin: 0;
+    font-size: 1.25rem;
+    color: var(--theme-text-primary, #f8fafc);
+  }
+
+  .mode-toggle {
+    display: inline-flex;
+    border: 1px solid var(--theme-border, rgba(59, 130, 246, 0.35));
+    border-radius: 999px;
+    overflow: hidden;
+    background: rgba(15, 23, 42, 0.65);
+  }
+
+  .mode-toggle button {
+    border: 0;
+    background: transparent;
+    color: var(--theme-text-secondary, #94a3b8);
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-family: var(--font-mono, monospace);
+    cursor: pointer;
+    padding: 0.35rem 0.7rem;
+  }
+
+  .mode-toggle button.active {
+    color: #e2e8f0;
+    background: rgba(59, 130, 246, 0.25);
   }
 
   .nav-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
     width: 36px;
     height: 36px;
-    background: transparent;
-    border: 1px solid var(--theme-border, #444);
-    border-radius: 6px;
-    color: var(--theme-text-secondary, #aaa);
+    border-radius: 8px;
+    border: 1px solid var(--theme-border, rgba(59, 130, 246, 0.4));
+    background: rgba(15, 23, 42, 0.8);
+    color: var(--theme-text-secondary, #cbd5e1);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     cursor: pointer;
-    transition: all 0.15s ease;
   }
 
-  .nav-btn:hover {
-    background: var(--theme-bg-elevated, #333);
-    color: var(--theme-text-primary, #eee);
-    border-color: var(--theme-primary, #3b82f6);
+  .mission-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 340px;
+    gap: 1rem;
+    align-items: start;
   }
 
-  .lesson-header h1 {
-    margin: 0;
-    font-size: 1.5rem;
-    text-align: center;
-    flex: 1;
-  }
-
-  .lesson-content {
-    display: flex;
-    gap: 1.5rem;
-    max-width: 1200px;
-    margin: 0 auto;
-  }
-
-  .board-section {
-    flex: none;
-    width: min(500px, 50vw);
-    border: 1px solid var(--theme-border, #444);
-    background: var(--theme-bg-base, #222);
+  .board-zone {
+    border: 1px solid var(--theme-border, rgba(59, 130, 246, 0.35));
+    background: var(--theme-bg-base, #0f172a);
     padding: 0.25rem;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
   }
 
-  .instruction-section {
-    flex: 1;
-    min-width: 300px;
+  .board-zone :global(.board-container) {
+    width: min(100%, calc(var(--board-height-budget) * 12 / 13));
+    max-height: var(--board-height-budget);
+  }
+
+  .mission-side {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
-    position: relative; /* For transitions */
+    gap: 0.85rem;
   }
 
-  .instruction-panel {
-    background: var(--theme-bg-panel, #222);
-    border: 1px solid var(--theme-border, #444);
-    border-radius: 8px;
-    padding: 1.5rem;
-  }
-
-  .instruction-text {
-    font-size: 1.125rem;
-    line-height: 1.6;
-    margin: 0 0 1rem 0;
-  }
-
-  .lesson-controls {
-    display: flex;
-    gap: 0.5rem;
-    margin-bottom: 1rem;
-  }
-
-  .move-counter {
-    font-size: 0.875rem;
-    color: var(--theme-text-secondary, #aaa);
-    margin-bottom: 0.5rem;
-  }
-
-  .move-count {
-    color: var(--theme-text-secondary, #aaa);
-    margin: 0.5rem 0;
-  }
-
-  .success-message {
-    color: var(--theme-success, #22c55e);
-    font-weight: 500;
-    margin: 0.5rem 0;
-  }
-
-  .feedback {
+  .desktop-log {
+    display: block;
     margin-top: 1rem;
-    padding: 0.75rem 1rem;
-    border-radius: 6px;
-    font-weight: 500;
   }
 
-  .feedback.hint {
-    background: rgba(59, 130, 246, 0.2);
-    color: #3b82f6;
-    border: 1px solid #3b82f6;
-  }
-
-  .completion-panel {
-    background: var(--theme-bg-panel, #222);
-    border: 1px solid var(--theme-success, #22c55e);
-    border-radius: 12px;
-    padding: 2.5rem;
-    text-align: center;
-    box-shadow: 0 10px 30px -5px rgba(34, 197, 94, 0.2);
-  }
-
-  .completion-icon-wrapper {
-    margin-bottom: 1rem;
-  }
-
-  .completion-panel :global(.completion-icon) {
-    color: var(--theme-success, #22c55e);
-    filter: drop-shadow(0 0 10px rgba(34, 197, 94, 0.5));
-  }
-
-  .completion-panel h2 {
-    margin: 0.5rem 0 1.5rem;
-    color: var(--theme-success, #22c55e);
-    font-size: 1.75rem;
-    font-weight: 700;
-  }
-
-  .stars-earned {
-    display: flex;
-    justify-content: center;
-    gap: 0.75rem;
-    margin: 1.5rem 0 0.5rem;
-  }
-
-  .star-wrapper {
-    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
-  }
-
-  .completion-actions {
-    display: flex;
-    gap: 1rem;
-    justify-content: center;
-    margin-top: 2rem;
-  }
-
-  .btn {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.75rem 1.5rem;
-    border: none;
-    border-radius: 6px;
-    font-weight: 600;
-    cursor: pointer;
-    font-size: 0.875rem;
-    transition: all 0.2s ease;
-  }
-
-  .btn:hover {
-    transform: translateY(-1px);
-  }
-
-  .btn:active {
-    transform: translateY(0);
-  }
-
-  .btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-
-  .btn.primary {
-    background: var(--theme-success, #22c55e);
-    color: #000;
-  }
-
-  .btn.primary:hover {
-    background: #16a34a;
-    box-shadow: 0 4px 12px rgba(34, 197, 94, 0.4);
-  }
-
-  .btn.secondary {
-    background: transparent;
-    border: 1px solid var(--theme-border, #444);
-    color: var(--theme-text-primary, #eee);
-  }
-
-  .btn.secondary:hover {
-    border-color: var(--theme-text-secondary, #aaa);
-    background: rgba(255, 255, 255, 0.05);
-  }
-
-  .btn.hint-btn {
-    background: rgba(59, 130, 246, 0.2);
-    border: 1px solid #3b82f6;
-    color: #3b82f6;
-  }
-
-  .btn.hint-btn:hover {
-    background: rgba(59, 130, 246, 0.3);
-    box-shadow: 0 0 10px rgba(59, 130, 246, 0.3);
+  .mobile-dock {
+    display: none;
   }
 
   .loading {
-    display: flex;
-    justify-content: center;
-    align-items: center;
     min-height: 100vh;
-    color: var(--theme-text-secondary, #aaa);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--theme-text-secondary, #94a3b8);
   }
 
-  @media (max-width: 768px) {
-    .lesson-content {
+  @media (max-width: 1100px) {
+    .lesson-player {
+      --board-height-budget: max(300px, calc(100dvh - 200px));
+    }
+
+    .mission-layout {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+
+  @media (max-width: 760px) {
+    .lesson-player {
+      --board-height-budget: max(260px, calc(100dvh - 190px));
+      padding: 0.75rem;
+    }
+
+    .mission-header {
       flex-direction: column;
+      align-items: stretch;
+      gap: 0.6rem;
     }
 
-    .board-section {
+    .left-actions,
+    .right-actions {
+      justify-content: space-between;
+    }
+
+    .right-actions {
       width: 100%;
+      align-items: stretch;
+      gap: 0.45rem;
     }
 
-    .instruction-section {
-      min-width: 0;
+    .exit-actions {
+      flex: 1;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.35rem;
     }
-  }
 
-  @keyframes pulse {
-    0% {
-      opacity: 0.6;
-      transform: scale(0.98);
+    .escape-link {
+      text-align: center;
+      padding: 0.4rem 0.5rem;
+      font-size: 0.63rem;
     }
-    50% {
-      opacity: 1;
-      transform: scale(1.01);
-    }
-    100% {
-      opacity: 1;
-      transform: scale(1);
-    }
-  }
 
-  .animate-pulse {
-    display: block;
-    animation: pulse 0.3s ease-out;
+    h1 {
+      font-size: 1rem;
+    }
+
+    .desktop-side,
+    .desktop-log {
+      display: none;
+    }
+
+    .mobile-dock {
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+      margin-top: 0.75rem;
+      padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+    }
+
+    .mobile-tabs {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 0.35rem;
+      border: 1px solid rgba(59, 130, 246, 0.35);
+      border-radius: 10px;
+      padding: 0.3rem;
+      background: rgba(15, 23, 42, 0.8);
+    }
+
+    .mobile-tabs button {
+      border: 0;
+      border-radius: 7px;
+      padding: 0.45rem 0.35rem;
+      background: transparent;
+      color: #94a3b8;
+      font-size: 0.67rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-family: var(--font-mono, monospace);
+    }
+
+    .mobile-tabs button.active {
+      background: rgba(59, 130, 246, 0.22);
+      color: #e2e8f0;
+    }
+
+    .mobile-panel {
+      min-height: 200px;
+    }
   }
 </style>
