@@ -23,6 +23,13 @@
     return translateSubject(selectedSubject, locale);
   });
 
+  const selectedLessonTotals = $derived.by(() => {
+    if (!selectedSubject) return { completed: 0, total: 0 };
+    const lessons = selectedSubject.sections.flatMap((section) => section.lessons);
+    const completed = lessons.filter((lesson) => subjectProgress.isLessonCompleted(lesson.id)).length;
+    return { completed, total: lessons.length };
+  });
+
   const completedSubjects = $derived(subjects.filter((subject) => subjectProgress.isSubjectCompleted(subject.id)).length);
   const overallMastery = $derived(subjects.length ? Math.round((completedSubjects / subjects.length) * 100) : 0);
 
@@ -128,7 +135,7 @@
       <p>{selectedTranslation?.description}</p>
       <div class="meta">
         <span>{selectedSubject.sections.length} sections</span>
-        <span>{selectedProgress.completedLessons}/{selectedProgress.totalLessons} lessons</span>
+        <span>{selectedLessonTotals.completed}/{selectedLessonTotals.total} lessons</span>
       </div>
       <a class="panel-cta" href={selectedLink}>
         {selectedState === 'completed' ? 'Review Subject' : 'Open Mission'}
