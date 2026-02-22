@@ -1,21 +1,23 @@
 <script lang="ts">
   import type { LearnSession } from '../learn-session.svelte';
+  import { getI18n } from '$lib/i18n/index.svelte';
 
   interface Props {
     session: LearnSession;
   }
 
   let { session }: Props = $props();
+  const i18n = getI18n();
 </script>
 
 <section class="attempt-log hud-corners">
   <header>
-    <span>Attempt Log</span>
-    <small>{session.attemptLog.length} entries</small>
+    <span>{i18n.t('learn.attemptLog')}</span>
+    <small>{session.attemptLog.length} {i18n.t('learn.attemptLogEntries')}</small>
   </header>
 
   {#if session.attemptLog.length === 0}
-    <p class="empty">Start making moves to build the log.</p>
+    <p class="empty">{i18n.t('learn.attemptLogEmpty')}</p>
   {:else}
     <div class="entries">
       {#each session.attemptLog as entry (entry.id)}

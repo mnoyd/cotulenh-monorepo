@@ -162,6 +162,61 @@ export const en: TranslationKeys = {
   'learn.feedback.error.invalidMove': 'Invalid move. Try again.',
   'learn.feedback.error.wrongScenarioMove': "That's not the expected move.",
 
+  // Learn UI additional strings
+  'learn.mastery': 'Mastery',
+  'learn.curriculumMap': 'Curriculum Map',
+  'learn.continueMission': 'Continue Mission',
+  'learn.reviewSubject': 'Review Subject',
+  'learn.openMission': 'Open Mission',
+  'learn.sections': 'sections',
+  'learn.missionTimeline': 'Mission Timeline',
+  'learn.actionReview': 'Review',
+  'learn.actionContinue': 'Continue',
+  'learn.actionStart': 'Start',
+  'learn.actionLocked': 'Locked',
+
+  // Learn mode and tabs
+  'learn.modeGuided': 'Guided',
+  'learn.modePractice': 'Practice',
+  'learn.tabObjective': 'Objective',
+  'learn.tabHints': 'Hints',
+  'learn.tabLog': 'Log',
+
+  // Learn assist and hints
+  'learn.assistGuided': 'Guided Assist',
+  'learn.assistPractice': 'Practice Assist',
+  'learn.assistGuidedTip': 'Guided assist is active: hints can escalate while you explore.',
+  'learn.assistPracticeTip': 'Practice assist is minimal: request hints manually when needed.',
+  'learn.revealHint': 'Reveal Hint',
+  'learn.hintLevelManual': 'Manual',
+  'learn.hintLevelNone': 'None',
+  'learn.hintLevelSubtle': 'Subtle',
+  'learn.hintLevelMedium': 'Medium',
+  'learn.hintLevelExplicit': 'Explicit',
+
+  // Learn objective strings
+  'learn.readBrief': 'Read Brief',
+  'learn.successCriteria': 'Success Criteria',
+  'learn.constraints': 'Constraints',
+  'learn.criteriaVisitTargets': 'Visit all target squares ({completed}/{total}).',
+  'learn.criteriaFollowScenario': 'Follow the scripted sequence to completion.',
+  'learn.criteriaReachGoal': 'Reach the target board state.',
+  'learn.criteriaDefault': 'Complete the mission objective.',
+  'learn.constraintTerrain': 'Respect terrain movement restrictions.',
+  'learn.constraintScenario': 'Exact move order is required.',
+  'learn.constraintLegal': 'Only legal moves are accepted.',
+  'learn.constraintOrdered': 'Targets must be visited in order.',
+  'learn.constraintDefault': 'Use any legal move sequence that satisfies the objective.',
+
+  // Learn completion and log
+  'learn.masteryLabel': 'Mastery',
+  'learn.masteryEfficient': 'Efficient',
+  'learn.masteryAssisted': 'Assisted',
+  'learn.masteryNeedsReview': 'Needs Review',
+  'learn.attemptLog': 'Attempt Log',
+  'learn.attemptLogEntries': 'entries',
+  'learn.attemptLogEmpty': 'Start making moves to build the log.',
+
   // Learn tooltips
   'learn.tooltip.target': '🎯 Move here',
   'learn.tooltip.clickToMove': 'Click to select',

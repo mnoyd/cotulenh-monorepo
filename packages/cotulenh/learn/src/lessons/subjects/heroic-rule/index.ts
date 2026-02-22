@@ -1,9 +1,10 @@
 import type { Subject, Section, Lesson } from '../../../types';
-import {
-  subject8Introduction,
-  section1HeroicPromotionIntro,
-  section2HeroicMovementIntro
-} from '../../../content';
+
+// Introduction content is now managed via i18n system (en.ts, vi.ts)
+// This serves as fallback - translations are applied at runtime
+const subject8Introduction = '';
+const section1HeroicPromotionIntro = '';
+const section2HeroicMovementIntro = '';
 
 const heroicPromotionLessons: Lesson[] = [
   {

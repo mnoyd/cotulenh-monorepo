@@ -1,9 +1,10 @@
 import type { Subject, Section, Lesson } from '../../../types';
-import {
-  subject4Introduction,
-  section1BlockedPiecesIntro,
-  section2UnblockedPiecesIntro
-} from '../../../content';
+
+// Introduction content is now managed via i18n system (en.ts, vi.ts)
+// This serves as fallback - translations are applied at runtime
+const subject4Introduction = '';
+const section1BlockedPiecesIntro = '';
+const section2UnblockedPiecesIntro = '';
 
 const blockingLessons: Lesson[] = [
   {

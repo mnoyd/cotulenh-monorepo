@@ -161,6 +161,61 @@ export interface TranslationKeys {
   'learn.feedback.error.invalidMove': string;
   'learn.feedback.error.wrongScenarioMove': string;
 
+  // Learn UI additional strings
+  'learn.mastery': string;
+  'learn.masteryLabel': string;
+  'learn.masteryEfficient': string;
+  'learn.masteryAssisted': string;
+  'learn.masteryNeedsReview': string;
+  'learn.curriculumMap': string;
+  'learn.continueMission': string;
+  'learn.reviewSubject': string;
+  'learn.openMission': string;
+  'learn.sections': string;
+  'learn.missionTimeline': string;
+  'learn.actionReview': string;
+  'learn.actionContinue': string;
+  'learn.actionStart': string;
+  'learn.actionLocked': string;
+
+  // Learn mode and tabs
+  'learn.modeGuided': string;
+  'learn.modePractice': string;
+  'learn.tabObjective': string;
+  'learn.tabHints': string;
+  'learn.tabLog': string;
+
+  // Learn assist and hints
+  'learn.assistGuided': string;
+  'learn.assistPractice': string;
+  'learn.assistGuidedTip': string;
+  'learn.assistPracticeTip': string;
+  'learn.revealHint': string;
+  'learn.hintLevelManual': string;
+  'learn.hintLevelNone': string;
+  'learn.hintLevelSubtle': string;
+  'learn.hintLevelMedium': string;
+  'learn.hintLevelExplicit': string;
+
+  // Learn objective strings
+  'learn.readBrief': string;
+  'learn.successCriteria': string;
+  'learn.constraints': string;
+  'learn.criteriaVisitTargets': string;
+  'learn.criteriaFollowScenario': string;
+  'learn.criteriaReachGoal': string;
+  'learn.criteriaDefault': string;
+  'learn.constraintTerrain': string;
+  'learn.constraintScenario': string;
+  'learn.constraintLegal': string;
+  'learn.constraintOrdered': string;
+  'learn.constraintDefault': string;
+
+  // Learn completion and log
+  'learn.attemptLog': string;
+  'learn.attemptLogEntries': string;
+  'learn.attemptLogEmpty': string;
+
   // Learn tooltips
   'learn.tooltip.target': string;
   'learn.tooltip.clickToMove': string;

@@ -1,9 +1,10 @@
 import type { Subject, Section, Lesson } from '../../../types';
-import {
-  subject7Introduction,
-  section1DeployBasicsIntro,
-  section2DeployCarrierIntro
-} from '../../../content';
+
+// Introduction content is now managed via i18n system (en.ts, vi.ts)
+// This serves as fallback - translations are applied at runtime
+const subject7Introduction = '';
+const section1DeployBasicsIntro = '';
+const section2DeployCarrierIntro = '';
 
 const deployStartFen = '11/11/11/11/11/11/11/11/4(FTI)6/11/11/11 r - - 0 1';
 

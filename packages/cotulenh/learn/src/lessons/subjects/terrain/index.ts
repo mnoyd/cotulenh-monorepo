@@ -1,5 +1,9 @@
 import type { Subject, Section, Lesson } from '../../../types';
-import { subject2Introduction, section1TerrainBasicsIntro } from '../../../content';
+
+// Introduction content is now managed via i18n system (en.ts, vi.ts)
+// This serves as fallback - translations are applied at runtime
+const subject2Introduction = '';
+const section1TerrainBasicsIntro = '';
 
 const terrainLessons: Lesson[] = [
   {
