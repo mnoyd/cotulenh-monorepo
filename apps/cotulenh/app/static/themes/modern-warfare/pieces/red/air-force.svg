@@ -73,13 +73,7 @@
     <rect x="52" y="95" width="6" height="3" fill="#1a1a1a" stroke="#000" stroke-width="1"/>
 
     <!-- Afterburners -->
-    <circle cx="45" cy="97" r="3.5" fill="#ff4400">
-       <animate attributeName="opacity" values="0.7;1;0.7" dur="0.1s" repeatCount="indefinite"/>
-       <animate attributeName="r" values="3.5;4;3.5" dur="0.1s" repeatCount="indefinite"/>
-    </circle>
-    <circle cx="55" cy="97" r="3.5" fill="#ff4400">
-       <animate attributeName="opacity" values="0.7;1;0.7" dur="0.1s" repeatCount="indefinite"/>
-       <animate attributeName="r" values="3.5;4;3.5" dur="0.1s" repeatCount="indefinite"/>
-    </circle>
+    <circle cx="45" cy="97" r="3.5" fill="#ff4400" opacity="0.85"/>
+    <circle cx="55" cy="97" r="3.5" fill="#ff4400" opacity="0.85"/>
   </g>
 </svg>
