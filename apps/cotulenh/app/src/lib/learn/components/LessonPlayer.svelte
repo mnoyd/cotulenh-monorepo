@@ -162,8 +162,8 @@
         </div>
 
         <div class="mode-toggle" role="tablist" aria-label="Learning mode">
-          <button class:active={mode === 'guided'} onclick={() => setMode('guided')}>Guided</button>
-          <button class:active={mode === 'practice'} onclick={() => setMode('practice')}>Practice</button>
+          <button class:active={mode === 'guided'} onclick={() => setMode('guided')}>{i18n.t('learn.modeGuided')}</button>
+          <button class:active={mode === 'practice'} onclick={() => setMode('practice')}>{i18n.t('learn.modePractice')}</button>
         </div>
 
         {#if nextUrl && session.status !== 'completed'}
@@ -217,7 +217,7 @@
           class:active={mobilePanel === 'objective'}
           onclick={() => (mobilePanel = 'objective')}
         >
-          Objective
+          {i18n.t('learn.tabObjective')}
         </button>
         <button
           role="tab"
@@ -225,7 +225,7 @@
           class:active={mobilePanel === 'assist'}
           onclick={() => (mobilePanel = 'assist')}
         >
-          Hints
+          {i18n.t('learn.tabHints')}
         </button>
         <button
           role="tab"
@@ -233,7 +233,7 @@
           class:active={mobilePanel === 'log'}
           onclick={() => (mobilePanel = 'log')}
         >
-          Log
+          {i18n.t('learn.tabLog')}
         </button>
       </div>
 

@@ -52,12 +52,12 @@
 
   function sectionActionLabel(sectionIndex: number): string {
     const state = sectionState(sectionIndex);
-    if (state === 'completed') return 'Review';
+    if (state === 'completed') return i18n.t('learn.actionReview');
     if (state === 'active') {
       const { done } = sectionProgress(sectionIndex);
-      return done > 0 ? 'Continue' : 'Start';
+      return done > 0 ? i18n.t('learn.actionContinue') : i18n.t('learn.actionStart');
     }
-    return 'Locked';
+    return i18n.t('learn.actionLocked');
   }
 </script>
 
@@ -105,7 +105,7 @@
 
     <section class="timeline hud-corners">
       <h2>
-        <span class="label">Mission Timeline</span>
+        <span class="label">{i18n.t('learn.missionTimeline')}</span>
         <span class="line"></span>
       </h2>
 
@@ -128,7 +128,7 @@
             <div class="body">
               <h3>{translatedSection.title}</h3>
               <p>{translatedSection.description}</p>
-              <div class="meta">{progressInfo.done}/{progressInfo.total} lessons</div>
+              <div class="meta">{progressInfo.done}/{progressInfo.total} {i18n.t('learn.lesson')}</div>
             </div>
 
             {#if state === 'upcoming'}

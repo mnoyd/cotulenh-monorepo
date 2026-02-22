@@ -162,6 +162,61 @@ export const vi: TranslationKeys = {
   'learn.feedback.error.invalidMove': 'Nước đi không hợp lệ. Thử lại.',
   'learn.feedback.error.wrongScenarioMove': 'Đó không phải là nước đi mong đợi.',
 
+  // Learn UI additional strings
+  'learn.mastery': 'Thành thạo',
+  'learn.curriculumMap': 'Sơ đồ chương trình',
+  'learn.continueMission': 'Tiếp tục nhiệm vụ',
+  'learn.reviewSubject': 'Xem lại môn học',
+  'learn.openMission': 'Mở nhiệm vụ',
+  'learn.sections': 'phần',
+  'learn.missionTimeline': 'Thời gian nhiệm vụ',
+  'learn.actionReview': 'Xem lại',
+  'learn.actionContinue': 'Tiếp tục',
+  'learn.actionStart': 'Bắt đầu',
+  'learn.actionLocked': 'Đã khóa',
+
+  // Learn mode and tabs
+  'learn.modeGuided': 'Hướng dẫn',
+  'learn.modePractice': 'Luyện tập',
+  'learn.tabObjective': 'Mục tiêu',
+  'learn.tabHints': 'Gợi ý',
+  'learn.tabLog': 'Nhật ký',
+
+  // Learn assist and hints
+  'learn.assistGuided': 'Hỗ trợ Hướng dẫn',
+  'learn.assistPractice': 'Hỗ trợ Luyện tập',
+  'learn.assistGuidedTip': 'Hỗ trợ hướng dẫn đang bật: gợi ý sẽ tăng dần khi bạn khám phá.',
+  'learn.assistPracticeTip': 'Hỗ trợ luyện tập tối thiểu: yêu cầu gợi ý thủ công khi cần.',
+  'learn.revealHint': 'Hiện Gợi ý',
+  'learn.hintLevelManual': 'Thủ công',
+  'learn.hintLevelNone': 'Không',
+  'learn.hintLevelSubtle': 'Nhẹ nhàng',
+  'learn.hintLevelMedium': 'Trung bình',
+  'learn.hintLevelExplicit': 'Rõ ràng',
+
+  // Learn objective strings
+  'learn.readBrief': 'Đọc Chỉ thị',
+  'learn.successCriteria': 'Tiêu chuẩn Thành công',
+  'learn.constraints': 'Hạn chế',
+  'learn.criteriaVisitTargets': 'Đến tất cả ô mục tiêu ({completed}/{total}).',
+  'learn.criteriaFollowScenario': 'Làm theo chuỗi kịch bản cho đến khi hoàn thành.',
+  'learn.criteriaReachGoal': 'Đạt trạng thái bàn cờ mục tiêu.',
+  'learn.criteriaDefault': 'Hoàn thành mục tiêu nhiệm vụ.',
+  'learn.constraintTerrain': 'Tuân thủ giới hạn di chuyển địa hình.',
+  'learn.constraintScenario': 'Yêu cầu thứ tự nước đi chính xác.',
+  'learn.constraintLegal': 'Chỉ chấp nhận các nước đi hợp lệ.',
+  'learn.constraintOrdered': 'Mục tiêu phải được theo thứ tự.',
+  'learn.constraintDefault': 'Sử dụng bất kỳ chuỗi nước đi hợp lệ nào đáp ứng mục tiêu.',
+
+  // Learn completion and log
+  'learn.masteryLabel': 'Thành thạo',
+  'learn.masteryEfficient': 'Hiệu quả',
+  'learn.masteryAssisted': 'Có hỗ trợ',
+  'learn.masteryNeedsReview': 'Cần xem lại',
+  'learn.attemptLog': 'Nhật ký Thử nghiệm',
+  'learn.attemptLogEntries': 'mục',
+  'learn.attemptLogEmpty': 'Bắt đầu di chuyển để tạo nhật ký.',
+
   // Learn tooltips
   'learn.tooltip.target': '🎯 Di chuyển đến đây',
   'learn.tooltip.clickToMove': 'Nhấp để chọn',

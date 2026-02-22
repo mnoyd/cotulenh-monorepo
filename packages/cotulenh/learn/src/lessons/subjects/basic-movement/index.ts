@@ -1,11 +1,12 @@
 import type { Subject, Section, Lesson } from '../../../types';
 import type { LearnEngine } from '../../../learn-engine';
-import {
-  subject1Introduction,
-  section1BasicUnitsIntro,
-  section2MediumRangeIntro,
-  section3AdvancedUnitsIntro
-} from '../../../content';
+
+// Introduction content is now managed via i18n system (en.ts, vi.ts)
+// This serves as fallback - translations are applied at runtime
+const subject1Introduction = '';
+const section1BasicUnitsIntro = '';
+const section2MediumRangeIntro = '';
+const section3AdvancedUnitsIntro = '';
 
 /**
  * Subject 1: Basic Movement

@@ -13,9 +13,9 @@
   const i18n = getI18n();
 
   const masteryLabel = $derived.by(() => {
-    if (session.mastery === 'efficient') return 'Efficient';
-    if (session.mastery === 'assisted') return 'Assisted';
-    return 'Needs Review';
+    if (session.mastery === 'efficient') return i18n.t('learn.masteryEfficient');
+    if (session.mastery === 'assisted') return i18n.t('learn.masteryAssisted');
+    return i18n.t('learn.masteryNeedsReview');
   });
 </script>
 
@@ -26,7 +26,7 @@
   </div>
 
   <div class="mastery-row">
-    <span class="mastery-label">Mastery</span>
+    <span class="mastery-label">{i18n.t('learn.masteryLabel')}</span>
     <strong class="mastery-value {session.mastery}">{masteryLabel}</strong>
   </div>
 

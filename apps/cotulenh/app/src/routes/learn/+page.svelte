@@ -77,7 +77,7 @@
       </div>
     </div>
     <div class="mastery">
-      <span>Mastery</span>
+      <span>{i18n.t('learn.mastery')}</span>
       <strong>{overallMastery}%</strong>
     </div>
   </header>
@@ -90,7 +90,7 @@
       <div class="left">
         <Play size={18} />
         <div>
-          <span class="label">Continue Mission</span>
+          <span class="label">{i18n.t('learn.continueMission')}</span>
           <strong>{nextMission.subject.icon} {nextMission.subject.title}</strong>
         </div>
       </div>
@@ -101,7 +101,7 @@
   <div class="subject-map hud-corners">
     <div class="map-header">
       <Target size={16} />
-      <span>Curriculum Map</span>
+      <span>{i18n.t('learn.curriculumMap')}</span>
     </div>
 
     <div class="nodes" role="listbox" aria-label="Subjects">
@@ -134,11 +134,11 @@
       </div>
       <p>{selectedTranslation?.description}</p>
       <div class="meta">
-        <span>{selectedSubject.sections.length} sections</span>
-        <span>{selectedLessonTotals.completed}/{selectedLessonTotals.total} lessons</span>
+        <span>{selectedSubject.sections.length} {i18n.t('learn.sections')}</span>
+        <span>{selectedLessonTotals.completed}/{selectedLessonTotals.total} {i18n.t('learn.lesson')}</span>
       </div>
       <a class="panel-cta" href={selectedLink}>
-        {selectedState === 'completed' ? 'Review Subject' : 'Open Mission'}
+        {selectedState === 'completed' ? i18n.t('learn.reviewSubject') : i18n.t('learn.openMission')}
       </a>
     </section>
   {/if}

@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { LearnSession } from '../learn-session.svelte';
   import LessonContent from './LessonContent.svelte';
+  import { getI18n } from '$lib/i18n/index.svelte';
 
   interface Props {
     session: LearnSession;
@@ -8,50 +9,51 @@
   }
 
   let { session, mode }: Props = $props();
+  const i18n = getI18n();
 
   const lesson = $derived(session.translatedLesson ?? session.lesson);
 
   const successCriteria = $derived.by(() => {
-    if (!lesson) return 'Complete the mission objective.';
+    if (!lesson) return i18n.t('learn.criteriaDefault');
     if (lesson.targetSquares?.length) {
-      return `Visit all target squares (${session.completedTargets}/${session.totalTargets}).`;
+      return i18n.t('learn.criteriaVisitTargets').replace('{completed}', String(session.completedTargets)).replace('{total}', String(session.totalTargets));
     }
     if (lesson.scenario?.length) {
-      return 'Follow the scripted sequence to completion.';
+      return i18n.t('learn.criteriaFollowScenario');
     }
     if (lesson.goalFen) {
-      return 'Reach the target board state.';
+      return i18n.t('learn.criteriaReachGoal');
     }
-    return 'Complete the mission objective.';
+    return i18n.t('learn.criteriaDefault');
   });
 
   const constraints = $derived.by(() => {
     if (!lesson) return [] as string[];
     const list: string[] = [];
-    if (lesson.validateTerrain) list.push('Respect terrain movement restrictions.');
-    if (lesson.strictScenario) list.push('Exact move order is required.');
-    if (lesson.validateLegality) list.push('Only legal moves are accepted.');
-    if (lesson.orderedTargets) list.push('Targets must be visited in order.');
-    if (!list.length) list.push('Use any legal move sequence that satisfies the objective.');
+    if (lesson.validateTerrain) list.push(i18n.t('learn.constraintTerrain'));
+    if (lesson.strictScenario) list.push(i18n.t('learn.constraintScenario'));
+    if (lesson.validateLegality) list.push(i18n.t('learn.constraintLegal'));
+    if (lesson.orderedTargets) list.push(i18n.t('learn.constraintOrdered'));
+    if (!list.length) list.push(i18n.t('learn.constraintDefault'));
     return list;
   });
 </script>
 
 <section class="objective-card hud-corners">
   <header>
-    <span class="label">Objective</span>
-    <span class="mode-badge {mode}">{mode === 'guided' ? 'Guided' : 'Practice'}</span>
+    <span class="label">{i18n.t('learn.tabObjective')}</span>
+    <span class="mode-badge {mode}">{mode === 'guided' ? i18n.t('learn.modeGuided') : i18n.t('learn.modePractice')}</span>
   </header>
 
   <p class="instruction">{session.instruction}</p>
 
   <div class="block">
-    <h3>Success Criteria</h3>
+    <h3>{i18n.t('learn.successCriteria')}</h3>
     <p>{successCriteria}</p>
   </div>
 
   <div class="block">
-    <h3>Constraints</h3>
+    <h3>{i18n.t('learn.constraints')}</h3>
     <ul>
       {#each constraints as item}
         <li>{item}</li>
@@ -61,7 +63,7 @@
 
   {#if session.lessonContent}
     <details class="brief">
-      <summary>Read Brief</summary>
+      <summary>{i18n.t('learn.readBrief')}</summary>
       <div class="brief-content">
         <LessonContent content={session.lessonContent} />
       </div>
