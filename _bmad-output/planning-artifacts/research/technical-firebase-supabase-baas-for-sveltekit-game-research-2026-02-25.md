@@ -1,5 +1,5 @@
 ---
-stepsCompleted: [1, 2, 3]
+stepsCompleted: [1, 2, 3, 4, 5, 6]
 inputDocuments: []
 workflowType: 'research'
 lastStep: 1
@@ -12,17 +12,58 @@ web_research_enabled: true
 source_verification: true
 ---
 
-# Research Report: technical
+# BaaS Platform Selection for CoTuLenh Multiplayer: Firebase vs Supabase Technical Research
 
 **Date:** 2026-02-25
 **Author:** Noy
-**Research Type:** technical
+**Research Type:** Technical Platform Evaluation
 
 ---
 
+## Executive Summary
+
+This research evaluates Firebase and Supabase as Backend-as-a-Service platforms for adding multiplayer capabilities to CoTuLenh, a Vietnamese strategy board game built as a SvelteKit monorepo. The scope covers authentication, user profiles, friend systems, game invitations, and realtime gameplay — with future extensibility for matchmaking and ELO ranking.
+
+**Supabase is the recommended platform.** It wins decisively across the dimensions that matter most for CoTuLenh:
+
+- **Official SvelteKit support** (`@supabase/ssr`) vs Firebase's community-only patterns requiring manual SSR wiring
+- **Relational data model** (PostgreSQL) naturally fits social features (friend lists, game history) and future needs (matchmaking via SQL range queries, leaderboards via `ORDER BY`)
+- **Broadcast for game moves** — ephemeral WebSocket messages that don't consume DB bandwidth, keeping the free tier viable for heavy realtime usage
+- **Row Level Security** — SQL-based policies are more expressive and testable than Firebase's JSON security rules
+- **Cost trajectory** — 40-60% cheaper at scale with predictable per-resource pricing vs Firebase's per-operation model
+- **Open source** — no vendor lock-in; self-hostable via Docker as an escape hatch
+
+Firebase's advantages (built-in offline sync, slightly lower latency, larger free storage) are not decisive for a 2-player turn-based online game.
+
+**Key Technical Findings:**
+
+- Both platforms offer 50K MAU free auth — more than sufficient for MVP through growth
+- Supabase Broadcast enables zero-DB-cost game moves (ephemeral messages)
+- The existing CoTuLenh Core game engine stays pure — BaaS integration happens only in the SvelteKit app layer via a service abstraction
+- Incremental adoption path: Auth → Social → Multiplayer → Competitive, each phase independently shippable
+- Free tier risk (project pausing after 7 days inactivity) is mitigable via GitHub Actions cron ping
+
+**Top Recommendations:**
+
+1. Choose Supabase as the BaaS platform
+2. Adopt incrementally — start with auth + profiles, layer in social and multiplayer
+3. Use Broadcast (not DB writes) for game moves to maximize free tier value
+4. Keep Core game engine pure — all BaaS integration in the SvelteKit app service layer
+5. Test RLS policies with pgTAP from day one — security misconfigurations are the highest-severity risk
+
+## Table of Contents
+
+1. [Technical Research Scope Confirmation](#technical-research-scope-confirmation)
+2. [Technology Stack Analysis](#technology-stack-analysis) — Platform comparison, SvelteKit integration, free tier limits, realtime suitability, cost projections
+3. [Integration Patterns Analysis](#integration-patterns-analysis) — Auth flows, realtime game sync, friend system, security patterns
+4. [Architectural Patterns and Design](#architectural-patterns-and-design) — System architecture, game room lifecycle, security layers, data schema, deployment
+5. [Implementation Approaches and Technology Adoption](#implementation-approaches-and-technology-adoption) — Adoption strategy, dev workflows, testing, CI/CD, cost optimization, risks
+6. [Technical Research Recommendations](#technical-research-recommendations) — Platform verdict, implementation roadmap, skills, success metrics
+7. [Research Synthesis and Conclusion](#research-synthesis-and-conclusion) — Key findings, future outlook, next steps
+
 ## Research Overview
 
-[Research overview and methodology will be appended here]
+This technical research was conducted over a single intensive session on 2026-02-25, evaluating Firebase and Supabase as BaaS platforms for the CoTuLenh SvelteKit monorepo. The research covered five analytical dimensions: technology stack comparison, integration patterns, architectural design, implementation approaches, and strategic recommendations. All claims were verified against current web sources (official documentation, community guides, pricing pages, and developer experience reports from 2025-2026). The full findings are organized in the sections below, with a final synthesis and conclusion at the end.
 
 ---
 
@@ -656,4 +697,346 @@ _Source: [Supabase User Management Tutorial](https://supabase.com/docs/guides/ge
 └─────────────────────────────────────────────┘
 ```
 
-<!-- Content will be appended sequentially through research workflow steps -->
+## Implementation Approaches and Technology Adoption
+
+### Technology Adoption Strategy for CoTuLenh
+
+**Recommended approach: Incremental adoption with Supabase**
+
+Given the research findings across all prior steps, Supabase is the recommended platform. The adoption should be incremental, layering capabilities one at a time:
+
+```
+Phase 1: Auth Foundation
+├─ Supabase project setup (free tier)
+├─ @supabase/ssr integration with SvelteKit hooks
+├─ Email/password + Google OAuth
+├─ Protected route groups
+├─ User profile table + RLS
+└─ Local dev with Supabase CLI + Docker
+
+Phase 2: Social Layer
+├─ Friendships table + RLS policies
+├─ Friend request/accept/block flows
+├─ Postgres Changes → real-time friend notifications
+├─ Online presence via Supabase Presence
+└─ Friend list UI
+
+Phase 3: Multiplayer
+├─ Games + game_invitations tables
+├─ Game room lifecycle (create → invite → accept → play → end)
+├─ Broadcast channels for game moves
+├─ Core game engine integration (validate locally, broadcast to opponent)
+├─ Disconnect handling via Presence
+└─ Game history persistence
+
+Phase 4: Polish & Future (later epic)
+├─ ELO rating system (SQL functions)
+├─ Matchmaking (SQL range queries)
+├─ Leaderboards
+├─ Edge Function move validation (anti-cheat)
+└─ Spectator mode
+```
+
+**Why incremental**: Each phase is independently shippable and testable. Auth works without friends, friends work without multiplayer. If you hit a blocker at any phase, prior work still has value.
+
+_Source: [Supabase Production Checklist](https://supabase.com/docs/guides/deployment/going-into-prod), [Supabase Best Practices](https://www.leanware.co/insights/supabase-best-practices)_
+
+### Development Workflows and Tooling
+
+#### Local Development Setup
+
+```
+# One-time setup
+supabase init                           # Creates supabase/ directory
+supabase start                          # Starts local PostgreSQL, Auth, Realtime, Studio
+
+# Environment config
+PUBLIC_SUPABASE_URL=http://localhost:54321
+PUBLIC_SUPABASE_ANON_KEY=<local-anon-key>
+
+# Development loop
+supabase db reset                       # Apply all migrations fresh
+supabase gen types typescript --local   # Generate TypeScript types
+pnpm dev                               # Start SvelteKit dev server
+```
+
+**Local Supabase Dashboard**: `http://localhost:54323` — full Studio UI for browsing tables, testing RLS, and managing auth users locally.
+
+#### Monorepo Integration
+
+The `supabase/` directory should be a workspace member in the pnpm monorepo:
+
+```yaml
+# pnpm-workspace.yaml
+packages:
+  - 'apps/*'
+  - 'packages/cotulenh/*'
+  - 'supabase' # NEW: Supabase as workspace
+```
+
+```json
+// supabase/package.json
+{
+  "name": "@cotulenh/supabase",
+  "scripts": {
+    "start": "supabase start",
+    "stop": "supabase stop",
+    "reset": "supabase db reset",
+    "types": "supabase gen types typescript --local > ../apps/cotulenh/app/src/lib/database.types.ts",
+    "migrate": "supabase migration new",
+    "test": "supabase test db"
+  }
+}
+```
+
+**Type sharing**: Generated `database.types.ts` lives in the SvelteKit app's `$lib` and provides full type safety for all Supabase queries.
+
+_Source: [Perfect Local SvelteKit Supabase Setup 2025](https://dev.to/jdgamble555/perfect-local-sveltekit-supabase-setup-in-2025-4adp), [Supabase Turborepo Setup](https://philipp.steinroetter.com/posts/supabase-turborepo), [Supabase CLI Docs](https://supabase.com/docs/guides/local-development/cli/getting-started)_
+
+### Testing and Quality Assurance
+
+#### Testing Strategy (3 layers)
+
+| Layer            | Tool                         | What to Test                                                  |
+| ---------------- | ---------------------------- | ------------------------------------------------------------- |
+| **Database/RLS** | pgTAP via `supabase test db` | RLS policies enforce correct access, migrations apply cleanly |
+| **Integration**  | Vitest + Supabase client     | Auth flows, friend request logic, game invitation flows       |
+| **E2E**          | Playwright                   | Login → add friend → invite → play game → result saved        |
+
+#### RLS Policy Testing (Critical)
+
+```sql
+-- Example pgTAP test: users can only see their own friendships
+BEGIN;
+SELECT plan(2);
+
+-- Authenticate as user_a
+SELECT set_config('request.jwt.claims', '{"sub": "user-a-uuid"}', true);
+
+-- user_a can see their friendship
+SELECT ok(
+  EXISTS(SELECT 1 FROM friendships WHERE user_id = 'user-a-uuid'),
+  'User can see own friendships'
+);
+
+-- user_a cannot see user_c's friendships
+SELECT ok(
+  NOT EXISTS(SELECT 1 FROM friendships WHERE user_id = 'user-c-uuid'),
+  'User cannot see other users friendships'
+);
+
+SELECT * FROM finish();
+ROLLBACK;
+```
+
+#### Integration Testing with Vitest
+
+```typescript
+// Test auth flow against local Supabase
+import { createClient } from '@supabase/supabase-js';
+
+describe('Auth', () => {
+  const supabase = createClient(LOCAL_URL, ANON_KEY);
+
+  it('should sign up and create profile', async () => {
+    const { data } = await supabase.auth.signUp({ email, password });
+    expect(data.user).toBeDefined();
+    // Profile auto-created via trigger
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select()
+      .eq('id', data.user.id)
+      .single();
+    expect(profile.username).toBeDefined();
+  });
+});
+```
+
+_Source: [Supabase Testing Overview](https://supabase.com/docs/guides/local-development/testing/overview), [RLS Testing](https://dev.to/davepar/testing-supabase-row-level-security-4h32), [pgTAP Guide](https://usebasejump.com/blog/testing-on-supabase-with-pgtap), [Edge Functions Testing](https://supabase.com/docs/guides/functions/unit-test)_
+
+### Deployment and CI/CD
+
+#### Migration Workflow
+
+```
+Developer                    GitHub                     Supabase
+  |                            |                           |
+  |-- supabase migration new ->|                           |
+  |-- Write SQL migration      |                           |
+  |-- Test locally (db reset)  |                           |
+  |-- git push ─────────────-->|                           |
+  |                            |-- CI: lint + test ------->|
+  |                            |-- PR merged to main       |
+  |                            |-- CD: supabase db push -->|
+  |                            |                           |-- Apply migration
+```
+
+**Key practices:**
+
+- Migrations are SQL files in `supabase/migrations/` — version controlled with the codebase
+- `supabase db push` deploys migrations to production
+- Never make schema changes via Studio in production — always via migrations
+- Use staging project for pre-production validation
+
+#### CI/CD Pipeline (GitHub Actions)
+
+```yaml
+# Simplified workflow
+jobs:
+  test:
+    steps:
+      - supabase start # Local Supabase for tests
+      - supabase db reset # Apply all migrations
+      - supabase test db # Run pgTAP tests
+      - pnpm test # Run Vitest + Playwright
+  deploy:
+    needs: test
+    steps:
+      - supabase link --project-ref $PROD_REF
+      - supabase db push # Deploy migrations
+      # SvelteKit deployed via Vercel/Netlify auto-deploy
+```
+
+_Source: [Supabase Migrations Docs](https://supabase.com/docs/guides/deployment/database-migrations), [Managing Environments](https://supabase.com/docs/guides/deployment/managing-environments), [Supabase DevOps](https://www.hrekov.com/blog/supabase-devops-version-control)_
+
+### Cost Optimization and Resource Management
+
+#### Free Tier Optimization Strategies
+
+| Resource                     | Limit                                                                                          | Optimization                               |
+| ---------------------------- | ---------------------------------------------------------------------------------------------- | ------------------------------------------ |
+| **Database (500 MB)**        | Store only essential data — profiles, friendships, game results. No move-by-move storage.      | Estimated usage: <10 MB for first 1K users |
+| **Bandwidth (5 GB)**         | Use Broadcast for game moves (doesn't count as DB bandwidth). Minimize file storage downloads. | Game moves = 0 bandwidth cost              |
+| **Connections (200)**        | Each game = 1 channel, 2 connections. Max ~100 concurrent games.                               | Sufficient for MVP                         |
+| **Auth (50K MAU)**           | More than enough for MVP-Growth stage                                                          | No optimization needed                     |
+| **Edge Functions (500K/mo)** | Not needed initially — add for anti-cheat later                                                | $0 until Phase 4                           |
+
+**Broadcast is the key free-tier enabler**: Game moves via Broadcast are ephemeral WebSocket messages — they don't write to the database and don't consume DB bandwidth. This means the game can handle heavy realtime traffic while barely touching free tier limits.
+
+#### When to Upgrade
+
+| Signal                          | Action                                           |
+| ------------------------------- | ------------------------------------------------ |
+| Database > 400 MB               | Upgrade to Pro ($25/mo) or archive old game data |
+| Bandwidth > 4 GB/month          | Optimize asset delivery via external CDN         |
+| Need daily backups              | Upgrade to Pro                                   |
+| Production reliability required | Upgrade to Pro (no pausing, email support)       |
+
+_Source: [Making the Most of Supabase Free Tier](https://medium.com/@reliabledataengineering/making-the-most-of-supabases-free-tier-a-practical-guide-ef4817d84a26), [Supabase Pricing Breakdown](https://www.metacto.com/blogs/the-true-cost-of-supabase-a-comprehensive-guide-to-pricing-integration-and-maintenance)_
+
+### Risk Assessment and Mitigation
+
+| Risk                               | Severity | Mitigation                                                                                       |
+| ---------------------------------- | -------- | ------------------------------------------------------------------------------------------------ |
+| **Free tier project pausing**      | High     | GitHub Actions cron ping every 3 days; upgrade to Pro when users depend on it                    |
+| **RLS policy misconfiguration**    | High     | pgTAP tests for every policy; review in PR process                                               |
+| **Supabase outage**                | Medium   | Supabase has 99.9% SLA on Pro; game state is ephemeral so reconnect handles most cases           |
+| **Vendor dependency**              | Low      | Supabase is open source — can self-host if needed; service layer abstraction limits blast radius |
+| **Database migration errors**      | Medium   | Test migrations locally via `db reset`; staging project before production                        |
+| **WebSocket connection limits**    | Low      | 200 concurrent connections = ~100 games; Pro tier removes this limit                             |
+| **Data loss (no backups on free)** | Medium   | Export critical data periodically; upgrade to Pro for daily backups when needed                  |
+
+_Source: [Supabase Production Checklist](https://supabase.com/docs/guides/deployment/going-into-prod), [Supabase Review 2026](https://hackceleration.com/supabase-review/)_
+
+## Technical Research Recommendations
+
+### Platform Recommendation: Supabase
+
+**Verdict: Supabase is the clear winner for CoTuLenh** based on:
+
+1. **Official SvelteKit support** — vs Firebase's community-only patterns
+2. **Relational model** — natural fit for social features (friends, matchmaking, ELO)
+3. **Broadcast for game moves** — ephemeral, low-latency, doesn't consume DB resources
+4. **RLS for security** — SQL policies are more expressive than Firebase security rules
+5. **Cost trajectory** — 40-60% cheaper at scale, predictable pricing
+6. **Open source** — no vendor lock-in, self-hostable escape hatch
+7. **Future-proof** — SQL queries for matchmaking/leaderboards are trivial vs NoSQL workarounds
+
+**Firebase is better if**: you need offline-first play (Firebase RTDB has built-in offline sync), or you're already deeply invested in the Google ecosystem.
+
+### Implementation Roadmap
+
+| Phase              | Scope                                                         | Estimated Effort | Dependencies    |
+| ------------------ | ------------------------------------------------------------- | ---------------- | --------------- |
+| **1. Auth**        | Supabase setup, SSR auth, profiles, protected routes          | 1 epic           | None            |
+| **2. Social**      | Friendships, friend requests, presence, notifications         | 1 epic           | Phase 1         |
+| **3. Multiplayer** | Game rooms, Broadcast moves, game lifecycle, Core integration | 1 epic           | Phase 1 + 2     |
+| **4. Competitive** | ELO, matchmaking, leaderboards, server validation             | 1 epic (future)  | Phase 1 + 2 + 3 |
+
+### Skill Development Requirements
+
+| Skill                 | Current Level (est.) | Needed       | Resources                             |
+| --------------------- | -------------------- | ------------ | ------------------------------------- |
+| **SvelteKit SSR**     | Intermediate         | Intermediate | Existing knowledge sufficient         |
+| **Supabase Auth/RLS** | New                  | Intermediate | Official docs + tutorials (excellent) |
+| **PostgreSQL**        | Basic-Intermediate   | Intermediate | RLS policies, triggers, functions     |
+| **Supabase Realtime** | New                  | Intermediate | Broadcast + Presence docs             |
+| **Supabase CLI**      | New                  | Basic        | Local dev setup guide                 |
+
+### Success Metrics
+
+| Metric                   | Target                                          |
+| ------------------------ | ----------------------------------------------- |
+| **Auth completion**      | User can sign up, log in, update profile        |
+| **Friend system**        | Add/accept/block friends, see online status     |
+| **Game invitation**      | Invite friend, friend accepts, both enter game  |
+| **Multiplayer game**     | Complete a full CoTuLenh game via Broadcast     |
+| **Free tier compliance** | All features work within Supabase free tier     |
+| **Test coverage**        | RLS policies 100% tested, auth flows E2E tested |
+
+## Research Synthesis and Conclusion
+
+### Summary of Key Technical Findings
+
+| Dimension                          | Firebase                                | Supabase                           | Winner   |
+| ---------------------------------- | --------------------------------------- | ---------------------------------- | -------- |
+| **SvelteKit Integration**          | Community patterns, manual SSR          | Official `@supabase/ssr`           | Supabase |
+| **Data Model for Social Features** | NoSQL — denormalized, complex sync      | SQL — joins, transactions, RLS     | Supabase |
+| **Realtime for Turn-Based Games**  | RTDB listeners, excellent               | Broadcast + Presence, excellent    | Tie      |
+| **Free Tier Auth**                 | 50K MAU                                 | 50K MAU                            | Tie      |
+| **Free Tier Storage**              | 2 GB (Firestore + RTDB)                 | 500 MB                             | Firebase |
+| **Free Tier Bandwidth**            | 10 GB/month                             | 5 GB/month                         | Firebase |
+| **Game Move Cost**                 | Read/write ops per listener             | Broadcast = $0 DB cost             | Supabase |
+| **Friend System Complexity**       | Medium (denormalized + Cloud Functions) | Low (SQL + RLS + Postgres Changes) | Supabase |
+| **Future Matchmaking/ELO**         | Awkward with NoSQL                      | Natural with SQL                   | Supabase |
+| **Vendor Lock-in**                 | High (proprietary)                      | Low (open source, self-hostable)   | Supabase |
+| **Cost at Scale**                  | $200-600/month at 10K users             | $25-100/month at 10K users         | Supabase |
+| **Offline Support**                | Built-in automatic sync                 | Not built-in                       | Firebase |
+| **Testing (RLS/Security)**         | Manual rules testing                    | pgTAP automated SQL tests          | Supabase |
+
+**Final Score: Supabase wins 8 dimensions, Firebase wins 3, Tie on 2.**
+
+### Future Technical Outlook
+
+**Supabase momentum (2025-2026):**
+
+- PostgREST v14 upgrade: ~20% throughput improvement for GET requests
+- Broadcast and Presence Authorization for private channels with RLS
+- Growing SvelteKit ecosystem with official support and community starters
+- AI/vector capabilities via pgvector (future potential for game analytics)
+
+**Industry trends favoring Supabase:**
+
+- Open source BaaS adoption accelerating
+- PostgreSQL continuing to dominate as default database choice
+- Serverless + edge computing aligning with Supabase Edge Functions (Deno)
+- Developer preference shifting toward predictable pricing and portability
+
+_Source: [Supabase January 2026 Update](https://github.com/orgs/supabase/discussions/41796), [Supabase Review 2026](https://hackceleration.com/supabase-review/), [Supabase Changelog](https://supabase.com/changelog)_
+
+### Next Steps
+
+1. **Create PRD** (`/bmad-bmm-create-prd`) — Use this research to inform the Product Requirements Document for the multiplayer epic
+2. **Set up Supabase** — Create free tier project, install CLI, run local stack
+3. **Prototype auth** — SvelteKit SSR auth with `@supabase/ssr` as a spike to validate integration
+4. **Design schema** — Refine the proposed `profiles`, `friendships`, `games`, `game_invitations` tables
+5. **Plan architecture** (`/bmad-bmm-create-architecture`) — Formalize the architectural decisions documented in this research
+
+---
+
+**Technical Research Completion Date:** 2026-02-25
+**Research Period:** Single-session comprehensive technical analysis
+**Source Verification:** All technical facts cited with current (2025-2026) sources
+**Technical Confidence Level:** High — based on official documentation, community experience reports, and multi-source cross-validation
+
+_This technical research document serves as the authoritative reference for BaaS platform selection in the CoTuLenh multiplayer epic. It should be referenced during PRD creation, architecture design, and implementation planning._
