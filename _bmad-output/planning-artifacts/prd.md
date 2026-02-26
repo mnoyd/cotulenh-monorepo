@@ -322,7 +322,7 @@ Following Lichess patterns:
 - FR1: Visitors can create an account using email and password
 - FR2: Registered users can sign in with their credentials
 - FR3: Authenticated users can sign out from any page
-- FR4: Users remain authenticated across page navigations and browser sessions (cookie-based)
+- FR4: Users remain authenticated across page navigations and browser sessions without re-entering credentials
 - FR5: Users can reset their password via email
 - FR6: Visitors can access the learn system, local play, and board editor without creating an account
 
@@ -332,7 +332,7 @@ Following Lichess patterns:
 - FR8: Users can view their own profile summary (display name, games played, win/loss record, member since)
 - FR9: Users can view another user's public profile and game history
 - FR10: Users can update account settings (email, password)
-- FR11: Existing app settings (sounds, move hints, theme, language) persist to the user's account when signed in
+- FR11: Users can access their app settings (sounds, move hints, theme, language) from any device when signed in
 
 ### Friend System
 
@@ -349,25 +349,25 @@ Following Lichess patterns:
 - FR19: Users can view their pending match invitations (sent and received)
 - FR20: Users can accept or decline a match invitation
 - FR21: Users can generate a shareable invite link for unregistered users
-- FR22: Users who follow an invite link are guided through signup and into the pending match
+- FR22: Users can follow an invite link to be guided through signup and into the pending match
 - FR23: Users can cancel a sent match invitation before it is accepted
 - FR24: Users can select time control settings when creating a match invitation
 
 ### Online Gameplay
 
 - FR25: Two authenticated users can play a realtime game of CoTuLenh against each other
-- FR26: When a player makes a move, the SAN is sent via Supabase Broadcast to the opponent's client
-- FR27: Each client validates received moves locally using `@cotulenh/core`; valid moves update the board, turn, clock, and history
-- FR28a: If a client receives an invalid/illegal SAN, the game is immediately paused and both players are notified of a move dispute
+- FR26: When a player makes a move, the opponent's board updates in realtime
+- FR27: Each player's client validates received moves locally; valid moves update the board, turn, clock, and history
+- FR28a: If a player receives an invalid or illegal move, the game pauses immediately and both players are notified of a move dispute
 - FR28b: Both players can classify the incident as a bug or cheat report with optional comments
 - FR28c: The dispute record (PGN, illegal move SAN, player reports) is saved to the database
-- FR28d: The admin resolves disputes manually via Supabase dashboard (review PGN, replay locally, assign game result)
-- FR29: The game enforces all CoTuLenh rules (including deploy sessions, stay captures, air defense) using the existing core engine
+- FR28d: The admin can resolve disputes by reviewing the game PGN, replaying moves, and assigning a game result
+- FR29: Players can only execute moves that are legal under CoTuLenh rules, including deploy sessions, stay captures, and air defense mechanics
 - FR30: Players can resign a game in progress
-- FR31: The system detects game completion (checkmate, stalemate, commander captured, draw conditions) and records the result
-- FR32: Chess clocks synchronize between players and enforce time controls
+- FR31: Players see the game result recorded automatically when a game ends by checkmate, stalemate, commander capture, or draw condition
+- FR32: Players can see synchronized chess clocks that count down their remaining time and enforce the selected time control
 - FR33: Players can see current game status (whose turn, move count, clock time) during play
-- FR34: On game completion, the full game is saved as PGN to the database (including headers, moves, result, clock data)
+- FR34: On game completion, the full game is persisted as PGN (including headers, moves, result, and clock data) for later review
 
 ### Game History & Review
 
@@ -377,42 +377,42 @@ Following Lichess patterns:
 
 ### Learn Progress Persistence
 
-- FR38: Authenticated users' learn progress is saved to their account in the database
-- FR39: Learn progress syncs across devices when users are signed in
-- FR40: When a visitor with local learn progress signs up, their existing progress is migrated to their account
-- FR41: The learn system continues to function for unauthenticated users using localStorage
-- FR42: Star ratings, lesson completion status, and subject unlock state are all persisted
+- FR38: Authenticated users can access their learn progress from their account on any device
+- FR39: Users can see their learn progress synchronized across all devices when signed in
+- FR40: Users who sign up with existing local learn progress can see that progress automatically migrated to their new account
+- FR41: Unauthenticated users can use the learn system with progress saved locally in their browser
+- FR42: Users can see their star ratings, lesson completion status, and subject unlock state persisted across sessions
 
 ### Feedback & Support
 
 - FR43: Users can submit feedback from any page via an in-app feedback button
-- FR44: Feedback submissions automatically capture contextual information (current page URL, browser, device, screen size)
+- FR44: Users' feedback submissions automatically include contextual information (current page URL, browser, device, screen size)
 - FR45: Submitted feedback is stored and accessible to the admin
 
 ### Platform Infrastructure
 
-- FR46: The application supports SSR for landing/public pages and SPA navigation for authenticated experiences
-- FR47: All new user-facing features support English and Vietnamese (existing i18n system)
-- FR48: The application works on modern desktop and mobile browsers (Chrome, Firefox, Safari, Edge)
+- FR46: Visitors can access landing and public pages with server-rendered content, while authenticated users experience client-side navigation without full page reloads
+- FR47: Users can access all features in English or Vietnamese
+- FR48: Users can access the application on Chrome, Firefox, Safari, and Edge browsers on both desktop and mobile
 
 ## Non-Functional Requirements
 
 ### Performance
 
 - NFR1: Page initial load completes within 2 seconds on a 4G mobile connection
-- NFR2: SPA route transitions complete within 300ms with no full page reload
+- NFR2: Client-side route transitions complete within 300ms with no full page reload
 - NFR3: Move broadcast latency (player action to opponent's board update) under 500ms on reasonable connections
 - NFR4: The game board renders and remains interactive at 60fps on mid-range mobile devices
-- NFR5: Client memory usage stays under 100MB during extended gameplay sessions (no leaks from realtime subscriptions or board re-renders)
+- NFR5: Client memory usage stays under 100MB during extended gameplay sessions with no memory leaks
 - NFR6: The application loads and functions without blocking the main thread for more than 50ms (no UI jank)
 - NFR7: Non-critical assets (learn system, game history) are lazy-loaded and do not impact initial page load
 
 ### Security
 
 - NFR8: All data in transit is encrypted via HTTPS/WSS
-- NFR9: User passwords are never stored in plaintext (handled by Supabase Auth with bcrypt)
-- NFR10: Database access is controlled via Supabase Row Level Security — users can only read/write their own data and public profiles
-- NFR11: Authentication tokens are stored in HTTP-only cookies, not localStorage (prevents XSS token theft)
+- NFR9: User passwords are never stored in plaintext; they are hashed using industry-standard algorithms
+- NFR10: Database access is controlled by row-level security policies — users can only read/write their own data and public profiles
+- NFR11: Authentication tokens are stored securely and are not accessible to client-side JavaScript (prevents XSS token theft)
 - NFR12: User-generated content (display names, feedback text) is sanitized to prevent XSS
 - NFR13: Game integrity is protected by client-side validation — illegal moves trigger dispute flow, not silent acceptance
 
@@ -422,4 +422,4 @@ Following Lichess patterns:
 - NFR15: If a player's connection drops during a game, they can reconnect and resume from the last known state
 - NFR16: Learn progress writes are idempotent — duplicate syncs do not corrupt data
 - NFR17: The feedback system degrades gracefully — if submission fails, the user is notified and can retry
-- NFR18: Supabase Realtime channel disconnections are detected and auto-reconnected with exponential backoff
+- NFR18: Realtime channel disconnections are detected and auto-reconnected with exponential backoff
