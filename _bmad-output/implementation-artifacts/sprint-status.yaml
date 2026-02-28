@@ -44,8 +44,8 @@ development_status:
   epic-1: in-progress
   1-1-user-registration: done
   1-2-user-login-persistent-sessions: review
-  1-3-auth-aware-navigation-logout: ready-for-dev
-  1-4-password-reset-flow: ready-for-dev
+  1-3-auth-aware-navigation-logout: done
+  1-4-password-reset-flow: done
   epic-1-retrospective: optional
 
   # Epic 2: User Profiles & Settings
