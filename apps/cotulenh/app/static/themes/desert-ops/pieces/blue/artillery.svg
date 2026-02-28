@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <!-- M777 Titanium / Aluminum Alloys -->
+    <linearGradient id="tiGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#546e7a"/>
+      <stop offset="40%" stop-color="#90a4ae"/> <!-- Bright metallic highlight -->
+      <stop offset="60%" stop-color="#78909c"/>
+      <stop offset="100%" stop-color="#455a64"/>
+    </linearGradient>
+    
+    <linearGradient id="cylGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#b0bec5"/>
+      <stop offset="50%" stop-color="#eceff1"/> <!-- Chrome/polished rod -->
+      <stop offset="100%" stop-color="#b0bec5"/>
+    </linearGradient>
+  </defs>
+
+  <g>
+    
+    <!-- === Complex Carriage (Titanium Frame) === -->
+    <!-- Trails -->
+    <path d="M50 68 L25 92 L32 96 L50 78 Z" fill="#607d8b" stroke="#37474f"/>
+    <path d="M50 68 L75 92 L68 96 L50 78 Z" fill="#607d8b" stroke="#37474f"/>
+    
+    <!-- Trail Spades (sharp) -->
+    <path d="M22 90 L30 90 L25 98 Z" fill="#263238"/>
+    <path d="M78 90 L70 90 L75 98 Z" fill="#263238"/>
+
+    <!-- === Wheels (Smaller, Technical) === -->
+    <circle cx="30" cy="62" r="7" fill="#263238" stroke="#37474f"/>
+    <circle cx="30" cy="62" r="3" fill="#546e7a"/> <!-- Hub -->
+    
+    <circle cx="70" cy="62" r="7" fill="#263238" stroke="#37474f"/>
+    <circle cx="70" cy="62" r="3" fill="#546e7a"/> <!-- Hub -->
+
+    <!-- === Cradle & Recoil System === -->
+    <rect x="38" y="52" width="24" height="14" rx="2" fill="#546e7a" stroke="#37474f"/>
+    
+    <!-- Hydraulic Dampers (Exposed Chrome) -->
+    <rect x="40" y="38" width="5" height="18" fill="url(#cylGrad)" stroke="#78909c"/>
+    <rect x="55" y="38" width="5" height="18" fill="url(#cylGrad)" stroke="#78909c"/>
+
+    <!-- Hydraulic Hoses (Details) -->
+    <path d="M38 58 C 30 58, 35 45, 41 40" fill="none" stroke="#263238" stroke-width="1.5"/>
+    <path d="M62 58 C 70 58, 65 45, 59 40" fill="none" stroke="#263238" stroke-width="1.5"/>
+
+    <!-- === Team Marking / Badge === -->
+    <rect x="45" y="60" width="10" height="3" fill="#0288d1"/>
+
+    <!-- === Digital Fire Control System (DFCS) === -->
+    <!-- The "Box" on the side (Left) -->
+    <rect x="32" y="48" width="6" height="8" fill="#263238" stroke="#111"/>
+    <rect x="33" y="49" width="4" height="4" fill="#00e5ff" opacity="0.6"/> <!-- Screen/Lens -->
+
+    <!-- === The BARREL === -->
+    <!-- Fluted barrel look (stripes) not easy, sticking to gradients -->
+    <rect x="46" y="5" width="8" height="55" fill="url(#tiGrad)" stroke="#37474f"/>
+    
+    <!-- Muzzle Brake (Typical 'Towing Eye' - Double Baffle) -->
+    <path d="M44 5H56 V12 H54 V8 H46 V12 H44 Z" fill="#37474f" stroke="#263238"/>
+    
+    <!-- Breech Block -->
+    <rect x="43" y="55" width="14" height="12" fill="#455a64" stroke="#263238"/>
+
+  </g>
+</svg>

@@ -34,12 +34,14 @@
 
   const themeNameKeys: Record<ThemeId, TranslationKey> = {
     'modern-warfare': 'settings.theme.modernWarfare.name',
+    'desert-ops': 'settings.theme.desertOps.name',
     classic: 'settings.theme.classic.name',
     forest: 'settings.theme.forest.name'
   };
 
   const themeDescriptionKeys: Record<ThemeId, TranslationKey> = {
     'modern-warfare': 'settings.theme.modernWarfare.description',
+    'desert-ops': 'settings.theme.desertOps.description',
     classic: 'settings.theme.classic.description',
     forest: 'settings.theme.forest.description'
   };
@@ -325,6 +327,10 @@
 
   .theme-preview-modern-warfare {
     background: linear-gradient(135deg, #050a14 0%, #00f3ff 50%, #00ff41 100%);
+  }
+
+  .theme-preview-desert-ops {
+    background: linear-gradient(135deg, #2c251d 0%, #ffb347 50%, #deb887 100%);
   }
 
   .theme-preview-classic {

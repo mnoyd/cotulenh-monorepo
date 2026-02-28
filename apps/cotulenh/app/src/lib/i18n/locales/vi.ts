@@ -56,6 +56,8 @@ export const vi: TranslationKeys = {
   'settings.saved': 'Đã lưu!',
   'settings.theme.modernWarfare.name': 'Hiện đại',
   'settings.theme.modernWarfare.description': 'HUD chiến thuật với điểm nhấn cyan/hổ phách',
+  'settings.theme.desertOps.name': 'Chiến dịch Sa mạc',
+  'settings.theme.desertOps.description': 'Ngụy trang sa mạc và rừng rậm chiến thuật',
   'settings.theme.classic.name': 'Cổ điển',
   'settings.theme.classic.description': 'Tông gỗ ấm truyền thống',
   'settings.theme.forest.name': 'Rừng',

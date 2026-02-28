@@ -55,6 +55,8 @@ export interface TranslationKeys {
   'settings.saved': string;
   'settings.theme.modernWarfare.name': string;
   'settings.theme.modernWarfare.description': string;
+  'settings.theme.desertOps.name': string;
+  'settings.theme.desertOps.description': string;
   'settings.theme.classic.name': string;
   'settings.theme.classic.description': string;
   'settings.theme.forest.name': string;

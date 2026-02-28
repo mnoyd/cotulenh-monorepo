@@ -1,0 +1,264 @@
+/* Modern Warfare Theme - Tactical HUD with Cyan/Amber accents */
+/* Inspired by military FPS game interfaces - high contrast, tech-forward */
+:root {
+  /* ===== CORE PALETTE ===== */
+  --theme-primary: #ffb347;
+  --theme-primary-dim: rgba(255, 179, 71, 0.12);
+  --theme-primary-glow: rgba(255, 179, 71, 0.4);
+  --theme-secondary: #deb887;
+  --theme-secondary-dim: rgba(222, 184, 135, 0.12);
+  --theme-secondary-glow: rgba(222, 184, 135, 0.4);
+  --theme-accent: #4b5320;
+  --theme-accent-dim: rgba(75, 83, 32, 0.12);
+  --theme-accent-glow: rgba(75, 83, 32, 0.4);
+  --theme-warning: #ffcc00;
+  --theme-error: #ff6b00;
+  --theme-success: #30d158;
+
+  /* ===== BACKGROUNDS ===== */
+  --theme-bg-dark: #030810;
+  --theme-bg-base: #0a1628;
+  --theme-bg-panel: rgba(10, 22, 40, 0.92);
+  --theme-bg-elevated: rgba(20, 38, 65, 0.95);
+  --theme-bg-overlay: rgba(0, 0, 0, 0.8);
+
+  /* ===== BORDERS ===== */
+  --theme-border: rgba(255, 179, 71, 0.35);
+  --theme-border-subtle: rgba(255, 179, 71, 0.18);
+  --theme-border-strong: rgba(255, 179, 71, 0.6);
+
+  /* ===== TEXT ===== */
+  --theme-text-primary: #e8f4fc;
+  --theme-text-secondary: #9eb8d4;
+  --theme-text-muted: #5c7a99;
+  --theme-text-inverse: #030810;
+
+  /* ===== NAVBAR ===== */
+  --theme-nav-bg: rgba(10, 22, 40, 0.97);
+  --theme-nav-border: rgba(255, 179, 71, 0.25);
+  --theme-nav-text: rgba(232, 244, 252, 0.85);
+  --theme-nav-text-hover: #ffb347;
+  --theme-nav-text-active: #030810;
+  --theme-nav-active-bg: #ffb347;
+  --theme-nav-hover-bg: rgba(255, 179, 71, 0.12);
+
+  /* ===== TEAM COLORS ===== */
+  --theme-team-blue: #c2b280;
+  --theme-team-blue-glow: rgba(194, 178, 128, 0.5);
+  --theme-team-red: #4b5320;
+  --theme-team-red-glow: rgba(75, 83, 32, 0.5);
+
+  /* ===== BOARD - BATTLEFIELD STYLE ===== */
+  /* Satellite/Tactical Map Aesthetic - Earth & Concrete tones */
+  --theme-board-bg: #2c251d;
+  --theme-board-border: #5c452b;
+  --theme-board-radius: 2px;
+  --theme-board-shadow: inset 0 0 50px rgba(0, 0, 0, 0.8);
+  --theme-board-filter: sepia(0.2) contrast(1.1) brightness(0.9);
+  /* Gritty look */
+  --theme-board-image: url('/themes/desert-ops/board-grid.svg');
+
+  /* Board Squares - Mud & Concrete */
+  --theme-board-light: #bfa782;
+  /* Concrete / Pale Grass */
+  --theme-board-dark: #8c7353;
+  /* Dark Earth / Mud */
+  --theme-board-highlight: rgba(255, 204, 0, 0.2);
+  --theme-board-selected: rgba(222, 184, 135, 0.3);
+  --theme-board-selected-border: #deb887;
+  --theme-board-selected-radius: 0;
+  --theme-board-last-move-from: rgba(255, 179, 71, 0.08);
+  --theme-board-last-move-to: rgba(255, 179, 71, 0.15);
+  --theme-board-last-move-radius: 0;
+  --theme-board-move-dest: #ffb347;
+  --theme-board-move-dest-bg: radial-gradient(rgba(255, 179, 71, 0.6) 20%, transparent 20%);
+  --theme-board-capture-bg: radial-gradient(
+    transparent 0%,
+    transparent 75%,
+    rgba(75, 83, 32, 0.4) 75%
+  );
+  --theme-board-capture: #4b5320;
+  --theme-board-check: rgba(255, 107, 0, 0.5);
+  --theme-board-check-bg: radial-gradient(
+    ellipse at center,
+    rgba(255, 107, 0, 1) 0%,
+    rgba(255, 107, 0, 0.6) 30%,
+    transparent 70%
+  );
+
+  /* Deploy Mode */
+  --theme-board-deploy-origin: rgba(255, 204, 0, 0.1);
+  --theme-board-deploy-origin-border: #ffcc00;
+  --theme-board-deploy-dest: rgba(222, 184, 135, 0.1);
+  --theme-board-deploy-dest-border: #deb887;
+  --theme-board-deploy-radius: 0;
+
+  /* Air Defense */
+  --theme-board-air-friendly: rgba(255, 179, 71, 0.8);
+  --theme-board-air-opponent: rgba(75, 83, 32, 0.9);
+  --theme-board-air-overlap: rgba(255, 107, 0, 0.8);
+
+  /* ===== PIECES ===== */
+  --theme-piece-path: '/themes/desert-ops/pieces';
+  --theme-piece-shadow: drop-shadow(0 0 2px rgba(0, 0, 0, 0.8));
+  --theme-piece-blue-filter: drop-shadow(0 0 4px #c2b280) brightness(1.2) contrast(1.2);
+  --theme-piece-red-filter: drop-shadow(0 0 4px #4b5320) hue-rotate(45deg) brightness(1.2)
+    contrast(1.1);
+  --theme-piece-heroic-filter: drop-shadow(0 0 10px rgba(255, 204, 0, 0.6)) brightness(1.2)
+    contrast(1.1);
+  --theme-piece-hover-filter: brightness(1.3) drop-shadow(0 10px 10px rgba(0, 0, 0, 0.5));
+  --theme-piece-drag-filter: brightness(1.3) drop-shadow(0 15px 15px rgba(0, 0, 0, 0.6));
+  --theme-heroic-star: url('/themes/desert-ops/pieces/heroic-star.svg');
+
+  /* ===== BUTTONS ===== */
+  --theme-btn-attack-stay: #ffd700;
+  --theme-btn-attack-normal: #ff4500;
+  --theme-btn-cancel-bg: rgba(255, 59, 48, 0.2);
+  --theme-btn-cancel-border: #ff3b30;
+  --theme-btn-confirm-bg: rgba(222, 184, 135, 0.2);
+  --theme-btn-confirm-border: #deb887;
+
+  /* ===== HEROIC BADGE ===== */
+  --theme-heroic-bg: rgba(10, 22, 40, 0.95);
+  --theme-heroic-border: #ffcc00;
+  --theme-heroic-glow: 0 0 8px #ffcc00;
+  --theme-heroic-star: #ffcc00;
+
+  /* ===== GLOW EFFECTS ===== */
+  --theme-glow-primary: 0 0 10px rgba(255, 179, 71, 0.4);
+  --theme-glow-secondary: 0 0 10px rgba(222, 184, 135, 0.4);
+  --theme-glow-accent: 0 0 10px rgba(75, 83, 32, 0.4);
+  --theme-glow-error: 0 0 10px rgba(255, 107, 0, 0.4);
+
+  /* ===== SHADOWS ===== */
+  --theme-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.6);
+  --theme-shadow-md: 0 4px 6px rgba(0, 0, 0, 0.55);
+  --theme-shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.6);
+
+  /* ===== OVERLAYS - DISABLED for performance ===== */
+  --theme-scanline-opacity: 0;
+  --theme-vignette-opacity: 0;
+  --theme-vignette-color: transparent;
+
+  /* ===== ANIMATIONS - DISABLED for performance ===== */
+  --theme-transition-fast: 0s;
+  --theme-transition-base: 0s;
+  --theme-transition-slow: 0s;
+
+  /* ===== ATTACK ICONS ===== */
+  --theme-icon-attack-stay: url('/themes/desert-ops/attack-stay.svg?v=2');
+  --theme-icon-attack-normal: url('/themes/desert-ops/attack-normal.svg?v=2');
+}
+
+/* ===== PIECE OVERRIDES ===== */
+/* Blue pieces */
+.cg-wrap piece.air_force.blue,
+piece.dragging.air_force.blue {
+  background-image: url('/themes/desert-ops/pieces/blue/air-force.svg');
+}
+
+.cg-wrap piece.anti_air.blue,
+piece.dragging.anti_air.blue {
+  background-image: url('/themes/desert-ops/pieces/blue/anti-air.svg');
+}
+
+.cg-wrap piece.artillery.blue,
+piece.dragging.artillery.blue {
+  background-image: url('/themes/desert-ops/pieces/blue/artillery.svg');
+}
+
+.cg-wrap piece.commander.blue,
+piece.dragging.commander.blue {
+  background-image: url('/themes/desert-ops/pieces/blue/commander.svg');
+}
+
+.cg-wrap piece.engineer.blue,
+piece.dragging.engineer.blue {
+  background-image: url('/themes/desert-ops/pieces/blue/engineer.svg');
+}
+
+.cg-wrap piece.headquarter.blue,
+piece.dragging.headquarter.blue {
+  background-image: url('/themes/desert-ops/pieces/blue/headquarter.svg');
+}
+
+.cg-wrap piece.infantry.blue,
+piece.dragging.infantry.blue {
+  background-image: url('/themes/desert-ops/pieces/blue/infantry.svg');
+}
+
+.cg-wrap piece.militia.blue,
+piece.dragging.militia.blue {
+  background-image: url('/themes/desert-ops/pieces/blue/militia.svg');
+}
+
+.cg-wrap piece.missile.blue,
+piece.dragging.missile.blue {
+  background-image: url('/themes/desert-ops/pieces/blue/missile.svg');
+}
+
+.cg-wrap piece.navy.blue,
+piece.dragging.navy.blue {
+  background-image: url('/themes/desert-ops/pieces/blue/navy.svg');
+}
+
+.cg-wrap piece.tank.blue,
+piece.dragging.tank.blue {
+  background-image: url('/themes/desert-ops/pieces/blue/tank.svg');
+}
+
+/* Red pieces */
+.cg-wrap piece.air_force.red,
+piece.dragging.air_force.red {
+  background-image: url('/themes/desert-ops/pieces/red/air-force.svg');
+}
+
+.cg-wrap piece.anti_air.red,
+piece.dragging.anti_air.red {
+  background-image: url('/themes/desert-ops/pieces/red/anti-air.svg');
+}
+
+.cg-wrap piece.artillery.red,
+piece.dragging.artillery.red {
+  background-image: url('/themes/desert-ops/pieces/red/artillery.svg');
+}
+
+.cg-wrap piece.commander.red,
+piece.dragging.commander.red {
+  background-image: url('/themes/desert-ops/pieces/red/commander.svg');
+}
+
+.cg-wrap piece.engineer.red,
+piece.dragging.engineer.red {
+  background-image: url('/themes/desert-ops/pieces/red/engineer.svg');
+}
+
+.cg-wrap piece.headquarter.red,
+piece.dragging.headquarter.red {
+  background-image: url('/themes/desert-ops/pieces/red/headquarter.svg');
+}
+
+.cg-wrap piece.infantry.red,
+piece.dragging.infantry.red {
+  background-image: url('/themes/desert-ops/pieces/red/infantry.svg');
+}
+
+.cg-wrap piece.militia.red,
+piece.dragging.militia.red {
+  background-image: url('/themes/desert-ops/pieces/red/militia.svg');
+}
+
+.cg-wrap piece.missile.red,
+piece.dragging.missile.red {
+  background-image: url('/themes/desert-ops/pieces/red/missile.svg');
+}
+
+.cg-wrap piece.navy.red,
+piece.dragging.navy.red {
+  background-image: url('/themes/desert-ops/pieces/red/navy.svg');
+}
+
+.cg-wrap piece.tank.red,
+piece.dragging.tank.red {
+  background-image: url('/themes/desert-ops/pieces/red/tank.svg');
+}

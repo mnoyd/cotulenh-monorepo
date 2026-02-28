@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <linearGradient id="coatGradBlue" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#8b7355"/>
+      <stop offset="50%" stop-color="#3b5266"/>
+      <stop offset="100%" stop-color="#8b7355"/>
+    </linearGradient>
+    <linearGradient id="visorShine" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#333"/>
+      <stop offset="50%" stop-color="#111"/>
+      <stop offset="51%" stop-color="#555"/> <!-- Glossy highlight edge -->
+      <stop offset="100%" stop-color="#000"/>
+    </linearGradient>
+  </defs>
+  <g>
+    <!-- Shoulders / Body Base -->
+    <path d="M25 55 C20 60, 20 80, 22 90 L78 90 C80 80, 80 60, 75 55 Q50 48, 25 55" fill="url(#coatGradBlue)" stroke="#1a2634"/>
+    
+    <!-- Shirt Collar & Tie -->
+    <path d="M42 50 L50 60 L58 50" fill="#fff" stroke="#ccc" stroke-width="1"/> <!-- Shirt -->
+    <path d="M48 52 L50 65 L52 52" fill="#222"/> <!-- Tie -->
+
+    <!-- Trench Coat Lapels -->
+    <path d="M35 55 L45 75 L30 85" fill="#a08a6b" stroke="#1a2634" opacity="0.8"/>
+    <path d="M65 55 L55 75 L70 85" fill="#a08a6b" stroke="#1a2634" opacity="0.8"/>
+
+    <!-- Gold Buttons -->
+    <circle cx="45" cy="65" r="1.5" fill="#f1c40f" stroke="#b8860b" stroke-width="1"/>
+    <circle cx="55" cy="65" r="1.5" fill="#f1c40f" stroke="#b8860b" stroke-width="1"/>
+    <circle cx="45" cy="75" r="1.5" fill="#f1c40f" stroke="#b8860b" stroke-width="1"/>
+    <circle cx="55" cy="75" r="1.5" fill="#f1c40f" stroke="#b8860b" stroke-width="1"/>
+    
+    <!-- Medal Ribbons (Left Chest) -->
+    <rect x="58" y="60" width="10" height="3" fill="#e74c3c"/> <!-- Red Ribbon -->
+    <rect x="68" y="60" width="4" height="3" fill="#f1c40f"/> <!-- Gold Ribbon -->
+    <rect x="58" y="63" width="5" height="3" fill="#3498db"/> <!-- Blue Ribbon -->
+    <rect x="63" y="63" width="9" height="3" fill="#2ecc71"/> <!-- Green Ribbon -->
+    <!-- Medal highlights -->
+    <rect x="58" y="60" width="14" height="6" fill="none" stroke="#222" stroke-width="1"/>
+
+    <!-- Pistol Holster (Right Hip/Waist) -->
+    <path d="M25 80 Q20 85, 28 88" fill="#4a2c20" stroke="#111"/> <!-- Holster Leather -->
+    <rect x="26" y="78" width="6" height="4" fill="#333"/> <!-- Pistol Grip -->
+
+    <!-- Epaulettes -->
+    <rect x="22" y="48" width="18" height="8" rx="2" transform="rotate(10 31 52)" fill="#f1c40f" stroke="#b8860b"/>
+    <rect x="60" y="48" width="18" height="8" rx="2" transform="rotate(-10 69 52)" fill="#f1c40f" stroke="#b8860b"/>
+    
+    <!-- Command Baton -->
+    <rect x="76" y="45" width="4" height="30" transform="rotate(-20 78 60)" fill="#444" stroke="#111"/> 
+    <rect x="79" y="42" width="6" height="4" transform="rotate(-20 78 60)" fill="#f1c40f"/> <!-- Gold Tip -->
+    <rect x="85" y="68" width="6" height="4" transform="rotate(-20 78 60)" fill="#f1c40f"/> <!-- Gold Handle -->
+
+    <!-- Head -->
+    <!-- Skin/Hair Hint -->
+    <ellipse cx="50" cy="42" rx="13" ry="12" fill="#dcbfa3"/> 
+    
+    <!-- PEAKED CAP -->
+    <!-- Cap Band -->
+    <ellipse cx="50" cy="40" rx="14" ry="13" fill="#1a2634"/>
+    <!-- Visor (Glossy) -->
+    <path d="M35 43 Q50 54, 65 43 L65 41 Q50 50, 35 41 Z" fill="url(#visorShine)" stroke="#000"/>
+    <!-- Cap Crown -->
+    <ellipse cx="50" cy="38" rx="15" ry="12" fill="#caba9e" stroke="#1a2634"/>
+    <!-- Cap Badge -->
+    <path d="M47 30 L53 30 L50 35 Z" fill="#f1c40f" stroke="#b8860b"/>
+    <path d="M38 39 Q50 46, 62 39" fill="none" stroke="#f1c40f" stroke-width="1.5"/> <!-- Cord -->
+
+  </g>
+</svg>

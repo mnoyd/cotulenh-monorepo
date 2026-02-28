@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <linearGradient id="hullGradRed" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#3c4a22"/>
+      <stop offset="50%" stop-color="#6b8e23"/>
+      <stop offset="100%" stop-color="#3c4a22"/>
+    </linearGradient>
+  </defs>
+  <g>
+    <!-- Water Wake (Solid vector shapes, no blur) -->
+    <path d="M50 85 L20 100" stroke="#aeeeff" stroke-width="3" opacity="0.5"/>
+    <path d="M50 85 L80 100" stroke="#aeeeff" stroke-width="3" opacity="0.5"/>
+
+    <!-- Main Hull (Robust Destroyer Shape) - ULTRA WIDE -->
+    <!-- Width: 46 (27 to 73) -->
+    <path d="M50 2 L73 25 L73 90 L50 98 L27 90 L27 25 Z" 
+          fill="url(#hullGradRed)" stroke="#34201a" stroke-width="1.5"/>
+    
+    <!-- Deck Detail -->
+    <path d="M30 28 L70 28 L70 88 L30 88 Z" fill="none" stroke="#34201a" stroke-width="1" opacity="0.5"/>
+
+    <!-- Forward VLS (Large Block) -->
+    <g transform="translate(36, 32)">
+      <rect x="0" y="0" width="28" height="10" fill="#3c4a22" stroke="#34201a" stroke-width="1"/>
+      <!-- VLS Cells (12 cells) -->
+      <path d="M4 0 V10 M8 0 V10 M12 0 V10 M16 0 V10 M20 0 V10 M24 0 V10 M0 5 H28" stroke="#34201a" stroke-width="1"/>
+    </g>
+
+    <!-- Main Gun (AK-130 style) -->
+    <g transform="translate(50, 20)">
+      <circle cx="0" cy="0" r="6" fill="#6a4a40" stroke="#34201a" stroke-width="1"/>
+      <rect x="-1.5" y="-12" width="3" height="10" fill="#111"/> <!-- Barrel -->
+    </g>
+
+    <!-- Superstructure (Heavy/Blocky) -->
+    <path d="M28 45 L72 45 L72 70 L28 70 Z" 
+          fill="#5e4034" stroke="#34201a" stroke-width="1"/>
+    
+    <!-- Bridge Windows -->
+    <rect x="33" y="48" width="34" height="4" fill="#111"/>
+
+    <!-- Heavy Mast / Radar -->
+    <path d="M45 55 L55 55 L55 68 L45 68 Z" fill="#3c4a22" stroke="#34201a" stroke-width="1"/>
+    <circle cx="50" cy="58" r="3" fill="#ff4500" opacity="0.8"/> <!-- Top Radar -->
+
+    <!-- Anti-Ship Missile Tubes (Large cylinders on sides) -->
+    <rect x="22" y="55" width="5" height="16" rx="2" fill="#3c4a22" stroke="#34201a" stroke-width="1"/>
+    <rect x="73" y="55" width="5" height="16" rx="2" fill="#3c4a22" stroke="#34201a" stroke-width="1"/>
+
+    <!-- Helipad -->
+    <rect x="32" y="80" width="36" height="14" fill="#3c4a22" stroke="#34201a" stroke-width="1"/>
+    <circle cx="50" cy="87" r="4" fill="none" stroke="#ff4500" stroke-width="1.5" opacity="0.6"/>
+    <text x="50" y="89" font-family="Arial" font-size="4" fill="#ff4500" text-anchor="middle" opacity="0.8">H</text>
+
+    <!-- CIWS (Rear) -->
+    <circle cx="50" cy="75" r="3" fill="#888" stroke="#111" stroke-width="1"/>
+  </g>
+</svg>
