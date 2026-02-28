@@ -364,5 +364,34 @@ export const en: TranslationKeys = {
   'a11y.blueTeamPieces': 'Blue team pieces',
   'a11y.hand': 'Hand',
   'a11y.delete': 'Delete',
-  'a11y.heroic': 'Heroic'
+  'a11y.heroic': 'Heroic',
+
+  // Auth
+  'auth.register.title': 'Create Account',
+  'auth.register.subtitle': 'Join the battlefield',
+  'auth.register.email': 'Email',
+  'auth.register.emailPlaceholder': 'your@email.com',
+  'auth.register.password': 'Password',
+  'auth.register.passwordPlaceholder': 'At least 8 characters',
+  'auth.register.displayName': 'Display Name',
+  'auth.register.displayNamePlaceholder': 'Your commander name',
+  'auth.register.submit': 'Create Account',
+  'auth.register.submitting': 'Creating account...',
+  'auth.register.haveAccount': 'Already have an account?',
+  'auth.register.loginLink': 'Sign in',
+  'auth.register.verifyEmail': 'Check your email',
+  'auth.register.verifyEmailDesc':
+    'We sent a verification link to your email. Please check your inbox and click the link to activate your account.',
+  'auth.validation.emailRequired': 'Email is required',
+  'auth.validation.emailInvalid': 'Please enter a valid email address',
+  'auth.validation.passwordRequired': 'Password is required',
+  'auth.validation.passwordMinLength': 'Password must be at least 8 characters',
+  'auth.validation.displayNameRequired': 'Display name is required',
+  'auth.validation.displayNameMinLength': 'Display name must be at least 3 characters',
+  'auth.validation.displayNameMaxLength': 'Display name must be at most 50 characters',
+  'auth.error.generic': 'Something went wrong. Please try again.',
+  'auth.error.registrationFailed': 'Registration failed. Please try again.',
+  'auth.error.title': 'Authentication Error',
+  'auth.error.description': 'Something went wrong during authentication. Please try again.',
+  'auth.error.backHome': 'Back to Home'
 };
