@@ -393,5 +393,16 @@ export const vi: TranslationKeys = {
   'auth.error.registrationFailed': 'Đăng ký thất bại. Vui lòng thử lại.',
   'auth.error.title': 'Lỗi Xác Thực',
   'auth.error.description': 'Đã xảy ra lỗi trong quá trình xác thực. Vui lòng thử lại.',
-  'auth.error.backHome': 'Về Trang Chủ'
+  'auth.error.backHome': 'Về Trang Chủ',
+  'auth.error.loginFailed': 'Email hoặc mật khẩu không đúng. Vui lòng thử lại.',
+  'auth.login.title': 'Đăng Nhập',
+  'auth.login.subtitle': 'Chào mừng trở lại, Chỉ huy',
+  'auth.login.email': 'Email',
+  'auth.login.emailPlaceholder': 'email@cuaban.com',
+  'auth.login.password': 'Mật khẩu',
+  'auth.login.passwordPlaceholder': 'Nhập mật khẩu của bạn',
+  'auth.login.submit': 'Đăng Nhập',
+  'auth.login.submitting': 'Đang đăng nhập...',
+  'auth.login.noAccount': 'Chưa có tài khoản?',
+  'auth.login.registerLink': 'Đăng ký'
 };

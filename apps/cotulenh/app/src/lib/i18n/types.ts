@@ -389,6 +389,17 @@ export interface TranslationKeys {
   'auth.error.title': string;
   'auth.error.description': string;
   'auth.error.backHome': string;
+  'auth.error.loginFailed': string;
+  'auth.login.title': string;
+  'auth.login.subtitle': string;
+  'auth.login.email': string;
+  'auth.login.emailPlaceholder': string;
+  'auth.login.password': string;
+  'auth.login.passwordPlaceholder': string;
+  'auth.login.submit': string;
+  'auth.login.submitting': string;
+  'auth.login.noAccount': string;
+  'auth.login.registerLink': string;
 }
 
 export type TranslationKey = keyof TranslationKeys;

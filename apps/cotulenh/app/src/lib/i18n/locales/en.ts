@@ -393,5 +393,16 @@ export const en: TranslationKeys = {
   'auth.error.registrationFailed': 'Registration failed. Please try again.',
   'auth.error.title': 'Authentication Error',
   'auth.error.description': 'Something went wrong during authentication. Please try again.',
-  'auth.error.backHome': 'Back to Home'
+  'auth.error.backHome': 'Back to Home',
+  'auth.error.loginFailed': 'Invalid email or password. Please try again.',
+  'auth.login.title': 'Sign In',
+  'auth.login.subtitle': 'Welcome back, Commander',
+  'auth.login.email': 'Email',
+  'auth.login.emailPlaceholder': 'your@email.com',
+  'auth.login.password': 'Password',
+  'auth.login.passwordPlaceholder': 'Enter your password',
+  'auth.login.submit': 'Sign In',
+  'auth.login.submitting': 'Signing in...',
+  'auth.login.noAccount': "Don't have an account?",
+  'auth.login.registerLink': 'Sign up'
 };
