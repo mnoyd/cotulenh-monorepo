@@ -404,5 +404,33 @@ export const en: TranslationKeys = {
   'auth.login.submit': 'Sign In',
   'auth.login.submitting': 'Signing in...',
   'auth.login.noAccount': "Don't have an account?",
-  'auth.login.registerLink': 'Sign up'
+  'auth.login.registerLink': 'Sign up',
+
+  // Forgot Password
+  'auth.forgotPassword.title': 'Reset Password',
+  'auth.forgotPassword.subtitle': 'Enter your email to receive a reset link',
+  'auth.forgotPassword.email': 'Email',
+  'auth.forgotPassword.emailPlaceholder': 'your@email.com',
+  'auth.forgotPassword.submit': 'Send Reset Link',
+  'auth.forgotPassword.submitting': 'Sending...',
+  'auth.forgotPassword.backToLogin': 'Back to login',
+  'auth.forgotPassword.checkEmail': 'Check your email',
+  'auth.forgotPassword.checkEmailDesc':
+    'If an account exists with that email, we sent a password reset link. Please check your inbox.',
+
+  // Reset Password
+  'auth.resetPassword.title': 'Set New Password',
+  'auth.resetPassword.subtitle': 'Enter your new password below',
+  'auth.resetPassword.newPassword': 'New Password',
+  'auth.resetPassword.newPasswordPlaceholder': 'At least 8 characters',
+  'auth.resetPassword.confirmPassword': 'Confirm Password',
+  'auth.resetPassword.confirmPasswordPlaceholder': 'Re-enter your password',
+  'auth.resetPassword.submit': 'Update Password',
+  'auth.resetPassword.submitting': 'Updating...',
+  'auth.resetPassword.backToLogin': 'Back to login',
+  'auth.resetPassword.success': 'Your password has been updated successfully.',
+  'auth.resetPassword.expiredLink': 'Your reset link has expired. Please request a new one.',
+  'auth.validation.confirmPasswordRequired': 'Please confirm your password',
+  'auth.validation.passwordMismatch': 'Passwords do not match',
+  'auth.error.resetFailed': 'Password reset failed. Please try again.'
 };
