@@ -37,35 +37,33 @@
   </defs>
 
   <!-- High-Tech Holographic Base -->
-  
-    <!-- High-tech projected base ring -->
-    <ellipse cx="50" cy="88" rx="40" ry="8" fill="url(#baseGrad)" stroke="url(#accentGrad)" stroke-width="1.5" opacity="0.8" />
-    <ellipse cx="50" cy="88" rx="36" ry="6" fill="none" stroke="#ff3300" stroke-width="0.5" opacity="0.6" stroke-dasharray="4 2" />
-    <circle cx="50" cy="88" r="2" fill="#ff3300" />
-  
+  <ellipse cx="50" cy="88" rx="40" ry="8" fill="url(#baseGrad)" stroke="url(#accentGrad)" stroke-width="1.5" opacity="0.8" />
+  <ellipse cx="50" cy="88" rx="36" ry="6" fill="none" stroke="#ff3300" stroke-width="0.5" opacity="0.6" stroke-dasharray="4 2" />
+  <circle cx="50" cy="88" r="2" fill="#ff3300" />
 
-  <!-- Premium infantry / red -->
+  <!-- Premium infantry / red / bust -->
   <g filter="url(#drop-shadow)">
-    
     <g transform="translate(0,-5)">
-      <!-- Legs -->
-      <path d="M 45 60 L 40 85 L 35 85 L 40 60 Z" fill="url(#darkGrad)" />
-      <path d="M 55 60 L 65 85 L 70 85 L 60 60 Z" fill="url(#darkGrad)" />
-      <!-- Torso -->
-      <polygon points="42,35 58,35 60,60 40,60" fill="url(#mainGrad)" stroke="#1a240c" stroke-width="1.5" />
-      <rect x="44" y="40" width="12" height="15" fill="url(#darkGrad)" rx="2" />
-      <!-- Weapon -->
-      <rect x="40" y="50" width="40" height="5" fill="url(#darkGrad)" />
-      <polygon points="40,50 32,54 32,58 40,54" fill="#1a240c" />
-      <rect x="52" y="46" width="6" height="4" fill="#ff3300" filter="url(#glow)" />
-      <!-- Arms -->
-      <path d="M 42 40 L 30 55 L 45 55" fill="none" stroke="url(#mainGrad)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" />
-      <!-- Helmet -->
-      <circle cx="50" cy="25" r="9" fill="url(#lightGrad)" />
-      <path d="M 40 25 C 40 10, 60 10, 60 25 Z" fill="url(#darkGrad)" />
-      <path d="M 38 23 C 45 28, 55 28, 62 23 C 60 30, 40 30, 38 23 Z" fill="#1a240c" />
-      <circle cx="48" cy="18" r="3" fill="#ff3300" filter="url(#glow)" />
+      <!-- Torso Base -->
+      <path d="M 30 85 C 30 55, 40 50, 50 50 C 60 50, 70 55, 70 85 Z" fill="url(#mainGrad)" stroke="#1a240c" stroke-width="2" />
+      
+      <!-- Inner chest armor -->
+      <path d="M 38 85 L 40 65 L 50 58 L 60 65 L 62 85 Z" fill="url(#darkGrad)" />
+      <!-- Core glow -->
+      <circle cx="50" cy="70" r="4" fill="#ff3300" filter="url(#glow)" opacity="0.8"/>
+
+      <!-- Neck -->
+      <rect x="43" y="45" width="14" height="10" fill="#1a240c" />
+
+      <!-- Helmet Outline -->
+      <path d="M 36 48 C 36 22, 64 22, 64 48 C 64 54, 60 56, 50 56 C 40 56, 36 54, 36 48 Z" fill="url(#mainGrad)" stroke="#1a240c" stroke-width="1.5" />
+      
+      <!-- Visor -->
+      <path d="M 38 40 Q 50 48 62 40 L 60 48 Q 50 52 40 48 Z" fill="#ff3300" filter="url(#glow)" />
+      
+      <!-- Ear pieces -->
+      <rect x="34" y="38" width="4" height="10" rx="2" fill="url(#darkGrad)" stroke="#1a240c" stroke-width="1" />
+      <rect x="62" y="38" width="4" height="10" rx="2" fill="url(#darkGrad)" stroke="#1a240c" stroke-width="1" />
     </g>
-  
   </g>
 </svg>

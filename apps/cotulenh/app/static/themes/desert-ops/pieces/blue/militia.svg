@@ -37,36 +37,35 @@
   </defs>
 
   <!-- High-Tech Holographic Base -->
-  
-    <!-- High-tech projected base ring -->
-    <ellipse cx="50" cy="88" rx="40" ry="8" fill="url(#baseGrad)" stroke="url(#accentGrad)" stroke-width="1.5" opacity="0.8" />
-    <ellipse cx="50" cy="88" rx="36" ry="6" fill="none" stroke="#00e5ff" stroke-width="0.5" opacity="0.6" stroke-dasharray="4 2" />
-    <circle cx="50" cy="88" r="2" fill="#00e5ff" />
-  
+  <ellipse cx="50" cy="88" rx="40" ry="8" fill="url(#baseGrad)" stroke="url(#accentGrad)" stroke-width="1.5" opacity="0.8" />
+  <ellipse cx="50" cy="88" rx="36" ry="6" fill="none" stroke="#00e5ff" stroke-width="0.5" opacity="0.6" stroke-dasharray="4 2" />
+  <circle cx="50" cy="88" r="2" fill="#00e5ff" />
 
-  <!-- Premium militia / blue -->
+  <!-- Premium militia / blue / bust -->
   <g filter="url(#drop-shadow)">
-    
-    <g transform="translate(0,-5)">
-      <!-- Tires -->
-      <circle cx="25" cy="80" r="9" fill="url(#darkGrad)" stroke="#4a3b2c" stroke-width="2" />
-      <circle cx="75" cy="80" r="9" fill="url(#darkGrad)" stroke="#4a3b2c" stroke-width="2" />
-      <!-- Technical Bed -->
-      <polygon points="10,65 10,55 40,55 40,65" fill="url(#darkGrad)" stroke="#4a3b2c" stroke-width="1.5" />
-      <!-- Cab -->
-      <polygon points="40,65 40,40 60,40 65,55 85,55 90,65" fill="url(#mainGrad)" stroke="#4a3b2c" stroke-width="1.5" />
-      <polygon points="43,43 57,43 60,55 43,55" fill="#00e5ff" opacity="0.6" />
-      <rect x="85" y="57" width="6" height="4" fill="#fff" filter="url(#glow)" />
-      <!-- HMG -->
-      <rect x="28" y="45" width="4" height="10" fill="#4a3b2c" />
-      <rect x="15" y="42" width="25" height="5" fill="url(#darkGrad)" />
-      <rect x="0" y="43.5" width="15" height="2" fill="#4a3b2c" />
-      <rect x="23" y="44" width="6" height="5" fill="#00e5ff" />
-      <polygon points="35,35 40,40 35,50" fill="url(#lightGrad)" opacity="0.8" />
-      <!-- Pennant -->
-      <path d="M 12 30 Q 5 25 15 20 Q 25 15 25 25 T 12 30" fill="#00e5ff" />
-      <line x1="12" y1="30" x2="12" y2="55" stroke="#4a3b2c" stroke-width="1" />
+    <g transform="translate(0, -5)">
+      <!-- Shoulders -->
+      <path d="M 28 85 C 25 60, 40 55, 50 55 C 60 55, 75 60, 72 85 Z" fill="url(#mainGrad)" stroke="#4a3b2c" stroke-width="1.5" />
+      
+      <!-- Vest -->
+      <path d="M 38 85 L 38 65 L 62 65 L 62 85 Z" fill="url(#darkGrad)" />
+      <rect x="42" y="68" width="16" height="6" fill="#4a3b2c" rx="1" />
+      <rect x="42" y="76" width="16" height="6" fill="#4a3b2c" rx="1" />
+
+      <!-- Scarf wrap -->
+      <path d="M 35 50 Q 50 65 65 50 Q 68 55 50 68 Q 32 55 35 50 Z" fill="url(#lightGrad)" stroke="#4a3b2c" stroke-width="1" />
+
+      <!-- Masked Face (Balaclava) -->
+      <path d="M 38 52 C 38 30, 62 30, 62 52 Z" fill="url(#darkGrad)" />
+      
+      <!-- Glowing Eyes/Goggles -->
+      <circle cx="45" cy="42" r="3" fill="#00e5ff" filter="url(#glow)" />
+      <circle cx="55" cy="42" r="3" fill="#00e5ff" filter="url(#glow)" />
+      
+      <!-- Headband / Hat Brim -->
+      <path d="M 34 35 Q 50 40 66 35 C 66 30, 34 30, 34 35 Z" fill="url(#mainGrad)" stroke="#4a3b2c" stroke-width="1" />
+      <!-- Hat Top -->
+      <path d="M 38 33 C 38 20, 62 20, 62 33 Z" fill="url(#mainGrad)" stroke="#4a3b2c" stroke-width="1" />
     </g>
-  
   </g>
 </svg>
