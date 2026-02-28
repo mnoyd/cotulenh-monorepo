@@ -406,6 +406,37 @@ export interface TranslationKeys {
   'auth.login.noAccount': string;
   'auth.login.registerLink': string;
   'auth.logout.signingOut': string;
+
+  // Forgot Password
+  'auth.forgotPassword.title': string;
+  'auth.forgotPassword.subtitle': string;
+  'auth.forgotPassword.email': string;
+  'auth.forgotPassword.emailPlaceholder': string;
+  'auth.forgotPassword.submit': string;
+  'auth.forgotPassword.submitting': string;
+  'auth.forgotPassword.backToLogin': string;
+  'auth.forgotPassword.checkEmail': string;
+  'auth.forgotPassword.checkEmailDesc': string;
+
+  // Reset Password
+  'auth.resetPassword.title': string;
+  'auth.resetPassword.subtitle': string;
+  'auth.resetPassword.newPassword': string;
+  'auth.resetPassword.newPasswordPlaceholder': string;
+  'auth.resetPassword.confirmPassword': string;
+  'auth.resetPassword.confirmPasswordPlaceholder': string;
+  'auth.resetPassword.submit': string;
+  'auth.resetPassword.submitting': string;
+  'auth.resetPassword.backToLogin': string;
+  'auth.resetPassword.success': string;
+  'auth.resetPassword.expiredLink': string;
+
+  // Additional validation keys
+  'auth.validation.confirmPasswordRequired': string;
+  'auth.validation.passwordMismatch': string;
+
+  // Additional error key
+  'auth.error.resetFailed': string;
 }
 
 export type TranslationKey = keyof TranslationKeys;

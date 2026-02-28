@@ -410,5 +410,33 @@ export const vi: TranslationKeys = {
   'auth.login.submitting': 'Đang đăng nhập...',
   'auth.login.noAccount': 'Chưa có tài khoản?',
   'auth.login.registerLink': 'Đăng ký',
-  'auth.logout.signingOut': 'Đang đăng xuất...'
+  'auth.logout.signingOut': 'Đang đăng xuất...',
+
+  // Forgot Password
+  'auth.forgotPassword.title': 'Khôi Phục Mật Khẩu',
+  'auth.forgotPassword.subtitle': 'Nhập email để nhận liên kết khôi phục',
+  'auth.forgotPassword.email': 'Email',
+  'auth.forgotPassword.emailPlaceholder': 'email@cuaban.com',
+  'auth.forgotPassword.submit': 'Gửi Liên Kết Khôi Phục',
+  'auth.forgotPassword.submitting': 'Đang gửi...',
+  'auth.forgotPassword.backToLogin': 'Quay lại đăng nhập',
+  'auth.forgotPassword.checkEmail': 'Kiểm tra email',
+  'auth.forgotPassword.checkEmailDesc':
+    'Nếu tài khoản tồn tại với email này, chúng tôi đã gửi liên kết khôi phục mật khẩu. Vui lòng kiểm tra hộp thư.',
+
+  // Reset Password
+  'auth.resetPassword.title': 'Đặt Mật Khẩu Mới',
+  'auth.resetPassword.subtitle': 'Nhập mật khẩu mới của bạn',
+  'auth.resetPassword.newPassword': 'Mật Khẩu Mới',
+  'auth.resetPassword.newPasswordPlaceholder': 'Ít nhất 8 ký tự',
+  'auth.resetPassword.confirmPassword': 'Xác Nhận Mật Khẩu',
+  'auth.resetPassword.confirmPasswordPlaceholder': 'Nhập lại mật khẩu',
+  'auth.resetPassword.submit': 'Cập Nhật Mật Khẩu',
+  'auth.resetPassword.submitting': 'Đang cập nhật...',
+  'auth.resetPassword.backToLogin': 'Quay lại đăng nhập',
+  'auth.resetPassword.success': 'Mật khẩu của bạn đã được cập nhật thành công.',
+  'auth.resetPassword.expiredLink': 'Liên kết khôi phục đã hết hạn. Vui lòng yêu cầu liên kết mới.',
+  'auth.validation.confirmPasswordRequired': 'Vui lòng xác nhận mật khẩu',
+  'auth.validation.passwordMismatch': 'Mật khẩu không khớp',
+  'auth.error.resetFailed': 'Khôi phục mật khẩu thất bại. Vui lòng thử lại.'
 };
