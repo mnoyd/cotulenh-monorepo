@@ -1,57 +1,45 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
   <defs>
-    <linearGradient id="bunkerGradBlue" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#8b7355"/>
-      <stop offset="50%" stop-color="#4e7391"/>
-      <stop offset="100%" stop-color="#8b7355"/>
-    </linearGradient>
-    <linearGradient id="flagGradBlue" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#154360"/>
-      <stop offset="20%" stop-color="#2980b9"/>
-      <stop offset="40%" stop-color="#5dade2"/>
-      <stop offset="60%" stop-color="#2980b9"/>
-      <stop offset="80%" stop-color="#1a5276"/>
-      <stop offset="100%" stop-color="#154360"/>
-    </linearGradient>
+    <filter id="drop-shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="rgba(0,0,0,0.3)" />
+    </filter>
   </defs>
-  <g>
-    <!-- Base Plate -->
-    <path d="M10 75 L90 75 L95 85 L5 85 Z" fill="#1a2634" stroke="#111"/>
+  <!-- headquarter / blue High Detail Modern Warfare -->
+  <g filter="url(#drop-shadow)">
     
-    <!-- Main Bunker Body (Preserved Shape) -->
     <g>
-        <path d="M20 75 L15 50 L30 35 L70 35 L85 50 L80 75 Z" fill="url(#bunkerGradBlue)" stroke="#1a2634" stroke-width="2"/>
+      <!-- Base & HESCO barriers (sandbag walls) -->
+      <rect x="10" y="70" width="80" height="15" fill="#d2b48c" stroke="#5c452b" stroke-width="1" />
+      <!-- Barrier grid lines -->
+      <line x1="20" y1="70" x2="20" y2="85" stroke="#5c452b" opacity="0.5" />
+      <line x1="30" y1="70" x2="30" y2="85" stroke="#5c452b" opacity="0.5" />
+      <line x1="40" y1="70" x2="40" y2="85" stroke="#5c452b" opacity="0.5" />
+      <line x1="50" y1="70" x2="50" y2="85" stroke="#5c452b" opacity="0.5" />
+      <line x1="60" y1="70" x2="60" y2="85" stroke="#5c452b" opacity="0.5" />
+      <line x1="70" y1="70" x2="70" y2="85" stroke="#5c452b" opacity="0.5" />
+      <line x1="80" y1="70" x2="80" y2="85" stroke="#5c452b" opacity="0.5" />
+      
+      <!-- Main TOC (Tactical Operations Center) Building / Tent -->
+      <path d="M 25 70 L 25 45 C 25 35, 75 35, 75 45 L 75 70 Z" fill="#5c452b" />
+      <path d="M 28 70 L 28 48 C 28 40, 72 40, 72 48 L 72 70 Z" fill="#d2b48c" />
+      <!-- Camo Netting draped -->
+      <path d="M 20 45 Q 35 30 50 40 T 80 45 L 80 55 Q 65 45 50 50 T 20 55 Z" fill="#8b7355" opacity="0.5" />
+
+      <!-- Massive Radome (Radar Dome) -->
+      <circle cx="85" cy="50" r="10" fill="#d2b48c" stroke="#5c452b" stroke-width="1.5" />
+      <path d="M 80 40 L 90 60 M 90 40 L 80 60 M 75 50 L 95 50" stroke="#5c452b" stroke-width="0.5" opacity="0.5" /> <!-- Panels -->
+      <rect x="80" y="60" width="10" height="10" fill="#8b7355" /> <!-- Pillar -->
+
+      <!-- Advanced Satellite Comm Array -->
+      <rect x="15" y="45" width="2" height="25" fill="#8b7355" />
+      <!-- Sat Dish -->
+      <ellipse cx="14" cy="40" rx="4" ry="10" fill="#d2b48c" stroke="#5c452b" stroke-width="1" transform="rotate(30 14 40)" />
+      <circle cx="16" cy="40" r="2" fill="#e6c200" />
+
+      <!-- Entryway / Guard Post -->
+      <rect x="42" y="60" width="16" height="10" fill="#8b7355" />
+      <rect x="45" y="62" width="10" height="8" fill="#e6c200" opacity="0.8" /> <!-- Light glow from inside -->
     </g>
-    
-    <!-- Shading for Depth (Side Faces) -->
-    <path d="M15 50 L30 35 L30 75 L20 75 Z" fill="#15202b" opacity="0.4"/> <!-- Left darker side -->
-    <path d="M85 50 L70 35 L70 75 L80 75 Z" fill="#15202b" opacity="0.4"/> <!-- Right darker side -->
-
-    <!-- Bunker Roof details -->
-    <path d="M30 35 L70 35 L65 55 L35 55 Z" fill="#a08a6b" stroke="#1a2634" opacity="0.8" stroke-width="1.5"/>
-    
-    <!-- Firing Slits / Windows -->
-    <rect x="25" y="45" width="10" height="3" fill="#111" stroke="#1a2634" stroke-width="1"/>
-    <rect x="65" y="45" width="10" height="3" fill="#111" stroke="#1a2634" stroke-width="1"/>
-    <rect x="45" y="48" width="10" height="4" fill="#000" stroke="#1a2634" stroke-width="1"/> <!-- Central door/port -->
-
-    <!-- Flag Pole -->
-    <rect x="48" y="10" width="4" height="65" fill="#7f8c8d" stroke="#555" stroke-width="1"/>
-    <circle cx="50" cy="10" r="3" fill="#f1c40f" stroke="#b8860b" stroke-width="1"/> <!-- Gold Topper -->
-
-    <!-- The Flag (Dynamic & Complex) -->
-    <!-- Main Cloth -->
-    <path d="M52 12 Q70 5, 85 15 T98 30 L52 35 Z" fill="url(#flagGradBlue)" stroke="#0e2f44" stroke-width="1"/>
-    
-    <!-- Top Edge Highlight -->
-    <path d="M52 12 Q70 5, 85 15 T98 30" fill="none" stroke="#aed6f1" stroke-width="1.5" opacity="0.6"/>
-    
-    <!-- Deep Folds/Shadows -->
-    <path d="M52 12 C 65 15, 65 30, 55 35" fill="none" stroke="#0e2f44" stroke-width="1" opacity="0.3"/>
-    <path d="M70 10 C 75 20, 80 25, 75 33" fill="none" stroke="#0e2f44" stroke-width="1" opacity="0.3"/>
-    
-    <!-- Fabric Ripples -->
-    <path d="M60 15 Q75 10, 88 18" fill="none" stroke="#5dade2" stroke-width="1" opacity="0.5"/>
-    <path d="M55 25 Q70 20, 85 28" fill="none" stroke="#1a5276" stroke-width="1" opacity="0.5"/>
+  
   </g>
 </svg>

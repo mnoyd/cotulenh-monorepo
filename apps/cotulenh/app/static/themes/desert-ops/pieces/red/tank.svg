@@ -1,61 +1,52 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
   <defs>
-    <linearGradient id="bodyGradRed" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#556b2f"/>
-      <stop offset="100%" stop-color="#2e3b18"/>
-    </linearGradient>
-    <radialGradient id="turretGradRed" cx="50%" cy="50%" r="50%">
-      <stop offset="50%" stop-color="#6b8e23"/>
-      <stop offset="100%" stop-color="#3c4a22"/>
-    </radialGradient>
+    <filter id="drop-shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="rgba(0,0,0,0.3)" />
+    </filter>
   </defs>
-
-  <g>
-    <!-- Tracks (Wider, chunkier for "heavy" feel) -->
-    <rect x="12" y="12" width="18" height="76" rx="2" fill="#222" stroke="#111" />
-    <rect x="70" y="12" width="18" height="76" rx="2" fill="#222" stroke="#111" />
+  <!-- tank / red High Detail Modern Warfare -->
+  <g filter="url(#drop-shadow)">
     
-    <!-- Track links details -->
-    <path d="M12 20 H30 M12 30 H30 M12 40 H30 M12 50 H30 M12 60 H30 M12 70 H30" stroke="#333" stroke-width="1.5"/>
-    <path d="M70 20 H88 M70 30 H88 M70 40 H88 M70 50 H88 M70 60 H88 M70 70 H88" stroke="#333" stroke-width="1.5"/>
+    <g>
+      <!-- Tracks & Wheels -->
+      <path d="M 12 70 A 10 10 0 0 0 22 80 L 78 80 A 10 10 0 0 0 88 70 Z" fill="#4a5d23" />
+      <circle cx="20" cy="74" r="4" fill="#2e3b18" />
+      <circle cx="32" cy="74" r="4" fill="#2e3b18" />
+      <circle cx="44" cy="74" r="4" fill="#2e3b18" />
+      <circle cx="56" cy="74" r="4" fill="#2e3b18" />
+      <circle cx="68" cy="74" r="4" fill="#2e3b18" />
+      <circle cx="80" cy="74" r="4" fill="#2e3b18" />
+      
+      <!-- Side Skirt / Armor -->
+      <polygon points="10,50 18,50 22,65 82,65 88,50 90,50 90,70 10,70" fill="#6b8e23" stroke="#2e3b18" stroke-width="1.5" />
+      <!-- Hull -->
+      <polygon points="18,50 35,40 75,40 88,50" fill="#6b8e23" stroke="#2e3b18" stroke-width="1.5" />
+      
+      <!-- Reactive Armor Panels (Hull) -->
+      <rect x="35" y="42" width="10" height="6" fill="#ff4500" opacity="0.4" />
+      <rect x="47" y="42" width="10" height="6" fill="#ff4500" opacity="0.4" />
+      <rect x="59" y="42" width="10" height="6" fill="#ff4500" opacity="0.4" />
+      
+      <!-- Main Gun Barrel & Bore Evacuator -->
+      <rect x="68" y="27" width="28" height="4" fill="#4a5d23" />
+      <rect x="75" y="26" width="10" height="6" fill="#2e3b18" /> <!-- Evacuator -->
+      <rect x="94" y="26" width="2" height="6" fill="#6b8e23" /> <!-- Muzzle brake -->
 
-    <!-- Hull (Slightly shorter, squat) -->
-    <rect x="30" y="15" width="40" height="70" fill="url(#bodyGradRed)" stroke="#1a240c" stroke-width="1.5"/>
-    
-    <!-- Reactive Armor on Hull Front -->
-    <path d="M32 18 L68 18 L68 30 L32 30 Z" fill="#4a5d23" stroke="#1a240c" opacity="0.8"/>
-    <line x1="44" y1="18" x2="44" y2="30" stroke="#1a240c"/>
-    <line x1="56" y1="18" x2="56" y2="30" stroke="#1a240c"/>
+      <!-- Turret Base & Sloped Armor -->
+      <polygon points="30,40 40,22 65,22 72,40" fill="#6b8e23" stroke="#2e3b18" stroke-width="2" />
+      <polygon points="40,22 50,22 55,40 30,40" fill="#4a5d23" opacity="0.6"/> <!-- Shadow side -->
+      
+      <!-- Turret Details (Optics/Hatch/MG/Antenna) -->
+      <rect x="42" y="16" width="8" height="6" fill="#2e3b18" /> <!-- Hatch -->
+      <circle cx="46" cy="16" r="3" fill="#6b8e23" />
+      <rect x="52" y="18" width="6" height="4" fill="#ff4500" /> <!-- Optics / Sensor -->
+      <line x1="35" y1="22" x2="33" y2="5" stroke="#2e3b18" stroke-width="1.5" /> <!-- Antenna -->
+      <polygon points="45,15 48,12 55,14 55,16" fill="#4a5d23" /> <!-- Commander MG -->
 
-    <!-- External Fuel Drums (Rear) - Classic Soviet look -->
-    <circle cx="36" cy="88" r="5" fill="#3a221d" stroke="#111"/>
-    <circle cx="64" cy="88" r="5" fill="#3a221d" stroke="#111"/>
-
-    <!-- Team Accent - Stripe on Engine Deck -->
-    <rect x="40" y="75" width="20" height="4" fill="#ff4500"/>
-
-    <!-- Turret (Cast/Round Shape) -->
-    <circle cx="50" cy="55" r="18" fill="url(#turretGradRed)" stroke="#1a240c" stroke-width="1.5"/>
-
-    <!-- Era Blocks on Turret (The "Porcupine" look) -->
-    <!-- Front Arc -->
-    <rect x="36" y="42" width="8" height="6" transform="rotate(-20 40 45)" fill="#6d443b" stroke="#1a240c"/>
-    <rect x="56" y="42" width="8" height="6" transform="rotate(20 60 45)" fill="#6d443b" stroke="#1a240c"/>
-    <!-- Side Arc -->
-    <rect x="30" y="52" width="6" height="8" transform="rotate(-10 33 56)" fill="#6d443b" stroke="#1a240c"/>
-    <rect x="64" y="52" width="6" height="8" transform="rotate(10 67 56)" fill="#6d443b" stroke="#1a240c"/>
-    
-    <!-- Main Gun (Thick, long) -->
-    <rect x="46" y="2" width="8" height="45" fill="#3c4a22" stroke="#1a240c"/>
-    <!-- Gun segment details -->
-    <rect x="45" y="25" width="10" height="6" fill="#3e2621"/> <!-- Extractor -->
-    <rect x="46" y="2" width="8" height="3" fill="#111"/> <!-- Muzzle -->
-
-    <!-- Commander Hatch (Large, prominent lens) -->
-    <circle cx="56" cy="58" r="5" fill="#333" stroke="#111"/>
-    <circle cx="58" cy="56" r="2" fill="#a00" opacity="0.6"/> <!-- Infrared searchlight hint -->
-    
-    <!-- Machine Gun (AA Gun) -->
-    <line x1="56" y1="58" x2="65" y2="45" stroke="#111" stroke-width="2.5"/>
+      <!-- Engine Grill (Rear) -->
+      <rect x="22" y="42" width="6" height="6" fill="#2e3b18" />
+      <rect x="20" y="42" width="1" height="6" fill="#4a5d23" />
+    </g>
+  
   </g>
 </svg>

@@ -1,85 +1,48 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
   <defs>
-    <!-- Metallic Body Gradient -->
-    <linearGradient id="bodyGradRed" x1="50%" y1="0%" x2="50%" y2="100%">
-      <stop offset="0%" stop-color="#aa6a5a"/> <!-- Highlights -->
-      <stop offset="40%" stop-color="#6b8e23"/>
-      <stop offset="100%" stop-color="#34201a"/>
-    </linearGradient>
-    
-    <!-- Canopy Glass Gradient -->
-    <linearGradient id="canopyGrad" x1="30%" y1="20%" x2="70%" y2="80%">
-      <stop offset="0%" stop-color="#ffeeaa"/>
-      <stop offset="50%" stop-color="#ff4500"/>
-      <stop offset="100%" stop-color="#cc7000"/>
-    </linearGradient>
-
-    <!-- Missile Body Gradient -->
-    <linearGradient id="missileGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#e0e0e0"/>
-      <stop offset="100%" stop-color="#909090"/>
-    </linearGradient>
+    <filter id="drop-shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="rgba(0,0,0,0.3)" />
+    </filter>
   </defs>
-  <g>
-    <!-- Shadow (Offset for floating effect) - SOLID SHAPE NOW -->
-    <path d="M50 20 L85 70 L60 90 L40 90 L15 70 Z" fill="#000000" opacity="0.3" transform="translate(6, 10) scale(0.95)"/>
-
-    <!-- Wing Under-mount Missiles (Visible armament) -->
-    <!-- Left Missile -->
-    <g transform="rotate(-15 25 65)">
-        <rect x="22" y="55" width="6" height="20" rx="2" fill="url(#missileGrad)" stroke="#555" stroke-width="1"/>
-        <path d="M22 75 L25 50 L28 75 Z" fill="#ccc"/> <!-- Warhead tip (implied) -->
-        <line x1="25" y1="55" x2="25" y2="75" stroke="#777" stroke-width="1"/>
-    </g>
-    <!-- Right Missile -->
-    <g transform="rotate(15 75 65)">
-        <rect x="72" y="55" width="6" height="20" rx="2" fill="url(#missileGrad)" stroke="#555" stroke-width="1"/>
-        <path d="M72 75 L75 50 L78 75 Z" fill="#ccc"/>
-        <line x1="75" y1="55" x2="75" y2="75" stroke="#777" stroke-width="1"/>
-    </g>
-
-    <!-- Jet Body (Stealth Fighter Shape) -->
-    <!-- Main Fuselage with sharper angles -->
-    <path d="M50 8 L68 35 L96 68 L78 85 L60 80 L60 95 L40 95 L40 80 L22 85 L4 68 L32 35 Z" fill="url(#bodyGradRed)" stroke="#1a2634" stroke-width="1.5"/>
-
-    <!-- Air Intakes (Aggressive geometry) -->
-    <path d="M35 40 L40 55 L32 58 Z" fill="#20100a" stroke="#1a2634" stroke-width="1"/>
-    <path d="M65 40 L60 55 L68 58 Z" fill="#20100a" stroke="#1a2634" stroke-width="1"/>
-
-    <!-- Bevels / Highlights (Sharper, more metallic) -->
-    <path d="M50 8 L32 35 L4 68" fill="none" stroke="#d48a7a" stroke-width="1.5" stroke-linecap="butt" opacity="0.8"/>
-    <path d="M50 8 L68 35 L96 68" fill="none" stroke="#3c4a22" stroke-width="1.5" stroke-linecap="butt" opacity="0.8"/> 
+  <!-- air-force / red High Detail Modern Warfare -->
+  <g filter="url(#drop-shadow)">
     
-    <!-- Cockpit Canopy -->
-    <path d="M45 42 Q50 36 55 42 L55 58 Q50 64 45 58 Z" fill="url(#canopyGrad)" stroke="#ffcc88" stroke-width="1"/>
-    <!-- Canopy Glint -->
-    <path d="M48 45 Q50 43 52 45" fill="none" stroke="#ffffff" stroke-width="2" opacity="0.8" stroke-linecap="round"/>
+    <g>
+      <!-- Shadow -->
+      <polygon points="50,15 10,65 50,85 90,65" fill="#4a5d23" opacity="0.2" transform="translate(0, 10)" />
 
-    <!-- Tech Markings / Warnings -->
-    <circle cx="35" cy="70" r="1" fill="#ffcc00"/>
-    <circle cx="65" cy="70" r="1" fill="#ffcc00"/>
-    <rect x="48" y="25" width="4" height="2" fill="#aa0000" opacity="0.7"/>
+      <!-- Top-Down Jet Fighter (F-35 / F-22 Style) -->
+      <!-- Main fuselage -->
+      <polygon points="50,10 42,30 40,65 45,85 55,85 60,65 58,30" fill="#6b8e23" stroke="#2e3b18" stroke-width="2" />
+      
+      <!-- Swept Wings -->
+      <polygon points="40,45 15,65 15,75 42,65" fill="#6b8e23" stroke="#2e3b18" stroke-width="1.5" />
+      <polygon points="60,45 85,65 85,75 58,65" fill="#6b8e23" stroke="#2e3b18" stroke-width="1.5" />
+      
+      <!-- Tailplane (Horizontal Stabilizers) -->
+      <polygon points="43,75 30,85 30,90 45,85" fill="#6b8e23" stroke="#2e3b18" stroke-width="1" />
+      <polygon points="57,75 70,85 70,90 55,85" fill="#6b8e23" stroke="#2e3b18" stroke-width="1" />
 
-    <!-- Engine Details -->
-    <g stroke="#1a2634" stroke-width="1" opacity="0.4">
-        <!-- Panel Lines -->
-        <line x1="50" y1="12" x2="50" y2="35"/>
-        <line x1="22" y1="85" x2="38" y2="80"/>
-        <line x1="78" y1="85" x2="62" y2="80"/>
+      <!-- Twin Engine nozzles -->
+      <circle cx="46" cy="85" r="4" fill="#2e3b18" />
+      <circle cx="54" cy="85" r="4" fill="#2e3b18" />
+      <!-- Afterburner glow -->
+      <polygon points="44,87 48,87 46,95" fill="#ff4500" />
+      <polygon points="52,87 56,87 54,95" fill="#ff4500" />
+
+      <!-- Cockpit Glass (Gold-tinted stealth aesthetic) -->
+      <polygon points="50,25 45,40 50,55 55,40" fill="#ff4500" opacity="0.8" />
+      <polygon points="50,25 46,35 50,45" fill="#fff" opacity="0.4" /> <!-- Highlight -->
+
+      <!-- Panel Lines / Weapon Bays -->
+      <rect x="46" y="55" width="8" height="15" fill="none" stroke="#2e3b18" stroke-width="1" />
+      <line x1="18" y1="65" x2="35" y2="58" stroke="#2e3b18" stroke-width="1" opacity="0.5" />
+      <line x1="82" y1="65" x2="65" y2="58" stroke="#2e3b18" stroke-width="1" opacity="0.5" />
+
+      <!-- Wingtip Missiles -->
+      <rect x="13" y="60" width="2" height="15" fill="#4a5d23" />
+      <rect x="85" y="60" width="2" height="15" fill="#4a5d23" />
     </g>
-
-    <!-- Nozzles (More detailed) -->
-    <rect x="42" y="95" width="6" height="3" fill="#1a1a1a" stroke="#000" stroke-width="1"/>
-    <rect x="52" y="95" width="6" height="3" fill="#1a1a1a" stroke="#000" stroke-width="1"/>
-
-    <!-- Afterburners -->
-    <circle cx="45" cy="97" r="3.5" fill="#ff4400">
-       <animate attributeName="opacity" values="0.7;1;0.7" dur="0.1s" repeatCount="indefinite"/>
-       <animate attributeName="r" values="3.5;4;3.5" dur="0.1s" repeatCount="indefinite"/>
-    </circle>
-    <circle cx="55" cy="97" r="3.5" fill="#ff4400">
-       <animate attributeName="opacity" values="0.7;1;0.7" dur="0.1s" repeatCount="indefinite"/>
-       <animate attributeName="r" values="3.5;4;3.5" dur="0.1s" repeatCount="indefinite"/>
-    </circle>
+  
   </g>
 </svg>

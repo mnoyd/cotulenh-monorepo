@@ -1,49 +1,46 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
   <defs>
-    <radialGradient id="blastBlue" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stop-color="#fff"/>
-      <stop offset="40%" stop-color="#00ccff"/>
-      <stop offset="80%" stop-color="#003366"/>
-      <stop offset="100%" stop-color="#001133" stop-opacity="0"/>
-    </radialGradient>
-    <linearGradient id="bodyGradBlue" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#ccffff"/>
-      <stop offset="50%" stop-color="#004488"/>
-      <stop offset="100%" stop-color="#002244"/>
-    </linearGradient>
+    <filter id="drop-shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="rgba(0,0,0,0.3)" />
+    </filter>
   </defs>
-  <g>
-    <!-- Silo Base Structure -->
-    <path d="M15 75 L50 90 L85 75 L50 60 Z" fill="#1a1a1a" stroke="#444" stroke-width="2"/>
+  <!-- missile / blue High Detail Modern Warfare -->
+  <g filter="url(#drop-shadow)">
     
-    <!-- Open Hatch Doors -->
-    <path d="M8 75 L38 60 L28 80 Z" fill="#1a2634" stroke="#8b7355" stroke-width="1.5"/>
-    <path d="M92 75 L62 60 L72 80 Z" fill="#1a2634" stroke="#8b7355" stroke-width="1.5"/>
-
-    <!-- Blast Cloud (Sharper) -->
-    <circle cx="50" cy="80" r="18" fill="url(#blastBlue)"/>
-    
-    <!-- Smoke Trail (Stylized) -->
-    <path d="M50 85 Q48 92, 50 100 M50 85 Q52 92, 50 100" stroke="#fff" stroke-width="2" fill="none" opacity="0.6"/>
-
-    <!-- Missile Body (Slimmer: Width reduced to 10 units) -->
-    <g transform="translate(0, -5)">
-      <!-- Main Fuselage: x range 45 to 55 -->
-      <path d="M45 80 L45 35 Q50 15, 55 35 L55 80" fill="url(#bodyGradBlue)" stroke="#002244" stroke-width="2"/>
+    <g>
+      <!-- TEL (Transporter Erector Launcher) Chassis -->
+      <!-- Massive 8-Wheel Base -->
+      <rect x="10" y="65" width="80" height="15" rx="3" fill="#d2b48c" stroke="#5c452b" stroke-width="1.5" />
+      <!-- Tires -->
+      <circle cx="20" cy="80" r="5" fill="#8b7355" stroke="#5c452b" stroke-width="1" />
+      <circle cx="35" cy="80" r="5" fill="#8b7355" stroke="#5c452b" stroke-width="1" />
+      <circle cx="65" cy="80" r="5" fill="#8b7355" stroke="#5c452b" stroke-width="1" />
+      <circle cx="80" cy="80" r="5" fill="#8b7355" stroke="#5c452b" stroke-width="1" />
       
-      <!-- Warhead Cap (Pointier) -->
-      <path d="M45 35 Q50 15, 55 35" fill="#00ffff" stroke="#0088cc" stroke-width="1"/>
+      <!-- Truck Cab (Forward) -->
+      <polygon points="10,65 10,48 15,48 20,55 30,55 30,65" fill="#d2b48c" stroke="#5c452b" stroke-width="1.5" />
+      <polygon points="14,50 19,56 25,56" fill="#5c452b" /> <!-- Window -->
+
+      <!-- Erector Arm -->
+      <rect x="30" y="60" width="50" height="4" fill="#8b7355" transform="rotate(-70 70 60)" />
+
+      <!-- Massive Ballistic Missile (Erected) -->
+      <g transform="rotate(-70 70 60)">
+        <!-- Missile Body -->
+        <rect x="35" y="48" width="45" height="12" rx="2" fill="#d2b48c" stroke="#5c452b" stroke-width="2" />
+        <!-- Warning strip -->
+        <rect x="55" y="48" width="5" height="12" fill="#e6c200" />
+        <!-- Warhead Cone -->
+        <polygon points="80,48 95,54 80,60" fill="#8b7355" />
+        <polygon points="90,51 98,54 90,57" fill="#e6c200" /> <!-- Tip -->
+        <!-- Tail Fins -->
+        <polygon points="35,48 40,40 45,48" fill="#5c452b" />
+        <polygon points="35,60 40,68 45,60" fill="#5c452b" />
+      </g>
       
-      <!-- Fins (Adjusted positions) -->
-      <!-- Left Fin -->
-      <path d="M45 75 L35 82 L45 82" fill="#003366" stroke="#002244" stroke-width="1.5"/>
-      <!-- Right Fin -->
-      <path d="M55 75 L65 82 L55 82" fill="#003366" stroke="#002244" stroke-width="1.5"/>
-      <!-- Center Fin -->
-      <path d="M50 75 L50 85" stroke="#002244" stroke-width="1.5"/>
+      <!-- Launch Exhaust Deflectors -->
+      <polygon points="75,65 90,65 85,80" fill="#5c452b" />
     </g>
-    
-    <!-- Highlights -->
-    <path d="M47 40 L47 70" stroke="#fff" stroke-width="1" opacity="0.3"/>
+  
   </g>
 </svg>
