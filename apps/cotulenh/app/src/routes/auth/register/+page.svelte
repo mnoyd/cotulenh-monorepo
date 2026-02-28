@@ -12,9 +12,11 @@
 
   let form: ActionData = $derived($page.form);
 
-  let email = $state('');
+  // Initialize from server-returned form data (progressive enhancement for no-JS)
+  const _serverForm = $page.form as { email?: string; displayName?: string } | null;
+  let email = $state(_serverForm?.email ?? '');
   let password = $state('');
-  let displayName = $state('');
+  let displayName = $state(_serverForm?.displayName ?? '');
   let submitting = $state(false);
 
   let touched: Record<string, boolean> = $state({});
@@ -156,6 +158,8 @@
           </div>
           {#if passwordError}
             <p id="password-error" class="field-error-text" role="alert">{passwordError}</p>
+          {:else}
+            <p class="field-hint">{i18n.t('auth.register.passwordPlaceholder')}</p>
           {/if}
         </div>
 
@@ -185,6 +189,11 @@
           {submitting ? i18n.t('auth.register.submitting') : i18n.t('auth.register.submit')}
         </Button>
       </form>
+
+      <p class="login-prompt">
+        {i18n.t('auth.register.haveAccount')}
+        <a href="/auth/login">{i18n.t('auth.register.loginLink')}</a>
+      </p>
     {/if}
   </div>
 </div>
@@ -308,6 +317,29 @@
     font-size: 0.75rem;
     color: #ef4444;
     margin: 0;
+  }
+
+  .field-hint {
+    font-size: 0.75rem;
+    color: var(--theme-text-secondary, #888);
+    margin: 0;
+  }
+
+  .login-prompt {
+    text-align: center;
+    font-size: 0.875rem;
+    color: var(--theme-text-secondary, #aaa);
+    margin: 1rem 0 0;
+  }
+
+  .login-prompt a {
+    color: var(--theme-primary, #06b6d4);
+    text-decoration: none;
+    font-weight: 500;
+  }
+
+  .login-prompt a:hover {
+    text-decoration: underline;
   }
 
   :global(.submit-btn) {

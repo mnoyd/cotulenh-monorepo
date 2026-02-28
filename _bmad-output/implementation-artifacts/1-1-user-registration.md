@@ -1,6 +1,6 @@
 # Story 1.1: User Registration
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -471,6 +471,7 @@ Claude Opus 4.6
 - Task 5: Auth callback handles verifyOtp with token_hash/type params, redirects to home on success or /auth/error on failure. Error page with i18n.
 - Task 6: All existing routes verified — no auth guards or redirects added. hooks.server.ts gracefully returns null user for anonymous visitors.
 - Task 7: 29 new tests across 4 test files. All 47 app tests pass. All 9 turbo tasks pass (441 total tests across monorepo). Zero type errors, zero lint regressions.
+- Code Review Fixes: [H1] Fixed open redirect in auth callback — validates `next` param is relative path. [H2] Rewrote hooks.server.test.ts to test actual `handle` export instead of reimplemented logic. [M1] Form now initializes email/displayName from server-returned form data for no-JS progressive enhancement. [M2] Added "Already have an account? Sign in" link with i18n. [M3] Added persistent password requirements hint below password field. Total: 50 app tests pass after review fixes.
 
 ### File List
 
@@ -507,3 +508,4 @@ Claude Opus 4.6
 ## Change Log
 
 - 2026-02-28: Story 1.1 implementation complete — Supabase auth infrastructure, registration page, email verification callback, database migration, i18n, and comprehensive test suite
+- 2026-02-28: Code review fixes — 2 HIGH (open redirect, test-the-real-code), 3 MEDIUM (progressive enhancement, login link, password hint). 3 LOW noted (autocomplete attr, unused type export, doc inconsistency). Note: UX spec says display name max 30 chars but story AC says 50 — kept at 50 per story spec.

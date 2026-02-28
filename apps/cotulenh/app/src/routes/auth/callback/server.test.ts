@@ -72,6 +72,44 @@ describe('auth callback route', () => {
     }
   });
 
+  it('prevents open redirect with absolute URL in next param', async () => {
+    mockSupabase.auth.verifyOtp.mockResolvedValue({ data: {}, error: null });
+
+    const event = createMockEvent({
+      token_hash: 'valid-hash',
+      type: 'email',
+      next: 'https://evil.com'
+    });
+
+    try {
+      await GET(event);
+      expect.unreachable('should have thrown redirect');
+    } catch (e: unknown) {
+      const redirect = e as { status: number; location: string };
+      expect(redirect.status).toBe(303);
+      expect(redirect.location).toBe('/');
+    }
+  });
+
+  it('prevents open redirect with protocol-relative URL in next param', async () => {
+    mockSupabase.auth.verifyOtp.mockResolvedValue({ data: {}, error: null });
+
+    const event = createMockEvent({
+      token_hash: 'valid-hash',
+      type: 'email',
+      next: '//evil.com'
+    });
+
+    try {
+      await GET(event);
+      expect.unreachable('should have thrown redirect');
+    } catch (e: unknown) {
+      const redirect = e as { status: number; location: string };
+      expect(redirect.status).toBe(303);
+      expect(redirect.location).toBe('/');
+    }
+  });
+
   it('redirects to /auth/error when token is missing', async () => {
     const event = createMockEvent({});
 

@@ -1,4 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { createServerClient } from '@supabase/ssr';
+import { handle } from './hooks.server';
 
 // Mock @supabase/ssr
 vi.mock('@supabase/ssr', () => ({
@@ -11,7 +13,7 @@ vi.mock('$env/static/public', () => ({
   PUBLIC_SUPABASE_PUBLISHABLE_KEY: 'test-anon-key'
 }));
 
-describe('safeGetSession', () => {
+describe('hooks.server handle', () => {
   let mockSupabase: {
     auth: {
       getUser: ReturnType<typeof vi.fn>;
@@ -26,29 +28,32 @@ describe('safeGetSession', () => {
         getSession: vi.fn()
       }
     };
+
+    (createServerClient as unknown as ReturnType<typeof vi.fn>).mockReturnValue(mockSupabase);
   });
 
-  interface AuthResult {
-    data: { user?: unknown; session?: unknown };
-    error: unknown;
-  }
-
-  // Helper to create a safeGetSession that mirrors hooks.server.ts logic
-  function createSafeGetSession(supabase: typeof mockSupabase) {
-    return async () => {
-      const getUserResult = (await supabase.auth.getUser()) as AuthResult;
-      const user = getUserResult.data?.user;
-      const error = getUserResult.error;
-      if (error) {
-        return { session: null, user: null };
+  function createMockHandleInput() {
+    const event = {
+      locals: {} as Record<string, unknown>,
+      cookies: {
+        getAll: vi.fn().mockReturnValue([]),
+        set: vi.fn()
       }
-      const getSessionResult = (await supabase.auth.getSession()) as AuthResult;
-      const session = getSessionResult.data?.session;
-      return { session, user };
     };
+    const resolve = vi.fn().mockResolvedValue(new Response());
+    return { event, resolve };
   }
 
-  it('returns session and user when getUser succeeds', async () => {
+  it('attaches supabase and safeGetSession to event.locals', async () => {
+    const { event, resolve } = createMockHandleInput();
+
+    await handle({ event, resolve } as unknown as Parameters<typeof handle>[0]);
+
+    expect(event.locals.supabase).toBeDefined();
+    expect(typeof event.locals.safeGetSession).toBe('function');
+  });
+
+  it('safeGetSession returns session and user when getUser succeeds', async () => {
     const mockUser = { id: 'user-123', email: 'test@example.com' };
     const mockSession = { access_token: 'token', user: mockUser };
 
@@ -61,38 +66,54 @@ describe('safeGetSession', () => {
       error: null
     });
 
-    const safeGetSession = createSafeGetSession(mockSupabase);
+    const { event, resolve } = createMockHandleInput();
+    await handle({ event, resolve } as unknown as Parameters<typeof handle>[0]);
+
+    const safeGetSession = event.locals.safeGetSession as () => Promise<{
+      session: unknown;
+      user: unknown;
+    }>;
     const result = await safeGetSession();
 
     expect(result.user).toEqual(mockUser);
     expect(result.session).toEqual(mockSession);
   });
 
-  it('returns null session and user when getUser returns error', async () => {
+  it('safeGetSession returns nulls when getUser returns error', async () => {
     mockSupabase.auth.getUser.mockResolvedValue({
       data: { user: null },
       error: { message: 'Session expired' }
     });
 
-    const safeGetSession = createSafeGetSession(mockSupabase);
+    const { event, resolve } = createMockHandleInput();
+    await handle({ event, resolve } as unknown as Parameters<typeof handle>[0]);
+
+    const safeGetSession = event.locals.safeGetSession as () => Promise<{
+      session: unknown;
+      user: unknown;
+    }>;
     const result = await safeGetSession();
 
     expect(result.session).toBeNull();
     expect(result.user).toBeNull();
-    // getSession should NOT be called when getUser fails
     expect(mockSupabase.auth.getSession).not.toHaveBeenCalled();
   });
 
-  it('returns null session and user when no cookie exists (getUser error)', async () => {
-    mockSupabase.auth.getUser.mockResolvedValue({
-      data: { user: null },
-      error: { message: 'Auth session missing!' }
-    });
+  it('calls resolve with correct filterSerializedResponseHeaders', async () => {
+    const { event, resolve } = createMockHandleInput();
 
-    const safeGetSession = createSafeGetSession(mockSupabase);
-    const result = await safeGetSession();
+    await handle({ event, resolve } as unknown as Parameters<typeof handle>[0]);
 
-    expect(result.session).toBeNull();
-    expect(result.user).toBeNull();
+    expect(resolve).toHaveBeenCalledWith(
+      event,
+      expect.objectContaining({
+        filterSerializedResponseHeaders: expect.any(Function)
+      })
+    );
+
+    const filterFn = resolve.mock.calls[0][1].filterSerializedResponseHeaders;
+    expect(filterFn('content-range')).toBe(true);
+    expect(filterFn('x-supabase-api-version')).toBe(true);
+    expect(filterFn('set-cookie')).toBe(false);
   });
 });

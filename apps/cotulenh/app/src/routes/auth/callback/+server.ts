@@ -11,10 +11,13 @@ export const GET: RequestHandler = async ({ url, locals: { supabase } }) => {
     | 'signup';
   const next = url.searchParams.get('next') ?? '/';
 
+  // Prevent open redirect — only allow relative paths
+  const safeNext = next.startsWith('/') && !next.startsWith('//') ? next : '/';
+
   if (token_hash && type) {
     const { error } = await supabase.auth.verifyOtp({ token_hash, type });
     if (!error) {
-      redirect(303, next);
+      redirect(303, safeNext);
     }
   }
 
