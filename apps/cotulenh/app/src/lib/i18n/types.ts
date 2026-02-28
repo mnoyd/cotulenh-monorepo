@@ -13,6 +13,11 @@ export interface TranslationKeys {
   'nav.learn': string;
   'nav.appName': string;
   'nav.menu': string;
+  'nav.signIn': string;
+  'nav.signOut': string;
+  'nav.profile': string;
+  'nav.accountSettings': string;
+  'nav.userMenu': string;
 
   // Home page
   'home.demoBadge': string;
@@ -400,6 +405,7 @@ export interface TranslationKeys {
   'auth.login.submitting': string;
   'auth.login.noAccount': string;
   'auth.login.registerLink': string;
+  'auth.logout.signingOut': string;
 }
 
 export type TranslationKey = keyof TranslationKeys;

@@ -13,6 +13,11 @@ export const vi: TranslationKeys = {
   'nav.learn': 'Học chơi',
   'nav.appName': 'Cờ Tư Lệnh Online',
   'nav.menu': 'Menu',
+  'nav.signIn': 'Đăng Nhập',
+  'nav.signOut': 'Đăng Xuất',
+  'nav.profile': 'Hồ Sơ',
+  'nav.accountSettings': 'Cài Đặt Tài Khoản',
+  'nav.userMenu': 'Menu Người Dùng',
 
   // Home page
   'home.demoBadge': 'Demo',
@@ -404,5 +409,6 @@ export const vi: TranslationKeys = {
   'auth.login.submit': 'Đăng Nhập',
   'auth.login.submitting': 'Đang đăng nhập...',
   'auth.login.noAccount': 'Chưa có tài khoản?',
-  'auth.login.registerLink': 'Đăng ký'
+  'auth.login.registerLink': 'Đăng ký',
+  'auth.logout.signingOut': 'Đang đăng xuất...'
 };

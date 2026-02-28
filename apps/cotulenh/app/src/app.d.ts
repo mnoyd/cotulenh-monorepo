@@ -10,6 +10,7 @@ declare global {
     interface PageData {
       session: Session | null;
       user: User | null;
+      profile: { displayName: string } | null;
     }
     // interface PageState {}
     // interface Platform {}

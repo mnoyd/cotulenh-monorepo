@@ -13,6 +13,11 @@ export const en: TranslationKeys = {
   'nav.learn': 'Learn',
   'nav.appName': 'Cotulenh Online',
   'nav.menu': 'Menu',
+  'nav.signIn': 'Sign In',
+  'nav.signOut': 'Sign Out',
+  'nav.profile': 'Profile',
+  'nav.accountSettings': 'Account Settings',
+  'nav.userMenu': 'User Menu',
 
   // Home page
   'home.demoBadge': 'Demo',
@@ -404,5 +409,6 @@ export const en: TranslationKeys = {
   'auth.login.submit': 'Sign In',
   'auth.login.submitting': 'Signing in...',
   'auth.login.noAccount': "Don't have an account?",
-  'auth.login.registerLink': 'Sign up'
+  'auth.login.registerLink': 'Sign up',
+  'auth.logout.signingOut': 'Signing out...'
 };

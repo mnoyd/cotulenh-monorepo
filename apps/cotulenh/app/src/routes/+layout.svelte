@@ -1,5 +1,6 @@
 <script lang="ts">
   import { browser } from '$app/environment';
+  import { enhance } from '$app/forms';
   import { invalidate } from '$app/navigation';
   import { page } from '$app/stores';
   import { onMount } from 'svelte';
@@ -9,7 +10,19 @@
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
   import SettingsDialog from '$lib/components/SettingsDialog.svelte';
   import ShortcutsDialog from '$lib/components/ShortcutsDialog.svelte';
-  import { Menu, Home, PenSquare, Settings, Keyboard, BookOpen, Puzzle } from 'lucide-svelte';
+  import {
+    Menu,
+    Home,
+    PenSquare,
+    Settings,
+    Keyboard,
+    BookOpen,
+    Puzzle,
+    LogIn,
+    LogOut,
+    UserCircle
+  } from 'lucide-svelte';
+  import DOMPurify from 'dompurify';
   import { themeStore } from '$lib/stores/theme.svelte';
   import { getI18n } from '$lib/i18n/index.svelte';
 
@@ -24,6 +37,16 @@
   let settingsOpen = $state(false);
   let shortcutsOpen = $state(false);
 
+  let isAuthenticated = $derived(!!$page.data.user);
+
+  let displayName = $derived(
+    $page.data.profile?.displayName
+      ? DOMPurify.sanitize($page.data.profile.displayName)
+      : $page.data.user?.email ?? ''
+  );
+
+  let avatarLetter = $derived(displayName ? displayName.charAt(0).toUpperCase() : '?');
+
   $effect(() => {
     if (browser) {
       themeStore.init();
@@ -31,8 +54,10 @@
   });
 
   onMount(() => {
-    const { data: { subscription } } = $page.data.supabase.auth.onAuthStateChange(
-      (_event: string, _session: unknown) => {
+    const {
+      data: { subscription }
+    } = $page.data.supabase.auth.onAuthStateChange(
+      () => {
         invalidate('supabase:auth');
       }
     );
@@ -106,6 +131,63 @@
         <Settings class="sidebar-icon" />
         <span class="sidebar-label">{i18n.t('nav.settings')}</span>
       </button>
+
+      {#if isAuthenticated}
+        <!-- Desktop User Menu -->
+        <div class="user-section">
+          <DropdownMenu.Root>
+            <DropdownMenu.Trigger>
+              <button
+                class="user-trigger"
+                aria-label={i18n.t('nav.userMenu')}
+                title={i18n.t('nav.userMenu')}
+              >
+                <span class="user-avatar">{avatarLetter}</span>
+                <span class="user-name">{displayName}</span>
+              </button>
+            </DropdownMenu.Trigger>
+            <DropdownMenu.Content align="start" side="right">
+              <DropdownMenu.Item>
+                {#snippet child({ props })}
+                  <a href="/user/profile" {...props}>
+                    <UserCircle size={16} />
+                    {i18n.t('nav.profile')}
+                  </a>
+                {/snippet}
+              </DropdownMenu.Item>
+              <DropdownMenu.Item>
+                {#snippet child({ props })}
+                  <a href="/user/settings" {...props}>
+                    <Settings size={16} />
+                    {i18n.t('nav.accountSettings')}
+                  </a>
+                {/snippet}
+              </DropdownMenu.Item>
+              <DropdownMenu.Separator />
+              <DropdownMenu.Item>
+                {#snippet child({ props })}
+                  <form method="POST" action="/auth/logout" use:enhance>
+                    <button type="submit" class="signout-menu-item" {...props}>
+                      <LogOut size={16} />
+                      {i18n.t('nav.signOut')}
+                    </button>
+                  </form>
+                {/snippet}
+              </DropdownMenu.Item>
+            </DropdownMenu.Content>
+          </DropdownMenu.Root>
+        </div>
+      {:else}
+        <!-- Desktop Sign In Link -->
+        <a
+          href="/auth/login"
+          class="sidebar-link"
+          title={i18n.t('nav.signIn')}
+        >
+          <LogIn class="sidebar-icon" />
+          <span class="sidebar-label">{i18n.t('nav.signIn')}</span>
+        </a>
+      {/if}
     </div>
   </aside>
 
@@ -164,6 +246,40 @@
             <Settings size={16} />
             {i18n.t('nav.settings')}
           </DropdownMenu.Item>
+          <DropdownMenu.Separator />
+          {#if isAuthenticated}
+            <div class="mobile-user-info">
+              <span class="user-avatar user-avatar-small">{avatarLetter}</span>
+              <span class="mobile-user-name">{displayName}</span>
+            </div>
+            <DropdownMenu.Item>
+              {#snippet child({ props })}
+                <a href="/user/profile" {...props}>
+                  <UserCircle size={16} />
+                  {i18n.t('nav.profile')}
+                </a>
+              {/snippet}
+            </DropdownMenu.Item>
+            <DropdownMenu.Item>
+              {#snippet child({ props })}
+                <form method="POST" action="/auth/logout" use:enhance>
+                  <button type="submit" class="signout-menu-item" {...props}>
+                    <LogOut size={16} />
+                    {i18n.t('nav.signOut')}
+                  </button>
+                </form>
+              {/snippet}
+            </DropdownMenu.Item>
+          {:else}
+            <DropdownMenu.Item>
+              {#snippet child({ props })}
+                <a href="/auth/login" {...props}>
+                  <LogIn size={16} />
+                  {i18n.t('nav.signIn')}
+                </a>
+              {/snippet}
+            </DropdownMenu.Item>
+          {/if}
         </DropdownMenu.Content>
       </DropdownMenu.Root>
     </div>
@@ -282,6 +398,96 @@
     text-overflow: ellipsis;
     max-width: 100%;
     text-align: center;
+  }
+
+  /* User Section */
+  .user-section {
+    margin-top: 0.25rem;
+  }
+
+  .user-trigger {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.5rem 0.25rem;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    background: transparent;
+    cursor: pointer;
+    width: 100%;
+    min-height: 44px;
+    color: var(--theme-text-secondary, #aaa);
+  }
+
+  .user-trigger:hover {
+    color: var(--theme-primary, #06b6d4);
+    background: var(--theme-bg-elevated, #333);
+    border-color: var(--theme-border, #444);
+  }
+
+  .user-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--theme-primary, #06b6d4);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    font-weight: 700;
+    font-family: var(--font-mono);
+    flex-shrink: 0;
+  }
+
+  .user-avatar-small {
+    width: 24px;
+    height: 24px;
+    font-size: 0.7rem;
+  }
+
+  .user-name {
+    font-size: 0.55rem;
+    font-family: var(--font-mono);
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+    text-align: center;
+  }
+
+  .signout-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+    background: transparent;
+    border: none;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+    padding: 0;
+  }
+
+  /* Mobile User Info */
+  .mobile-user-info {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.5rem 0.25rem;
+    color: var(--theme-text-secondary, #aaa);
+    font-size: 0.75rem;
+  }
+
+  .mobile-user-name {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
   }
 
   /* Mobile Menu */
