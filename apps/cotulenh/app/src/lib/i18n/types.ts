@@ -361,6 +361,45 @@ export interface TranslationKeys {
   'report.placeholder': string;
   'report.submit': string;
   'report.submitting': string;
+
+  // Auth
+  'auth.register.title': string;
+  'auth.register.subtitle': string;
+  'auth.register.email': string;
+  'auth.register.emailPlaceholder': string;
+  'auth.register.password': string;
+  'auth.register.passwordPlaceholder': string;
+  'auth.register.displayName': string;
+  'auth.register.displayNamePlaceholder': string;
+  'auth.register.submit': string;
+  'auth.register.submitting': string;
+  'auth.register.haveAccount': string;
+  'auth.register.loginLink': string;
+  'auth.register.verifyEmail': string;
+  'auth.register.verifyEmailDesc': string;
+  'auth.validation.emailRequired': string;
+  'auth.validation.emailInvalid': string;
+  'auth.validation.passwordRequired': string;
+  'auth.validation.passwordMinLength': string;
+  'auth.validation.displayNameRequired': string;
+  'auth.validation.displayNameMinLength': string;
+  'auth.validation.displayNameMaxLength': string;
+  'auth.error.generic': string;
+  'auth.error.registrationFailed': string;
+  'auth.error.title': string;
+  'auth.error.description': string;
+  'auth.error.backHome': string;
+  'auth.error.loginFailed': string;
+  'auth.login.title': string;
+  'auth.login.subtitle': string;
+  'auth.login.email': string;
+  'auth.login.emailPlaceholder': string;
+  'auth.login.password': string;
+  'auth.login.passwordPlaceholder': string;
+  'auth.login.submit': string;
+  'auth.login.submitting': string;
+  'auth.login.noAccount': string;
+  'auth.login.registerLink': string;
 }
 
 export type TranslationKey = keyof TranslationKeys;

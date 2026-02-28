@@ -1,0 +1,129 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { actions } from './+page.server';
+
+// Mock DOMPurify
+vi.mock('dompurify', () => ({
+  default: {
+    sanitize: (str: string) => str
+  }
+}));
+
+describe('registration form action', () => {
+  let mockSupabase: {
+    auth: {
+      signUp: ReturnType<typeof vi.fn>;
+    };
+  };
+
+  beforeEach(() => {
+    mockSupabase = {
+      auth: {
+        signUp: vi.fn()
+      }
+    };
+  });
+
+  function createMockEvent(formFields: Record<string, string>) {
+    const formData = new FormData();
+    for (const [key, value] of Object.entries(formFields)) {
+      formData.set(key, value);
+    }
+    return {
+      request: {
+        formData: async () => formData
+      },
+      locals: {
+        supabase: mockSupabase
+      }
+    } as unknown as Parameters<typeof actions.default>[0];
+  }
+
+  it('returns success on valid signup', async () => {
+    mockSupabase.auth.signUp.mockResolvedValue({ data: { user: {} }, error: null });
+
+    const event = createMockEvent({
+      email: 'test@example.com',
+      password: 'password123',
+      displayName: 'Commander'
+    });
+
+    const result = await actions.default(event);
+    expect(result).toEqual({ success: true });
+    expect(mockSupabase.auth.signUp).toHaveBeenCalledWith({
+      email: 'test@example.com',
+      password: 'password123',
+      options: {
+        data: {
+          display_name: 'Commander'
+        }
+      }
+    });
+  });
+
+  it('returns fail(400) for invalid email', async () => {
+    const event = createMockEvent({
+      email: 'not-an-email',
+      password: 'password123',
+      displayName: 'Commander'
+    });
+
+    const result = await actions.default(event);
+    expect(result?.status).toBe(400);
+    expect(result?.data?.errors?.email).toBe('emailInvalid');
+  });
+
+  it('returns fail(400) for missing fields', async () => {
+    const event = createMockEvent({
+      email: '',
+      password: '',
+      displayName: ''
+    });
+
+    const result = await actions.default(event);
+    expect(result?.status).toBe(400);
+    expect(result?.data?.errors).toBeDefined();
+  });
+
+  it('returns generic failure on Supabase error (no email enumeration)', async () => {
+    mockSupabase.auth.signUp.mockResolvedValue({
+      data: { user: null },
+      error: { message: 'User already registered' }
+    });
+
+    const event = createMockEvent({
+      email: 'existing@example.com',
+      password: 'password123',
+      displayName: 'Commander'
+    });
+
+    const result = await actions.default(event);
+    expect(result?.status).toBe(400);
+    expect(result?.data?.errors?.form).toBe('registrationFailed');
+    // Should NOT reveal the email already exists
+    expect(JSON.stringify(result)).not.toContain('already registered');
+  });
+
+  it('returns fail(400) for short password', async () => {
+    const event = createMockEvent({
+      email: 'test@example.com',
+      password: 'short',
+      displayName: 'Commander'
+    });
+
+    const result = await actions.default(event);
+    expect(result?.status).toBe(400);
+    expect(result?.data?.errors?.password).toBe('passwordMinLength');
+  });
+
+  it('returns fail(400) for short display name', async () => {
+    const event = createMockEvent({
+      email: 'test@example.com',
+      password: 'password123',
+      displayName: 'AB'
+    });
+
+    const result = await actions.default(event);
+    expect(result?.status).toBe(400);
+    expect(result?.data?.errors?.displayName).toBe('displayNameMinLength');
+  });
+});

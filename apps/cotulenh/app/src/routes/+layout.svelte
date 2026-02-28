@@ -1,6 +1,8 @@
 <script lang="ts">
   import { browser } from '$app/environment';
+  import { invalidate } from '$app/navigation';
   import { page } from '$app/stores';
+  import { onMount } from 'svelte';
   import '../app.css';
   import '@cotulenh/board/assets/commander-chess.pieces.css';
   import Sonner from '$lib/components/ui/sonner/sonner.svelte';
@@ -26,6 +28,16 @@
     if (browser) {
       themeStore.init();
     }
+  });
+
+  onMount(() => {
+    const { data: { subscription } } = $page.data.supabase.auth.onAuthStateChange(
+      (_event: string, _session: unknown) => {
+        invalidate('supabase:auth');
+      }
+    );
+
+    return () => subscription.unsubscribe();
   });
 </script>
 
