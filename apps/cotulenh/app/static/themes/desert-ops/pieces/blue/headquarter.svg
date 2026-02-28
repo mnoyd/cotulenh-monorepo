@@ -1,44 +1,72 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
   <defs>
+    <!-- Rich Drop Shadow -->
     <filter id="drop-shadow" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="rgba(0,0,0,0.3)" />
+      <feDropShadow dx="0" dy="3" stdDeviation="3" flood-color="rgba(0,0,0,0.5)" />
     </filter>
+    <!-- Glowing Neon Accents -->
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="2" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+    
+    <!-- Metallic/Gloss Gradients -->
+    <linearGradient id="mainGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#e6d2b5" />
+      <stop offset="100%" stop-color="#c2a880" />
+    </linearGradient>
+    <linearGradient id="lightGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.3" />
+      <stop offset="100%" stop-color="#e6d2b5" />
+    </linearGradient>
+    <linearGradient id="darkGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#c2a880" />
+      <stop offset="100%" stop-color="#8b7355" />
+    </linearGradient>
+    <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00e5ff" stop-opacity="0.8" />
+      <stop offset="100%" stop-color="#00e5ff" stop-opacity="0.1" />
+    </linearGradient>
+    <radialGradient id="baseGrad" cx="50%" cy="50%" r="50%">
+      <stop offset="60%" stop-color="#4a3b2c" stop-opacity="0.8"/>
+      <stop offset="100%" stop-color="#4a3b2c" stop-opacity="0"/>
+    </radialGradient>
   </defs>
-  <!-- headquarter / blue High Detail Modern Warfare -->
+
+  <!-- High-Tech Holographic Base -->
+  
+    <!-- High-tech projected base ring -->
+    <ellipse cx="50" cy="88" rx="40" ry="8" fill="url(#baseGrad)" stroke="url(#accentGrad)" stroke-width="1.5" opacity="0.8" />
+    <ellipse cx="50" cy="88" rx="36" ry="6" fill="none" stroke="#00e5ff" stroke-width="0.5" opacity="0.6" stroke-dasharray="4 2" />
+    <circle cx="50" cy="88" r="2" fill="#00e5ff" />
+  
+
+  <!-- Premium headquarter / blue -->
   <g filter="url(#drop-shadow)">
     
-    <g>
-      <!-- Base & HESCO barriers (sandbag walls) -->
-      <rect x="10" y="70" width="80" height="15" fill="#d2b48c" stroke="#5c452b" stroke-width="1" />
-      <!-- Barrier grid lines -->
-      <line x1="20" y1="70" x2="20" y2="85" stroke="#5c452b" opacity="0.5" />
-      <line x1="30" y1="70" x2="30" y2="85" stroke="#5c452b" opacity="0.5" />
-      <line x1="40" y1="70" x2="40" y2="85" stroke="#5c452b" opacity="0.5" />
-      <line x1="50" y1="70" x2="50" y2="85" stroke="#5c452b" opacity="0.5" />
-      <line x1="60" y1="70" x2="60" y2="85" stroke="#5c452b" opacity="0.5" />
-      <line x1="70" y1="70" x2="70" y2="85" stroke="#5c452b" opacity="0.5" />
-      <line x1="80" y1="70" x2="80" y2="85" stroke="#5c452b" opacity="0.5" />
-      
-      <!-- Main TOC (Tactical Operations Center) Building / Tent -->
-      <path d="M 25 70 L 25 45 C 25 35, 75 35, 75 45 L 75 70 Z" fill="#5c452b" />
-      <path d="M 28 70 L 28 48 C 28 40, 72 40, 72 48 L 72 70 Z" fill="#d2b48c" />
-      <!-- Camo Netting draped -->
-      <path d="M 20 45 Q 35 30 50 40 T 80 45 L 80 55 Q 65 45 50 50 T 20 55 Z" fill="#8b7355" opacity="0.5" />
-
-      <!-- Massive Radome (Radar Dome) -->
-      <circle cx="85" cy="50" r="10" fill="#d2b48c" stroke="#5c452b" stroke-width="1.5" />
-      <path d="M 80 40 L 90 60 M 90 40 L 80 60 M 75 50 L 95 50" stroke="#5c452b" stroke-width="0.5" opacity="0.5" /> <!-- Panels -->
-      <rect x="80" y="60" width="10" height="10" fill="#8b7355" /> <!-- Pillar -->
-
-      <!-- Advanced Satellite Comm Array -->
-      <rect x="15" y="45" width="2" height="25" fill="#8b7355" />
-      <!-- Sat Dish -->
-      <ellipse cx="14" cy="40" rx="4" ry="10" fill="#d2b48c" stroke="#5c452b" stroke-width="1" transform="rotate(30 14 40)" />
-      <circle cx="16" cy="40" r="2" fill="#e6c200" />
-
-      <!-- Entryway / Guard Post -->
-      <rect x="42" y="60" width="16" height="10" fill="#8b7355" />
-      <rect x="45" y="62" width="10" height="8" fill="#e6c200" opacity="0.8" /> <!-- Light glow from inside -->
+    <g transform="translate(0,-5)">
+      <!-- HESCO Barriers -->
+      <rect x="10" y="70" width="80" height="15" fill="url(#lightGrad)" stroke="#4a3b2c" stroke-width="1.5" />
+      <line x1="30" y1="70" x2="30" y2="85" stroke="#4a3b2c" />
+      <line x1="50" y1="70" x2="50" y2="85" stroke="#4a3b2c" />
+      <line x1="70" y1="70" x2="70" y2="85" stroke="#4a3b2c" />
+      <!-- TOC Building -->
+      <path d="M 25 70 L 25 45 C 25 35, 75 35, 75 45 L 75 70 Z" fill="url(#darkGrad)" />
+      <path d="M 28 70 L 28 48 C 28 40, 72 40, 72 48 L 72 70 Z" fill="url(#mainGrad)" />
+      <!-- Radome -->
+      <circle cx="85" cy="50" r="12" fill="url(#lightGrad)" stroke="#4a3b2c" stroke-width="1.5" />
+      <circle cx="85" cy="50" r="6" fill="none" stroke="#00e5ff" stroke-width="1" opacity="0.5" />
+      <rect x="82" y="62" width="6" height="8" fill="#4a3b2c" />
+      <!-- Satcom Array -->
+      <rect x="15" y="45" width="2" height="25" fill="#4a3b2c" />
+      <ellipse cx="14" cy="40" rx="5" ry="12" fill="url(#lightGrad)" transform="rotate(25 14 40)" />
+      <circle cx="16" cy="40" r="3" fill="#00e5ff" filter="url(#glow)" />
+      <!-- Glowing Entrance -->
+      <rect x="42" y="60" width="16" height="10" fill="#4a3b2c" />
+      <rect x="45" y="62" width="10" height="8" fill="#00e5ff" filter="url(#glow)" opacity="0.9" />
     </g>
   
   </g>

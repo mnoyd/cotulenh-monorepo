@@ -1,47 +1,72 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
   <defs>
+    <!-- Rich Drop Shadow -->
     <filter id="drop-shadow" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="rgba(0,0,0,0.3)" />
+      <feDropShadow dx="0" dy="3" stdDeviation="3" flood-color="rgba(0,0,0,0.5)" />
     </filter>
+    <!-- Glowing Neon Accents -->
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="2" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+    
+    <!-- Metallic/Gloss Gradients -->
+    <linearGradient id="mainGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#8b9e63" />
+      <stop offset="100%" stop-color="#556b2f" />
+    </linearGradient>
+    <linearGradient id="lightGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.3" />
+      <stop offset="100%" stop-color="#8b9e63" />
+    </linearGradient>
+    <linearGradient id="darkGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#556b2f" />
+      <stop offset="100%" stop-color="#3e4f20" />
+    </linearGradient>
+    <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ff3300" stop-opacity="0.8" />
+      <stop offset="100%" stop-color="#ff3300" stop-opacity="0.1" />
+    </linearGradient>
+    <radialGradient id="baseGrad" cx="50%" cy="50%" r="50%">
+      <stop offset="60%" stop-color="#1a240c" stop-opacity="0.8"/>
+      <stop offset="100%" stop-color="#1a240c" stop-opacity="0"/>
+    </radialGradient>
   </defs>
-  <!-- anti-air / red High Detail Modern Warfare -->
+
+  <!-- High-Tech Holographic Base -->
+  
+    <!-- High-tech projected base ring -->
+    <ellipse cx="50" cy="88" rx="40" ry="8" fill="url(#baseGrad)" stroke="url(#accentGrad)" stroke-width="1.5" opacity="0.8" />
+    <ellipse cx="50" cy="88" rx="36" ry="6" fill="none" stroke="#ff3300" stroke-width="0.5" opacity="0.6" stroke-dasharray="4 2" />
+    <circle cx="50" cy="88" r="2" fill="#ff3300" />
+  
+
+  <!-- Premium anti-air / red -->
   <g filter="url(#drop-shadow)">
     
-    <g>
-      <!-- Tracks (Boxier chassis) -->
-      <path d="M 12 70 A 8 8 0 0 0 20 78 L 80 78 A 8 8 0 0 0 88 70 Z" fill="#4a5d23" />
-      <circle cx="20" cy="74" r="3" fill="#2e3b18" />
-      <circle cx="35" cy="74" r="3" fill="#2e3b18" />
-      <circle cx="50" cy="74" r="3" fill="#2e3b18" />
-      <circle cx="65" cy="74" r="3" fill="#2e3b18" />
-      <circle cx="80" cy="74" r="3" fill="#2e3b18" />
-
-      <!-- Hull -->
-      <polygon points="10,50 15,45 80,45 90,55 90,70 10,70" fill="#6b8e23" stroke="#2e3b18" stroke-width="1.5" />
-      <rect x="15" y="48" width="10" height="5" fill="#4a5d23" /> <!-- Driver viewport -->
-
-      <!-- Anti-Air Turret Base -->
-      <rect x="45" y="35" width="25" height="10" fill="#2e3b18" />
-
-      <!-- Missile Pod (Elevated) -->
-      <g transform="rotate(-25 55 35)">
-        <rect x="40" y="20" width="30" height="20" rx="3" fill="#4a5d23" stroke="#6b8e23" stroke-width="2" />
-        <!-- 4x Missile Tubes -->
-        <circle cx="48" cy="25" r="3" fill="#2e3b18" />
-        <circle cx="62" cy="25" r="3" fill="#2e3b18" />
-        <circle cx="48" cy="35" r="3" fill="#2e3b18" />
-        <circle cx="62" cy="35" r="3" fill="#2e3b18" />
-        <!-- Missile tips extending -->
-        <polygon points="68,23 74,25 68,27" fill="#ff4500" />
-        <polygon points="68,33 74,35 68,37" fill="#ff4500" />
+    <g transform="translate(0,-5)">
+      <!-- Chassis -->
+      <path d="M 12 70 L 20 78 L 80 78 L 88 70 Z" fill="url(#darkGrad)" />
+      <polygon points="10,50 15,45 80,45 90,55 90,70 10,70" fill="url(#mainGrad)" stroke="#1a240c" stroke-width="1.5" />
+      <!-- Turret Base -->
+      <rect x="42" y="38" width="20" height="7" fill="url(#darkGrad)" />
+      <!-- Missile Pod -->
+      <g transform="rotate(-30 52 38)">
+        <rect x="35" y="20" width="35" height="20" rx="4" fill="url(#darkGrad)" stroke="url(#lightGrad)" stroke-width="1.5" />
+        <!-- Missiles -->
+        <circle cx="45" cy="26" r="3" fill="#1a240c" />
+        <circle cx="60" cy="26" r="3" fill="#1a240c" />
+        <circle cx="45" cy="34" r="3" fill="#1a240c" />
+        <circle cx="60" cy="34" r="3" fill="#1a240c" />
+        <polygon points="68,24 76,26 68,28" fill="#ff3300" filter="url(#glow)" />
+        <polygon points="68,32 76,34 68,36" fill="#ff3300" filter="url(#glow)" />
       </g>
-
-      <!-- Advanced Radar Array (Spinning/Tilted) -->
-      <path d="M 30 25 L 45 10 L 55 20 L 40 35 Z" fill="#6b8e23" stroke="#2e3b18" stroke-width="1.5" />
-      <circle cx="42" cy="22" r="5" fill="#ff4500" opacity="0.6" /> <!-- Radar pulse aesthetic -->
-      <!-- Radar grid lines -->
-      <line x1="35" y1="20" x2="50" y2="30" stroke="#2e3b18" stroke-width="0.5" />
-      <line x1="38" y1="17" x2="53" y2="27" stroke="#2e3b18" stroke-width="0.5" />
+      <!-- Radar -->
+      <path d="M 28 25 L 45 10 L 55 20 L 38 35 Z" fill="url(#lightGrad)" stroke="#1a240c" stroke-width="1" />
+      <circle cx="42" cy="22" r="6" fill="#ff3300" filter="url(#glow)" opacity="0.8" />
     </g>
   
   </g>

@@ -1,44 +1,69 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
   <defs>
+    <!-- Rich Drop Shadow -->
     <filter id="drop-shadow" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="rgba(0,0,0,0.3)" />
+      <feDropShadow dx="0" dy="3" stdDeviation="3" flood-color="rgba(0,0,0,0.5)" />
     </filter>
+    <!-- Glowing Neon Accents -->
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="2" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+    
+    <!-- Metallic/Gloss Gradients -->
+    <linearGradient id="mainGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#e6d2b5" />
+      <stop offset="100%" stop-color="#c2a880" />
+    </linearGradient>
+    <linearGradient id="lightGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.3" />
+      <stop offset="100%" stop-color="#e6d2b5" />
+    </linearGradient>
+    <linearGradient id="darkGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#c2a880" />
+      <stop offset="100%" stop-color="#8b7355" />
+    </linearGradient>
+    <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00e5ff" stop-opacity="0.8" />
+      <stop offset="100%" stop-color="#00e5ff" stop-opacity="0.1" />
+    </linearGradient>
+    <radialGradient id="baseGrad" cx="50%" cy="50%" r="50%">
+      <stop offset="60%" stop-color="#4a3b2c" stop-opacity="0.8"/>
+      <stop offset="100%" stop-color="#4a3b2c" stop-opacity="0"/>
+    </radialGradient>
   </defs>
-  <!-- navy / blue High Detail Modern Warfare -->
+
+  <!-- High-Tech Holographic Base -->
+  
+    <!-- High-tech projected base ring -->
+    <ellipse cx="50" cy="88" rx="40" ry="8" fill="url(#baseGrad)" stroke="url(#accentGrad)" stroke-width="1.5" opacity="0.8" />
+    <ellipse cx="50" cy="88" rx="36" ry="6" fill="none" stroke="#00e5ff" stroke-width="0.5" opacity="0.6" stroke-dasharray="4 2" />
+    <circle cx="50" cy="88" r="2" fill="#00e5ff" />
+  
+
+  <!-- Premium navy / blue -->
   <g filter="url(#drop-shadow)">
     
-    <g>
-      <!-- Water/Wake -->
-      <path d="M 5 80 Q 25 90 50 80 T 95 80" fill="none" stroke="#e6c200" stroke-width="2" opacity="0.6" />
-      <path d="M 15 85 Q 35 95 60 85 T 85 85" fill="none" stroke="#e6c200" stroke-width="1" opacity="0.3" />
-
-      <!-- Destroyer Hull -->
-      <polygon points="10,80 25,55 85,55 95,80" fill="#d2b48c" stroke="#5c452b" stroke-width="1.5" />
-      
-      <!-- Waterline stripe -->
-      <line x1="8" y1="75" x2="93" y2="75" stroke="#8b7355" stroke-width="2" />
-      <text x="20" y="70" font-family="monospace" font-size="6" fill="#5c452b" font-weight="bold">DDG</text>
-
-      <!-- Superstructure (Stealthy faceted angles) -->
-      <polygon points="35,55 40,35 60,35 65,55" fill="#d2b48c" stroke="#5c452b" stroke-width="1.5" />
-      <polygon points="40,35 45,20 50,20 55,35" fill="#8b7355" /> <!-- Main Mast Base -->
-      
-      <!-- SPY Radar Array Plates (Aegis style) -->
-      <polygon points="42,48 48,38 52,43 45,53" fill="#e6c200" opacity="0.8" />
-      <polygon points="58,48 52,38 48,43 55,53" fill="#e6c200" opacity="0.5" />
-
-      <!-- Main Deck Gun (Forward) -->
-      <polygon points="70,55 75,50 80,50 85,55" fill="#5c452b" /> <!-- Turret -->
-      <rect x="80" y="51" width="12" height="2" fill="#8b7355" /> <!-- Barrel -->
-
-      <!-- VLS (Vertical Launch System) Cells -->
-      <rect x="25" y="55" width="10" height="3" fill="#8b7355" />
-      <rect x="62" y="55" width="6" height="3" fill="#8b7355" />
-
-      <!-- Antennae & Masts -->
-      <line x1="48" y1="20" x2="48" y2="5" stroke="#5c452b" stroke-width="1.5" />
-      <line x1="52" y1="20" x2="55" y2="10" stroke="#5c452b" stroke-width="1" />
-      <circle cx="48" cy="5" r="2" fill="#e6c200" />
+    <g transform="translate(0,0)">
+      <!-- Wake -->
+      <path d="M 5 80 Q 25 90 50 80 T 95 80" fill="none" stroke="url(#accentGrad)" stroke-width="2" opacity="0.6" filter="url(#glow)" />
+      <!-- Hull -->
+      <polygon points="10,80 25,55 85,55 95,80" fill="url(#mainGrad)" stroke="#4a3b2c" stroke-width="1.5" />
+      <line x1="8" y1="75" x2="93" y2="75" stroke="#00e5ff" stroke-width="1.5" />
+      <!-- Superstructure -->
+      <polygon points="35,55 40,35 60,35 65,55" fill="url(#lightGrad)" stroke="#4a3b2c" stroke-width="1.5" />
+      <!-- Aegis Panels -->
+      <polygon points="42,48 48,38 52,43 45,53" fill="#00e5ff" opacity="0.9" />
+      <polygon points="58,48 52,38 48,43 55,53" fill="#00e5ff" opacity="0.6" />
+      <!-- Deck Gun -->
+      <polygon points="70,55 75,50 80,50 85,55" fill="url(#darkGrad)" />
+      <rect x="80" y="51" width="14" height="2" fill="#4a3b2c" />
+      <!-- Tower -->
+      <polygon points="40,35 45,15 50,15 55,35" fill="url(#darkGrad)" />
+      <circle cx="48" cy="12" r="3" fill="#00e5ff" filter="url(#glow)" />
     </g>
   
   </g>
