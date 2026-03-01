@@ -43,10 +43,10 @@
   --theme-nav-hover-bg: rgba(212, 175, 55, 0.12);
 
   /* ===== TEAM COLORS ===== */
-  --theme-team-blue: #3275a1;
-  --theme-team-blue-glow: rgba(50, 117, 161, 0.5);
-  --theme-team-red: #2a8a5f;
-  --theme-team-red-glow: rgba(42, 138, 95, 0.5);
+  --theme-team-blue: #4a5d6e;
+  --theme-team-blue-glow: rgba(74, 93, 110, 0.5);
+  --theme-team-red: #8c3a3a;
+  --theme-team-red-glow: rgba(140, 58, 58, 0.5);
 
   /* ===== BOARD - COURTYARD STYLE ===== */
   /* Courtyard Aesthetic - Earth & Limestone tones */
@@ -95,20 +95,20 @@
 
   /* Air Defense */
   --theme-board-air-friendly: rgba(50, 117, 161, 0.8);
-  --theme-board-air-opponent: rgba(42, 138, 95, 0.9);
+  --theme-board-air-opponent: rgba(171, 74, 56, 0.9);
   --theme-board-air-overlap: rgba(212, 175, 55, 0.8);
 
   /* ===== PIECES ===== */
   --theme-piece-path: '/themes/desert-ops/pieces';
-  --theme-piece-shadow: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.3));
-  --theme-piece-blue-filter: drop-shadow(0 0 6px rgba(50, 117, 161, 0.5)) brightness(1.1)
+  --theme-piece-shadow: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.45));
+  --theme-piece-blue-filter: drop-shadow(0 0 6px rgba(74, 93, 110, 0.5)) brightness(1.1)
     contrast(1.1);
-  --theme-piece-red-filter: drop-shadow(0 0 6px rgba(42, 138, 95, 0.5)) hue-rotate(0deg)
+  --theme-piece-red-filter: drop-shadow(0 0 6px rgba(140, 58, 58, 0.5)) hue-rotate(0deg)
     brightness(1.1) contrast(1.1);
   --theme-piece-heroic-filter: drop-shadow(0 0 12px rgba(212, 175, 55, 0.7)) brightness(1.2)
     contrast(1.1);
-  --theme-piece-hover-filter: brightness(1.2) drop-shadow(0 8px 12px rgba(0, 0, 0, 0.4));
-  --theme-piece-drag-filter: brightness(1.2) drop-shadow(0 15px 15px rgba(0, 0, 0, 0.5));
+  --theme-piece-hover-filter: brightness(1.2) drop-shadow(4px 10px 14px rgba(0, 0, 0, 0.6));
+  --theme-piece-drag-filter: brightness(1.2) drop-shadow(6px 18px 20px rgba(0, 0, 0, 0.7));
   --theme-heroic-star: url('/themes/desert-ops/pieces/heroic-star.svg');
 
   /* ===== BUTTONS ===== */

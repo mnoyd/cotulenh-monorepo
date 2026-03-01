@@ -7,17 +7,17 @@
   <ellipse cx="50" cy="85" rx="42" ry="8" fill="#1a1a1a" opacity="0.6" />
   <g filter="url(#shadow)">
     <!-- Base Platform -->
-    <rect x="15" y="70" width="70" height="10" fill="#4a5a40" stroke="#3d4a35" stroke-width="1.5" rx="2" />
+    <rect x="15" y="70" width="70" height="10" fill="#2c3945" stroke="#3d4a35" stroke-width="1.5" rx="2" />
     <!-- Main Command Bunker -->
-    <rect x="25" y="40" width="50" height="30" fill="#5b6e50" stroke="#3d4a35" stroke-width="1.5" rx="2" />
+    <rect x="25" y="40" width="50" height="30" fill="#4a5d6e" stroke="#3d4a35" stroke-width="1.5" rx="2" />
     <!-- Roof with Camo Netting Vibe -->
-    <path d="M 22 40 L 78 40 L 70 30 L 30 30 Z" fill="#6c8060" stroke="#4a5a40" stroke-width="1.5" />
+    <path d="M 22 40 L 78 40 L 70 30 L 30 30 Z" fill="#647b8f" stroke="#2c3945" stroke-width="1.5" />
     <!-- Slanted Wall / Blast Deflector -->
-    <path d="M 25 70 L 15 70 L 25 40 Z" fill="#4a5a40" />
-    <path d="M 75 70 L 85 70 L 75 40 Z" fill="#4a5a40" />
+    <path d="M 25 70 L 15 70 L 25 40 Z" fill="#2c3945" />
+    <path d="M 75 70 L 85 70 L 75 40 Z" fill="#2c3945" />
     <!-- Door -->
     <rect x="42" y="55" width="16" height="15" fill="#2c2a26" />
-    <rect x="54" y="62" width="2" height="4" fill="#6c8060" /> <!-- Handle -->
+    <rect x="54" y="62" width="2" height="4" fill="#647b8f" /> <!-- Handle -->
     <!-- Window slots -->
     <rect x="30" y="50" width="8" height="4" fill="#2c2a26" />
     <rect x="62" y="50" width="8" height="4" fill="#2c2a26" />
@@ -26,6 +26,6 @@
     <ellipse cx="33" cy="18" rx="8" ry="4" fill="none" stroke="#2c2a26" stroke-width="1.5" />
     <rect x="65" y="10" width="2" height="20" fill="#2c2a26" />
     <!-- Flag / Pennant -->
-    <path d="M 67 12 L 75 16 L 67 20 Z" fill="#5b6e50" />
+    <path d="M 67 12 L 75 16 L 67 20 Z" fill="#4a5d6e" />
   </g>
 </svg>

@@ -7,20 +7,20 @@
   <ellipse cx="50" cy="85" rx="42" ry="8" fill="#1a1a1a" opacity="0.6" />
   <g filter="url(#shadow)">
     <!-- Truck Chassis (Bavar-373 TELAR vibe) -->
-    <rect x="15" y="60" width="70" height="15" fill="#8c7a65" stroke="#6b5c4a" stroke-width="1.5" rx="2" />
+    <rect x="15" y="60" width="70" height="15" fill="#8c3a3a" stroke="#5e2b2b" stroke-width="1.5" rx="2" />
     <circle cx="22" cy="75" r="5" fill="#2c2a26" />
     <circle cx="36" cy="75" r="5" fill="#2c2a26" />
     <circle cx="64" cy="75" r="5" fill="#2c2a26" />
     <circle cx="78" cy="75" r="5" fill="#2c2a26" />
     <!-- Cab -->
-    <rect x="65" y="45" width="20" height="15" fill="#8c7a65" stroke="#6b5c4a" stroke-width="1.5" rx="2" />
+    <rect x="65" y="45" width="20" height="15" fill="#8c3a3a" stroke="#5e2b2b" stroke-width="1.5" rx="2" />
     <rect x="68" y="48" width="5" height="5" fill="#1a1a1a" />
     <!-- Vertical Launch Tubes -->
-    <rect x="25" y="25" width="25" height="35" fill="#b08d6a" stroke="#6b5c4a" stroke-width="1.5" rx="2" />
-    <rect x="28" y="25" width="5" height="35" fill="#8c7a65" />
-    <rect x="35" y="25" width="5" height="35" fill="#8c7a65" />
-    <rect x="42" y="25" width="5" height="35" fill="#8c7a65" />
+    <rect x="25" y="25" width="25" height="35" fill="#b35050" stroke="#5e2b2b" stroke-width="1.5" rx="2" />
+    <rect x="28" y="25" width="5" height="35" fill="#8c3a3a" />
+    <rect x="35" y="25" width="5" height="35" fill="#8c3a3a" />
+    <rect x="42" y="25" width="5" height="35" fill="#8c3a3a" />
     <!-- Radar Array on top -->
-    <path d="M 22 20 L 53 20 L 48 25 L 27 25 Z" fill="#5c6a4a" stroke="#3d4a35" stroke-width="1" />
+    <path d="M 22 20 L 53 20 L 48 25 L 27 25 Z" fill="#4f5445" stroke="#3d4a35" stroke-width="1" />
   </g>
 </svg>

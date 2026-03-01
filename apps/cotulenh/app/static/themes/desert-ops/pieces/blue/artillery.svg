@@ -15,18 +15,18 @@
     <circle cx="68" cy="72.5" r="4" fill="#4a4a4a" />
     <circle cx="80" cy="72.5" r="4" fill="#4a4a4a" />
     <!-- Hull Boxy M109 style -->
-    <path d="M 12 50 L 85 50 L 88 65 L 10 65 Z" fill="#5b6e50" stroke="#3d4a35" stroke-width="1.5" />
-    <rect x="14" y="50" width="70" height="8" fill="#6c8060" />
+    <path d="M 12 50 L 85 50 L 88 65 L 10 65 Z" fill="#4a5d6e" stroke="#3d4a35" stroke-width="1.5" />
+    <rect x="14" y="50" width="70" height="8" fill="#647b8f" />
     <!-- Massive Boxy Turret -->
-    <rect x="15" y="25" width="50" height="25" fill="#5b6e50" stroke="#3d4a35" stroke-width="1.5" />
-    <path d="M 15 25 L 25 20 L 65 20 L 65 25 Z" fill="#6c8060" />
+    <rect x="15" y="25" width="50" height="25" fill="#4a5d6e" stroke="#3d4a35" stroke-width="1.5" />
+    <path d="M 15 25 L 25 20 L 65 20 L 65 25 Z" fill="#647b8f" />
     <!-- Massive Muzzle/Barrel angled up slightly -->
     <g transform="translate(60, 35) rotate(-15)">
-      <rect x="0" y="0" width="35" height="6" fill="#4a5a40" stroke="#2c2a26" stroke-width="1" />
+      <rect x="0" y="0" width="35" height="6" fill="#2c3945" stroke="#2c2a26" stroke-width="1" />
       <rect x="30" y="-2" width="6" height="10" fill="#3d4a35" /> <!-- Muzzle brake -->
     </g>
     <!-- Recoil mechanics / mantlet -->
-    <rect x="55" y="28" width="10" height="12" fill="#4a5a40" rx="2" />
+    <rect x="55" y="28" width="10" height="12" fill="#2c3945" rx="2" />
     <!-- Antenna/radar dish -->
     <rect x="25" y="10" width="2" height="10" fill="#2c2a26" />
     <ellipse cx="45" cy="18" rx="8" ry="2" fill="#3d4a35" />

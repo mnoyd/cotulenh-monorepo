@@ -7,16 +7,16 @@
   <ellipse cx="50" cy="90" rx="35" ry="5" fill="#1a1a1a" opacity="0.6" />
   <g filter="url(#shadow)">
     <!-- Backpack (Explosives/Gear) -->
-    <path d="M 25 50 L 35 50 L 35 85 L 20 85 Z" fill="#6b5c4a" stroke="#4a3e30" stroke-width="1.5" />
-    <rect x="22" y="55" width="8" height="20" fill="#4a3e30" rx="2" />
+    <path d="M 25 50 L 35 50 L 35 85 L 20 85 Z" fill="#5e2b2b" stroke="#3d1d1d" stroke-width="1.5" />
+    <rect x="22" y="55" width="8" height="20" fill="#3d1d1d" rx="2" />
     <!-- Body -->
-    <path d="M 35 90 C 35 60, 40 55, 50 55 C 60 55, 65 60, 65 90 Z" fill="#8c7a65" stroke="#6b5c4a" stroke-width="1.5" />
+    <path d="M 35 90 C 35 60, 40 55, 50 55 C 60 55, 65 60, 65 90 Z" fill="#8c3a3a" stroke="#5e2b2b" stroke-width="1.5" />
     <!-- Vest/Plate Carrier -->
-    <path d="M 40 90 L 42 65 L 58 65 L 60 90 Z" fill="#b08d6a" stroke="#6b5c4a" stroke-width="1" />
+    <path d="M 40 90 L 42 65 L 58 65 L 60 90 Z" fill="#b35050" stroke="#5e2b2b" stroke-width="1" />
     <!-- Head/Helmet -->
-    <path d="M 38 45 C 38 25, 62 25, 62 45 C 62 55, 58 58, 50 58 C 42 58, 38 55, 38 45 Z" fill="#b08d6a" stroke="#2c2a26" stroke-width="1.5" />
+    <path d="M 38 45 C 38 25, 62 25, 62 45 C 62 55, 58 58, 50 58 C 42 58, 38 55, 38 45 Z" fill="#b35050" stroke="#2c2a26" stroke-width="1.5" />
     <!-- Distinctive Helmet / Wrap -->
-    <path d="M 34 38 C 34 20, 66 20, 66 38 Q 50 40 34 38 Z" fill="#5c6a4a" stroke="#3d4a35" stroke-width="1.5" />
+    <path d="M 34 38 C 34 20, 66 20, 66 38 Q 50 40 34 38 Z" fill="#4f5445" stroke="#3d4a35" stroke-width="1.5" />
     <path d="M 35 48 Q 50 50 65 48" fill="none" stroke="#2c2a26" stroke-width="2" opacity="0.5" />
     <!-- Shovel (Entrenching Tool) -->
     <g transform="translate(55, 60) rotate(20)">

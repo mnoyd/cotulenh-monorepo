@@ -7,19 +7,19 @@
   <ellipse cx="50" cy="90" rx="35" ry="5" fill="#1a1a1a" opacity="0.6" />
   <g filter="url(#shadow)">
     <!-- Body -->
-    <path d="M 35 90 C 35 60, 40 55, 50 55 C 60 55, 65 60, 65 90 Z" fill="#b08d6a" stroke="#8c7a65" stroke-width="1.5" />
+    <path d="M 35 90 C 35 60, 40 55, 50 55 C 60 55, 65 60, 65 90 Z" fill="#b35050" stroke="#8c3a3a" stroke-width="1.5" />
     <path d="M 35 90 L 50 65 L 65 90" fill="none" stroke="#2c2a26" stroke-width="1" opacity="0.3" />
     <!-- Head -->
-    <path d="M 38 45 C 38 25, 62 25, 62 45 C 62 55, 58 58, 50 58 C 42 58, 38 55, 38 45 Z" fill="#8c7a65" stroke="#2c2a26" stroke-width="1.5" />
+    <path d="M 38 45 C 38 25, 62 25, 62 45 C 62 55, 58 58, 50 58 C 42 58, 38 55, 38 45 Z" fill="#8c3a3a" stroke="#2c2a26" stroke-width="1.5" />
     <!-- Bandana / Keffiyeh wrap -->
     <path d="M 34 25 C 40 15, 60 15, 66 25 Q 50 35 34 25 Z" fill="#f4e8d8" stroke="#d5c0a3" stroke-width="1.5" />
     <path d="M 34 25 C 30 35, 30 50, 42 55 L 42 40" fill="#f4e8d8" stroke="#d5c0a3" stroke-width="1" />
     <path d="M 66 25 C 70 35, 70 50, 58 55 L 58 40" fill="#f4e8d8" stroke="#d5c0a3" stroke-width="1" />
     <!-- RPG-7 Silhouette (to make them distinct from infantry) -->
     <g transform="translate(45, 65) rotate(-35)">
-      <rect x="-10" y="0" width="35" height="4" fill="#5c6a4a" /> <!-- Tube -->
-      <rect x="25" y="-3" width="15" height="10" fill="#6b5c4a" rx="5" /> <!-- Warhead -->
-      <rect x="40" y="-1" width="5" height="6" fill="#8c7a65" rx="2" /> <!-- Tip -->
+      <rect x="-10" y="0" width="35" height="4" fill="#4f5445" /> <!-- Tube -->
+      <rect x="25" y="-3" width="15" height="10" fill="#5e2b2b" rx="5" /> <!-- Warhead -->
+      <rect x="40" y="-1" width="5" height="6" fill="#8c3a3a" rx="2" /> <!-- Tip -->
       <rect x="5" y="4" width="3" height="10" fill="#2c2a26" /> <!-- Grip -->
       <rect x="15" y="4" width="3" height="8" fill="#2c2a26" /> <!-- Handle 2 -->
     </g>

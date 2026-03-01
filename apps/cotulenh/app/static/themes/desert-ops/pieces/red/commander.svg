@@ -7,16 +7,16 @@
   <ellipse cx="50" cy="90" rx="35" ry="5" fill="#1a1a1a" opacity="0.6" />
   <g filter="url(#shadow)">
     <!-- Shoulders / Uniform -->
-    <path d="M 30 90 C 30 55, 38 55, 50 55 C 62 55, 70 55, 70 90 Z" fill="#8c7a65" stroke="#6b5c4a" stroke-width="1.5" />
+    <path d="M 30 90 C 30 55, 38 55, 50 55 C 62 55, 70 55, 70 90 Z" fill="#8c3a3a" stroke="#5e2b2b" stroke-width="1.5" />
     <!-- Collar -->
     <path d="M 40 55 L 50 70 L 60 55" fill="none" stroke="#2c2a26" stroke-width="2" />
-    <path d="M 42 55 L 50 65 L 58 55 Z" fill="#5c6a4a" /> <!-- Shirt -->
-    <path d="M 45 55 L 50 80 L 55 55 Z" fill="#b08d6a" />
+    <path d="M 42 55 L 50 65 L 58 55 Z" fill="#4f5445" /> <!-- Shirt -->
+    <path d="M 45 55 L 50 80 L 55 55 Z" fill="#b35050" />
     <!-- Prominent Gold Epaulettes -->
     <path d="M 28 62 L 40 53 L 44 58 Z" fill="#d4af37" stroke="#b89768" stroke-width="1" />
     <path d="M 72 62 L 60 53 L 56 58 Z" fill="#d4af37" stroke="#b89768" stroke-width="1" />
     <!-- Head & Beard -->
-    <path d="M 38 45 C 38 25, 62 25, 62 45 C 62 60, 56 65, 50 65 C 44 65, 38 60, 38 45 Z" fill="#b08d6a" stroke="#2c2a26" stroke-width="1.5" />
+    <path d="M 38 45 C 38 25, 62 25, 62 45 C 62 60, 56 65, 50 65 C 44 65, 38 60, 38 45 Z" fill="#b35050" stroke="#2c2a26" stroke-width="1.5" />
     <!-- Neat Black Beard -->
     <path d="M 38 50 Q 50 70 62 50 C 60 68, 40 68, 38 50 Z" fill="#1a1a1a" />
     <path d="M 45 55 Q 50 62 55 55" fill="none" stroke="#1a1a1a" stroke-width="2" /> <!-- Mustache -->
@@ -24,7 +24,7 @@
     <rect x="42" y="42" width="5" height="2" fill="#2c2a26" />
     <rect x="53" y="42" width="5" height="2" fill="#2c2a26" />
     <!-- Officer Peaked Cap -->
-    <path d="M 34 35 C 34 15, 66 15, 66 35 Z" fill="#5c6a4a" stroke="#3d4a35" stroke-width="1.5" />
+    <path d="M 34 35 C 34 15, 66 15, 66 35 Z" fill="#4f5445" stroke="#3d4a35" stroke-width="1.5" />
     <!-- Cap Band -->
     <path d="M 34 32 Q 50 38 66 32 L 66 35 Q 50 42 34 35 Z" fill="#d4af37" />
     <!-- Cap Visor -->

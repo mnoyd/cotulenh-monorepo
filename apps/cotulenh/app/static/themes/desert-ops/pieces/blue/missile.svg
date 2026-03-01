@@ -7,8 +7,8 @@
   <ellipse cx="50" cy="85" rx="42" ry="8" fill="#1a1a1a" opacity="0.6" />
   <g filter="url(#shadow)">
     <!-- Silo / Base Platform -->
-    <path d="M 35 75 L 65 75 L 70 85 L 30 85 Z" fill="#5b6e50" stroke="#3d4a35" stroke-width="1.5" />
-    <rect x="40" y="70" width="20" height="5" fill="#6c8060" />
+    <path d="M 35 75 L 65 75 L 70 85 L 30 85 Z" fill="#4a5d6e" stroke="#3d4a35" stroke-width="1.5" />
+    <rect x="40" y="70" width="20" height="5" fill="#647b8f" />
     <!-- Missile Body (Jericho style) -->
     <!-- Pointing Straight Up -->
     <rect x="42" y="30" width="16" height="40" fill="#d4c0a5" stroke="#8b7a65" stroke-width="1.5" />
@@ -16,7 +16,7 @@
     <rect x="42" y="55" width="16" height="2" fill="#8b7a65" />
     <rect x="42" y="45" width="16" height="2" fill="#8b7a65" />
     <!-- Warhead Tip -->
-    <path d="M 42 30 L 50 10 L 58 30 Z" fill="#5b6e50" stroke="#3d4a35" stroke-width="1.5" />
+    <path d="M 42 30 L 50 10 L 58 30 Z" fill="#4a5d6e" stroke="#3d4a35" stroke-width="1.5" />
     <!-- Thruster / Flames -->
     <path d="M 44 70 L 50 82 L 56 70 Z" fill="#f39c12" />
     <path d="M 46 70 L 50 78 L 54 70 Z" fill="#fdf5e6" />
