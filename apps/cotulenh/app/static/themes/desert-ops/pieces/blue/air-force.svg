@@ -4,8 +4,9 @@
       <feDropShadow dx="0" dy="5" stdDeviation="5" flood-color="rgba(0,0,0,0.6)" />
     </filter>
   </defs>
-  <!-- No base, to emphasize flight -->
-  <g filter="url(#shadow)">
+  <!-- Base shadow on the ground to emphasize altitude -->
+  <ellipse cx="50" cy="85" rx="35" ry="6" fill="#1a1a1a" opacity="0.5" />
+  <g filter="url(#shadow)" transform="scale(0.9) translate(5.5, -5)">
     <!-- Fuselage (F-16/F-35 style, top-down view) -->
     <path d="M 50 10 C 55 10, 58 20, 58 40 L 58 75 C 58 85, 55 90, 50 90 C 45 90, 42 85, 42 75 L 42 40 C 42 20, 45 10, 50 10 Z" fill="#6c7a8a" stroke="#4a5a6a" stroke-width="1.5" />
     <!-- Nosecone -->

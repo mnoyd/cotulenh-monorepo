@@ -4,8 +4,9 @@
       <feDropShadow dx="0" dy="5" stdDeviation="5" flood-color="rgba(0,0,0,0.6)" />
     </filter>
   </defs>
-  <!-- No base, to emphasize flight -->
-  <g filter="url(#shadow)">
+  <!-- Base shadow on the ground to emphasize altitude -->
+  <ellipse cx="50" cy="85" rx="35" ry="6" fill="#1a1a1a" opacity="0.5" />
+  <g filter="url(#shadow)" transform="scale(0.9) translate(5.5, -5)">
     <!-- Fuselage (MiG-29 / F-14 swept wing vibe) -->
     <!-- Twin engine body -->
     <path d="M 50 10 C 54 10, 56 20, 60 40 L 62 85 C 62 90, 58 90, 50 90 C 42 90, 38 90, 38 85 L 40 40 C 44 20, 46 10, 50 10 Z" fill="#b35050" stroke="#8c3a3a" stroke-width="1.5" />
