@@ -1,139 +1,140 @@
-/* Modern Warfare Theme - Tactical HUD with Cyan/Amber accents */
-/* Inspired by military FPS game interfaces - high contrast, tech-forward */
+/* Desert Oasis Theme - Heritage design with warm, natural accents */
+/* Inspired by ancient desert cultures - terracotta, limestone and rich blues */
 :root {
   /* ===== CORE PALETTE ===== */
-  --theme-primary: #ffb347;
-  --theme-primary-dim: rgba(255, 179, 71, 0.12);
-  --theme-primary-glow: rgba(255, 179, 71, 0.4);
-  --theme-secondary: #deb887;
-  --theme-secondary-dim: rgba(222, 184, 135, 0.12);
-  --theme-secondary-glow: rgba(222, 184, 135, 0.4);
-  --theme-accent: #4b5320;
-  --theme-accent-dim: rgba(75, 83, 32, 0.12);
-  --theme-accent-glow: rgba(75, 83, 32, 0.4);
-  --theme-warning: #ffcc00;
-  --theme-error: #ff6b00;
-  --theme-success: #30d158;
+  --theme-primary: #d4af37;
+  --theme-primary-dim: rgba(212, 175, 55, 0.12);
+  --theme-primary-glow: rgba(212, 175, 55, 0.4);
+  --theme-secondary: #e2c290;
+  --theme-secondary-dim: rgba(226, 194, 144, 0.12);
+  --theme-secondary-glow: rgba(226, 194, 144, 0.4);
+  --theme-accent: #20b2aa;
+  --theme-accent-dim: rgba(32, 178, 170, 0.12);
+  --theme-accent-glow: rgba(32, 178, 170, 0.4);
+  --theme-warning: #f39c12;
+  --theme-error: #c0392b;
+  --theme-success: #27ae60;
 
   /* ===== BACKGROUNDS ===== */
-  --theme-bg-dark: #030810;
-  --theme-bg-base: #0a1628;
-  --theme-bg-panel: rgba(10, 22, 40, 0.92);
-  --theme-bg-elevated: rgba(20, 38, 65, 0.95);
-  --theme-bg-overlay: rgba(0, 0, 0, 0.8);
+  --theme-bg-dark: #0f1620;
+  --theme-bg-base: #17212b;
+  --theme-bg-panel: rgba(23, 33, 43, 0.92);
+  --theme-bg-elevated: rgba(32, 45, 58, 0.95);
+  --theme-bg-overlay: rgba(10, 15, 20, 0.85);
 
   /* ===== BORDERS ===== */
-  --theme-border: rgba(255, 179, 71, 0.35);
-  --theme-border-subtle: rgba(255, 179, 71, 0.18);
-  --theme-border-strong: rgba(255, 179, 71, 0.6);
+  --theme-border: rgba(212, 175, 55, 0.35);
+  --theme-border-subtle: rgba(212, 175, 55, 0.15);
+  --theme-border-strong: rgba(212, 175, 55, 0.6);
 
   /* ===== TEXT ===== */
-  --theme-text-primary: #e8f4fc;
-  --theme-text-secondary: #9eb8d4;
-  --theme-text-muted: #5c7a99;
-  --theme-text-inverse: #030810;
+  --theme-text-primary: #fdf5e6;
+  --theme-text-secondary: #d1c4a5;
+  --theme-text-muted: #8b99a6;
+  --theme-text-inverse: #0f1620;
 
   /* ===== NAVBAR ===== */
-  --theme-nav-bg: rgba(10, 22, 40, 0.97);
-  --theme-nav-border: rgba(255, 179, 71, 0.25);
-  --theme-nav-text: rgba(232, 244, 252, 0.85);
-  --theme-nav-text-hover: #ffb347;
-  --theme-nav-text-active: #030810;
-  --theme-nav-active-bg: #ffb347;
-  --theme-nav-hover-bg: rgba(255, 179, 71, 0.12);
+  --theme-nav-bg: rgba(23, 33, 43, 0.97);
+  --theme-nav-border: rgba(212, 175, 55, 0.25);
+  --theme-nav-text: rgba(253, 245, 230, 0.85);
+  --theme-nav-text-hover: #d4af37;
+  --theme-nav-text-active: #fff;
+  --theme-nav-active-bg: #d4af37;
+  --theme-nav-hover-bg: rgba(212, 175, 55, 0.12);
 
   /* ===== TEAM COLORS ===== */
-  --theme-team-blue: #c2b280;
-  --theme-team-blue-glow: rgba(194, 178, 128, 0.5);
-  --theme-team-red: #4b5320;
-  --theme-team-red-glow: rgba(75, 83, 32, 0.5);
+  --theme-team-blue: #3275a1;
+  --theme-team-blue-glow: rgba(50, 117, 161, 0.5);
+  --theme-team-red: #2a8a5f;
+  --theme-team-red-glow: rgba(42, 138, 95, 0.5);
 
-  /* ===== BOARD - BATTLEFIELD STYLE ===== */
-  /* Satellite/Tactical Map Aesthetic - Earth & Concrete tones */
-  --theme-board-bg: #2c251d;
-  --theme-board-border: #5c452b;
-  --theme-board-radius: 2px;
-  --theme-board-shadow: inset 0 0 50px rgba(0, 0, 0, 0.8);
-  --theme-board-filter: sepia(0.2) contrast(1.1) brightness(0.9);
-  /* Gritty look */
+  /* ===== BOARD - COURTYARD STYLE ===== */
+  /* Courtyard Aesthetic - Earth & Limestone tones */
+  --theme-board-bg: #e6d8c3;
+  --theme-board-border: #b89768;
+  --theme-board-radius: 4px;
+  --theme-board-shadow: inset 0 0 50px rgba(100, 75, 50, 0.3);
+  --theme-board-filter: sepia(0.15) contrast(1.02) brightness(0.98);
+  /* Geometric patterns implicitly through original grid overlay */
   --theme-board-image: url('/themes/desert-ops/board-grid.svg');
 
-  /* Board Squares - Mud & Concrete */
-  --theme-board-light: #bfa782;
-  /* Concrete / Pale Grass */
-  --theme-board-dark: #8c7353;
-  /* Dark Earth / Mud */
-  --theme-board-highlight: rgba(255, 204, 0, 0.2);
-  --theme-board-selected: rgba(222, 184, 135, 0.3);
-  --theme-board-selected-border: #deb887;
-  --theme-board-selected-radius: 0;
-  --theme-board-last-move-from: rgba(255, 179, 71, 0.08);
-  --theme-board-last-move-to: rgba(255, 179, 71, 0.15);
-  --theme-board-last-move-radius: 0;
-  --theme-board-move-dest: #ffb347;
-  --theme-board-move-dest-bg: radial-gradient(rgba(255, 179, 71, 0.6) 20%, transparent 20%);
+  /* Board Squares - Limestone & Warm Earth */
+  --theme-board-light: #f4e8d8;
+  /* Limestone */
+  --theme-board-dark: #d5c0a3;
+  /* Warm Earth */
+  --theme-board-highlight: rgba(212, 175, 55, 0.25);
+  --theme-board-selected: rgba(212, 175, 55, 0.4);
+  --theme-board-selected-border: #d4af37;
+  --theme-board-selected-radius: 2px;
+  --theme-board-last-move-from: rgba(212, 175, 55, 0.15);
+  --theme-board-last-move-to: rgba(212, 175, 55, 0.25);
+  --theme-board-last-move-radius: 2px;
+  --theme-board-move-dest: #d4af37;
+  --theme-board-move-dest-bg: radial-gradient(rgba(212, 175, 55, 0.6) 20%, transparent 20%);
   --theme-board-capture-bg: radial-gradient(
     transparent 0%,
     transparent 75%,
-    rgba(75, 83, 32, 0.4) 75%
+    rgba(212, 175, 55, 0.4) 75%
   );
-  --theme-board-capture: #4b5320;
-  --theme-board-check: rgba(255, 107, 0, 0.5);
+  --theme-board-capture: #c0392b;
+  --theme-board-check: rgba(192, 57, 43, 0.5);
   --theme-board-check-bg: radial-gradient(
     ellipse at center,
-    rgba(255, 107, 0, 1) 0%,
-    rgba(255, 107, 0, 0.6) 30%,
+    rgba(192, 57, 43, 1) 0%,
+    rgba(192, 57, 43, 0.6) 30%,
     transparent 70%
   );
 
   /* Deploy Mode */
-  --theme-board-deploy-origin: rgba(255, 204, 0, 0.1);
-  --theme-board-deploy-origin-border: #ffcc00;
-  --theme-board-deploy-dest: rgba(222, 184, 135, 0.1);
-  --theme-board-deploy-dest-border: #deb887;
-  --theme-board-deploy-radius: 0;
+  --theme-board-deploy-origin: rgba(212, 175, 55, 0.1);
+  --theme-board-deploy-origin-border: #d4af37;
+  --theme-board-deploy-dest: rgba(226, 194, 144, 0.1);
+  --theme-board-deploy-dest-border: #e2c290;
+  --theme-board-deploy-radius: 2px;
 
   /* Air Defense */
-  --theme-board-air-friendly: rgba(255, 179, 71, 0.8);
-  --theme-board-air-opponent: rgba(75, 83, 32, 0.9);
-  --theme-board-air-overlap: rgba(255, 107, 0, 0.8);
+  --theme-board-air-friendly: rgba(50, 117, 161, 0.8);
+  --theme-board-air-opponent: rgba(42, 138, 95, 0.9);
+  --theme-board-air-overlap: rgba(212, 175, 55, 0.8);
 
   /* ===== PIECES ===== */
   --theme-piece-path: '/themes/desert-ops/pieces';
-  --theme-piece-shadow: drop-shadow(0 0 2px rgba(0, 0, 0, 0.8));
-  --theme-piece-blue-filter: drop-shadow(0 0 4px #c2b280) brightness(1.2) contrast(1.2);
-  --theme-piece-red-filter: drop-shadow(0 0 4px #4b5320) hue-rotate(45deg) brightness(1.2)
+  --theme-piece-shadow: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.3));
+  --theme-piece-blue-filter: drop-shadow(0 0 6px rgba(50, 117, 161, 0.5)) brightness(1.1)
     contrast(1.1);
-  --theme-piece-heroic-filter: drop-shadow(0 0 10px rgba(255, 204, 0, 0.6)) brightness(1.2)
+  --theme-piece-red-filter: drop-shadow(0 0 6px rgba(42, 138, 95, 0.5)) hue-rotate(0deg)
+    brightness(1.1) contrast(1.1);
+  --theme-piece-heroic-filter: drop-shadow(0 0 12px rgba(212, 175, 55, 0.7)) brightness(1.2)
     contrast(1.1);
-  --theme-piece-hover-filter: brightness(1.3) drop-shadow(0 10px 10px rgba(0, 0, 0, 0.5));
-  --theme-piece-drag-filter: brightness(1.3) drop-shadow(0 15px 15px rgba(0, 0, 0, 0.6));
+  --theme-piece-hover-filter: brightness(1.2) drop-shadow(0 8px 12px rgba(0, 0, 0, 0.4));
+  --theme-piece-drag-filter: brightness(1.2) drop-shadow(0 15px 15px rgba(0, 0, 0, 0.5));
   --theme-heroic-star: url('/themes/desert-ops/pieces/heroic-star.svg');
 
   /* ===== BUTTONS ===== */
-  --theme-btn-attack-stay: #ffd700;
-  --theme-btn-attack-normal: #ff4500;
-  --theme-btn-cancel-bg: rgba(255, 59, 48, 0.2);
-  --theme-btn-cancel-border: #ff3b30;
-  --theme-btn-confirm-bg: rgba(222, 184, 135, 0.2);
-  --theme-btn-confirm-border: #deb887;
+  --theme-btn-attack-stay: #f39c12;
+  --theme-btn-attack-normal: #c0392b;
+  --theme-btn-cancel-bg: rgba(192, 57, 43, 0.2);
+  --theme-btn-cancel-border: #c0392b;
+  --theme-btn-confirm-bg: rgba(46, 139, 87, 0.2);
+  --theme-btn-confirm-border: #27ae60;
 
   /* ===== HEROIC BADGE ===== */
-  --theme-heroic-bg: rgba(10, 22, 40, 0.95);
-  --theme-heroic-border: #ffcc00;
-  --theme-heroic-glow: 0 0 8px #ffcc00;
-  --theme-heroic-star: #ffcc00;
+  --theme-heroic-bg: rgba(23, 33, 43, 0.95);
+  --theme-heroic-border: #d4af37;
+  --theme-heroic-glow: 0 0 8px #d4af37;
+  --theme-heroic-star: #d4af37;
 
   /* ===== GLOW EFFECTS ===== */
-  --theme-glow-primary: 0 0 10px rgba(255, 179, 71, 0.4);
-  --theme-glow-secondary: 0 0 10px rgba(222, 184, 135, 0.4);
-  --theme-glow-accent: 0 0 10px rgba(75, 83, 32, 0.4);
-  --theme-glow-error: 0 0 10px rgba(255, 107, 0, 0.4);
+  --theme-glow-primary: 0 0 12px rgba(212, 175, 55, 0.4);
+  --theme-glow-secondary: 0 0 12px rgba(226, 194, 144, 0.4);
+  --theme-glow-accent: 0 0 12px rgba(32, 178, 170, 0.4);
+  --theme-glow-error: 0 0 12px rgba(192, 57, 43, 0.4);
 
   /* ===== SHADOWS ===== */
-  --theme-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.6);
-  --theme-shadow-md: 0 4px 6px rgba(0, 0, 0, 0.55);
-  --theme-shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.6);
+  --theme-shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.2);
+  --theme-shadow-md: 0 4px 8px rgba(0, 0, 0, 0.3);
+  --theme-shadow-lg: 0 10px 20px rgba(0, 0, 0, 0.4);
 
   /* ===== OVERLAYS - DISABLED for performance ===== */
   --theme-scanline-opacity: 0;

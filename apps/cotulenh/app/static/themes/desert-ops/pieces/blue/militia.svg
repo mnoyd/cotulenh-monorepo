@@ -1,71 +1,31 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
   <defs>
-    <!-- Rich Drop Shadow -->
-    <filter id="drop-shadow" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="3" stdDeviation="3" flood-color="rgba(0,0,0,0.5)" />
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="rgba(0,0,0,0.5)" />
     </filter>
-    <!-- Glowing Neon Accents -->
-    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
-      <feGaussianBlur stdDeviation="2" result="blur" />
-      <feMerge>
-        <feMergeNode in="blur" />
-        <feMergeNode in="SourceGraphic" />
-      </feMerge>
-    </filter>
-    
-    <!-- Metallic/Gloss Gradients -->
-    <linearGradient id="mainGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#e6d2b5" />
-      <stop offset="100%" stop-color="#c2a880" />
-    </linearGradient>
-    <linearGradient id="lightGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.3" />
-      <stop offset="100%" stop-color="#e6d2b5" />
-    </linearGradient>
-    <linearGradient id="darkGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#c2a880" />
-      <stop offset="100%" stop-color="#8b7355" />
-    </linearGradient>
-    <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="#00e5ff" stop-opacity="0.8" />
-      <stop offset="100%" stop-color="#00e5ff" stop-opacity="0.1" />
-    </linearGradient>
-    <radialGradient id="baseGrad" cx="50%" cy="50%" r="50%">
-      <stop offset="60%" stop-color="#4a3b2c" stop-opacity="0.8"/>
-      <stop offset="100%" stop-color="#4a3b2c" stop-opacity="0"/>
-    </radialGradient>
   </defs>
-
-  <!-- High-Tech Holographic Base -->
-  <ellipse cx="50" cy="88" rx="40" ry="8" fill="url(#baseGrad)" stroke="url(#accentGrad)" stroke-width="1.5" opacity="0.8" />
-  <ellipse cx="50" cy="88" rx="36" ry="6" fill="none" stroke="#00e5ff" stroke-width="0.5" opacity="0.6" stroke-dasharray="4 2" />
-  <circle cx="50" cy="88" r="2" fill="#00e5ff" />
-
-  <!-- Premium militia / blue / bust -->
-  <g filter="url(#drop-shadow)">
-    <g transform="translate(0, -5)">
-      <!-- Shoulders -->
-      <path d="M 28 85 C 25 60, 40 55, 50 55 C 60 55, 75 60, 72 85 Z" fill="url(#mainGrad)" stroke="#4a3b2c" stroke-width="1.5" />
-      
-      <!-- Vest -->
-      <path d="M 38 85 L 38 65 L 62 65 L 62 85 Z" fill="url(#darkGrad)" />
-      <rect x="42" y="68" width="16" height="6" fill="#4a3b2c" rx="1" />
-      <rect x="42" y="76" width="16" height="6" fill="#4a3b2c" rx="1" />
-
-      <!-- Scarf wrap -->
-      <path d="M 35 50 Q 50 65 65 50 Q 68 55 50 68 Q 32 55 35 50 Z" fill="url(#lightGrad)" stroke="#4a3b2c" stroke-width="1" />
-
-      <!-- Masked Face (Balaclava) -->
-      <path d="M 38 52 C 38 30, 62 30, 62 52 Z" fill="url(#darkGrad)" />
-      
-      <!-- Glowing Eyes/Goggles -->
-      <circle cx="45" cy="42" r="3" fill="#00e5ff" filter="url(#glow)" />
-      <circle cx="55" cy="42" r="3" fill="#00e5ff" filter="url(#glow)" />
-      
-      <!-- Headband / Hat Brim -->
-      <path d="M 34 35 Q 50 40 66 35 C 66 30, 34 30, 34 35 Z" fill="url(#mainGrad)" stroke="#4a3b2c" stroke-width="1" />
-      <!-- Hat Top -->
-      <path d="M 38 33 C 38 20, 62 20, 62 33 Z" fill="url(#mainGrad)" stroke="#4a3b2c" stroke-width="1" />
+  <ellipse cx="50" cy="90" rx="35" ry="5" fill="#1a1a1a" opacity="0.6" />
+  <g filter="url(#shadow)">
+    <!-- Body -->
+    <path d="M 35 90 C 35 60, 40 55, 50 55 C 60 55, 65 60, 65 90 Z" fill="#6c8060" stroke="#4a5a40" stroke-width="1.5" />
+    <!-- Suspenders -->
+    <path d="M 42 55 L 42 90 M 58 55 L 58 90" stroke="#3d4a35" stroke-width="3" />
+    <!-- Head -->
+    <path d="M 38 45 C 38 25, 62 25, 62 45 C 62 55, 58 58, 50 58 C 42 58, 38 55, 38 45 Z" fill="#d4c0a5" stroke="#2c2a26" stroke-width="1.5" />
+    <!-- Patrol Cap -->
+    <path d="M 36 35 C 36 25, 64 25, 64 35 Z" fill="#5b6e50" stroke="#3d4a35" stroke-width="1.5" />
+    <path d="M 34 35 Q 50 38 72 35" fill="none" stroke="#3d4a35" stroke-width="2" />
+    <path d="M 64 35 L 75 40" stroke="#5b6e50" stroke-width="3" />
+    <!-- M16 Rifle Silhouette (Carry Handle, longer barrel) -->
+    <g transform="translate(45, 65) rotate(-40)">
+      <rect x="-10" y="0" width="45" height="4" fill="#2c2a26" rx="1" />
+      <path d="M 8 4 L 10 15 L 13 15 L 11 4 Z" fill="#2c2a26" />
+      <rect x="-2" y="4" width="4" height="8" fill="#2c2a26" rx="1" />
+      <!-- Carry handle -->
+      <path d="M 2 -4 L 12 -4 L 12 0 L 2 0 Z" fill="none" stroke="#2c2a26" stroke-width="2" />
+      <!-- Triangle handguard -->
+      <path d="M 15 0 L 28 0 L 28 5 L 15 4 Z" fill="#1a1a1a" />
+      <rect x="28" y="1" width="15" height="2" fill="#2c2a26" />
     </g>
   </g>
 </svg>

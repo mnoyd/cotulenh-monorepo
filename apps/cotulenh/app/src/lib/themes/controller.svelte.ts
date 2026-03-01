@@ -29,7 +29,7 @@ export const themes: ThemeInfo[] = [
   {
     id: 'desert-ops',
     name: 'Desert Ops',
-    description: 'Tactical desert and jungle camouflage',
+    description: 'Ancient desert and warm heritage tones',
     isDark: true
   },
   {
