@@ -55,6 +55,7 @@
       displayNameRequired: 'profile.validation.displayNameRequired',
       displayNameMinLength: 'profile.validation.displayNameMinLength',
       displayNameMaxLength: 'profile.validation.displayNameMaxLength',
+      displayNameInvalidChars: 'profile.validation.displayNameInvalidChars',
       updateFailed: 'profile.error.updateFailed'
     };
     return keyMap[code] || 'profile.error.updateFailed';

@@ -1,13 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { actions } from './+page.server';
 
-// Mock DOMPurify
-vi.mock('dompurify', () => ({
-  default: {
-    sanitize: (str: string) => str
-  }
-}));
-
 describe('registration form action', () => {
   let mockSupabase: {
     auth: {
@@ -125,5 +118,39 @@ describe('registration form action', () => {
     const result = await actions.default(event);
     expect(result?.status).toBe(400);
     expect(result?.data?.errors?.displayName).toBe('displayNameMinLength');
+  });
+
+  it('normalizes display name before signup', async () => {
+    mockSupabase.auth.signUp.mockResolvedValue({ data: { user: {} }, error: null });
+
+    const event = createMockEvent({
+      email: 'test@example.com',
+      password: 'password123',
+      displayName: '  Commander   One  '
+    });
+
+    await actions.default(event);
+
+    expect(mockSupabase.auth.signUp).toHaveBeenCalledWith({
+      email: 'test@example.com',
+      password: 'password123',
+      options: {
+        data: {
+          display_name: 'Commander One'
+        }
+      }
+    });
+  });
+
+  it('returns fail(400) for display name with blocked characters', async () => {
+    const event = createMockEvent({
+      email: 'test@example.com',
+      password: 'password123',
+      displayName: '<b>Commander</b>'
+    });
+
+    const result = await actions.default(event);
+    expect(result?.status).toBe(400);
+    expect(result?.data?.errors?.displayName).toBe('displayNameInvalidChars');
   });
 });

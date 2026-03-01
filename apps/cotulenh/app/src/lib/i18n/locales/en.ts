@@ -394,6 +394,8 @@ export const en: TranslationKeys = {
   'auth.validation.displayNameRequired': 'Display name is required',
   'auth.validation.displayNameMinLength': 'Display name must be at least 3 characters',
   'auth.validation.displayNameMaxLength': 'Display name must be at most 50 characters',
+  'auth.validation.displayNameInvalidChars':
+    'Display name cannot include <, >, or control characters',
   'auth.error.generic': 'Something went wrong. Please try again.',
   'auth.error.registrationFailed': 'Registration failed. Please try again.',
   'auth.error.title': 'Authentication Error',
@@ -457,5 +459,12 @@ export const en: TranslationKeys = {
   'profile.validation.displayNameRequired': 'Display name is required',
   'profile.validation.displayNameMinLength': 'Display name must be at least 3 characters',
   'profile.validation.displayNameMaxLength': 'Display name must be at most 50 characters',
-  'profile.error.updateFailed': 'Failed to update profile. Please try again.'
+  'profile.validation.displayNameInvalidChars':
+    'Display name cannot include <, >, or control characters',
+  'profile.error.updateFailed': 'Failed to update profile. Please try again.',
+
+  // Public Profile
+  'profile.public.title': "{username}'s Profile",
+  'profile.public.gameHistory.title': 'Game History',
+  'profile.public.gameHistory.empty': 'No games played yet'
 };

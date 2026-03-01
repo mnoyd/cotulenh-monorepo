@@ -389,6 +389,7 @@ export interface TranslationKeys {
   'auth.validation.displayNameRequired': string;
   'auth.validation.displayNameMinLength': string;
   'auth.validation.displayNameMaxLength': string;
+  'auth.validation.displayNameInvalidChars': string;
   'auth.error.generic': string;
   'auth.error.registrationFailed': string;
   'auth.error.title': string;
@@ -455,7 +456,13 @@ export interface TranslationKeys {
   'profile.validation.displayNameRequired': string;
   'profile.validation.displayNameMinLength': string;
   'profile.validation.displayNameMaxLength': string;
+  'profile.validation.displayNameInvalidChars': string;
   'profile.error.updateFailed': string;
+
+  // Public Profile
+  'profile.public.title': string;
+  'profile.public.gameHistory.title': string;
+  'profile.public.gameHistory.empty': string;
 }
 
 export type TranslationKey = keyof TranslationKeys;

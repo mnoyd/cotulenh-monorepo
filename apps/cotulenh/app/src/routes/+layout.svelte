@@ -22,7 +22,6 @@
     LogOut,
     UserCircle
   } from 'lucide-svelte';
-  import DOMPurify from 'dompurify';
   import { themeStore } from '$lib/stores/theme.svelte';
   import { getI18n } from '$lib/i18n/index.svelte';
 
@@ -39,11 +38,7 @@
 
   let isAuthenticated = $derived(!!$page.data.user);
 
-  let displayName = $derived(
-    $page.data.profile?.displayName
-      ? DOMPurify.sanitize($page.data.profile.displayName)
-      : $page.data.user?.email ?? ''
-  );
+  let displayName = $derived($page.data.profile?.displayName ?? $page.data.user?.email ?? '');
 
   let avatarLetter = $derived(displayName ? displayName.charAt(0).toUpperCase() : '?');
 

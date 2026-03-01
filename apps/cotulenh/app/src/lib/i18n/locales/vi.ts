@@ -394,6 +394,8 @@ export const vi: TranslationKeys = {
   'auth.validation.displayNameRequired': 'Tên hiển thị là bắt buộc',
   'auth.validation.displayNameMinLength': 'Tên hiển thị phải có ít nhất 3 ký tự',
   'auth.validation.displayNameMaxLength': 'Tên hiển thị tối đa 50 ký tự',
+  'auth.validation.displayNameInvalidChars':
+    'Tên hiển thị không được chứa <, > hoặc ký tự điều khiển',
   'auth.error.generic': 'Đã có lỗi xảy ra. Vui lòng thử lại.',
   'auth.error.registrationFailed': 'Đăng ký thất bại. Vui lòng thử lại.',
   'auth.error.title': 'Lỗi Xác Thực',
@@ -457,5 +459,12 @@ export const vi: TranslationKeys = {
   'profile.validation.displayNameRequired': 'Tên hiển thị là bắt buộc',
   'profile.validation.displayNameMinLength': 'Tên hiển thị phải có ít nhất 3 ký tự',
   'profile.validation.displayNameMaxLength': 'Tên hiển thị tối đa 50 ký tự',
-  'profile.error.updateFailed': 'Cập nhật hồ sơ thất bại. Vui lòng thử lại.'
+  'profile.validation.displayNameInvalidChars':
+    'Tên hiển thị không được chứa <, > hoặc ký tự điều khiển',
+  'profile.error.updateFailed': 'Cập nhật hồ sơ thất bại. Vui lòng thử lại.',
+
+  // Public Profile
+  'profile.public.title': 'Hồ sơ của {username}',
+  'profile.public.gameHistory.title': 'Lịch Sử Trận Đấu',
+  'profile.public.gameHistory.empty': 'Chưa có trận đấu nào'
 };

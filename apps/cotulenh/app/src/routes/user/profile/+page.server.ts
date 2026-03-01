@@ -1,7 +1,6 @@
 import { fail, redirect } from '@sveltejs/kit';
 import { displayNameSchema } from './validation';
 import type { Actions, PageServerLoad } from './$types';
-import DOMPurify from 'dompurify';
 
 export const load: PageServerLoad = async ({ locals: { supabase, safeGetSession } }) => {
   const { user } = await safeGetSession();
@@ -49,15 +48,15 @@ export const actions: Actions = {
       return fail(400, { errors: fieldErrors, displayName });
     }
 
-    const sanitized = DOMPurify.sanitize(result.data.displayName, { ALLOWED_TAGS: [] });
+    const normalizedDisplayName = result.data.displayName;
 
     const { error } = await supabase
       .from('profiles')
-      .update({ display_name: sanitized, updated_at: new Date().toISOString() })
+      .update({ display_name: normalizedDisplayName, updated_at: new Date().toISOString() })
       .eq('id', user.id);
 
     if (error) {
-      return fail(500, { errors: { form: 'updateFailed' }, displayName });
+      return fail(500, { errors: { form: 'updateFailed' }, displayName: normalizedDisplayName });
     }
 
     return { success: true };

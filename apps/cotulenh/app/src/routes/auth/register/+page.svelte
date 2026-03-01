@@ -53,6 +53,7 @@
       displayNameRequired: 'auth.validation.displayNameRequired',
       displayNameMinLength: 'auth.validation.displayNameMinLength',
       displayNameMaxLength: 'auth.validation.displayNameMaxLength',
+      displayNameInvalidChars: 'auth.validation.displayNameInvalidChars',
       registrationFailed: 'auth.error.registrationFailed',
       form: 'auth.error.generic'
     };

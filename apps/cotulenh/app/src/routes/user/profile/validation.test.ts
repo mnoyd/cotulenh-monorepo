@@ -73,4 +73,21 @@ describe('displayNameSchema', () => {
     const result = displayNameSchema.safeParse({ displayName: 'Player123' });
     expect(result.success).toBe(true);
   });
+
+  it('normalizes whitespace in display name', () => {
+    const result = displayNameSchema.safeParse({ displayName: '  Commander   Name  ' });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.displayName).toBe('Commander Name');
+    }
+  });
+
+  it('rejects display name with blocked characters', () => {
+    const result = displayNameSchema.safeParse({ displayName: '<b>Commander</b>' });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      const nameError = result.error.issues.find((i) => i.path[0] === 'displayName');
+      expect(nameError?.message).toBe('displayNameInvalidChars');
+    }
+  });
 });

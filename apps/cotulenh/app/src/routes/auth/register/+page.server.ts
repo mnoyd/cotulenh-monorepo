@@ -1,7 +1,6 @@
 import { fail } from '@sveltejs/kit';
 import { registerSchema } from './validation';
 import type { Actions } from './$types';
-import DOMPurify from 'dompurify';
 
 export const actions: Actions = {
   default: async ({ request, locals: { supabase } }) => {
@@ -23,14 +22,14 @@ export const actions: Actions = {
       return fail(400, { errors: fieldErrors, email, displayName });
     }
 
-    const sanitizedDisplayName = DOMPurify.sanitize(result.data.displayName);
+    const normalizedDisplayName = result.data.displayName;
 
     const { error } = await supabase.auth.signUp({
       email: result.data.email,
       password: result.data.password,
       options: {
         data: {
-          display_name: sanitizedDisplayName
+          display_name: normalizedDisplayName
         }
       }
     });
@@ -40,7 +39,7 @@ export const actions: Actions = {
       return fail(400, {
         errors: { form: 'registrationFailed' },
         email: result.data.email,
-        displayName: sanitizedDisplayName
+        displayName: normalizedDisplayName
       });
     }
 

@@ -51,7 +51,7 @@ development_status:
   # Epic 2: User Profiles & Settings
   epic-2: in-progress
   2-1-display-name-own-profile: done
-  2-2-public-user-profiles: backlog
+  2-2-public-user-profiles: review
   2-3-account-settings: backlog
   epic-2-retrospective: optional
 

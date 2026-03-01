@@ -117,6 +117,23 @@ describe('registerSchema', () => {
       const result = registerSchema.safeParse({ ...validData, displayName: 'ABC' });
       expect(result.success).toBe(true);
     });
+
+    it('normalizes whitespace in display name', () => {
+      const result = registerSchema.safeParse({ ...validData, displayName: '  Commander   One  ' });
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.displayName).toBe('Commander One');
+      }
+    });
+
+    it('rejects display name with blocked characters', () => {
+      const result = registerSchema.safeParse({ ...validData, displayName: '<b>Commander</b>' });
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        const nameError = result.error.issues.find((i) => i.path[0] === 'displayName');
+        expect(nameError?.message).toBe('displayNameInvalidChars');
+      }
+    });
   });
 
   describe('empty fields', () => {

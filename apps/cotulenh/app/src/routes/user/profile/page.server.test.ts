@@ -1,14 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { actions, load } from './+page.server';
 
-// Mock DOMPurify - track calls to verify sanitization (AC4)
-const sanitizeMock = vi.fn((str: string) => str);
-vi.mock('dompurify', () => ({
-  default: {
-    sanitize: (...args: unknown[]) => sanitizeMock(...(args as [string]))
-  }
-}));
-
 describe('profile page server', () => {
   let mockSupabase: {
     from: ReturnType<typeof vi.fn>;
@@ -24,7 +16,6 @@ describe('profile page server', () => {
       session: { user: { id: 'user-123' } },
       user: { id: 'user-123' }
     });
-    sanitizeMock.mockClear();
   });
 
   function createMockEvent(formFields: Record<string, string>) {
@@ -184,16 +175,26 @@ describe('profile page server', () => {
       expect(result?.data?.displayName).toBe('Valid Name');
     });
 
-    it('calls DOMPurify.sanitize with ALLOWED_TAGS: [] to strip HTML (AC4)', async () => {
+    it('normalizes display name before saving', async () => {
       const updateMock = vi.fn().mockReturnValue({
         eq: vi.fn().mockResolvedValue({ data: {}, error: null })
       });
       mockSupabase.from.mockReturnValue({ update: updateMock });
 
-      const event = createMockEvent({ displayName: '<b>Bold Name</b>' });
+      const event = createMockEvent({ displayName: '  Commander   Name  ' });
       await actions.default(event);
 
-      expect(sanitizeMock).toHaveBeenCalledWith('<b>Bold Name</b>', { ALLOWED_TAGS: [] });
+      expect(updateMock).toHaveBeenCalledWith(
+        expect.objectContaining({ display_name: 'Commander Name' })
+      );
+    });
+
+    it('returns fail(400) for display name with blocked characters', async () => {
+      const event = createMockEvent({ displayName: '<b>Bold Name</b>' });
+      const result = await actions.default(event);
+
+      expect(result?.status).toBe(400);
+      expect(result?.data?.errors?.displayName).toBe('displayNameInvalidChars');
     });
   });
 });

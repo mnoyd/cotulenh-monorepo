@@ -1,11 +1,8 @@
 import { z } from 'zod';
+import { displayNameFieldSchema } from '$lib/validation/display-name';
 
 export const displayNameSchema = z.object({
-  displayName: z
-    .string()
-    .min(1, 'displayNameRequired')
-    .min(3, 'displayNameMinLength')
-    .max(50, 'displayNameMaxLength')
+  displayName: displayNameFieldSchema
 });
 
 export type DisplayNameFormData = z.infer<typeof displayNameSchema>;
