@@ -439,5 +439,23 @@ export const vi: TranslationKeys = {
   'auth.resetPassword.expiredLink': 'Liên kết khôi phục đã hết hạn. Vui lòng yêu cầu liên kết mới.',
   'auth.validation.confirmPasswordRequired': 'Vui lòng xác nhận mật khẩu',
   'auth.validation.passwordMismatch': 'Mật khẩu không khớp',
-  'auth.error.resetFailed': 'Khôi phục mật khẩu thất bại. Vui lòng thử lại.'
+  'auth.error.resetFailed': 'Khôi phục mật khẩu thất bại. Vui lòng thử lại.',
+
+  // Profile
+  'profile.title': 'Hồ Sơ',
+  'profile.displayName.label': 'Tên Hiển Thị',
+  'profile.displayName.placeholder': 'Nhập tên hiển thị',
+  'profile.displayName.saved': 'Đã lưu tên hiển thị',
+  'profile.displayName.edit': 'Sửa',
+  'profile.displayName.save': 'Lưu',
+  'profile.displayName.saving': 'Đang lưu...',
+  'profile.memberSince': 'Tham gia {date}',
+  'profile.stats.title': 'Thống Kê Trận Đấu',
+  'profile.stats.gamesPlayed': 'Số Trận',
+  'profile.stats.wins': 'Thắng',
+  'profile.stats.losses': 'Thua',
+  'profile.validation.displayNameRequired': 'Tên hiển thị là bắt buộc',
+  'profile.validation.displayNameMinLength': 'Tên hiển thị phải có ít nhất 3 ký tự',
+  'profile.validation.displayNameMaxLength': 'Tên hiển thị tối đa 50 ký tự',
+  'profile.error.updateFailed': 'Cập nhật hồ sơ thất bại. Vui lòng thử lại.'
 };

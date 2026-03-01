@@ -439,5 +439,23 @@ export const en: TranslationKeys = {
   'auth.resetPassword.expiredLink': 'Your reset link has expired. Please request a new one.',
   'auth.validation.confirmPasswordRequired': 'Please confirm your password',
   'auth.validation.passwordMismatch': 'Passwords do not match',
-  'auth.error.resetFailed': 'Password reset failed. Please try again.'
+  'auth.error.resetFailed': 'Password reset failed. Please try again.',
+
+  // Profile
+  'profile.title': 'My Profile',
+  'profile.displayName.label': 'Display Name',
+  'profile.displayName.placeholder': 'Enter your display name',
+  'profile.displayName.saved': 'Display name saved',
+  'profile.displayName.edit': 'Edit',
+  'profile.displayName.save': 'Save',
+  'profile.displayName.saving': 'Saving...',
+  'profile.memberSince': 'Joined {date}',
+  'profile.stats.title': 'Game Statistics',
+  'profile.stats.gamesPlayed': 'Games Played',
+  'profile.stats.wins': 'Wins',
+  'profile.stats.losses': 'Losses',
+  'profile.validation.displayNameRequired': 'Display name is required',
+  'profile.validation.displayNameMinLength': 'Display name must be at least 3 characters',
+  'profile.validation.displayNameMaxLength': 'Display name must be at most 50 characters',
+  'profile.error.updateFailed': 'Failed to update profile. Please try again.'
 };

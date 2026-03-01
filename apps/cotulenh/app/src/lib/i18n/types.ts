@@ -438,6 +438,24 @@ export interface TranslationKeys {
 
   // Additional error key
   'auth.error.resetFailed': string;
+
+  // Profile
+  'profile.title': string;
+  'profile.displayName.label': string;
+  'profile.displayName.placeholder': string;
+  'profile.displayName.saved': string;
+  'profile.displayName.edit': string;
+  'profile.displayName.save': string;
+  'profile.displayName.saving': string;
+  'profile.memberSince': string;
+  'profile.stats.title': string;
+  'profile.stats.gamesPlayed': string;
+  'profile.stats.wins': string;
+  'profile.stats.losses': string;
+  'profile.validation.displayNameRequired': string;
+  'profile.validation.displayNameMinLength': string;
+  'profile.validation.displayNameMaxLength': string;
+  'profile.error.updateFailed': string;
 }
 
 export type TranslationKey = keyof TranslationKeys;
