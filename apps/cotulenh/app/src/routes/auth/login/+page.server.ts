@@ -1,4 +1,5 @@
 import { fail, redirect } from '@sveltejs/kit';
+import { logger } from '@cotulenh/common';
 import { loginSchema } from './validation';
 import type { Actions, PageServerLoad } from './$types';
 
@@ -16,8 +17,8 @@ export const load: PageServerLoad = async ({ locals: { safeGetSession } }) => {
 export const actions: Actions = {
   default: async ({ request, url, locals: { supabase } }) => {
     const formData = await request.formData();
-    const email = formData.get('email') as string;
-    const password = formData.get('password') as string;
+    const email = String(formData.get('email') ?? '');
+    const password = String(formData.get('password') ?? '');
 
     const result = loginSchema.safeParse({ email, password });
 
@@ -38,6 +39,7 @@ export const actions: Actions = {
     });
 
     if (error) {
+      logger.warn('Login failed', { email: result.data.email, error: error.message });
       return fail(400, {
         errors: { form: 'loginFailed' },
         email: result.data.email

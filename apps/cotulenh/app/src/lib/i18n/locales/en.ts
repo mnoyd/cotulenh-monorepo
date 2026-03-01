@@ -408,6 +408,7 @@ export const en: TranslationKeys = {
   'auth.login.passwordPlaceholder': 'Enter your password',
   'auth.login.submit': 'Sign In',
   'auth.login.submitting': 'Signing in...',
+  'auth.login.forgotPassword': 'Forgot password?',
   'auth.login.noAccount': "Don't have an account?",
   'auth.login.registerLink': 'Sign up',
   'auth.logout.signingOut': 'Signing out...',

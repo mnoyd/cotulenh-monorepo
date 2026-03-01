@@ -1,6 +1,6 @@
 # Story 1.2: User Login & Persistent Sessions
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -260,8 +260,16 @@ Claude Opus 4.6
 - Task 5: Verified session persistence infrastructure from Story 1.1 — hooks.server.ts, layout.server.ts, layout.ts, layout.svelte onAuthStateChange all in place. Load function test confirms session detection.
 - Task 6: 71 app tests pass (21 new + 50 existing). turbo build, check-types, test all pass. Zero type errors.
 
+### Code Review Fixes (2026-03-01)
+
+- **H1 — Server-side error logging:** Added `@cotulenh/common` logger import. Failed `signInWithPassword` calls now log `logger.warn('Login failed', { email, error })` for production observability.
+- **H2 — Submit button disabled state:** Button now disabled when email or password fields are empty (`disabled={submitting || !email || !password}`), matching the UX spec requirement.
+- **M1 — Forgot password link:** Added "Forgot password?" link (`/auth/forgot-password`) below the submit button with i18n support (EN: "Forgot password?", VI: "Quên mật khẩu?"). New key `auth.login.forgotPassword` added to types.ts, en.ts, vi.ts.
+- **M2 — Safe formData extraction:** Replaced unsafe `formData.get('email') as string` with `String(formData.get('email') ?? '')` for explicit null handling.
+
 ### Change Log
 
+- **2026-03-01:** Code review fixes — added server-side error logging, submit button disabled when empty, forgot password link, safe formData extraction.
 - **2026-02-28:** Story 1.2 implementation complete — login page with form action, Zod validation, open redirect prevention, session persistence verification, i18n (EN + VI), 21 new tests.
 
 ### File List

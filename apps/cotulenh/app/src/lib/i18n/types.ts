@@ -403,6 +403,7 @@ export interface TranslationKeys {
   'auth.login.passwordPlaceholder': string;
   'auth.login.submit': string;
   'auth.login.submitting': string;
+  'auth.login.forgotPassword': string;
   'auth.login.noAccount': string;
   'auth.login.registerLink': string;
   'auth.logout.signingOut': string;

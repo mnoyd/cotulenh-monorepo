@@ -140,9 +140,13 @@
         {/if}
       </div>
 
-      <Button type="submit" size="lg" disabled={submitting} class="submit-btn">
+      <Button type="submit" size="lg" disabled={submitting || !email || !password} class="submit-btn">
         {submitting ? i18n.t('auth.login.submitting') : i18n.t('auth.login.submit')}
       </Button>
+
+      <a href="/auth/forgot-password" class="forgot-password-link">
+        {i18n.t('auth.login.forgotPassword')}
+      </a>
     </form>
 
     <p class="register-prompt">
@@ -271,6 +275,20 @@
     font-size: 0.75rem;
     color: #ef4444;
     margin: 0;
+  }
+
+  .forgot-password-link {
+    display: block;
+    text-align: right;
+    font-size: 0.8125rem;
+    color: var(--theme-text-secondary, #aaa);
+    text-decoration: none;
+    margin-top: 0.25rem;
+  }
+
+  .forgot-password-link:hover {
+    color: var(--theme-primary, #06b6d4);
+    text-decoration: underline;
   }
 
   .register-prompt {

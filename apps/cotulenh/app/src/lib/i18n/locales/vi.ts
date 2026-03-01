@@ -408,6 +408,7 @@ export const vi: TranslationKeys = {
   'auth.login.passwordPlaceholder': 'Nhập mật khẩu của bạn',
   'auth.login.submit': 'Đăng Nhập',
   'auth.login.submitting': 'Đang đăng nhập...',
+  'auth.login.forgotPassword': 'Quên mật khẩu?',
   'auth.login.noAccount': 'Chưa có tài khoản?',
   'auth.login.registerLink': 'Đăng ký',
   'auth.logout.signingOut': 'Đang đăng xuất...',
