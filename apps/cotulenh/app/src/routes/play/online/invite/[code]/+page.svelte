@@ -37,7 +37,10 @@
         srAnnouncement = '';
       }, 2000);
     } catch {
-      srAnnouncement = '';
+      srAnnouncement = i18n.t('share.toastCopyFailed');
+      setTimeout(() => {
+        srAnnouncement = '';
+      }, 2000);
     }
   }
 </script>

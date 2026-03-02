@@ -178,6 +178,20 @@ describe('presence-core', () => {
       channel._simulateLeave('user-2');
       expect(getOnlineUsers().has('user-2')).toBe(false);
     });
+
+    it('returns a defensive copy', () => {
+      const channel = createMockChannel();
+      const supabase = createMockSupabase(channel);
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      joinLobby(supabase as any, 'user-1');
+      channel._simulateSync({ 'user-2': [{}] });
+
+      const snapshot = getOnlineUsers();
+      snapshot.add('user-999');
+
+      expect(getOnlineUsers().has('user-999')).toBe(false);
+    });
   });
 
   describe('isUserOnline', () => {
@@ -243,11 +257,56 @@ describe('presence-core', () => {
       channel._simulateJoin('user-4');
       expect(callback).not.toHaveBeenCalled();
     });
+
+    it('clears callbacks on leave to avoid stale listeners', () => {
+      const channel = createMockChannel();
+      const supabase = createMockSupabase(channel);
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      joinLobby(supabase as any, 'user-1');
+
+      const callback = vi.fn();
+      onPresenceChange(callback);
+
+      leaveLobby();
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      joinLobby(supabase as any, 'user-1');
+      channel._simulateJoin('user-4');
+      expect(callback).not.toHaveBeenCalled();
+    });
   });
 
   describe('getLobbyConnected', () => {
     it('returns false when not connected', () => {
       expect(getLobbyConnected()).toBe(false);
+    });
+
+    it('schedules reconnect when track fails', async () => {
+      vi.useFakeTimers();
+      try {
+        const firstChannel = createMockChannel();
+        firstChannel.track = vi.fn().mockRejectedValue(new Error('track failed'));
+        const secondChannel = createMockChannel();
+        const supabase = {
+          channel: vi
+            .fn()
+            .mockReturnValueOnce(firstChannel)
+            .mockReturnValueOnce(secondChannel)
+        };
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        joinLobby(supabase as any, 'user-1');
+        await firstChannel._simulateSubscribed();
+
+        expect(getLobbyConnected()).toBe(false);
+        expect(supabase.channel).toHaveBeenCalledTimes(1);
+
+        await vi.advanceTimersByTimeAsync(1000);
+        expect(supabase.channel).toHaveBeenCalledTimes(2);
+      } finally {
+        vi.useRealTimers();
+      }
     });
   });
 });

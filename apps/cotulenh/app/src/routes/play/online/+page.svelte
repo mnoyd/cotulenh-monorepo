@@ -316,7 +316,7 @@
     }
   }
 
-  async function handleCopyInviteLink(code: string) {
+  async function handleCopyInviteLink(code: string): Promise<boolean> {
     try {
       const url = `${window.location.origin}/play/online/invite/${code}`;
       await navigator.clipboard.writeText(url);
@@ -326,9 +326,11 @@
         copiedLink = false;
         srAnnouncement = '';
       }, 2000);
+      return true;
     } catch {
-      srAnnouncement = i18n.t('inviteLink.toast.createFailed');
+      srAnnouncement = i18n.t('share.toastCopyFailed');
       setTimeout(() => (srAnnouncement = ''), 2000);
+      return false;
     }
   }
 

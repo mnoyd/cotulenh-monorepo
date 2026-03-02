@@ -8,7 +8,7 @@
     invitation: InvitationItem;
     loading?: boolean;
     oncancel?: (invitationId: string) => void;
-    oncopy?: (inviteCode: string) => Promise<void> | void;
+    oncopy?: (inviteCode: string) => Promise<boolean> | boolean;
   }
 
   let { invitation, loading = false, oncancel, oncopy }: Props = $props();
@@ -27,7 +27,10 @@
 
   async function handleCopy() {
     try {
-      await oncopy?.(invitation.inviteCode);
+      const copyOk = await oncopy?.(invitation.inviteCode);
+      if (copyOk === false) {
+        return;
+      }
       copied = true;
       setTimeout(() => (copied = false), 2000);
     } catch {

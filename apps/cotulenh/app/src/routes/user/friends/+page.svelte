@@ -3,6 +3,7 @@
   import type { TranslationKey } from '$lib/i18n/types';
   import type { FriendSearchResult, FriendListItem, PendingRequestItem } from '$lib/friends/types';
   import { getOnlineUsers } from '$lib/friends/presence.svelte';
+  import { sortFriendsByOnline } from '$lib/friends/sort';
   import PlayerCard from '$lib/components/PlayerCard.svelte';
   import FriendRequestCard from '$lib/components/FriendRequestCard.svelte';
   import { AlertDialog } from 'bits-ui';
@@ -52,17 +53,10 @@
 
   // Merge data friends + optimistic friends, filter removed, add online status
   let allFriends = $derived.by(() => {
-    const merged = [...data.friends, ...optimisticFriends]
-      .filter((f) => !removedFriends.has(f.friendshipId));
-
-    // Sort: online first, then alphabetical within each group (AC7)
-    return merged.sort((a, b) => {
-      const aOnline = onlineUsers.has(a.userId);
-      const bOnline = onlineUsers.has(b.userId);
-      if (aOnline && !bOnline) return -1;
-      if (!aOnline && bOnline) return 1;
-      return a.displayName.localeCompare(b.displayName);
-    });
+    const merged = [...data.friends, ...optimisticFriends].filter(
+      (f) => !removedFriends.has(f.friendshipId)
+    );
+    return sortFriendsByOnline(merged, onlineUsers);
   });
 
   // Click-outside handler to close search dropdown

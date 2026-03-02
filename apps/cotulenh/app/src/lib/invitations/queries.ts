@@ -1,7 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { GameConfig, InvitationItem } from './types';
 import { logger } from '@cotulenh/common';
-import { canonicalPair } from '$lib/friends/queries';
 
 /** Strip HTML tags from display name to prevent stored XSS at query boundary */
 export function sanitizeName(name: string): string {
@@ -377,7 +376,9 @@ export async function acceptInviteLink(
     .from('game_invitations')
     .update({ status: 'accepted' })
     .eq('id', claimed.id)
+    .eq('status', 'pending')
     .eq('to_user', userId)
+    .gt('expires_at', new Date().toISOString())
     .select('id')
     .single();
 
@@ -390,7 +391,17 @@ export async function acceptInviteLink(
     return { success: false, error: 'acceptFailed' };
   }
 
-  // Step 3: Create games row — sender is red, acceptor is blue
+  // Step 3: Auto-friend users; rollback invitation if friendship reconciliation fails.
+  const friendshipCreated = await createAutoFriendship(supabase, userId, claimed.from_user);
+  if (!friendshipCreated) {
+    await supabase
+      .from('game_invitations')
+      .update({ status: 'pending', to_user: null })
+      .eq('id', claimed.id);
+    return { success: false, error: 'friendshipFailed' };
+  }
+
+  // Step 4: Create games row — sender is red, acceptor is blue
   const { data: game, error: gameError } = await supabase
     .from('games')
     .insert({
@@ -418,29 +429,23 @@ export async function acceptInviteLink(
 
 /**
  * Create an auto-accepted friendship between two users.
- * Uses canonical ordering (user_a < user_b) to satisfy the CHECK constraint.
- * Returns true on success or if already friends (duplicate key).
- * Returns false on unexpected errors (logged but non-blocking).
+ * Delegates to SECURITY DEFINER RPC to reconcile accepted friendship under RLS.
+ * Returns true only when friendship is confirmed accepted.
  */
 export async function createAutoFriendship(
   supabase: SupabaseClient,
   userIdA: string,
   userIdB: string
 ): Promise<boolean> {
-  const [user_a, user_b] = canonicalPair(userIdA, userIdB);
-  const { error } = await supabase.from('friendships').insert({
-    user_a,
-    user_b,
-    status: 'accepted',
-    initiated_by: user_a
+  const { data, error } = await supabase.rpc('create_or_accept_friendship', {
+    p_user_1: userIdA,
+    p_user_2: userIdB,
+    p_initiated_by: userIdA
   });
 
-  if (!error) return true;
-
-  // Already friends — expected, treat as success
-  if (error.message.includes('duplicate key')) return true;
+  if (!error && data === true) return true;
 
   // Unexpected error — log but don't throw (friendship is non-blocking side effect)
-  logger.error(error, 'createAutoFriendship failed');
+  logger.error(error ?? new Error('create_or_accept_friendship returned false'), 'createAutoFriendship failed');
   return false;
 }

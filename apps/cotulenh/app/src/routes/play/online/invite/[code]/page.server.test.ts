@@ -2,20 +2,17 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 vi.mock('$lib/invitations/queries', () => ({
   getInvitationByCode: vi.fn(),
-  acceptInviteLink: vi.fn(),
-  createAutoFriendship: vi.fn()
+  acceptInviteLink: vi.fn()
 }));
 
 import {
   getInvitationByCode,
-  acceptInviteLink,
-  createAutoFriendship
+  acceptInviteLink
 } from '$lib/invitations/queries';
 import { load, actions } from './+page.server';
 
 const mockGetInvitationByCode = vi.mocked(getInvitationByCode);
 const mockAcceptInviteLink = vi.mocked(acceptInviteLink);
-const mockCreateAutoFriendship = vi.mocked(createAutoFriendship);
 
 function createMockLocals(user: { id: string } | null = null) {
   return {
@@ -117,13 +114,12 @@ describe('actions.acceptInviteLink', () => {
     expect(data.status).toBe(401);
   });
 
-  it('redirects to game on success and creates auto-friendship', async () => {
+  it('redirects to game on success', async () => {
     mockAcceptInviteLink.mockResolvedValue({
       success: true,
       gameId: 'game-1',
       inviterUserId: 'user-sender'
     });
-    mockCreateAutoFriendship.mockResolvedValue(true);
 
     await expect(
       actions.acceptInviteLink({
@@ -141,11 +137,6 @@ describe('actions.acceptInviteLink', () => {
       expect.anything(),
       'abc12345',
       'user-acceptor'
-    );
-    expect(mockCreateAutoFriendship).toHaveBeenCalledWith(
-      expect.anything(),
-      'user-acceptor',
-      'user-sender'
     );
   });
 

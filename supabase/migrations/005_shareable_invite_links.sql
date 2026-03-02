@@ -51,6 +51,9 @@ CREATE POLICY "Users can claim link invitations"
   )
   WITH CHECK (
     to_user = auth.uid()
+    AND status = 'pending'
+    AND from_user != auth.uid()
+    AND expires_at > now()
   );
 
 -- Partial index for fast invite code lookups on unclaimed link invitations

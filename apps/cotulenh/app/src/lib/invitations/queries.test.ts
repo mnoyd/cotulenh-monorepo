@@ -670,8 +670,9 @@ describe('createShareableInvitation', () => {
 
 describe('acceptInviteLink', () => {
   it('claims, accepts, and creates game on success', async () => {
-    const { supabase, mockFrom } = createMockSupabase();
+    const { supabase, mockFrom, mockRpc } = createMockSupabase();
     let callCount = 0;
+    mockRpc.mockResolvedValue({ data: true, error: null });
 
     mockFrom.mockImplementation(() => {
       callCount++;
@@ -698,7 +699,8 @@ describe('acceptInviteLink', () => {
   });
 
   it('fails when invitation already claimed (race condition)', async () => {
-    const { supabase, mockFrom } = createMockSupabase();
+    const { supabase, mockFrom, mockRpc } = createMockSupabase();
+    mockRpc.mockResolvedValue({ data: true, error: null });
     const chain = actionChain({ data: null, error: { code: 'PGRST116', message: 'no rows' } });
     mockFrom.mockReturnValue(chain);
 
@@ -709,7 +711,8 @@ describe('acceptInviteLink', () => {
   });
 
   it('prevents self-accept via neq from_user filter', async () => {
-    const { supabase, mockFrom } = createMockSupabase();
+    const { supabase, mockFrom, mockRpc } = createMockSupabase();
+    mockRpc.mockResolvedValue({ data: true, error: null });
     // Claim step fails because from_user == userId is filtered by .neq()
     const chain = actionChain({ data: null, error: { code: 'PGRST116' } });
     mockFrom.mockReturnValue(chain);
@@ -721,9 +724,10 @@ describe('acceptInviteLink', () => {
   });
 
   it('rolls back on game creation failure', async () => {
-    const { supabase, mockFrom } = createMockSupabase();
+    const { supabase, mockFrom, mockRpc } = createMockSupabase();
     let callCount = 0;
     const rollbackChain = actionChain({ data: { id: 'inv-1' }, error: null });
+    mockRpc.mockResolvedValue({ data: true, error: null });
 
     mockFrom.mockImplementation(() => {
       callCount++;
@@ -751,46 +755,64 @@ describe('acceptInviteLink', () => {
     expect(result.success).toBe(false);
     expect(result.error).toBe('gameCreationFailed');
   });
+
+  it('rolls back and fails when auto-friendship reconciliation fails', async () => {
+    const { supabase, mockFrom, mockRpc } = createMockSupabase();
+    let callCount = 0;
+    const rollbackChain = actionChain({ data: { id: 'inv-1' }, error: null });
+    mockRpc.mockResolvedValue({ data: false, error: null });
+
+    mockFrom.mockImplementation(() => {
+      callCount++;
+      if (callCount === 1) {
+        // claim succeeds
+        return actionChain({
+          data: { id: 'inv-1', from_user: 'user-sender', game_config: { timeMinutes: 5, incrementSeconds: 0 } },
+          error: null
+        });
+      }
+      if (callCount === 2) {
+        // accept succeeds
+        return actionChain({ data: { id: 'inv-1' }, error: null });
+      }
+      // rollback invitation
+      return rollbackChain;
+    });
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = await acceptInviteLink(supabase as any, 'abc12345', 'user-acceptor');
+    expect(result.success).toBe(false);
+    expect(result.error).toBe('friendshipFailed');
+  });
 });
 
 describe('createAutoFriendship', () => {
-  it('creates friendship with accepted status and returns true', async () => {
-    const { supabase, mockFrom } = createMockSupabase();
-    const chain: Record<string, unknown> = {};
-    chain.insert = vi.fn().mockResolvedValue({ error: null });
-    mockFrom.mockReturnValue(chain);
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const result = await createAutoFriendship(supabase as any, 'user-b', 'user-a');
-    expect(result).toBe(true);
-    expect(chain.insert).toHaveBeenCalled();
-    const insertCall = (chain.insert as ReturnType<typeof vi.fn>).mock.calls[0][0];
-    // Canonical pair: user-a < user-b
-    expect(insertCall.user_a).toBe('user-a');
-    expect(insertCall.user_b).toBe('user-b');
-    expect(insertCall.status).toBe('accepted');
-  });
-
-  it('returns true when already friends (duplicate key)', async () => {
-    const { supabase, mockFrom } = createMockSupabase();
-    const chain: Record<string, unknown> = {};
-    chain.insert = vi.fn().mockResolvedValue({
-      error: { message: 'duplicate key value violates unique constraint' }
-    });
-    mockFrom.mockReturnValue(chain);
+  it('returns true when RPC reconciles friendship', async () => {
+    const { supabase, mockRpc } = createMockSupabase();
+    mockRpc.mockResolvedValue({ data: true, error: null });
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const result = await createAutoFriendship(supabase as any, 'user-a', 'user-b');
     expect(result).toBe(true);
+    expect(mockRpc).toHaveBeenCalledWith('create_or_accept_friendship', {
+      p_user_1: 'user-a',
+      p_user_2: 'user-b',
+      p_initiated_by: 'user-a'
+    });
   });
 
-  it('returns false on unexpected errors', async () => {
-    const { supabase, mockFrom } = createMockSupabase();
-    const chain: Record<string, unknown> = {};
-    chain.insert = vi.fn().mockResolvedValue({
-      error: { message: 'connection refused' }
-    });
-    mockFrom.mockReturnValue(chain);
+  it('returns false when RPC returns false', async () => {
+    const { supabase, mockRpc } = createMockSupabase();
+    mockRpc.mockResolvedValue({ data: false, error: null });
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = await createAutoFriendship(supabase as any, 'user-a', 'user-b');
+    expect(result).toBe(false);
+  });
+
+  it('returns false on RPC errors', async () => {
+    const { supabase, mockRpc } = createMockSupabase();
+    mockRpc.mockResolvedValue({ data: null, error: { message: 'connection refused' } });
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const result = await createAutoFriendship(supabase as any, 'user-a', 'user-b');

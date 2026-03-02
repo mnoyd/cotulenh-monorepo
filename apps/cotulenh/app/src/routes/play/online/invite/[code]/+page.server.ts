@@ -2,8 +2,7 @@ import { fail, redirect } from '@sveltejs/kit';
 import { logger } from '@cotulenh/common';
 import {
   getInvitationByCode,
-  acceptInviteLink,
-  createAutoFriendship
+  acceptInviteLink
 } from '$lib/invitations/queries';
 import type { Actions, PageServerLoad } from './$types';
 
@@ -40,14 +39,6 @@ export const actions: Actions = {
         errors: { form: result.error ?? 'acceptFailed' },
         action: 'acceptInviteLink' as const
       });
-    }
-
-    // Auto-friend the inviter and acceptor (non-blocking — game takes priority)
-    if (result.inviterUserId) {
-      const friendshipCreated = await createAutoFriendship(supabase, user.id, result.inviterUserId);
-      if (!friendshipCreated) {
-        logger.error(new Error('Auto-friendship failed'), 'Invite accept proceeding without friendship');
-      }
     }
 
     redirect(303, `/play/online/${result.gameId}`);

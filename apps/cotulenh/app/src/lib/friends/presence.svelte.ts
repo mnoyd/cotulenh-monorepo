@@ -38,7 +38,7 @@ export function leaveLobby(): void {
  * Get the current set of online user IDs (reactive via $state).
  */
 export function getOnlineUsers(): Set<string> {
-  return onlineUsers;
+  return new Set(onlineUsers);
 }
 
 /**

@@ -1,6 +1,6 @@
 # Story 3.3: Friends List with Online Status
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -280,18 +280,22 @@ All 7 tasks implemented successfully. The friends list now has real-time online 
 - **Remove friend**: Query verifies user is part of the accepted friendship. Server action with auth guard and validation.
 - **i18n**: 7 new translation keys for remove friend dialog and toasts (EN/VI).
 - **Tests**: 25 new tests — 14 presence-core tests + 5 removeFriend query tests + 4 removeFriend server action tests + 2 existing test updates.
+- **Senior review fixes (2026-03-02)**: Added offline status screen-reader announcements while keeping offline dots hidden, hardened presence state safety (`getOnlineUsers` defensive copies), added reconnect handling for `track()` failures, cleared stale presence callbacks on leave, and extracted/tested online-first sort logic.
 
 ### File List
 
 **New files created:**
 - `apps/cotulenh/app/src/lib/friends/presence-core.ts` — Core presence channel logic (testable)
 - `apps/cotulenh/app/src/lib/friends/presence.svelte.ts` — Reactive $state wrapper for Svelte components
-- `apps/cotulenh/app/src/lib/friends/presence.test.ts` — 14 presence tests
+- `apps/cotulenh/app/src/lib/friends/presence.test.ts` — 19 presence tests
+- `apps/cotulenh/app/src/lib/friends/sort.ts` — Online-first/alphabetical friend sorting helper
+- `apps/cotulenh/app/src/lib/friends/sort.test.ts` — Sorting behavior tests (online-first + alphabetical)
 
 **Files modified:**
 - `apps/cotulenh/app/src/routes/+layout.svelte` — Added lobby join/leave lifecycle
 - `apps/cotulenh/app/src/lib/components/OnlineIndicator.svelte` — Activated (visible=true default), --color-player-online token
 - `apps/cotulenh/app/src/lib/components/PlayerCard.svelte` — Added online/showOnlineIndicator props with indicator badge
+- `apps/cotulenh/app/src/lib/friends/presence.svelte.ts` — Defensive copy for online user snapshots
 - `apps/cotulenh/app/src/lib/friends/queries.ts` — Added removeFriend function
 - `apps/cotulenh/app/src/routes/user/friends/+page.server.ts` — Added removeFriend action
 - `apps/cotulenh/app/src/routes/user/friends/+page.svelte` — Online status, sorting, remove friend with AlertDialog
@@ -303,5 +307,27 @@ All 7 tasks implemented successfully. The friends list now has real-time online 
 
 ### Test Results
 
-- 253 tests passing across 24 files
+- 259 tests passing across 25 files
 - No new type errors (only pre-existing env variable warnings)
+
+## Senior Developer Review (AI)
+
+### Reviewer
+
+- Codex (GPT-5)
+- Date: 2026-03-02
+
+### Outcome
+
+- Approved after fixes
+
+### Review Notes
+
+- AC9 accessibility gap fixed: offline status is now announced to screen readers while offline users still show no visual dot.
+- Presence state hardening completed: defensive `Set` copies prevent external mutation, and stale callbacks are cleared on lobby leave.
+- Reconnect reliability improved: failed `track()` now logs and schedules exponential-backoff reconnect.
+- Task 7.4 evidence added: friend sorting extracted to a helper with dedicated tests validating online-first + alphabetical order.
+
+## Change Log
+
+- 2026-03-02: Senior review pass completed. Story moved `review` -> `done`. Applied accessibility and presence reliability fixes; added sorting helper + tests.

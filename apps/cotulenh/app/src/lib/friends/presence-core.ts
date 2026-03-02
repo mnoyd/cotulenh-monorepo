@@ -78,9 +78,15 @@ export function joinLobby(supabase: SupabaseClient, userId: string): void {
     })
     .subscribe(async (status) => {
       if (status === 'SUBSCRIBED') {
-        await channel.track({ user_id: userId, online_at: new Date().toISOString() });
-        setConnected(true);
-        reconnectAttempts = 0;
+        try {
+          await channel.track({ user_id: userId, online_at: new Date().toISOString() });
+          setConnected(true);
+          reconnectAttempts = 0;
+        } catch (error) {
+          logger.error(error as Error, 'Failed to track lobby presence');
+          setConnected(false);
+          scheduleReconnect(supabase, userId);
+        }
       } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
         setConnected(false);
         scheduleReconnect(supabase, userId);
@@ -109,6 +115,7 @@ export function leaveLobby(): void {
 
   connected = false;
   onlineUsers = new Set();
+  presenceCallbacks.clear();
   notifyAll();
 }
 
@@ -116,7 +123,7 @@ export function leaveLobby(): void {
  * Get the current set of online user IDs.
  */
 export function getOnlineUsers(): Set<string> {
-  return onlineUsers;
+  return new Set(onlineUsers);
 }
 
 /**

@@ -1,6 +1,6 @@
 # Story 4.3: Shareable Invite Link
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -460,7 +460,7 @@ None — clean implementation with no blocking issues.
 ### Completion Notes List
 
 - **Task 1:** Created `005_shareable_invite_links.sql` with 3 RLS policies (authenticated SELECT, anon SELECT, authenticated UPDATE for claiming) and a partial index on `invite_code WHERE to_user IS NULL`. All policies properly scoped to pending + unexpired + unclaimed invitations.
-- **Task 2:** Added 4 new query functions to `queries.ts`: `getInvitationByCode` (fetches invitation + inviter profile by code), `createShareableInvitation` (inserts with `to_user = NULL` and 24h expiration), `acceptInviteLink` (claim-then-accept pattern with atomic updates and game creation + rollback), `createAutoFriendship` (canonical pair ordering, silent on duplicate key). All functions follow existing error handling patterns.
+- **Task 2:** Added 4 new query functions to `queries.ts`: `getInvitationByCode` (fetches invitation + inviter profile by code), `createShareableInvitation` (inserts with `to_user = NULL` and 24h expiration), `acceptInviteLink` (claim-then-accept pattern with atomic updates and game creation + rollback), `createAutoFriendship` (RPC-backed reconciliation via `create_or_accept_friendship` for reliable accepted friendship under RLS).
 - **Task 3:** Created public invite landing page at `/play/online/invite/[code]/`. Modified existing `+layout.server.ts` to skip auth for `/play/online/invite/` paths (simpler than route groups, well-tested). Server load returns invitation data + auth state + own-invitation flag. Form action handles accept + auto-friendship + redirect to game.
 - **Task 4:** Added "Create Invite Link" section to online page with `createShareableInvitation` form action. Inline copyable link result with "Copy Link" button using navigator.clipboard API. Reuses existing TimeControlSelector.
 - **Task 5:** Updated register page to support `redirectTo` parameter: reads from form data, validates with `isRelativePath()`, passes as `emailRedirectTo` to Supabase signUp. Login link preserves redirectTo. Verify email page shows invite context message.
@@ -473,6 +473,7 @@ None — clean implementation with no blocking issues.
 - 2026-03-02: Implemented Story 4.3 — Shareable Invite Link feature (all 8 tasks)
 - 2026-03-02: Senior code review completed; status changed to `in-progress` and AI follow-up tasks added.
 - 2026-03-02: All 6 valid review findings addressed (1 critical, 1 high, 3 medium, 1 low). 1 finding marked N/A (branch-level artifact). Story moved back to `review`. 357 tests passing.
+- 2026-03-02: Follow-up fixes applied for Story 4.3 scope: invite claim policy hardening, race-safe accept update guards, RPC-backed auto-friendship reconciliation, blocking friendship failure rollback before game creation, and copy-feedback accessibility fixes. Story marked `done`.
 
 ## Senior Developer Review (AI)
 
@@ -483,23 +484,24 @@ None — clean implementation with no blocking issues.
 
 ### Outcome
 
-- Changes Requested
+- Approved (after follow-up fixes)
 
 ### Summary
 
 - Identified one critical security gap, one high-severity AC reliability gap, and four medium/low correctness/accessibility gaps.
-- Added follow-up tasks under "Review Follow-ups (AI)" and moved story status from `review` to `in-progress`.
+- Applied and verified follow-up fixes in story scope; story status is now `done`.
 
 ### File List
 
 **New files:**
 - `supabase/migrations/005_shareable_invite_links.sql`
+- `supabase/migrations/006_create_or_accept_friendship.sql`
 - `apps/cotulenh/app/src/routes/play/online/invite/[code]/+page.server.ts`
 - `apps/cotulenh/app/src/routes/play/online/invite/[code]/+page.svelte`
 - `apps/cotulenh/app/src/routes/play/online/invite/[code]/page.server.test.ts`
 
 **Modified files:**
-- `apps/cotulenh/app/src/lib/invitations/queries.ts` (added 4 new functions + canonicalPair import)
+- `apps/cotulenh/app/src/lib/invitations/queries.ts` (added 4 new functions and RPC-backed auto-friendship reconciliation)
 - `apps/cotulenh/app/src/lib/invitations/queries.test.ts` (added 12 tests for new query functions)
 - `apps/cotulenh/app/src/routes/play/online/+layout.server.ts` (skip auth for invite routes)
 - `apps/cotulenh/app/src/routes/play/online/layout.server.test.ts` (added invite bypass test)

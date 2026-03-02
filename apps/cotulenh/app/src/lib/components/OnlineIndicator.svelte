@@ -14,13 +14,10 @@
 </script>
 
 {#if visible}
-  <span
-    class="online-indicator"
-    class:online
-    role="status"
-    aria-label={label}
-  >
-  </span>
+  <span class="sr-only" role="status">{label}</span>
+  {#if online}
+    <span class="online-indicator online" aria-hidden="true"></span>
+  {/if}
 {/if}
 
 <style>
@@ -34,5 +31,17 @@
 
   .online-indicator.online {
     background: var(--color-player-online, #22c55e);
+  }
+
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
   }
 </style>
