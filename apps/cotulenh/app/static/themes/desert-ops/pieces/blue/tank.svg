@@ -15,16 +15,16 @@
     <circle cx="68" cy="72.5" r="4" fill="#4a4a4a" />
     <circle cx="80" cy="72.5" r="4" fill="#4a4a4a" />
     <!-- Hull (Sloped rear/front Merkava vibe) -->
-    <path d="M 12 55 L 85 55 L 88 65 L 10 65 Z" fill="#38bdf8" stroke="#0f172a" stroke-width="1.5" />
-    <path d="M 20 45 L 75 45 L 85 55 L 12 55 Z" fill="#7dd3fc" stroke="#0f172a" stroke-width="1.5" />
+    <path d="M 12 55 L 85 55 L 88 65 L 10 65 Z" fill="#3b8cc4" stroke="#1a2520" stroke-width="1.5" />
+    <path d="M 20 45 L 75 45 L 85 55 L 12 55 Z" fill="#6aadcc" stroke="#1a2520" stroke-width="1.5" />
     <!-- Turret (Sloped angular) -->
-    <path d="M 30 45 L 70 45 L 75 35 L 40 30 Z" fill="#38bdf8" stroke="#0f172a" stroke-width="1.5" />
-    <path d="M 35 30 L 70 30 L 75 35 L 40 30 Z" fill="#7dd3fc" />
+    <path d="M 30 45 L 70 45 L 75 35 L 40 30 Z" fill="#3b8cc4" stroke="#1a2520" stroke-width="1.5" />
+    <path d="M 35 30 L 70 30 L 75 35 L 40 30 Z" fill="#6aadcc" />
     <!-- Barrel -->
-    <rect x="70" y="36" width="28" height="4" fill="#0369a1" stroke="#2c2a26" stroke-width="1" />
-    <rect x="85" y="35" width="6" height="6" fill="#0f172a" /> <!-- Fume extractor -->
+    <rect x="70" y="36" width="28" height="4" fill="#2a6d8a" stroke="#2c2a26" stroke-width="1" />
+    <rect x="85" y="35" width="6" height="6" fill="#1a2520" /> <!-- Fume extractor -->
     <!-- Hatch/MG -->
-    <rect x="35" y="26" width="10" height="4" fill="#0369a1" />
+    <rect x="35" y="26" width="10" height="4" fill="#2a6d8a" />
     <rect x="45" y="24" width="15" height="2" fill="#2c2a26" />
     <!-- Antenna -->
     <rect x="30" y="10" width="1" height="20" fill="#2c2a26" />

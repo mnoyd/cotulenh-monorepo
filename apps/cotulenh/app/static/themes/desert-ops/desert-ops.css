@@ -8,19 +8,19 @@
   --theme-secondary: #e2c290;
   --theme-secondary-dim: rgba(226, 194, 144, 0.12);
   --theme-secondary-glow: rgba(226, 194, 144, 0.4);
-  --theme-accent: #20b2aa;
-  --theme-accent-dim: rgba(32, 178, 170, 0.12);
-  --theme-accent-glow: rgba(32, 178, 170, 0.4);
+  --theme-accent: #5a9e98;
+  --theme-accent-dim: rgba(90, 158, 152, 0.12);
+  --theme-accent-glow: rgba(90, 158, 152, 0.4);
   --theme-warning: #f39c12;
   --theme-error: #c0392b;
   --theme-success: #27ae60;
 
   /* ===== BACKGROUNDS ===== */
-  --theme-bg-dark: #0f1620;
-  --theme-bg-base: #17212b;
-  --theme-bg-panel: rgba(23, 33, 43, 0.92);
-  --theme-bg-elevated: rgba(32, 45, 58, 0.95);
-  --theme-bg-overlay: rgba(10, 15, 20, 0.85);
+  --theme-bg-dark: #151410;
+  --theme-bg-base: #1f1c17;
+  --theme-bg-panel: rgba(31, 28, 23, 0.92);
+  --theme-bg-elevated: rgba(45, 40, 32, 0.95);
+  --theme-bg-overlay: rgba(15, 12, 8, 0.85);
 
   /* ===== BORDERS ===== */
   --theme-border: rgba(212, 175, 55, 0.35);
@@ -30,11 +30,11 @@
   /* ===== TEXT ===== */
   --theme-text-primary: #fdf5e6;
   --theme-text-secondary: #d1c4a5;
-  --theme-text-muted: #8b99a6;
-  --theme-text-inverse: #0f1620;
+  --theme-text-muted: #9a8e7a;
+  --theme-text-inverse: #151410;
 
   /* ===== NAVBAR ===== */
-  --theme-nav-bg: rgba(23, 33, 43, 0.97);
+  --theme-nav-bg: rgba(31, 28, 23, 0.97);
   --theme-nav-border: rgba(212, 175, 55, 0.25);
   --theme-nav-text: rgba(253, 245, 230, 0.85);
   --theme-nav-text-hover: #d4af37;
@@ -43,10 +43,10 @@
   --theme-nav-hover-bg: rgba(212, 175, 55, 0.12);
 
   /* ===== TEAM COLORS ===== */
-  --theme-team-blue: #4a5d6e;
-  --theme-team-blue-glow: rgba(74, 93, 110, 0.5);
-  --theme-team-red: #8c3a3a;
-  --theme-team-red-glow: rgba(140, 58, 58, 0.5);
+  --theme-team-blue: #3b7ea1;
+  --theme-team-blue-glow: rgba(59, 126, 161, 0.5);
+  --theme-team-red: #c75b39;
+  --theme-team-red-glow: rgba(199, 91, 57, 0.5);
 
   /* ===== BOARD - COURTYARD STYLE ===== */
   /* Courtyard Aesthetic - Earth & Limestone tones */
@@ -94,8 +94,8 @@
   --theme-board-deploy-radius: 2px;
 
   /* Air Defense - High Visibility */
-  --theme-board-air-friendly: rgba(32, 178, 170, 0.95);
-  /* Teal accent */
+  --theme-board-air-friendly: rgba(90, 158, 152, 0.95);
+  /* Oasis teal accent */
   --theme-board-air-opponent: rgba(220, 50, 40, 0.95);
   /* Crisp red */
   --theme-board-air-overlap: rgba(243, 156, 18, 0.95);
@@ -108,9 +108,9 @@
   /* ===== PIECES ===== */
   --theme-piece-path: '/themes/desert-ops/pieces';
   --theme-piece-shadow: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.45));
-  --theme-piece-blue-filter: drop-shadow(0 0 6px rgba(74, 93, 110, 0.5)) brightness(1.1)
+  --theme-piece-blue-filter: drop-shadow(0 0 6px rgba(59, 126, 161, 0.5)) brightness(1.1)
     contrast(1.1);
-  --theme-piece-red-filter: drop-shadow(0 0 6px rgba(140, 58, 58, 0.5)) hue-rotate(0deg)
+  --theme-piece-red-filter: drop-shadow(0 0 6px rgba(199, 91, 57, 0.5)) hue-rotate(0deg)
     brightness(1.1) contrast(1.1);
   --theme-piece-heroic-filter: drop-shadow(0 0 12px rgba(212, 175, 55, 0.7)) brightness(1.2)
     contrast(1.1);
@@ -127,7 +127,7 @@
   --theme-btn-confirm-border: #27ae60;
 
   /* ===== HEROIC BADGE ===== */
-  --theme-heroic-bg: rgba(23, 33, 43, 0.95);
+  --theme-heroic-bg: rgba(31, 28, 23, 0.95);
   --theme-heroic-border: #d4af37;
   --theme-heroic-glow: 0 0 8px #d4af37;
   --theme-heroic-star-color: #d4af37;
@@ -135,7 +135,7 @@
   /* ===== GLOW EFFECTS ===== */
   --theme-glow-primary: 0 0 12px rgba(212, 175, 55, 0.4);
   --theme-glow-secondary: 0 0 12px rgba(226, 194, 144, 0.4);
-  --theme-glow-accent: 0 0 12px rgba(32, 178, 170, 0.4);
+  --theme-glow-accent: 0 0 12px rgba(90, 158, 152, 0.4);
   --theme-glow-error: 0 0 12px rgba(192, 57, 43, 0.4);
 
   /* ===== SHADOWS ===== */
@@ -145,13 +145,13 @@
 
   /* ===== OVERLAYS - DISABLED for performance ===== */
   --theme-scanline-opacity: 0;
-  --theme-vignette-opacity: 0;
-  --theme-vignette-color: transparent;
+  --theme-vignette-opacity: 0.15;
+  --theme-vignette-color: rgba(20, 12, 5, 0.8);
 
   /* ===== ANIMATIONS - DISABLED for performance ===== */
-  --theme-transition-fast: 0s;
-  --theme-transition-base: 0s;
-  --theme-transition-slow: 0s;
+  --theme-transition-fast: 0.1s;
+  --theme-transition-base: 0.15s;
+  --theme-transition-slow: 0.25s;
 
   /* ===== ATTACK ICONS ===== */
   --theme-icon-attack-stay: url('/themes/desert-ops/attack-stay.svg');

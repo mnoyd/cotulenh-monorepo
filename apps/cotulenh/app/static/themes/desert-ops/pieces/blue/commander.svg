@@ -7,9 +7,9 @@
   <ellipse cx="50" cy="90" rx="35" ry="5" fill="#1a1a1a" opacity="0.6" />
   <g filter="url(#shadow)">
     <!-- Shoulders / Uniform -->
-    <path d="M 30 90 C 30 55, 38 55, 50 55 C 62 55, 70 55, 70 90 Z" fill="#38bdf8" stroke="#0f172a" stroke-width="1.5" />
+    <path d="M 30 90 C 30 55, 38 55, 50 55 C 62 55, 70 55, 70 90 Z" fill="#3b8cc4" stroke="#1a2520" stroke-width="1.5" />
     <!-- Collar / Shirt -->
-    <path d="M 42 55 L 50 65 L 58 55 Z" fill="#0369a1" />
+    <path d="M 42 55 L 50 65 L 58 55 Z" fill="#2a6d8a" />
     <path d="M 45 55 L 50 75 L 55 55 Z" fill="#fcd34d" />
     <!-- Epaulettes -->
     <path d="M 32 60 L 42 53 L 44 55 Z" fill="#2c2a26" />

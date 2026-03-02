@@ -7,29 +7,29 @@
   <ellipse cx="50" cy="85" rx="42" ry="8" fill="#1a1a1a" opacity="0.6" />
   <g filter="url(#shadow)">
     <!-- Base Platform -->
-    <rect x="20" y="60" width="60" height="15" fill="#38bdf8" stroke="#0f172a" stroke-width="1.5" rx="3" />
-    <rect x="25" y="75" width="50" height="5" fill="#0f172a" />
+    <rect x="20" y="60" width="60" height="15" fill="#3b8cc4" stroke="#1a2520" stroke-width="1.5" rx="3" />
+    <rect x="25" y="75" width="50" height="5" fill="#1a2520" />
     <circle cx="30" cy="75" r="4" fill="#2c2a26" />
     <circle cx="50" cy="75" r="4" fill="#2c2a26" />
     <circle cx="70" cy="75" r="4" fill="#2c2a26" />
     <!-- Turret / Rotation gear -->
-    <rect x="40" y="50" width="20" height="10" fill="#7dd3fc" />
+    <rect x="40" y="50" width="20" height="10" fill="#6aadcc" />
     <!-- Iron Dome style Launcher Array -->
     <g transform="translate(50, 45) rotate(-35)">
       <!-- Launcher Box -->
-      <rect x="-15" y="-15" width="40" height="25" fill="#38bdf8" stroke="#0f172a" stroke-width="1.5" rx="2" />
-      <rect x="-10" y="-10" width="5" height="4" fill="#7dd3fc" />
-      <rect x="-10" y="-2" width="5" height="4" fill="#7dd3fc" />
-      <rect x="-10" y="6" width="5" height="4" fill="#7dd3fc" />
-      <rect x="-2" y="-10" width="5" height="4" fill="#7dd3fc" />
-      <rect x="-2" y="-2" width="5" height="4" fill="#7dd3fc" />
-      <rect x="-2" y="6" width="5" height="4" fill="#7dd3fc" />
+      <rect x="-15" y="-15" width="40" height="25" fill="#3b8cc4" stroke="#1a2520" stroke-width="1.5" rx="2" />
+      <rect x="-10" y="-10" width="5" height="4" fill="#6aadcc" />
+      <rect x="-10" y="-2" width="5" height="4" fill="#6aadcc" />
+      <rect x="-10" y="6" width="5" height="4" fill="#6aadcc" />
+      <rect x="-2" y="-10" width="5" height="4" fill="#6aadcc" />
+      <rect x="-2" y="-2" width="5" height="4" fill="#6aadcc" />
+      <rect x="-2" y="6" width="5" height="4" fill="#6aadcc" />
       <!-- Missile tips sticking out -->
-      <path d="M 25 -10 L 30 -8 L 25 -6 Z" fill="#0369a1" />
-      <path d="M 25 -2 L 30 0 L 25 2 Z" fill="#0369a1" />
+      <path d="M 25 -10 L 30 -8 L 25 -6 Z" fill="#2a6d8a" />
+      <path d="M 25 -2 L 30 0 L 25 2 Z" fill="#2a6d8a" />
     </g>
     <!-- Radar mast -->
     <rect x="25" y="30" width="2" height="30" fill="#2c2a26" />
-    <rect x="22" y="25" width="8" height="5" fill="#0369a1" />
+    <rect x="22" y="25" width="8" height="5" fill="#2a6d8a" />
   </g>
 </svg>

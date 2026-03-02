@@ -12,29 +12,29 @@
   
   <g filter="url(#shadow)" transform="translate(0, 15)">
     <!-- Wooden Dhow/Skiff Hull -->
-    <path d="M 10 65 L 20 45 L 80 45 L 95 60 L 90 65 Z" fill="#9a3412" stroke="#431407" stroke-width="1.5" />
+    <path d="M 10 65 L 20 45 L 80 45 L 95 60 L 90 65 Z" fill="#9a3412" stroke="#4d2010" stroke-width="1.5" />
     <!-- Hull planking lines -->
-    <path d="M 15 55 L 85 55 M 12 60 L 90 60 L 80 50" fill="none" stroke="#431407" stroke-width="1" opacity="0.6" />
+    <path d="M 15 55 L 85 55 M 12 60 L 90 60 L 80 50" fill="none" stroke="#4d2010" stroke-width="1" opacity="0.6" />
     
     <!-- Scrap Metal Armor Plates -->
     <!-- Red plate on the side -->
-    <path d="M 25 45 L 45 45 L 42 54 L 22 54 Z" fill="#ea580c" stroke="#7c2d12" stroke-width="1" />
-    <circle cx="26" cy="48" r="0.8" fill="#431407" />
-    <circle cx="40" cy="48" r="0.8" fill="#431407" />
-    <circle cx="28" cy="52" r="0.8" fill="#431407" />
+    <path d="M 25 45 L 45 45 L 42 54 L 22 54 Z" fill="#c75b39" stroke="#8a3a1e" stroke-width="1" />
+    <circle cx="26" cy="48" r="0.8" fill="#4d2010" />
+    <circle cx="40" cy="48" r="0.8" fill="#4d2010" />
+    <circle cx="28" cy="52" r="0.8" fill="#4d2010" />
     
     <!-- Green plate near bow -->
-    <path d="M 50 45 L 75 45 L 75 52 L 48 52 Z" fill="#78350f" stroke="#7c2d12" stroke-width="1" />
+    <path d="M 50 45 L 75 45 L 75 52 L 48 52 Z" fill="#7a3d1a" stroke="#8a3a1e" stroke-width="1" />
     <circle cx="53" cy="48" r="0.8" fill="#1a1a1a" />
     <circle cx="72" cy="48" r="0.8" fill="#1a1a1a" />
     <circle cx="62" cy="50" r="0.8" fill="#1a1a1a" />
     
     <!-- Small cabin / Steering console -->
-    <path d="M 28 45 L 28 30 L 38 30 L 38 45 Z" fill="#ea580c" stroke="#7c2d12" stroke-width="1.5" />
+    <path d="M 28 45 L 28 30 L 38 30 L 38 45 Z" fill="#c75b39" stroke="#8a3a1e" stroke-width="1.5" />
     <!-- Tarp / Canopy over console -->
-    <path d="M 22 30 Q 33 22 44 30 Z" fill="#fb923c" stroke="#7c2d12" stroke-width="1" />
+    <path d="M 22 30 Q 33 22 44 30 Z" fill="#d4845a" stroke="#8a3a1e" stroke-width="1" />
     <!-- Tarp supports -->
-    <path d="M 24 30 L 24 45 M 42 30 L 42 45" stroke="#431407" stroke-width="1.5" />
+    <path d="M 24 30 L 24 45 M 42 30 L 42 45" stroke="#4d2010" stroke-width="1.5" />
     
     <!-- Outboard Motor at stern -->
     <rect x="6" y="55" width="8" height="12" fill="#2c2a26" rx="2" />
@@ -43,7 +43,7 @@
     
     <!-- Heavy AA Gun (ZU-23-2 style) mounted on deck -->
     <!-- Mount base -->
-    <path d="M 60 45 L 65 35 L 75 35 L 80 45 Z" fill="#78350f" stroke="#7c2d12" stroke-width="1" />
+    <path d="M 60 45 L 65 35 L 75 35 L 80 45 Z" fill="#7a3d1a" stroke="#8a3a1e" stroke-width="1" />
     <circle cx="70" cy="38" r="6" fill="#2c2a26" />
     <!-- Gunner seat -->
     <rect x="63" y="32" width="6" height="4" fill="#1a1a1a" />
@@ -57,7 +57,7 @@
       <rect x="94" y="37.5" width="4" height="3" fill="#2c2a26" />
     </g>
     <!-- Ammo box -->
-    <rect x="68" y="38" width="6" height="6" fill="#7c2d12" stroke="#431407" stroke-width="0.5" />
+    <rect x="68" y="38" width="6" height="6" fill="#8a3a1e" stroke="#4d2010" stroke-width="0.5" />
     
   </g>
 </svg>

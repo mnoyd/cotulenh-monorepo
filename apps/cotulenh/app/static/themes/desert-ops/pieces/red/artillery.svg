@@ -15,15 +15,15 @@
     <circle cx="70" cy="72.5" r="4.5" fill="#4a4a4a" />
     <circle cx="83" cy="72.5" r="4.5" fill="#4a4a4a" />
     <!-- Hull (Long boat-like hull 2S1 style) -->
-    <path d="M 5 55 L 90 55 L 85 65 L 12 65 Z" fill="#ea580c" stroke="#7c2d12" stroke-width="1.5" />
-    <path d="M 15 45 L 85 45 L 90 55 L 5 55 Z" fill="#fb923c" />
+    <path d="M 5 55 L 90 55 L 85 65 L 12 65 Z" fill="#c75b39" stroke="#8a3a1e" stroke-width="1.5" />
+    <path d="M 15 45 L 85 45 L 90 55 L 5 55 Z" fill="#d4845a" />
     <!-- Rear-mounted Turret -->
-    <rect x="12" y="32" width="35" height="13" fill="#ea580c" stroke="#7c2d12" stroke-width="1.5" rx="2" />
-    <rect x="12" y="30" width="35" height="2" fill="#fb923c" />
+    <rect x="12" y="32" width="35" height="13" fill="#c75b39" stroke="#8a3a1e" stroke-width="1.5" rx="2" />
+    <rect x="12" y="30" width="35" height="2" fill="#d4845a" />
     <!-- Barrel angled up -->
     <g transform="translate(45, 38) rotate(-10)">
-      <rect x="0" y="0" width="45" height="4" fill="#7c2d12" stroke="#431407" stroke-width="0.5" />
-      <rect x="40" y="-1" width="6" height="6" fill="#431407" /> <!-- Fluted Muzzle -->
+      <rect x="0" y="0" width="45" height="4" fill="#8a3a1e" stroke="#4d2010" stroke-width="0.5" />
+      <rect x="40" y="-1" width="6" height="6" fill="#4d2010" /> <!-- Fluted Muzzle -->
     </g>
   </g>
 </svg>

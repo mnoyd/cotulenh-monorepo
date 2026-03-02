@@ -7,7 +7,7 @@
   <ellipse cx="50" cy="85" rx="42" ry="8" fill="#1a1a1a" opacity="0.6" />
   <g filter="url(#shadow)">
     <!-- TEL Truck (Shahab vibe) -->
-    <rect x="10" y="65" width="80" height="12" fill="#ea580c" stroke="#7c2d12" stroke-width="1.5" rx="2" />
+    <rect x="10" y="65" width="80" height="12" fill="#c75b39" stroke="#8a3a1e" stroke-width="1.5" rx="2" />
     <circle cx="18" cy="77" r="4.5" fill="#2c2a26" />
     <circle cx="28" cy="77" r="4.5" fill="#2c2a26" />
     <circle cx="38" cy="77" r="4.5" fill="#2c2a26" />
@@ -15,22 +15,22 @@
     <circle cx="72" cy="77" r="4.5" fill="#2c2a26" />
     <circle cx="82" cy="77" r="4.5" fill="#2c2a26" />
     <!-- Cab -->
-    <path d="M 70 65 L 70 52 L 85 52 L 90 65 Z" fill="#ea580c" stroke="#7c2d12" stroke-width="1" />
+    <path d="M 70 65 L 70 52 L 85 52 L 90 65 Z" fill="#c75b39" stroke="#8a3a1e" stroke-width="1" />
     <rect x="75" y="55" width="5" height="5" fill="#1a1a1a" />
     <!-- Erector arm / mount -->
-    <rect x="35" y="60" width="10" height="8" fill="#78350f" />
+    <rect x="35" y="60" width="10" height="8" fill="#7a3d1a" />
     <!-- Missile (Erected at roughly 60 degrees) -->
     <g transform="translate(40, 65) rotate(-60)">
       <!-- Missile Body -->
-      <rect x="0" y="-8" width="55" height="16" fill="#fb923c" stroke="#7c2d12" stroke-width="1.5" />
-      <rect x="40" y="-8" width="5" height="16" fill="#ea580c" />
+      <rect x="0" y="-8" width="55" height="16" fill="#d4845a" stroke="#8a3a1e" stroke-width="1.5" />
+      <rect x="40" y="-8" width="5" height="16" fill="#c75b39" />
       <!-- Checker pattern / details -->
-      <rect x="15" y="-8" width="4" height="16" fill="#78350f" />
+      <rect x="15" y="-8" width="4" height="16" fill="#7a3d1a" />
       <!-- Pointy Warhead -->
-      <path d="M 55 -8 L 75 0 L 55 8 Z" fill="#ea580c" stroke="#7c2d12" stroke-width="1.5" />
+      <path d="M 55 -8 L 75 0 L 55 8 Z" fill="#c75b39" stroke="#8a3a1e" stroke-width="1.5" />
       <!-- Fins -->
-      <path d="M 5 -8 L 15 -12 L 15 -8 Z" fill="#78350f" />
-      <path d="M 5 8 L 15 12 L 15 8 Z" fill="#78350f" />
+      <path d="M 5 -8 L 15 -12 L 15 -8 Z" fill="#7a3d1a" />
+      <path d="M 5 8 L 15 12 L 15 8 Z" fill="#7a3d1a" />
     </g>
   </g>
 </svg>
