@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { GameConfig, InvitationItem } from './types';
 import { logger } from '@cotulenh/common';
+import { canonicalPair } from '$lib/friends/queries';
 
 /** Strip HTML tags from display name to prevent stored XSS at query boundary */
 export function sanitizeName(name: string): string {
@@ -273,4 +274,173 @@ export async function declineInvitation(
   }
 
   return { success: true };
+}
+
+/**
+ * Fetch a shareable link invitation by invite code.
+ * Uses SECURITY DEFINER RPC function to prevent enumeration of all pending link invites.
+ * Only returns pending, unexpired, unclaimed (to_user IS NULL) invitations.
+ * Works for both authenticated and anonymous users.
+ */
+export async function getInvitationByCode(
+  supabase: SupabaseClient,
+  inviteCode: string
+): Promise<{
+  id: string;
+  fromUser: { id: string; displayName: string };
+  gameConfig: GameConfig;
+  inviteCode: string;
+  createdAt: string;
+  expiresAt: string;
+} | null> {
+  const { data, error } = await supabase.rpc('get_invitation_by_code', {
+    p_invite_code: inviteCode
+  });
+
+  if (error || !data) {
+    return null;
+  }
+
+  return {
+    id: data.id,
+    fromUser: {
+      id: data.from_user,
+      displayName: sanitizeName(data.display_name ?? '')
+    },
+    gameConfig: data.game_config as GameConfig,
+    inviteCode: data.invite_code,
+    createdAt: data.created_at,
+    expiresAt: data.expires_at
+  };
+}
+
+/**
+ * Create a shareable invitation link (to_user = NULL, 24-hour expiration).
+ */
+export async function createShareableInvitation(
+  supabase: SupabaseClient,
+  fromUserId: string,
+  gameConfig: GameConfig
+): Promise<{ success: boolean; inviteCode?: string; error?: string }> {
+  const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+
+  const { data, error } = await supabase
+    .from('game_invitations')
+    .insert({
+      from_user: fromUserId,
+      to_user: null,
+      game_config: gameConfig,
+      status: 'pending',
+      expires_at: expiresAt
+    })
+    .select('id, invite_code')
+    .single();
+
+  if (error || !data) {
+    logger.error(error ?? new Error('Unknown'), 'createShareableInvitation: insert failed');
+    return { success: false, error: 'createFailed' };
+  }
+
+  return { success: true, inviteCode: data.invite_code };
+}
+
+/**
+ * Accept a shareable invite link using claim-then-accept pattern.
+ * Step 1: Claim (set to_user atomically where to_user IS NULL)
+ * Step 2: Update status to accepted
+ * Step 3: Create games row (sender=red, acceptor=blue)
+ * Rolls back on failure.
+ */
+export async function acceptInviteLink(
+  supabase: SupabaseClient,
+  inviteCode: string,
+  userId: string
+): Promise<{ success: boolean; gameId?: string; inviterUserId?: string; error?: string }> {
+  // Step 1: Claim the invitation (set to_user atomically)
+  const { data: claimed, error: claimError } = await supabase
+    .from('game_invitations')
+    .update({ to_user: userId })
+    .eq('invite_code', inviteCode)
+    .is('to_user', null)
+    .eq('status', 'pending')
+    .gt('expires_at', new Date().toISOString())
+    .neq('from_user', userId)
+    .select('id, from_user, game_config')
+    .single();
+
+  if (claimError || !claimed) {
+    return { success: false, error: 'alreadyClaimed' };
+  }
+
+  // Step 2: Update status to accepted
+  const { error: acceptError } = await supabase
+    .from('game_invitations')
+    .update({ status: 'accepted' })
+    .eq('id', claimed.id)
+    .eq('to_user', userId)
+    .select('id')
+    .single();
+
+  if (acceptError) {
+    // Rollback claim
+    await supabase
+      .from('game_invitations')
+      .update({ to_user: null })
+      .eq('id', claimed.id);
+    return { success: false, error: 'acceptFailed' };
+  }
+
+  // Step 3: Create games row — sender is red, acceptor is blue
+  const { data: game, error: gameError } = await supabase
+    .from('games')
+    .insert({
+      red_player: claimed.from_user,
+      blue_player: userId,
+      status: 'started',
+      time_control: claimed.game_config,
+      invitation_id: claimed.id
+    })
+    .select('id')
+    .single();
+
+  if (gameError || !game) {
+    // Rollback: revert invitation to pending + unclaimed
+    logger.error(gameError as Error, 'acceptInviteLink: game creation failed, rolling back');
+    await supabase
+      .from('game_invitations')
+      .update({ status: 'pending', to_user: null })
+      .eq('id', claimed.id);
+    return { success: false, error: 'gameCreationFailed' };
+  }
+
+  return { success: true, gameId: game.id, inviterUserId: claimed.from_user };
+}
+
+/**
+ * Create an auto-accepted friendship between two users.
+ * Uses canonical ordering (user_a < user_b) to satisfy the CHECK constraint.
+ * Returns true on success or if already friends (duplicate key).
+ * Returns false on unexpected errors (logged but non-blocking).
+ */
+export async function createAutoFriendship(
+  supabase: SupabaseClient,
+  userIdA: string,
+  userIdB: string
+): Promise<boolean> {
+  const [user_a, user_b] = canonicalPair(userIdA, userIdB);
+  const { error } = await supabase.from('friendships').insert({
+    user_a,
+    user_b,
+    status: 'accepted',
+    initiated_by: user_a
+  });
+
+  if (!error) return true;
+
+  // Already friends — expected, treat as success
+  if (error.message.includes('duplicate key')) return true;
+
+  // Unexpected error — log but don't throw (friendship is non-blocking side effect)
+  logger.error(error, 'createAutoFriendship failed');
+  return false;
 }

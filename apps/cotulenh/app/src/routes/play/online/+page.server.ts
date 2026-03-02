@@ -8,7 +8,8 @@ import {
   cancelInvitation,
   acceptInvitation,
   declineInvitation,
-  validateGameConfig
+  validateGameConfig,
+  createShareableInvitation
 } from '$lib/invitations/queries';
 import type { Actions, PageServerLoad } from './$types';
 
@@ -165,5 +166,52 @@ export const actions: Actions = {
     }
 
     return { success: true, action: 'declineInvitation' as const };
+  },
+
+  createShareableInvitation: async ({ request, locals: { supabase, safeGetSession } }) => {
+    const { user } = await safeGetSession();
+    if (!user) {
+      return fail(401, {
+        errors: { form: 'unauthorized' },
+        action: 'createShareableInvitation' as const
+      });
+    }
+
+    const formData = await request.formData();
+    let gameConfig: unknown;
+    try {
+      gameConfig = JSON.parse(String(formData.get('gameConfig') ?? ''));
+    } catch {
+      return fail(400, {
+        errors: { form: 'invalidGameConfig' },
+        action: 'createShareableInvitation' as const
+      });
+    }
+
+    if (!validateGameConfig(gameConfig)) {
+      return fail(400, {
+        errors: { form: 'invalidGameConfig' },
+        action: 'createShareableInvitation' as const
+      });
+    }
+
+    const result = await createShareableInvitation(supabase, user.id, gameConfig);
+
+    if (!result.success) {
+      logger.error(
+        new Error(result.error ?? 'Unknown'),
+        'Failed to create shareable invitation'
+      );
+      return fail(400, {
+        errors: { form: result.error ?? 'createFailed' },
+        action: 'createShareableInvitation' as const
+      });
+    }
+
+    return {
+      success: true,
+      action: 'createShareableInvitation' as const,
+      inviteCode: result.inviteCode
+    };
   }
 };

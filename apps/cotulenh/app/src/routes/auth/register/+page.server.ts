@@ -1,13 +1,15 @@
 import { fail } from '@sveltejs/kit';
+import { isRelativePath } from '$lib/auth/guards';
 import { registerSchema } from './validation';
 import type { Actions } from './$types';
 
 export const actions: Actions = {
-  default: async ({ request, locals: { supabase } }) => {
+  default: async ({ request, url, locals: { supabase } }) => {
     const formData = await request.formData();
     const email = String(formData.get('email') ?? '');
     const password = String(formData.get('password') ?? '');
     const displayName = String(formData.get('displayName') ?? '');
+    const redirectTo = String(formData.get('redirectTo') ?? '');
 
     const result = registerSchema.safeParse({ email, password, displayName });
 
@@ -24,13 +26,20 @@ export const actions: Actions = {
 
     const normalizedDisplayName = result.data.displayName;
 
+    // Build emailRedirectTo for post-verification redirect
+    const safeRedirectTo = redirectTo && isRelativePath(redirectTo) ? redirectTo : '';
+    const emailRedirectTo = safeRedirectTo
+      ? `${url.origin}/auth/callback?next=${encodeURIComponent(safeRedirectTo)}`
+      : undefined;
+
     const { error } = await supabase.auth.signUp({
       email: result.data.email,
       password: result.data.password,
       options: {
         data: {
           display_name: normalizedDisplayName
-        }
+        },
+        ...(emailRedirectTo ? { emailRedirectTo } : {})
       }
     });
 
@@ -43,6 +52,6 @@ export const actions: Actions = {
       });
     }
 
-    return { success: true };
+    return { success: true, redirectTo: safeRedirectTo };
   }
 };

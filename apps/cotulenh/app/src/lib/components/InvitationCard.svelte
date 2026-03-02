@@ -1,6 +1,6 @@
 <script lang="ts">
   import { getI18n } from '$lib/i18n/index.svelte';
-  import { Loader2 } from 'lucide-svelte';
+  import { Loader2, Copy, Check } from 'lucide-svelte';
   import Button from '$lib/components/ui/button/button.svelte';
   import type { InvitationItem } from '$lib/invitations/types';
 
@@ -8,29 +8,64 @@
     invitation: InvitationItem;
     loading?: boolean;
     oncancel?: (invitationId: string) => void;
+    oncopy?: (inviteCode: string) => Promise<void> | void;
   }
 
-  let { invitation, loading = false, oncancel }: Props = $props();
+  let { invitation, loading = false, oncancel, oncopy }: Props = $props();
 
   const i18n = getI18n();
 
-  let displayName = $derived(invitation.toUser?.displayName ?? '?');
-  let initial = $derived(displayName.charAt(0).toUpperCase() || '?');
+  let isLinkInvitation = $derived(invitation.toUser === null);
+  let displayName = $derived(
+    isLinkInvitation ? i18n.t('inviteLink.label') : (invitation.toUser?.displayName ?? '?')
+  );
+  let initial = $derived(isLinkInvitation ? '🔗' : (displayName.charAt(0).toUpperCase() || '?'));
   let timeLabel = $derived(
     `${invitation.gameConfig.timeMinutes}+${invitation.gameConfig.incrementSeconds}`
   );
+  let copied = $state(false);
+
+  async function handleCopy() {
+    try {
+      await oncopy?.(invitation.inviteCode);
+      copied = true;
+      setTimeout(() => (copied = false), 2000);
+    } catch {
+      // Clipboard write failed — don't show copied feedback
+    }
+  }
 </script>
 
 <div class="invitation-card">
-  <span class="invitation-avatar" aria-hidden="true">{initial}</span>
+  <span class="invitation-avatar" class:link-avatar={isLinkInvitation} aria-hidden="true">{initial}</span>
   <div class="invitation-info">
-    <span class="invitation-name">{displayName}</span>
+    <div class="invitation-name-row">
+      <span class="invitation-name">{displayName}</span>
+      {#if isLinkInvitation}
+        <span class="link-badge">{i18n.t('inviteLink.badge')}</span>
+      {/if}
+    </div>
     <span class="invitation-time">{timeLabel}</span>
   </div>
   <div class="invitation-actions">
     {#if loading}
       <Loader2 size={18} class="animate-spin invitation-spinner" />
     {:else}
+      {#if isLinkInvitation && oncopy}
+        <Button
+          size="sm"
+          variant="outline"
+          class="copy-invite-btn"
+          onclick={handleCopy}
+          aria-label={copied ? i18n.t('common.copied') : i18n.t('inviteLink.copyLink')}
+        >
+          {#if copied}
+            <Check size={14} />
+          {:else}
+            <Copy size={14} />
+          {/if}
+        </Button>
+      {/if}
       <Button
         size="sm"
         variant="outline"
@@ -79,6 +114,13 @@
     overflow: hidden;
   }
 
+  .invitation-name-row {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    overflow: hidden;
+  }
+
   .invitation-name {
     font-size: 0.875rem;
     font-weight: 500;
@@ -86,6 +128,23 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  .link-badge {
+    font-size: 0.625rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 0.125rem 0.375rem;
+    background: rgba(6, 182, 212, 0.15);
+    color: var(--theme-primary, #06b6d4);
+    border-radius: 4px;
+    flex-shrink: 0;
+  }
+
+  .link-avatar {
+    font-size: 1rem;
+    background: rgba(6, 182, 212, 0.2);
   }
 
   .invitation-time {
@@ -105,6 +164,11 @@
   }
 
   :global(.cancel-btn) {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  :global(.copy-invite-btn) {
     min-height: 44px;
     min-width: 44px;
   }

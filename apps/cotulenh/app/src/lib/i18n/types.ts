@@ -570,6 +570,29 @@ export interface TranslationKeys {
   'invitation.toast.declineSuccess': string;
   'invitation.toast.declineFailed': string;
 
+  // Shareable Invite Link
+  'inviteLink.pageTitle': string;
+  'inviteLink.invitedYou': string;
+  'inviteLink.acceptAndPlay': string;
+  'inviteLink.signUpToPlay': string;
+  'inviteLink.alreadyHaveAccount': string;
+  'inviteLink.logIn': string;
+  'inviteLink.expired.title': string;
+  'inviteLink.expired.description': string;
+  'inviteLink.own.title': string;
+  'inviteLink.own.description': string;
+  'inviteLink.copyLink': string;
+  'inviteLink.linkLabel': string;
+  'inviteLink.label': string;
+  'inviteLink.badge': string;
+  'inviteLink.create.title': string;
+  'inviteLink.create.description': string;
+  'inviteLink.create.button': string;
+  'inviteLink.create.another': string;
+  'inviteLink.toast.created': string;
+  'inviteLink.toast.createFailed': string;
+  'inviteLink.verifyEmailContext': string;
+
   // Game page
   'game.pageTitle': string;
   'game.starting': string;

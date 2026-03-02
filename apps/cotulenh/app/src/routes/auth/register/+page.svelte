@@ -19,6 +19,10 @@
   let displayName = $state(_serverForm?.displayName ?? '');
   let submitting = $state(false);
 
+  // Preserve redirectTo from URL params (for invite link flow)
+  let redirectTo = $derived($page.url.searchParams.get('redirectTo') ?? '');
+  let hasInviteRedirect = $derived(redirectTo.includes('/invite/'));
+
   let touched: Record<string, boolean> = $state({});
   let clientErrors: Record<string, string> = $state({});
 
@@ -88,6 +92,9 @@
         </div>
         <h1 class="verify-title">{i18n.t('auth.register.verifyEmail')}</h1>
         <p class="verify-desc">{i18n.t('auth.register.verifyEmailDesc')}</p>
+        {#if hasInviteRedirect}
+          <p class="verify-invite-context">{i18n.t('inviteLink.verifyEmailContext')}</p>
+        {/if}
         <Button href="/" variant="outline" size="lg">
           {i18n.t('auth.error.backHome')}
         </Button>
@@ -118,6 +125,9 @@
         class="register-form"
         novalidate
       >
+        {#if redirectTo}
+          <input type="hidden" name="redirectTo" value={redirectTo} />
+        {/if}
         <div class="field">
           <label for="email" class="field-label">{i18n.t('auth.register.email')}</label>
           <div class="field-input-wrapper" class:field-error={emailError}>
@@ -193,7 +203,7 @@
 
       <p class="login-prompt">
         {i18n.t('auth.register.haveAccount')}
-        <a href="/auth/login">{i18n.t('auth.register.loginLink')}</a>
+        <a href="/auth/login{redirectTo ? `?redirectTo=${encodeURIComponent(redirectTo)}` : ''}">{i18n.t('auth.register.loginLink')}</a>
       </p>
     {/if}
   </div>
@@ -371,6 +381,13 @@
     font-size: 0.875rem;
     color: var(--theme-text-secondary, #aaa);
     margin: 0 0 1.5rem;
+    line-height: 1.5;
+  }
+
+  .verify-invite-context {
+    font-size: 0.875rem;
+    color: var(--theme-primary, #06b6d4);
+    margin: -0.75rem 0 1.5rem;
     line-height: 1.5;
   }
 </style>

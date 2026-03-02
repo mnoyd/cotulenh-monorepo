@@ -12,7 +12,8 @@ vi.mock('$lib/invitations/queries', () => ({
   cancelInvitation: vi.fn(),
   acceptInvitation: vi.fn(),
   declineInvitation: vi.fn(),
-  validateGameConfig: vi.fn()
+  validateGameConfig: vi.fn(),
+  createShareableInvitation: vi.fn()
 }));
 
 import { getFriendsList } from '$lib/friends/queries';
@@ -23,7 +24,8 @@ import {
   cancelInvitation,
   acceptInvitation,
   declineInvitation,
-  validateGameConfig
+  validateGameConfig,
+  createShareableInvitation
 } from '$lib/invitations/queries';
 import { actions, load } from './+page.server';
 
@@ -35,6 +37,7 @@ const mockCancelInvitation = vi.mocked(cancelInvitation);
 const mockAcceptInvitation = vi.mocked(acceptInvitation);
 const mockDeclineInvitation = vi.mocked(declineInvitation);
 const mockValidateGameConfig = vi.mocked(validateGameConfig);
+const mockCreateShareableInvitation = vi.mocked(createShareableInvitation);
 
 function createMockLocals(user: { id: string } | null = { id: 'user-1' }) {
   return {
@@ -357,6 +360,85 @@ describe('actions.declineInvitation', () => {
 
     const result = await actions.declineInvitation({
       request: createMockRequest({ invitationId: 'inv-1' }),
+      locals: createMockLocals()
+    } as never);
+
+    const data = result as { status: number };
+    expect(data.status).toBe(400);
+  });
+});
+
+describe('actions.createShareableInvitation', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('returns 401 for unauthenticated user', async () => {
+    const result = await actions.createShareableInvitation({
+      request: createMockRequest({
+        gameConfig: JSON.stringify({ timeMinutes: 5, incrementSeconds: 0 })
+      }),
+      locals: createMockLocals(null)
+    } as never);
+
+    const data = result as { status: number };
+    expect(data.status).toBe(401);
+  });
+
+  it('returns 400 for invalid gameConfig JSON', async () => {
+    const result = await actions.createShareableInvitation({
+      request: createMockRequest({ gameConfig: 'not-json' }),
+      locals: createMockLocals()
+    } as never);
+
+    const data = result as { status: number };
+    expect(data.status).toBe(400);
+  });
+
+  it('returns 400 for invalid gameConfig values', async () => {
+    mockValidateGameConfig.mockReturnValue(false);
+
+    const result = await actions.createShareableInvitation({
+      request: createMockRequest({
+        gameConfig: JSON.stringify({ timeMinutes: 100, incrementSeconds: 0 })
+      }),
+      locals: createMockLocals()
+    } as never);
+
+    const data = result as { status: number };
+    expect(data.status).toBe(400);
+  });
+
+  it('returns success with inviteCode', async () => {
+    mockValidateGameConfig.mockReturnValue(true);
+    mockCreateShareableInvitation.mockResolvedValue({ success: true, inviteCode: 'link1234' });
+
+    const result = await actions.createShareableInvitation({
+      request: createMockRequest({
+        gameConfig: JSON.stringify({ timeMinutes: 10, incrementSeconds: 5 })
+      }),
+      locals: createMockLocals()
+    } as never);
+
+    const data = result as { success: boolean; action: string; inviteCode: string };
+    expect(data.success).toBe(true);
+    expect(data.action).toBe('createShareableInvitation');
+    expect(data.inviteCode).toBe('link1234');
+    expect(mockCreateShareableInvitation).toHaveBeenCalledWith(
+      expect.anything(),
+      'user-1',
+      { timeMinutes: 10, incrementSeconds: 5 }
+    );
+  });
+
+  it('returns 400 when creation fails', async () => {
+    mockValidateGameConfig.mockReturnValue(true);
+    mockCreateShareableInvitation.mockResolvedValue({ success: false, error: 'createFailed' });
+
+    const result = await actions.createShareableInvitation({
+      request: createMockRequest({
+        gameConfig: JSON.stringify({ timeMinutes: 5, incrementSeconds: 0 })
+      }),
       locals: createMockLocals()
     } as never);
 

@@ -66,7 +66,7 @@ development_status:
   epic-4: in-progress
   4-1-send-match-invitation-to-friend: done
   4-2-view-respond-to-match-invitations: done
-  4-3-shareable-invite-link: backlog
+  4-3-shareable-invite-link: review
   epic-4-retrospective: optional
 
   # Epic 5: Realtime Online Gameplay

@@ -14,7 +14,7 @@
   import TimeControlSelector from '$lib/components/TimeControlSelector.svelte';
   import InvitationCard from '$lib/components/InvitationCard.svelte';
   import ReceivedInvitationCard from '$lib/components/ReceivedInvitationCard.svelte';
-  import { Loader2, Users } from 'lucide-svelte';
+  import { Loader2, Users, Link, Copy, Check } from 'lucide-svelte';
   import Button from '$lib/components/ui/button/button.svelte';
   import { toast } from 'svelte-sonner';
   import type { PageData } from './$types';
@@ -34,6 +34,14 @@
   let loadingCancel = $state(new Set<string>());
   let loadingAccept = $state(new Set<string>());
   let loadingDecline = $state(new Set<string>());
+
+  // Invite link state
+  let creatingLink = $state(false);
+  let createdInviteCode = $state<string | null>(null);
+  let copiedLink = $state(false);
+
+  // Screen reader announcement
+  let srAnnouncement = $state('');
 
   // Realtime received invitations (new ones that arrive after page load)
   let realtimeReceivedInvitations = $state<InvitationItem[]>([]);
@@ -269,6 +277,61 @@
     }
   }
 
+  async function handleCreateInviteLink() {
+    creatingLink = true;
+    createdInviteCode = null;
+
+    try {
+      const response = await postAction('createShareableInvitation', {
+        gameConfig: JSON.stringify(selectedConfig)
+      });
+
+      if (!response.ok) {
+        const result = deserialize(await response.text());
+        const errorCode = result.type === 'failure'
+          ? (result.data as { errors?: { form?: string } } | null)?.errors?.form
+          : undefined;
+        if (errorCode === 'invalidGameConfig') {
+          toast.error(i18n.t('invitation.error.invalidGameConfig'));
+        } else {
+          toast.error(i18n.t('inviteLink.toast.createFailed'));
+        }
+        return;
+      }
+
+      const result = deserialize(await response.text());
+      const inviteCode = result.type === 'success'
+        ? (result.data as { inviteCode?: string })?.inviteCode
+        : undefined;
+
+      if (inviteCode) {
+        createdInviteCode = inviteCode;
+        toast.success(i18n.t('inviteLink.toast.created'), { duration: 4000 });
+        invalidateAll();
+      }
+    } catch {
+      toast.error(i18n.t('inviteLink.toast.createFailed'));
+    } finally {
+      creatingLink = false;
+    }
+  }
+
+  async function handleCopyInviteLink(code: string) {
+    try {
+      const url = `${window.location.origin}/play/online/invite/${code}`;
+      await navigator.clipboard.writeText(url);
+      copiedLink = true;
+      srAnnouncement = i18n.t('common.copied');
+      setTimeout(() => {
+        copiedLink = false;
+        srAnnouncement = '';
+      }, 2000);
+    } catch {
+      srAnnouncement = i18n.t('inviteLink.toast.createFailed');
+      setTimeout(() => (srAnnouncement = ''), 2000);
+    }
+  }
+
   function handleTimeSelect(config: GameConfig) {
     selectedConfig = config;
   }
@@ -361,16 +424,71 @@
               {invitation}
               loading={loadingCancel.has(invitation.id)}
               oncancel={handleCancel}
+              oncopy={invitation.toUser === null ? handleCopyInviteLink : undefined}
             />
           {/each}
         </div>
       </section>
     {/if}
+
+    <!-- Create Invite Link -->
+    <section class="section" aria-labelledby="invite-link-heading">
+      <h2 id="invite-link-heading" class="section-title">
+        {i18n.t('inviteLink.create.title')}
+      </h2>
+      {#if createdInviteCode}
+        <div class="invite-link-result">
+          <input
+            type="text"
+            readonly
+            value="{typeof window !== 'undefined' ? window.location.origin : ''}/play/online/invite/{createdInviteCode}"
+            class="invite-link-input"
+            aria-label={i18n.t('inviteLink.linkLabel')}
+          />
+          <Button
+            size="sm"
+            class="copy-link-btn"
+            onclick={() => handleCopyInviteLink(createdInviteCode!)}
+            aria-label={copiedLink ? i18n.t('common.copied') : i18n.t('inviteLink.copyLink')}
+          >
+            {#if copiedLink}
+              <Check size={16} />
+              {i18n.t('common.copied')}
+            {:else}
+              <Copy size={16} />
+              {i18n.t('inviteLink.copyLink')}
+            {/if}
+          </Button>
+        </div>
+        <Button
+          size="sm"
+          variant="outline"
+          class="create-another-btn"
+          onclick={() => { createdInviteCode = null; }}
+        >
+          {i18n.t('inviteLink.create.another')}
+        </Button>
+      {:else}
+        <p class="invite-link-desc">{i18n.t('inviteLink.create.description')}</p>
+        <Button
+          size="sm"
+          disabled={creatingLink}
+          class="create-link-btn"
+          onclick={handleCreateInviteLink}
+        >
+          {#if creatingLink}
+            <Loader2 size={14} class="animate-spin" />
+          {/if}
+          <Link size={14} />
+          {i18n.t('inviteLink.create.button')}
+        </Button>
+      {/if}
+    </section>
   </div>
 </div>
 
 <!-- Screen reader announcements -->
-<div class="sr-only" aria-live="polite" aria-atomic="true"></div>
+<div class="sr-only" aria-live="polite" aria-atomic="true">{srAnnouncement}</div>
 
 <style>
   .online-page {
@@ -475,6 +593,53 @@
     .online-page {
       padding: 1rem 0.5rem;
     }
+  }
+
+  /* Invite link section */
+  .invite-link-desc {
+    font-size: 0.875rem;
+    color: var(--theme-text-secondary, #aaa);
+    margin: 0;
+  }
+
+  :global(.create-link-btn) {
+    min-height: 44px;
+    min-width: 44px;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+  }
+
+  :global(.create-another-btn) {
+    min-height: 44px;
+  }
+
+  .invite-link-result {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  .invite-link-input {
+    flex: 1;
+    padding: 0.5rem 0.75rem;
+    background: var(--theme-bg-dark, #111);
+    border: 1px solid var(--theme-border, #444);
+    border-radius: 8px;
+    color: var(--theme-text-primary, #eee);
+    font-size: 0.75rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .invite-link-input:focus {
+    outline: 2px solid var(--theme-primary, #06b6d4);
+    outline-offset: -2px;
+  }
+
+  :global(.copy-link-btn) {
+    min-height: 44px;
+    min-width: 44px;
+    flex-shrink: 0;
   }
 
   .sr-only {
