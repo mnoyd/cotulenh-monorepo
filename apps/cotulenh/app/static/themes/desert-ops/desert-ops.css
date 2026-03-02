@@ -93,10 +93,15 @@
   --theme-board-deploy-dest-border: #e2c290;
   --theme-board-deploy-radius: 2px;
 
-  /* Air Defense */
-  --theme-board-air-friendly: rgba(50, 117, 161, 0.8);
-  --theme-board-air-opponent: rgba(171, 74, 56, 0.9);
-  --theme-board-air-overlap: rgba(212, 175, 55, 0.8);
+  /* Air Defense - High Visibility */
+  --theme-board-air-friendly: rgba(32, 178, 170, 0.95);
+  /* Teal accent */
+  --theme-board-air-opponent: rgba(220, 50, 40, 0.95);
+  /* Crisp red */
+  --theme-board-air-overlap: rgba(243, 156, 18, 0.95);
+  /* Vibrant gold/warning */
+  --theme-radar-ring-opacity: 0.65;
+  --theme-radar-overlap-ring-opacity: 0.85;
 
   /* ===== PIECES ===== */
   --theme-piece-path: '/themes/desert-ops/pieces';
