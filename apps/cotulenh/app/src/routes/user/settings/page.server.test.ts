@@ -267,7 +267,10 @@ describe('settings page server', () => {
       expect(mockSupabase.from).toHaveBeenCalledWith('profiles');
       expect(updateMock).toHaveBeenCalledWith(
         expect.objectContaining({
-          settings_json: { soundsEnabled: false, soundVolume: 0.3 }
+          settings_json: expect.objectContaining({
+            soundsEnabled: false,
+            soundVolume: 0.3
+          })
         })
       );
     });

@@ -496,5 +496,31 @@ export const vi: TranslationKeys = {
   'accountSettings.validation.emailInvalid': 'Vui lòng nhập địa chỉ email hợp lệ',
   'accountSettings.validation.passwordRequired': 'Mật khẩu là bắt buộc',
   'accountSettings.validation.passwordMinLength': 'Mật khẩu phải có ít nhất 8 ký tự',
-  'accountSettings.validation.passwordMismatch': 'Mật khẩu không khớp'
+  'accountSettings.validation.passwordMismatch': 'Mật khẩu không khớp',
+
+  // Friends
+  'nav.friends': 'Bạn Bè',
+  'friends.title': 'Bạn Bè',
+  'friends.search.placeholder': 'Tìm người chơi theo tên...',
+  'friends.search.noResults': 'Không tìm thấy người chơi',
+  'friends.search.noResultsHint': 'Kiểm tra chính tả hoặc thử tên khác',
+  'friends.search.minChars': 'Nhập ít nhất 2 ký tự để tìm kiếm',
+  'friends.empty.title': 'Chưa có bạn bè',
+  'friends.empty.subtitle': 'Tìm kiếm người chơi để kết nối',
+  'friends.list.title': 'Bạn Bè Của Bạn',
+  'friends.action.sendRequest': 'Gửi Lời Mời',
+  'friends.action.pending': 'Đang Chờ',
+  'friends.action.friends': 'Bạn Bè',
+  'friends.action.cancel': 'Hủy',
+  'friends.action.accept': 'Chấp Nhận',
+  'friends.action.decline': 'Từ Chối',
+  'friends.action.remove': 'Xóa',
+  'friends.toast.requestSent': 'Đã gửi lời mời kết bạn',
+  'friends.toast.requestFailed': 'Gửi lời mời kết bạn thất bại',
+  'friends.status.online': 'Trực Tuyến',
+  'friends.status.offline': 'Ngoại Tuyến',
+  'friends.error.sendFailed': 'Gửi lời mời kết bạn thất bại. Vui lòng thử lại.',
+  'friends.error.alreadyFriends': 'Bạn đã là bạn bè với người dùng này.',
+  'friends.error.requestAlreadyPending': 'Lời mời kết bạn đang chờ xử lý.',
+  'friends.error.cannotFriendSelf': 'Bạn không thể gửi lời mời kết bạn cho chính mình.'
 };

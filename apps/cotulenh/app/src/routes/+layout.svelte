@@ -20,7 +20,8 @@
     Puzzle,
     LogIn,
     LogOut,
-    UserCircle
+    UserCircle,
+    Users
   } from 'lucide-svelte';
   import { themeStore } from '$lib/stores/theme.svelte';
   import { saveSettings as persistSettings, type Settings as AppSettings } from '$lib/stores/settings';
@@ -122,6 +123,17 @@
         <PenSquare class="sidebar-icon" />
         <span class="sidebar-label">{i18n.t('nav.editor')}</span>
       </a>
+      {#if isAuthenticated}
+        <a
+          href="/user/friends"
+          class="sidebar-link"
+          class:active={$page.url.pathname === '/user/friends'}
+          title={i18n.t('nav.friends')}
+        >
+          <Users class="sidebar-icon" />
+          <span class="sidebar-label">{i18n.t('nav.friends')}</span>
+        </a>
+      {/if}
     </nav>
 
     <div class="sidebar-footer">
@@ -247,6 +259,16 @@
               </a>
             {/snippet}
           </DropdownMenu.Item>
+          {#if isAuthenticated}
+            <DropdownMenu.Item>
+              {#snippet child({ props })}
+                <a href="/user/friends" {...props}>
+                  <Users size={16} />
+                  {i18n.t('nav.friends')}
+                </a>
+              {/snippet}
+            </DropdownMenu.Item>
+          {/if}
           <DropdownMenu.Separator />
           <DropdownMenu.Item onclick={() => (shortcutsOpen = true)}>
             <Keyboard size={16} />

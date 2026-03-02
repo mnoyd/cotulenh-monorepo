@@ -492,6 +492,32 @@ export interface TranslationKeys {
   'accountSettings.validation.passwordRequired': string;
   'accountSettings.validation.passwordMinLength': string;
   'accountSettings.validation.passwordMismatch': string;
+
+  // Friends
+  'nav.friends': string;
+  'friends.title': string;
+  'friends.search.placeholder': string;
+  'friends.search.noResults': string;
+  'friends.search.noResultsHint': string;
+  'friends.search.minChars': string;
+  'friends.empty.title': string;
+  'friends.empty.subtitle': string;
+  'friends.list.title': string;
+  'friends.action.sendRequest': string;
+  'friends.action.pending': string;
+  'friends.action.friends': string;
+  'friends.action.cancel': string;
+  'friends.action.accept': string;
+  'friends.action.decline': string;
+  'friends.action.remove': string;
+  'friends.toast.requestSent': string;
+  'friends.toast.requestFailed': string;
+  'friends.status.online': string;
+  'friends.status.offline': string;
+  'friends.error.sendFailed': string;
+  'friends.error.alreadyFriends': string;
+  'friends.error.requestAlreadyPending': string;
+  'friends.error.cannotFriendSelf': string;
 }
 
 export type TranslationKey = keyof TranslationKeys;

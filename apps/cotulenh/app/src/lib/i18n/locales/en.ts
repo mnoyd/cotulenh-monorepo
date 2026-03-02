@@ -496,5 +496,31 @@ export const en: TranslationKeys = {
   'accountSettings.validation.emailInvalid': 'Please enter a valid email address',
   'accountSettings.validation.passwordRequired': 'Password is required',
   'accountSettings.validation.passwordMinLength': 'Password must be at least 8 characters',
-  'accountSettings.validation.passwordMismatch': 'Passwords do not match'
+  'accountSettings.validation.passwordMismatch': 'Passwords do not match',
+
+  // Friends
+  'nav.friends': 'Friends',
+  'friends.title': 'Friends',
+  'friends.search.placeholder': 'Search players by name...',
+  'friends.search.noResults': 'No players found',
+  'friends.search.noResultsHint': 'Check the spelling or try a different name',
+  'friends.search.minChars': 'Type at least 2 characters to search',
+  'friends.empty.title': 'No friends yet',
+  'friends.empty.subtitle': 'Search for players to connect with',
+  'friends.list.title': 'Your Friends',
+  'friends.action.sendRequest': 'Send Request',
+  'friends.action.pending': 'Pending',
+  'friends.action.friends': 'Friends',
+  'friends.action.cancel': 'Cancel',
+  'friends.action.accept': 'Accept',
+  'friends.action.decline': 'Decline',
+  'friends.action.remove': 'Remove',
+  'friends.toast.requestSent': 'Friend request sent',
+  'friends.toast.requestFailed': 'Failed to send friend request',
+  'friends.status.online': 'Online',
+  'friends.status.offline': 'Offline',
+  'friends.error.sendFailed': 'Failed to send friend request. Please try again.',
+  'friends.error.alreadyFriends': 'You are already friends with this user.',
+  'friends.error.requestAlreadyPending': 'A friend request is already pending.',
+  'friends.error.cannotFriendSelf': 'You cannot send a friend request to yourself.'
 };
