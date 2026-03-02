@@ -14,8 +14,8 @@ export const load: PageServerLoad = async ({ locals: { safeGetSession } }) => {
 export const actions: Actions = {
   default: async ({ request, locals: { supabase } }) => {
     const formData = await request.formData();
-    const password = formData.get('password') as string;
-    const confirmPassword = formData.get('confirmPassword') as string;
+    const password = String(formData.get('password') ?? '');
+    const confirmPassword = String(formData.get('confirmPassword') ?? '');
 
     const result = resetPasswordSchema.safeParse({ password, confirmPassword });
     if (!result.success) {

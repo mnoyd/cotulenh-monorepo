@@ -6,7 +6,7 @@ import { logger } from '@cotulenh/common';
 export const actions: Actions = {
   default: async ({ request, url, locals: { supabase } }) => {
     const formData = await request.formData();
-    const email = formData.get('email') as string;
+    const email = String(formData.get('email') ?? '');
 
     const result = forgotPasswordSchema.safeParse({ email });
     if (!result.success) {

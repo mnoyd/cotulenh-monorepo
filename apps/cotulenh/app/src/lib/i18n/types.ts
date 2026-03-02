@@ -534,6 +534,7 @@ export interface TranslationKeys {
   'friends.error.alreadyFriends': string;
   'friends.error.requestAlreadyPending': string;
   'friends.error.cannotFriendSelf': string;
+  'friends.error.userBlocked': string;
 }
 
 export type TranslationKey = keyof TranslationKeys;

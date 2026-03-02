@@ -98,7 +98,8 @@
       try {
         const response = await fetch('?/search', {
           method: 'POST',
-          body: new URLSearchParams({ query: searchQuery.trim() })
+          body: new URLSearchParams({ query: searchQuery.trim() }),
+          headers: { 'x-sveltekit-action': 'true' }
         });
         const result = await response.json();
         const actionData = result?.data;
@@ -119,16 +120,22 @@
     }, 300);
   }
 
+  async function postAction(action: string, body: Record<string, string>): Promise<boolean> {
+    const response = await fetch(`?/${action}`, {
+      method: 'POST',
+      body: new URLSearchParams(body),
+      headers: { 'x-sveltekit-action': 'true' }
+    });
+    return response.ok;
+  }
+
   async function handleSendRequest(toUserId: string) {
     optimisticPending = new Set([...optimisticPending, toUserId]);
 
     try {
-      const response = await fetch('?/sendRequest', {
-        method: 'POST',
-        body: new URLSearchParams({ toUserId })
-      });
+      const ok = await postAction('sendRequest', { toUserId });
 
-      if (!response.ok) {
+      if (!ok) {
         const next = new Set(optimisticPending);
         next.delete(toUserId);
         optimisticPending = next;
@@ -152,12 +159,9 @@
     const request = data.incomingRequests.find((r: PendingRequestItem) => r.friendshipId === friendshipId);
 
     try {
-      const response = await fetch('?/acceptRequest', {
-        method: 'POST',
-        body: new URLSearchParams({ friendshipId })
-      });
+      const ok = await postAction('acceptRequest', { friendshipId });
 
-      if (!response.ok) {
+      if (!ok) {
         toast.error(i18n.t('friends.toast.actionFailed'));
         return;
       }
@@ -185,12 +189,9 @@
     loadingRequests = new Set([...loadingRequests, friendshipId]);
 
     try {
-      const response = await fetch('?/declineRequest', {
-        method: 'POST',
-        body: new URLSearchParams({ friendshipId })
-      });
+      const ok = await postAction('declineRequest', { friendshipId });
 
-      if (!response.ok) {
+      if (!ok) {
         toast.error(i18n.t('friends.toast.actionFailed'));
         return;
       }
@@ -210,12 +211,9 @@
     loadingRequests = new Set([...loadingRequests, friendshipId]);
 
     try {
-      const response = await fetch('?/cancelRequest', {
-        method: 'POST',
-        body: new URLSearchParams({ friendshipId })
-      });
+      const ok = await postAction('cancelRequest', { friendshipId });
 
-      if (!response.ok) {
+      if (!ok) {
         toast.error(i18n.t('friends.toast.actionFailed'));
         return;
       }
@@ -243,12 +241,9 @@
     const { friendshipId } = friendToRemove;
 
     try {
-      const response = await fetch('?/removeFriend', {
-        method: 'POST',
-        body: new URLSearchParams({ friendshipId })
-      });
+      const ok = await postAction('removeFriend', { friendshipId });
 
-      if (!response.ok) {
+      if (!ok) {
         toast.error(i18n.t('friends.toast.removeFailed'));
         return;
       }

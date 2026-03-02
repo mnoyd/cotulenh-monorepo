@@ -1,4 +1,4 @@
-import { fail } from '@sveltejs/kit';
+import { fail, redirect } from '@sveltejs/kit';
 import { logger } from '@cotulenh/common';
 import { SettingsSchema } from '$lib/stores/settings';
 import { emailUpdateSchema, passwordChangeSchema } from './validation';
@@ -7,7 +7,7 @@ import type { Actions, PageServerLoad } from './$types';
 export const load: PageServerLoad = async ({ locals: { supabase, safeGetSession } }) => {
   const { user } = await safeGetSession();
   if (!user) {
-    return { email: '', settingsJson: {} };
+    redirect(303, '/auth/login');
   }
 
   const {

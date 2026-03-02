@@ -538,5 +538,6 @@ export const vi: TranslationKeys = {
   'friends.error.sendFailed': 'Gửi lời mời kết bạn thất bại. Vui lòng thử lại.',
   'friends.error.alreadyFriends': 'Bạn đã là bạn bè với người dùng này.',
   'friends.error.requestAlreadyPending': 'Lời mời kết bạn đang chờ xử lý.',
-  'friends.error.cannotFriendSelf': 'Bạn không thể gửi lời mời kết bạn cho chính mình.'
+  'friends.error.cannotFriendSelf': 'Bạn không thể gửi lời mời kết bạn cho chính mình.',
+  'friends.error.userBlocked': 'Người dùng này không khả dụng.'
 };

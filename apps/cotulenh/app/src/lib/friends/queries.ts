@@ -105,6 +105,9 @@ export async function sendFriendRequest(
     if (existing.status === 'pending') {
       return { success: false, error: 'requestAlreadyPending' };
     }
+    if (existing.status === 'blocked') {
+      return { success: false, error: 'userBlocked' };
+    }
   }
 
   const { error } = await supabase.from('friendships').insert({

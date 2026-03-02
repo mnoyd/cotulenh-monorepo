@@ -30,9 +30,17 @@ CREATE POLICY "Users can insert friendships they initiate"
   ON public.friendships FOR INSERT
   WITH CHECK (auth.uid() = initiated_by AND (auth.uid() = user_a OR auth.uid() = user_b));
 
-CREATE POLICY "Users can update own friendships"
+-- Only the recipient (non-initiator) can accept a pending request
+CREATE POLICY "Recipients can accept pending friendships"
   ON public.friendships FOR UPDATE
-  USING (auth.uid() = user_a OR auth.uid() = user_b);
+  USING (
+    (auth.uid() = user_a OR auth.uid() = user_b)
+    AND auth.uid() != initiated_by
+    AND status = 'pending'
+  )
+  WITH CHECK (
+    status = 'accepted'
+  );
 
 CREATE POLICY "Users can delete own friendships"
   ON public.friendships FOR DELETE

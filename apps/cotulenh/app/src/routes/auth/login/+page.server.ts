@@ -1,11 +1,8 @@
 import { fail, redirect } from '@sveltejs/kit';
 import { logger } from '@cotulenh/common';
 import { loginSchema } from './validation';
+import { isRelativePath } from '$lib/auth/guards';
 import type { Actions, PageServerLoad } from './$types';
-
-function isRelativePath(path: string): boolean {
-  return path.startsWith('/') && !path.startsWith('//') && !path.includes('://');
-}
 
 export const load: PageServerLoad = async ({ locals: { safeGetSession } }) => {
   const { session } = await safeGetSession();

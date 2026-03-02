@@ -171,6 +171,28 @@ describe('sendFriendRequest', () => {
     expect(result.error).toBe('alreadyFriends');
   });
 
+  it('rejects when user is blocked', async () => {
+    const singleFn = vi
+      .fn()
+      .mockResolvedValue({ data: { id: 'f-1', status: 'blocked' }, error: null });
+    const { supabase, mockFrom } = createMockSupabase();
+
+    mockFrom.mockReturnValue({
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            single: singleFn
+          })
+        })
+      })
+    });
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = await sendFriendRequest(supabase as any, 'user-1', 'user-2');
+    expect(result.success).toBe(false);
+    expect(result.error).toBe('userBlocked');
+  });
+
   it('rejects when request already pending', async () => {
     const singleFn = vi
       .fn()

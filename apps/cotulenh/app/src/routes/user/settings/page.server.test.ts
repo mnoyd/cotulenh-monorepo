@@ -91,13 +91,12 @@ describe('settings page server', () => {
       expect(result.settingsJson).toEqual({});
     });
 
-    it('returns empty email and settings when user is not authenticated', async () => {
+    it('redirects to login when user is not authenticated', async () => {
       mockSafeGetSession.mockResolvedValue({ session: null, user: null });
 
-      const result = (await load(createMockLoadEvent())) as Record<string, unknown>;
-
-      expect(result.email).toBe('');
-      expect(result.settingsJson).toEqual({});
+      await expect(load(createMockLoadEvent())).rejects.toEqual(
+        expect.objectContaining({ status: 303, location: '/auth/login' })
+      );
     });
 
     it('returns defaults when profile data is null', async () => {

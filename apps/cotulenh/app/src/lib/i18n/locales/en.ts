@@ -538,5 +538,6 @@ export const en: TranslationKeys = {
   'friends.error.sendFailed': 'Failed to send friend request. Please try again.',
   'friends.error.alreadyFriends': 'You are already friends with this user.',
   'friends.error.requestAlreadyPending': 'A friend request is already pending.',
-  'friends.error.cannotFriendSelf': 'You cannot send a friend request to yourself.'
+  'friends.error.cannotFriendSelf': 'You cannot send a friend request to yourself.',
+  'friends.error.userBlocked': 'This user is not available.'
 };
