@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { browser } from '$app/environment';
 import { logger } from '@cotulenh/common';
 
-const THEME_IDS = ['modern-warfare', 'classic', 'forest'] as const;
+const THEME_IDS = ['modern-warfare', 'desert-ops', 'classic', 'forest'] as const;
 export type ThemeId = (typeof THEME_IDS)[number];
 
 export const SettingsSchema = z.object({

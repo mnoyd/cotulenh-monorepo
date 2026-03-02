@@ -1,0 +1,272 @@
+/* Desert Oasis Theme - Heritage design with warm, natural accents */
+/* Inspired by ancient desert cultures - terracotta, limestone and rich blues */
+:root {
+  /* ===== CORE PALETTE ===== */
+  --theme-primary: #d4af37;
+  --theme-primary-dim: rgba(212, 175, 55, 0.12);
+  --theme-primary-glow: rgba(212, 175, 55, 0.4);
+  --theme-secondary: #e2c290;
+  --theme-secondary-dim: rgba(226, 194, 144, 0.12);
+  --theme-secondary-glow: rgba(226, 194, 144, 0.4);
+  --theme-accent: #5a9e98;
+  --theme-accent-dim: rgba(90, 158, 152, 0.12);
+  --theme-accent-glow: rgba(90, 158, 152, 0.4);
+  --theme-warning: #f39c12;
+  --theme-error: #c0392b;
+  --theme-success: #27ae60;
+
+  /* ===== BACKGROUNDS ===== */
+  --theme-bg-dark: #151410;
+  --theme-bg-base: #1f1c17;
+  --theme-bg-panel: rgba(31, 28, 23, 0.92);
+  --theme-bg-elevated: rgba(45, 40, 32, 0.95);
+  --theme-bg-overlay: rgba(15, 12, 8, 0.85);
+
+  /* ===== BORDERS ===== */
+  --theme-border: rgba(212, 175, 55, 0.35);
+  --theme-border-subtle: rgba(212, 175, 55, 0.15);
+  --theme-border-strong: rgba(212, 175, 55, 0.6);
+
+  /* ===== TEXT ===== */
+  --theme-text-primary: #fdf5e6;
+  --theme-text-secondary: #d1c4a5;
+  --theme-text-muted: #9a8e7a;
+  --theme-text-inverse: #151410;
+
+  /* ===== NAVBAR ===== */
+  --theme-nav-bg: rgba(31, 28, 23, 0.97);
+  --theme-nav-border: rgba(212, 175, 55, 0.25);
+  --theme-nav-text: rgba(253, 245, 230, 0.85);
+  --theme-nav-text-hover: #d4af37;
+  --theme-nav-text-active: #fff;
+  --theme-nav-active-bg: #d4af37;
+  --theme-nav-hover-bg: rgba(212, 175, 55, 0.12);
+
+  /* ===== TEAM COLORS ===== */
+  --theme-team-blue: #3b7ea1;
+  --theme-team-blue-glow: rgba(59, 126, 161, 0.5);
+  --theme-team-red: #c75b39;
+  --theme-team-red-glow: rgba(199, 91, 57, 0.5);
+
+  /* ===== BOARD - COURTYARD STYLE ===== */
+  /* Courtyard Aesthetic - Earth & Limestone tones */
+  --theme-board-bg: #e6d8c3;
+  --theme-board-border: #b89768;
+  --theme-board-radius: 4px;
+  --theme-board-shadow: inset 0 0 50px rgba(100, 75, 50, 0.3);
+  --theme-board-filter: sepia(0.15) contrast(1.02) brightness(0.98);
+  /* Geometric patterns implicitly through original grid overlay */
+  --theme-board-image: url('/themes/desert-ops/board-grid.svg');
+
+  /* Board Squares - Limestone & Warm Earth */
+  --theme-board-light: #f4e8d8;
+  /* Limestone */
+  --theme-board-dark: #d5c0a3;
+  /* Warm Earth */
+  --theme-board-highlight: rgba(212, 175, 55, 0.25);
+  --theme-board-selected: rgba(212, 175, 55, 0.4);
+  --theme-board-selected-border: #d4af37;
+  --theme-board-selected-radius: 2px;
+  --theme-board-last-move-from: rgba(212, 175, 55, 0.15);
+  --theme-board-last-move-to: rgba(212, 175, 55, 0.25);
+  --theme-board-last-move-radius: 2px;
+  --theme-board-move-dest: #d4af37;
+  --theme-board-move-dest-bg: radial-gradient(rgba(212, 175, 55, 0.6) 20%, transparent 20%);
+  --theme-board-capture-bg: radial-gradient(
+    transparent 0%,
+    transparent 75%,
+    rgba(212, 175, 55, 0.4) 75%
+  );
+  --theme-board-capture: #c0392b;
+  --theme-board-check: rgba(192, 57, 43, 0.5);
+  --theme-board-check-bg: radial-gradient(
+    ellipse at center,
+    rgba(192, 57, 43, 1) 0%,
+    rgba(192, 57, 43, 0.6) 30%,
+    transparent 70%
+  );
+
+  /* Deploy Mode */
+  --theme-board-deploy-origin: rgba(212, 175, 55, 0.1);
+  --theme-board-deploy-origin-border: #d4af37;
+  --theme-board-deploy-dest: rgba(226, 194, 144, 0.1);
+  --theme-board-deploy-dest-border: #e2c290;
+  --theme-board-deploy-radius: 2px;
+
+  /* Air Defense - High Visibility */
+  --theme-board-air-friendly: rgba(90, 158, 152, 0.95);
+  /* Oasis teal accent */
+  --theme-board-air-opponent: rgba(220, 50, 40, 0.95);
+  /* Crisp red */
+  --theme-board-air-overlap: rgba(243, 156, 18, 0.95);
+  /* Vibrant gold/warning */
+  --theme-radar-ring-opacity: 0.65;
+  --theme-radar-blip-opacity: 0.8;
+  --theme-radar-overlap-ring-opacity: 0.85;
+  --theme-radar-overlap-blip-opacity: 1;
+
+  /* ===== PIECES ===== */
+  --theme-piece-path: '/themes/desert-ops/pieces';
+  --theme-piece-shadow: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.45));
+  --theme-piece-blue-filter: drop-shadow(0 0 6px rgba(59, 126, 161, 0.5)) brightness(1.1)
+    contrast(1.1);
+  --theme-piece-red-filter: drop-shadow(0 0 6px rgba(199, 91, 57, 0.5)) hue-rotate(0deg)
+    brightness(1.1) contrast(1.1);
+  --theme-piece-heroic-filter: drop-shadow(0 0 12px rgba(212, 175, 55, 0.7)) brightness(1.2)
+    contrast(1.1);
+  --theme-piece-hover-filter: brightness(1.2) drop-shadow(4px 10px 14px rgba(0, 0, 0, 0.6));
+  --theme-piece-drag-filter: brightness(1.2) drop-shadow(6px 18px 20px rgba(0, 0, 0, 0.7));
+  --theme-heroic-star: url('/themes/desert-ops/pieces/heroic-star.svg');
+
+  /* ===== BUTTONS ===== */
+  --theme-btn-attack-stay: #f39c12;
+  --theme-btn-attack-normal: #c0392b;
+  --theme-btn-cancel-bg: rgba(192, 57, 43, 0.2);
+  --theme-btn-cancel-border: #c0392b;
+  --theme-btn-confirm-bg: rgba(46, 139, 87, 0.2);
+  --theme-btn-confirm-border: #27ae60;
+
+  /* ===== HEROIC BADGE ===== */
+  --theme-heroic-bg: rgba(31, 28, 23, 0.95);
+  --theme-heroic-border: #d4af37;
+  --theme-heroic-glow: 0 0 8px #d4af37;
+  --theme-heroic-star-color: #d4af37;
+
+  /* ===== GLOW EFFECTS ===== */
+  --theme-glow-primary: 0 0 12px rgba(212, 175, 55, 0.4);
+  --theme-glow-secondary: 0 0 12px rgba(226, 194, 144, 0.4);
+  --theme-glow-accent: 0 0 12px rgba(90, 158, 152, 0.4);
+  --theme-glow-error: 0 0 12px rgba(192, 57, 43, 0.4);
+
+  /* ===== SHADOWS ===== */
+  --theme-shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.2);
+  --theme-shadow-md: 0 4px 8px rgba(0, 0, 0, 0.3);
+  --theme-shadow-lg: 0 10px 20px rgba(0, 0, 0, 0.4);
+
+  /* ===== OVERLAYS - DISABLED for performance ===== */
+  --theme-scanline-opacity: 0;
+  --theme-vignette-opacity: 0.15;
+  --theme-vignette-color: rgba(20, 12, 5, 0.8);
+
+  /* ===== ANIMATIONS - DISABLED for performance ===== */
+  --theme-transition-fast: 0.1s;
+  --theme-transition-base: 0.15s;
+  --theme-transition-slow: 0.25s;
+
+  /* ===== ATTACK ICONS ===== */
+  --theme-icon-attack-stay: url('/themes/desert-ops/attack-stay.svg');
+  --theme-icon-attack-normal: url('/themes/desert-ops/attack-normal.svg');
+}
+
+/* ===== PIECE OVERRIDES ===== */
+/* Blue pieces */
+.cg-wrap piece.air_force.blue,
+piece.dragging.air_force.blue {
+  background-image: url('/themes/desert-ops/pieces/blue/air-force.svg');
+}
+
+.cg-wrap piece.anti_air.blue,
+piece.dragging.anti_air.blue {
+  background-image: url('/themes/desert-ops/pieces/blue/anti-air.svg');
+}
+
+.cg-wrap piece.artillery.blue,
+piece.dragging.artillery.blue {
+  background-image: url('/themes/desert-ops/pieces/blue/artillery.svg');
+}
+
+.cg-wrap piece.commander.blue,
+piece.dragging.commander.blue {
+  background-image: url('/themes/desert-ops/pieces/blue/commander.svg');
+}
+
+.cg-wrap piece.engineer.blue,
+piece.dragging.engineer.blue {
+  background-image: url('/themes/desert-ops/pieces/blue/engineer.svg');
+}
+
+.cg-wrap piece.headquarter.blue,
+piece.dragging.headquarter.blue {
+  background-image: url('/themes/desert-ops/pieces/blue/headquarter.svg');
+}
+
+.cg-wrap piece.infantry.blue,
+piece.dragging.infantry.blue {
+  background-image: url('/themes/desert-ops/pieces/blue/infantry.svg');
+}
+
+.cg-wrap piece.militia.blue,
+piece.dragging.militia.blue {
+  background-image: url('/themes/desert-ops/pieces/blue/militia.svg');
+}
+
+.cg-wrap piece.missile.blue,
+piece.dragging.missile.blue {
+  background-image: url('/themes/desert-ops/pieces/blue/missile.svg');
+}
+
+.cg-wrap piece.navy.blue,
+piece.dragging.navy.blue {
+  background-image: url('/themes/desert-ops/pieces/blue/navy.svg');
+}
+
+.cg-wrap piece.tank.blue,
+piece.dragging.tank.blue {
+  background-image: url('/themes/desert-ops/pieces/blue/tank.svg');
+}
+
+/* Red pieces */
+.cg-wrap piece.air_force.red,
+piece.dragging.air_force.red {
+  background-image: url('/themes/desert-ops/pieces/red/air-force.svg');
+}
+
+.cg-wrap piece.anti_air.red,
+piece.dragging.anti_air.red {
+  background-image: url('/themes/desert-ops/pieces/red/anti-air.svg');
+}
+
+.cg-wrap piece.artillery.red,
+piece.dragging.artillery.red {
+  background-image: url('/themes/desert-ops/pieces/red/artillery.svg');
+}
+
+.cg-wrap piece.commander.red,
+piece.dragging.commander.red {
+  background-image: url('/themes/desert-ops/pieces/red/commander.svg');
+}
+
+.cg-wrap piece.engineer.red,
+piece.dragging.engineer.red {
+  background-image: url('/themes/desert-ops/pieces/red/engineer.svg');
+}
+
+.cg-wrap piece.headquarter.red,
+piece.dragging.headquarter.red {
+  background-image: url('/themes/desert-ops/pieces/red/headquarter.svg');
+}
+
+.cg-wrap piece.infantry.red,
+piece.dragging.infantry.red {
+  background-image: url('/themes/desert-ops/pieces/red/infantry.svg');
+}
+
+.cg-wrap piece.militia.red,
+piece.dragging.militia.red {
+  background-image: url('/themes/desert-ops/pieces/red/militia.svg');
+}
+
+.cg-wrap piece.missile.red,
+piece.dragging.missile.red {
+  background-image: url('/themes/desert-ops/pieces/red/missile.svg');
+}
+
+.cg-wrap piece.navy.red,
+piece.dragging.navy.red {
+  background-image: url('/themes/desert-ops/pieces/red/navy.svg');
+}
+
+.cg-wrap piece.tank.red,
+piece.dragging.tank.red {
+  background-image: url('/themes/desert-ops/pieces/red/tank.svg');
+}

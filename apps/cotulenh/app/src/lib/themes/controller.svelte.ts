@@ -7,7 +7,7 @@
 
 import { browser } from '$app/environment';
 
-export type ThemeId = 'modern-warfare' | 'classic' | 'forest';
+export type ThemeId = 'modern-warfare' | 'desert-ops' | 'classic' | 'forest';
 
 export interface ThemeInfo {
   id: ThemeId;
@@ -24,6 +24,12 @@ export const themes: ThemeInfo[] = [
     id: 'modern-warfare',
     name: 'Modern Warfare',
     description: 'Tactical HUD with cyan/amber accents',
+    isDark: true
+  },
+  {
+    id: 'desert-ops',
+    name: 'Desert Ops',
+    description: 'Ancient desert and warm heritage tones',
     isDark: true
   },
   {

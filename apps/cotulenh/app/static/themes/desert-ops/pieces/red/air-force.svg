@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="5" stdDeviation="5" flood-color="rgba(0,0,0,0.6)" />
+    </filter>
+  </defs>
+  <!-- Base shadow on the ground to emphasize altitude -->
+  <ellipse cx="50" cy="85" rx="35" ry="6" fill="#1a1a1a" opacity="0.5" />
+  <g filter="url(#shadow)" transform="scale(0.9) translate(5.5, -5)">
+    <!-- Fuselage (MiG-29 / F-14 swept wing vibe) -->
+    <!-- Twin engine body -->
+    <path d="M 50 10 C 54 10, 56 20, 60 40 L 62 85 C 62 90, 58 90, 50 90 C 42 90, 38 90, 38 85 L 40 40 C 44 20, 46 10, 50 10 Z" fill="#d4845a" stroke="#c75b39" stroke-width="1.5" />
+    <!-- Camo blotches -->
+    <path d="M 45 30 Q 50 35 48 45 T 42 50 Z" fill="#8a3a1e" />
+    <path d="M 55 50 Q 58 60 52 65 T 58 75 Z" fill="#8a3a1e" />
+    <!-- Nosecone -->
+    <path d="M 50 10 C 51 10, 52 14, 52 18 L 48 18 C 48 14, 49 10, 50 10 Z" fill="#7a3d1a" />
+    <!-- Canopy -->
+    <ellipse cx="50" cy="30" rx="3.5" ry="10" fill="#1a2b3c" stroke="#1a1a1a" stroke-width="1" />
+    <!-- Wings (Swept back) -->
+    <path d="M 40 45 L 8 60 L 10 70 L 38 65 Z" fill="#d4845a" stroke="#c75b39" stroke-width="1.5" />
+    <path d="M 60 45 L 92 60 L 90 70 L 62 65 Z" fill="#d4845a" stroke="#c75b39" stroke-width="1.5" />
+    <!-- Camo on wings -->
+    <path d="M 20 60 L 12 65 L 25 68 Z" fill="#7a3d1a" />
+    <path d="M 80 60 L 88 65 L 75 68 Z" fill="#7a3d1a" />
+    <!-- Horizontal Stabilizers -->
+    <path d="M 38 75 L 15 85 L 15 90 L 38 85 Z" fill="#d4845a" stroke="#c75b39" stroke-width="1.5" />
+    <path d="M 62 75 L 85 85 L 85 90 L 62 85 Z" fill="#d4845a" stroke="#c75b39" stroke-width="1.5" />
+    <!-- Twin Tails -->
+    <rect x="42" y="70" width="1.5" height="15" fill="#1a1a1a" />
+    <rect x="56.5" y="70" width="1.5" height="15" fill="#1a1a1a" />
+    <!-- Twin Engine Exhausts -->
+    <circle cx="44" cy="90" r="3.5" fill="#1a1a1a" />
+    <circle cx="44" cy="90" r="2" fill="#f39c12" />
+    <circle cx="56" cy="90" r="3.5" fill="#1a1a1a" />
+    <circle cx="56" cy="90" r="2" fill="#f39c12" />
+  </g>
+</svg>

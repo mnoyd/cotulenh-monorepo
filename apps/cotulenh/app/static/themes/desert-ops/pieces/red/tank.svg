@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="rgba(0,0,0,0.5)" />
+    </filter>
+  </defs>
+  <ellipse cx="50" cy="85" rx="42" ry="8" fill="#1a1a1a" opacity="0.6" />
+  <g filter="url(#shadow)">
+    <!-- Tracks -->
+    <rect x="15" y="65" width="70" height="15" rx="5" fill="#2c2a26" stroke="#1a1a1a" stroke-width="2" />
+    <circle cx="22" cy="72.5" r="5" fill="#4a4a4a" />
+    <circle cx="36" cy="72.5" r="5" fill="#4a4a4a" />
+    <circle cx="50" cy="72.5" r="5" fill="#4a4a4a" />
+    <circle cx="64" cy="72.5" r="5" fill="#4a4a4a" />
+    <circle cx="78" cy="72.5" r="5" fill="#4a4a4a" />
+    <!-- Hull -->
+    <path d="M 10 65 L 88 65 L 82 50 L 15 50 Z" fill="#c75b39" stroke="#8a3a1e" stroke-width="1.5" />
+    <!-- Fuel drums rear -->
+    <ellipse cx="12" cy="50" rx="4" ry="8" fill="#7a3d1a" stroke="#8a3a1e" />
+    <ellipse cx="18" cy="50" rx="4" ry="8" fill="#7a3d1a" stroke="#8a3a1e" />
+    <!-- Turret (Dome-like T-72 vibe) -->
+    <path d="M 35 50 C 35 35, 65 35, 70 50 Z" fill="#d4845a" stroke="#8a3a1e" stroke-width="1.5" />
+    <!-- ERA blocks -->
+    <rect x="60" y="40" width="4" height="6" fill="#c75b39" transform="rotate(20, 60, 40)" />
+    <rect x="65" y="44" width="4" height="6" fill="#c75b39" transform="rotate(40, 65, 44)" />
+    <rect x="55" y="37" width="4" height="6" fill="#c75b39" transform="rotate(10, 55, 37)" />
+    <!-- Barrel -->
+    <rect x="68" y="42" width="30" height="3" fill="#8a3a1e" stroke="#4d2010" stroke-width="0.5" />
+    <rect x="85" y="41" width="4" height="5" fill="#4d2010" /> <!-- Fume extractor -->
+    <!-- DShK MG -->
+    <rect x="45" y="32" width="12" height="2" fill="#2c2a26" />
+    <rect x="42" y="30" width="4" height="6" fill="#4d2010" /> <!-- Hatch -->
+  </g>
+</svg>
