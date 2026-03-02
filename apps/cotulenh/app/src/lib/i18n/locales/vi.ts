@@ -505,6 +505,8 @@ export const vi: TranslationKeys = {
   'friends.search.noResults': 'Không tìm thấy người chơi',
   'friends.search.noResultsHint': 'Kiểm tra chính tả hoặc thử tên khác',
   'friends.search.minChars': 'Nhập ít nhất 2 ký tự để tìm kiếm',
+  'friends.search.resultsLabel': 'Kết quả tìm kiếm',
+  'friends.search.resultsFound': 'kết quả tìm thấy',
   'friends.empty.title': 'Chưa có bạn bè',
   'friends.empty.subtitle': 'Tìm kiếm người chơi để kết nối',
   'friends.list.title': 'Bạn Bè Của Bạn',

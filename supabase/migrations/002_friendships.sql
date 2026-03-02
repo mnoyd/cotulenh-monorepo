@@ -43,3 +43,16 @@ CREATE INDEX idx_friendships_user_a ON public.friendships (user_a);
 CREATE INDEX idx_friendships_user_b ON public.friendships (user_b);
 CREATE INDEX idx_friendships_status ON public.friendships (status);
 CREATE INDEX idx_friendships_initiated_by ON public.friendships (initiated_by);
+
+-- Trigger: auto-update updated_at on row modification
+CREATE OR REPLACE FUNCTION public.update_friendships_updated_at()
+RETURNS trigger AS $$
+BEGIN
+  NEW.updated_at = now();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER friendships_updated_at
+  BEFORE UPDATE ON public.friendships
+  FOR EACH ROW EXECUTE FUNCTION public.update_friendships_updated_at();

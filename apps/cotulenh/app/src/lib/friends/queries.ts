@@ -1,6 +1,11 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { FriendSearchResult, FriendListItem, RelationshipStatus } from './types';
 
+/** Strip HTML tags from display name to prevent stored XSS at query boundary */
+function sanitizeName(name: string): string {
+  return name.replace(/<[^>]*>/g, '');
+}
+
 /**
  * Ensure canonical ordering for friendship pairs: user_a < user_b
  */
@@ -18,11 +23,14 @@ export async function searchUsers(
 ): Promise<FriendSearchResult[]> {
   if (query.length < 2) return [];
 
+  // Escape LIKE metacharacters (% and _) in user input
+  const escapedQuery = query.replace(/[%_]/g, '\\$&');
+
   // Search profiles by display name
   const { data: profiles, error: profileError } = await supabase
     .from('profiles')
     .select('id, display_name')
-    .ilike('display_name', `%${query}%`)
+    .ilike('display_name', `%${escapedQuery}%`)
     .neq('id', currentUserId)
     .limit(10);
 
@@ -57,7 +65,7 @@ export async function searchUsers(
     }
     return {
       id: p.id,
-      displayName: p.display_name,
+      displayName: sanitizeName(p.display_name),
       relationship
     };
   });
@@ -140,7 +148,7 @@ export async function getFriendsList(
       return {
         friendshipId: f.id,
         userId: friendId,
-        displayName: profileMap.get(friendId) ?? ''
+        displayName: sanitizeName(profileMap.get(friendId) ?? '')
       };
     })
     .sort((a, b) => a.displayName.localeCompare(b.displayName));

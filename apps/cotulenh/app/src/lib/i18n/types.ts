@@ -500,6 +500,8 @@ export interface TranslationKeys {
   'friends.search.noResults': string;
   'friends.search.noResultsHint': string;
   'friends.search.minChars': string;
+  'friends.search.resultsLabel': string;
+  'friends.search.resultsFound': string;
   'friends.empty.title': string;
   'friends.empty.subtitle': string;
   'friends.list.title': string;

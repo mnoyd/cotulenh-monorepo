@@ -505,6 +505,8 @@ export const en: TranslationKeys = {
   'friends.search.noResults': 'No players found',
   'friends.search.noResultsHint': 'Check the spelling or try a different name',
   'friends.search.minChars': 'Type at least 2 characters to search',
+  'friends.search.resultsLabel': 'Search results',
+  'friends.search.resultsFound': 'results found',
   'friends.empty.title': 'No friends yet',
   'friends.empty.subtitle': 'Search for players to connect with',
   'friends.list.title': 'Your Friends',

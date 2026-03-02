@@ -1,11 +1,9 @@
 <script lang="ts">
-  import { browser } from '$app/environment';
-  import { page } from '$app/stores';
   import { getI18n } from '$lib/i18n/index.svelte';
   import type { TranslationKey } from '$lib/i18n/types';
   import type { FriendSearchResult } from '$lib/friends/types';
   import PlayerCard from '$lib/components/PlayerCard.svelte';
-  import { Search, UserPlus, Loader2, Users } from 'lucide-svelte';
+  import { Search, Loader2, Users } from 'lucide-svelte';
   import Button from '$lib/components/ui/button/button.svelte';
   import { toast } from 'svelte-sonner';
   import type { PageData } from './$types';
@@ -24,15 +22,34 @@
   // Optimistic pending set — track IDs we've sent requests to
   let optimisticPending = $state(new Set<string>());
 
+  // Click-outside handler to close search dropdown
+  let searchSectionEl: HTMLElement | undefined = $state();
+  let showDropdown = $state(false);
+
+  function handleClickOutside(event: MouseEvent) {
+    if (searchSectionEl && !searchSectionEl.contains(event.target as Node)) {
+      showDropdown = false;
+    }
+  }
+
+  $effect(() => {
+    if (typeof document !== 'undefined') {
+      document.addEventListener('click', handleClickOutside);
+      return () => document.removeEventListener('click', handleClickOutside);
+    }
+  });
+
   function debounceSearch() {
     if (debounceTimer) clearTimeout(debounceTimer);
 
     if (searchQuery.trim().length < 2) {
       searchResults = [];
       hasSearched = false;
+      showDropdown = false;
       return;
     }
 
+    showDropdown = true;
     debounceTimer = setTimeout(async () => {
       isSearching = true;
       try {
@@ -117,7 +134,7 @@
     <h1 class="friends-title">{i18n.t('friends.title')}</h1>
 
     <!-- Search Section -->
-    <section class="search-section" aria-label={i18n.t('friends.search.placeholder')}>
+    <section class="search-section" aria-label={i18n.t('friends.search.placeholder')} bind:this={searchSectionEl}>
       <div class="search-input-wrapper">
         <Search size={18} class="search-icon" />
         <input
@@ -133,9 +150,20 @@
         {/if}
       </div>
 
+      <!-- Screen reader announcement for search results -->
+      <div class="sr-only" aria-live="polite" aria-atomic="true">
+        {#if hasSearched && !isSearching}
+          {#if searchResults.length === 0}
+            {i18n.t('friends.search.noResults')}
+          {:else}
+            {searchResults.length} {i18n.t('friends.search.resultsFound')}
+          {/if}
+        {/if}
+      </div>
+
       <!-- Search Results Dropdown -->
-      {#if searchQuery.trim().length >= 2}
-        <div class="search-results" role="listbox" aria-label="Search results">
+      {#if showDropdown && searchQuery.trim().length >= 2}
+        <div class="search-results" role="listbox" aria-label={i18n.t('friends.search.resultsLabel')}>
           {#if isSearching}
             <div class="search-status">{i18n.t('common.loading')}</div>
           {:else if hasSearched && searchResults.length === 0}
@@ -367,6 +395,18 @@
     .friends-page {
       padding: 1rem 0.5rem;
     }
+  }
+
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
   }
 
   :global(.animate-spin) {
