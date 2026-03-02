@@ -8,7 +8,10 @@ vi.mock('$lib/friends/queries', () => ({
 vi.mock('$lib/invitations/queries', () => ({
   sendInvitation: vi.fn(),
   getSentInvitations: vi.fn(),
+  getReceivedInvitations: vi.fn(),
   cancelInvitation: vi.fn(),
+  acceptInvitation: vi.fn(),
+  declineInvitation: vi.fn(),
   validateGameConfig: vi.fn()
 }));
 
@@ -16,7 +19,10 @@ import { getFriendsList } from '$lib/friends/queries';
 import {
   sendInvitation,
   getSentInvitations,
+  getReceivedInvitations,
   cancelInvitation,
+  acceptInvitation,
+  declineInvitation,
   validateGameConfig
 } from '$lib/invitations/queries';
 import { actions, load } from './+page.server';
@@ -24,7 +30,10 @@ import { actions, load } from './+page.server';
 const mockGetFriendsList = vi.mocked(getFriendsList);
 const mockSendInvitation = vi.mocked(sendInvitation);
 const mockGetSentInvitations = vi.mocked(getSentInvitations);
+const mockGetReceivedInvitations = vi.mocked(getReceivedInvitations);
 const mockCancelInvitation = vi.mocked(cancelInvitation);
+const mockAcceptInvitation = vi.mocked(acceptInvitation);
+const mockDeclineInvitation = vi.mocked(declineInvitation);
 const mockValidateGameConfig = vi.mocked(validateGameConfig);
 
 function createMockLocals(user: { id: string } | null = { id: 'user-1' }) {
@@ -45,7 +54,7 @@ describe('load', () => {
     vi.clearAllMocks();
   });
 
-  it('returns friends and sent invitations for authenticated user', async () => {
+  it('returns friends, sent invitations, and received invitations for authenticated user', async () => {
     const friends = [{ friendshipId: 'f-1', userId: 'user-2', displayName: 'Player Two' }];
     const sentInvitations = [
       {
@@ -58,21 +67,35 @@ describe('load', () => {
         createdAt: '2024-01-01T00:00:00Z'
       }
     ];
+    const receivedInvitations = [
+      {
+        id: 'inv-2',
+        fromUser: { id: 'user-3', displayName: 'Player Three' },
+        toUser: { id: 'user-1', displayName: '' },
+        gameConfig: { timeMinutes: 10, incrementSeconds: 0 },
+        inviteCode: 'def67890',
+        status: 'pending' as const,
+        createdAt: '2024-01-01T00:00:00Z'
+      }
+    ];
     mockGetFriendsList.mockResolvedValue(friends);
     mockGetSentInvitations.mockResolvedValue(sentInvitations);
+    mockGetReceivedInvitations.mockResolvedValue(receivedInvitations);
 
     const result = await load({
       locals: createMockLocals()
     } as never);
 
-    expect(result).toEqual({ friends, sentInvitations });
+    expect(result).toEqual({ friends, sentInvitations, receivedInvitations });
     expect(mockGetFriendsList).toHaveBeenCalledWith(expect.anything(), 'user-1');
     expect(mockGetSentInvitations).toHaveBeenCalledWith(expect.anything(), 'user-1');
+    expect(mockGetReceivedInvitations).toHaveBeenCalledWith(expect.anything(), 'user-1');
   });
 
   it('redirects unauthenticated users to login', async () => {
     mockGetFriendsList.mockResolvedValue([]);
     mockGetSentInvitations.mockResolvedValue([]);
+    mockGetReceivedInvitations.mockResolvedValue([]);
 
     await expect(
       load({
@@ -228,6 +251,111 @@ describe('actions.cancelInvitation', () => {
     mockCancelInvitation.mockResolvedValue({ success: false, error: 'cancelFailed' });
 
     const result = await actions.cancelInvitation({
+      request: createMockRequest({ invitationId: 'inv-1' }),
+      locals: createMockLocals()
+    } as never);
+
+    const data = result as { status: number };
+    expect(data.status).toBe(400);
+  });
+});
+
+describe('actions.acceptInvitation', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('returns 401 for unauthenticated user', async () => {
+    const result = await actions.acceptInvitation({
+      request: createMockRequest({ invitationId: 'inv-1' }),
+      locals: createMockLocals(null)
+    } as never);
+
+    const data = result as { status: number };
+    expect(data.status).toBe(401);
+  });
+
+  it('returns 400 for missing invitationId', async () => {
+    const result = await actions.acceptInvitation({
+      request: createMockRequest({ invitationId: '' }),
+      locals: createMockLocals()
+    } as never);
+
+    const data = result as { status: number };
+    expect(data.status).toBe(400);
+  });
+
+  it('returns success with gameId', async () => {
+    mockAcceptInvitation.mockResolvedValue({ success: true, gameId: 'game-1' });
+
+    const result = await actions.acceptInvitation({
+      request: createMockRequest({ invitationId: 'inv-1' }),
+      locals: createMockLocals()
+    } as never);
+
+    const data = result as { success: boolean; action: string; gameId: string };
+    expect(data.success).toBe(true);
+    expect(data.action).toBe('acceptInvitation');
+    expect(data.gameId).toBe('game-1');
+    expect(mockAcceptInvitation).toHaveBeenCalledWith(expect.anything(), 'inv-1', 'user-1');
+  });
+
+  it('returns 400 when accept fails (not recipient)', async () => {
+    mockAcceptInvitation.mockResolvedValue({ success: false, error: 'acceptFailed' });
+
+    const result = await actions.acceptInvitation({
+      request: createMockRequest({ invitationId: 'inv-1' }),
+      locals: createMockLocals()
+    } as never);
+
+    const data = result as { status: number };
+    expect(data.status).toBe(400);
+  });
+});
+
+describe('actions.declineInvitation', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('returns 401 for unauthenticated user', async () => {
+    const result = await actions.declineInvitation({
+      request: createMockRequest({ invitationId: 'inv-1' }),
+      locals: createMockLocals(null)
+    } as never);
+
+    const data = result as { status: number };
+    expect(data.status).toBe(401);
+  });
+
+  it('returns 400 for missing invitationId', async () => {
+    const result = await actions.declineInvitation({
+      request: createMockRequest({ invitationId: '' }),
+      locals: createMockLocals()
+    } as never);
+
+    const data = result as { status: number };
+    expect(data.status).toBe(400);
+  });
+
+  it('returns success when decline succeeds', async () => {
+    mockDeclineInvitation.mockResolvedValue({ success: true });
+
+    const result = await actions.declineInvitation({
+      request: createMockRequest({ invitationId: 'inv-1' }),
+      locals: createMockLocals()
+    } as never);
+
+    const data = result as { success: boolean; action: string };
+    expect(data.success).toBe(true);
+    expect(data.action).toBe('declineInvitation');
+    expect(mockDeclineInvitation).toHaveBeenCalledWith(expect.anything(), 'inv-1', 'user-1');
+  });
+
+  it('returns 400 when decline fails (not recipient)', async () => {
+    mockDeclineInvitation.mockResolvedValue({ success: false, error: 'declineFailed' });
+
+    const result = await actions.declineInvitation({
       request: createMockRequest({ invitationId: 'inv-1' }),
       locals: createMockLocals()
     } as never);

@@ -1,12 +1,16 @@
 <script lang="ts">
+  import { goto } from '$app/navigation';
   import { getI18n } from '$lib/i18n/index.svelte';
   import { getOnlineUsers } from '$lib/friends/presence.svelte';
   import type { GameConfig, InvitationItem } from '$lib/invitations/types';
   import { TIME_PRESETS } from '$lib/invitations/types';
   import type { FriendListItem } from '$lib/friends/types';
+  import { onInvitationRealtimeEvent } from '$lib/invitations/realtime.svelte';
+  import type { InvitationRealtimeEvent } from '$lib/invitations/realtime.svelte';
   import PlayerCard from '$lib/components/PlayerCard.svelte';
   import TimeControlSelector from '$lib/components/TimeControlSelector.svelte';
   import InvitationCard from '$lib/components/InvitationCard.svelte';
+  import ReceivedInvitationCard from '$lib/components/ReceivedInvitationCard.svelte';
   import { Loader2, Users } from 'lucide-svelte';
   import Button from '$lib/components/ui/button/button.svelte';
   import { toast } from 'svelte-sonner';
@@ -21,9 +25,15 @@
 
   // Optimistic states
   let optimisticInvited = $state(new Set<string>());
-  let removedInvitations = $state(new Set<string>());
+  let removedSentInvitations = $state(new Set<string>());
+  let removedReceivedInvitations = $state(new Set<string>());
   let loadingSend = $state(new Set<string>());
   let loadingCancel = $state(new Set<string>());
+  let loadingAccept = $state(new Set<string>());
+  let loadingDecline = $state(new Set<string>());
+
+  // Realtime received invitations (new ones that arrive after page load)
+  let realtimeReceivedInvitations = $state<InvitationItem[]>([]);
 
   // Get online users from presence (reactive)
   let onlineUsers = $derived(getOnlineUsers());
@@ -37,7 +47,7 @@
   let pendingToUserIds = $derived.by(() => {
     const ids = new Set<string>();
     for (const inv of data.sentInvitations) {
-      if (inv.toUser && !removedInvitations.has(inv.id)) {
+      if (inv.toUser && !removedSentInvitations.has(inv.id)) {
         ids.add(inv.toUser.id);
       }
     }
@@ -48,17 +58,65 @@
   });
 
   // Visible sent invitations
-  let visibleInvitations = $derived(
-    data.sentInvitations.filter((inv: InvitationItem) => !removedInvitations.has(inv.id))
+  let visibleSentInvitations = $derived(
+    data.sentInvitations.filter((inv: InvitationItem) => !removedSentInvitations.has(inv.id))
   );
 
-  async function postAction(action: string, body: Record<string, string>): Promise<boolean> {
-    const response = await fetch(`?/${action}`, {
+  // Visible received invitations — combine server data + realtime arrivals, minus removed
+  let visibleReceivedInvitations = $derived.by(() => {
+    const serverReceived = data.receivedInvitations.filter(
+      (inv: InvitationItem) => !removedReceivedInvitations.has(inv.id)
+    );
+    const realtimeReceived = realtimeReceivedInvitations.filter(
+      (inv) => !removedReceivedInvitations.has(inv.id)
+    );
+    // Deduplicate by ID (realtime might duplicate server data)
+    const seen = new Set<string>();
+    const result: InvitationItem[] = [];
+    for (const inv of [...serverReceived, ...realtimeReceived]) {
+      if (!seen.has(inv.id)) {
+        seen.add(inv.id);
+        result.push(inv);
+      }
+    }
+    return result;
+  });
+
+  // Listen for realtime invitation events on this page
+  $effect(() => {
+    const unsub = onInvitationRealtimeEvent((event: InvitationRealtimeEvent) => {
+      if (event.type === 'received') {
+        // Add to realtime received list — display name will show as loading briefly
+        realtimeReceivedInvitations = [
+          ...realtimeReceivedInvitations,
+          {
+            id: event.id,
+            fromUser: { id: event.fromUser, displayName: '' },
+            toUser: null,
+            gameConfig: event.gameConfig,
+            inviteCode: event.inviteCode,
+            status: 'pending',
+            createdAt: event.createdAt
+          }
+        ];
+      } else if (event.type === 'statusChanged') {
+        // A sent invitation was accepted/declined — remove from sent list
+        removedSentInvitations = new Set([...removedSentInvitations, event.id]);
+      } else if (event.type === 'deleted') {
+        // A received invitation was cancelled by sender — remove
+        removedReceivedInvitations = new Set([...removedReceivedInvitations, event.id]);
+      }
+    });
+
+    return unsub;
+  });
+
+  async function postAction(action: string, body: Record<string, string>): Promise<Response> {
+    return fetch(`?/${action}`, {
       method: 'POST',
       body: new URLSearchParams(body),
       headers: { 'x-sveltekit-action': 'true' }
     });
-    return response.ok;
   }
 
   async function handleInvite(friendUserId: string) {
@@ -67,12 +125,12 @@
     loadingSend = new Set([...loadingSend, friendUserId]);
 
     try {
-      const ok = await postAction('sendInvitation', {
+      const response = await postAction('sendInvitation', {
         toUserId: friendUserId,
         gameConfig: JSON.stringify(selectedConfig)
       });
 
-      if (!ok) {
+      if (!response.ok) {
         const next = new Set(optimisticInvited);
         next.delete(friendUserId);
         optimisticInvited = next;
@@ -97,9 +155,9 @@
     loadingCancel = new Set([...loadingCancel, invitationId]);
 
     try {
-      const ok = await postAction('cancelInvitation', { invitationId });
+      const response = await postAction('cancelInvitation', { invitationId });
 
-      if (!ok) {
+      if (!response.ok) {
         toast.error(i18n.t('invitation.toast.cancelFailed'));
         return;
       }
@@ -112,7 +170,7 @@
         optimisticInvited = next;
       }
 
-      removedInvitations = new Set([...removedInvitations, invitationId]);
+      removedSentInvitations = new Set([...removedSentInvitations, invitationId]);
       toast.success(i18n.t('invitation.toast.cancelled'), { duration: 4000 });
     } catch {
       toast.error(i18n.t('invitation.toast.cancelFailed'));
@@ -120,6 +178,60 @@
       const next = new Set(loadingCancel);
       next.delete(invitationId);
       loadingCancel = next;
+    }
+  }
+
+  async function handleAccept(invitationId: string) {
+    loadingAccept = new Set([...loadingAccept, invitationId]);
+
+    try {
+      const response = await postAction('acceptInvitation', { invitationId });
+
+      if (!response.ok) {
+        toast.error(i18n.t('invitation.toast.acceptFailed'));
+        return;
+      }
+
+      // Parse response to get gameId
+      const result = await response.json();
+      // SvelteKit action responses use a specific format
+      const parsed = typeof result?.data === 'string' ? JSON.parse(result.data) : result;
+      const gameId = parsed?.[1]?.gameId ?? parsed?.gameId;
+
+      removedReceivedInvitations = new Set([...removedReceivedInvitations, invitationId]);
+      toast.success(i18n.t('invitation.toast.acceptSuccess'), { duration: 4000 });
+
+      if (gameId) {
+        goto(`/play/online/${gameId}`);
+      }
+    } catch {
+      toast.error(i18n.t('invitation.toast.acceptFailed'));
+    } finally {
+      const next = new Set(loadingAccept);
+      next.delete(invitationId);
+      loadingAccept = next;
+    }
+  }
+
+  async function handleDecline(invitationId: string) {
+    loadingDecline = new Set([...loadingDecline, invitationId]);
+
+    try {
+      const response = await postAction('declineInvitation', { invitationId });
+
+      if (!response.ok) {
+        toast.error(i18n.t('invitation.toast.declineFailed'));
+        return;
+      }
+
+      removedReceivedInvitations = new Set([...removedReceivedInvitations, invitationId]);
+      toast.success(i18n.t('invitation.toast.declineSuccess'), { duration: 4000 });
+    } catch {
+      toast.error(i18n.t('invitation.toast.declineFailed'));
+    } finally {
+      const next = new Set(loadingDecline);
+      next.delete(invitationId);
+      loadingDecline = next;
     }
   }
 
@@ -135,6 +247,26 @@
 <div class="online-page">
   <div class="online-container">
     <h1 class="page-title">{i18n.t('invitation.pageTitle')}</h1>
+
+    <!-- Received Invitations (AC2, AC3, AC4) -->
+    {#if visibleReceivedInvitations.length > 0}
+      <section class="section" aria-labelledby="received-invitations-heading">
+        <h2 id="received-invitations-heading" class="section-title">
+          {i18n.t('invitation.received.title')} ({visibleReceivedInvitations.length})
+        </h2>
+        <div class="invitations-list">
+          {#each visibleReceivedInvitations as invitation (invitation.id)}
+            <ReceivedInvitationCard
+              {invitation}
+              loadingAccept={loadingAccept.has(invitation.id)}
+              loadingDecline={loadingDecline.has(invitation.id)}
+              onaccept={handleAccept}
+              ondecline={handleDecline}
+            />
+          {/each}
+        </div>
+      </section>
+    {/if}
 
     <!-- Time Control Selector (AC2) -->
     <section class="section" aria-label={i18n.t('invitation.timeControl.title')}>
@@ -184,13 +316,13 @@
     </section>
 
     <!-- Sent Invitations (AC5, AC6) -->
-    {#if visibleInvitations.length > 0}
+    {#if visibleSentInvitations.length > 0}
       <section class="section" aria-labelledby="sent-invitations-heading">
         <h2 id="sent-invitations-heading" class="section-title">
-          {i18n.t('invitation.sent.title')} ({visibleInvitations.length})
+          {i18n.t('invitation.sent.title')} ({visibleSentInvitations.length})
         </h2>
         <div class="invitations-list">
-          {#each visibleInvitations as invitation (invitation.id)}
+          {#each visibleSentInvitations as invitation (invitation.id)}
             <InvitationCard
               {invitation}
               loading={loadingCancel.has(invitation.id)}

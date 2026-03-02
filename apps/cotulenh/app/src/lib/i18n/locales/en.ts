@@ -560,5 +560,25 @@ export const en: TranslationKeys = {
   'invitation.toast.cancelFailed': 'Failed to cancel invitation',
   'invitation.error.invalidGameConfig': 'Invalid time control settings.',
   'invitation.error.alreadyInvited': 'You already have a pending invitation to this player.',
-  'invitation.error.cannotInviteSelf': 'You cannot invite yourself.'
+  'invitation.error.cannotInviteSelf': 'You cannot invite yourself.',
+
+  // Invitation — Received / Respond
+  'invitation.received.title': 'Received Invitations',
+  'invitation.action.accept': 'Accept',
+  'invitation.action.decline': 'Decline',
+  'invitation.notification.title': 'Match Challenge',
+  'invitation.notification.challengeMessage': 'wants to play a match',
+  'invitation.toast.accepted': 'Your invitation was accepted!',
+  'invitation.toast.declined': 'Your invitation was declined',
+  'invitation.toast.acceptSuccess': 'Match accepted — starting game',
+  'invitation.toast.acceptFailed': 'Failed to accept invitation',
+  'invitation.toast.declineSuccess': 'Invitation declined',
+  'invitation.toast.declineFailed': 'Failed to decline invitation',
+
+  // Game page
+  'game.pageTitle': 'Game',
+  'game.starting': 'Game Starting...',
+  'game.opponent': 'Opponent',
+  'game.yourColor': 'Your Color',
+  'game.placeholderMessage': 'The game board will appear here when realtime gameplay is implemented.'
 };

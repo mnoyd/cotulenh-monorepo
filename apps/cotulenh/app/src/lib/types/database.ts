@@ -144,6 +144,100 @@ export interface Database {
           }
         ];
       };
+      games: {
+        Row: {
+          id: string;
+          red_player: string;
+          blue_player: string;
+          status:
+            | 'started'
+            | 'aborted'
+            | 'checkmate'
+            | 'resign'
+            | 'timeout'
+            | 'stalemate'
+            | 'draw'
+            | 'dispute';
+          winner: 'red' | 'blue' | null;
+          result_reason: string | null;
+          pgn: string | null;
+          time_control: Json;
+          invitation_id: string | null;
+          started_at: string;
+          ended_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          red_player: string;
+          blue_player: string;
+          status?:
+            | 'started'
+            | 'aborted'
+            | 'checkmate'
+            | 'resign'
+            | 'timeout'
+            | 'stalemate'
+            | 'draw'
+            | 'dispute';
+          winner?: 'red' | 'blue' | null;
+          result_reason?: string | null;
+          pgn?: string | null;
+          time_control: Json;
+          invitation_id?: string | null;
+          started_at?: string;
+          ended_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          red_player?: string;
+          blue_player?: string;
+          status?:
+            | 'started'
+            | 'aborted'
+            | 'checkmate'
+            | 'resign'
+            | 'timeout'
+            | 'stalemate'
+            | 'draw'
+            | 'dispute';
+          winner?: 'red' | 'blue' | null;
+          result_reason?: string | null;
+          pgn?: string | null;
+          time_control?: Json;
+          invitation_id?: string | null;
+          started_at?: string;
+          ended_at?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'games_red_player_fkey';
+            columns: ['red_player'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'games_blue_player_fkey';
+            columns: ['blue_player'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'games_invitation_id_fkey';
+            columns: ['invitation_id'];
+            isOneToOne: false;
+            referencedRelation: 'game_invitations';
+            referencedColumns: ['id'];
+          }
+        ];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;

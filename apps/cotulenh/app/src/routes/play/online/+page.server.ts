@@ -4,7 +4,10 @@ import { getFriendsList } from '$lib/friends/queries';
 import {
   sendInvitation,
   getSentInvitations,
+  getReceivedInvitations,
   cancelInvitation,
+  acceptInvitation,
+  declineInvitation,
   validateGameConfig
 } from '$lib/invitations/queries';
 import type { Actions, PageServerLoad } from './$types';
@@ -13,12 +16,13 @@ export const load: PageServerLoad = async ({ locals: { supabase, safeGetSession 
   const { user } = await safeGetSession();
   if (!user) redirect(303, '/auth/login');
 
-  const [friends, sentInvitations] = await Promise.all([
+  const [friends, sentInvitations, receivedInvitations] = await Promise.all([
     getFriendsList(supabase, user.id),
-    getSentInvitations(supabase, user.id)
+    getSentInvitations(supabase, user.id),
+    getReceivedInvitations(supabase, user.id)
   ]);
 
-  return { friends, sentInvitations };
+  return { friends, sentInvitations, receivedInvitations };
 };
 
 export const actions: Actions = {
@@ -97,5 +101,69 @@ export const actions: Actions = {
     }
 
     return { success: true, action: 'cancelInvitation' as const };
+  },
+
+  acceptInvitation: async ({ request, locals: { supabase, safeGetSession } }) => {
+    const { user } = await safeGetSession();
+    if (!user) {
+      return fail(401, {
+        errors: { form: 'unauthorized' },
+        action: 'acceptInvitation' as const
+      });
+    }
+
+    const formData = await request.formData();
+    const invitationId = String(formData.get('invitationId') ?? '');
+
+    if (!invitationId) {
+      return fail(400, {
+        errors: { form: 'missingInvitationId' },
+        action: 'acceptInvitation' as const
+      });
+    }
+
+    const result = await acceptInvitation(supabase, invitationId, user.id);
+
+    if (!result.success) {
+      logger.error(new Error(result.error ?? 'Unknown'), 'Failed to accept match invitation');
+      return fail(400, {
+        errors: { form: result.error ?? 'acceptFailed' },
+        action: 'acceptInvitation' as const
+      });
+    }
+
+    return { success: true, action: 'acceptInvitation' as const, gameId: result.gameId };
+  },
+
+  declineInvitation: async ({ request, locals: { supabase, safeGetSession } }) => {
+    const { user } = await safeGetSession();
+    if (!user) {
+      return fail(401, {
+        errors: { form: 'unauthorized' },
+        action: 'declineInvitation' as const
+      });
+    }
+
+    const formData = await request.formData();
+    const invitationId = String(formData.get('invitationId') ?? '');
+
+    if (!invitationId) {
+      return fail(400, {
+        errors: { form: 'missingInvitationId' },
+        action: 'declineInvitation' as const
+      });
+    }
+
+    const result = await declineInvitation(supabase, invitationId, user.id);
+
+    if (!result.success) {
+      logger.error(new Error(result.error ?? 'Unknown'), 'Failed to decline match invitation');
+      return fail(400, {
+        errors: { form: result.error ?? 'declineFailed' },
+        action: 'declineInvitation' as const
+      });
+    }
+
+    return { success: true, action: 'declineInvitation' as const };
   }
 };

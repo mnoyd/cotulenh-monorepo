@@ -65,7 +65,7 @@ development_status:
   # Epic 4: Match Invitations & Game Setup
   epic-4: in-progress
   4-1-send-match-invitation-to-friend: review
-  4-2-view-respond-to-match-invitations: backlog
+  4-2-view-respond-to-match-invitations: review
   4-3-shareable-invite-link: backlog
   epic-4-retrospective: optional
 

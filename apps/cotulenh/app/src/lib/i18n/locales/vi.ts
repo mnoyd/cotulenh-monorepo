@@ -560,5 +560,25 @@ export const vi: TranslationKeys = {
   'invitation.toast.cancelFailed': 'Hủy lời mời thất bại',
   'invitation.error.invalidGameConfig': 'Cài đặt thời gian không hợp lệ.',
   'invitation.error.alreadyInvited': 'Bạn đã có lời mời đang chờ gửi đến người chơi này.',
-  'invitation.error.cannotInviteSelf': 'Bạn không thể mời chính mình.'
+  'invitation.error.cannotInviteSelf': 'Bạn không thể mời chính mình.',
+
+  // Invitation — Received / Respond
+  'invitation.received.title': 'Lời Mời Nhận Được',
+  'invitation.action.accept': 'Chấp Nhận',
+  'invitation.action.decline': 'Từ Chối',
+  'invitation.notification.title': 'Thách Đấu',
+  'invitation.notification.challengeMessage': 'muốn chơi một ván',
+  'invitation.toast.accepted': 'Lời mời của bạn đã được chấp nhận!',
+  'invitation.toast.declined': 'Lời mời của bạn đã bị từ chối',
+  'invitation.toast.acceptSuccess': 'Đã chấp nhận — bắt đầu ván đấu',
+  'invitation.toast.acceptFailed': 'Chấp nhận lời mời thất bại',
+  'invitation.toast.declineSuccess': 'Đã từ chối lời mời',
+  'invitation.toast.declineFailed': 'Từ chối lời mời thất bại',
+
+  // Game page
+  'game.pageTitle': 'Ván Đấu',
+  'game.starting': 'Ván Đấu Đang Bắt Đầu...',
+  'game.opponent': 'Đối Thủ',
+  'game.yourColor': 'Bên Của Bạn',
+  'game.placeholderMessage': 'Bàn cờ sẽ xuất hiện ở đây khi tính năng chơi thời gian thực được triển khai.'
 };

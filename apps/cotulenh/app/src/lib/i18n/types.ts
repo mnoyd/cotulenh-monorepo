@@ -556,6 +556,26 @@ export interface TranslationKeys {
   'invitation.error.invalidGameConfig': string;
   'invitation.error.alreadyInvited': string;
   'invitation.error.cannotInviteSelf': string;
+
+  // Invitation — Received / Respond
+  'invitation.received.title': string;
+  'invitation.action.accept': string;
+  'invitation.action.decline': string;
+  'invitation.notification.title': string;
+  'invitation.notification.challengeMessage': string;
+  'invitation.toast.accepted': string;
+  'invitation.toast.declined': string;
+  'invitation.toast.acceptSuccess': string;
+  'invitation.toast.acceptFailed': string;
+  'invitation.toast.declineSuccess': string;
+  'invitation.toast.declineFailed': string;
+
+  // Game page
+  'game.pageTitle': string;
+  'game.starting': string;
+  'game.opponent': string;
+  'game.yourColor': string;
+  'game.placeholderMessage': string;
 }
 
 export type TranslationKey = keyof TranslationKeys;

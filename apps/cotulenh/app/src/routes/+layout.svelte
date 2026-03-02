@@ -23,10 +23,19 @@
     UserCircle,
     Users
   } from 'lucide-svelte';
+  import { toast } from 'svelte-sonner';
   import { themeStore } from '$lib/stores/theme.svelte';
   import { saveSettings as persistSettings, type Settings as AppSettings } from '$lib/stores/settings';
   import { getI18n } from '$lib/i18n/index.svelte';
   import { joinLobby, leaveLobby } from '$lib/friends/presence.svelte';
+  import {
+    subscribeToInvitations,
+    unsubscribeFromInvitations,
+    onInvitationRealtimeEvent
+  } from '$lib/invitations/realtime.svelte';
+  import type { InvitationRealtimeEvent } from '$lib/invitations/realtime.svelte';
+  import MatchInvitationToast from '$lib/components/MatchInvitationToast.svelte';
+  import { goto } from '$app/navigation';
 
   interface Props {
     children: import('svelte').Snippet;
@@ -39,6 +48,14 @@
   let settingsOpen = $state(false);
   let shortcutsOpen = $state(false);
   let dbSettingsSynced = false;
+
+  // Invitation notification state
+  let pendingInvitationToast = $state<{
+    id: string;
+    fromUser: string;
+    fromDisplayName: string;
+    gameConfig: { timeMinutes: number; incrementSeconds: number };
+  } | null>(null);
 
   let isAuthenticated = $derived(!!$page.data.user);
 
@@ -71,10 +88,48 @@
       const user = $page.data.user;
       if (user) {
         joinLobby($page.data.supabase, user.id);
+        subscribeToInvitations($page.data.supabase, user.id);
       }
     } else if (browser && !isAuthenticated) {
       leaveLobby();
+      unsubscribeFromInvitations();
     }
+  });
+
+  // Handle invitation realtime events — show toast for incoming invitations
+  $effect(() => {
+    if (!browser || !isAuthenticated) return;
+
+    const unsub = onInvitationRealtimeEvent(async (event: InvitationRealtimeEvent) => {
+      if (event.type === 'received') {
+        // Fetch sender display name
+        const { data: profile } = await $page.data.supabase
+          .from('profiles')
+          .select('display_name')
+          .eq('id', event.fromUser)
+          .single();
+
+        pendingInvitationToast = {
+          id: event.id,
+          fromUser: event.fromUser,
+          fromDisplayName: profile?.display_name ?? i18n.t('common.loading'),
+          gameConfig: event.gameConfig
+        };
+      } else if (event.type === 'statusChanged') {
+        if (event.newStatus === 'accepted') {
+          toast.success(i18n.t('invitation.toast.accepted'));
+        } else if (event.newStatus === 'declined') {
+          toast.info(i18n.t('invitation.toast.declined'));
+        }
+      } else if (event.type === 'deleted') {
+        // Sender cancelled — dismiss toast if it's for this invitation
+        if (pendingInvitationToast?.id === event.id) {
+          pendingInvitationToast = null;
+        }
+      }
+    });
+
+    return unsub;
   });
 
   onMount(() => {
@@ -86,9 +141,10 @@
       }
     );
 
-    // Leave lobby on page unload (AC6)
+    // Leave lobby and unsubscribe on page unload (AC6)
     function handleBeforeUnload() {
       leaveLobby();
+      unsubscribeFromInvitations();
     }
     window.addEventListener('beforeunload', handleBeforeUnload);
 
@@ -96,12 +152,52 @@
       subscription.unsubscribe();
       window.removeEventListener('beforeunload', handleBeforeUnload);
       leaveLobby();
+      unsubscribeFromInvitations();
     };
   });
 </script>
 
 <div class="app-container">
   <Sonner />
+
+  <!-- Invitation notification toast -->
+  {#if pendingInvitationToast}
+    <MatchInvitationToast
+      invitationId={pendingInvitationToast.id}
+      fromDisplayName={pendingInvitationToast.fromDisplayName}
+      gameConfig={pendingInvitationToast.gameConfig}
+      onaccept={async (invitationId) => {
+        const response = await fetch('/play/online?/acceptInvitation', {
+          method: 'POST',
+          body: new URLSearchParams({ invitationId }),
+          headers: { 'x-sveltekit-action': 'true' }
+        });
+        pendingInvitationToast = null;
+        if (response.ok) {
+          const result = await response.json();
+          const parsed = result?.data ? JSON.parse(result.data) : result;
+          const gameId = parsed?.[1]?.gameId ?? parsed?.gameId;
+          if (gameId) {
+            goto(`/play/online/${gameId}`);
+          }
+        } else {
+          toast.error(i18n.t('invitation.toast.acceptFailed'));
+        }
+      }}
+      ondecline={async (invitationId) => {
+        const response = await fetch('/play/online?/declineInvitation', {
+          method: 'POST',
+          body: new URLSearchParams({ invitationId }),
+          headers: { 'x-sveltekit-action': 'true' }
+        });
+        pendingInvitationToast = null;
+        if (!response.ok) {
+          toast.error(i18n.t('invitation.toast.declineFailed'));
+        }
+      }}
+      ondismiss={() => { pendingInvitationToast = null; }}
+    />
+  {/if}
 
   <!-- Desktop Sidebar -->
   <aside class="sidebar max-md:hidden">

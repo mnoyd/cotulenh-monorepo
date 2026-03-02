@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { GameConfig, InvitationItem } from './types';
+import { logger } from '@cotulenh/common';
 
 /** Strip HTML tags from display name to prevent stored XSS at query boundary */
 function sanitizeName(name: string): string {
@@ -145,6 +146,125 @@ export async function cancelInvitation(
 
   if (error || !data) {
     return { success: false, error: 'cancelFailed' };
+  }
+
+  return { success: true };
+}
+
+/**
+ * Get received pending invitations for a user, with sender display names
+ */
+export async function getReceivedInvitations(
+  supabase: SupabaseClient,
+  userId: string
+): Promise<InvitationItem[]> {
+  const { data: invitations, error } = await supabase
+    .from('game_invitations')
+    .select('id, from_user, to_user, game_config, invite_code, status, created_at')
+    .eq('to_user', userId)
+    .eq('status', 'pending')
+    .order('created_at', { ascending: false });
+
+  if (error || !invitations || invitations.length === 0) return [];
+
+  // Get sender profiles
+  const senderIds = invitations.map((inv) => inv.from_user);
+
+  let profileMap = new Map<string, string>();
+  if (senderIds.length > 0) {
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('id, display_name')
+      .in('id', senderIds);
+
+    if (profiles) {
+      profileMap = new Map(profiles.map((p) => [p.id, p.display_name]));
+    }
+  }
+
+  return invitations.map((inv) => ({
+    id: inv.id,
+    fromUser: {
+      id: inv.from_user,
+      displayName: sanitizeName(profileMap.get(inv.from_user) ?? '')
+    },
+    toUser: inv.to_user ? { id: inv.to_user, displayName: '' } : null,
+    gameConfig: inv.game_config as GameConfig,
+    inviteCode: inv.invite_code,
+    status: inv.status,
+    createdAt: inv.created_at
+  }));
+}
+
+/**
+ * Accept a received invitation — only the recipient (to_user) can accept.
+ * Updates invitation status and creates a games row.
+ * Sender = red (first to move), recipient = blue.
+ */
+export async function acceptInvitation(
+  supabase: SupabaseClient,
+  invitationId: string,
+  userId: string
+): Promise<{ success: boolean; error?: string; gameId?: string }> {
+  // 1. Update invitation status to 'accepted', verifying recipient and pending status
+  const { data: invitation, error: updateError } = await supabase
+    .from('game_invitations')
+    .update({ status: 'accepted' })
+    .eq('id', invitationId)
+    .eq('to_user', userId)
+    .eq('status', 'pending')
+    .select('id, from_user, game_config')
+    .single();
+
+  if (updateError || !invitation) {
+    return { success: false, error: 'acceptFailed' };
+  }
+
+  // 2. Create games row — sender is red, recipient is blue
+  const { data: game, error: insertError } = await supabase
+    .from('games')
+    .insert({
+      red_player: invitation.from_user,
+      blue_player: userId,
+      status: 'started',
+      time_control: invitation.game_config,
+      invitation_id: invitation.id
+    })
+    .select('id')
+    .single();
+
+  if (insertError || !game) {
+    // Rollback invitation status on game creation failure
+    logger.error(insertError as Error, 'Failed to create game after accepting invitation');
+    await supabase
+      .from('game_invitations')
+      .update({ status: 'pending' })
+      .eq('id', invitationId);
+    return { success: false, error: 'gameCreationFailed' };
+  }
+
+  return { success: true, gameId: game.id };
+}
+
+/**
+ * Decline a received invitation — only the recipient (to_user) can decline
+ */
+export async function declineInvitation(
+  supabase: SupabaseClient,
+  invitationId: string,
+  userId: string
+): Promise<{ success: boolean; error?: string }> {
+  const { data, error } = await supabase
+    .from('game_invitations')
+    .update({ status: 'declined' })
+    .eq('id', invitationId)
+    .eq('to_user', userId)
+    .eq('status', 'pending')
+    .select('id')
+    .single();
+
+  if (error || !data) {
+    return { success: false, error: 'declineFailed' };
   }
 
   return { success: true };
