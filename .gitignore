@@ -38,6 +38,7 @@ build
 .vercel
 .netlify
 .idea.beads/
+.beads/
 
 # Dolt database files (added by bd init)
 .dolt/
