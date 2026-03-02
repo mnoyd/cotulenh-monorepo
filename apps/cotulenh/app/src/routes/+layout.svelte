@@ -1,5 +1,6 @@
 <script lang="ts">
   import { browser } from '$app/environment';
+  import { deserialize } from '$app/forms';
   import { enhance } from '$app/forms';
   import { invalidate } from '$app/navigation';
   import { page } from '$app/stores';
@@ -117,7 +118,22 @@
         };
       } else if (event.type === 'statusChanged') {
         if (event.newStatus === 'accepted') {
-          toast.success(i18n.t('invitation.toast.accepted'));
+          // Look up the game created from this invitation
+          const { data: game } = await $page.data.supabase
+            .from('games')
+            .select('id')
+            .eq('invitation_id', event.id)
+            .single();
+          if (game) {
+            toast.success(i18n.t('invitation.toast.accepted'), {
+              action: {
+                label: i18n.t('game.goToGame'),
+                onClick: () => goto(`/play/online/${game.id}`)
+              }
+            });
+          } else {
+            toast.success(i18n.t('invitation.toast.accepted'));
+          }
         } else if (event.newStatus === 'declined') {
           toast.info(i18n.t('invitation.toast.declined'));
         }
@@ -173,10 +189,9 @@
           headers: { 'x-sveltekit-action': 'true' }
         });
         pendingInvitationToast = null;
-        if (response.ok) {
-          const result = await response.json();
-          const parsed = result?.data ? JSON.parse(result.data) : result;
-          const gameId = parsed?.[1]?.gameId ?? parsed?.gameId;
+        const result = deserialize(await response.text());
+        if (result.type === 'success' && result.data) {
+          const gameId = (result.data as { gameId?: string }).gameId;
           if (gameId) {
             goto(`/play/online/${gameId}`);
           }
@@ -191,7 +206,8 @@
           headers: { 'x-sveltekit-action': 'true' }
         });
         pendingInvitationToast = null;
-        if (!response.ok) {
+        const declineResult = deserialize(await response.text());
+        if (declineResult.type !== 'success') {
           toast.error(i18n.t('invitation.toast.declineFailed'));
         }
       }}

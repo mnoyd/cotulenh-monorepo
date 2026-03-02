@@ -407,11 +407,21 @@ Claude Opus 4.6 (claude-opus-4-6)
 
 ### Completion Notes List
 
-- All 316 tests pass across 28 test files
+- All 329 tests pass across 29 test files (13 new realtime-core tests)
 - svelte-check shows only pre-existing `$env/static/public` errors (4 errors) — no new errors
 - Realtime subscription follows established presence pattern (core + reactive wrapper)
 - Accept flow includes rollback logic if game creation fails after invitation update
 - Color assignment: sender = red (first to move), recipient = blue
+
+### Code Review Fixes Applied
+
+- H1: Added "Go to Game" action button to sender's accept toast in layout (query games by invitation_id)
+- H2: Fixed optimisticInvited Set not clearing on realtime statusChanged (decline/accept)
+- H3: Created realtime-core.test.ts with 13 tests covering subscriptions, events, callbacks, cleanup
+- M1: Added focus management to MatchInvitationToast (onMount focus, tabindex="-1", bind:this)
+- M2: Fixed realtime received invitations showing blank name — now fetches sender profile async
+- M3: Tightened games INSERT RLS to require auth.uid()=blue_player, invitation_id NOT NULL, and EXISTS accepted invitation
+- M4: Replaced fragile JSON.parse response parsing with SvelteKit's deserialize() in both layout and page
 
 ### File List
 
@@ -419,6 +429,7 @@ New files:
 - `supabase/migrations/004_games.sql`
 - `apps/cotulenh/app/src/lib/invitations/realtime-core.ts`
 - `apps/cotulenh/app/src/lib/invitations/realtime.svelte.ts`
+- `apps/cotulenh/app/src/lib/invitations/realtime-core.test.ts`
 - `apps/cotulenh/app/src/lib/components/MatchInvitationToast.svelte`
 - `apps/cotulenh/app/src/lib/components/ReceivedInvitationCard.svelte`
 - `apps/cotulenh/app/src/routes/play/online/[gameId]/+page.server.ts`

@@ -1,5 +1,7 @@
 <script lang="ts">
+  import { deserialize } from '$app/forms';
   import { goto } from '$app/navigation';
+  import { page } from '$app/stores';
   import { getI18n } from '$lib/i18n/index.svelte';
   import { getOnlineUsers } from '$lib/friends/presence.svelte';
   import type { GameConfig, InvitationItem } from '$lib/invitations/types';
@@ -84,24 +86,43 @@
 
   // Listen for realtime invitation events on this page
   $effect(() => {
-    const unsub = onInvitationRealtimeEvent((event: InvitationRealtimeEvent) => {
+    const unsub = onInvitationRealtimeEvent(async (event: InvitationRealtimeEvent) => {
       if (event.type === 'received') {
-        // Add to realtime received list — display name will show as loading briefly
-        realtimeReceivedInvitations = [
-          ...realtimeReceivedInvitations,
-          {
-            id: event.id,
-            fromUser: { id: event.fromUser, displayName: '' },
-            toUser: null,
-            gameConfig: event.gameConfig,
-            inviteCode: event.inviteCode,
-            status: 'pending',
-            createdAt: event.createdAt
-          }
-        ];
+        // Add to realtime received list immediately, then fetch sender profile
+        const newInvitation: InvitationItem = {
+          id: event.id,
+          fromUser: { id: event.fromUser, displayName: '' },
+          toUser: null,
+          gameConfig: event.gameConfig,
+          inviteCode: event.inviteCode,
+          status: 'pending',
+          createdAt: event.createdAt
+        };
+        realtimeReceivedInvitations = [...realtimeReceivedInvitations, newInvitation];
+
+        // Fetch sender profile and update display name
+        const { data: profile } = await $page.data.supabase
+          .from('profiles')
+          .select('display_name')
+          .eq('id', event.fromUser)
+          .single();
+        if (profile) {
+          realtimeReceivedInvitations = realtimeReceivedInvitations.map((inv) =>
+            inv.id === event.id
+              ? { ...inv, fromUser: { ...inv.fromUser, displayName: profile.display_name } }
+              : inv
+          );
+        }
       } else if (event.type === 'statusChanged') {
         // A sent invitation was accepted/declined — remove from sent list
         removedSentInvitations = new Set([...removedSentInvitations, event.id]);
+        // Also clear optimisticInvited for the declined/accepted user
+        const inv = data.sentInvitations.find((i: InvitationItem) => i.id === event.id);
+        if (inv?.toUser) {
+          const next = new Set(optimisticInvited);
+          next.delete(inv.toUser.id);
+          optimisticInvited = next;
+        }
       } else if (event.type === 'deleted') {
         // A received invitation was cancelled by sender — remove
         removedReceivedInvitations = new Set([...removedReceivedInvitations, event.id]);
@@ -192,11 +213,9 @@
         return;
       }
 
-      // Parse response to get gameId
-      const result = await response.json();
-      // SvelteKit action responses use a specific format
-      const parsed = typeof result?.data === 'string' ? JSON.parse(result.data) : result;
-      const gameId = parsed?.[1]?.gameId ?? parsed?.gameId;
+      // Parse response to get gameId using SvelteKit's deserialize
+      const result = deserialize(await response.text());
+      const gameId = result.type === 'success' ? (result.data as { gameId?: string })?.gameId : undefined;
 
       removedReceivedInvitations = new Set([...removedReceivedInvitations, invitationId]);
       toast.success(i18n.t('invitation.toast.acceptSuccess'), { duration: 4000 });

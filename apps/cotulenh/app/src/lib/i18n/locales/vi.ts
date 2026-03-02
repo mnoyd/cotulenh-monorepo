@@ -580,5 +580,6 @@ export const vi: TranslationKeys = {
   'game.starting': 'Ván Đấu Đang Bắt Đầu...',
   'game.opponent': 'Đối Thủ',
   'game.yourColor': 'Bên Của Bạn',
-  'game.placeholderMessage': 'Bàn cờ sẽ xuất hiện ở đây khi tính năng chơi thời gian thực được triển khai.'
+  'game.placeholderMessage': 'Bàn cờ sẽ xuất hiện ở đây khi tính năng chơi thời gian thực được triển khai.',
+  'game.goToGame': 'Đi Đến Ván Đấu'
 };

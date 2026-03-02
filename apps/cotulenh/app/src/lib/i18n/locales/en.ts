@@ -580,5 +580,6 @@ export const en: TranslationKeys = {
   'game.starting': 'Game Starting...',
   'game.opponent': 'Opponent',
   'game.yourColor': 'Your Color',
-  'game.placeholderMessage': 'The game board will appear here when realtime gameplay is implemented.'
+  'game.placeholderMessage': 'The game board will appear here when realtime gameplay is implemented.',
+  'game.goToGame': 'Go to Game'
 };

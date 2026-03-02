@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import { getI18n } from '$lib/i18n/index.svelte';
   import { Loader2, Swords } from 'lucide-svelte';
   import Button from '$lib/components/ui/button/button.svelte';
@@ -25,6 +26,11 @@
 
   let loadingAccept = $state(false);
   let loadingDecline = $state(false);
+  let containerEl: HTMLDivElement;
+
+  onMount(() => {
+    containerEl?.focus();
+  });
 
   let timeLabel = $derived(
     gameConfig.incrementSeconds > 0
@@ -52,10 +58,12 @@
 </script>
 
 <div
+  bind:this={containerEl}
   class="toast-overlay"
   role="alertdialog"
   aria-label={i18n.t('invitation.notification.title')}
   aria-describedby="invitation-toast-desc"
+  tabindex="-1"
 >
   <div class="toast-card">
     <div class="toast-header">

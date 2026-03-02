@@ -28,10 +28,19 @@ CREATE POLICY "Players can view own games"
   ON public.games FOR SELECT
   USING (auth.uid() = red_player OR auth.uid() = blue_player);
 
--- Only server actions create games (via service role), but allow player inserts for the accept flow
+-- Only the invitation recipient can create a game, and only when a matching accepted invitation exists
 CREATE POLICY "Players can create games"
   ON public.games FOR INSERT
-  WITH CHECK (auth.uid() = red_player OR auth.uid() = blue_player);
+  WITH CHECK (
+    auth.uid() = blue_player
+    AND invitation_id IS NOT NULL
+    AND EXISTS (
+      SELECT 1 FROM public.game_invitations
+      WHERE id = invitation_id
+        AND status = 'accepted'
+        AND to_user = auth.uid()
+    )
+  );
 
 -- Either player can update game status (for game end conditions)
 CREATE POLICY "Players can update own games"

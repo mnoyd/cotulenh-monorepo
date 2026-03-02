@@ -576,6 +576,7 @@ export interface TranslationKeys {
   'game.opponent': string;
   'game.yourColor': string;
   'game.placeholderMessage': string;
+  'game.goToGame': string;
 }
 
 export type TranslationKey = keyof TranslationKeys;
