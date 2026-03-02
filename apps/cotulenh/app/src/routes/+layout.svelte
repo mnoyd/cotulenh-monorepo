@@ -26,6 +26,7 @@
   import { themeStore } from '$lib/stores/theme.svelte';
   import { saveSettings as persistSettings, type Settings as AppSettings } from '$lib/stores/settings';
   import { getI18n } from '$lib/i18n/index.svelte';
+  import { joinLobby, leaveLobby } from '$lib/friends/presence.svelte';
 
   interface Props {
     children: import('svelte').Snippet;
@@ -64,6 +65,18 @@
     }
   });
 
+  // Join/leave lobby based on auth state (AC5, AC6)
+  $effect(() => {
+    if (browser && isAuthenticated) {
+      const user = $page.data.user;
+      if (user) {
+        joinLobby($page.data.supabase, user.id);
+      }
+    } else if (browser && !isAuthenticated) {
+      leaveLobby();
+    }
+  });
+
   onMount(() => {
     const {
       data: { subscription }
@@ -73,7 +86,17 @@
       }
     );
 
-    return () => subscription.unsubscribe();
+    // Leave lobby on page unload (AC6)
+    function handleBeforeUnload() {
+      leaveLobby();
+    }
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      subscription.unsubscribe();
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      leaveLobby();
+    };
   });
 </script>
 

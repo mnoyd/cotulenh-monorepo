@@ -523,6 +523,13 @@ export interface TranslationKeys {
   'friends.toast.actionFailed': string;
   'friends.status.online': string;
   'friends.status.offline': string;
+  'friends.remove.button': string;
+  'friends.remove.title': string;
+  'friends.remove.description': string;
+  'friends.remove.confirm': string;
+  'friends.remove.cancel': string;
+  'friends.toast.friendRemoved': string;
+  'friends.toast.removeFailed': string;
   'friends.error.sendFailed': string;
   'friends.error.alreadyFriends': string;
   'friends.error.requestAlreadyPending': string;

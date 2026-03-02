@@ -288,6 +288,30 @@ export async function declineFriendRequest(
 }
 
 /**
+ * Remove an accepted friend — either user in the friendship can remove
+ */
+export async function removeFriend(
+  supabase: SupabaseClient,
+  friendshipId: string,
+  userId: string
+): Promise<{ success: boolean; error?: string }> {
+  const { data, error: deleteError } = await supabase
+    .from('friendships')
+    .delete()
+    .eq('id', friendshipId)
+    .or(`user_a.eq.${userId},user_b.eq.${userId}`)
+    .eq('status', 'accepted')
+    .select('id')
+    .single();
+
+  if (deleteError || !data) {
+    return { success: false, error: 'removeFailed' };
+  }
+
+  return { success: true };
+}
+
+/**
  * Cancel a sent friend request — only the initiator can cancel
  */
 export async function cancelSentRequest(

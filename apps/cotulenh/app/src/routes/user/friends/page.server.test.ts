@@ -9,7 +9,8 @@ vi.mock('$lib/friends/queries', () => ({
   getPendingSentRequests: vi.fn(),
   acceptFriendRequest: vi.fn(),
   declineFriendRequest: vi.fn(),
-  cancelSentRequest: vi.fn()
+  cancelSentRequest: vi.fn(),
+  removeFriend: vi.fn()
 }));
 
 import {
@@ -20,7 +21,8 @@ import {
   getPendingSentRequests,
   acceptFriendRequest,
   declineFriendRequest,
-  cancelSentRequest
+  cancelSentRequest,
+  removeFriend
 } from '$lib/friends/queries';
 import { actions, load } from './+page.server';
 
@@ -32,6 +34,7 @@ const mockGetPendingSent = vi.mocked(getPendingSentRequests);
 const mockAcceptFriendRequest = vi.mocked(acceptFriendRequest);
 const mockDeclineFriendRequest = vi.mocked(declineFriendRequest);
 const mockCancelSentRequest = vi.mocked(cancelSentRequest);
+const mockRemoveFriend = vi.mocked(removeFriend);
 
 function createMockLocals(user: { id: string } | null = { id: 'user-1' }) {
   return {
@@ -330,6 +333,58 @@ describe('actions.cancelRequest', () => {
     mockCancelSentRequest.mockResolvedValue({ success: false, error: 'cancelFailed' });
 
     const result = await actions.cancelRequest({
+      request: createMockRequest({ friendshipId: 'f-1' }),
+      locals: createMockLocals()
+    } as never);
+
+    const data = result as { status: number };
+    expect(data.status).toBe(400);
+  });
+});
+
+describe('actions.removeFriend', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('returns 401 for unauthenticated user', async () => {
+    const result = await actions.removeFriend({
+      request: createMockRequest({ friendshipId: 'f-1' }),
+      locals: createMockLocals(null)
+    } as never);
+
+    const data = result as { status: number };
+    expect(data.status).toBe(401);
+  });
+
+  it('returns 400 for missing friendshipId', async () => {
+    const result = await actions.removeFriend({
+      request: createMockRequest({ friendshipId: '' }),
+      locals: createMockLocals()
+    } as never);
+
+    const data = result as { status: number };
+    expect(data.status).toBe(400);
+  });
+
+  it('returns success when remove succeeds', async () => {
+    mockRemoveFriend.mockResolvedValue({ success: true });
+
+    const result = await actions.removeFriend({
+      request: createMockRequest({ friendshipId: 'f-1' }),
+      locals: createMockLocals()
+    } as never);
+
+    const data = result as { success: boolean; action: string };
+    expect(data.success).toBe(true);
+    expect(data.action).toBe('removeFriend');
+    expect(mockRemoveFriend).toHaveBeenCalledWith(expect.anything(), 'f-1', 'user-1');
+  });
+
+  it('returns 400 when remove fails (not in friendship)', async () => {
+    mockRemoveFriend.mockResolvedValue({ success: false, error: 'removeFailed' });
+
+    const result = await actions.removeFriend({
       request: createMockRequest({ friendshipId: 'f-1' }),
       locals: createMockLocals()
     } as never);

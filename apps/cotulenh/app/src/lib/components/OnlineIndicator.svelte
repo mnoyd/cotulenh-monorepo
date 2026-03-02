@@ -6,7 +6,7 @@
     visible?: boolean;
   }
 
-  let { online, visible = false }: Props = $props();
+  let { online, visible = true }: Props = $props();
 
   const i18n = getI18n();
 
@@ -33,6 +33,6 @@
   }
 
   .online-indicator.online {
-    background: #22c55e;
+    background: var(--color-player-online, #22c55e);
   }
 </style>

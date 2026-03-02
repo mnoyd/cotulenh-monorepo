@@ -8,7 +8,8 @@ import {
   getPendingSentRequests,
   acceptFriendRequest,
   declineFriendRequest,
-  cancelSentRequest
+  cancelSentRequest,
+  removeFriend
 } from '$lib/friends/queries';
 import type { Actions, PageServerLoad } from './$types';
 
@@ -157,5 +158,34 @@ export const actions: Actions = {
     }
 
     return { success: true, action: 'cancelRequest' as const };
+  },
+
+  removeFriend: async ({ request, locals: { supabase, safeGetSession } }) => {
+    const { user } = await safeGetSession();
+    if (!user) {
+      return fail(401, { errors: { form: 'unauthorized' }, action: 'removeFriend' as const });
+    }
+
+    const formData = await request.formData();
+    const friendshipId = String(formData.get('friendshipId') ?? '');
+
+    if (!friendshipId) {
+      return fail(400, {
+        errors: { form: 'missingFriendshipId' },
+        action: 'removeFriend' as const
+      });
+    }
+
+    const result = await removeFriend(supabase, friendshipId, user.id);
+
+    if (!result.success) {
+      logger.error(new Error(result.error ?? 'Unknown'), 'Failed to remove friend');
+      return fail(400, {
+        errors: { form: result.error ?? 'removeFailed' },
+        action: 'removeFriend' as const
+      });
+    }
+
+    return { success: true, action: 'removeFriend' as const };
   }
 };

@@ -1,9 +1,11 @@
 <script lang="ts">
   import { getI18n } from '$lib/i18n/index.svelte';
   import type { TranslationKey } from '$lib/i18n/types';
-  import type { FriendSearchResult, PendingRequestItem } from '$lib/friends/types';
+  import type { FriendSearchResult, FriendListItem, PendingRequestItem } from '$lib/friends/types';
+  import { getOnlineUsers } from '$lib/friends/presence.svelte';
   import PlayerCard from '$lib/components/PlayerCard.svelte';
   import FriendRequestCard from '$lib/components/FriendRequestCard.svelte';
+  import { AlertDialog } from 'bits-ui';
   import { Search, Loader2, Users } from 'lucide-svelte';
   import Button from '$lib/components/ui/button/button.svelte';
   import { toast } from 'svelte-sonner';
@@ -26,10 +28,16 @@
   // Optimistic removal sets for request management
   let removedIncoming = $state(new Set<string>());
   let removedSent = $state(new Set<string>());
+  let removedFriends = $state(new Set<string>());
   let loadingRequests = $state(new Set<string>());
 
   // Optimistic accepted — friends added from accepted requests
   let optimisticFriends = $state<Array<{ friendshipId: string; userId: string; displayName: string }>>([]);
+
+  // Remove friend dialog state
+  let removeDialogOpen = $state(false);
+  let friendToRemove = $state<{ friendshipId: string; displayName: string } | null>(null);
+  let isRemoving = $state(false);
 
   // Derived filtered lists
   let visibleIncoming = $derived(
@@ -38,7 +46,24 @@
   let visibleSent = $derived(
     data.sentRequests.filter((r: PendingRequestItem) => !removedSent.has(r.friendshipId))
   );
-  let allFriends = $derived([...data.friends, ...optimisticFriends]);
+
+  // Get online users from presence (reactive)
+  let onlineUsers = $derived(getOnlineUsers());
+
+  // Merge data friends + optimistic friends, filter removed, add online status
+  let allFriends = $derived.by(() => {
+    const merged = [...data.friends, ...optimisticFriends]
+      .filter((f) => !removedFriends.has(f.friendshipId));
+
+    // Sort: online first, then alphabetical within each group (AC7)
+    return merged.sort((a, b) => {
+      const aOnline = onlineUsers.has(a.userId);
+      const bOnline = onlineUsers.has(b.userId);
+      if (aOnline && !bOnline) return -1;
+      if (!aOnline && bOnline) return 1;
+      return a.displayName.localeCompare(b.displayName);
+    });
+  });
 
   // Click-outside handler to close search dropdown
   let searchSectionEl: HTMLElement | undefined = $state();
@@ -206,6 +231,40 @@
     }
   }
 
+  function openRemoveDialog(friend: FriendListItem) {
+    friendToRemove = { friendshipId: friend.friendshipId, displayName: friend.displayName };
+    removeDialogOpen = true;
+  }
+
+  async function handleRemoveFriend() {
+    if (!friendToRemove) return;
+    isRemoving = true;
+
+    const { friendshipId } = friendToRemove;
+
+    try {
+      const response = await fetch('?/removeFriend', {
+        method: 'POST',
+        body: new URLSearchParams({ friendshipId })
+      });
+
+      if (!response.ok) {
+        toast.error(i18n.t('friends.toast.removeFailed'));
+        return;
+      }
+
+      // Optimistic removal
+      removedFriends = new Set([...removedFriends, friendshipId]);
+      toast.success(i18n.t('friends.toast.friendRemoved'), { duration: 4000 });
+    } catch {
+      toast.error(i18n.t('friends.toast.removeFailed'));
+    } finally {
+      isRemoving = false;
+      removeDialogOpen = false;
+      friendToRemove = null;
+    }
+  }
+
   function getButtonLabel(result: FriendSearchResult): TranslationKey {
     if (optimisticPending.has(result.id)) return 'friends.action.pending';
     if (result.relationship === 'accepted') return 'friends.action.friends';
@@ -349,13 +408,53 @@
       {:else if allFriends.length > 0}
         <div class="friends-grid">
           {#each allFriends as friend (friend.friendshipId)}
-            <PlayerCard displayName={friend.displayName} />
+            <PlayerCard
+              displayName={friend.displayName}
+              online={onlineUsers.has(friend.userId)}
+              showOnlineIndicator={true}
+            >
+              <Button
+                size="sm"
+                variant="outline"
+                class="remove-btn"
+                aria-label="{i18n.t('friends.remove.button')} {friend.displayName}"
+                onclick={() => openRemoveDialog(friend)}
+              >
+                {i18n.t('friends.remove.button')}
+              </Button>
+            </PlayerCard>
           {/each}
         </div>
       {/if}
     </section>
   </div>
 </div>
+
+<!-- Remove Friend Confirmation Dialog (AC4) -->
+<AlertDialog.Root bind:open={removeDialogOpen}>
+  <AlertDialog.Portal>
+    <AlertDialog.Overlay class="alert-overlay" />
+    <AlertDialog.Content class="alert-content">
+      <AlertDialog.Title class="alert-title">
+        {i18n.t('friends.remove.title')}
+      </AlertDialog.Title>
+      <AlertDialog.Description class="alert-description">
+        {i18n.t('friends.remove.description').replace('{name}', friendToRemove?.displayName ?? '')}
+      </AlertDialog.Description>
+      <div class="alert-actions">
+        <AlertDialog.Cancel class="alert-cancel-btn">
+          {i18n.t('friends.remove.cancel')}
+        </AlertDialog.Cancel>
+        <AlertDialog.Action class="alert-action-btn" onclick={handleRemoveFriend} disabled={isRemoving}>
+          {#if isRemoving}
+            <Loader2 size={14} class="animate-spin" />
+          {/if}
+          {i18n.t('friends.remove.confirm')}
+        </AlertDialog.Action>
+      </div>
+    </AlertDialog.Content>
+  </AlertDialog.Portal>
+</AlertDialog.Root>
 
 <style>
   .friends-page {
@@ -511,6 +610,18 @@
     gap: 0.5rem;
   }
 
+  /* Remove button styling */
+  :global(.remove-btn) {
+    color: #ef4444 !important;
+    border-color: #ef4444 !important;
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  :global(.remove-btn:hover) {
+    background: rgba(239, 68, 68, 0.1) !important;
+  }
+
   /* Empty State */
   .empty-state {
     display: flex;
@@ -536,6 +647,105 @@
     font-size: 0.875rem;
     color: var(--theme-text-secondary, #aaa);
     margin: 0;
+  }
+
+  /* Alert Dialog */
+  :global(.alert-overlay) {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    background: rgba(0, 0, 0, 0.5);
+  }
+
+  :global(.alert-content) {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 50;
+    width: calc(100% - 2rem);
+    max-width: 28rem;
+    background: var(--theme-bg-panel, #222);
+    border: 1px solid var(--theme-border, #444);
+    border-radius: 12px;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  :global(.alert-title) {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--theme-text-primary, #eee);
+    margin: 0;
+  }
+
+  :global(.alert-description) {
+    font-size: 0.875rem;
+    color: var(--theme-text-secondary, #aaa);
+    margin: 0;
+    line-height: 1.5;
+  }
+
+  .alert-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    margin-top: 0.5rem;
+  }
+
+  :global(.alert-cancel-btn) {
+    padding: 0.5rem 1rem;
+    min-height: 44px;
+    min-width: 44px;
+    border-radius: 8px;
+    border: 1px solid var(--theme-border, #444);
+    background: transparent;
+    color: var(--theme-text-primary, #eee);
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+  }
+
+  :global(.alert-cancel-btn:hover) {
+    background: var(--theme-bg-elevated, #333);
+  }
+
+  :global(.alert-cancel-btn:focus-visible) {
+    outline: 2px solid var(--theme-primary, #06b6d4);
+    outline-offset: 2px;
+  }
+
+  :global(.alert-action-btn) {
+    padding: 0.5rem 1rem;
+    min-height: 44px;
+    min-width: 44px;
+    border-radius: 8px;
+    border: 1px solid #ef4444;
+    background: #ef4444;
+    color: white;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  :global(.alert-action-btn:hover) {
+    background: #dc2626;
+    border-color: #dc2626;
+  }
+
+  :global(.alert-action-btn:focus-visible) {
+    outline: 2px solid var(--theme-primary, #06b6d4);
+    outline-offset: 2px;
+  }
+
+  :global(.alert-action-btn:disabled) {
+    opacity: 0.6;
+    cursor: not-allowed;
   }
 
   /* Responsive */

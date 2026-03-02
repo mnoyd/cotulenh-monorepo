@@ -8,7 +8,8 @@ import {
   getPendingSentRequests,
   acceptFriendRequest,
   declineFriendRequest,
-  cancelSentRequest
+  cancelSentRequest,
+  removeFriend
 } from './queries';
 
 // Mock Supabase client factory
@@ -510,5 +511,58 @@ describe('cancelSentRequest', () => {
     const result = await cancelSentRequest(supabase as any, 'f-1', 'not-initiator');
     expect(result.success).toBe(false);
     expect(result.error).toBe('cancelFailed');
+  });
+});
+
+describe('removeFriend', () => {
+  it('returns success when user removes an accepted friend', async () => {
+    const { supabase, mockFrom } = createMockSupabase();
+    const chain = actionChain({ data: { id: 'f-1' }, error: null });
+    mockFrom.mockReturnValue(chain);
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = await removeFriend(supabase as any, 'f-1', 'user-1');
+    expect(result.success).toBe(true);
+  });
+
+  it('uses delete to remove the friendship row', async () => {
+    const { supabase, mockFrom } = createMockSupabase();
+    const chain = actionChain({ data: { id: 'f-1' }, error: null });
+    mockFrom.mockReturnValue(chain);
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await removeFriend(supabase as any, 'f-1', 'user-1');
+    expect(chain.delete).toHaveBeenCalled();
+  });
+
+  it('filters by accepted status only', async () => {
+    const { supabase, mockFrom } = createMockSupabase();
+    const chain = actionChain({ data: { id: 'f-1' }, error: null });
+    mockFrom.mockReturnValue(chain);
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await removeFriend(supabase as any, 'f-1', 'user-1');
+    expect(chain.eq).toHaveBeenCalledWith('status', 'accepted');
+  });
+
+  it('verifies user is part of the friendship via or clause', async () => {
+    const { supabase, mockFrom } = createMockSupabase();
+    const chain = actionChain({ data: { id: 'f-1' }, error: null });
+    mockFrom.mockReturnValue(chain);
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await removeFriend(supabase as any, 'f-1', 'user-1');
+    expect(chain.or).toHaveBeenCalledWith('user_a.eq.user-1,user_b.eq.user-1');
+  });
+
+  it('fails when user is not part of the friendship', async () => {
+    const { supabase, mockFrom } = createMockSupabase();
+    const chain = actionChain({ data: null, error: { code: 'PGRST116' } });
+    mockFrom.mockReturnValue(chain);
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = await removeFriend(supabase as any, 'f-1', 'not-a-friend');
+    expect(result.success).toBe(false);
+    expect(result.error).toBe('removeFailed');
   });
 });
