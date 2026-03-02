@@ -7,20 +7,20 @@
   <ellipse cx="50" cy="90" rx="35" ry="5" fill="#1a1a1a" opacity="0.6" />
   <g filter="url(#shadow)">
     <!-- Shoulders / Uniform -->
-    <path d="M 30 90 C 30 55, 38 55, 50 55 C 62 55, 70 55, 70 90 Z" fill="#4a5d6e" stroke="#3d4a35" stroke-width="1.5" />
+    <path d="M 30 90 C 30 55, 38 55, 50 55 C 62 55, 70 55, 70 90 Z" fill="#38bdf8" stroke="#0f172a" stroke-width="1.5" />
     <!-- Collar / Shirt -->
-    <path d="M 42 55 L 50 65 L 58 55 Z" fill="#2c3945" />
-    <path d="M 45 55 L 50 75 L 55 55 Z" fill="#d4c0a5" />
+    <path d="M 42 55 L 50 65 L 58 55 Z" fill="#0369a1" />
+    <path d="M 45 55 L 50 75 L 55 55 Z" fill="#fcd34d" />
     <!-- Epaulettes -->
     <path d="M 32 60 L 42 53 L 44 55 Z" fill="#2c2a26" />
     <path d="M 68 60 L 58 53 L 56 55 Z" fill="#2c2a26" />
     <!-- Head -->
-    <path d="M 38 45 C 38 25, 62 25, 62 45 C 62 60, 56 62, 50 62 C 44 62, 38 60, 38 45 Z" fill="#d4c0a5" stroke="#2c2a26" stroke-width="1.5" />
+    <path d="M 38 45 C 38 25, 62 25, 62 45 C 62 60, 56 62, 50 62 C 44 62, 38 60, 38 45 Z" fill="#fcd34d" stroke="#2c2a26" stroke-width="1.5" />
     <!-- Sunglasses (Tactical Aviators style) -->
     <path d="M 40 42 Q 50 40 60 42 L 58 48 Q 50 46 42 48 Z" fill="#1a1a1a" />
     <!-- Red Beret (Paratrooper/Commando vibe) -->
     <path d="M 32 30 C 30 20, 50 15, 68 25 C 72 28, 68 35, 60 32 C 50 28, 40 35, 32 30 Z" fill="#8b2525" stroke="#5a1515" stroke-width="1.5" />
-    <circle cx="45" cy="26" r="2" fill="#d4af37" /> <!-- Badge -->
+    <circle cx="45" cy="26" r="2" fill="#facc15" /> <!-- Badge -->
     <!-- Tactical Earpiece / Radio -->
     <rect x="58" y="45" width="6" height="12" rx="3" fill="#2c2a26" />
     <!-- Wire -->

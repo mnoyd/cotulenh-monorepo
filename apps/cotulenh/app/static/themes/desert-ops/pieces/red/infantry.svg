@@ -7,31 +7,31 @@
   <ellipse cx="50" cy="90" rx="35" ry="5" fill="#1a1a1a" opacity="0.6" />
   <g filter="url(#shadow)">
     <!-- Body -->
-    <path d="M 35 90 C 35 60, 40 55, 50 55 C 60 55, 65 60, 65 90 Z" fill="#8c3a3a" stroke="#5e2b2b" stroke-width="1.5" />
+    <path d="M 35 90 C 35 60, 40 55, 50 55 C 60 55, 65 60, 65 90 Z" fill="#ea580c" stroke="#7c2d12" stroke-width="1.5" />
     <!-- Ammo rig -->
-    <path d="M 40 90 L 42 65 L 58 65 L 60 90 Z" fill="#5e2b2b" stroke="#3d1d1d" stroke-width="1" />
-    <path d="M 45 65 L 55 90" stroke="#3d1d1d" stroke-width="2" />
-    <path d="M 55 65 L 45 90" stroke="#3d1d1d" stroke-width="2" />
+    <path d="M 40 90 L 42 65 L 58 65 L 60 90 Z" fill="#7c2d12" stroke="#431407" stroke-width="1" />
+    <path d="M 45 65 L 55 90" stroke="#431407" stroke-width="2" />
+    <path d="M 55 65 L 45 90" stroke="#431407" stroke-width="2" />
     <!-- Head -->
-    <path d="M 38 45 C 38 25, 62 25, 62 45 C 62 55, 58 58, 50 58 C 42 58, 38 55, 38 45 Z" fill="#b35050" stroke="#2c2a26" stroke-width="1.5" />
+    <path d="M 38 45 C 38 25, 62 25, 62 45 C 62 55, 58 58, 50 58 C 42 58, 38 55, 38 45 Z" fill="#fb923c" stroke="#2c2a26" stroke-width="1.5" />
     <!-- Face Wrap -->
-    <path d="M 38 48 Q 50 45 62 48 L 60 58 Q 50 62 40 58 Z" fill="#4f5445" stroke="#3d4a35" stroke-width="1" />
+    <path d="M 38 48 Q 50 45 62 48 L 60 58 Q 50 62 40 58 Z" fill="#78350f" stroke="#7c2d12" stroke-width="1" />
     <!-- Eyes -->
     <rect x="42" y="40" width="6" height="3" fill="#2c2a26" />
     <rect x="52" y="40" width="6" height="3" fill="#2c2a26" />
     <!-- Helmet / Wrap -->
-    <path d="M 34 38 C 34 20, 66 20, 66 38 Q 50 40 34 38 Z" fill="#5e2b2b" stroke="#3d1d1d" stroke-width="1.5" />
+    <path d="M 34 38 C 34 20, 66 20, 66 38 Q 50 40 34 38 Z" fill="#7c2d12" stroke="#431407" stroke-width="1.5" />
     
     <!-- AK-47 Silhouette -->
     <g transform="translate(45, 65) rotate(-30)">
       <rect x="0" y="0" width="30" height="4" fill="#2c2a26" rx="1" />
-      <rect x="-12" y="1" width="12" height="5" fill="#6b4423" />
+      <rect x="-12" y="1" width="12" height="5" fill="#9a3412" />
       <!-- Banana mag -->
       <path d="M 8 4 Q 10 15 15 18 L 18 16 Q 14 12 12 4 Z" fill="#2c2a26" />
       <!-- Grip -->
-      <rect x="-2" y="4" width="4" height="8" fill="#6b4423" rx="1" />
+      <rect x="-2" y="4" width="4" height="8" fill="#9a3412" rx="1" />
       <!-- Wood handguard -->
-      <rect x="15" y="-1" width="10" height="5" fill="#6b4423" />
+      <rect x="15" y="-1" width="10" height="5" fill="#9a3412" />
       <rect x="30" y="0" width="12" height="2" fill="#2c2a26" />
       <rect x="38" y="-3" width="2" height="3" fill="#2c2a26" />
     </g>

@@ -7,18 +7,18 @@
   <ellipse cx="50" cy="90" rx="35" ry="5" fill="#1a1a1a" opacity="0.6" />
   <g filter="url(#shadow)">
     <!-- Body -->
-    <path d="M 35 90 C 35 60, 40 55, 50 55 C 60 55, 65 60, 65 90 Z" fill="#4a5d6e" stroke="#3d4a35" stroke-width="1.5" />
+    <path d="M 35 90 C 35 60, 40 55, 50 55 C 60 55, 65 60, 65 90 Z" fill="#38bdf8" stroke="#0f172a" stroke-width="1.5" />
     <!-- Vest/Plate Carrier -->
-    <path d="M 40 90 L 42 65 L 58 65 L 60 90 Z" fill="#2c3945" stroke="#3d4a35" stroke-width="1" />
-    <rect x="44" y="70" width="12" height="15" fill="#3d4a35" rx="1" />
+    <path d="M 40 90 L 42 65 L 58 65 L 60 90 Z" fill="#0369a1" stroke="#0f172a" stroke-width="1" />
+    <rect x="44" y="70" width="12" height="15" fill="#0f172a" rx="1" />
     <!-- Head/Helmet -->
-    <path d="M 38 45 C 38 25, 62 25, 62 45 C 62 55, 58 58, 50 58 C 42 58, 38 55, 38 45 Z" fill="#d4c0a5" stroke="#2c2a26" stroke-width="1.5" />
+    <path d="M 38 45 C 38 25, 62 25, 62 45 C 62 55, 58 58, 50 58 C 42 58, 38 55, 38 45 Z" fill="#fcd34d" stroke="#2c2a26" stroke-width="1.5" />
     <!-- Tactical Helmet -->
-    <path d="M 37 46 C 37 28, 63 28, 63 46 Q 50 40 37 46 Z" fill="#2c3945" stroke="#3d4a35" stroke-width="1.5" />
+    <path d="M 37 46 C 37 28, 63 28, 63 46 Q 50 40 37 46 Z" fill="#0369a1" stroke="#0f172a" stroke-width="1.5" />
     <path d="M 35 46 Q 50 49 65 46" fill="none" stroke="#2c2a26" stroke-width="2" />
     <!-- Goggles on helmet -->
     <rect x="42" y="32" width="16" height="6" rx="2" fill="#2c2a26" />
-    <rect x="44" y="33" width="12" height="4" rx="1" fill="#2c3945" />
+    <rect x="44" y="33" width="12" height="4" rx="1" fill="#0369a1" />
     <!-- M4 Rifle Silhouette -->
     <g transform="translate(45, 65) rotate(-30)">
       <rect x="0" y="0" width="35" height="4" fill="#2c2a26" rx="1" />

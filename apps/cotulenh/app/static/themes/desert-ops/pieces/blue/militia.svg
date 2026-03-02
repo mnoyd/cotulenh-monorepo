@@ -7,15 +7,15 @@
   <ellipse cx="50" cy="90" rx="35" ry="5" fill="#1a1a1a" opacity="0.6" />
   <g filter="url(#shadow)">
     <!-- Body -->
-    <path d="M 35 90 C 35 60, 40 55, 50 55 C 60 55, 65 60, 65 90 Z" fill="#647b8f" stroke="#2c3945" stroke-width="1.5" />
+    <path d="M 35 90 C 35 60, 40 55, 50 55 C 60 55, 65 60, 65 90 Z" fill="#7dd3fc" stroke="#0369a1" stroke-width="1.5" />
     <!-- Suspenders -->
-    <path d="M 42 55 L 42 90 M 58 55 L 58 90" stroke="#3d4a35" stroke-width="3" />
+    <path d="M 42 55 L 42 90 M 58 55 L 58 90" stroke="#0f172a" stroke-width="3" />
     <!-- Head -->
-    <path d="M 38 45 C 38 25, 62 25, 62 45 C 62 55, 58 58, 50 58 C 42 58, 38 55, 38 45 Z" fill="#d4c0a5" stroke="#2c2a26" stroke-width="1.5" />
+    <path d="M 38 45 C 38 25, 62 25, 62 45 C 62 55, 58 58, 50 58 C 42 58, 38 55, 38 45 Z" fill="#fcd34d" stroke="#2c2a26" stroke-width="1.5" />
     <!-- Patrol Cap -->
-    <path d="M 36 35 C 36 25, 64 25, 64 35 Z" fill="#4a5d6e" stroke="#3d4a35" stroke-width="1.5" />
-    <path d="M 34 35 Q 50 38 72 35" fill="none" stroke="#3d4a35" stroke-width="2" />
-    <path d="M 64 35 L 75 40" stroke="#4a5d6e" stroke-width="3" />
+    <path d="M 36 35 C 36 25, 64 25, 64 35 Z" fill="#38bdf8" stroke="#0f172a" stroke-width="1.5" />
+    <path d="M 34 35 Q 50 38 72 35" fill="none" stroke="#0f172a" stroke-width="2" />
+    <path d="M 64 35 L 75 40" stroke="#38bdf8" stroke-width="3" />
     <!-- M16 Rifle Silhouette (Carry Handle, longer barrel) -->
     <g transform="translate(45, 65) rotate(-40)">
       <rect x="-10" y="0" width="45" height="4" fill="#2c2a26" rx="1" />

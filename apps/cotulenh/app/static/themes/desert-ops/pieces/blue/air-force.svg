@@ -8,21 +8,21 @@
   <ellipse cx="50" cy="85" rx="35" ry="6" fill="#1a1a1a" opacity="0.5" />
   <g filter="url(#shadow)" transform="scale(0.9) translate(5.5, -5)">
     <!-- Fuselage (F-16/F-35 style, top-down view) -->
-    <path d="M 50 10 C 55 10, 58 20, 58 40 L 58 75 C 58 85, 55 90, 50 90 C 45 90, 42 85, 42 75 L 42 40 C 42 20, 45 10, 50 10 Z" fill="#6c7a8a" stroke="#4a5a6a" stroke-width="1.5" />
+    <path d="M 50 10 C 55 10, 58 20, 58 40 L 58 75 C 58 85, 55 90, 50 90 C 45 90, 42 85, 42 75 L 42 40 C 42 20, 45 10, 50 10 Z" fill="#38bdf8" stroke="#0369a1" stroke-width="1.5" />
     <!-- Nosecone -->
-    <path d="M 50 10 C 52 10, 53 15, 53 20 L 47 20 C 47 15, 48 10, 50 10 Z" fill="#4a5a6a" />
+    <path d="M 50 10 C 52 10, 53 15, 53 20 L 47 20 C 47 15, 48 10, 50 10 Z" fill="#0369a1" />
     <!-- Canopy -->
-    <ellipse cx="50" cy="35" rx="4" ry="12" fill="#1a2b3c" stroke="#4a5a6a" stroke-width="1" />
+    <ellipse cx="50" cy="35" rx="4" ry="12" fill="#1a2b3c" stroke="#0369a1" stroke-width="1" />
     <!-- Delta Wings -->
-    <path d="M 42 45 L 15 65 L 15 75 L 42 70 Z" fill="#5c6a7a" stroke="#4a5a6a" stroke-width="1.5" />
-    <path d="M 58 45 L 85 65 L 85 75 L 58 70 Z" fill="#5c6a7a" stroke="#4a5a6a" stroke-width="1.5" />
+    <path d="M 42 45 L 15 65 L 15 75 L 42 70 Z" fill="#0ea5e9" stroke="#0369a1" stroke-width="1.5" />
+    <path d="M 58 45 L 85 65 L 85 75 L 58 70 Z" fill="#0ea5e9" stroke="#0369a1" stroke-width="1.5" />
     <!-- Horizontal Stabilizers -->
-    <path d="M 45 75 L 25 85 L 25 90 L 45 85 Z" fill="#5c6a7a" stroke="#4a5a6a" stroke-width="1.5" />
-    <path d="M 55 75 L 75 85 L 75 90 L 55 85 Z" fill="#5c6a7a" stroke="#4a5a6a" stroke-width="1.5" />
+    <path d="M 45 75 L 25 85 L 25 90 L 45 85 Z" fill="#0ea5e9" stroke="#0369a1" stroke-width="1.5" />
+    <path d="M 55 75 L 75 85 L 75 90 L 55 85 Z" fill="#0ea5e9" stroke="#0369a1" stroke-width="1.5" />
     <!-- Vertical Stabilizer (F-16 single fin, seen top down as a thick line) -->
-    <rect x="49" y="70" width="2" height="18" fill="#3a4a5a" />
+    <rect x="49" y="70" width="2" height="18" fill="#0284c7" />
     <!-- Jet Engine Exhaust -->
     <circle cx="50" cy="90" r="4" fill="#1a1a1a" />
-    <circle cx="50" cy="90" r="2" fill="#f39c12" /> <!-- Glow -->
+    <circle cx="50" cy="90" r="2" fill="#fb923c" /> <!-- Glow -->
   </g>
 </svg>
