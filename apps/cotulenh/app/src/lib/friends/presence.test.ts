@@ -64,7 +64,9 @@ describe('presence-core', () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       joinLobby(supabase as any, 'user-1');
 
-      expect(supabase.channel).toHaveBeenCalledWith('lobby');
+      expect(supabase.channel).toHaveBeenCalledWith('lobby', {
+        config: { presence: { key: 'user-1' } }
+      });
       expect(channel.on).toHaveBeenCalledTimes(3); // sync, join, leave
       expect(channel.subscribe).toHaveBeenCalled();
     });

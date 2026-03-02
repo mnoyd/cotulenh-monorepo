@@ -57,7 +57,9 @@ export function joinLobby(supabase: SupabaseClient, userId: string): void {
     return;
   }
 
-  const channel = supabase.channel('lobby');
+  const channel = supabase.channel('lobby', {
+    config: { presence: { key: userId } }
+  });
 
   channel
     .on('presence', { event: 'sync' }, () => {

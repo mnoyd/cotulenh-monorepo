@@ -19,7 +19,7 @@
     <span class="player-avatar" aria-hidden="true">{initial}</span>
     {#if showOnlineIndicator}
       <span class="indicator-badge">
-        <OnlineIndicator {online} />
+        <OnlineIndicator {online} visible={online} />
       </span>
     {/if}
   </div>
