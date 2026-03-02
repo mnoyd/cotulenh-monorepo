@@ -5,6 +5,6 @@ description: 'Generates or updates an index.md to reference all docs in the fold
 
 # index-docs
 
-Read the entire task file at: {project-root}/\_bmad/core/tasks/index-docs.xml
+Read the entire task file at: {project-root}/_bmad/core/tasks/index-docs.xml
 
 Follow all instructions in the task file exactly as written.

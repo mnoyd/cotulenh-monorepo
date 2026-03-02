@@ -5,6 +5,6 @@ description: 'Analyzes what is done and the users query and offers advice on wha
 
 # help
 
-Read the entire task file at: {project-root}/\_bmad/core/tasks/help.md
+Read the entire task file at: {project-root}/_bmad/core/tasks/help.md
 
 Follow all instructions in the task file exactly as written.
