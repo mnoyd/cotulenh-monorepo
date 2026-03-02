@@ -1,6 +1,6 @@
 # Story 2.2: Public User Profiles
 
-Status: review
+Status: done
 
 ## Story
 
@@ -305,3 +305,22 @@ No debug issues encountered.
 - `apps/cotulenh/app/src/lib/i18n/types.ts` — added 3 public profile translation keys
 - `apps/cotulenh/app/src/lib/i18n/locales/en.ts` — added English public profile translations
 - `apps/cotulenh/app/src/lib/i18n/locales/vi.ts` — added Vietnamese public profile translations
+
+### Code Review (2026-03-02)
+
+**Reviewer:** Claude Opus 4.6 (adversarial code review)
+**Result:** Approved with 3 MEDIUM fixes applied
+
+**Fixes Applied:**
+
+- M1: Added null fallback for `created_at` in `[username]/+page.server.ts` (`?? new Date().toISOString()`) — consistent with own profile pattern
+- M2: Added `<svelte:head><title>` in `[username]/+page.svelte` for browser tab title on public route
+- M3: Added `logger.error()` from `@cotulenh/common` for DB errors in `[username]/+page.server.ts` — follows project logging conventions
+
+**Low Issues Noted (not fixed):**
+
+- L1: `profile.public.notFound` i18n key omitted (global error page handles it correctly)
+- L2: `+error.svelte` hardcodes "404" for all error statuses (pre-existing, not Story 2.2 scope)
+- L3: Stats section uses `<div>` instead of `<dl>/<dt>/<dd>` (pre-existing pattern from Story 2.1)
+
+**All 149 tests pass. No new type errors.**

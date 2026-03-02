@@ -21,6 +21,10 @@
   );
 </script>
 
+<svelte:head>
+  <title>{pageTitle}</title>
+</svelte:head>
+
 <div class="profile-page">
   <div class="profile-container">
     <h1 class="profile-title">{pageTitle}</h1>

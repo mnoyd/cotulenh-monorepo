@@ -1,4 +1,14 @@
 import { describe, it, expect, vi } from 'vitest';
+
+vi.mock('@cotulenh/common', () => ({
+  logger: {
+    error: vi.fn(),
+    warn: vi.fn(),
+    info: vi.fn(),
+    debug: vi.fn()
+  }
+}));
+
 import { load } from './+page.server';
 
 describe('public profile page server', () => {

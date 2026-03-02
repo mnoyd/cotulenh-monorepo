@@ -1,4 +1,5 @@
 import { error } from '@sveltejs/kit';
+import { logger } from '@cotulenh/common';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ params, locals: { supabase } }) => {
@@ -13,6 +14,7 @@ export const load: PageServerLoad = async ({ params, locals: { supabase } }) => 
     .maybeSingle();
 
   if (dbError) {
+    logger.error(dbError, 'Failed to load public profile');
     error(500, { message: 'Failed to load user profile' });
   }
 
@@ -24,7 +26,7 @@ export const load: PageServerLoad = async ({ params, locals: { supabase } }) => 
     profileDetail: {
       displayName: profileData.display_name,
       avatarUrl: profileData.avatar_url ?? null,
-      createdAt: profileData.created_at
+      createdAt: profileData.created_at ?? new Date().toISOString()
     },
     stats: {
       gamesPlayed: 0,
