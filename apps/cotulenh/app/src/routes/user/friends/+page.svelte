@@ -293,11 +293,11 @@
     </section>
 
     <!-- Pending Incoming Requests Section -->
-    {#if visibleIncoming.length > 0}
-      <section class="requests-section" aria-labelledby="incoming-requests-heading">
-        <h2 id="incoming-requests-heading" class="section-title">
-          {i18n.t('friends.requests.incoming')} ({visibleIncoming.length})
-        </h2>
+    <section class="requests-section" aria-labelledby="incoming-requests-heading">
+      <h2 id="incoming-requests-heading" class="section-title">
+        {i18n.t('friends.requests.incoming')} ({visibleIncoming.length})
+      </h2>
+      {#if visibleIncoming.length > 0}
         <div class="requests-list">
           {#each visibleIncoming as request (request.friendshipId)}
             <FriendRequestCard
@@ -310,8 +310,10 @@
             />
           {/each}
         </div>
-      </section>
-    {/if}
+      {:else}
+        <p class="empty-message">{i18n.t('friends.requests.emptyIncoming')}</p>
+      {/if}
+    </section>
 
     <!-- Sent Requests Section -->
     {#if visibleSent.length > 0}

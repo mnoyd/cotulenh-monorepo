@@ -37,6 +37,7 @@
     {:else if direction === 'incoming'}
       <Button
         size="sm"
+        class="request-btn"
         onclick={() => onaccept?.(friendshipId)}
         aria-label="{i18n.t('friends.action.accept')} {displayName}"
       >
@@ -45,6 +46,7 @@
       <Button
         size="sm"
         variant="outline"
+        class="request-btn"
         onclick={() => ondecline?.(friendshipId)}
         aria-label="{i18n.t('friends.action.decline')} {displayName}"
       >
@@ -54,6 +56,7 @@
       <Button
         size="sm"
         variant="outline"
+        class="request-btn"
         onclick={() => oncancel?.(friendshipId)}
         aria-label="{i18n.t('friends.action.cancel')} {displayName}"
       >
@@ -109,5 +112,10 @@
 
   :global(.request-spinner) {
     color: var(--theme-primary, #06b6d4);
+  }
+
+  :global(.request-btn) {
+    min-height: 44px;
+    min-width: 44px;
   }
 </style>
