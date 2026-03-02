@@ -515,7 +515,6 @@ export interface TranslationKeys {
   'friends.requests.incoming': string;
   'friends.requests.sent': string;
   'friends.requests.emptyIncoming': string;
-  'friends.requests.emptySent': string;
   'friends.toast.requestSent': string;
   'friends.toast.requestFailed': string;
   'friends.toast.requestAccepted': string;

@@ -520,7 +520,6 @@ export const vi: TranslationKeys = {
   'friends.requests.incoming': 'Lời Mời Đang Chờ',
   'friends.requests.sent': 'Lời Mời Đã Gửi',
   'friends.requests.emptyIncoming': 'Không có lời mời chờ xử lý',
-  'friends.requests.emptySent': 'Không có lời mời đã gửi',
   'friends.toast.requestSent': 'Đã gửi lời mời kết bạn',
   'friends.toast.requestFailed': 'Gửi lời mời kết bạn thất bại',
   'friends.toast.requestAccepted': 'Đã chấp nhận lời mời kết bạn',

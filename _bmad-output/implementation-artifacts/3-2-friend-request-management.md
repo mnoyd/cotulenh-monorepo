@@ -121,6 +121,12 @@ And screen readers announce action outcomes via toast aria-live
   - [x]6.2 Server action tests: acceptRequest (success, not-recipient error), declineRequest, cancelRequest
   - [x]6.3 Authorization tests: verify user can only accept/decline their own incoming requests, only cancel their own sent requests
 
+### Review Follow-ups (AI)
+
+- [x] [AI-Review][MEDIUM] Add `.empty-message` CSS styling — class used but not defined in scoped styles [+page.svelte]
+- [x] [AI-Review][MEDIUM] Fix `aria-labelledby="friends-list-heading"` broken reference when friends list is empty — heading moved outside conditional [+page.svelte]
+- [x] [AI-Review][LOW] Remove unused `friends.requests.emptySent` i18n key [types.ts, en.ts, vi.ts]
+
 ## Dev Notes
 
 ### Critical Architecture Patterns (MUST FOLLOW)

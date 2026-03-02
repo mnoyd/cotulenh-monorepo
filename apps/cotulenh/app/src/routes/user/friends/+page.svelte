@@ -337,16 +337,16 @@
 
     <!-- Friends List Section -->
     <section class="friends-list-section" aria-labelledby="friends-list-heading">
+      <h2 id="friends-list-heading" class="section-title">
+        {i18n.t('friends.list.title')} ({allFriends.length})
+      </h2>
       {#if allFriends.length === 0 && visibleIncoming.length === 0 && visibleSent.length === 0}
         <div class="empty-state">
           <Users size={48} class="empty-icon" />
-          <h2 class="empty-title">{i18n.t('friends.empty.title')}</h2>
+          <p class="empty-title">{i18n.t('friends.empty.title')}</p>
           <p class="empty-subtitle">{i18n.t('friends.empty.subtitle')}</p>
         </div>
       {:else if allFriends.length > 0}
-        <h2 id="friends-list-heading" class="section-title">
-          {i18n.t('friends.list.title')} ({allFriends.length})
-        </h2>
         <div class="friends-grid">
           {#each allFriends as friend (friend.friendshipId)}
             <PlayerCard displayName={friend.displayName} />
@@ -482,6 +482,13 @@
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
+  }
+
+  .empty-message {
+    color: var(--theme-text-secondary, #aaa);
+    font-size: 0.875rem;
+    margin: 0;
+    padding: 0.75rem;
   }
 
   /* Friends List */

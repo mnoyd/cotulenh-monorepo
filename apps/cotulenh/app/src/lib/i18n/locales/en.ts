@@ -520,7 +520,6 @@ export const en: TranslationKeys = {
   'friends.requests.incoming': 'Pending Requests',
   'friends.requests.sent': 'Sent Requests',
   'friends.requests.emptyIncoming': 'No pending invitations',
-  'friends.requests.emptySent': 'No sent requests',
   'friends.toast.requestSent': 'Friend request sent',
   'friends.toast.requestFailed': 'Failed to send friend request',
   'friends.toast.requestAccepted': 'Friend request accepted',
