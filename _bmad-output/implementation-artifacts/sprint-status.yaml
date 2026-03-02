@@ -52,7 +52,7 @@ development_status:
   epic-2: in-progress
   2-1-display-name-own-profile: done
   2-2-public-user-profiles: done
-  2-3-account-settings: backlog
+  2-3-account-settings: review
   epic-2-retrospective: optional
 
   # Epic 3: Social & Friends

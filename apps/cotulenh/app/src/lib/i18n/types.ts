@@ -463,6 +463,35 @@ export interface TranslationKeys {
   'profile.public.title': string;
   'profile.public.gameHistory.title': string;
   'profile.public.gameHistory.empty': string;
+
+  // Account Settings
+  'accountSettings.title': string;
+  'accountSettings.account.title': string;
+  'accountSettings.email.label': string;
+  'accountSettings.email.current': string;
+  'accountSettings.email.new': string;
+  'accountSettings.email.placeholder': string;
+  'accountSettings.email.submit': string;
+  'accountSettings.email.submitting': string;
+  'accountSettings.email.success': string;
+  'accountSettings.password.title': string;
+  'accountSettings.password.new': string;
+  'accountSettings.password.newPlaceholder': string;
+  'accountSettings.password.confirm': string;
+  'accountSettings.password.confirmPlaceholder': string;
+  'accountSettings.password.submit': string;
+  'accountSettings.password.submitting': string;
+  'accountSettings.password.success': string;
+  'accountSettings.preferences.title': string;
+  'accountSettings.preferences.saved': string;
+  'accountSettings.error.emailUpdateFailed': string;
+  'accountSettings.error.passwordUpdateFailed': string;
+  'accountSettings.error.settingsUpdateFailed': string;
+  'accountSettings.validation.emailRequired': string;
+  'accountSettings.validation.emailInvalid': string;
+  'accountSettings.validation.passwordRequired': string;
+  'accountSettings.validation.passwordMinLength': string;
+  'accountSettings.validation.passwordMismatch': string;
 }
 
 export type TranslationKey = keyof TranslationKeys;

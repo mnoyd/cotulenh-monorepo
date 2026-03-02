@@ -466,5 +466,35 @@ export const vi: TranslationKeys = {
   // Public Profile
   'profile.public.title': 'Hồ sơ của {username}',
   'profile.public.gameHistory.title': 'Lịch Sử Trận Đấu',
-  'profile.public.gameHistory.empty': 'Chưa có trận đấu nào'
+  'profile.public.gameHistory.empty': 'Chưa có trận đấu nào',
+
+  // Account Settings
+  'accountSettings.title': 'Cài Đặt Tài Khoản',
+  'accountSettings.account.title': 'Tài Khoản',
+  'accountSettings.email.label': 'Địa Chỉ Email',
+  'accountSettings.email.current': 'Email Hiện Tại',
+  'accountSettings.email.new': 'Email Mới',
+  'accountSettings.email.placeholder': 'Nhập email mới',
+  'accountSettings.email.submit': 'Cập Nhật Email',
+  'accountSettings.email.submitting': 'Đang cập nhật...',
+  'accountSettings.email.success':
+    'Email xác minh đã được gửi đến địa chỉ mới. Vui lòng kiểm tra hộp thư để xác nhận thay đổi.',
+  'accountSettings.password.title': 'Đổi Mật Khẩu',
+  'accountSettings.password.new': 'Mật Khẩu Mới',
+  'accountSettings.password.newPlaceholder': 'Ít nhất 8 ký tự',
+  'accountSettings.password.confirm': 'Xác Nhận Mật Khẩu',
+  'accountSettings.password.confirmPlaceholder': 'Nhập lại mật khẩu',
+  'accountSettings.password.submit': 'Cập Nhật Mật Khẩu',
+  'accountSettings.password.submitting': 'Đang cập nhật...',
+  'accountSettings.password.success': 'Mật khẩu đã được cập nhật thành công.',
+  'accountSettings.preferences.title': 'Tùy Chọn Ứng Dụng',
+  'accountSettings.preferences.saved': 'Đã lưu tùy chọn',
+  'accountSettings.error.emailUpdateFailed': 'Cập nhật email thất bại. Vui lòng thử lại.',
+  'accountSettings.error.passwordUpdateFailed': 'Cập nhật mật khẩu thất bại. Vui lòng thử lại.',
+  'accountSettings.error.settingsUpdateFailed': 'Lưu cài đặt thất bại. Vui lòng thử lại.',
+  'accountSettings.validation.emailRequired': 'Email là bắt buộc',
+  'accountSettings.validation.emailInvalid': 'Vui lòng nhập địa chỉ email hợp lệ',
+  'accountSettings.validation.passwordRequired': 'Mật khẩu là bắt buộc',
+  'accountSettings.validation.passwordMinLength': 'Mật khẩu phải có ít nhất 8 ký tự',
+  'accountSettings.validation.passwordMismatch': 'Mật khẩu không khớp'
 };

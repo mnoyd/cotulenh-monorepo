@@ -466,5 +466,35 @@ export const en: TranslationKeys = {
   // Public Profile
   'profile.public.title': "{username}'s Profile",
   'profile.public.gameHistory.title': 'Game History',
-  'profile.public.gameHistory.empty': 'No games played yet'
+  'profile.public.gameHistory.empty': 'No games played yet',
+
+  // Account Settings
+  'accountSettings.title': 'Account Settings',
+  'accountSettings.account.title': 'Account',
+  'accountSettings.email.label': 'Email Address',
+  'accountSettings.email.current': 'Current Email',
+  'accountSettings.email.new': 'New Email',
+  'accountSettings.email.placeholder': 'Enter new email',
+  'accountSettings.email.submit': 'Update Email',
+  'accountSettings.email.submitting': 'Updating...',
+  'accountSettings.email.success':
+    'Verification email sent to your new address. Please check your inbox to confirm the change.',
+  'accountSettings.password.title': 'Change Password',
+  'accountSettings.password.new': 'New Password',
+  'accountSettings.password.newPlaceholder': 'At least 8 characters',
+  'accountSettings.password.confirm': 'Confirm Password',
+  'accountSettings.password.confirmPlaceholder': 'Re-enter your password',
+  'accountSettings.password.submit': 'Update Password',
+  'accountSettings.password.submitting': 'Updating...',
+  'accountSettings.password.success': 'Password updated successfully.',
+  'accountSettings.preferences.title': 'App Preferences',
+  'accountSettings.preferences.saved': 'Preference saved',
+  'accountSettings.error.emailUpdateFailed': 'Failed to update email. Please try again.',
+  'accountSettings.error.passwordUpdateFailed': 'Failed to update password. Please try again.',
+  'accountSettings.error.settingsUpdateFailed': 'Failed to save settings. Please try again.',
+  'accountSettings.validation.emailRequired': 'Email is required',
+  'accountSettings.validation.emailInvalid': 'Please enter a valid email address',
+  'accountSettings.validation.passwordRequired': 'Password is required',
+  'accountSettings.validation.passwordMinLength': 'Password must be at least 8 characters',
+  'accountSettings.validation.passwordMismatch': 'Passwords do not match'
 };

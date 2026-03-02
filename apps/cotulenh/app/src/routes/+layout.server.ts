@@ -7,11 +7,14 @@ export const load: LayoutServerLoad = async ({ locals: { safeGetSession, supabas
   if (user) {
     const { data } = await supabase
       .from('profiles')
-      .select('display_name')
+      .select('display_name, settings_json')
       .eq('id', user.id)
       .single();
     if (data) {
-      profile = { displayName: data.display_name };
+      profile = {
+        displayName: data.display_name,
+        settingsJson: data.settings_json ?? {}
+      };
     }
   }
 
