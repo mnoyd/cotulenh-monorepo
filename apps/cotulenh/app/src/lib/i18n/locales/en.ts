@@ -604,5 +604,14 @@ export const en: TranslationKeys = {
   'game.opponent': 'Opponent',
   'game.yourColor': 'Your Color',
   'game.placeholderMessage': 'The game board will appear here when realtime gameplay is implemented.',
-  'game.goToGame': 'Go to Game'
+  'game.goToGame': 'Go to Game',
+  'game.connecting': 'Connecting...',
+  'game.waitingForOpponent': 'Waiting for opponent...',
+  'game.opponentConnected': 'Opponent connected',
+  'game.opponentDisconnected': 'Opponent disconnected',
+  'game.yourTurn': 'Your turn',
+  'game.opponentTurn': "Opponent's turn",
+  'game.moveCount': 'Move {count}',
+  'game.gameAborted': 'Game aborted — no moves were made',
+  'game.connectionLost': 'Connection lost'
 };

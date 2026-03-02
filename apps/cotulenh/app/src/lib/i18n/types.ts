@@ -600,6 +600,15 @@ export interface TranslationKeys {
   'game.yourColor': string;
   'game.placeholderMessage': string;
   'game.goToGame': string;
+  'game.connecting': string;
+  'game.waitingForOpponent': string;
+  'game.opponentConnected': string;
+  'game.opponentDisconnected': string;
+  'game.yourTurn': string;
+  'game.opponentTurn': string;
+  'game.moveCount': string;
+  'game.gameAborted': string;
+  'game.connectionLost': string;
 }
 
 export type TranslationKey = keyof TranslationKeys;

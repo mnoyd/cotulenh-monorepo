@@ -604,5 +604,14 @@ export const vi: TranslationKeys = {
   'game.opponent': 'Đối Thủ',
   'game.yourColor': 'Bên Của Bạn',
   'game.placeholderMessage': 'Bàn cờ sẽ xuất hiện ở đây khi tính năng chơi thời gian thực được triển khai.',
-  'game.goToGame': 'Đi Đến Ván Đấu'
+  'game.goToGame': 'Đi Đến Ván Đấu',
+  'game.connecting': 'Đang kết nối...',
+  'game.waitingForOpponent': 'Đang chờ đối thủ...',
+  'game.opponentConnected': 'Đối thủ đã kết nối',
+  'game.opponentDisconnected': 'Đối thủ đã ngắt kết nối',
+  'game.yourTurn': 'Lượt của bạn',
+  'game.opponentTurn': 'Lượt đối thủ',
+  'game.moveCount': 'Nước {count}',
+  'game.gameAborted': 'Ván đấu bị hủy — không có nước đi nào',
+  'game.connectionLost': 'Mất kết nối'
 };
