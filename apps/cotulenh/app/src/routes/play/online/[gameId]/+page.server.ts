@@ -37,6 +37,7 @@ export const load: PageServerLoad = async ({ params, locals: { supabase, safeGet
       timeControl: game.time_control as { timeMinutes: number; incrementSeconds: number },
       startedAt: game.started_at
     },
+    currentUserId: user.id,
     playerColor,
     opponent: {
       id: opponentId,

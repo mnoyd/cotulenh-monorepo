@@ -4,7 +4,7 @@ import { logger } from '@cotulenh/common';
 import { GameSession } from '$lib/game-session.svelte';
 import { ChessClockState, type ClockConfig, type ClockColor } from '$lib/clock/clock.svelte';
 import { LagTracker } from '$lib/game/lag-tracker';
-import { sendGameMessage, onGameMessage, isGameMessage, type GameMessage } from '$lib/game/messages';
+import { sendGameMessage, onGameMessage, type GameMessage } from '$lib/game/messages';
 
 export type ConnectionState = 'disconnected' | 'connecting' | 'connected';
 export type Lifecycle = 'waiting' | 'playing' | 'ended';
@@ -14,6 +14,8 @@ const NOSTART_TIMEOUT_MS = 30_000;
 export interface OnlineSessionConfig {
   gameId: string;
   playerColor: 'red' | 'blue';
+  currentUserId: string;
+  opponentUserId: string;
   timeControl: { timeMinutes: number; incrementSeconds: number };
   supabase: SupabaseClient;
 }
@@ -28,6 +30,8 @@ export class OnlineGameSessionCore {
   readonly playerColor: 'red' | 'blue';
   readonly session: GameSession;
   readonly clock: ChessClockState;
+  readonly #currentUserId: string;
+  readonly #opponentUserId: string;
 
   #supabase: SupabaseClient;
   #channel: RealtimeChannel | null = null;
@@ -48,6 +52,8 @@ export class OnlineGameSessionCore {
   constructor(config: OnlineSessionConfig, callbacks: OnlineSessionCallbacks = {}) {
     this.gameId = config.gameId;
     this.playerColor = config.playerColor;
+    this.#currentUserId = config.currentUserId;
+    this.#opponentUserId = config.opponentUserId;
     this.#supabase = config.supabase;
     this.#callbacks = callbacks;
 
@@ -116,7 +122,11 @@ export class OnlineGameSessionCore {
       if (status === 'SUBSCRIBED') {
         this.#connectionState = 'connected';
         this.#lifecycle = 'waiting';
-        await channel.track({ color: this.playerColor, presenceId: this.#presenceId });
+        await channel.track({
+          color: this.playerColor,
+          userId: this.#currentUserId,
+          presenceId: this.#presenceId
+        });
         this.#syncPresence(channel);
         this.#notifyStateChange();
 
@@ -153,6 +163,13 @@ export class OnlineGameSessionCore {
       logger.warn('Cannot send move: not connected');
       return;
     }
+    if (!this.#opponentConnected || this.#lifecycle !== 'playing') {
+      logger.warn('Cannot send move: game not started', {
+        opponentConnected: this.#opponentConnected,
+        lifecycle: this.#lifecycle
+      });
+      return;
+    }
 
     this.#clearNoStartTimerOnFirstMove();
 
@@ -170,6 +187,7 @@ export class OnlineGameSessionCore {
     this.#pendingAcks.set(seq, Date.now());
     sendGameMessage(this.#channel, {
       event: 'move',
+      senderId: this.#currentUserId,
       san,
       clock: myTime,
       seq,
@@ -186,6 +204,17 @@ export class OnlineGameSessionCore {
   // ============================================================
 
   #handleGameMessage(msg: GameMessage): void {
+    if (msg.senderId === this.#currentUserId) {
+      return;
+    }
+    if (msg.senderId !== this.#opponentUserId) {
+      logger.warn('Ignoring game message from unexpected sender', {
+        senderId: msg.senderId,
+        expectedSenderId: this.#opponentUserId
+      });
+      return;
+    }
+
     switch (msg.event) {
       case 'move':
         this.#handleRemoteMove(msg);
@@ -206,7 +235,11 @@ export class OnlineGameSessionCore {
     if (!this.#channel) return;
 
     // Send ack immediately
-    sendGameMessage(this.#channel, { event: 'ack', seq: msg.seq });
+    sendGameMessage(this.#channel, {
+      event: 'ack',
+      senderId: this.#currentUserId,
+      seq: msg.seq
+    });
 
     // Skip duplicate
     if (msg.seq <= this.#lastProcessedSeq) {
@@ -298,7 +331,10 @@ export class OnlineGameSessionCore {
 
     // Notify via broadcast
     if (this.#channel) {
-      sendGameMessage(this.#channel, { event: 'abort' });
+      sendGameMessage(this.#channel, {
+        event: 'abort',
+        senderId: this.#currentUserId
+      });
     }
 
     this.#notifyAbortOnce();
@@ -316,7 +352,11 @@ export class OnlineGameSessionCore {
       const presences = state[key];
       for (const p of presences) {
         const presence = p as Record<string, unknown>;
-        if (presence.presenceId !== this.#presenceId) {
+        if (
+          presence.presenceId !== this.#presenceId &&
+          typeof presence.userId === 'string' &&
+          presence.userId === this.#opponentUserId
+        ) {
           opponentFound = true;
           break;
         }

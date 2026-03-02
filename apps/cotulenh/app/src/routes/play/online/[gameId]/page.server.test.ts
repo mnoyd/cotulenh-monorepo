@@ -116,10 +116,16 @@ describe('game page load', () => {
     const result = await load({
       params: { gameId: 'game-1' },
       locals
-    } as never) as { game: { id: string; status: string }; playerColor: string; opponent: { id: string; displayName: string } };
+    } as never) as {
+      game: { id: string; status: string };
+      currentUserId: string;
+      playerColor: string;
+      opponent: { id: string; displayName: string };
+    };
 
     expect(result.game.id).toBe('game-1');
     expect(result.game.status).toBe('started');
+    expect(result.currentUserId).toBe('user-1');
     expect(result.playerColor).toBe('red');
     expect(result.opponent.id).toBe('user-2');
     expect(result.opponent.displayName).toBe('Player Two');
@@ -163,8 +169,9 @@ describe('game page load', () => {
     const result = await load({
       params: { gameId: 'game-1' },
       locals
-    } as never) as { playerColor: string; opponent: { id: string; displayName: string } };
+    } as never) as { currentUserId: string; playerColor: string; opponent: { id: string; displayName: string } };
 
+    expect(result.currentUserId).toBe('user-2');
     expect(result.playerColor).toBe('blue');
     expect(result.opponent.id).toBe('user-1');
     expect(result.opponent.displayName).toBe('Player One');

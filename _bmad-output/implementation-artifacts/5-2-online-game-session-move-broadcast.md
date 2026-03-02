@@ -1,6 +1,6 @@
 # Story 5.2: Online Game Session & Move Broadcast
 
-Status: review
+Status: done
 
 ## Story
 
@@ -83,6 +83,10 @@ So that we can play CoTuLenh online against each other.
 - [x] [AI-Review][HIGH] Complete local move broadcast test coverage for Task 5.1: added assertions for broadcast payload (`san`, `clock`, `seq`, `sentAt`) and ack cleanup behavior. [apps/cotulenh/app/src/lib/game/online-session-core.test.ts]
 - [x] [AI-Review][MEDIUM] Harden presence join/leave handling: join/leave now recompute from `presenceState` and ignore local presence via `presenceId`. [apps/cotulenh/app/src/lib/game/online-session-core.ts]
 - [x] [AI-Review][MEDIUM] Reconcile story file scope: this story file list remains story-owned source; note that the repository contains unrelated pre-existing modified files outside Story 5.2 scope.
+- [x] [AI-Review][HIGH] Prevent pre-start local moves: local move broadcast now requires `lifecycle === 'playing'` and `opponentConnected`, and page view-only gating enforces this in UI. [apps/cotulenh/app/src/lib/game/online-session-core.ts, apps/cotulenh/app/src/routes/play/online/[gameId]/+page.svelte]
+- [x] [AI-Review][HIGH] Add sender identity hardening for game messages: `GameMessage` now includes `senderId`, core ignores self/unknown senders, and page load provides `currentUserId` + `opponentUserId` for strict validation. [apps/cotulenh/app/src/lib/game/messages.ts, apps/cotulenh/app/src/lib/game/online-session-core.ts, apps/cotulenh/app/src/routes/play/online/[gameId]/+page.server.ts]
+- [x] [AI-Review][MEDIUM] Strengthen Task 1.5 evidence: added explicit local board-move test proving `onMove(san)` callback delivery in addition to `applyMove` non-callback behavior. [apps/cotulenh/app/src/lib/game-session.test.ts]
+- [x] [AI-Review][MEDIUM] Reconciled story file tracking for this pass by listing additional route/message/security test changes in File List. [this story file]
 
 ## Dev Notes
 
@@ -332,11 +336,15 @@ clock.switchSide()
 | File | Action | Purpose |
 |------|--------|---------|
 | `apps/cotulenh/app/src/lib/game-session.svelte.ts` | MODIFIED | Changed `onMove` to `(san: string) => void`, added `applyMove(san)`, added `get game()` |
-| `apps/cotulenh/app/src/lib/game-session.test.ts` | CREATED | 10 tests for applyMove, onMove(san) signature, game getter |
-| `apps/cotulenh/app/src/lib/game/online-session-core.ts` | CREATED | Core OnlineGameSession logic: channel, move broadcast/receive, lag comp, ack, NoStart, Presence |
-| `apps/cotulenh/app/src/lib/game/online-session-core.test.ts` | CREATED | 21 tests for OnlineGameSessionCore |
+| `apps/cotulenh/app/src/lib/game-session.test.ts` | CREATED + MODIFIED | Added local board-move assertion for `onMove(san)` callback and retained `applyMove` no-callback validation |
+| `apps/cotulenh/app/src/lib/game/messages.ts` | CREATED + MODIFIED | Added typed `GameMessage` helpers and sender identity (`senderId`) metadata/validation |
+| `apps/cotulenh/app/src/lib/game/messages.test.ts` | CREATED + MODIFIED | Added/updated message helper tests for sender-aware payload validation |
+| `apps/cotulenh/app/src/lib/game/online-session-core.ts` | CREATED + MODIFIED | Core OnlineGameSession logic plus pre-start move guard and strict sender/opponent validation |
+| `apps/cotulenh/app/src/lib/game/online-session-core.test.ts` | CREATED + MODIFIED | Expanded tests for sender filtering, waiting-state move blocking, and sender-aware ack payloads |
 | `apps/cotulenh/app/src/lib/game/online-session.svelte.ts` | CREATED | Svelte 5 $state reactive wrapper over OnlineGameSessionCore |
-| `apps/cotulenh/app/src/routes/play/online/[gameId]/+page.svelte` | MODIFIED | Replaced stub with full game UI: board, clocks, turn indicator, connection status |
+| `apps/cotulenh/app/src/routes/play/online/[gameId]/+page.server.ts` | MODIFIED | Added `currentUserId` to page data for sender/presence validation wiring |
+| `apps/cotulenh/app/src/routes/play/online/[gameId]/+page.svelte` | MODIFIED | Added `currentUserId`/`opponentUserId` config wiring and stricter pre-start board lock gating |
+| `apps/cotulenh/app/src/routes/play/online/[gameId]/page.server.test.ts` | MODIFIED | Updated route tests for new `currentUserId` server payload |
 | `apps/cotulenh/app/src/lib/i18n/locales/en.ts` | MODIFIED | Added 9 i18n keys for online game UI |
 | `apps/cotulenh/app/src/lib/i18n/locales/vi.ts` | MODIFIED | Added 9 i18n keys for online game UI (Vietnamese) |
 | `apps/cotulenh/app/src/lib/i18n/types.ts` | MODIFIED | Added 9 i18n key type definitions |
@@ -360,6 +368,7 @@ No issues encountered during implementation.
 - **Task 4:** Replaced stub game page with full-featured UI: board with correct orientation per player color, opponent/player clocks at top/bottom, turn indicator, move counter, opponent connection status via OnlineIndicator, NoStart abort with toast and redirect. Added 9 i18n strings in both en and vi.
 - **Task 5:** 31 new tests total (10 GameSession + 21 OnlineGameSessionCore). All 442 tests pass across 35 test files with zero regressions.
 - **Review Fix Pass:** Implemented post-review fixes for lifecycle start gating, pending ack cleanup, presence hardening, and missing local-broadcast assertions. Full suite now passes at 448 tests.
+- **Review Fix Pass 2 (Adversarial):** Hardened online-session integrity by requiring opponent-connected `playing` state before local broadcasts, adding typed `senderId` metadata to all game messages, filtering unknown senders, wiring `currentUserId`/`opponentUserId` from route data, and expanding tests for local callback assertions and sender validation. Full suite now passes at 450 tests.
 
 ### Senior Developer Review (AI)
 
@@ -419,8 +428,22 @@ Validation:
 - Test run executed: `pnpm --filter @cotulenh/app test`
 - Result: 35 files, 448 tests passed.
 
+### Review Resolution (AI) - Pass 2
+
+Outcome: Approved
+
+- Resolved pre-start move risk by enforcing local move guard (`playing` + `opponentConnected`) in both core logic and board `viewOnly` config.
+- Resolved sender-trust risk by making `senderId` mandatory in `GameMessage`, then rejecting self-echo and unexpected senders in `OnlineGameSessionCore`.
+- Resolved test-evidence gap by adding explicit local board-move callback verification for `onMove(san)`.
+- Reconciled story tracking for this pass by updating the file list with additional route/message/security test changes.
+
+Validation:
+- Test run executed: `pnpm --filter @cotulenh/app test`
+- Result: 35 files, 450 tests passed.
+
 ### Change Log
 
 - 2026-03-03: Implemented Story 5.2 — Online Game Session & Move Broadcast. Created OnlineGameSession (core + reactive wrapper), enhanced GameSession for composition, implemented full game page with board, clocks, and connection tracking.
 - 2026-03-03: Senior Developer Review (AI) completed. Story moved to in-progress with 3 HIGH and 2 MEDIUM follow-ups.
 - 2026-03-03: Implemented AI review follow-up fixes (lifecycle start gating, ack cleanup, presence hardening, local-broadcast test assertions). Story returned to review.
+- 2026-03-02: Adversarial re-review fixes applied: pre-start move lock enforcement, strict sender identity checks (`senderId`), opponent-aware presence filtering via route user IDs, and stronger callback/test coverage. Story marked done after 450/450 tests passed.

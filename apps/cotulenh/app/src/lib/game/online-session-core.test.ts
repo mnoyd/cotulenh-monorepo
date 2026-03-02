@@ -36,6 +36,9 @@ vi.mock('$lib/debug', () => ({
 import { OnlineGameSessionCore, type OnlineSessionConfig } from './online-session-core';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 
+const CURRENT_USER_ID = 'user-red';
+const OPPONENT_USER_ID = 'user-blue';
+
 // Helper to create a mock Supabase client
 function createMockSupabase() {
   const channelHandlers: Record<string, Function[]> = {};
@@ -83,9 +86,10 @@ function createMockSupabase() {
     getTrackData: () => trackData,
     // Helper to simulate receiving a game message
     simulateGameMessage: (payload: Record<string, unknown>) => {
+      const withSender = { senderId: OPPONENT_USER_ID, ...payload };
       const handlers = channelHandlers['broadcast:game-message'] ?? [];
       for (const handler of handlers) {
-        handler({ payload });
+        handler({ payload: withSender });
       }
     },
     // Helper to simulate presence sync
@@ -114,6 +118,8 @@ function createDefaultConfig(supabase: unknown): OnlineSessionConfig {
   return {
     gameId: 'test-game-id',
     playerColor: 'red',
+    currentUserId: CURRENT_USER_ID,
+    opponentUserId: OPPONENT_USER_ID,
     timeControl: { timeMinutes: 5, incrementSeconds: 3 },
     supabase: supabase as OnlineSessionConfig['supabase']
   };
@@ -178,6 +184,7 @@ describe('OnlineGameSessionCore', () => {
       expect(mock.mockChannel.track).toHaveBeenCalledWith(
         expect.objectContaining({
           color: 'red',
+          userId: CURRENT_USER_ID,
           presenceId: expect.any(String)
         })
       );
@@ -191,7 +198,11 @@ describe('OnlineGameSessionCore', () => {
       expect(core.lifecycle).toBe('waiting');
       expect(core.clock.status).toBe('idle');
 
-      mock.presenceState['opponent'] = [{ color: 'blue', presenceId: 'opponent-presence' }];
+      mock.presenceState['opponent'] = [{
+        color: 'blue',
+        userId: OPPONENT_USER_ID,
+        presenceId: 'opponent-presence'
+      }];
       mock.simulatePresenceSync();
 
       expect(core.opponentConnected).toBe(true);
@@ -229,6 +240,13 @@ describe('OnlineGameSessionCore', () => {
       core.join();
       await vi.advanceTimersByTimeAsync(10);
 
+      mock.presenceState['opponent'] = [{
+        color: 'blue',
+        userId: OPPONENT_USER_ID,
+        presenceId: 'opponent-presence'
+      }];
+      mock.simulatePresenceSync();
+
       const now = Date.now();
       const move = triggerLocalMove(core);
 
@@ -255,6 +273,13 @@ describe('OnlineGameSessionCore', () => {
       core = new OnlineGameSessionCore(createDefaultConfig(mock.supabase));
       core.join();
       await vi.advanceTimersByTimeAsync(10);
+
+      mock.presenceState['opponent'] = [{
+        color: 'blue',
+        userId: OPPONENT_USER_ID,
+        presenceId: 'opponent-presence'
+      }];
+      mock.simulatePresenceSync();
 
       // First local move (red)
       triggerLocalMove(core);
@@ -291,6 +316,13 @@ describe('OnlineGameSessionCore', () => {
       core.join();
       await vi.advanceTimersByTimeAsync(10);
 
+      mock.presenceState['opponent'] = [{
+        color: 'blue',
+        userId: OPPONENT_USER_ID,
+        presenceId: 'opponent-presence'
+      }];
+      mock.simulatePresenceSync();
+
       triggerLocalMove(core);
       expect(core.pendingAckCount).toBe(1);
 
@@ -298,22 +330,30 @@ describe('OnlineGameSessionCore', () => {
       expect(core.pendingAckCount).toBe(0);
     });
 
-    it('transitions lifecycle to playing on first local move', async () => {
+    it('does not broadcast local move while waiting for opponent', async () => {
       core = new OnlineGameSessionCore(createDefaultConfig(mock.supabase));
       core.join();
       await vi.advanceTimersByTimeAsync(10);
 
       expect(core.lifecycle).toBe('waiting');
       triggerLocalMove(core);
-      expect(core.lifecycle).toBe('playing');
+      expect(mock.mockChannel.send).not.toHaveBeenCalled();
     });
 
-    it('starts clock and switches side after local move', async () => {
+    it('switches clock side after local move', async () => {
       core = new OnlineGameSessionCore(createDefaultConfig(mock.supabase));
       core.join();
       await vi.advanceTimersByTimeAsync(10);
 
-      expect(core.clock.status).toBe('idle');
+      mock.presenceState['opponent'] = [{
+        color: 'blue',
+        userId: OPPONENT_USER_ID,
+        presenceId: 'opponent-presence'
+      }];
+      mock.simulatePresenceSync();
+
+      expect(core.clock.status).toBe('running');
+      expect(core.clock.activeSide).toBe('r');
       triggerLocalMove(core);
       expect(core.clock.status).toBe('running');
       // Red moved first, so clock should have switched to blue's turn
@@ -378,7 +418,7 @@ describe('OnlineGameSessionCore', () => {
         expect.objectContaining({
           type: 'broadcast',
           event: 'game-message',
-          payload: { event: 'ack', seq: 1 }
+          payload: { event: 'ack', senderId: CURRENT_USER_ID, seq: 1 }
         })
       );
     });
@@ -449,6 +489,24 @@ describe('OnlineGameSessionCore', () => {
       // Invalid move should not be added to history
       expect(core.session.history).toHaveLength(0);
     });
+
+    it('ignores messages from unexpected senders', async () => {
+      core = new OnlineGameSessionCore(createDefaultConfig(mock.supabase));
+      core.join();
+      await vi.advanceTimersByTimeAsync(10);
+
+      const moves = core.session.possibleMoves;
+      mock.simulateGameMessage({
+        senderId: 'intruder-user',
+        event: 'move',
+        san: moves[0].san,
+        clock: 299_000,
+        seq: 1,
+        sentAt: Date.now() - 50
+      });
+
+      expect(core.session.history).toHaveLength(0);
+    });
   });
 
   describe('NoStart timeout', () => {
@@ -511,7 +569,11 @@ describe('OnlineGameSessionCore', () => {
 
       expect(core.opponentConnected).toBe(false);
 
-      mock.presenceState['opponent'] = [{ color: 'blue', presenceId: 'opponent-presence' }];
+      mock.presenceState['opponent'] = [{
+        color: 'blue',
+        userId: OPPONENT_USER_ID,
+        presenceId: 'opponent-presence'
+      }];
       mock.simulatePresenceJoin({ key: 'opponent-key' });
       expect(core.opponentConnected).toBe(true);
     });
@@ -521,7 +583,11 @@ describe('OnlineGameSessionCore', () => {
       core.join();
       await vi.advanceTimersByTimeAsync(10);
 
-      mock.presenceState['opponent'] = [{ color: 'blue', presenceId: 'opponent-presence' }];
+      mock.presenceState['opponent'] = [{
+        color: 'blue',
+        userId: OPPONENT_USER_ID,
+        presenceId: 'opponent-presence'
+      }];
       mock.simulatePresenceJoin({ key: 'opponent-key' });
       expect(core.opponentConnected).toBe(true);
 
@@ -536,7 +602,7 @@ describe('OnlineGameSessionCore', () => {
       await vi.advanceTimersByTimeAsync(10);
 
       // Add opponent to presence state
-      mock.presenceState['opponent'] = [{ color: 'blue' }];
+      mock.presenceState['opponent'] = [{ color: 'blue', userId: OPPONENT_USER_ID }];
       mock.simulatePresenceSync();
 
       expect(core.opponentConnected).toBe(true);

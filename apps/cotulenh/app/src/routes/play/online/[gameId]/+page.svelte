@@ -40,7 +40,9 @@
   );
 
   let isMyTurn = $derived(
-    onlineSession && onlineSession.lifecycle !== 'ended'
+    onlineSession &&
+      onlineSession.lifecycle === 'playing' &&
+      onlineSession.opponentConnected
       ? (onlineSession.turn === 'r' && data.playerColor === 'red') ||
         (onlineSession.turn === 'b' && data.playerColor === 'blue')
       : false
@@ -76,6 +78,8 @@
       {
         gameId: data.game.id,
         playerColor: data.playerColor as 'red' | 'blue',
+        currentUserId: data.currentUserId,
+        opponentUserId: data.opponent.id,
         timeControl: data.game.timeControl,
         supabase
       },
@@ -132,7 +136,10 @@
           config={{
             ...onlineSession.session.boardConfig,
             orientation,
-            viewOnly: onlineSession.lifecycle === 'ended' || !isMyTurn
+            viewOnly:
+              onlineSession.lifecycle !== 'playing' ||
+              !onlineSession.opponentConnected ||
+              !isMyTurn
           }}
           onApiReady={handleBoardReady}
         />

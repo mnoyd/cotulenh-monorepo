@@ -72,7 +72,7 @@ development_status:
   # Epic 5: Realtime Online Gameplay
   epic-5: in-progress
   5-1-delta-based-clock-gamemessage-types: done
-  5-2-online-game-session-move-broadcast: review
+  5-2-online-game-session-move-broadcast: done
   5-3-move-reliability-reconnection: backlog
   5-4-game-end-conditions-result-recording: backlog
   5-5-clock-timeout-claim-victory: backlog
