@@ -1,5 +1,15 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { canonicalPair, searchUsers, sendFriendRequest, getFriendsList } from './queries';
+import {
+  canonicalPair,
+  searchUsers,
+  sendFriendRequest,
+  getFriendsList,
+  getPendingIncomingRequests,
+  getPendingSentRequests,
+  acceptFriendRequest,
+  declineFriendRequest,
+  cancelSentRequest
+} from './queries';
 
 // Mock Supabase client factory
 function createMockSupabase(overrides: Record<string, unknown> = {}) {
@@ -24,6 +34,16 @@ function chainable(finalResult: unknown) {
   chain.ilike = vi.fn().mockReturnValue(chain);
   chain.or = vi.fn().mockReturnValue(chain);
   chain.in = vi.fn().mockReturnValue(chain);
+  return chain;
+}
+
+/** Build a chain for update/delete actions where single() is the terminal */
+function actionChain(singleResult: unknown) {
+  const chain: Record<string, unknown> = {};
+  for (const m of ['update', 'delete', 'eq', 'or', 'neq', 'select']) {
+    chain[m] = vi.fn().mockReturnValue(chain);
+  }
+  chain.single = vi.fn().mockResolvedValue(singleResult);
   return chain;
 }
 
@@ -188,5 +208,307 @@ describe('getFriendsList', () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const result = await getFriendsList(supabase as any, 'user-1');
     expect(result).toEqual([]);
+  });
+});
+
+describe('getPendingIncomingRequests', () => {
+  it('returns empty array when no pending incoming requests', async () => {
+    const { supabase, mockFrom } = createMockSupabase();
+
+    mockFrom.mockReturnValue({
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          or: vi.fn().mockReturnValue({
+            neq: vi.fn().mockResolvedValue({ data: [], error: null })
+          })
+        })
+      })
+    });
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = await getPendingIncomingRequests(supabase as any, 'user-1');
+    expect(result).toEqual([]);
+  });
+
+  it('returns incoming requests with sender display names', async () => {
+    const { supabase, mockFrom } = createMockSupabase();
+    let callCount = 0;
+
+    mockFrom.mockImplementation(() => {
+      callCount++;
+      if (callCount === 1) {
+        // friendships query
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              or: vi.fn().mockReturnValue({
+                neq: vi.fn().mockResolvedValue({
+                  data: [
+                    {
+                      id: 'f-1',
+                      user_a: 'sender-1',
+                      user_b: 'user-1',
+                      initiated_by: 'sender-1',
+                      created_at: '2024-01-01T00:00:00Z'
+                    }
+                  ],
+                  error: null
+                })
+              })
+            })
+          })
+        };
+      }
+      // profiles query
+      return {
+        select: vi.fn().mockReturnValue({
+          in: vi.fn().mockResolvedValue({
+            data: [{ id: 'sender-1', display_name: 'Sender One' }],
+            error: null
+          })
+        })
+      };
+    });
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = await getPendingIncomingRequests(supabase as any, 'user-1');
+    expect(result).toHaveLength(1);
+    expect(result[0].friendshipId).toBe('f-1');
+    expect(result[0].displayName).toBe('Sender One');
+    expect(result[0].userId).toBe('sender-1');
+  });
+
+  it('returns empty when profiles query fails', async () => {
+    const { supabase, mockFrom } = createMockSupabase();
+    let callCount = 0;
+
+    mockFrom.mockImplementation(() => {
+      callCount++;
+      if (callCount === 1) {
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              or: vi.fn().mockReturnValue({
+                neq: vi.fn().mockResolvedValue({
+                  data: [
+                    {
+                      id: 'f-1',
+                      user_a: 'sender-1',
+                      user_b: 'user-1',
+                      initiated_by: 'sender-1',
+                      created_at: '2024-01-01T00:00:00Z'
+                    }
+                  ],
+                  error: null
+                })
+              })
+            })
+          })
+        };
+      }
+      return {
+        select: vi.fn().mockReturnValue({
+          in: vi.fn().mockResolvedValue({ data: null, error: { message: 'fail' } })
+        })
+      };
+    });
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = await getPendingIncomingRequests(supabase as any, 'user-1');
+    expect(result).toEqual([]);
+  });
+});
+
+describe('getPendingSentRequests', () => {
+  it('returns empty array when no pending sent requests', async () => {
+    const { supabase, mockFrom } = createMockSupabase();
+
+    mockFrom.mockReturnValue({
+      select: vi.fn().mockReturnValue({
+        eq: vi.fn().mockReturnValue({
+          eq: vi.fn().mockResolvedValue({ data: [], error: null })
+        })
+      })
+    });
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = await getPendingSentRequests(supabase as any, 'user-1');
+    expect(result).toEqual([]);
+  });
+
+  it('returns sent requests with recipient display names', async () => {
+    const { supabase, mockFrom } = createMockSupabase();
+    let callCount = 0;
+
+    mockFrom.mockImplementation(() => {
+      callCount++;
+      if (callCount === 1) {
+        // friendships query
+        return {
+          select: vi.fn().mockReturnValue({
+            eq: vi.fn().mockReturnValue({
+              eq: vi.fn().mockResolvedValue({
+                data: [
+                  {
+                    id: 'f-2',
+                    user_a: 'recipient-1',
+                    user_b: 'user-1',
+                    initiated_by: 'user-1',
+                    created_at: '2024-01-02T00:00:00Z'
+                  }
+                ],
+                error: null
+              })
+            })
+          })
+        };
+      }
+      // profiles query
+      return {
+        select: vi.fn().mockReturnValue({
+          in: vi.fn().mockResolvedValue({
+            data: [{ id: 'recipient-1', display_name: 'Recipient One' }],
+            error: null
+          })
+        })
+      };
+    });
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = await getPendingSentRequests(supabase as any, 'user-1');
+    expect(result).toHaveLength(1);
+    expect(result[0].friendshipId).toBe('f-2');
+    expect(result[0].displayName).toBe('Recipient One');
+    expect(result[0].userId).toBe('recipient-1');
+  });
+});
+
+describe('acceptFriendRequest', () => {
+  it('returns success when recipient accepts', async () => {
+    const { supabase, mockFrom } = createMockSupabase();
+    const chain = actionChain({ data: { id: 'f-1' }, error: null });
+    mockFrom.mockReturnValue(chain);
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = await acceptFriendRequest(supabase as any, 'f-1', 'user-1');
+    expect(result.success).toBe(true);
+  });
+
+  it('calls update with accepted status', async () => {
+    const { supabase, mockFrom } = createMockSupabase();
+    const chain = actionChain({ data: { id: 'f-1' }, error: null });
+    mockFrom.mockReturnValue(chain);
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await acceptFriendRequest(supabase as any, 'f-1', 'user-1');
+    expect(chain.update).toHaveBeenCalledWith({ status: 'accepted' });
+  });
+
+  it('fails when user is the initiator (not recipient)', async () => {
+    const { supabase, mockFrom } = createMockSupabase();
+    const chain = actionChain({ data: null, error: { code: 'PGRST116' } });
+    mockFrom.mockReturnValue(chain);
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = await acceptFriendRequest(supabase as any, 'f-1', 'initiator-user');
+    expect(result.success).toBe(false);
+    expect(result.error).toBe('acceptFailed');
+  });
+
+  it('verifies recipient authorization via neq initiated_by', async () => {
+    const { supabase, mockFrom } = createMockSupabase();
+    const chain = actionChain({ data: { id: 'f-1' }, error: null });
+    mockFrom.mockReturnValue(chain);
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await acceptFriendRequest(supabase as any, 'f-1', 'user-1');
+    expect(chain.neq).toHaveBeenCalledWith('initiated_by', 'user-1');
+  });
+});
+
+describe('declineFriendRequest', () => {
+  it('returns success when recipient declines', async () => {
+    const { supabase, mockFrom } = createMockSupabase();
+    const chain = actionChain({ data: { id: 'f-1' }, error: null });
+    mockFrom.mockReturnValue(chain);
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = await declineFriendRequest(supabase as any, 'f-1', 'user-1');
+    expect(result.success).toBe(true);
+  });
+
+  it('uses delete to remove the friendship row', async () => {
+    const { supabase, mockFrom } = createMockSupabase();
+    const chain = actionChain({ data: { id: 'f-1' }, error: null });
+    mockFrom.mockReturnValue(chain);
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await declineFriendRequest(supabase as any, 'f-1', 'user-1');
+    expect(chain.delete).toHaveBeenCalled();
+  });
+
+  it('fails when user is the initiator (not recipient)', async () => {
+    const { supabase, mockFrom } = createMockSupabase();
+    const chain = actionChain({ data: null, error: { code: 'PGRST116' } });
+    mockFrom.mockReturnValue(chain);
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = await declineFriendRequest(supabase as any, 'f-1', 'initiator-user');
+    expect(result.success).toBe(false);
+    expect(result.error).toBe('declineFailed');
+  });
+
+  it('verifies recipient authorization via neq initiated_by', async () => {
+    const { supabase, mockFrom } = createMockSupabase();
+    const chain = actionChain({ data: { id: 'f-1' }, error: null });
+    mockFrom.mockReturnValue(chain);
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await declineFriendRequest(supabase as any, 'f-1', 'user-1');
+    expect(chain.neq).toHaveBeenCalledWith('initiated_by', 'user-1');
+  });
+});
+
+describe('cancelSentRequest', () => {
+  it('returns success when initiator cancels', async () => {
+    const { supabase, mockFrom } = createMockSupabase();
+    const chain = actionChain({ data: { id: 'f-1' }, error: null });
+    mockFrom.mockReturnValue(chain);
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = await cancelSentRequest(supabase as any, 'f-1', 'user-1');
+    expect(result.success).toBe(true);
+  });
+
+  it('uses delete to remove the friendship row', async () => {
+    const { supabase, mockFrom } = createMockSupabase();
+    const chain = actionChain({ data: { id: 'f-1' }, error: null });
+    mockFrom.mockReturnValue(chain);
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await cancelSentRequest(supabase as any, 'f-1', 'user-1');
+    expect(chain.delete).toHaveBeenCalled();
+  });
+
+  it('verifies sender authorization via eq initiated_by', async () => {
+    const { supabase, mockFrom } = createMockSupabase();
+    const chain = actionChain({ data: { id: 'f-1' }, error: null });
+    mockFrom.mockReturnValue(chain);
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await cancelSentRequest(supabase as any, 'f-1', 'user-1');
+    // Should verify initiated_by = userId (sender only)
+    expect(chain.eq).toHaveBeenCalledWith('initiated_by', 'user-1');
+  });
+
+  it('fails when user is not the initiator', async () => {
+    const { supabase, mockFrom } = createMockSupabase();
+    const chain = actionChain({ data: null, error: { code: 'PGRST116' } });
+    mockFrom.mockReturnValue(chain);
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = await cancelSentRequest(supabase as any, 'f-1', 'not-initiator');
+    expect(result.success).toBe(false);
+    expect(result.error).toBe('cancelFailed');
   });
 });

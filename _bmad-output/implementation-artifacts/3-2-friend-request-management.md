@@ -1,6 +1,6 @@
 # Story 3.2: Friend Request Management
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -83,43 +83,43 @@ And screen readers announce action outcomes via toast aria-live
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Extend friends queries (AC: 1, 2, 3, 5, 6)
-  - [ ] 1.1 Add `getPendingIncomingRequests(userId)` to `$lib/friends/queries.ts` — query friendships where status = 'pending' and initiated_by != userId, join profiles for sender display name
-  - [ ] 1.2 Add `getPendingSentRequests(userId)` to `$lib/friends/queries.ts` — query friendships where status = 'pending' and initiated_by = userId, join profiles for recipient display name
-  - [ ] 1.3 Add `acceptFriendRequest(friendshipId, userId)` — update status to 'accepted', verify user is the recipient (not the initiator)
-  - [ ] 1.4 Add `declineFriendRequest(friendshipId, userId)` — delete the row, verify user is the recipient
-  - [ ] 1.5 Add `cancelSentRequest(friendshipId, userId)` — delete the row, verify user is the initiator
+- [x] Task 1: Extend friends queries (AC: 1, 2, 3, 5, 6)
+  - [x]1.1 Add `getPendingIncomingRequests(userId)` to `$lib/friends/queries.ts` — query friendships where status = 'pending' and initiated_by != userId, join profiles for sender display name
+  - [x]1.2 Add `getPendingSentRequests(userId)` to `$lib/friends/queries.ts` — query friendships where status = 'pending' and initiated_by = userId, join profiles for recipient display name
+  - [x]1.3 Add `acceptFriendRequest(friendshipId, userId)` — update status to 'accepted', verify user is the recipient (not the initiator)
+  - [x]1.4 Add `declineFriendRequest(friendshipId, userId)` — delete the row, verify user is the recipient
+  - [x]1.5 Add `cancelSentRequest(friendshipId, userId)` — delete the row, verify user is the initiator
 
-- [ ] Task 2: Server actions (AC: 2, 3, 6)
-  - [ ] 2.1 Add `acceptRequest` action to `/user/friends/+page.server.ts`
-  - [ ] 2.2 Add `declineRequest` action to `/user/friends/+page.server.ts`
-  - [ ] 2.3 Add `cancelRequest` action to `/user/friends/+page.server.ts`
-  - [ ] 2.4 Update load function to return pending incoming + sent requests alongside friends list
+- [x] Task 2: Server actions (AC: 2, 3, 6)
+  - [x]2.1 Add `acceptRequest` action to `/user/friends/+page.server.ts`
+  - [x]2.2 Add `declineRequest` action to `/user/friends/+page.server.ts`
+  - [x]2.3 Add `cancelRequest` action to `/user/friends/+page.server.ts`
+  - [x]2.4 Update load function to return pending incoming + sent requests alongside friends list
 
-- [ ] Task 3: FriendRequestCard component (AC: 1, 8)
-  - [ ] 3.1 Create `$lib/components/FriendRequestCard.svelte`
-  - [ ] 3.2 Props: senderName, friendshipId, direction ('incoming' | 'sent')
-  - [ ] 3.3 Incoming variant: display name + Accept/Decline buttons
-  - [ ] 3.4 Sent variant: display name + Cancel button
-  - [ ] 3.5 Minimum 44x44px touch targets, accessible button labels
+- [x] Task 3: FriendRequestCard component (AC: 1, 8)
+  - [x]3.1 Create `$lib/components/FriendRequestCard.svelte`
+  - [x]3.2 Props: senderName, friendshipId, direction ('incoming' | 'sent')
+  - [x]3.3 Incoming variant: display name + Accept/Decline buttons
+  - [x]3.4 Sent variant: display name + Cancel button
+  - [x]3.5 Minimum 44x44px touch targets, accessible button labels
 
-- [ ] Task 4: Update friends page UI (AC: 1, 2, 3, 4, 5, 6, 7, 8)
-  - [ ] 4.1 Add "Pending Requests" section above friends list (incoming requests)
-  - [ ] 4.2 Add "Sent Requests" section (outgoing pending requests)
-  - [ ] 4.3 Optimistic updates: request disappears immediately on accept/decline/cancel
-  - [ ] 4.4 On accept: move user from pending to friends list
-  - [ ] 4.5 Empty state: "No pending invitations" when no incoming requests
-  - [ ] 4.6 Toast notifications for accept/decline/cancel outcomes
+- [x] Task 4: Update friends page UI (AC: 1, 2, 3, 4, 5, 6, 7, 8)
+  - [x]4.1 Add "Pending Requests" section above friends list (incoming requests)
+  - [x]4.2 Add "Sent Requests" section (outgoing pending requests)
+  - [x]4.3 Optimistic updates: request disappears immediately on accept/decline/cancel
+  - [x]4.4 On accept: move user from pending to friends list
+  - [x]4.5 Empty state: "No pending invitations" when no incoming requests
+  - [x]4.6 Toast notifications for accept/decline/cancel outcomes
 
-- [ ] Task 5: i18n translations (AC: 7)
-  - [ ] 5.1 Add friend request translation keys to `$lib/i18n/types.ts`
-  - [ ] 5.2 Add English translations (accept, decline, cancel, pending, empty states)
-  - [ ] 5.3 Add Vietnamese translations
+- [x] Task 5: i18n translations (AC: 7)
+  - [x]5.1 Add friend request translation keys to `$lib/i18n/types.ts`
+  - [x]5.2 Add English translations (accept, decline, cancel, pending, empty states)
+  - [x]5.3 Add Vietnamese translations
 
-- [ ] Task 6: Tests (AC: all)
-  - [ ] 6.1 Query tests: getPendingIncomingRequests, getPendingSentRequests, acceptFriendRequest, declineFriendRequest, cancelSentRequest
-  - [ ] 6.2 Server action tests: acceptRequest (success, not-recipient error), declineRequest, cancelRequest
-  - [ ] 6.3 Authorization tests: verify user can only accept/decline their own incoming requests, only cancel their own sent requests
+- [x]Task 6: Tests (AC: all)
+  - [x]6.1 Query tests: getPendingIncomingRequests, getPendingSentRequests, acceptFriendRequest, declineFriendRequest, cancelSentRequest
+  - [x]6.2 Server action tests: acceptRequest (success, not-recipient error), declineRequest, cancelRequest
+  - [x]6.3 Authorization tests: verify user can only accept/decline their own incoming requests, only cancel their own sent requests
 
 ## Dev Notes
 
@@ -208,3 +208,34 @@ apps/cotulenh/app/src/lib/i18n/locales/vi.ts    ← Add Vietnamese translations
 - [Source: _bmad-output/planning-artifacts/architecture.md#Database Schema, #RLS Policies]
 - [Source: _bmad-output/planning-artifacts/ux-design-specification.md#Empty States, #Friend Request Flow]
 - [Source: _bmad-output/planning-artifacts/prd.md#FR14, #FR15]
+
+---
+
+## Dev Agent Record
+
+### Completion Notes
+
+All 6 tasks implemented successfully. The friend request management system adds full CRUD for pending requests with proper authorization:
+
+- **Query layer**: 5 new functions with recipient-only accept/decline and sender-only cancel authorization enforced via Supabase query constraints (`neq('initiated_by', userId)` for recipient actions, `eq('initiated_by', userId)` for sender actions)
+- **Server actions**: 3 new form actions (acceptRequest, declineRequest, cancelRequest) with auth guards and validation
+- **UI**: FriendRequestCard component with incoming/sent variants, optimistic updates (immediate removal on action), toast notifications
+- **Tests**: 28 query tests + 20 server action tests covering success paths, authorization failures, and empty states
+
+### Files Modified
+
+- `apps/cotulenh/app/src/lib/friends/queries.ts` — Added getPendingIncomingRequests, getPendingSentRequests, acceptFriendRequest, declineFriendRequest, cancelSentRequest + PendingRequestItem type import
+- `apps/cotulenh/app/src/lib/friends/types.ts` — Added PendingRequestItem interface
+- `apps/cotulenh/app/src/lib/friends/queries.test.ts` — Added 16 tests for new query functions (empty states, data mapping, authorization, delete/update verification)
+- `apps/cotulenh/app/src/routes/user/friends/+page.server.ts` — Added 3 server actions, updated load to return incomingRequests + sentRequests
+- `apps/cotulenh/app/src/routes/user/friends/page.server.test.ts` — Added 12 server action tests (auth, validation, success, failure for accept/decline/cancel), updated load test
+- `apps/cotulenh/app/src/routes/user/friends/+page.svelte` — Added incoming/sent request sections with optimistic updates and toast notifications
+- `apps/cotulenh/app/src/lib/components/FriendRequestCard.svelte` — New component for request card with incoming/sent variants
+- `apps/cotulenh/app/src/lib/i18n/types.ts` — Added 8 friend request translation keys
+- `apps/cotulenh/app/src/lib/i18n/locales/en.ts` — Added English translations
+- `apps/cotulenh/app/src/lib/i18n/locales/vi.ts` — Added Vietnamese translations
+
+### Test Results
+
+- 228 tests passing across 23 files
+- No new type errors (only pre-existing env variable warnings)

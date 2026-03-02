@@ -1,8 +1,9 @@
 <script lang="ts">
   import { getI18n } from '$lib/i18n/index.svelte';
   import type { TranslationKey } from '$lib/i18n/types';
-  import type { FriendSearchResult } from '$lib/friends/types';
+  import type { FriendSearchResult, PendingRequestItem } from '$lib/friends/types';
   import PlayerCard from '$lib/components/PlayerCard.svelte';
+  import FriendRequestCard from '$lib/components/FriendRequestCard.svelte';
   import { Search, Loader2, Users } from 'lucide-svelte';
   import Button from '$lib/components/ui/button/button.svelte';
   import { toast } from 'svelte-sonner';
@@ -21,6 +22,23 @@
 
   // Optimistic pending set — track IDs we've sent requests to
   let optimisticPending = $state(new Set<string>());
+
+  // Optimistic removal sets for request management
+  let removedIncoming = $state(new Set<string>());
+  let removedSent = $state(new Set<string>());
+  let loadingRequests = $state(new Set<string>());
+
+  // Optimistic accepted — friends added from accepted requests
+  let optimisticFriends = $state<Array<{ friendshipId: string; userId: string; displayName: string }>>([]);
+
+  // Derived filtered lists
+  let visibleIncoming = $derived(
+    data.incomingRequests.filter((r: PendingRequestItem) => !removedIncoming.has(r.friendshipId))
+  );
+  let visibleSent = $derived(
+    data.sentRequests.filter((r: PendingRequestItem) => !removedSent.has(r.friendshipId))
+  );
+  let allFriends = $derived([...data.friends, ...optimisticFriends]);
 
   // Click-outside handler to close search dropdown
   let searchSectionEl: HTMLElement | undefined = $state();
@@ -58,14 +76,12 @@
           body: new URLSearchParams({ query: searchQuery.trim() })
         });
         const result = await response.json();
-        // SvelteKit form action responses have data nested
         const actionData = result?.data;
         if (actionData && Array.isArray(actionData)) {
           searchResults = actionData;
         } else if (Array.isArray(actionData?.results)) {
           searchResults = actionData.results;
         } else {
-          // Try parsing from the response format
           searchResults = result?.data?.results ?? [];
         }
         hasSearched = true;
@@ -79,7 +95,6 @@
   }
 
   async function handleSendRequest(toUserId: string) {
-    // Optimistic update
     optimisticPending = new Set([...optimisticPending, toUserId]);
 
     try {
@@ -89,7 +104,6 @@
       });
 
       if (!response.ok) {
-        // Revert optimistic update
         const next = new Set(optimisticPending);
         next.delete(toUserId);
         optimisticPending = next;
@@ -99,11 +113,96 @@
 
       toast.success(i18n.t('friends.toast.requestSent'), { duration: 4000 });
     } catch {
-      // Revert optimistic update
       const next = new Set(optimisticPending);
       next.delete(toUserId);
       optimisticPending = next;
       toast.error(i18n.t('friends.toast.requestFailed'));
+    }
+  }
+
+  async function handleAcceptRequest(friendshipId: string) {
+    loadingRequests = new Set([...loadingRequests, friendshipId]);
+
+    // Find the request to get display name for optimistic friend addition
+    const request = data.incomingRequests.find((r: PendingRequestItem) => r.friendshipId === friendshipId);
+
+    try {
+      const response = await fetch('?/acceptRequest', {
+        method: 'POST',
+        body: new URLSearchParams({ friendshipId })
+      });
+
+      if (!response.ok) {
+        toast.error(i18n.t('friends.toast.actionFailed'));
+        return;
+      }
+
+      // Optimistic: remove from incoming, add to friends
+      removedIncoming = new Set([...removedIncoming, friendshipId]);
+      if (request) {
+        optimisticFriends = [...optimisticFriends, {
+          friendshipId,
+          userId: request.userId,
+          displayName: request.displayName
+        }];
+      }
+      toast.success(i18n.t('friends.toast.requestAccepted'), { duration: 4000 });
+    } catch {
+      toast.error(i18n.t('friends.toast.actionFailed'));
+    } finally {
+      const next = new Set(loadingRequests);
+      next.delete(friendshipId);
+      loadingRequests = next;
+    }
+  }
+
+  async function handleDeclineRequest(friendshipId: string) {
+    loadingRequests = new Set([...loadingRequests, friendshipId]);
+
+    try {
+      const response = await fetch('?/declineRequest', {
+        method: 'POST',
+        body: new URLSearchParams({ friendshipId })
+      });
+
+      if (!response.ok) {
+        toast.error(i18n.t('friends.toast.actionFailed'));
+        return;
+      }
+
+      removedIncoming = new Set([...removedIncoming, friendshipId]);
+      toast.success(i18n.t('friends.toast.requestDeclined'), { duration: 4000 });
+    } catch {
+      toast.error(i18n.t('friends.toast.actionFailed'));
+    } finally {
+      const next = new Set(loadingRequests);
+      next.delete(friendshipId);
+      loadingRequests = next;
+    }
+  }
+
+  async function handleCancelRequest(friendshipId: string) {
+    loadingRequests = new Set([...loadingRequests, friendshipId]);
+
+    try {
+      const response = await fetch('?/cancelRequest', {
+        method: 'POST',
+        body: new URLSearchParams({ friendshipId })
+      });
+
+      if (!response.ok) {
+        toast.error(i18n.t('friends.toast.actionFailed'));
+        return;
+      }
+
+      removedSent = new Set([...removedSent, friendshipId]);
+      toast.success(i18n.t('friends.toast.requestCancelled'), { duration: 4000 });
+    } catch {
+      toast.error(i18n.t('friends.toast.actionFailed'));
+    } finally {
+      const next = new Set(loadingRequests);
+      next.delete(friendshipId);
+      loadingRequests = next;
     }
   }
 
@@ -193,20 +292,61 @@
       {/if}
     </section>
 
+    <!-- Pending Incoming Requests Section -->
+    {#if visibleIncoming.length > 0}
+      <section class="requests-section" aria-labelledby="incoming-requests-heading">
+        <h2 id="incoming-requests-heading" class="section-title">
+          {i18n.t('friends.requests.incoming')} ({visibleIncoming.length})
+        </h2>
+        <div class="requests-list">
+          {#each visibleIncoming as request (request.friendshipId)}
+            <FriendRequestCard
+              displayName={request.displayName}
+              friendshipId={request.friendshipId}
+              direction="incoming"
+              loading={loadingRequests.has(request.friendshipId)}
+              onaccept={handleAcceptRequest}
+              ondecline={handleDeclineRequest}
+            />
+          {/each}
+        </div>
+      </section>
+    {/if}
+
+    <!-- Sent Requests Section -->
+    {#if visibleSent.length > 0}
+      <section class="requests-section" aria-labelledby="sent-requests-heading">
+        <h2 id="sent-requests-heading" class="section-title">
+          {i18n.t('friends.requests.sent')} ({visibleSent.length})
+        </h2>
+        <div class="requests-list">
+          {#each visibleSent as request (request.friendshipId)}
+            <FriendRequestCard
+              displayName={request.displayName}
+              friendshipId={request.friendshipId}
+              direction="sent"
+              loading={loadingRequests.has(request.friendshipId)}
+              oncancel={handleCancelRequest}
+            />
+          {/each}
+        </div>
+      </section>
+    {/if}
+
     <!-- Friends List Section -->
     <section class="friends-list-section" aria-labelledby="friends-list-heading">
-      {#if data.friends.length === 0}
+      {#if allFriends.length === 0 && visibleIncoming.length === 0 && visibleSent.length === 0}
         <div class="empty-state">
           <Users size={48} class="empty-icon" />
           <h2 class="empty-title">{i18n.t('friends.empty.title')}</h2>
           <p class="empty-subtitle">{i18n.t('friends.empty.subtitle')}</p>
         </div>
-      {:else}
+      {:else if allFriends.length > 0}
         <h2 id="friends-list-heading" class="section-title">
-          {i18n.t('friends.list.title')} ({data.friends.length})
+          {i18n.t('friends.list.title')} ({allFriends.length})
         </h2>
         <div class="friends-grid">
-          {#each data.friends as friend (friend.friendshipId)}
+          {#each allFriends as friend (friend.friendshipId)}
             <PlayerCard displayName={friend.displayName} />
           {/each}
         </div>
@@ -329,6 +469,17 @@
     color: var(--theme-text-secondary, #aaa);
     font-size: 0.75rem;
     margin: 0;
+  }
+
+  /* Request Sections */
+  .requests-section {
+    margin-top: 0.25rem;
+  }
+
+  .requests-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
   }
 
   /* Friends List */

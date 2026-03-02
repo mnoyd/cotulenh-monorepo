@@ -23,3 +23,10 @@ export interface FriendListItem {
   userId: string;
   displayName: string;
 }
+
+export interface PendingRequestItem {
+  friendshipId: string;
+  userId: string;
+  displayName: string;
+  createdAt: string;
+}

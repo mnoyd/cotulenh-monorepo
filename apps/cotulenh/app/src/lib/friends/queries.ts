@@ -1,5 +1,10 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { FriendSearchResult, FriendListItem, RelationshipStatus } from './types';
+import type {
+  FriendSearchResult,
+  FriendListItem,
+  PendingRequestItem,
+  RelationshipStatus
+} from './types';
 
 /** Strip HTML tags from display name to prevent stored XSS at query boundary */
 function sanitizeName(name: string): string {
@@ -152,4 +157,156 @@ export async function getFriendsList(
       };
     })
     .sort((a, b) => a.displayName.localeCompare(b.displayName));
+}
+
+/**
+ * Get pending incoming friend requests (where someone else initiated)
+ */
+export async function getPendingIncomingRequests(
+  supabase: SupabaseClient,
+  userId: string
+): Promise<PendingRequestItem[]> {
+  const { data: friendships, error } = await supabase
+    .from('friendships')
+    .select('id, user_a, user_b, initiated_by, created_at')
+    .eq('status', 'pending')
+    .or(`user_a.eq.${userId},user_b.eq.${userId}`)
+    .neq('initiated_by', userId);
+
+  if (error || !friendships || friendships.length === 0) return [];
+
+  const senderIds = friendships.map((f) => f.initiated_by);
+
+  const { data: profiles } = await supabase
+    .from('profiles')
+    .select('id, display_name')
+    .in('id', senderIds);
+
+  if (!profiles) return [];
+
+  const profileMap = new Map(profiles.map((p) => [p.id, p.display_name]));
+
+  return friendships
+    .map((f) => ({
+      friendshipId: f.id,
+      userId: f.initiated_by,
+      displayName: sanitizeName(profileMap.get(f.initiated_by) ?? ''),
+      createdAt: f.created_at
+    }))
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+}
+
+/**
+ * Get pending sent friend requests (where current user initiated)
+ */
+export async function getPendingSentRequests(
+  supabase: SupabaseClient,
+  userId: string
+): Promise<PendingRequestItem[]> {
+  const { data: friendships, error } = await supabase
+    .from('friendships')
+    .select('id, user_a, user_b, initiated_by, created_at')
+    .eq('status', 'pending')
+    .eq('initiated_by', userId);
+
+  if (error || !friendships || friendships.length === 0) return [];
+
+  const recipientIds = friendships.map((f) =>
+    f.user_a === userId ? f.user_b : f.user_a
+  );
+
+  const { data: profiles } = await supabase
+    .from('profiles')
+    .select('id, display_name')
+    .in('id', recipientIds);
+
+  if (!profiles) return [];
+
+  const profileMap = new Map(profiles.map((p) => [p.id, p.display_name]));
+
+  return friendships
+    .map((f) => {
+      const recipientId = f.user_a === userId ? f.user_b : f.user_a;
+      return {
+        friendshipId: f.id,
+        userId: recipientId,
+        displayName: sanitizeName(profileMap.get(recipientId) ?? ''),
+        createdAt: f.created_at
+      };
+    })
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+}
+
+/**
+ * Accept a friend request — only the recipient (non-initiator) can accept
+ */
+export async function acceptFriendRequest(
+  supabase: SupabaseClient,
+  friendshipId: string,
+  userId: string
+): Promise<{ success: boolean; error?: string }> {
+  const { data, error: updateError } = await supabase
+    .from('friendships')
+    .update({ status: 'accepted' })
+    .eq('id', friendshipId)
+    .or(`user_a.eq.${userId},user_b.eq.${userId}`)
+    .neq('initiated_by', userId)
+    .eq('status', 'pending')
+    .select('id')
+    .single();
+
+  if (updateError || !data) {
+    return { success: false, error: 'acceptFailed' };
+  }
+
+  return { success: true };
+}
+
+/**
+ * Decline a friend request — only the recipient (non-initiator) can decline
+ */
+export async function declineFriendRequest(
+  supabase: SupabaseClient,
+  friendshipId: string,
+  userId: string
+): Promise<{ success: boolean; error?: string }> {
+  const { data, error: deleteError } = await supabase
+    .from('friendships')
+    .delete()
+    .eq('id', friendshipId)
+    .or(`user_a.eq.${userId},user_b.eq.${userId}`)
+    .neq('initiated_by', userId)
+    .eq('status', 'pending')
+    .select('id')
+    .single();
+
+  if (deleteError || !data) {
+    return { success: false, error: 'declineFailed' };
+  }
+
+  return { success: true };
+}
+
+/**
+ * Cancel a sent friend request — only the initiator can cancel
+ */
+export async function cancelSentRequest(
+  supabase: SupabaseClient,
+  friendshipId: string,
+  userId: string
+): Promise<{ success: boolean; error?: string }> {
+  const { data, error: deleteError } = await supabase
+    .from('friendships')
+    .delete()
+    .eq('id', friendshipId)
+    .eq('initiated_by', userId)
+    .eq('status', 'pending')
+    .select('id')
+    .single();
+
+  if (deleteError || !data) {
+    return { success: false, error: 'cancelFailed' };
+  }
+
+  return { success: true };
 }

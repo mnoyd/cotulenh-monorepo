@@ -4,15 +4,34 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 vi.mock('$lib/friends/queries', () => ({
   searchUsers: vi.fn(),
   sendFriendRequest: vi.fn(),
-  getFriendsList: vi.fn()
+  getFriendsList: vi.fn(),
+  getPendingIncomingRequests: vi.fn(),
+  getPendingSentRequests: vi.fn(),
+  acceptFriendRequest: vi.fn(),
+  declineFriendRequest: vi.fn(),
+  cancelSentRequest: vi.fn()
 }));
 
-import { searchUsers, sendFriendRequest, getFriendsList } from '$lib/friends/queries';
+import {
+  searchUsers,
+  sendFriendRequest,
+  getFriendsList,
+  getPendingIncomingRequests,
+  getPendingSentRequests,
+  acceptFriendRequest,
+  declineFriendRequest,
+  cancelSentRequest
+} from '$lib/friends/queries';
 import { actions, load } from './+page.server';
 
 const mockSearchUsers = vi.mocked(searchUsers);
 const mockSendFriendRequest = vi.mocked(sendFriendRequest);
 const mockGetFriendsList = vi.mocked(getFriendsList);
+const mockGetPendingIncoming = vi.mocked(getPendingIncomingRequests);
+const mockGetPendingSent = vi.mocked(getPendingSentRequests);
+const mockAcceptFriendRequest = vi.mocked(acceptFriendRequest);
+const mockDeclineFriendRequest = vi.mocked(declineFriendRequest);
+const mockCancelSentRequest = vi.mocked(cancelSentRequest);
 
 function createMockLocals(user: { id: string } | null = { id: 'user-1' }) {
   return {
@@ -36,14 +55,34 @@ describe('load', () => {
     const friends = [
       { friendshipId: 'f-1', userId: 'user-2', displayName: 'Player Two' }
     ];
+    const incomingRequests = [
+      {
+        friendshipId: 'f-2',
+        userId: 'user-3',
+        displayName: 'Sender',
+        createdAt: '2024-01-01T00:00:00Z'
+      }
+    ];
+    const sentRequests = [
+      {
+        friendshipId: 'f-3',
+        userId: 'user-4',
+        displayName: 'Recipient',
+        createdAt: '2024-01-02T00:00:00Z'
+      }
+    ];
     mockGetFriendsList.mockResolvedValue(friends);
+    mockGetPendingIncoming.mockResolvedValue(incomingRequests);
+    mockGetPendingSent.mockResolvedValue(sentRequests);
 
     const result = await load({
       locals: createMockLocals()
     } as never);
 
-    expect(result).toEqual({ friends });
+    expect(result).toEqual({ friends, incomingRequests, sentRequests });
     expect(mockGetFriendsList).toHaveBeenCalledWith(expect.anything(), 'user-1');
+    expect(mockGetPendingIncoming).toHaveBeenCalledWith(expect.anything(), 'user-1');
+    expect(mockGetPendingSent).toHaveBeenCalledWith(expect.anything(), 'user-1');
   });
 });
 
@@ -136,6 +175,162 @@ describe('actions.sendRequest', () => {
 
     const result = await actions.sendRequest({
       request: createMockRequest({ toUserId: 'user-2' }),
+      locals: createMockLocals()
+    } as never);
+
+    const data = result as { status: number };
+    expect(data.status).toBe(400);
+  });
+});
+
+describe('actions.acceptRequest', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('returns 401 for unauthenticated user', async () => {
+    const result = await actions.acceptRequest({
+      request: createMockRequest({ friendshipId: 'f-1' }),
+      locals: createMockLocals(null)
+    } as never);
+
+    const data = result as { status: number };
+    expect(data.status).toBe(401);
+  });
+
+  it('returns 400 for missing friendshipId', async () => {
+    const result = await actions.acceptRequest({
+      request: createMockRequest({ friendshipId: '' }),
+      locals: createMockLocals()
+    } as never);
+
+    const data = result as { status: number };
+    expect(data.status).toBe(400);
+  });
+
+  it('returns success when accept succeeds', async () => {
+    mockAcceptFriendRequest.mockResolvedValue({ success: true });
+
+    const result = await actions.acceptRequest({
+      request: createMockRequest({ friendshipId: 'f-1' }),
+      locals: createMockLocals()
+    } as never);
+
+    const data = result as { success: boolean; action: string };
+    expect(data.success).toBe(true);
+    expect(data.action).toBe('acceptRequest');
+    expect(mockAcceptFriendRequest).toHaveBeenCalledWith(expect.anything(), 'f-1', 'user-1');
+  });
+
+  it('returns 400 when accept fails (not recipient)', async () => {
+    mockAcceptFriendRequest.mockResolvedValue({ success: false, error: 'acceptFailed' });
+
+    const result = await actions.acceptRequest({
+      request: createMockRequest({ friendshipId: 'f-1' }),
+      locals: createMockLocals()
+    } as never);
+
+    const data = result as { status: number };
+    expect(data.status).toBe(400);
+  });
+});
+
+describe('actions.declineRequest', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('returns 401 for unauthenticated user', async () => {
+    const result = await actions.declineRequest({
+      request: createMockRequest({ friendshipId: 'f-1' }),
+      locals: createMockLocals(null)
+    } as never);
+
+    const data = result as { status: number };
+    expect(data.status).toBe(401);
+  });
+
+  it('returns 400 for missing friendshipId', async () => {
+    const result = await actions.declineRequest({
+      request: createMockRequest({ friendshipId: '' }),
+      locals: createMockLocals()
+    } as never);
+
+    const data = result as { status: number };
+    expect(data.status).toBe(400);
+  });
+
+  it('returns success when decline succeeds', async () => {
+    mockDeclineFriendRequest.mockResolvedValue({ success: true });
+
+    const result = await actions.declineRequest({
+      request: createMockRequest({ friendshipId: 'f-1' }),
+      locals: createMockLocals()
+    } as never);
+
+    const data = result as { success: boolean; action: string };
+    expect(data.success).toBe(true);
+    expect(data.action).toBe('declineRequest');
+    expect(mockDeclineFriendRequest).toHaveBeenCalledWith(expect.anything(), 'f-1', 'user-1');
+  });
+
+  it('returns 400 when decline fails', async () => {
+    mockDeclineFriendRequest.mockResolvedValue({ success: false, error: 'declineFailed' });
+
+    const result = await actions.declineRequest({
+      request: createMockRequest({ friendshipId: 'f-1' }),
+      locals: createMockLocals()
+    } as never);
+
+    const data = result as { status: number };
+    expect(data.status).toBe(400);
+  });
+});
+
+describe('actions.cancelRequest', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('returns 401 for unauthenticated user', async () => {
+    const result = await actions.cancelRequest({
+      request: createMockRequest({ friendshipId: 'f-1' }),
+      locals: createMockLocals(null)
+    } as never);
+
+    const data = result as { status: number };
+    expect(data.status).toBe(401);
+  });
+
+  it('returns 400 for missing friendshipId', async () => {
+    const result = await actions.cancelRequest({
+      request: createMockRequest({ friendshipId: '' }),
+      locals: createMockLocals()
+    } as never);
+
+    const data = result as { status: number };
+    expect(data.status).toBe(400);
+  });
+
+  it('returns success when cancel succeeds', async () => {
+    mockCancelSentRequest.mockResolvedValue({ success: true });
+
+    const result = await actions.cancelRequest({
+      request: createMockRequest({ friendshipId: 'f-1' }),
+      locals: createMockLocals()
+    } as never);
+
+    const data = result as { success: boolean; action: string };
+    expect(data.success).toBe(true);
+    expect(data.action).toBe('cancelRequest');
+    expect(mockCancelSentRequest).toHaveBeenCalledWith(expect.anything(), 'f-1', 'user-1');
+  });
+
+  it('returns 400 when cancel fails (not initiator)', async () => {
+    mockCancelSentRequest.mockResolvedValue({ success: false, error: 'cancelFailed' });
+
+    const result = await actions.cancelRequest({
+      request: createMockRequest({ friendshipId: 'f-1' }),
       locals: createMockLocals()
     } as never);
 

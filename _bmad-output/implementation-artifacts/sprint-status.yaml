@@ -58,7 +58,7 @@ development_status:
   # Epic 3: Social & Friends
   epic-3: in-progress
   3-1-user-search-send-friend-request: done
-  3-2-friend-request-management: ready-for-dev
+  3-2-friend-request-management: review
   3-3-friends-list-with-online-status: ready-for-dev
   epic-3-retrospective: optional
 

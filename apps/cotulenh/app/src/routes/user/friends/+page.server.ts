@@ -1,15 +1,28 @@
 import { fail, redirect } from '@sveltejs/kit';
 import { logger } from '@cotulenh/common';
-import { searchUsers, sendFriendRequest, getFriendsList } from '$lib/friends/queries';
+import {
+  searchUsers,
+  sendFriendRequest,
+  getFriendsList,
+  getPendingIncomingRequests,
+  getPendingSentRequests,
+  acceptFriendRequest,
+  declineFriendRequest,
+  cancelSentRequest
+} from '$lib/friends/queries';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ locals: { supabase, safeGetSession } }) => {
   const { user } = await safeGetSession();
   if (!user) redirect(303, '/auth/login');
 
-  const friends = await getFriendsList(supabase, user.id);
+  const [friends, incomingRequests, sentRequests] = await Promise.all([
+    getFriendsList(supabase, user.id),
+    getPendingIncomingRequests(supabase, user.id),
+    getPendingSentRequests(supabase, user.id)
+  ]);
 
-  return { friends };
+  return { friends, incomingRequests, sentRequests };
 };
 
 export const actions: Actions = {
@@ -57,5 +70,92 @@ export const actions: Actions = {
     }
 
     return { success: true, action: 'sendRequest' as const };
+  },
+
+  acceptRequest: async ({ request, locals: { supabase, safeGetSession } }) => {
+    const { user } = await safeGetSession();
+    if (!user) {
+      return fail(401, { errors: { form: 'unauthorized' }, action: 'acceptRequest' as const });
+    }
+
+    const formData = await request.formData();
+    const friendshipId = String(formData.get('friendshipId') ?? '');
+
+    if (!friendshipId) {
+      return fail(400, {
+        errors: { form: 'missingFriendshipId' },
+        action: 'acceptRequest' as const
+      });
+    }
+
+    const result = await acceptFriendRequest(supabase, friendshipId, user.id);
+
+    if (!result.success) {
+      logger.error(new Error(result.error ?? 'Unknown'), 'Failed to accept friend request');
+      return fail(400, {
+        errors: { form: result.error ?? 'acceptFailed' },
+        action: 'acceptRequest' as const
+      });
+    }
+
+    return { success: true, action: 'acceptRequest' as const };
+  },
+
+  declineRequest: async ({ request, locals: { supabase, safeGetSession } }) => {
+    const { user } = await safeGetSession();
+    if (!user) {
+      return fail(401, { errors: { form: 'unauthorized' }, action: 'declineRequest' as const });
+    }
+
+    const formData = await request.formData();
+    const friendshipId = String(formData.get('friendshipId') ?? '');
+
+    if (!friendshipId) {
+      return fail(400, {
+        errors: { form: 'missingFriendshipId' },
+        action: 'declineRequest' as const
+      });
+    }
+
+    const result = await declineFriendRequest(supabase, friendshipId, user.id);
+
+    if (!result.success) {
+      logger.error(new Error(result.error ?? 'Unknown'), 'Failed to decline friend request');
+      return fail(400, {
+        errors: { form: result.error ?? 'declineFailed' },
+        action: 'declineRequest' as const
+      });
+    }
+
+    return { success: true, action: 'declineRequest' as const };
+  },
+
+  cancelRequest: async ({ request, locals: { supabase, safeGetSession } }) => {
+    const { user } = await safeGetSession();
+    if (!user) {
+      return fail(401, { errors: { form: 'unauthorized' }, action: 'cancelRequest' as const });
+    }
+
+    const formData = await request.formData();
+    const friendshipId = String(formData.get('friendshipId') ?? '');
+
+    if (!friendshipId) {
+      return fail(400, {
+        errors: { form: 'missingFriendshipId' },
+        action: 'cancelRequest' as const
+      });
+    }
+
+    const result = await cancelSentRequest(supabase, friendshipId, user.id);
+
+    if (!result.success) {
+      logger.error(new Error(result.error ?? 'Unknown'), 'Failed to cancel friend request');
+      return fail(400, {
+        errors: { form: result.error ?? 'cancelFailed' },
+        action: 'cancelRequest' as const
+      });
+    }
+
+    return { success: true, action: 'cancelRequest' as const };
   }
 };

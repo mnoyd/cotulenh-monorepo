@@ -512,8 +512,16 @@ export interface TranslationKeys {
   'friends.action.accept': string;
   'friends.action.decline': string;
   'friends.action.remove': string;
+  'friends.requests.incoming': string;
+  'friends.requests.sent': string;
+  'friends.requests.emptyIncoming': string;
+  'friends.requests.emptySent': string;
   'friends.toast.requestSent': string;
   'friends.toast.requestFailed': string;
+  'friends.toast.requestAccepted': string;
+  'friends.toast.requestDeclined': string;
+  'friends.toast.requestCancelled': string;
+  'friends.toast.actionFailed': string;
   'friends.status.online': string;
   'friends.status.offline': string;
   'friends.error.sendFailed': string;
