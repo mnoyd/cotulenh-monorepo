@@ -130,7 +130,7 @@
   --theme-heroic-bg: rgba(23, 33, 43, 0.95);
   --theme-heroic-border: #d4af37;
   --theme-heroic-glow: 0 0 8px #d4af37;
-  --theme-heroic-star: #d4af37;
+  --theme-heroic-star-color: #d4af37;
 
   /* ===== GLOW EFFECTS ===== */
   --theme-glow-primary: 0 0 12px rgba(212, 175, 55, 0.4);
@@ -154,8 +154,8 @@
   --theme-transition-slow: 0s;
 
   /* ===== ATTACK ICONS ===== */
-  --theme-icon-attack-stay: url('/themes/desert-ops/attack-stay.svg?v=2');
-  --theme-icon-attack-normal: url('/themes/desert-ops/attack-normal.svg?v=2');
+  --theme-icon-attack-stay: url('/themes/desert-ops/attack-stay.svg');
+  --theme-icon-attack-normal: url('/themes/desert-ops/attack-normal.svg');
 }
 
 /* ===== PIECE OVERRIDES ===== */

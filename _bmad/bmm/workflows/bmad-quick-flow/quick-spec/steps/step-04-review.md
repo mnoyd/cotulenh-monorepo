@@ -165,7 +165,8 @@ b) **HALT and wait for user selection.**
    > DO NOT exclude findings based on severity or validity unless explicitly asked to do so.
    > Order findings by severity.
    > Number the ordered findings (F1, F2, F3, etc.).
-   > If TodoWrite or similar tool is available, turn each finding into a TODO, include ID, severity, validity, and description in the TODO; otherwise present findings as a table with columns: ID, Severity, Validity, Description 3. Return here and redisplay menu.
+   > If TodoWrite or similar tool is available, turn each finding into a TODO, include ID, severity, validity, and description in the TODO; otherwise present findings as a table with columns: ID, Severity, Validity, Description
+   3. Return here and redisplay menu.
 
 ### 5. Exit Workflow
 
