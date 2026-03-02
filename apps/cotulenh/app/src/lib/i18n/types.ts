@@ -535,6 +535,27 @@ export interface TranslationKeys {
   'friends.error.requestAlreadyPending': string;
   'friends.error.cannotFriendSelf': string;
   'friends.error.userBlocked': string;
+
+  // Invitations / Online Play
+  'invitation.pageTitle': string;
+  'invitation.timeControl.title': string;
+  'invitation.timeControl.custom': string;
+  'invitation.timeControl.minutes': string;
+  'invitation.timeControl.increment': string;
+  'invitation.onlineFriends.title': string;
+  'invitation.onlineFriends.empty': string;
+  'invitation.onlineFriends.emptyLink': string;
+  'invitation.action.invite': string;
+  'invitation.action.invited': string;
+  'invitation.action.cancel': string;
+  'invitation.sent.title': string;
+  'invitation.toast.sent': string;
+  'invitation.toast.sendFailed': string;
+  'invitation.toast.cancelled': string;
+  'invitation.toast.cancelFailed': string;
+  'invitation.error.invalidGameConfig': string;
+  'invitation.error.alreadyInvited': string;
+  'invitation.error.cannotInviteSelf': string;
 }
 
 export type TranslationKey = keyof TranslationKeys;

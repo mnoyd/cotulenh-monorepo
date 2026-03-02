@@ -59,12 +59,12 @@ development_status:
   epic-3: in-progress
   3-1-user-search-send-friend-request: done
   3-2-friend-request-management: done
-  3-3-friends-list-with-online-status: review
+  3-3-friends-list-with-online-status: done
   epic-3-retrospective: optional
 
   # Epic 4: Match Invitations & Game Setup
   epic-4: in-progress
-  4-1-send-match-invitation-to-friend: ready-for-dev
+  4-1-send-match-invitation-to-friend: review
   4-2-view-respond-to-match-invitations: backlog
   4-3-shareable-invite-link: backlog
   epic-4-retrospective: optional

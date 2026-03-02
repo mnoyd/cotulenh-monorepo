@@ -539,5 +539,26 @@ export const vi: TranslationKeys = {
   'friends.error.alreadyFriends': 'Bạn đã là bạn bè với người dùng này.',
   'friends.error.requestAlreadyPending': 'Lời mời kết bạn đang chờ xử lý.',
   'friends.error.cannotFriendSelf': 'Bạn không thể gửi lời mời kết bạn cho chính mình.',
-  'friends.error.userBlocked': 'Người dùng này không khả dụng.'
+  'friends.error.userBlocked': 'Người dùng này không khả dụng.',
+
+  // Invitations / Online Play
+  'invitation.pageTitle': 'Chơi Trực Tuyến',
+  'invitation.timeControl.title': 'Thời Gian',
+  'invitation.timeControl.custom': 'Tùy Chỉnh',
+  'invitation.timeControl.minutes': 'Phút',
+  'invitation.timeControl.increment': 'Tăng thêm (giây)',
+  'invitation.onlineFriends.title': 'Bạn Bè Trực Tuyến',
+  'invitation.onlineFriends.empty': 'Không có bạn bè trực tuyến',
+  'invitation.onlineFriends.emptyLink': 'Đi đến trang Bạn Bè',
+  'invitation.action.invite': 'Mời',
+  'invitation.action.invited': 'Đã Mời',
+  'invitation.action.cancel': 'Hủy',
+  'invitation.sent.title': 'Lời Mời Đã Gửi',
+  'invitation.toast.sent': 'Đã gửi lời mời',
+  'invitation.toast.sendFailed': 'Gửi lời mời thất bại',
+  'invitation.toast.cancelled': 'Đã hủy lời mời',
+  'invitation.toast.cancelFailed': 'Hủy lời mời thất bại',
+  'invitation.error.invalidGameConfig': 'Cài đặt thời gian không hợp lệ.',
+  'invitation.error.alreadyInvited': 'Bạn đã có lời mời đang chờ gửi đến người chơi này.',
+  'invitation.error.cannotInviteSelf': 'Bạn không thể mời chính mình.'
 };

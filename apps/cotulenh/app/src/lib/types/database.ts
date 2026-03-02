@@ -93,6 +93,57 @@ export interface Database {
           }
         ];
       };
+      game_invitations: {
+        Row: {
+          id: string;
+          from_user: string;
+          to_user: string | null;
+          status: 'pending' | 'accepted' | 'declined' | 'cancelled' | 'expired';
+          game_config: Json;
+          invite_code: string;
+          created_at: string;
+          updated_at: string;
+          expires_at: string;
+        };
+        Insert: {
+          id?: string;
+          from_user: string;
+          to_user?: string | null;
+          status?: 'pending' | 'accepted' | 'declined' | 'cancelled' | 'expired';
+          game_config: Json;
+          invite_code?: string;
+          created_at?: string;
+          updated_at?: string;
+          expires_at?: string;
+        };
+        Update: {
+          id?: string;
+          from_user?: string;
+          to_user?: string | null;
+          status?: 'pending' | 'accepted' | 'declined' | 'cancelled' | 'expired';
+          game_config?: Json;
+          invite_code?: string;
+          created_at?: string;
+          updated_at?: string;
+          expires_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'game_invitations_from_user_fkey';
+            columns: ['from_user'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'game_invitations_to_user_fkey';
+            columns: ['to_user'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          }
+        ];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;

@@ -539,5 +539,26 @@ export const en: TranslationKeys = {
   'friends.error.alreadyFriends': 'You are already friends with this user.',
   'friends.error.requestAlreadyPending': 'A friend request is already pending.',
   'friends.error.cannotFriendSelf': 'You cannot send a friend request to yourself.',
-  'friends.error.userBlocked': 'This user is not available.'
+  'friends.error.userBlocked': 'This user is not available.',
+
+  // Invitations / Online Play
+  'invitation.pageTitle': 'Play Online',
+  'invitation.timeControl.title': 'Time Control',
+  'invitation.timeControl.custom': 'Custom',
+  'invitation.timeControl.minutes': 'Minutes',
+  'invitation.timeControl.increment': 'Increment (sec)',
+  'invitation.onlineFriends.title': 'Online Friends',
+  'invitation.onlineFriends.empty': 'No friends online',
+  'invitation.onlineFriends.emptyLink': 'Go to Friends page',
+  'invitation.action.invite': 'Invite',
+  'invitation.action.invited': 'Invited',
+  'invitation.action.cancel': 'Cancel',
+  'invitation.sent.title': 'Sent Invitations',
+  'invitation.toast.sent': 'Invitation sent',
+  'invitation.toast.sendFailed': 'Failed to send invitation',
+  'invitation.toast.cancelled': 'Invitation cancelled',
+  'invitation.toast.cancelFailed': 'Failed to cancel invitation',
+  'invitation.error.invalidGameConfig': 'Invalid time control settings.',
+  'invitation.error.alreadyInvited': 'You already have a pending invitation to this player.',
+  'invitation.error.cannotInviteSelf': 'You cannot invite yourself.'
 };
