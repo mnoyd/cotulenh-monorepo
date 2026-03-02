@@ -157,18 +157,15 @@ b) **HALT and wait for user selection.**
    > With `{finalFile}` constructed, load and follow the review task. If possible, use information asymmetry: load this task, and only it, in a separate subagent or process with read access to the project, but no context except the `{finalFile}`.
    > <invoke-task>Review {finalFile} using {project-root}/\_bmad/core/tasks/review-adversarial-general.xml</invoke-task>
    > **Platform fallback:** If task invocation not available, load the task file and follow its instructions inline, passing `{finalFile}` as the content.
-   > The task should: review `{finalFile}` and return a list of findings.
-   2. **Process Findings**:
+   > The task should: review `{finalFile}` and return a list of findings. 2. **Process Findings**:
 
-      > Capture the findings from the task output.
-      > **If zero findings:** HALT - this is suspicious. Re-analyze or request user guidance.
-      > Evaluate severity (Critical, High, Medium, Low) and validity (real, noise, undecided).
-      > DO NOT exclude findings based on severity or validity unless explicitly asked to do so.
-      > Order findings by severity.
-      > Number the ordered findings (F1, F2, F3, etc.).
-      > If TodoWrite or similar tool is available, turn each finding into a TODO, include ID, severity, validity, and description in the TODO; otherwise present findings as a table with columns: ID, Severity, Validity, Description
-
-   3. Return here and redisplay menu.
+   > Capture the findings from the task output.
+   > **If zero findings:** HALT - this is suspicious. Re-analyze or request user guidance.
+   > Evaluate severity (Critical, High, Medium, Low) and validity (real, noise, undecided).
+   > DO NOT exclude findings based on severity or validity unless explicitly asked to do so.
+   > Order findings by severity.
+   > Number the ordered findings (F1, F2, F3, etc.).
+   > If TodoWrite or similar tool is available, turn each finding into a TODO, include ID, severity, validity, and description in the TODO; otherwise present findings as a table with columns: ID, Severity, Validity, Description 3. Return here and redisplay menu.
 
 ### 5. Exit Workflow
 

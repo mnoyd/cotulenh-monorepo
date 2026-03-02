@@ -275,7 +275,7 @@
 
   .theme-grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(2, 1fr);
     gap: 0.75rem;
   }
 
@@ -330,7 +330,7 @@
   }
 
   .theme-preview-desert-ops {
-    background: linear-gradient(135deg, #2c251d 0%, #ffb347 50%, #deb887 100%);
+    background: linear-gradient(135deg, #e6d8c3 0%, #d4af37 50%, #8c3a3a 100%);
   }
 
   .theme-preview-classic {

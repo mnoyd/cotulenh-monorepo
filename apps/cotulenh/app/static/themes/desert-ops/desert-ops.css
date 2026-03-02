@@ -101,7 +101,9 @@
   --theme-board-air-overlap: rgba(243, 156, 18, 0.95);
   /* Vibrant gold/warning */
   --theme-radar-ring-opacity: 0.65;
+  --theme-radar-blip-opacity: 0.8;
   --theme-radar-overlap-ring-opacity: 0.85;
+  --theme-radar-overlap-blip-opacity: 1;
 
   /* ===== PIECES ===== */
   --theme-piece-path: '/themes/desert-ops/pieces';

@@ -57,7 +57,7 @@ export const en: TranslationKeys = {
   'settings.theme.modernWarfare.name': 'Modern Warfare',
   'settings.theme.modernWarfare.description': 'Tactical HUD with cyan/amber accents',
   'settings.theme.desertOps.name': 'Desert Ops',
-  'settings.theme.desertOps.description': 'Tactical desert and jungle camouflage',
+  'settings.theme.desertOps.description': 'Ancient desert and warm heritage tones',
   'settings.theme.classic.name': 'Classic',
   'settings.theme.classic.description': 'Traditional warm wood tones',
   'settings.theme.forest.name': 'Forest',
