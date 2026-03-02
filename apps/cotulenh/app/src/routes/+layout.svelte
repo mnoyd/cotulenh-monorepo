@@ -23,6 +23,7 @@
     UserCircle
   } from 'lucide-svelte';
   import { themeStore } from '$lib/stores/theme.svelte';
+  import { saveSettings as persistSettings, type Settings as AppSettings } from '$lib/stores/settings';
   import { getI18n } from '$lib/i18n/index.svelte';
 
   interface Props {
@@ -35,6 +36,7 @@
 
   let settingsOpen = $state(false);
   let shortcutsOpen = $state(false);
+  let dbSettingsSynced = false;
 
   let isAuthenticated = $derived(!!$page.data.user);
 
@@ -45,6 +47,19 @@
   $effect(() => {
     if (browser) {
       themeStore.init();
+    }
+  });
+
+  // Sync DB settings to localStorage once per page load (AC4: settings persistence across devices)
+  $effect(() => {
+    if (browser && isAuthenticated && !dbSettingsSynced) {
+      const profile = $page.data.profile as { displayName: string; settingsJson?: Record<string, unknown> } | null;
+      const dbSettings = profile?.settingsJson as Partial<AppSettings> | undefined;
+      if (dbSettings && Object.keys(dbSettings).length > 0) {
+        const saved = persistSettings(dbSettings);
+        themeStore.setTheme(saved.theme);
+        dbSettingsSynced = true;
+      }
     }
   });
 
