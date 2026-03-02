@@ -175,7 +175,29 @@ describe('OnlineGameSessionCore', () => {
 
       await vi.advanceTimersByTimeAsync(10);
 
-      expect(mock.mockChannel.track).toHaveBeenCalledWith({ color: 'red' });
+      expect(mock.mockChannel.track).toHaveBeenCalledWith(
+        expect.objectContaining({
+          color: 'red',
+          presenceId: expect.any(String)
+        })
+      );
+    });
+
+    it('starts game when opponent presence is detected', async () => {
+      core = new OnlineGameSessionCore(createDefaultConfig(mock.supabase));
+      core.join();
+      await vi.advanceTimersByTimeAsync(10);
+
+      expect(core.lifecycle).toBe('waiting');
+      expect(core.clock.status).toBe('idle');
+
+      mock.presenceState['opponent'] = [{ color: 'blue', presenceId: 'opponent-presence' }];
+      mock.simulatePresenceSync();
+
+      expect(core.opponentConnected).toBe(true);
+      expect(core.lifecycle).toBe('playing');
+      expect(core.clock.status).toBe('running');
+      expect(core.clock.activeSide).toBe('r');
     });
 
     it('warns and returns if already joined', async () => {
@@ -262,6 +284,18 @@ describe('OnlineGameSessionCore', () => {
       expect(moveSends).toHaveLength(2);
       expect((moveSends[0][0] as Record<string, Record<string, unknown>>).payload.seq).toBe(1);
       expect((moveSends[1][0] as Record<string, Record<string, unknown>>).payload.seq).toBe(2);
+    });
+
+    it('tracks pending acks for local moves and clears on ack', async () => {
+      core = new OnlineGameSessionCore(createDefaultConfig(mock.supabase));
+      core.join();
+      await vi.advanceTimersByTimeAsync(10);
+
+      triggerLocalMove(core);
+      expect(core.pendingAckCount).toBe(1);
+
+      mock.simulateGameMessage({ event: 'ack', seq: 1 });
+      expect(core.pendingAckCount).toBe(0);
     });
 
     it('transitions lifecycle to playing on first local move', async () => {
@@ -454,6 +488,19 @@ describe('OnlineGameSessionCore', () => {
       expect(core.lifecycle).toBe('playing');
       expect(onAbort).not.toHaveBeenCalled();
     });
+
+    it('handles remote abort by ending lifecycle and notifying callback once', async () => {
+      const onAbort = vi.fn();
+      core = new OnlineGameSessionCore(createDefaultConfig(mock.supabase), { onAbort });
+      core.join();
+      await vi.advanceTimersByTimeAsync(10);
+
+      mock.simulateGameMessage({ event: 'abort' });
+      mock.simulateGameMessage({ event: 'abort' });
+
+      expect(core.lifecycle).toBe('ended');
+      expect(onAbort).toHaveBeenCalledTimes(1);
+    });
   });
 
   describe('Presence tracking', () => {
@@ -464,6 +511,7 @@ describe('OnlineGameSessionCore', () => {
 
       expect(core.opponentConnected).toBe(false);
 
+      mock.presenceState['opponent'] = [{ color: 'blue', presenceId: 'opponent-presence' }];
       mock.simulatePresenceJoin({ key: 'opponent-key' });
       expect(core.opponentConnected).toBe(true);
     });
@@ -473,9 +521,11 @@ describe('OnlineGameSessionCore', () => {
       core.join();
       await vi.advanceTimersByTimeAsync(10);
 
+      mock.presenceState['opponent'] = [{ color: 'blue', presenceId: 'opponent-presence' }];
       mock.simulatePresenceJoin({ key: 'opponent-key' });
       expect(core.opponentConnected).toBe(true);
 
+      delete mock.presenceState['opponent'];
       mock.simulatePresenceLeave({ key: 'opponent-key' });
       expect(core.opponentConnected).toBe(false);
     });
