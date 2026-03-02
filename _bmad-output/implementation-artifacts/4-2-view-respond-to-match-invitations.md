@@ -1,6 +1,6 @@
 # Story 4.2: View & Respond to Match Invitations
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -422,6 +422,13 @@ Claude Opus 4.6 (claude-opus-4-6)
 - M2: Fixed realtime received invitations showing blank name — now fetches sender profile async
 - M3: Tightened games INSERT RLS to require auth.uid()=blue_player, invitation_id NOT NULL, and EXISTS accepted invitation
 - M4: Replaced fragile JSON.parse response parsing with SvelteKit's deserialize() in both layout and page
+
+### Code Review Fixes Applied (Round 2)
+
+- H1: Added `expires_at` filter to `getReceivedInvitations` — expired invitations no longer shown to recipients
+- H2: Added `expires_at` guard to `acceptInvitation` — prevents accepting expired invitations
+- M1: Exported `sanitizeName` and applied it to realtime display name paths in both `+layout.svelte` and `+page.svelte` for defense-in-depth XSS protection
+- Test: Added `gt` to `actionChain` helper to support new `.gt()` calls in accept flow
 
 ### File List
 

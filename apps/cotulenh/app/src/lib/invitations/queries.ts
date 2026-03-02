@@ -3,7 +3,7 @@ import type { GameConfig, InvitationItem } from './types';
 import { logger } from '@cotulenh/common';
 
 /** Strip HTML tags from display name to prevent stored XSS at query boundary */
-function sanitizeName(name: string): string {
+export function sanitizeName(name: string): string {
   return name.replace(/<[^>]*>/g, '');
 }
 
@@ -39,6 +39,7 @@ export async function hasPendingInvitation(
     .eq('from_user', fromUserId)
     .eq('to_user', toUserId)
     .eq('status', 'pending')
+    .gt('expires_at', new Date().toISOString())
     .limit(1);
 
   return Array.isArray(data) && data.length > 0;
@@ -75,6 +76,7 @@ export async function sendInvitation(
     .single();
 
   if (error || !data) {
+    logger.error(error ?? new Error('Unknown'), 'sendInvitation: insert failed');
     return { success: false, error: 'sendFailed' };
   }
 
@@ -93,6 +95,7 @@ export async function getSentInvitations(
     .select('id, from_user, to_user, game_config, invite_code, status, created_at')
     .eq('from_user', userId)
     .eq('status', 'pending')
+    .gt('expires_at', new Date().toISOString())
     .order('created_at', { ascending: false });
 
   if (error || !invitations || invitations.length === 0) return [];
@@ -163,6 +166,7 @@ export async function getReceivedInvitations(
     .select('id, from_user, to_user, game_config, invite_code, status, created_at')
     .eq('to_user', userId)
     .eq('status', 'pending')
+    .gt('expires_at', new Date().toISOString())
     .order('created_at', { ascending: false });
 
   if (error || !invitations || invitations.length === 0) return [];
@@ -213,6 +217,7 @@ export async function acceptInvitation(
     .eq('id', invitationId)
     .eq('to_user', userId)
     .eq('status', 'pending')
+    .gt('expires_at', new Date().toISOString())
     .select('id, from_user, game_config')
     .single();
 

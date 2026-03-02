@@ -29,8 +29,8 @@
   }
 
   function updateCustom() {
-    const minutes = Math.max(1, Math.min(60, customMinutes));
-    const increment = Math.max(0, Math.min(30, customIncrement));
+    const minutes = Math.floor(Math.max(1, Math.min(60, customMinutes)));
+    const increment = Math.floor(Math.max(0, Math.min(30, customIncrement)));
     customMinutes = minutes;
     customIncrement = increment;
     onselect({ timeMinutes: minutes, incrementSeconds: increment });
@@ -81,6 +81,7 @@
           class="custom-input"
           min="1"
           max="60"
+          step="1"
           bind:value={customMinutes}
           onchange={updateCustom}
           aria-label={i18n.t('invitation.timeControl.minutes')}
@@ -93,6 +94,7 @@
           class="custom-input"
           min="0"
           max="30"
+          step="1"
           bind:value={customIncrement}
           onchange={updateCustom}
           aria-label={i18n.t('invitation.timeControl.increment')}

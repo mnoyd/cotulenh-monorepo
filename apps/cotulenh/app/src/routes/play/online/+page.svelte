@@ -1,11 +1,12 @@
 <script lang="ts">
   import { deserialize } from '$app/forms';
-  import { goto } from '$app/navigation';
+  import { goto, invalidateAll } from '$app/navigation';
   import { page } from '$app/stores';
   import { getI18n } from '$lib/i18n/index.svelte';
   import { getOnlineUsers } from '$lib/friends/presence.svelte';
   import type { GameConfig, InvitationItem } from '$lib/invitations/types';
   import { TIME_PRESETS } from '$lib/invitations/types';
+  import { sanitizeName } from '$lib/invitations/queries';
   import type { FriendListItem } from '$lib/friends/types';
   import { onInvitationRealtimeEvent } from '$lib/invitations/realtime.svelte';
   import type { InvitationRealtimeEvent } from '$lib/invitations/realtime.svelte';
@@ -109,7 +110,7 @@
         if (profile) {
           realtimeReceivedInvitations = realtimeReceivedInvitations.map((inv) =>
             inv.id === event.id
-              ? { ...inv, fromUser: { ...inv.fromUser, displayName: profile.display_name } }
+              ? { ...inv, fromUser: { ...inv.fromUser, displayName: sanitizeName(profile.display_name) } }
               : inv
           );
         }
@@ -155,11 +156,24 @@
         const next = new Set(optimisticInvited);
         next.delete(friendUserId);
         optimisticInvited = next;
-        toast.error(i18n.t('invitation.toast.sendFailed'));
+        const result = deserialize(await response.text());
+        const errorCode = result.type === 'failure'
+          ? (result.data as { errors?: { form?: string } } | null)?.errors?.form
+          : undefined;
+        if (errorCode === 'alreadyInvited') {
+          toast.error(i18n.t('invitation.error.alreadyInvited'));
+        } else if (errorCode === 'cannotInviteSelf') {
+          toast.error(i18n.t('invitation.error.cannotInviteSelf'));
+        } else if (errorCode === 'invalidGameConfig') {
+          toast.error(i18n.t('invitation.error.invalidGameConfig'));
+        } else {
+          toast.error(i18n.t('invitation.toast.sendFailed'));
+        }
         return;
       }
 
       toast.success(i18n.t('invitation.toast.sent'), { duration: 4000 });
+      invalidateAll();
     } catch {
       const next = new Set(optimisticInvited);
       next.delete(friendUserId);
@@ -193,6 +207,7 @@
 
       removedSentInvitations = new Set([...removedSentInvitations, invitationId]);
       toast.success(i18n.t('invitation.toast.cancelled'), { duration: 4000 });
+      invalidateAll();
     } catch {
       toast.error(i18n.t('invitation.toast.cancelFailed'));
     } finally {

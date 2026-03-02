@@ -13,7 +13,7 @@ import {
 /** Build a chain for delete/insert actions where single() is the terminal */
 function actionChain(singleResult: unknown) {
   const chain: Record<string, unknown> = {};
-  for (const m of ['insert', 'delete', 'update', 'eq', 'select', 'limit', 'order']) {
+  for (const m of ['insert', 'delete', 'update', 'eq', 'gt', 'select', 'limit', 'order']) {
     chain[m] = vi.fn().mockReturnValue(chain);
   }
   chain.single = vi.fn().mockResolvedValue(singleResult);
@@ -70,7 +70,7 @@ describe('hasPendingInvitation', () => {
   it('returns true when pending invitation exists', async () => {
     const { supabase, mockFrom } = createMockSupabase();
     const chain: Record<string, unknown> = {};
-    for (const m of ['select', 'eq', 'limit']) {
+    for (const m of ['select', 'eq', 'gt', 'limit']) {
       chain[m] = vi.fn().mockReturnValue(chain);
     }
     chain.limit = vi.fn().mockResolvedValue({ data: [{ id: 'inv-1' }], error: null });
@@ -84,7 +84,7 @@ describe('hasPendingInvitation', () => {
   it('returns false when no pending invitation exists', async () => {
     const { supabase, mockFrom } = createMockSupabase();
     const chain: Record<string, unknown> = {};
-    for (const m of ['select', 'eq', 'limit']) {
+    for (const m of ['select', 'eq', 'gt', 'limit']) {
       chain[m] = vi.fn().mockReturnValue(chain);
     }
     chain.limit = vi.fn().mockResolvedValue({ data: [], error: null });
@@ -112,7 +112,7 @@ describe('sendInvitation', () => {
     const { supabase, mockFrom } = createMockSupabase();
     // hasPendingInvitation returns existing
     const chain: Record<string, unknown> = {};
-    for (const m of ['select', 'eq', 'limit']) {
+    for (const m of ['select', 'eq', 'gt', 'limit']) {
       chain[m] = vi.fn().mockReturnValue(chain);
     }
     chain.limit = vi.fn().mockResolvedValue({ data: [{ id: 'inv-1' }], error: null });
@@ -136,7 +136,7 @@ describe('sendInvitation', () => {
       if (callCount === 1) {
         // hasPendingInvitation check — returns empty (no existing)
         const chain: Record<string, unknown> = {};
-        for (const m of ['select', 'eq', 'limit']) {
+        for (const m of ['select', 'eq', 'gt', 'limit']) {
           chain[m] = vi.fn().mockReturnValue(chain);
         }
         chain.limit = vi.fn().mockResolvedValue({ data: [], error: null });
@@ -163,7 +163,7 @@ describe('sendInvitation', () => {
       callCount++;
       if (callCount === 1) {
         const chain: Record<string, unknown> = {};
-        for (const m of ['select', 'eq', 'limit']) {
+        for (const m of ['select', 'eq', 'gt', 'limit']) {
           chain[m] = vi.fn().mockReturnValue(chain);
         }
         chain.limit = vi.fn().mockResolvedValue({ data: [], error: null });
@@ -186,7 +186,7 @@ describe('getSentInvitations', () => {
   it('returns empty array when no invitations exist', async () => {
     const { supabase, mockFrom } = createMockSupabase();
     const chain: Record<string, unknown> = {};
-    for (const m of ['select', 'eq', 'order']) {
+    for (const m of ['select', 'eq', 'gt', 'order']) {
       chain[m] = vi.fn().mockReturnValue(chain);
     }
     chain.order = vi.fn().mockResolvedValue({ data: [], error: null });
@@ -206,7 +206,7 @@ describe('getSentInvitations', () => {
       if (callCount === 1) {
         // invitations query
         const chain: Record<string, unknown> = {};
-        for (const m of ['select', 'eq', 'order']) {
+        for (const m of ['select', 'eq', 'gt', 'order']) {
           chain[m] = vi.fn().mockReturnValue(chain);
         }
         chain.order = vi.fn().mockResolvedValue({
@@ -252,7 +252,7 @@ describe('getSentInvitations', () => {
       callCount++;
       if (callCount === 1) {
         const chain: Record<string, unknown> = {};
-        for (const m of ['select', 'eq', 'order']) {
+        for (const m of ['select', 'eq', 'gt', 'order']) {
           chain[m] = vi.fn().mockReturnValue(chain);
         }
         chain.order = vi.fn().mockResolvedValue({
@@ -344,7 +344,7 @@ describe('getReceivedInvitations', () => {
   it('returns empty array when no invitations exist', async () => {
     const { supabase, mockFrom } = createMockSupabase();
     const chain: Record<string, unknown> = {};
-    for (const m of ['select', 'eq', 'order']) {
+    for (const m of ['select', 'eq', 'gt', 'order']) {
       chain[m] = vi.fn().mockReturnValue(chain);
     }
     chain.order = vi.fn().mockResolvedValue({ data: [], error: null });
@@ -364,7 +364,7 @@ describe('getReceivedInvitations', () => {
       if (callCount === 1) {
         // invitations query
         const chain: Record<string, unknown> = {};
-        for (const m of ['select', 'eq', 'order']) {
+        for (const m of ['select', 'eq', 'gt', 'order']) {
           chain[m] = vi.fn().mockReturnValue(chain);
         }
         chain.order = vi.fn().mockResolvedValue({
@@ -410,7 +410,7 @@ describe('getReceivedInvitations', () => {
       callCount++;
       if (callCount === 1) {
         const chain: Record<string, unknown> = {};
-        for (const m of ['select', 'eq', 'order']) {
+        for (const m of ['select', 'eq', 'gt', 'order']) {
           chain[m] = vi.fn().mockReturnValue(chain);
         }
         chain.order = vi.fn().mockResolvedValue({

@@ -1,6 +1,6 @@
 # Story 4.1: Send Match Invitation to Friend
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -355,6 +355,15 @@ Claude Opus 4.6
 
 - All 292 tests pass (38 new tests added for invitation queries + server actions)
 - svelte-check: 4 pre-existing env var errors only, no new errors
+
+### Code Review Fixes Applied
+
+- **H1**: Added `invalidateAll()` after send/cancel to refresh sent invitations list in UI
+- **H2**: Added partial unique index `idx_unique_pending_invitation` on `(from_user, to_user) WHERE status = 'pending'` to prevent race condition duplicates
+- **H3**: Added `expires_at` filtering to `hasPendingInvitation()` and `getSentInvitations()` so expired invitations don't block new sends or show stale UI
+- **H4**: Added `step="1"` to custom time inputs and `Math.floor()` in `updateCustom()` to prevent decimal values
+- **M1**: Added specific error message mapping in `handleInvite()` — server error codes now map to i18n keys (alreadyInvited, cannotInviteSelf, invalidGameConfig)
+- **M2**: Added `logger.error()` in `sendInvitation()` query when insert fails, so database errors are no longer silently swallowed
 
 ### Completion Notes List
 

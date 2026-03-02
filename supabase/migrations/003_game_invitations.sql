@@ -55,3 +55,8 @@ $$ LANGUAGE plpgsql;
 CREATE TRIGGER game_invitations_updated_at
   BEFORE UPDATE ON public.game_invitations
   FOR EACH ROW EXECUTE FUNCTION public.update_game_invitations_updated_at();
+
+-- Prevent duplicate pending invitations from same sender to same recipient
+CREATE UNIQUE INDEX idx_unique_pending_invitation
+  ON public.game_invitations (from_user, to_user)
+  WHERE status = 'pending';

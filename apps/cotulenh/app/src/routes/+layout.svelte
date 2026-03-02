@@ -35,6 +35,7 @@
     onInvitationRealtimeEvent
   } from '$lib/invitations/realtime.svelte';
   import type { InvitationRealtimeEvent } from '$lib/invitations/realtime.svelte';
+  import { sanitizeName } from '$lib/invitations/queries';
   import MatchInvitationToast from '$lib/components/MatchInvitationToast.svelte';
   import { goto } from '$app/navigation';
 
@@ -113,7 +114,7 @@
         pendingInvitationToast = {
           id: event.id,
           fromUser: event.fromUser,
-          fromDisplayName: profile?.display_name ?? i18n.t('common.loading'),
+          fromDisplayName: sanitizeName(profile?.display_name ?? '') || i18n.t('common.loading'),
           gameConfig: event.gameConfig
         };
       } else if (event.type === 'statusChanged') {
