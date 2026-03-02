@@ -1,21 +1,110 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
+  import { goto } from '$app/navigation';
+  import { page } from '$app/stores';
+  import { toast } from 'svelte-sonner';
+  import BoardContainer from '$lib/components/BoardContainer.svelte';
+  import OnlineIndicator from '$lib/components/OnlineIndicator.svelte';
+  import { OnlineGameSession } from '$lib/game/online-session.svelte';
+  import { formatClockTime } from '$lib/clock/clock.svelte';
   import { getI18n } from '$lib/i18n/index.svelte';
-  import { Swords } from 'lucide-svelte';
+  import type { Api } from '@cotulenh/board';
   import type { PageData } from './$types';
+
+  import '$lib/styles/board.css';
 
   const i18n = getI18n();
 
   let { data }: { data: PageData } = $props();
 
-  let timeLabel = $derived(
-    data.game.timeControl.incrementSeconds > 0
-      ? `${data.game.timeControl.timeMinutes}+${data.game.timeControl.incrementSeconds}`
-      : `${data.game.timeControl.timeMinutes}+0`
+  let onlineSession = $state<OnlineGameSession | null>(null);
+  let boardComponent: BoardContainer | null = $state(null);
+
+  const orientation = data.playerColor === 'red' ? 'red' : 'blue';
+
+  // Clock display: opponent clock at top, player clock at bottom
+  let opponentTime = $derived(
+    onlineSession
+      ? onlineSession.playerColor === 'red'
+        ? onlineSession.blueTime
+        : onlineSession.redTime
+      : data.game.timeControl.timeMinutes * 60 * 1000
   );
 
-  let colorLabel = $derived(
-    data.playerColor === 'red' ? i18n.t('common.red') : i18n.t('common.blue')
+  let playerTime = $derived(
+    onlineSession
+      ? onlineSession.playerColor === 'red'
+        ? onlineSession.redTime
+        : onlineSession.blueTime
+      : data.game.timeControl.timeMinutes * 60 * 1000
   );
+
+  let isMyTurn = $derived(
+    onlineSession && onlineSession.lifecycle !== 'ended'
+      ? (onlineSession.turn === 'r' && data.playerColor === 'red') ||
+        (onlineSession.turn === 'b' && data.playerColor === 'blue')
+      : false
+  );
+
+  let moveCount = $derived(onlineSession ? onlineSession.history.length : 0);
+
+  let turnLabel = $derived(
+    isMyTurn ? i18n.t('game.yourTurn') : i18n.t('game.opponentTurn')
+  );
+
+  let statusLabel = $derived.by(() => {
+    if (!onlineSession) return i18n.t('game.connecting');
+    if (onlineSession.connectionState === 'connecting') return i18n.t('game.connecting');
+    if (onlineSession.connectionState === 'disconnected') return i18n.t('game.connectionLost');
+    if (onlineSession.lifecycle === 'waiting') return i18n.t('game.waitingForOpponent');
+    if (onlineSession.lifecycle === 'ended') return '';
+    return turnLabel;
+  });
+
+  let opponentClockActive = $derived(
+    onlineSession?.activeSide === onlineSession?.opponentClockColor
+  );
+
+  let playerClockActive = $derived(
+    onlineSession?.activeSide === onlineSession?.myClockColor
+  );
+
+  onMount(() => {
+    const supabase = $page.data.supabase;
+
+    const session = new OnlineGameSession(
+      {
+        gameId: data.game.id,
+        playerColor: data.playerColor as 'red' | 'blue',
+        timeControl: data.game.timeControl,
+        supabase
+      },
+      () => {
+        // onAbort callback
+        toast.info(i18n.t('game.gameAborted'));
+        goto('/play/online');
+      }
+    );
+
+    onlineSession = session;
+    session.join();
+
+    return () => {
+      session.destroy();
+    };
+  });
+
+  function handleBoardReady(api: Api) {
+    if (onlineSession) {
+      onlineSession.session.setBoardApi(api);
+    }
+  }
+
+  $effect(() => {
+    if (onlineSession) {
+      onlineSession.session.setupBoardEffect();
+    }
+  });
 </script>
 
 <svelte:head>
@@ -23,28 +112,61 @@
 </svelte:head>
 
 <div class="game-page">
-  <div class="game-container">
-    <div class="game-header">
-      <Swords size={32} class="game-icon" />
-      <h1 class="game-title">{i18n.t('game.starting')}</h1>
-    </div>
-
-    <div class="game-info">
-      <div class="info-row">
-        <span class="info-label">{i18n.t('game.opponent')}</span>
-        <span class="info-value">{data.opponent.displayName}</span>
+  <div class="game-layout">
+    <!-- Opponent info + clock (top) -->
+    <div class="player-bar opponent">
+      <div class="player-info">
+        <OnlineIndicator online={onlineSession?.opponentConnected ?? false} />
+        <span class="player-name">{data.opponent.displayName}</span>
       </div>
-      <div class="info-row">
-        <span class="info-label">{i18n.t('game.yourColor')}</span>
-        <span class="info-value color-badge {data.playerColor}">{colorLabel}</span>
-      </div>
-      <div class="info-row">
-        <span class="info-label">{i18n.t('invitation.timeControl.title')}</span>
-        <span class="info-value mono">{timeLabel}</span>
+      <div class="clock" class:active={opponentClockActive}>
+        {formatClockTime(opponentTime)}
       </div>
     </div>
 
-    <p class="game-placeholder">{i18n.t('game.placeholderMessage')}</p>
+    <!-- Board -->
+    <div class="board-area">
+      {#if onlineSession}
+        <BoardContainer
+          bind:this={boardComponent}
+          config={{
+            ...onlineSession.session.boardConfig,
+            orientation,
+            viewOnly: onlineSession.lifecycle === 'ended' || !isMyTurn
+          }}
+          onApiReady={handleBoardReady}
+        />
+      {:else}
+        <div class="board-loading-placeholder">
+          <p>{i18n.t('game.connecting')}</p>
+        </div>
+      {/if}
+    </div>
+
+    <!-- Game status bar -->
+    <div class="status-bar">
+      {#if onlineSession?.lifecycle === 'playing'}
+        <span class="turn-indicator" class:my-turn={isMyTurn}>
+          {statusLabel}
+        </span>
+        <span class="move-counter">
+          {i18n.t('game.moveCount').replace('{count}', String(moveCount))}
+        </span>
+      {:else}
+        <span class="status-text">{statusLabel}</span>
+      {/if}
+    </div>
+
+    <!-- Player info + clock (bottom) -->
+    <div class="player-bar self">
+      <div class="player-info">
+        <span class="color-dot {data.playerColor}"></span>
+        <span class="player-name you">{i18n.t('common.play')}</span>
+      </div>
+      <div class="clock" class:active={playerClockActive}>
+        {formatClockTime(playerTime)}
+      </div>
+    </div>
   </div>
 </div>
 
@@ -52,57 +174,108 @@
   .game-page {
     display: flex;
     justify-content: center;
-    align-items: center;
-    padding: 2rem 1rem;
+    align-items: flex-start;
+    padding: 0.5rem;
     min-height: 100vh;
   }
 
-  .game-container {
+  .game-layout {
     width: 100%;
-    max-width: 480px;
+    max-width: 560px;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    gap: 1.5rem;
-    text-align: center;
+    gap: 0.25rem;
   }
 
-  .game-header {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.75rem;
-  }
-
-  :global(.game-icon) {
-    color: var(--theme-primary, #06b6d4);
-  }
-
-  .game-title {
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: var(--theme-text-primary, #eee);
-    margin: 0;
-  }
-
-  .game-info {
-    width: 100%;
-    background: var(--theme-bg-panel, #222);
-    border: 1px solid var(--theme-border, #444);
-    border-radius: 8px;
-    padding: 1rem;
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-  }
-
-  .info-row {
+  .player-bar {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    padding: 0.5rem 0.75rem;
+    background: var(--theme-bg-panel, #1a1a1a);
+    border: 1px solid var(--theme-border, #333);
+    border-radius: 6px;
   }
 
-  .info-label {
+  .player-info {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .player-name {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--theme-text-primary, #eee);
+  }
+
+  .player-name.you {
+    color: var(--theme-text-secondary, #aaa);
+  }
+
+  .color-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .color-dot.red {
+    background: #ef4444;
+  }
+
+  .color-dot.blue {
+    background: #3b82f6;
+  }
+
+  .clock {
+    font-family: var(--font-mono, monospace);
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--theme-text-secondary, #888);
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    min-width: 5ch;
+    text-align: center;
+  }
+
+  .clock.active {
+    color: var(--theme-text-primary, #fff);
+    background: var(--theme-bg-active, rgba(6, 182, 212, 0.15));
+    border: 1px solid var(--theme-primary, #06b6d4);
+  }
+
+  .board-area {
+    container-type: size;
+    width: 100%;
+    aspect-ratio: 12 / 13;
+    position: relative;
+  }
+
+  .board-loading-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    background: var(--theme-bg-panel, #1a1a1a);
+    border-radius: 4px;
+    color: var(--theme-text-secondary, #aaa);
+    font-size: 0.875rem;
+  }
+
+  .status-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.375rem 0.75rem;
+    background: var(--theme-bg-panel, #1a1a1a);
+    border: 1px solid var(--theme-border, #333);
+    border-radius: 6px;
+    min-height: 2rem;
+  }
+
+  .turn-indicator {
     font-size: 0.75rem;
     font-weight: 600;
     text-transform: uppercase;
@@ -110,38 +283,30 @@
     color: var(--theme-text-secondary, #aaa);
   }
 
-  .info-value {
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: var(--theme-text-primary, #eee);
+  .turn-indicator.my-turn {
+    color: var(--theme-primary, #06b6d4);
   }
 
-  .info-value.mono {
-    font-family: var(--font-mono);
-  }
-
-  .color-badge {
-    padding: 0.125rem 0.5rem;
-    border-radius: 4px;
+  .move-counter {
     font-size: 0.75rem;
-    font-weight: 700;
-    text-transform: uppercase;
+    color: var(--theme-text-secondary, #888);
+    font-family: var(--font-mono, monospace);
   }
 
-  .color-badge.red {
-    background: rgba(239, 68, 68, 0.2);
-    color: #ef4444;
-  }
-
-  .color-badge.blue {
-    background: rgba(59, 130, 246, 0.2);
-    color: #3b82f6;
-  }
-
-  .game-placeholder {
-    font-size: 0.875rem;
+  .status-text {
+    font-size: 0.75rem;
+    font-weight: 500;
     color: var(--theme-text-secondary, #aaa);
-    margin: 0;
-    line-height: 1.5;
+  }
+
+  @media (min-width: 768px) {
+    .game-page {
+      align-items: center;
+      padding: 1rem;
+    }
+
+    .clock {
+      font-size: 1.5rem;
+    }
   }
 </style>
