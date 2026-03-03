@@ -74,12 +74,21 @@ function createMockSupabase() {
 
   let insertResult = { error: null as null | Error };
   let lastInsertValues: Record<string, unknown> | null = null;
+  let lastInsertTable: string | null = null;
   let insertCallCount = 0;
+  let rematchInvitationResult: { data: { id: string } | null; error: null | Error } = {
+    data: { id: 'invitation-1' },
+    error: null
+  };
+  let rematchGameResult: { data: { id: string } | null; error: null | Error } = {
+    data: { id: 'rematch-game-1' },
+    error: null
+  };
 
   const supabase = {
     channel: vi.fn(() => mockChannel as unknown as RealtimeChannel),
     removeChannel: vi.fn(),
-    from: vi.fn(() => ({
+    from: vi.fn((tableName: string) => ({
       update: vi.fn((values?: Record<string, unknown>, options?: Record<string, unknown>) => {
         lastUpdateValues = values ?? null;
         lastUpdateOptions = options ?? null;
@@ -97,10 +106,24 @@ function createMockSupabase() {
           })
         };
       }),
-      insert: vi.fn(async (values?: Record<string, unknown>) => {
+      insert: vi.fn((values?: Record<string, unknown>) => {
         insertCallCount++;
         lastInsertValues = values ?? null;
-        return { error: insertResult.error };
+        lastInsertTable = tableName;
+        return {
+          error: insertResult.error,
+          select: vi.fn((_columns?: string) => ({
+            single: vi.fn(async () => {
+              if (tableName === 'game_invitations') {
+                return rematchInvitationResult;
+              }
+              if (tableName === 'games') {
+                return rematchGameResult;
+              }
+              return { data: null, error: insertResult.error };
+            })
+          }))
+        };
       })
     }))
   };
@@ -131,7 +154,14 @@ function createMockSupabase() {
       insertResult = result;
     },
     getLastInsertValues: () => lastInsertValues,
+    getLastInsertTable: () => lastInsertTable,
     getInsertCallCount: () => insertCallCount,
+    setRematchInvitationResult: (result: { data: { id: string } | null; error: null | Error }) => {
+      rematchInvitationResult = result;
+    },
+    setRematchGameResult: (result: { data: { id: string } | null; error: null | Error }) => {
+      rematchGameResult = result;
+    },
     // Helper to simulate presence sync
     simulatePresenceSync: () => {
       const handlers = channelHandlers['presence:sync'] ?? [];
@@ -1878,8 +1908,8 @@ describe('OnlineGameSessionCore', () => {
       const onGameEnd = vi.fn();
       await setupPlayingGame({ onGameEnd });
 
-      // Set pending draw offer
-      core.setPendingDrawOffer(true);
+      // Set pending draw offer via actual draw-offer action
+      core.offerDraw();
 
       // Trigger opponent timeout
       triggerLocalMove(core);
@@ -1959,6 +1989,153 @@ describe('OnlineGameSessionCore', () => {
       // (Clock started in startGameWhenReady, but opponent not yet connected so still 'waiting')
       expect(core.opponentFlagged).toBe(false);
       expect(onGameEnd).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('draw and rematch flows', () => {
+    async function setupPlayingGame(callbacks: ConstructorParameters<typeof OnlineGameSessionCore>[1] = {}) {
+      core = new OnlineGameSessionCore(createDefaultConfig(mock.supabase), callbacks);
+      core.join();
+      await vi.advanceTimersByTimeAsync(10);
+
+      mock.presenceState['opponent'] = [{
+        color: 'blue',
+        userId: OPPONENT_USER_ID,
+        presenceId: 'opponent-presence'
+      }];
+      mock.simulatePresenceSync();
+    }
+
+    async function setupEndedGame(callbacks: ConstructorParameters<typeof OnlineGameSessionCore>[1] = {}) {
+      await setupPlayingGame(callbacks);
+      core.resign();
+      await Promise.resolve();
+      expect(core.lifecycle).toBe('ended');
+    }
+
+    it('offerDraw sends draw-offer and marks offer as pending', async () => {
+      await setupPlayingGame();
+      core.offerDraw();
+
+      expect(core.drawOfferSent).toBe(true);
+      const sendCalls = (mock.mockChannel.send as ReturnType<typeof vi.fn>).mock.calls;
+      const drawOffer = sendCalls.find(
+        (c: unknown[]) => (c[0] as Record<string, Record<string, unknown>>).payload?.event === 'draw-offer'
+      );
+      expect(drawOffer).toBeDefined();
+    });
+
+    it('acceptDraw ends game as draw_by_agreement and writes draw result', async () => {
+      await setupPlayingGame();
+
+      mock.simulateGameMessage({ event: 'draw-offer' });
+      expect(core.drawOfferReceived).toBe(true);
+
+      core.acceptDraw();
+      await Promise.resolve();
+
+      expect(core.lifecycle).toBe('ended');
+      expect(core.gameResult).toEqual(expect.objectContaining({
+        status: 'draw',
+        winner: null,
+        resultReason: 'draw_by_agreement'
+      }));
+
+      const updateValues = mock.getLastUpdateValues();
+      expect(updateValues).toEqual(expect.objectContaining({
+        status: 'draw',
+        winner: null,
+        result_reason: 'draw_by_agreement'
+      }));
+    });
+
+    it('declineDraw clears received state and keeps gameplay running', async () => {
+      await setupPlayingGame();
+
+      mock.simulateGameMessage({ event: 'draw-offer' });
+      expect(core.drawOfferReceived).toBe(true);
+
+      core.declineDraw();
+
+      expect(core.lifecycle).toBe('playing');
+      expect(core.drawOfferReceived).toBe(false);
+      const sendCalls = (mock.mockChannel.send as ReturnType<typeof vi.fn>).mock.calls;
+      const drawDecline = sendCalls.find(
+        (c: unknown[]) => (c[0] as Record<string, Record<string, unknown>>).payload?.event === 'draw-decline'
+      );
+      expect(drawDecline).toBeDefined();
+    });
+
+    it('simultaneous draw offers auto-accept as draw_by_agreement', async () => {
+      await setupPlayingGame();
+
+      core.offerDraw();
+      mock.simulateGameMessage({ event: 'draw-offer' });
+
+      expect(core.lifecycle).toBe('ended');
+      expect(core.gameResult).toEqual(expect.objectContaining({
+        status: 'draw',
+        resultReason: 'draw_by_agreement'
+      }));
+    });
+
+    it('requestRematch sends rematch message after game end', async () => {
+      await setupEndedGame();
+
+      core.requestRematch();
+
+      expect(core.rematchSent).toBe(true);
+      const sendCalls = (mock.mockChannel.send as ReturnType<typeof vi.fn>).mock.calls;
+      const rematchSend = sendCalls.find(
+        (c: unknown[]) => (c[0] as Record<string, Record<string, unknown>>).payload?.event === 'rematch'
+      );
+      expect(rematchSend).toBeDefined();
+    });
+
+    it('acceptRematch creates invitation/game and broadcasts rematch-accept with newGameId', async () => {
+      const onRematchAccepted = vi.fn();
+      await setupEndedGame({ onRematchAccepted });
+      mock.simulateGameMessage({ event: 'rematch' });
+      expect(core.rematchReceived).toBe(true);
+
+      await core.acceptRematch();
+
+      expect(mock.supabase.from).toHaveBeenCalledWith('game_invitations');
+      expect(mock.supabase.from).toHaveBeenCalledWith('games');
+      expect(core.rematchGameId).toBe('rematch-game-1');
+      expect(onRematchAccepted).toHaveBeenCalledWith('rematch-game-1');
+
+      const sendCalls = (mock.mockChannel.send as ReturnType<typeof vi.fn>).mock.calls;
+      const rematchAccept = sendCalls.find(
+        (c: unknown[]) => (c[0] as Record<string, Record<string, unknown>>).payload?.event === 'rematch-accept'
+      );
+      expect(rematchAccept).toBeDefined();
+      expect((rematchAccept?.[0] as Record<string, Record<string, unknown>>).payload?.newGameId).toBe('rematch-game-1');
+    });
+
+    it('handles incoming rematch-accept by storing newGameId and firing callback', async () => {
+      const onRematchAccepted = vi.fn();
+      await setupEndedGame({ onRematchAccepted });
+
+      core.requestRematch();
+      mock.simulateGameMessage({ event: 'rematch-accept', newGameId: 'new-game-42' });
+
+      expect(core.rematchGameId).toBe('new-game-42');
+      expect(onRematchAccepted).toHaveBeenCalledWith('new-game-42');
+    });
+
+    it('abort sends abort message when canAbort is true', async () => {
+      await setupPlayingGame();
+
+      expect(core.canAbort).toBe(true);
+      await core.abort();
+
+      expect(core.lifecycle).toBe('ended');
+      const sendCalls = (mock.mockChannel.send as ReturnType<typeof vi.fn>).mock.calls;
+      const abortSend = sendCalls.find(
+        (c: unknown[]) => (c[0] as Record<string, Record<string, unknown>>).payload?.event === 'abort'
+      );
+      expect(abortSend).toBeDefined();
     });
   });
 

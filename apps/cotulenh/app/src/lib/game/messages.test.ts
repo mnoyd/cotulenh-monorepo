@@ -223,6 +223,22 @@ describe('GameMessage helpers', () => {
       expect(handler).toHaveBeenCalledWith(msg);
     });
 
+    it('delivers rematch-accept with newGameId', () => {
+      const handler = vi.fn();
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      onGameMessage(channel as any, handler);
+
+      const msg: GameMessage = {
+        event: 'rematch-accept',
+        senderId,
+        newGameId: 'new-game-123'
+      };
+      channel._simulateBroadcast(msg);
+
+      expect(handler).toHaveBeenCalledWith(msg);
+    });
+
     it('delivers sync-request messages', () => {
       const handler = vi.fn();
 
@@ -298,9 +314,12 @@ describe('GameMessage helpers', () => {
       const invalidAck: GameMessage = { event: 'ack', senderId };
       // @ts-expect-error sync-request requires expectedSeq
       const invalidSyncRequest: GameMessage = { event: 'sync-request', senderId };
+      // @ts-expect-error rematch-accept requires newGameId
+      const invalidRematchAccept: GameMessage = { event: 'rematch-accept', senderId };
       void invalidMove;
       void invalidAck;
       void invalidSyncRequest;
+      void invalidRematchAccept;
     });
   });
 });

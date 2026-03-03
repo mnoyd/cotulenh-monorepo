@@ -70,14 +70,14 @@ development_status:
   epic-4-retrospective: optional
 
   # Epic 5: Realtime Online Gameplay
-  epic-5: in-progress
+  epic-5: done
   5-1-delta-based-clock-gamemessage-types: done
   5-2-online-game-session-move-broadcast: done
   5-3-move-reliability-reconnection: done
   5-4-game-end-conditions-result-recording: done
   5-5-clock-timeout-claim-victory: done
   5-6-dispute-system: done
-  5-7-draw-offers-rematch: backlog
+  5-7-draw-offers-rematch: done
   epic-5-retrospective: optional
 
   # Epic 6: Game History & Review

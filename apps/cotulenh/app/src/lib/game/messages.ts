@@ -37,7 +37,7 @@ export type GameMessage =
     })
   // Post-game
   | (SenderMetadata & { event: 'rematch' })
-  | (SenderMetadata & { event: 'rematch-accept' })
+  | (SenderMetadata & { event: 'rematch-accept'; newGameId: string })
   | (SenderMetadata & { event: 'rematch-decline' });
 
 /** Extract the event literal type from GameMessage. */
@@ -95,9 +95,10 @@ export function isGameMessage(value: unknown): value is GameMessage {
     case 'draw-accept':
     case 'draw-decline':
     case 'rematch':
-    case 'rematch-accept':
     case 'rematch-decline':
       return true;
+    case 'rematch-accept':
+      return typeof value.newGameId === 'string' && value.newGameId.length > 0;
     default:
       return false;
   }

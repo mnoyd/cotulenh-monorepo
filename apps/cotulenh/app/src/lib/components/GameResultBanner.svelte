@@ -8,11 +8,21 @@
   let {
     result,
     playerColor,
-    onPlayAgain
+    onPlayAgain,
+    onRematch,
+    rematchSent = false,
+    rematchReceived = false,
+    onAcceptRematch,
+    onDeclineRematch
   }: {
     result: GameEndResult;
     playerColor: 'red' | 'blue';
     onPlayAgain?: () => void;
+    onRematch?: () => void;
+    rematchSent?: boolean;
+    rematchReceived?: boolean;
+    onAcceptRematch?: () => void;
+    onDeclineRematch?: () => void;
   } = $props();
 
   let outcomeText = $derived.by(() => {
@@ -28,6 +38,7 @@
       case 'resignation': return i18n.t('game.resultResign');
       case 'timeout': return i18n.t('game.resultTimeout');
       case 'dispute': return i18n.t('game.resultDispute');
+      case 'draw_by_agreement': return i18n.t('game.resultDrawAgreement');
       default: return i18n.t('game.resultDraw');
     }
   });
@@ -75,7 +86,25 @@
     <span class="reason">{reasonText}</span>
   </div>
   <div class="result-actions">
-    <!-- TODO: Add "Review Game" button when game replay is implemented (Story 6.2) -->
+    {#if rematchReceived}
+      <div class="rematch-prompt">
+        <span>{i18n.t('game.rematchReceived')}</span>
+        <button class="accept-rematch-btn" onclick={() => onAcceptRematch?.()}>
+          {i18n.t('game.acceptRematch')}
+        </button>
+        <button class="decline-rematch-btn" onclick={() => onDeclineRematch?.()}>
+          {i18n.t('game.declineRematch')}
+        </button>
+      </div>
+    {:else if rematchSent}
+      <button class="rematch-btn" disabled>
+        {i18n.t('game.rematchRequested')}
+      </button>
+    {:else}
+      <button class="rematch-btn" onclick={() => onRematch?.()}>
+        {i18n.t('game.rematch')}
+      </button>
+    {/if}
     <button class="play-again-btn" onclick={() => onPlayAgain?.()}>
       {i18n.t('game.playAgain')}
     </button>
@@ -134,6 +163,58 @@
   .result-actions {
     display: flex;
     gap: 0.5rem;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .rematch-prompt {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.75rem;
+  }
+
+  .rematch-btn,
+  .accept-rematch-btn,
+  .decline-rematch-btn {
+    padding: 0.45rem 0.85rem;
+    border-radius: 6px;
+    border: 1px solid var(--theme-border, #333);
+    background: transparent;
+    color: var(--theme-text-primary, #eee);
+    font-size: 0.75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.15s, border-color 0.15s, background-color 0.15s;
+  }
+
+  .rematch-btn:hover:not(:disabled) {
+    border-color: var(--theme-primary, #06b6d4);
+    background: rgba(6, 182, 212, 0.12);
+  }
+
+  .rematch-btn:disabled {
+    cursor: default;
+    opacity: 0.7;
+  }
+
+  .accept-rematch-btn {
+    border-color: rgba(34, 197, 94, 0.5);
+    color: #22c55e;
+  }
+
+  .accept-rematch-btn:hover {
+    background: rgba(34, 197, 94, 0.12);
+  }
+
+  .decline-rematch-btn {
+    border-color: rgba(239, 68, 68, 0.5);
+    color: #ef4444;
+  }
+
+  .decline-rematch-btn:hover {
+    background: rgba(239, 68, 68, 0.12);
   }
 
   .play-again-btn {

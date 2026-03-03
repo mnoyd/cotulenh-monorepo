@@ -42,6 +42,11 @@ export interface OnlineSessionCallbacks {
   onSyncError?: (context: SyncErrorContext) => void;
   onGameEnd?: (result: GameEndResult) => void;
   onDispute?: (info: { san: string; pgn: string }) => void;
+  onDrawOffer?: () => void;
+  onDrawDeclined?: () => void;
+  onRematchRequested?: () => void;
+  onRematchAccepted?: (newGameId: string) => void;
+  onRematchDeclined?: () => void;
 }
 
 export class OnlineGameSessionCore {
@@ -77,9 +82,15 @@ export class OnlineGameSessionCore {
   #gameResult: GameEndResult | null = null;
   #opponentFlagged = false;
   #pendingDrawOffer = false;
+  #drawOfferSent = false;
+  #drawOfferReceived = false;
   #disputeActive = false;
   #disputeInfo: { san: string; pgn: string } | null = null;
   #reportingDispute = false;
+  #rematchSent = false;
+  #rematchReceived = false;
+  #rematchGameId: string | null = null;
+  #acceptingRematch = false;
 
   constructor(config: OnlineSessionConfig, callbacks: OnlineSessionCallbacks = {}) {
     this.gameId = config.gameId;
@@ -150,8 +161,28 @@ export class OnlineGameSessionCore {
     return this.#disputeInfo;
   }
 
-  setPendingDrawOffer(pending: boolean): void {
-    this.#pendingDrawOffer = pending;
+  get drawOfferSent(): boolean {
+    return this.#drawOfferSent;
+  }
+
+  get drawOfferReceived(): boolean {
+    return this.#drawOfferReceived;
+  }
+
+  get rematchSent(): boolean {
+    return this.#rematchSent;
+  }
+
+  get rematchReceived(): boolean {
+    return this.#rematchReceived;
+  }
+
+  get rematchGameId(): string | null {
+    return this.#rematchGameId;
+  }
+
+  get canAbort(): boolean {
+    return this.#lifecycle === 'playing' && this.session.game.history().length < 2;
   }
 
   join(): void {
@@ -262,6 +293,184 @@ export class OnlineGameSessionCore {
     this.#notifyStateChange();
   }
 
+  offerDraw(): void {
+    if (!this.#channel) return;
+    if (
+      this.#lifecycle !== 'playing' ||
+      this.#disputeActive ||
+      this.#drawOfferSent ||
+      this.#drawOfferReceived
+    ) {
+      return;
+    }
+
+    sendGameMessage(this.#channel, {
+      event: 'draw-offer',
+      senderId: this.#currentUserId
+    });
+
+    this.#drawOfferSent = true;
+    this.#pendingDrawOffer = true;
+    this.#notifyStateChange();
+  }
+
+  acceptDraw(): void {
+    if (!this.#channel) return;
+    if (!this.#drawOfferReceived || this.#lifecycle !== 'playing') return;
+
+    sendGameMessage(this.#channel, {
+      event: 'draw-accept',
+      senderId: this.#currentUserId
+    });
+
+    this.#endGameAsDraw('draw_by_agreement');
+  }
+
+  declineDraw(): void {
+    if (!this.#channel) return;
+    if (!this.#drawOfferReceived || this.#lifecycle !== 'playing') return;
+
+    sendGameMessage(this.#channel, {
+      event: 'draw-decline',
+      senderId: this.#currentUserId
+    });
+
+    this.#drawOfferReceived = false;
+    this.#pendingDrawOffer = false;
+    this.#notifyStateChange();
+  }
+
+  requestRematch(): void {
+    if (!this.#channel) return;
+    if (this.#lifecycle !== 'ended' || this.#rematchSent || this.#rematchReceived) return;
+
+    sendGameMessage(this.#channel, {
+      event: 'rematch',
+      senderId: this.#currentUserId
+    });
+
+    this.#rematchSent = true;
+    this.#notifyStateChange();
+  }
+
+  async acceptRematch(): Promise<void> {
+    if (!this.#channel) return;
+    if (
+      !this.#rematchReceived ||
+      this.#lifecycle !== 'ended' ||
+      this.#acceptingRematch
+    ) {
+      return;
+    }
+
+    this.#acceptingRematch = true;
+    try {
+      const newRedPlayer = this.playerColor === 'red' ? this.#opponentUserId : this.#currentUserId;
+      const newBluePlayer = this.playerColor === 'red' ? this.#currentUserId : this.#opponentUserId;
+      const gameConfig = {
+        timeMinutes: this.#timeControlMinutes,
+        incrementSeconds: this.#timeControlIncrement
+      };
+
+      const { data: invitation, error: invitationError } = await this.#supabase
+        .from('game_invitations')
+        .insert({
+          from_user: this.#opponentUserId,
+          to_user: this.#currentUserId,
+          status: 'accepted',
+          game_config: gameConfig
+        })
+        .select('id')
+        .single();
+
+      if (invitationError || !invitation?.id) {
+        logger.error('Failed to create rematch invitation', {
+          gameId: this.gameId,
+          error: invitationError
+        });
+        return;
+      }
+
+      const { data: newGame, error: gameError } = await this.#supabase
+        .from('games')
+        .insert({
+          invitation_id: invitation.id,
+          red_player: newRedPlayer,
+          blue_player: newBluePlayer,
+          status: 'started',
+          time_control: gameConfig
+        })
+        .select('id')
+        .single();
+
+      if (gameError || !newGame?.id) {
+        logger.error('Failed to create rematch game', {
+          gameId: this.gameId,
+          error: gameError
+        });
+        return;
+      }
+
+      sendGameMessage(this.#channel, {
+        event: 'rematch-accept',
+        senderId: this.#currentUserId,
+        newGameId: newGame.id
+      });
+
+      this.#rematchGameId = newGame.id;
+      this.#rematchSent = false;
+      this.#rematchReceived = false;
+      this.#callbacks.onRematchAccepted?.(newGame.id);
+      this.#notifyStateChange();
+    } catch (error) {
+      logger.error('Unexpected rematch acceptance failure', {
+        gameId: this.gameId,
+        error
+      });
+    } finally {
+      this.#acceptingRematch = false;
+    }
+  }
+
+  declineRematch(): void {
+    if (!this.#channel) return;
+    if (!this.#rematchReceived || this.#lifecycle !== 'ended') return;
+
+    sendGameMessage(this.#channel, {
+      event: 'rematch-decline',
+      senderId: this.#currentUserId
+    });
+
+    this.#rematchReceived = false;
+    this.#notifyStateChange();
+  }
+
+  async abort(): Promise<void> {
+    if (!this.#channel || !this.canAbort) return;
+    if (this.#disputeActive) return;
+
+    this.#lifecycle = 'ended';
+    this.clock.stop();
+    this.#notifyStateChange();
+
+    const { error } = await this.#supabase
+      .from('games')
+      .update({ status: 'aborted' }, { count: 'exact' })
+      .eq('id', this.gameId)
+      .eq('status', 'started');
+
+    if (error) {
+      logger.error('Failed to abort game', { gameId: this.gameId, error });
+    }
+
+    sendGameMessage(this.#channel, {
+      event: 'abort',
+      senderId: this.#currentUserId
+    });
+
+    this.#notifyAbortOnce();
+  }
+
   async reportDispute(classification: 'bug' | 'cheat', comment?: string): Promise<void> {
     if (!this.#disputeActive || this.#lifecycle !== 'playing' || !this.#disputeInfo || this.#reportingDispute) return;
 
@@ -359,6 +568,16 @@ export class OnlineGameSessionCore {
     sendGameMessage(this.#channel, message);
     this.#startAckRetry(seq, message);
 
+    // Local move while opponent draw offer is pending implicitly declines it.
+    if (this.#drawOfferReceived) {
+      sendGameMessage(this.#channel, {
+        event: 'draw-decline',
+        senderId: this.#currentUserId
+      });
+      this.#drawOfferReceived = false;
+      this.#pendingDrawOffer = false;
+    }
+
     // Switch clock side
     this.clock.switchSide();
     this.#notifyStateChange();
@@ -413,6 +632,24 @@ export class OnlineGameSessionCore {
         break;
       case 'abort':
         this.#handleAbortMessage();
+        break;
+      case 'draw-offer':
+        this.#handleDrawOfferMessage();
+        break;
+      case 'draw-accept':
+        this.#handleDrawAcceptMessage();
+        break;
+      case 'draw-decline':
+        this.#handleDrawDeclineMessage();
+        break;
+      case 'rematch':
+        this.#handleRematchMessage();
+        break;
+      case 'rematch-accept':
+        this.#handleRematchAcceptMessage(msg);
+        break;
+      case 'rematch-decline':
+        this.#handleRematchDeclineMessage();
         break;
       default:
         break;
@@ -480,6 +717,10 @@ export class OnlineGameSessionCore {
       this.clock.setTime(this.opponentClockColor, adjustedClock);
       this.clock.switchSide();
       this.#lagTracker.regenerate();
+      if (this.#drawOfferSent) {
+        this.#drawOfferSent = false;
+        this.#pendingDrawOffer = false;
+      }
       this.#lastProcessedSeq = msg.seq;
       this.#sendAck(msg.seq);
       this.#notifyStateChange();
@@ -548,6 +789,75 @@ export class OnlineGameSessionCore {
     this.#lifecycle = 'ended';
     this.#notifyStateChange();
     this.#notifyAbortOnce();
+  }
+
+  #handleDrawOfferMessage(): void {
+    if (
+      this.#lifecycle !== 'playing' ||
+      this.#disputeActive ||
+      this.#drawOfferReceived
+    ) {
+      return;
+    }
+
+    if (this.#drawOfferSent) {
+      this.#endGameAsDraw('draw_by_agreement');
+      return;
+    }
+
+    this.#drawOfferReceived = true;
+    this.#pendingDrawOffer = true;
+    this.#callbacks.onDrawOffer?.();
+    this.#notifyStateChange();
+  }
+
+  #handleDrawAcceptMessage(): void {
+    if (!this.#drawOfferSent || this.#lifecycle !== 'playing') return;
+    this.#endGameAsDraw('draw_by_agreement');
+  }
+
+  #handleDrawDeclineMessage(): void {
+    if (!this.#drawOfferSent) return;
+    this.#drawOfferSent = false;
+    this.#pendingDrawOffer = false;
+    this.#callbacks.onDrawDeclined?.();
+    this.#notifyStateChange();
+  }
+
+  #handleRematchMessage(): void {
+    if (this.#lifecycle !== 'ended' || this.#rematchReceived) return;
+
+    if (this.#rematchSent) {
+      // Deterministic tiebreak to avoid both peers creating rematch rows.
+      if (this.#currentUserId < this.#opponentUserId) {
+        this.#rematchReceived = true;
+        void this.acceptRematch();
+      }
+      return;
+    }
+
+    this.#rematchReceived = true;
+    this.#callbacks.onRematchRequested?.();
+    this.#notifyStateChange();
+  }
+
+  #handleRematchAcceptMessage(msg: Extract<GameMessage, { event: 'rematch-accept' }>): void {
+    if (!this.#rematchSent) return;
+    const newGameId = msg.newGameId;
+    if (!newGameId || typeof newGameId !== 'string') return;
+
+    this.#rematchGameId = newGameId;
+    this.#rematchSent = false;
+    this.#rematchReceived = false;
+    this.#callbacks.onRematchAccepted?.(newGameId);
+    this.#notifyStateChange();
+  }
+
+  #handleRematchDeclineMessage(): void {
+    if (!this.#rematchSent) return;
+    this.#rematchSent = false;
+    this.#callbacks.onRematchDeclined?.();
+    this.#notifyStateChange();
   }
 
   // ============================================================
@@ -626,8 +936,9 @@ export class OnlineGameSessionCore {
     // Update game status to aborted in database
     const { error } = await this.#supabase
       .from('games')
-      .update({ status: 'aborted' })
-      .eq('id', this.gameId);
+      .update({ status: 'aborted' }, { count: 'exact' })
+      .eq('id', this.gameId)
+      .eq('status', 'started');
 
     if (error) {
       logger.error('Failed to abort game', { gameId: this.gameId, error });
@@ -729,17 +1040,7 @@ export class OnlineGameSessionCore {
 
     // Opponent's clock ran out — check for pending draw offer interaction
     if (this.#pendingDrawOffer) {
-      this.clock.stop();
-      this.#lifecycle = 'ended';
-      this.#gameResult = {
-        status: 'draw',
-        winner: null,
-        resultReason: 'draw_by_timeout_with_pending_offer',
-        isLocalPlayerWinner: false
-      };
-      this.#writeGameResult('draw', null, 'draw_by_timeout_with_pending_offer');
-      this.#callbacks.onGameEnd?.(this.#gameResult);
-      this.#notifyStateChange();
+      this.#endGameAsDraw('draw_by_timeout_with_pending_offer');
       return;
     }
 
@@ -756,6 +1057,24 @@ export class OnlineGameSessionCore {
     const myRemainingTime = this.clock.getTime(this.myClockColor);
     const opponentRemainingTime = this.clock.getTime(this.opponentClockColor);
     this.#opponentFlagged = opponentRemainingTime <= 0 && myRemainingTime > 0;
+  }
+
+  #endGameAsDraw(resultReason: string): void {
+    if (this.#lifecycle === 'ended') return;
+    this.#lifecycle = 'ended';
+    this.clock.stop();
+    this.#drawOfferSent = false;
+    this.#drawOfferReceived = false;
+    this.#pendingDrawOffer = false;
+    this.#gameResult = {
+      status: 'draw',
+      winner: null,
+      resultReason,
+      isLocalPlayerWinner: false
+    };
+    this.#writeGameResult('draw', null, resultReason);
+    this.#callbacks.onGameEnd?.(this.#gameResult);
+    this.#notifyStateChange();
   }
 
   // ============================================================
@@ -891,6 +1210,7 @@ export class OnlineGameSessionCore {
         case 'threefold_repetition': terminationString = 'threefold repetition'; break;
         case 'timeout': terminationString = 'time forfeit'; break;
         case 'dispute': terminationString = 'move dispute'; break;
+        case 'draw_by_agreement': terminationString = 'draw by agreement'; break;
         default: terminationString = resultReason; break;
       }
       game.setHeader('Termination', terminationString);
@@ -908,6 +1228,10 @@ export class OnlineGameSessionCore {
       // For dispute, result is unknown pending admin resolution
       if (status === 'dispute') {
         game.setHeader('Result', '*');
+      }
+
+      if (status === 'draw') {
+        game.setHeader('Result', '1/2-1/2');
       }
 
       // Core engine accepts `clocks` but interface type doesn't expose it

@@ -34,7 +34,8 @@ export class OnlineGameSession {
     onAbort?: () => void,
     onSyncError?: (context: SyncErrorContext) => void,
     onGameEnd?: (result: GameEndResult) => void,
-    onDispute?: (info: { san: string; pgn: string }) => void
+    onDispute?: (info: { san: string; pgn: string }) => void,
+    onRematchAccepted?: (newGameId: string) => void
   ) {
     this.#core = new OnlineGameSessionCore(config, {
       onStateChange: () => this.#syncState(),
@@ -44,6 +45,22 @@ export class OnlineGameSession {
       onDispute: (info) => {
         this.#version++;
         onDispute?.(info);
+      },
+      onDrawOffer: () => {
+        this.#version++;
+      },
+      onDrawDeclined: () => {
+        this.#version++;
+      },
+      onRematchRequested: () => {
+        this.#version++;
+      },
+      onRematchAccepted: (newGameId) => {
+        this.#version++;
+        onRematchAccepted?.(newGameId);
+      },
+      onRematchDeclined: () => {
+        this.#version++;
       }
     });
   }
@@ -171,6 +188,36 @@ export class OnlineGameSession {
     return this.#core.disputeInfo;
   }
 
+  get drawOfferSent(): boolean {
+    void this.#version;
+    return this.#core.drawOfferSent;
+  }
+
+  get drawOfferReceived(): boolean {
+    void this.#version;
+    return this.#core.drawOfferReceived;
+  }
+
+  get rematchSent(): boolean {
+    void this.#version;
+    return this.#core.rematchSent;
+  }
+
+  get rematchReceived(): boolean {
+    void this.#version;
+    return this.#core.rematchReceived;
+  }
+
+  get rematchGameId(): string | null {
+    void this.#version;
+    return this.#core.rematchGameId;
+  }
+
+  get canAbort(): boolean {
+    void this.#version;
+    return this.#core.canAbort;
+  }
+
   // ============================================================
   // Actions
   // ============================================================
@@ -185,6 +232,34 @@ export class OnlineGameSession {
 
   resign(): void {
     this.#core.resign();
+  }
+
+  offerDraw(): void {
+    this.#core.offerDraw();
+  }
+
+  acceptDraw(): void {
+    this.#core.acceptDraw();
+  }
+
+  declineDraw(): void {
+    this.#core.declineDraw();
+  }
+
+  requestRematch(): void {
+    this.#core.requestRematch();
+  }
+
+  async acceptRematch(): Promise<void> {
+    await this.#core.acceptRematch();
+  }
+
+  declineRematch(): void {
+    this.#core.declineRematch();
+  }
+
+  async abort(): Promise<void> {
+    await this.#core.abort();
   }
 
   async reportDispute(classification: 'bug' | 'cheat', comment?: string): Promise<void> {

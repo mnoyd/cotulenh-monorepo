@@ -626,6 +626,11 @@ export interface TranslationKeys {
   'game.resignButton': string;
   'game.playAgain': string;
   'game.claimVictory': string;
+  'game.offerDraw': string;
+  'game.drawOfferSent': string;
+  'game.drawOfferReceived': string;
+  'game.acceptDraw': string;
+  'game.declineDraw': string;
   'game.resultTimeout': string;
   'game.disputeTitle': string;
   'game.disputeMessage': string;
@@ -633,6 +638,13 @@ export interface TranslationKeys {
   'game.reportBug': string;
   'game.reportCheat': string;
   'game.resultDispute': string;
+  'game.resultDrawAgreement': string;
+  'game.rematch': string;
+  'game.rematchRequested': string;
+  'game.rematchReceived': string;
+  'game.acceptRematch': string;
+  'game.declineRematch': string;
+  'game.abortGame': string;
 }
 
 export type TranslationKey = keyof TranslationKeys;

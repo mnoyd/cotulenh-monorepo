@@ -68,6 +68,11 @@
   let disputeDialogOpen = $derived(disputeActive && onlineSession?.lifecycle === 'playing');
   let disputeComment = $state('');
   let submittingDispute = $state(false);
+  let drawOfferSent = $derived(onlineSession?.drawOfferSent ?? false);
+  let drawOfferReceived = $derived(onlineSession?.drawOfferReceived ?? false);
+  let canAbort = $derived(onlineSession?.canAbort ?? false);
+  let rematchSent = $derived(onlineSession?.rematchSent ?? false);
+  let rematchReceived = $derived(onlineSession?.rematchReceived ?? false);
 
   let turnLabel = $derived(
     isMyTurn ? i18n.t('game.yourTurn') : i18n.t('game.opponentTurn')
@@ -131,6 +136,10 @@
       (result) => {
         // onGameEnd callback
         gameResult = result;
+      },
+      undefined,
+      (newGameId: string) => {
+        goto(`/play/online/${newGameId}`);
       }
     );
 
@@ -156,6 +165,14 @@
       disputeComment = '';
     } finally {
       submittingDispute = false;
+    }
+  }
+
+  async function handleAcceptRematch() {
+    await onlineSession?.acceptRematch();
+    const newGameId = onlineSession?.rematchGameId;
+    if (newGameId) {
+      goto(`/play/online/${newGameId}`);
     }
   }
 
@@ -212,6 +229,11 @@
             result={gameResult}
             playerColor={data.playerColor as 'red' | 'blue'}
             onPlayAgain={() => goto('/play/online')}
+            onRematch={() => onlineSession?.requestRematch()}
+            {rematchSent}
+            {rematchReceived}
+            onAcceptRematch={handleAcceptRematch}
+            onDeclineRematch={() => onlineSession?.declineRematch()}
           />
         </div>
       {/if}
@@ -230,18 +252,36 @@
           <span class="move-counter">
             {i18n.t('game.moveCount').replace('{count}', String(moveCount))}
           </span>
+          {#if !opponentFlagged && !disputeActive}
+            {#if drawOfferSent}
+              <span class="draw-offer-pending">{i18n.t('game.drawOfferSent')}</span>
+            {:else if drawOfferReceived}
+              <div class="draw-offer-received">
+                <span>{i18n.t('game.drawOfferReceived')}</span>
+                <button class="accept-draw-btn" onclick={() => onlineSession?.acceptDraw()}>
+                  {i18n.t('game.acceptDraw')}
+                </button>
+                <button class="decline-draw-btn" onclick={() => onlineSession?.declineDraw()}>
+                  {i18n.t('game.declineDraw')}
+                </button>
+              </div>
+            {:else}
+              <button class="draw-offer-btn" onclick={() => onlineSession?.offerDraw()}>
+                {i18n.t('game.offerDraw')}
+              </button>
+            {/if}
+          {/if}
+
           {#if opponentFlagged}
-            <button
-              class="claim-victory-btn"
-              onclick={() => onlineSession?.claimVictory()}
-            >
+            <button class="claim-victory-btn" onclick={() => onlineSession?.claimVictory()}>
               {i18n.t('game.claimVictory')}
             </button>
+          {:else if canAbort}
+            <button class="abort-btn" onclick={() => void onlineSession?.abort()}>
+              {i18n.t('game.abortGame')}
+            </button>
           {:else}
-            <button
-              class="resign-btn"
-              onclick={() => { resignDialogOpen = true; }}
-            >
+            <button class="resign-btn" onclick={() => { resignDialogOpen = true; }}>
               {i18n.t('game.resignButton')}
             </button>
           {/if}
@@ -474,6 +514,72 @@
     display: flex;
     align-items: center;
     gap: 0.75rem;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .draw-offer-btn,
+  .abort-btn,
+  .accept-draw-btn,
+  .decline-draw-btn {
+    font-size: 0.6875rem;
+    font-weight: 600;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    border: 1px solid var(--theme-border, #333);
+    background: transparent;
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s, background-color 0.15s;
+  }
+
+  .draw-offer-btn {
+    color: var(--theme-text-secondary, #aaa);
+  }
+
+  .draw-offer-btn:hover {
+    color: var(--theme-text-primary, #eee);
+    border-color: var(--theme-text-secondary, #aaa);
+  }
+
+  .draw-offer-pending {
+    font-size: 0.6875rem;
+    color: var(--theme-text-secondary, #888);
+    font-weight: 600;
+  }
+
+  .draw-offer-received {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.6875rem;
+    color: var(--theme-text-secondary, #aaa);
+  }
+
+  .accept-draw-btn {
+    color: #22c55e;
+    border-color: rgba(34, 197, 94, 0.5);
+  }
+
+  .accept-draw-btn:hover {
+    background: rgba(34, 197, 94, 0.12);
+  }
+
+  .decline-draw-btn {
+    color: #ef4444;
+    border-color: rgba(239, 68, 68, 0.5);
+  }
+
+  .decline-draw-btn:hover {
+    background: rgba(239, 68, 68, 0.12);
+  }
+
+  .abort-btn {
+    color: var(--theme-text-primary, #eee);
+  }
+
+  .abort-btn:hover {
+    color: #f59e0b;
+    border-color: #f59e0b;
   }
 
   .resign-btn {
