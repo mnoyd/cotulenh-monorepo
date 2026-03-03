@@ -1582,6 +1582,372 @@ describe('OnlineGameSessionCore', () => {
     });
   });
 
+  describe('clock timeout and claim victory', () => {
+    async function setupPlayingGame(callbacks: Record<string, Function> = {}) {
+      core = new OnlineGameSessionCore(createDefaultConfig(mock.supabase), callbacks);
+      core.join();
+      await vi.advanceTimersByTimeAsync(10);
+
+      mock.presenceState['opponent'] = [{
+        color: 'blue',
+        userId: OPPONENT_USER_ID,
+        presenceId: 'opponent-presence'
+      }];
+      mock.simulatePresenceSync();
+      return core;
+    }
+
+    it('sets opponentFlagged when opponent clock reaches 0', async () => {
+      const onStateChange = vi.fn();
+      await setupPlayingGame({ onStateChange });
+
+      expect(core.opponentFlagged).toBe(false);
+
+      // Make a local move so clock switches to blue (opponent)
+      triggerLocalMove(core);
+
+      // Set opponent's clock very low and advance to trigger timeout
+      core.clock.setTime('b', 50);
+      await vi.advanceTimersByTimeAsync(100);
+
+      expect(core.opponentFlagged).toBe(true);
+      expect(core.lifecycle).toBe('playing'); // Game continues
+      expect(onStateChange).toHaveBeenCalled();
+    });
+
+    it('does nothing when own clock reaches 0', async () => {
+      const onGameEnd = vi.fn();
+      await setupPlayingGame({ onGameEnd });
+
+      expect(core.opponentFlagged).toBe(false);
+
+      // Red side is active at start — set red time low
+      core.clock.setTime('r', 50);
+      await vi.advanceTimersByTimeAsync(100);
+
+      expect(core.opponentFlagged).toBe(false);
+      expect(core.lifecycle).not.toBe('ended');
+      expect(onGameEnd).not.toHaveBeenCalled();
+    });
+
+    it('claimVictory sends message and ends game with timeout status', async () => {
+      const onGameEnd = vi.fn();
+      await setupPlayingGame({ onGameEnd });
+
+      // Trigger opponent timeout
+      triggerLocalMove(core);
+      core.clock.setTime('b', 50);
+      await vi.advanceTimersByTimeAsync(100);
+
+      expect(core.opponentFlagged).toBe(true);
+
+      core.claimVictory();
+
+      expect(core.lifecycle).toBe('ended');
+      expect(core.gameResult).toEqual(expect.objectContaining({
+        status: 'timeout',
+        winner: 'red',
+        resultReason: 'timeout',
+        isLocalPlayerWinner: true
+      }));
+      expect(onGameEnd).toHaveBeenCalledWith(expect.objectContaining({
+        status: 'timeout',
+        winner: 'red',
+        isLocalPlayerWinner: true
+      }));
+
+      // Should have sent claim-victory message
+      const sendCalls = (mock.mockChannel.send as ReturnType<typeof vi.fn>).mock.calls;
+      const claimSends = sendCalls.filter(
+        (c: unknown[]) => (c[0] as Record<string, Record<string, unknown>>).payload?.event === 'claim-victory'
+      );
+      expect(claimSends).toHaveLength(1);
+    });
+
+    it('claimVictory does nothing when opponentFlagged is false', async () => {
+      const onGameEnd = vi.fn();
+      await setupPlayingGame({ onGameEnd });
+
+      expect(core.opponentFlagged).toBe(false);
+
+      core.claimVictory();
+
+      expect(core.lifecycle).toBe('playing');
+      expect(onGameEnd).not.toHaveBeenCalled();
+    });
+
+    it('claimVictory does nothing when lifecycle is not playing', async () => {
+      const onGameEnd = vi.fn();
+      core = new OnlineGameSessionCore(createDefaultConfig(mock.supabase), { onGameEnd });
+      core.join();
+      await vi.advanceTimersByTimeAsync(10);
+
+      // Still in 'waiting' state
+      core.claimVictory();
+      expect(core.lifecycle).toBe('waiting');
+      expect(onGameEnd).not.toHaveBeenCalled();
+    });
+
+    it('handles receiving claim-victory message — local player loses', async () => {
+      const onGameEnd = vi.fn();
+      await setupPlayingGame({ onGameEnd });
+
+      // Local player must be flagged locally before claim-victory can be accepted
+      core.clock.setTime('r', 50);
+      await vi.advanceTimersByTimeAsync(100);
+
+      mock.simulateGameMessage({ event: 'claim-victory' });
+
+      expect(core.lifecycle).toBe('ended');
+      expect(core.gameResult).toEqual(expect.objectContaining({
+        status: 'timeout',
+        winner: 'blue',
+        resultReason: 'timeout',
+        isLocalPlayerWinner: false
+      }));
+      expect(onGameEnd).toHaveBeenCalledWith(expect.objectContaining({
+        status: 'timeout',
+        winner: 'blue',
+        isLocalPlayerWinner: false
+      }));
+    });
+
+    it('ignores claim-victory message if local clock has not timed out', async () => {
+      const onGameEnd = vi.fn();
+      await setupPlayingGame({ onGameEnd });
+
+      // Local clock still has full time
+      expect(core.clock.getTime('r')).toBeGreaterThan(0);
+
+      mock.simulateGameMessage({ event: 'claim-victory' });
+
+      expect(core.lifecycle).toBe('playing');
+      expect(core.gameResult).toBeNull();
+      expect(onGameEnd).not.toHaveBeenCalled();
+    });
+
+    it('ignores claim-victory after sync sets local time to 0 but timeout status is not reached', async () => {
+      const onGameEnd = vi.fn();
+      await setupPlayingGame({ onGameEnd });
+
+      expect(core.clock.status).toBe('running');
+      expect(core.clock.getTime('r')).toBeGreaterThan(0);
+
+      mock.simulateGameMessage({
+        event: 'sync',
+        fen: core.session.game.fen(),
+        pgn: core.session.pgn,
+        clock: { red: 0, blue: 200000 },
+        seq: 1
+      });
+
+      expect(core.clock.getTime('r')).toBe(0);
+      expect(core.clock.status).toBe('running');
+
+      mock.simulateGameMessage({ event: 'claim-victory' });
+
+      expect(core.lifecycle).toBe('playing');
+      expect(core.gameResult).toBeNull();
+      expect(onGameEnd).not.toHaveBeenCalled();
+    });
+
+    it('does not broadcast local moves after own timeout', async () => {
+      await setupPlayingGame();
+
+      core.clock.setTime('r', 50);
+      await vi.advanceTimersByTimeAsync(100);
+      expect(core.clock.status).toBe('timeout');
+
+      const moveSendsBefore = (mock.mockChannel.send as ReturnType<typeof vi.fn>).mock.calls.filter(
+        (c: unknown[]) => (c[0] as Record<string, Record<string, unknown>>).payload?.event === 'move'
+      ).length;
+
+      triggerLocalMove(core);
+
+      const moveSendsAfter = (mock.mockChannel.send as ReturnType<typeof vi.fn>).mock.calls.filter(
+        (c: unknown[]) => (c[0] as Record<string, Record<string, unknown>>).payload?.event === 'move'
+      ).length;
+
+      expect(moveSendsAfter).toBe(moveSendsBefore);
+      expect(core.seqCounter).toBe(0);
+    });
+
+    it('does not allow resign after own timeout', async () => {
+      const onGameEnd = vi.fn();
+      await setupPlayingGame({ onGameEnd });
+
+      core.clock.setTime('r', 50);
+      await vi.advanceTimersByTimeAsync(100);
+      expect(core.clock.status).toBe('timeout');
+
+      const sendCountBefore = (mock.mockChannel.send as ReturnType<typeof vi.fn>).mock.calls.length;
+      core.resign();
+      const sendCountAfter = (mock.mockChannel.send as ReturnType<typeof vi.fn>).mock.calls.length;
+
+      expect(core.lifecycle).toBe('playing');
+      expect(core.gameResult).toBeNull();
+      expect(onGameEnd).not.toHaveBeenCalled();
+      expect(sendCountAfter).toBe(sendCountBefore);
+    });
+
+    it('ignores claim-victory message if lifecycle is already ended', async () => {
+      const onGameEnd = vi.fn();
+      await setupPlayingGame({ onGameEnd });
+
+      // Local player must be timed out so the first claim-victory is accepted
+      core.clock.setTime('r', 50);
+      await vi.advanceTimersByTimeAsync(100);
+
+      // First claim
+      mock.simulateGameMessage({ event: 'claim-victory' });
+      expect(onGameEnd).toHaveBeenCalledTimes(1);
+
+      // Second claim should be ignored (idempotent)
+      mock.simulateGameMessage({ event: 'claim-victory' });
+      expect(onGameEnd).toHaveBeenCalledTimes(1);
+    });
+
+    it('ignores remote move messages after game has ended', async () => {
+      await setupPlayingGame();
+
+      // End game via timeout claim.
+      triggerLocalMove(core);
+      core.clock.setTime('b', 50);
+      await vi.advanceTimersByTimeAsync(100);
+      core.claimVictory();
+      expect(core.lifecycle).toBe('ended');
+
+      const historyBefore = core.session.history.length;
+      const sendCountBefore = (mock.mockChannel.send as ReturnType<typeof vi.fn>).mock.calls.length;
+      const fallbackSan = core.session.possibleMoves[0]?.san ?? 'Ic6';
+
+      mock.simulateGameMessage({
+        event: 'move',
+        san: fallbackSan,
+        clock: 10_000,
+        seq: 999,
+        sentAt: Date.now() - 50
+      });
+
+      expect(core.session.history.length).toBe(historyBefore);
+
+      // We still ack to stop remote retries, but no state mutation should occur.
+      const sendCalls = (mock.mockChannel.send as ReturnType<typeof vi.fn>).mock.calls;
+      expect(sendCalls.length).toBe(sendCountBefore + 1);
+      expect(sendCalls.at(-1)?.[0]).toEqual(expect.objectContaining({
+        payload: expect.objectContaining({ event: 'ack', seq: 999 })
+      }));
+    });
+
+    it('writes PGN with time forfeit termination on timeout', async () => {
+      await setupPlayingGame();
+
+      // Make a move so there's PGN content
+      triggerLocalMove(core);
+      core.clock.setTime('b', 50);
+      await vi.advanceTimersByTimeAsync(100);
+
+      core.claimVictory();
+      await Promise.resolve();
+
+      const updateValues = mock.getLastUpdateValues() as Record<string, unknown>;
+      expect(updateValues.status).toBe('timeout');
+      expect(updateValues.winner).toBe('red');
+      expect(updateValues.result_reason).toBe('timeout');
+
+      const pgn = String(updateValues.pgn ?? '');
+      expect(pgn).toContain('[Termination "time forfeit"]');
+      expect(pgn).toContain('[Result "1-0"]');
+    });
+
+    it('ends as draw when pendingDrawOffer is true and opponent times out', async () => {
+      const onGameEnd = vi.fn();
+      await setupPlayingGame({ onGameEnd });
+
+      // Set pending draw offer
+      core.setPendingDrawOffer(true);
+
+      // Trigger opponent timeout
+      triggerLocalMove(core);
+      core.clock.setTime('b', 50);
+      await vi.advanceTimersByTimeAsync(100);
+
+      expect(core.opponentFlagged).toBe(false); // Should NOT be set
+      expect(core.lifecycle).toBe('ended');
+      expect(core.gameResult).toEqual(expect.objectContaining({
+        status: 'draw',
+        winner: null,
+        resultReason: 'draw_by_timeout_with_pending_offer',
+        isLocalPlayerWinner: false
+      }));
+      expect(onGameEnd).toHaveBeenCalledWith(expect.objectContaining({
+        status: 'draw',
+        winner: null
+      }));
+    });
+
+    it('resets opponentFlagged on sync', async () => {
+      await setupPlayingGame();
+
+      // Trigger opponent timeout
+      triggerLocalMove(core);
+      core.clock.setTime('b', 50);
+      await vi.advanceTimersByTimeAsync(100);
+
+      expect(core.opponentFlagged).toBe(true);
+
+      // Simulate sync message (seq must be positive integer per isGameMessage validator)
+      mock.simulateGameMessage({
+        event: 'sync',
+        fen: core.session.game.fen(),
+        pgn: core.session.pgn,
+        clock: { red: 200000, blue: 200000 },
+        seq: 1
+      });
+
+      expect(core.opponentFlagged).toBe(false);
+    });
+
+    it('keeps opponentFlagged true on sync when timeout state still shows opponent at 0', async () => {
+      await setupPlayingGame();
+
+      // Trigger opponent timeout to enter claimable state.
+      triggerLocalMove(core);
+      core.clock.setTime('b', 50);
+      await vi.advanceTimersByTimeAsync(100);
+      expect(core.opponentFlagged).toBe(true);
+      expect(core.clock.status).toBe('timeout');
+
+      // Sync preserves opponent at 0 and local above 0.
+      mock.simulateGameMessage({
+        event: 'sync',
+        fen: core.session.game.fen(),
+        pgn: core.session.pgn,
+        clock: { red: 200000, blue: 0 },
+        seq: 1
+      });
+
+      expect(core.clock.status).toBe('timeout');
+      expect(core.opponentFlagged).toBe(true);
+    });
+
+    it('does not handle clock timeout when lifecycle is not playing', async () => {
+      const onGameEnd = vi.fn();
+      core = new OnlineGameSessionCore(createDefaultConfig(mock.supabase), { onGameEnd });
+      core.join();
+      await vi.advanceTimersByTimeAsync(10);
+
+      // lifecycle is 'waiting' — set time low on red (active after start)
+      core.clock.setTime('r', 50);
+      await vi.advanceTimersByTimeAsync(100);
+
+      // Even though clock timed out, nothing should happen since lifecycle isn't 'playing'
+      // (Clock started in startGameWhenReady, but opponent not yet connected so still 'waiting')
+      expect(core.opponentFlagged).toBe(false);
+      expect(onGameEnd).not.toHaveBeenCalled();
+    });
+  });
+
   describe('PGN save', () => {
     it('writes result with expected headers, clock annotations, and optimistic-concurrency filters', async () => {
       core = new OnlineGameSessionCore(createDefaultConfig(mock.supabase));

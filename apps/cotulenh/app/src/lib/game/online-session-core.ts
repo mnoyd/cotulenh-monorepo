@@ -74,6 +74,8 @@ export class OnlineGameSessionCore {
   #callbacks: OnlineSessionCallbacks;
   #clockAnnotations: string[] = [];
   #gameResult: GameEndResult | null = null;
+  #opponentFlagged = false;
+  #pendingDrawOffer = false;
 
   constructor(config: OnlineSessionConfig, callbacks: OnlineSessionCallbacks = {}) {
     this.gameId = config.gameId;
@@ -102,6 +104,7 @@ export class OnlineGameSessionCore {
       }
     };
     this.clock = new ChessClockState(clockConfig);
+    this.clock.onTimeout = (loser: ClockColor) => this.#handleClockTimeout(loser);
 
     // Hook into local move events
     this.session.onMove = (san: string) => this.#handleLocalMove(san);
@@ -129,6 +132,14 @@ export class OnlineGameSessionCore {
 
   get gameResult(): GameEndResult | null {
     return this.#gameResult;
+  }
+
+  get opponentFlagged(): boolean {
+    return this.#opponentFlagged;
+  }
+
+  setPendingDrawOffer(pending: boolean): void {
+    this.#pendingDrawOffer = pending;
   }
 
   join(): void {
@@ -181,8 +192,36 @@ export class OnlineGameSessionCore {
     this.#channel = channel;
   }
 
+  claimVictory(): void {
+    if (!this.#channel || this.#lifecycle !== 'playing' || !this.#opponentFlagged) return;
+
+    sendGameMessage(this.#channel, {
+      event: 'claim-victory',
+      senderId: this.#currentUserId
+    });
+
+    this.clock.stop();
+    this.#lifecycle = 'ended';
+    this.#gameResult = {
+      status: 'timeout',
+      winner: this.playerColor,
+      resultReason: 'timeout',
+      isLocalPlayerWinner: true
+    };
+    this.#writeGameResult('timeout', this.playerColor, 'timeout');
+    this.#callbacks.onGameEnd?.(this.#gameResult);
+    this.#notifyStateChange();
+  }
+
   resign(): void {
     if (!this.#channel || this.#lifecycle !== 'playing') return;
+    if (this.clock.status === 'timeout') {
+      logger.warn('Cannot resign after timeout', {
+        gameId: this.gameId,
+        playerColor: this.playerColor
+      });
+      return;
+    }
 
     sendGameMessage(this.#channel, {
       event: 'resign',
@@ -228,6 +267,13 @@ export class OnlineGameSessionCore {
     if (this.#lifecycle !== 'playing') {
       logger.warn('Cannot send move: game not started', {
         lifecycle: this.#lifecycle
+      });
+      return;
+    }
+    if (this.clock.status === 'timeout') {
+      logger.warn('Cannot send move: clock already timed out', {
+        gameId: this.gameId,
+        playerColor: this.playerColor
       });
       return;
     }
@@ -283,6 +329,12 @@ export class OnlineGameSessionCore {
 
     switch (msg.event) {
       case 'move':
+        if (this.#lifecycle === 'ended') {
+          // Late packets can arrive after the game is finalized; acknowledge but do not mutate state.
+          this.#sendAck(msg.seq);
+          logger.debug('Ignoring move after game ended', { seq: msg.seq });
+          break;
+        }
         this.#handleRemoteMove(msg);
         break;
       case 'ack':
@@ -296,6 +348,9 @@ export class OnlineGameSessionCore {
         break;
       case 'resign':
         this.#handleResignMessage();
+        break;
+      case 'claim-victory':
+        this.#handleClaimVictoryMessage();
         break;
       case 'abort':
         this.#handleAbortMessage();
@@ -401,6 +456,7 @@ export class OnlineGameSessionCore {
     this.clock.setTime('b', msg.clock.blue);
     this.#lastProcessedSeq = msg.seq;
     this.#awaitingSync = false;
+    this.#syncOpponentFlaggedFromClockState();
     this.#clockAnnotations = [];
     this.#clearAllPendingAcks();
     this.#notifyStateChange();
@@ -582,6 +638,52 @@ export class OnlineGameSessionCore {
   }
 
   // ============================================================
+  // PRIVATE - Clock timeout handling
+  // ============================================================
+
+  #handleClockTimeout(loser: ClockColor): void {
+    if (this.#lifecycle !== 'playing') return;
+
+    const loserColor = loser === 'r' ? 'red' : 'blue';
+
+    if (loserColor === this.playerColor) {
+      // Own clock ran out — do nothing, game continues until opponent claims
+      this.#notifyStateChange();
+      return;
+    }
+
+    // Opponent's clock ran out — check for pending draw offer interaction
+    if (this.#pendingDrawOffer) {
+      this.clock.stop();
+      this.#lifecycle = 'ended';
+      this.#gameResult = {
+        status: 'draw',
+        winner: null,
+        resultReason: 'draw_by_timeout_with_pending_offer',
+        isLocalPlayerWinner: false
+      };
+      this.#writeGameResult('draw', null, 'draw_by_timeout_with_pending_offer');
+      this.#callbacks.onGameEnd?.(this.#gameResult);
+      this.#notifyStateChange();
+      return;
+    }
+
+    this.#opponentFlagged = true;
+    this.#notifyStateChange();
+  }
+
+  #syncOpponentFlaggedFromClockState(): void {
+    if (this.#lifecycle !== 'playing' || this.clock.status !== 'timeout') {
+      this.#opponentFlagged = false;
+      return;
+    }
+
+    const myRemainingTime = this.clock.getTime(this.myClockColor);
+    const opponentRemainingTime = this.clock.getTime(this.opponentClockColor);
+    this.#opponentFlagged = opponentRemainingTime <= 0 && myRemainingTime > 0;
+  }
+
+  // ============================================================
   // PRIVATE - Game end detection, resign, result writing
   // ============================================================
 
@@ -650,6 +752,41 @@ export class OnlineGameSessionCore {
     this.#notifyStateChange();
   }
 
+  #handleClaimVictoryMessage(): void {
+    if (this.#lifecycle === 'ended') return;
+    if (this.#lifecycle !== 'playing') return;
+
+    if (this.clock.status !== 'timeout') {
+      logger.warn('Ignoring claim-victory without local timeout status', {
+        gameId: this.gameId,
+        clockStatus: this.clock.status
+      });
+      return;
+    }
+
+    const myRemainingTime = this.clock.getTime(this.myClockColor);
+    if (myRemainingTime > 0) {
+      logger.warn('Ignoring claim-victory before local timeout', {
+        gameId: this.gameId,
+        myRemainingTime
+      });
+      return;
+    }
+
+    const winner = this.playerColor === 'red' ? 'blue' : 'red';
+    this.clock.stop();
+    this.#lifecycle = 'ended';
+    this.#gameResult = {
+      status: 'timeout',
+      winner,
+      resultReason: 'timeout',
+      isLocalPlayerWinner: false
+    };
+    this.#writeGameResult('timeout', winner, 'timeout');
+    this.#callbacks.onGameEnd?.(this.#gameResult);
+    this.#notifyStateChange();
+  }
+
   async #writeGameResult(status: string, winner: string | null, resultReason: string): Promise<void> {
     try {
       // Set PGN headers before export
@@ -667,12 +804,18 @@ export class OnlineGameSessionCore {
         case 'resignation': terminationString = 'resignation'; break;
         case 'fifty_moves': terminationString = 'fifty move rule'; break;
         case 'threefold_repetition': terminationString = 'threefold repetition'; break;
+        case 'timeout': terminationString = 'time forfeit'; break;
         default: terminationString = resultReason; break;
       }
       game.setHeader('Termination', terminationString);
 
       // For resign, manually set Result since engine doesn't know about resignation
       if (status === 'resign') {
+        game.setHeader('Result', winner === 'red' ? '1-0' : '0-1');
+      }
+
+      // For timeout, manually set Result since engine doesn't know about timeout
+      if (status === 'timeout') {
         game.setHeader('Result', winner === 'red' ? '1-0' : '0-1');
       }
 
