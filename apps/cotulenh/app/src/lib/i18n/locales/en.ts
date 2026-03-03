@@ -629,5 +629,7 @@ export const en: TranslationKeys = {
   'game.resignConfirmTitle': 'Resign Game',
   'game.resignConfirmMessage': 'Are you sure you want to resign? This cannot be undone.',
   'game.resignButton': 'Resign',
-  'game.playAgain': 'Play Again'
+  'game.playAgain': 'Play Again',
+  'game.claimVictory': 'Claim Victory',
+  'game.resultTimeout': 'on Time'
 };

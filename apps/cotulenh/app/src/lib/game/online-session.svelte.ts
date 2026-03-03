@@ -151,12 +151,21 @@ export class OnlineGameSession {
     return this.#core.gameResult;
   }
 
+  get opponentFlagged(): boolean {
+    void this.#version;
+    return this.#core.opponentFlagged;
+  }
+
   // ============================================================
   // Actions
   // ============================================================
 
   join(): void {
     this.#core.join();
+  }
+
+  claimVictory(): void {
+    this.#core.claimVictory();
   }
 
   resign(): void {

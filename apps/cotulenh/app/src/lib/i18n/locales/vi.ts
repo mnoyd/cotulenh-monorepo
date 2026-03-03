@@ -629,5 +629,7 @@ export const vi: TranslationKeys = {
   'game.resignConfirmTitle': 'Đầu Hàng',
   'game.resignConfirmMessage': 'Bạn có chắc chắn muốn đầu hàng? Không thể hoàn tác.',
   'game.resignButton': 'Đầu Hàng',
-  'game.playAgain': 'Chơi Lại'
+  'game.playAgain': 'Chơi Lại',
+  'game.claimVictory': 'Đòi Thắng',
+  'game.resultTimeout': 'do Hết giờ'
 };

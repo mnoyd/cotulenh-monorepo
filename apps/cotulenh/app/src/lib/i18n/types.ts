@@ -625,6 +625,8 @@ export interface TranslationKeys {
   'game.resignConfirmMessage': string;
   'game.resignButton': string;
   'game.playAgain': string;
+  'game.claimVictory': string;
+  'game.resultTimeout': string;
 }
 
 export type TranslationKey = keyof TranslationKeys;

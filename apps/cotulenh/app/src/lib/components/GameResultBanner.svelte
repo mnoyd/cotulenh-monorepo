@@ -26,6 +26,7 @@
       case 'commander_captured': return i18n.t('game.resultCommanderCaptured');
       case 'stalemate': return i18n.t('game.resultStalemate');
       case 'resignation': return i18n.t('game.resultResign');
+      case 'timeout': return i18n.t('game.resultTimeout');
       default: return i18n.t('game.resultDraw');
     }
   });

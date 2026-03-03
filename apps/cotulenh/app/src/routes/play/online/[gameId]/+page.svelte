@@ -62,6 +62,8 @@
 
   let moveCount = $derived(onlineSession ? onlineSession.history.length : 0);
 
+  let opponentFlagged = $derived(onlineSession?.opponentFlagged ?? false);
+
   let turnLabel = $derived(
     isMyTurn ? i18n.t('game.yourTurn') : i18n.t('game.opponentTurn')
   );
@@ -176,6 +178,7 @@
             viewOnly:
               onlineSession.lifecycle !== 'playing' ||
               onlineSession.connectionState !== 'connected' ||
+              onlineSession.clockStatus !== 'running' ||
               !isMyTurn
           }}
           onApiReady={handleBoardReady}
@@ -210,12 +213,21 @@
           <span class="move-counter">
             {i18n.t('game.moveCount').replace('{count}', String(moveCount))}
           </span>
-          <button
-            class="resign-btn"
-            onclick={() => { resignDialogOpen = true; }}
-          >
-            {i18n.t('game.resignButton')}
-          </button>
+          {#if opponentFlagged}
+            <button
+              class="claim-victory-btn"
+              onclick={() => onlineSession?.claimVictory()}
+            >
+              {i18n.t('game.claimVictory')}
+            </button>
+          {:else}
+            <button
+              class="resign-btn"
+              onclick={() => { resignDialogOpen = true; }}
+            >
+              {i18n.t('game.resignButton')}
+            </button>
+          {/if}
         </div>
       {:else}
         <span class="status-text">{statusLabel}</span>
@@ -414,6 +426,28 @@
   .resign-btn:hover {
     color: #ef4444;
     border-color: #ef4444;
+  }
+
+  .claim-victory-btn {
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.3rem 0.75rem;
+    border-radius: 4px;
+    border: 1px solid #22c55e;
+    background: #22c55e;
+    color: #000;
+    cursor: pointer;
+    animation: pulse-glow 1.5s ease-in-out infinite;
+  }
+
+  .claim-victory-btn:hover {
+    background: #16a34a;
+    border-color: #16a34a;
+  }
+
+  @keyframes pulse-glow {
+    0%, 100% { box-shadow: 0 0 4px rgba(34, 197, 94, 0.4); }
+    50% { box-shadow: 0 0 12px rgba(34, 197, 94, 0.7); }
   }
 
   .confirm-resign-btn {
