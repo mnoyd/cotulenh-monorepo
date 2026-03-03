@@ -673,5 +673,19 @@ export const vi: TranslationKeys = {
   'gameHistory.reason.threefold_repetition': 'do lặp lại thế cờ 3 lần',
   'gameHistory.duration': '{minutes}p {seconds}g',
   'gameHistory.viewAll': 'Xem Tất Cả Trận Đấu',
-  'gameHistory.vs': 'vs'
+  'gameHistory.vs': 'vs',
+
+  // Game Replay
+  'gameReplay.title': 'Xem Lại Trận Đấu',
+  'gameReplay.copyPgn': 'Sao Chép PGN',
+  'gameReplay.pgnCopied': 'Đã sao chép PGN!',
+  'gameReplay.backToHistory': 'Quay Lại Lịch Sử',
+  'gameReplay.gameNotFound': 'Không tìm thấy trận đấu',
+  'gameReplay.startPosition': 'Vị Trí Ban Đầu',
+  'gameReplay.finalPosition': 'Vị Trí Cuối Cùng',
+  'gameReplay.moveOf': 'Nước {current} / {total}',
+  'gameReplay.firstMove': 'Nước đầu',
+  'gameReplay.previousMove': 'Nước trước',
+  'gameReplay.nextMove': 'Nước tiếp',
+  'gameReplay.lastMove': 'Nước cuối'
 };

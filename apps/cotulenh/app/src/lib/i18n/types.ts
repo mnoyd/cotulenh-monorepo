@@ -669,6 +669,20 @@ export interface TranslationKeys {
   'gameHistory.duration': string;
   'gameHistory.viewAll': string;
   'gameHistory.vs': string;
+
+  // Game Replay
+  'gameReplay.title': string;
+  'gameReplay.copyPgn': string;
+  'gameReplay.pgnCopied': string;
+  'gameReplay.backToHistory': string;
+  'gameReplay.gameNotFound': string;
+  'gameReplay.startPosition': string;
+  'gameReplay.finalPosition': string;
+  'gameReplay.moveOf': string;
+  'gameReplay.firstMove': string;
+  'gameReplay.previousMove': string;
+  'gameReplay.nextMove': string;
+  'gameReplay.lastMove': string;
 }
 
 export type TranslationKey = keyof TranslationKeys;

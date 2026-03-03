@@ -81,9 +81,9 @@ development_status:
   epic-5-retrospective: optional
 
   # Epic 6: Game History & Review
-  epic-6: in-progress
+  epic-6: done
   6-1-game-history-list: done
-  6-2-game-replay-viewer: backlog
+  6-2-game-replay-viewer: done
   epic-6-retrospective: optional
 
   # Epic 7: Learn Progress Persistence (parallel track - needs Epic 1 only)

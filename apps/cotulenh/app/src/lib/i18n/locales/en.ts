@@ -673,5 +673,19 @@ export const en: TranslationKeys = {
   'gameHistory.reason.threefold_repetition': 'by threefold repetition',
   'gameHistory.duration': '{minutes}m {seconds}s',
   'gameHistory.viewAll': 'View All Games',
-  'gameHistory.vs': 'vs'
+  'gameHistory.vs': 'vs',
+
+  // Game Replay
+  'gameReplay.title': 'Game Replay',
+  'gameReplay.copyPgn': 'Copy PGN',
+  'gameReplay.pgnCopied': 'PGN copied!',
+  'gameReplay.backToHistory': 'Back to History',
+  'gameReplay.gameNotFound': 'Game not found',
+  'gameReplay.startPosition': 'Starting Position',
+  'gameReplay.finalPosition': 'Final Position',
+  'gameReplay.moveOf': 'Move {current} of {total}',
+  'gameReplay.firstMove': 'First move',
+  'gameReplay.previousMove': 'Previous move',
+  'gameReplay.nextMove': 'Next move',
+  'gameReplay.lastMove': 'Last move'
 };
