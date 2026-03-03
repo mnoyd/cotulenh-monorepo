@@ -20,15 +20,16 @@ export const load: PageServerLoad = async ({ params, locals: { supabase, safeGet
     throw error(403, 'Not a player in this game');
   }
 
-  // Get opponent profile
+  // Get both player profiles
   const opponentId = game.red_player === user.id ? game.blue_player : game.red_player;
-  const { data: opponentProfile } = await supabase
-    .from('profiles')
-    .select('display_name')
-    .eq('id', opponentId)
-    .single();
+  const [{ data: opponentProfile }, { data: currentUserProfile }] = await Promise.all([
+    supabase.from('profiles').select('display_name').eq('id', opponentId).single(),
+    supabase.from('profiles').select('display_name').eq('id', user.id).single()
+  ]);
 
   const playerColor = game.red_player === user.id ? 'red' : 'blue';
+  const currentDisplayName = currentUserProfile?.display_name ?? user.email ?? 'Player';
+  const opponentDisplayName = opponentProfile?.display_name ?? 'Opponent';
 
   return {
     game: {
@@ -39,9 +40,10 @@ export const load: PageServerLoad = async ({ params, locals: { supabase, safeGet
     },
     currentUserId: user.id,
     playerColor,
+    currentDisplayName,
     opponent: {
       id: opponentId,
-      displayName: opponentProfile?.display_name ?? ''
+      displayName: opponentDisplayName
     }
   };
 };

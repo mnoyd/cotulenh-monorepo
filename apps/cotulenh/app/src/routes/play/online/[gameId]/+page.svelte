@@ -6,7 +6,10 @@
   import BoardContainer from '$lib/components/BoardContainer.svelte';
   import OnlineIndicator from '$lib/components/OnlineIndicator.svelte';
   import ReconnectBanner from '$lib/components/ReconnectBanner.svelte';
+  import GameResultBanner from '$lib/components/GameResultBanner.svelte';
+  import * as Dialog from '$lib/components/ui/dialog';
   import { OnlineGameSession } from '$lib/game/online-session.svelte';
+  import type { GameEndResult } from '$lib/game/online-session-core';
   import { setStoredValue } from '$lib/stores/persisted.svelte';
   import { formatClockTime } from '$lib/clock/clock.svelte';
   import { getI18n } from '$lib/i18n/index.svelte';
@@ -21,6 +24,8 @@
 
   let onlineSession = $state<OnlineGameSession | null>(null);
   let boardComponent: BoardContainer | null = $state(null);
+  let gameResult = $state<GameEndResult | null>(null);
+  let resignDialogOpen = $state(false);
 
   const orientation = data.playerColor === 'red' ? 'red' : 'blue';
 
@@ -81,14 +86,20 @@
   onMount(() => {
     const supabase = $page.data.supabase;
 
+    const playerColor = data.playerColor as 'red' | 'blue';
+    const redPlayerName = playerColor === 'red' ? data.currentDisplayName : data.opponent.displayName;
+    const bluePlayerName = playerColor === 'blue' ? data.currentDisplayName : data.opponent.displayName;
+
     const session = new OnlineGameSession(
       {
         gameId: data.game.id,
-        playerColor: data.playerColor as 'red' | 'blue',
+        playerColor,
         currentUserId: data.currentUserId,
         opponentUserId: data.opponent.id,
         timeControl: data.game.timeControl,
-        supabase
+        supabase,
+        redPlayerName,
+        bluePlayerName
       },
       () => {
         // onAbort callback
@@ -109,6 +120,10 @@
             }
           }
         });
+      },
+      (result) => {
+        // onGameEnd callback
+        gameResult = result;
       }
     );
 
@@ -170,6 +185,16 @@
           <p>{i18n.t('game.connecting')}</p>
         </div>
       {/if}
+
+      {#if onlineSession?.lifecycle === 'ended' && gameResult}
+        <div class="result-overlay">
+          <GameResultBanner
+            result={gameResult}
+            playerColor={data.playerColor as 'red' | 'blue'}
+            onPlayAgain={() => goto('/play/online')}
+          />
+        </div>
+      {/if}
     </div>
 
     <!-- Reconnect banner -->
@@ -181,13 +206,46 @@
         <span class="turn-indicator" class:my-turn={isMyTurn}>
           {statusLabel}
         </span>
-        <span class="move-counter">
-          {i18n.t('game.moveCount').replace('{count}', String(moveCount))}
-        </span>
+        <div class="status-right">
+          <span class="move-counter">
+            {i18n.t('game.moveCount').replace('{count}', String(moveCount))}
+          </span>
+          <button
+            class="resign-btn"
+            onclick={() => { resignDialogOpen = true; }}
+          >
+            {i18n.t('game.resignButton')}
+          </button>
+        </div>
       {:else}
         <span class="status-text">{statusLabel}</span>
       {/if}
     </div>
+
+    <!-- Resign confirmation dialog -->
+    <Dialog.Root bind:open={resignDialogOpen}>
+      <Dialog.Portal>
+        <Dialog.Overlay />
+        <Dialog.Content>
+          <Dialog.Header>
+            <Dialog.Title>{i18n.t('game.resignConfirmTitle')}</Dialog.Title>
+            <Dialog.Description>{i18n.t('game.resignConfirmMessage')}</Dialog.Description>
+          </Dialog.Header>
+          <Dialog.Footer>
+            <Dialog.Close>{i18n.t('common.cancel')}</Dialog.Close>
+            <button
+              class="confirm-resign-btn"
+              onclick={() => {
+                resignDialogOpen = false;
+                onlineSession?.resign();
+              }}
+            >
+              {i18n.t('game.resignButton')}
+            </button>
+          </Dialog.Footer>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
 
     <!-- Player info + clock (bottom) -->
     <div class="player-bar self">
@@ -284,6 +342,16 @@
     position: relative;
   }
 
+  .result-overlay {
+    position: absolute;
+    left: 0.5rem;
+    right: 0.5rem;
+    bottom: 0.5rem;
+    z-index: 20;
+    display: flex;
+    justify-content: center;
+  }
+
   .board-loading-placeholder {
     display: flex;
     align-items: center;
@@ -323,6 +391,40 @@
     font-size: 0.75rem;
     color: var(--theme-text-secondary, #888);
     font-family: var(--font-mono, monospace);
+  }
+
+  .status-right {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .resign-btn {
+    font-size: 0.6875rem;
+    font-weight: 500;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    border: 1px solid var(--theme-border, #333);
+    background: transparent;
+    color: var(--theme-text-secondary, #888);
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s;
+  }
+
+  .resign-btn:hover {
+    color: #ef4444;
+    border-color: #ef4444;
+  }
+
+  .confirm-resign-btn {
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    border: 1px solid #ef4444;
+    background: #ef4444;
+    color: #fff;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
   }
 
   .status-text {

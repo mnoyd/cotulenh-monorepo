@@ -617,5 +617,17 @@ export const en: TranslationKeys = {
   'game.opponentMayReconnect': 'Opponent disconnected — they may reconnect',
   'game.connectionRestored': 'Connection restored',
   'game.syncFailed': 'Game sync failed — your game state may be outdated',
-  'game.syncFailedReport': 'Report Issue'
+  'game.syncFailedReport': 'Report Issue',
+  'game.youWin': 'You Win!',
+  'game.youLose': 'You Lose',
+  'game.gameDraw': 'Draw',
+  'game.resultCheckmate': 'by Checkmate',
+  'game.resultStalemate': 'by Stalemate',
+  'game.resultDraw': 'by Draw',
+  'game.resultResign': 'by Resignation',
+  'game.resultCommanderCaptured': 'Commander Captured',
+  'game.resignConfirmTitle': 'Resign Game',
+  'game.resignConfirmMessage': 'Are you sure you want to resign? This cannot be undone.',
+  'game.resignButton': 'Resign',
+  'game.playAgain': 'Play Again'
 };

@@ -613,6 +613,18 @@ export interface TranslationKeys {
   'game.connectionRestored': string;
   'game.syncFailed': string;
   'game.syncFailedReport': string;
+  'game.youWin': string;
+  'game.youLose': string;
+  'game.gameDraw': string;
+  'game.resultCheckmate': string;
+  'game.resultStalemate': string;
+  'game.resultDraw': string;
+  'game.resultResign': string;
+  'game.resultCommanderCaptured': string;
+  'game.resignConfirmTitle': string;
+  'game.resignConfirmMessage': string;
+  'game.resignButton': string;
+  'game.playAgain': string;
 }
 
 export type TranslationKey = keyof TranslationKeys;

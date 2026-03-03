@@ -67,13 +67,32 @@ function createMockSupabase() {
     unsubscribe: vi.fn()
   };
 
+  let updateResult = { error: null as null | Error, count: 1 };
+  let lastUpdateValues: Record<string, unknown> | null = null;
+  let lastUpdateOptions: Record<string, unknown> | null = null;
+  const eqFilters: Array<{ column: string; value: unknown }> = [];
+
   const supabase = {
     channel: vi.fn(() => mockChannel as unknown as RealtimeChannel),
     removeChannel: vi.fn(),
     from: vi.fn(() => ({
-      update: vi.fn(() => ({
-        eq: vi.fn(async () => ({ error: null }))
-      }))
+      update: vi.fn((values?: Record<string, unknown>, options?: Record<string, unknown>) => {
+        lastUpdateValues = values ?? null;
+        lastUpdateOptions = options ?? null;
+        eqFilters.length = 0;
+
+        return {
+          eq: vi.fn((column: string, value: unknown) => {
+            eqFilters.push({ column, value });
+            return {
+              eq: vi.fn(async (innerColumn: string, innerValue: unknown) => {
+                eqFilters.push({ column: innerColumn, value: innerValue });
+                return { error: updateResult.error, count: updateResult.count };
+              })
+            };
+          })
+        };
+      })
     }))
   };
 
@@ -92,6 +111,13 @@ function createMockSupabase() {
         handler({ payload: withSender });
       }
     },
+    // Helper to set the DB update result for testing optimistic concurrency
+    setUpdateResult: (result: { error: null | Error; count: number }) => {
+      updateResult = result;
+    },
+    getLastUpdateValues: () => lastUpdateValues,
+    getLastUpdateOptions: () => lastUpdateOptions,
+    getEqFilters: () => [...eqFilters],
     // Helper to simulate presence sync
     simulatePresenceSync: () => {
       const handlers = channelHandlers['presence:sync'] ?? [];
@@ -121,7 +147,9 @@ function createDefaultConfig(supabase: unknown): OnlineSessionConfig {
     currentUserId: CURRENT_USER_ID,
     opponentUserId: OPPONENT_USER_ID,
     timeControl: { timeMinutes: 5, incrementSeconds: 3 },
-    supabase: supabase as OnlineSessionConfig['supabase']
+    supabase: supabase as OnlineSessionConfig['supabase'],
+    redPlayerName: 'RedPlayer',
+    bluePlayerName: 'BluePlayer'
   };
 }
 
@@ -1082,6 +1110,517 @@ describe('OnlineGameSessionCore', () => {
       core = new OnlineGameSessionCore(config);
       expect(core.myClockColor).toBe('b');
       expect(core.opponentClockColor).toBe('r');
+    });
+  });
+
+  describe('clock annotation tracking', () => {
+    it('accumulates clock annotations on local move', async () => {
+      core = new OnlineGameSessionCore(createDefaultConfig(mock.supabase));
+      core.join();
+      await vi.advanceTimersByTimeAsync(10);
+
+      mock.presenceState['opponent'] = [{
+        color: 'blue',
+        userId: OPPONENT_USER_ID,
+        presenceId: 'opponent-presence'
+      }];
+      mock.simulatePresenceSync();
+
+      triggerLocalMove(core);
+      expect(core.clockAnnotations).toHaveLength(1);
+      expect(core.clockAnnotations[0]).toMatch(/^\d+:\d{2}:\d{2}$/);
+    });
+
+    it('accumulates clock annotations on remote move', async () => {
+      core = new OnlineGameSessionCore(createDefaultConfig(mock.supabase));
+      core.join();
+      await vi.advanceTimersByTimeAsync(10);
+
+      const moves = core.session.possibleMoves;
+      mock.simulateGameMessage({
+        event: 'move',
+        san: moves[0].san,
+        clock: 299_000,
+        seq: 1,
+        sentAt: Date.now() - 50
+      });
+
+      expect(core.clockAnnotations).toHaveLength(1);
+      expect(core.clockAnnotations[0]).toMatch(/^\d+:\d{2}:\d{2}$/);
+    });
+
+    it('resets clock annotations on sync', async () => {
+      core = new OnlineGameSessionCore(createDefaultConfig(mock.supabase));
+      core.join();
+      await vi.advanceTimersByTimeAsync(10);
+
+      // Add a move to get an annotation
+      const moves = core.session.possibleMoves;
+      mock.simulateGameMessage({
+        event: 'move',
+        san: moves[0].san,
+        clock: 299_000,
+        seq: 1,
+        sentAt: Date.now() - 50
+      });
+      expect(core.clockAnnotations).toHaveLength(1);
+
+      // Sync should clear annotations
+      mock.simulateGameMessage({
+        event: 'sync',
+        fen: core.session.game.fen(),
+        pgn: '*',
+        clock: { red: 250_000, blue: 280_000 },
+        seq: 5
+      });
+      expect(core.clockAnnotations).toHaveLength(0);
+    });
+
+    it('formats clock annotation correctly', async () => {
+      core = new OnlineGameSessionCore(createDefaultConfig(mock.supabase));
+      core.join();
+      await vi.advanceTimersByTimeAsync(10);
+
+      mock.presenceState['opponent'] = [{
+        color: 'blue',
+        userId: OPPONENT_USER_ID,
+        presenceId: 'opponent-presence'
+      }];
+      mock.simulatePresenceSync();
+
+      // Make a move right away (clock is ~5:00:000 = 300000ms)
+      triggerLocalMove(core);
+      // 300000ms = 0:05:00
+      expect(core.clockAnnotations[0]).toBe('0:05:00');
+    });
+  });
+
+  describe('resign', () => {
+    it('sends resign message and ends game with opponent as winner', async () => {
+      const onGameEnd = vi.fn();
+      core = new OnlineGameSessionCore(createDefaultConfig(mock.supabase), { onGameEnd });
+      core.join();
+      await vi.advanceTimersByTimeAsync(10);
+
+      mock.presenceState['opponent'] = [{
+        color: 'blue',
+        userId: OPPONENT_USER_ID,
+        presenceId: 'opponent-presence'
+      }];
+      mock.simulatePresenceSync();
+
+      core.resign();
+
+      expect(core.lifecycle).toBe('ended');
+      expect(core.gameResult).toEqual(expect.objectContaining({
+        status: 'resign',
+        winner: 'blue',
+        resultReason: 'resignation',
+        isLocalPlayerWinner: false
+      }));
+      expect(onGameEnd).toHaveBeenCalledWith(expect.objectContaining({
+        status: 'resign',
+        winner: 'blue'
+      }));
+
+      // Should have sent resign message
+      const sendCalls = (mock.mockChannel.send as ReturnType<typeof vi.fn>).mock.calls;
+      const resignSends = sendCalls.filter(
+        (c: unknown[]) => (c[0] as Record<string, Record<string, unknown>>).payload?.event === 'resign'
+      );
+      expect(resignSends).toHaveLength(1);
+    });
+
+    it('does nothing if lifecycle is not playing', async () => {
+      core = new OnlineGameSessionCore(createDefaultConfig(mock.supabase));
+      core.join();
+      await vi.advanceTimersByTimeAsync(10);
+
+      // Still in 'waiting' state
+      core.resign();
+      expect(core.lifecycle).toBe('waiting');
+    });
+
+    it('handles receiving resign message — local player wins', async () => {
+      const onGameEnd = vi.fn();
+      core = new OnlineGameSessionCore(createDefaultConfig(mock.supabase), { onGameEnd });
+      core.join();
+      await vi.advanceTimersByTimeAsync(10);
+
+      mock.presenceState['opponent'] = [{
+        color: 'blue',
+        userId: OPPONENT_USER_ID,
+        presenceId: 'opponent-presence'
+      }];
+      mock.simulatePresenceSync();
+
+      mock.simulateGameMessage({ event: 'resign' });
+
+      expect(core.lifecycle).toBe('ended');
+      expect(core.gameResult).toEqual(expect.objectContaining({
+        status: 'resign',
+        winner: 'red',
+        resultReason: 'resignation',
+        isLocalPlayerWinner: true
+      }));
+      expect(onGameEnd).toHaveBeenCalledWith(expect.objectContaining({
+        status: 'resign',
+        winner: 'red'
+      }));
+    });
+
+    it('ignores resign message if already ended', async () => {
+      const onGameEnd = vi.fn();
+      core = new OnlineGameSessionCore(createDefaultConfig(mock.supabase), { onGameEnd });
+      core.join();
+      await vi.advanceTimersByTimeAsync(10);
+
+      mock.presenceState['opponent'] = [{
+        color: 'blue',
+        userId: OPPONENT_USER_ID,
+        presenceId: 'opponent-presence'
+      }];
+      mock.simulatePresenceSync();
+
+      // First resign
+      mock.simulateGameMessage({ event: 'resign' });
+      expect(onGameEnd).toHaveBeenCalledTimes(1);
+
+      // Second resign should be ignored
+      mock.simulateGameMessage({ event: 'resign' });
+      expect(onGameEnd).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('game end detection', () => {
+    it('detects checkmate after local move and fires onGameEnd', async () => {
+      const onGameEnd = vi.fn();
+      core = new OnlineGameSessionCore(createDefaultConfig(mock.supabase), { onGameEnd });
+      core.join();
+      await vi.advanceTimersByTimeAsync(10);
+
+      mock.presenceState['opponent'] = [{
+        color: 'blue',
+        userId: OPPONENT_USER_ID,
+        presenceId: 'opponent-presence'
+      }];
+      mock.simulatePresenceSync();
+
+      const localMove = core.session.possibleMoves[0];
+      expect(localMove).toBeDefined();
+      const boardConfig = core.session.boardConfig;
+
+      const statusSpy = vi.spyOn(core.session, 'status', 'get').mockReturnValue('checkmate');
+      const winnerSpy = vi.spyOn(core.session, 'winner', 'get').mockReturnValue('r');
+      const commanderSpy = vi.spyOn(core.session.game, 'isCommanderCaptured').mockReturnValue(false);
+      const checkmateSpy = vi.spyOn(core.session.game, 'isCheckmate').mockReturnValue(true);
+      const stalemateSpy = vi.spyOn(core.session.game, 'isStalemate').mockReturnValue(false);
+      const fiftySpy = vi.spyOn(core.session.game, 'isDrawByFiftyMoves').mockReturnValue(false);
+      const repetitionSpy = vi.spyOn(core.session.game, 'isThreefoldRepetition').mockReturnValue(false);
+
+      boardConfig.movable.events.after({ square: localMove.from }, { square: localMove.to });
+
+      expect(core.lifecycle).toBe('ended');
+      expect(core.gameResult).toEqual(expect.objectContaining({
+        status: 'checkmate',
+        winner: 'red',
+        resultReason: 'checkmate',
+        isLocalPlayerWinner: true
+      }));
+      expect(onGameEnd).toHaveBeenCalledWith(expect.objectContaining({
+        status: 'checkmate',
+        winner: 'red'
+      }));
+
+      statusSpy.mockRestore();
+      winnerSpy.mockRestore();
+      commanderSpy.mockRestore();
+      checkmateSpy.mockRestore();
+      stalemateSpy.mockRestore();
+      fiftySpy.mockRestore();
+      repetitionSpy.mockRestore();
+    });
+
+    it('detects checkmate after remote move and fires onGameEnd', async () => {
+      const onGameEnd = vi.fn();
+      core = new OnlineGameSessionCore(createDefaultConfig(mock.supabase), { onGameEnd });
+      core.join();
+      await vi.advanceTimersByTimeAsync(10);
+
+      const remoteMove = core.session.possibleMoves[0];
+      expect(remoteMove).toBeDefined();
+
+      const statusSpy = vi.spyOn(core.session, 'status', 'get').mockReturnValue('checkmate');
+      const winnerSpy = vi.spyOn(core.session, 'winner', 'get').mockReturnValue('b');
+      const commanderSpy = vi.spyOn(core.session.game, 'isCommanderCaptured').mockReturnValue(false);
+      const checkmateSpy = vi.spyOn(core.session.game, 'isCheckmate').mockReturnValue(true);
+      const stalemateSpy = vi.spyOn(core.session.game, 'isStalemate').mockReturnValue(false);
+      const fiftySpy = vi.spyOn(core.session.game, 'isDrawByFiftyMoves').mockReturnValue(false);
+      const repetitionSpy = vi.spyOn(core.session.game, 'isThreefoldRepetition').mockReturnValue(false);
+
+      mock.simulateGameMessage({
+        event: 'move',
+        san: remoteMove.san,
+        clock: 299_000,
+        seq: 1,
+        sentAt: Date.now() - 50
+      });
+
+      expect(core.lifecycle).toBe('ended');
+      expect(core.gameResult).toEqual(expect.objectContaining({
+        status: 'checkmate',
+        winner: 'blue',
+        resultReason: 'checkmate',
+        isLocalPlayerWinner: false
+      }));
+      expect(onGameEnd).toHaveBeenCalledWith(expect.objectContaining({
+        status: 'checkmate',
+        winner: 'blue'
+      }));
+
+      statusSpy.mockRestore();
+      winnerSpy.mockRestore();
+      commanderSpy.mockRestore();
+      checkmateSpy.mockRestore();
+      stalemateSpy.mockRestore();
+      fiftySpy.mockRestore();
+      repetitionSpy.mockRestore();
+    });
+
+    it('maps stalemate to draw-without-winner result', async () => {
+      const onGameEnd = vi.fn();
+      core = new OnlineGameSessionCore(createDefaultConfig(mock.supabase), { onGameEnd });
+      core.join();
+      await vi.advanceTimersByTimeAsync(10);
+
+      mock.presenceState['opponent'] = [{
+        color: 'blue',
+        userId: OPPONENT_USER_ID,
+        presenceId: 'opponent-presence'
+      }];
+      mock.simulatePresenceSync();
+
+      const localMove = core.session.possibleMoves[0];
+      expect(localMove).toBeDefined();
+      const boardConfig = core.session.boardConfig;
+
+      const statusSpy = vi.spyOn(core.session, 'status', 'get').mockReturnValue('stalemate');
+      const winnerSpy = vi.spyOn(core.session, 'winner', 'get').mockReturnValue(null);
+      const commanderSpy = vi.spyOn(core.session.game, 'isCommanderCaptured').mockReturnValue(false);
+      const checkmateSpy = vi.spyOn(core.session.game, 'isCheckmate').mockReturnValue(false);
+      const stalemateSpy = vi.spyOn(core.session.game, 'isStalemate').mockReturnValue(true);
+      const fiftySpy = vi.spyOn(core.session.game, 'isDrawByFiftyMoves').mockReturnValue(false);
+      const repetitionSpy = vi.spyOn(core.session.game, 'isThreefoldRepetition').mockReturnValue(false);
+
+      boardConfig.movable.events.after({ square: localMove.from }, { square: localMove.to });
+
+      expect(core.lifecycle).toBe('ended');
+      expect(core.gameResult).toEqual(expect.objectContaining({
+        status: 'stalemate',
+        winner: null,
+        resultReason: 'stalemate'
+      }));
+      expect(onGameEnd).toHaveBeenCalledWith(expect.objectContaining({
+        status: 'stalemate',
+        winner: null
+      }));
+
+      statusSpy.mockRestore();
+      winnerSpy.mockRestore();
+      commanderSpy.mockRestore();
+      checkmateSpy.mockRestore();
+      stalemateSpy.mockRestore();
+      fiftySpy.mockRestore();
+      repetitionSpy.mockRestore();
+    });
+
+    it('uses commander_captured reason for commander-capture game end', async () => {
+      const onGameEnd = vi.fn();
+      core = new OnlineGameSessionCore(createDefaultConfig(mock.supabase), { onGameEnd });
+      core.join();
+      await vi.advanceTimersByTimeAsync(10);
+
+      mock.presenceState['opponent'] = [{
+        color: 'blue',
+        userId: OPPONENT_USER_ID,
+        presenceId: 'opponent-presence'
+      }];
+      mock.simulatePresenceSync();
+
+      const localMove = core.session.possibleMoves[0];
+      expect(localMove).toBeDefined();
+      const boardConfig = core.session.boardConfig;
+
+      const statusSpy = vi.spyOn(core.session, 'status', 'get').mockReturnValue('checkmate');
+      const winnerSpy = vi.spyOn(core.session, 'winner', 'get').mockReturnValue('r');
+      const commanderSpy = vi.spyOn(core.session.game, 'isCommanderCaptured').mockReturnValue(true);
+
+      boardConfig.movable.events.after({ square: localMove.from }, { square: localMove.to });
+
+      expect(core.lifecycle).toBe('ended');
+      expect(core.gameResult).toEqual(expect.objectContaining({
+        status: 'checkmate',
+        winner: 'red',
+        resultReason: 'commander_captured'
+      }));
+      expect(onGameEnd).toHaveBeenCalledWith(expect.objectContaining({
+        status: 'checkmate',
+        resultReason: 'commander_captured'
+      }));
+
+      statusSpy.mockRestore();
+      winnerSpy.mockRestore();
+      commanderSpy.mockRestore();
+    });
+
+    it('does not end game when status remains playing (deploy-session guard behavior)', async () => {
+      const onGameEnd = vi.fn();
+      core = new OnlineGameSessionCore(createDefaultConfig(mock.supabase), { onGameEnd });
+      core.join();
+      await vi.advanceTimersByTimeAsync(10);
+
+      mock.presenceState['opponent'] = [{
+        color: 'blue',
+        userId: OPPONENT_USER_ID,
+        presenceId: 'opponent-presence'
+      }];
+      mock.simulatePresenceSync();
+
+      const statusSpy = vi.spyOn(core.session, 'status', 'get').mockReturnValue('playing');
+      const commanderSpy = vi.spyOn(core.session.game, 'isCommanderCaptured').mockReturnValue(true);
+
+      triggerLocalMove(core);
+
+      expect(core.lifecycle).toBe('playing');
+      expect(core.gameResult).toBeNull();
+      expect(onGameEnd).not.toHaveBeenCalled();
+      expect(mock.supabase.from).not.toHaveBeenCalledWith('games');
+
+      statusSpy.mockRestore();
+      commanderSpy.mockRestore();
+    });
+
+    it('checkGameEnd is idempotent — calling twice does not double-fire', async () => {
+      const onGameEnd = vi.fn();
+      core = new OnlineGameSessionCore(createDefaultConfig(mock.supabase), { onGameEnd });
+      core.join();
+      await vi.advanceTimersByTimeAsync(10);
+
+      mock.presenceState['opponent'] = [{
+        color: 'blue',
+        userId: OPPONENT_USER_ID,
+        presenceId: 'opponent-presence'
+      }];
+      mock.simulatePresenceSync();
+
+      // Resign ends the game, which sets lifecycle to 'ended'
+      core.resign();
+      expect(onGameEnd).toHaveBeenCalledTimes(1);
+
+      // A second resign should be guarded
+      core.resign();
+      expect(onGameEnd).toHaveBeenCalledTimes(1);
+    });
+
+    it('gameResult getter returns null while playing', async () => {
+      core = new OnlineGameSessionCore(createDefaultConfig(mock.supabase));
+      core.join();
+      await vi.advanceTimersByTimeAsync(10);
+
+      mock.presenceState['opponent'] = [{
+        color: 'blue',
+        userId: OPPONENT_USER_ID,
+        presenceId: 'opponent-presence'
+      }];
+      mock.simulatePresenceSync();
+
+      expect(core.gameResult).toBeNull();
+    });
+  });
+
+  describe('optimistic concurrency', () => {
+    it('handles DB update returning count=0 gracefully', async () => {
+      mock.setUpdateResult({ error: null, count: 0 });
+      const onGameEnd = vi.fn();
+      core = new OnlineGameSessionCore(createDefaultConfig(mock.supabase), { onGameEnd });
+      core.join();
+      await vi.advanceTimersByTimeAsync(10);
+
+      mock.presenceState['opponent'] = [{
+        color: 'blue',
+        userId: OPPONENT_USER_ID,
+        presenceId: 'opponent-presence'
+      }];
+      mock.simulatePresenceSync();
+
+      // Should not throw
+      core.resign();
+      expect(core.lifecycle).toBe('ended');
+      expect(onGameEnd).toHaveBeenCalledTimes(1);
+      expect(mock.getLastUpdateOptions()).toEqual({ count: 'exact' });
+    });
+
+    it('handles DB error gracefully without crashing', async () => {
+      mock.setUpdateResult({ error: new Error('network error'), count: 0 });
+      const onGameEnd = vi.fn();
+      core = new OnlineGameSessionCore(createDefaultConfig(mock.supabase), { onGameEnd });
+      core.join();
+      await vi.advanceTimersByTimeAsync(10);
+
+      mock.presenceState['opponent'] = [{
+        color: 'blue',
+        userId: OPPONENT_USER_ID,
+        presenceId: 'opponent-presence'
+      }];
+      mock.simulatePresenceSync();
+
+      // Should not throw
+      core.resign();
+      expect(core.lifecycle).toBe('ended');
+      expect(onGameEnd).toHaveBeenCalledTimes(1);
+      expect(mock.getLastUpdateOptions()).toEqual({ count: 'exact' });
+    });
+  });
+
+  describe('PGN save', () => {
+    it('writes result with expected headers, clock annotations, and optimistic-concurrency filters', async () => {
+      core = new OnlineGameSessionCore(createDefaultConfig(mock.supabase));
+      core.join();
+      await vi.advanceTimersByTimeAsync(10);
+
+      mock.presenceState['opponent'] = [{
+        color: 'blue',
+        userId: OPPONENT_USER_ID,
+        presenceId: 'opponent-presence'
+      }];
+      mock.simulatePresenceSync();
+
+      // Add at least one move so PGN includes move text and a clock annotation.
+      triggerLocalMove(core);
+      core.resign();
+      await Promise.resolve();
+
+      // Verify supabase.from('games').update was called
+      expect(mock.supabase.from).toHaveBeenCalledWith('games');
+      expect(mock.getLastUpdateOptions()).toEqual({ count: 'exact' });
+      expect(mock.getEqFilters()).toEqual([
+        { column: 'id', value: 'test-game-id' },
+        { column: 'status', value: 'started' }
+      ]);
+
+      const updateValues = mock.getLastUpdateValues() as Record<string, unknown>;
+      expect(updateValues.status).toBe('resign');
+      expect(updateValues.winner).toBe('blue');
+      expect(updateValues.result_reason).toBe('resignation');
+
+      const pgn = String(updateValues.pgn ?? '');
+      expect(pgn).toContain('[Red "RedPlayer"]');
+      expect(pgn).toContain('[Blue "BluePlayer"]');
+      expect(pgn).toContain('[TimeControl "300+3"]');
+      expect(pgn).toContain('[Termination "resignation"]');
+      expect(pgn).toContain('[Result "0-1"]');
+      expect(pgn).toContain('[Date "');
+      expect(pgn).toContain('%clk ');
     });
   });
 });

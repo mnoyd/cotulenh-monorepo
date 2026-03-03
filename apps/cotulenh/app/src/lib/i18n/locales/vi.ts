@@ -617,5 +617,17 @@ export const vi: TranslationKeys = {
   'game.opponentMayReconnect': 'Đối thủ mất kết nối — có thể kết nối lại',
   'game.connectionRestored': 'Đã khôi phục kết nối',
   'game.syncFailed': 'Đồng bộ thất bại — trạng thái ván đấu có thể lỗi thời',
-  'game.syncFailedReport': 'Báo lỗi'
+  'game.syncFailedReport': 'Báo lỗi',
+  'game.youWin': 'Bạn Thắng!',
+  'game.youLose': 'Bạn Thua',
+  'game.gameDraw': 'Hòa',
+  'game.resultCheckmate': 'do Chiếu hết',
+  'game.resultStalemate': 'do Hòa cờ',
+  'game.resultDraw': 'do Hòa',
+  'game.resultResign': 'do Đầu hàng',
+  'game.resultCommanderCaptured': 'Tư Lệnh Bị Bắt',
+  'game.resignConfirmTitle': 'Đầu Hàng',
+  'game.resignConfirmMessage': 'Bạn có chắc chắn muốn đầu hàng? Không thể hoàn tác.',
+  'game.resignButton': 'Đầu Hàng',
+  'game.playAgain': 'Chơi Lại'
 };

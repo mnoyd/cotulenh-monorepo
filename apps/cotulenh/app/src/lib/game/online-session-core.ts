@@ -18,6 +18,15 @@ export interface OnlineSessionConfig {
   opponentUserId: string;
   timeControl: { timeMinutes: number; incrementSeconds: number };
   supabase: SupabaseClient;
+  redPlayerName: string;
+  bluePlayerName: string;
+}
+
+export interface GameEndResult {
+  status: string;
+  winner: 'red' | 'blue' | null;
+  resultReason: string;
+  isLocalPlayerWinner: boolean;
 }
 
 export interface SyncErrorContext {
@@ -31,6 +40,7 @@ export interface OnlineSessionCallbacks {
   onStateChange?: () => void;
   onAbort?: () => void;
   onSyncError?: (context: SyncErrorContext) => void;
+  onGameEnd?: (result: GameEndResult) => void;
 }
 
 export class OnlineGameSessionCore {
@@ -40,6 +50,10 @@ export class OnlineGameSessionCore {
   readonly clock: ChessClockState;
   readonly #currentUserId: string;
   readonly #opponentUserId: string;
+  readonly #redPlayerName: string;
+  readonly #bluePlayerName: string;
+  readonly #timeControlMinutes: number;
+  readonly #timeControlIncrement: number;
 
   #supabase: SupabaseClient;
   #channel: RealtimeChannel | null = null;
@@ -58,6 +72,8 @@ export class OnlineGameSessionCore {
   #hasMoveOccurred = false;
   #abortNotified = false;
   #callbacks: OnlineSessionCallbacks;
+  #clockAnnotations: string[] = [];
+  #gameResult: GameEndResult | null = null;
 
   constructor(config: OnlineSessionConfig, callbacks: OnlineSessionCallbacks = {}) {
     this.gameId = config.gameId;
@@ -66,6 +82,10 @@ export class OnlineGameSessionCore {
     this.#opponentUserId = config.opponentUserId;
     this.#supabase = config.supabase;
     this.#callbacks = callbacks;
+    this.#redPlayerName = config.redPlayerName;
+    this.#bluePlayerName = config.bluePlayerName;
+    this.#timeControlMinutes = config.timeControl.timeMinutes;
+    this.#timeControlIncrement = config.timeControl.incrementSeconds;
 
     // Create composed GameSession
     this.session = new GameSession();
@@ -101,6 +121,14 @@ export class OnlineGameSessionCore {
 
   get opponentClockColor(): ClockColor {
     return this.playerColor === 'red' ? 'b' : 'r';
+  }
+
+  get clockAnnotations(): string[] {
+    return this.#clockAnnotations;
+  }
+
+  get gameResult(): GameEndResult | null {
+    return this.#gameResult;
   }
 
   join(): void {
@@ -153,6 +181,28 @@ export class OnlineGameSessionCore {
     this.#channel = channel;
   }
 
+  resign(): void {
+    if (!this.#channel || this.#lifecycle !== 'playing') return;
+
+    sendGameMessage(this.#channel, {
+      event: 'resign',
+      senderId: this.#currentUserId
+    });
+
+    const winner = this.playerColor === 'red' ? 'blue' : 'red';
+    this.clock.stop();
+    this.#lifecycle = 'ended';
+    this.#gameResult = {
+      status: 'resign',
+      winner,
+      resultReason: 'resignation',
+      isLocalPlayerWinner: false
+    };
+    this.#writeGameResult('resign', winner, 'resignation');
+    this.#callbacks.onGameEnd?.(this.#gameResult);
+    this.#notifyStateChange();
+  }
+
   destroy(): void {
     this.#clearNoStartTimer();
     this.clock.destroy();
@@ -190,8 +240,9 @@ export class OnlineGameSessionCore {
       this.#lifecycle = 'playing';
     }
 
-    // Read clock time before broadcasting
+    // Read clock time before broadcasting and record annotation
     const myTime = this.clock.getTime(this.myClockColor);
+    this.#clockAnnotations.push(this.#formatClockAnnotation(myTime));
 
     // Broadcast move with retry
     const seq = ++this.#seqCounter;
@@ -209,6 +260,9 @@ export class OnlineGameSessionCore {
     // Switch clock side
     this.clock.switchSide();
     this.#notifyStateChange();
+
+    // Check if this move ended the game
+    this.#checkGameEnd();
   }
 
   // ============================================================
@@ -240,10 +294,12 @@ export class OnlineGameSessionCore {
       case 'sync':
         this.#handleSync(msg);
         break;
+      case 'resign':
+        this.#handleResignMessage();
+        break;
       case 'abort':
         this.#handleAbortMessage();
         break;
-      // Other message types will be handled by later stories (5.4-5.7)
       default:
         break;
     }
@@ -297,6 +353,9 @@ export class OnlineGameSessionCore {
     const result = this.session.applyMove(msg.san);
 
     if (result) {
+      // Record clock annotation for remote move
+      this.#clockAnnotations.push(this.#formatClockAnnotation(adjustedClock));
+
       // Update opponent's clock with lag compensation
       this.clock.setTime(this.opponentClockColor, adjustedClock);
       this.clock.switchSide();
@@ -304,6 +363,9 @@ export class OnlineGameSessionCore {
       this.#lastProcessedSeq = msg.seq;
       this.#sendAck(msg.seq);
       this.#notifyStateChange();
+
+      // Check if this move ended the game
+      this.#checkGameEnd();
     } else {
       // Invalid move — log error (dispute handling is Story 5.6)
       logger.error('Received invalid remote move', { san: msg.san, seq: msg.seq });
@@ -339,6 +401,7 @@ export class OnlineGameSessionCore {
     this.clock.setTime('b', msg.clock.blue);
     this.#lastProcessedSeq = msg.seq;
     this.#awaitingSync = false;
+    this.#clockAnnotations = [];
     this.#clearAllPendingAcks();
     this.#notifyStateChange();
   }
@@ -516,6 +579,137 @@ export class OnlineGameSessionCore {
       },
       seq: this.#seqCounter
     });
+  }
+
+  // ============================================================
+  // PRIVATE - Game end detection, resign, result writing
+  // ============================================================
+
+  #checkGameEnd(): void {
+    if (this.session.status === 'playing') return;
+    if (this.#lifecycle === 'ended') return;
+
+    const engineStatus = this.session.status;
+    let dbStatus: string;
+    let resultReason: string;
+
+    if (this.session.game.isCommanderCaptured()) {
+      dbStatus = 'checkmate';
+      resultReason = 'commander_captured';
+    } else if (this.session.game.isCheckmate()) {
+      dbStatus = 'checkmate';
+      resultReason = 'checkmate';
+    } else if (this.session.game.isStalemate()) {
+      dbStatus = 'stalemate';
+      resultReason = 'stalemate';
+    } else if (this.session.game.isDrawByFiftyMoves()) {
+      dbStatus = 'draw';
+      resultReason = 'fifty_moves';
+    } else if (this.session.game.isThreefoldRepetition()) {
+      dbStatus = 'draw';
+      resultReason = 'threefold_repetition';
+    } else if (engineStatus === 'draw') {
+      dbStatus = 'draw';
+      resultReason = 'draw';
+    } else {
+      dbStatus = engineStatus;
+      resultReason = engineStatus;
+    }
+
+    // Determine winner from engine: after the ending move, turn() returns the losing side
+    const engineWinner = this.session.winner;
+    const dbWinner = engineWinner === 'r' ? 'red' : engineWinner === 'b' ? 'blue' : null;
+
+    this.clock.stop();
+    this.#lifecycle = 'ended';
+    this.#gameResult = {
+      status: dbStatus,
+      winner: dbWinner,
+      resultReason,
+      isLocalPlayerWinner: dbWinner === this.playerColor
+    };
+    this.#writeGameResult(dbStatus, dbWinner, resultReason);
+    this.#callbacks.onGameEnd?.(this.#gameResult);
+    this.#notifyStateChange();
+  }
+
+  #handleResignMessage(): void {
+    if (this.#lifecycle === 'ended') return;
+
+    const winner = this.playerColor; // Local player wins when opponent resigns
+    this.clock.stop();
+    this.#lifecycle = 'ended';
+    this.#gameResult = {
+      status: 'resign',
+      winner,
+      resultReason: 'resignation',
+      isLocalPlayerWinner: true
+    };
+    this.#writeGameResult('resign', winner, 'resignation');
+    this.#callbacks.onGameEnd?.(this.#gameResult);
+    this.#notifyStateChange();
+  }
+
+  async #writeGameResult(status: string, winner: string | null, resultReason: string): Promise<void> {
+    try {
+      // Set PGN headers before export
+      const game = this.session.game;
+      game.setHeader('Red', this.#redPlayerName);
+      game.setHeader('Blue', this.#bluePlayerName);
+      game.setHeader('Date', new Date().toISOString().slice(0, 10).replace(/-/g, '.'));
+      game.setHeader('TimeControl', `${this.#timeControlMinutes * 60}+${this.#timeControlIncrement}`);
+
+      let terminationString: string;
+      switch (resultReason) {
+        case 'checkmate': terminationString = 'checkmate'; break;
+        case 'commander_captured': terminationString = 'commander captured'; break;
+        case 'stalemate': terminationString = 'stalemate'; break;
+        case 'resignation': terminationString = 'resignation'; break;
+        case 'fifty_moves': terminationString = 'fifty move rule'; break;
+        case 'threefold_repetition': terminationString = 'threefold repetition'; break;
+        default: terminationString = resultReason; break;
+      }
+      game.setHeader('Termination', terminationString);
+
+      // For resign, manually set Result since engine doesn't know about resignation
+      if (status === 'resign') {
+        game.setHeader('Result', winner === 'red' ? '1-0' : '0-1');
+      }
+
+      // Core engine accepts `clocks` but interface type doesn't expose it
+      const fullPgn = (game as unknown as { pgn(opts: { clocks?: string[] }): string }).pgn({ clocks: this.#clockAnnotations });
+
+      const { error, count } = await this.#supabase
+        .from('games')
+        .update(
+          {
+            status,
+            winner,
+            result_reason: resultReason,
+            pgn: fullPgn,
+            ended_at: new Date().toISOString()
+          },
+          { count: 'exact' }
+        )
+        .eq('id', this.gameId)
+        .eq('status', 'started');
+
+      if (error) {
+        logger.error('Failed to write game result', { gameId: this.gameId, error });
+      } else if (count === 0) {
+        logger.info('Game result already written by other client', { gameId: this.gameId });
+      }
+    } catch (error) {
+      logger.error('Error writing game result', { gameId: this.gameId, error });
+    }
+  }
+
+  #formatClockAnnotation(ms: number): string {
+    const totalSeconds = Math.max(0, Math.floor(ms / 1000));
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+    return `${hours}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
   }
 
   // ============================================================

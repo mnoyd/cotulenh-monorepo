@@ -7,7 +7,8 @@ import {
   type OnlineSessionConfig,
   type ConnectionState,
   type Lifecycle,
-  type SyncErrorContext
+  type SyncErrorContext,
+  type GameEndResult
 } from './online-session-core';
 import type { GameSession } from '$lib/game-session.svelte';
 import type { ChessClockState, ClockColor } from '$lib/clock/clock.svelte';
@@ -31,12 +32,14 @@ export class OnlineGameSession {
   constructor(
     config: OnlineSessionConfig,
     onAbort?: () => void,
-    onSyncError?: (context: SyncErrorContext) => void
+    onSyncError?: (context: SyncErrorContext) => void,
+    onGameEnd?: (result: GameEndResult) => void
   ) {
     this.#core = new OnlineGameSessionCore(config, {
       onStateChange: () => this.#syncState(),
       onAbort,
-      onSyncError
+      onSyncError,
+      onGameEnd
     });
   }
 
@@ -140,11 +143,24 @@ export class OnlineGameSession {
   get clock(): ChessClockState { return this.#core.clock; }
 
   // ============================================================
+  // Game result (reactive)
+  // ============================================================
+
+  get gameResult(): GameEndResult | null {
+    void this.#version;
+    return this.#core.gameResult;
+  }
+
+  // ============================================================
   // Actions
   // ============================================================
 
   join(): void {
     this.#core.join();
+  }
+
+  resign(): void {
+    this.#core.resign();
   }
 
   destroy(): void {
