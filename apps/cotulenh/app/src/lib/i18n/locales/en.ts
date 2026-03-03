@@ -649,5 +649,29 @@ export const en: TranslationKeys = {
   'game.rematchReceived': 'Opponent wants a rematch!',
   'game.acceptRematch': 'Accept',
   'game.declineRematch': 'Decline',
-  'game.abortGame': 'Abort'
+  'game.abortGame': 'Abort',
+
+  // Game History
+  'gameHistory.title': 'Game History',
+  'gameHistory.empty.title': 'No Games Yet',
+  'gameHistory.empty.subtitle': 'Play a game to start building your history!',
+  'gameHistory.result.win': 'Win',
+  'gameHistory.result.loss': 'Loss',
+  'gameHistory.result.draw': 'Draw',
+  'gameHistory.result.aborted': 'Aborted',
+  'gameHistory.reason.checkmate': 'by checkmate',
+  'gameHistory.reason.resign': 'by resignation',
+  'gameHistory.reason.resignation': 'by resignation',
+  'gameHistory.reason.timeout': 'by timeout',
+  'gameHistory.reason.stalemate': 'by stalemate',
+  'gameHistory.reason.draw': 'by draw',
+  'gameHistory.reason.draw_by_agreement': 'by agreement',
+  'gameHistory.reason.draw_by_timeout_with_pending_offer': 'by timeout (draw pending)',
+  'gameHistory.reason.dispute': 'by dispute',
+  'gameHistory.reason.commander_captured': 'by commander captured',
+  'gameHistory.reason.fifty_moves': 'by fifty-move rule',
+  'gameHistory.reason.threefold_repetition': 'by threefold repetition',
+  'gameHistory.duration': '{minutes}m {seconds}s',
+  'gameHistory.viewAll': 'View All Games',
+  'gameHistory.vs': 'vs'
 };

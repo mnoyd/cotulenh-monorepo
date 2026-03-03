@@ -645,6 +645,30 @@ export interface TranslationKeys {
   'game.acceptRematch': string;
   'game.declineRematch': string;
   'game.abortGame': string;
+
+  // Game History
+  'gameHistory.title': string;
+  'gameHistory.empty.title': string;
+  'gameHistory.empty.subtitle': string;
+  'gameHistory.result.win': string;
+  'gameHistory.result.loss': string;
+  'gameHistory.result.draw': string;
+  'gameHistory.result.aborted': string;
+  'gameHistory.reason.checkmate': string;
+  'gameHistory.reason.resign': string;
+  'gameHistory.reason.resignation': string;
+  'gameHistory.reason.timeout': string;
+  'gameHistory.reason.stalemate': string;
+  'gameHistory.reason.draw': string;
+  'gameHistory.reason.draw_by_agreement': string;
+  'gameHistory.reason.draw_by_timeout_with_pending_offer': string;
+  'gameHistory.reason.dispute': string;
+  'gameHistory.reason.commander_captured': string;
+  'gameHistory.reason.fifty_moves': string;
+  'gameHistory.reason.threefold_repetition': string;
+  'gameHistory.duration': string;
+  'gameHistory.viewAll': string;
+  'gameHistory.vs': string;
 }
 
 export type TranslationKey = keyof TranslationKeys;

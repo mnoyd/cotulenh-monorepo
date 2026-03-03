@@ -81,8 +81,8 @@ development_status:
   epic-5-retrospective: optional
 
   # Epic 6: Game History & Review
-  epic-6: backlog
-  6-1-game-history-list: backlog
+  epic-6: in-progress
+  6-1-game-history-list: done
   6-2-game-replay-viewer: backlog
   epic-6-retrospective: optional
 

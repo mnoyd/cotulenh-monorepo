@@ -649,5 +649,29 @@ export const vi: TranslationKeys = {
   'game.rematchReceived': 'Đối thủ muốn chơi lại!',
   'game.acceptRematch': 'Đồng Ý',
   'game.declineRematch': 'Từ Chối',
-  'game.abortGame': 'Hủy Ván'
+  'game.abortGame': 'Hủy Ván',
+
+  // Game History
+  'gameHistory.title': 'Lịch Sử Trận Đấu',
+  'gameHistory.empty.title': 'Chưa Có Trận Đấu',
+  'gameHistory.empty.subtitle': 'Hãy bắt đầu chơi để xem lịch sử!',
+  'gameHistory.result.win': 'Thắng',
+  'gameHistory.result.loss': 'Thua',
+  'gameHistory.result.draw': 'Hòa',
+  'gameHistory.result.aborted': 'Hủy',
+  'gameHistory.reason.checkmate': 'do chiếu hết',
+  'gameHistory.reason.resign': 'do đầu hàng',
+  'gameHistory.reason.resignation': 'do đầu hàng',
+  'gameHistory.reason.timeout': 'do hết giờ',
+  'gameHistory.reason.stalemate': 'do hòa cờ',
+  'gameHistory.reason.draw': 'do hòa',
+  'gameHistory.reason.draw_by_agreement': 'do thỏa thuận',
+  'gameHistory.reason.draw_by_timeout_with_pending_offer': 'do hết giờ (hòa đang chờ)',
+  'gameHistory.reason.dispute': 'do tranh chấp',
+  'gameHistory.reason.commander_captured': 'do bắt tư lệnh',
+  'gameHistory.reason.fifty_moves': 'do luật 50 nước',
+  'gameHistory.reason.threefold_repetition': 'do lặp lại thế cờ 3 lần',
+  'gameHistory.duration': '{minutes}p {seconds}g',
+  'gameHistory.viewAll': 'Xem Tất Cả Trận Đấu',
+  'gameHistory.vs': 'vs'
 };
