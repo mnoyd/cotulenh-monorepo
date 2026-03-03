@@ -613,5 +613,9 @@ export const en: TranslationKeys = {
   'game.opponentTurn': "Opponent's turn",
   'game.moveCount': 'Move {count}',
   'game.gameAborted': 'Game aborted — no moves were made',
-  'game.connectionLost': 'Connection lost'
+  'game.connectionLost': 'Connection lost',
+  'game.opponentMayReconnect': 'Opponent disconnected — they may reconnect',
+  'game.connectionRestored': 'Connection restored',
+  'game.syncFailed': 'Game sync failed — your game state may be outdated',
+  'game.syncFailedReport': 'Report Issue'
 };

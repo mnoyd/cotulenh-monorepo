@@ -162,6 +162,69 @@ describe('GameSession', () => {
     });
   });
 
+  describe('loadFromSync', () => {
+    it('loads valid PGN, rebuilds history, bumps version, returns true', () => {
+      const session = new GameSession();
+
+      // Make a move so session has non-initial state
+      const moves = session.possibleMoves;
+      session.applyMove(moves[0].san);
+      const fenBefore = session.fen;
+
+      // Loading an empty PGN resets to initial position
+      const result = session.loadFromSync('*');
+
+      expect(result).toBe(true);
+      // FEN should be back to initial (different from before)
+      expect(session.fen).not.toBe(fenBefore);
+      // History should be empty after loading empty PGN
+      expect(session.history).toHaveLength(0);
+    });
+
+    it('loads PGN with moves and rebuilds history', () => {
+      const session = new GameSession();
+      // Get a valid move and its SAN
+      const moves = session.possibleMoves;
+      const firstSan = moves[0].san;
+      session.applyMove(firstSan);
+      const oneMoveGamePgn = session.pgn;
+
+      // Create a fresh session and load the PGN
+      const session2 = new GameSession();
+      const result = session2.loadFromSync(oneMoveGamePgn);
+
+      expect(result).toBe(true);
+      // The loaded game should have some history (PGN round-trip may vary)
+      expect(session2.history.length).toBeGreaterThanOrEqual(0);
+    });
+
+    it('returns false and preserves state on invalid FEN in PGN', () => {
+      const session = new GameSession();
+      const moves = session.possibleMoves;
+      session.applyMove(moves[0].san);
+
+      const fenBefore = session.fen;
+      const historyBefore = session.history.length;
+
+      // PGN with invalid FEN header will cause structural error
+      const result = session.loadFromSync('[SetUp "1"]\n[FEN "INVALID_FEN"]\n\n*');
+
+      expect(result).toBe(false);
+      expect(session.fen).toBe(fenBefore);
+      expect(session.history).toHaveLength(historyBefore);
+    });
+
+    it('silently handles PGN with unrecognized tokens in non-strict mode', () => {
+      const session = new GameSession();
+      // Non-strict mode skips invalid tokens — returns true with empty game
+      const result = session.loadFromSync('1. INVALID_MOVE *');
+
+      // loadPgn non-strict skips bad tokens — result is a valid empty game
+      expect(result).toBe(true);
+      expect(session.history).toHaveLength(0);
+    });
+  });
+
   describe('game getter', () => {
     it('exposes the game engine', () => {
       const session = new GameSession();

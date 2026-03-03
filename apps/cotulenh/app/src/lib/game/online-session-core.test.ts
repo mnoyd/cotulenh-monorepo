@@ -125,6 +125,17 @@ function createDefaultConfig(supabase: unknown): OnlineSessionConfig {
   };
 }
 
+// Helper: trigger a local move through GameSession's board config callback,
+// which fires onMove(san) → OnlineGameSessionCore.#handleLocalMove → sendGameMessage.
+function triggerLocalMove(session: OnlineGameSessionCore) {
+  const moves = session.session.possibleMoves;
+  expect(moves.length).toBeGreaterThan(0);
+  const move = moves[0];
+  const boardConfig = session.session.boardConfig;
+  boardConfig.movable.events.after({ square: move.from }, { square: move.to });
+  return move;
+}
+
 describe('OnlineGameSessionCore', () => {
   let mock: ReturnType<typeof createMockSupabase>;
   let core: OnlineGameSessionCore;
@@ -223,18 +234,6 @@ describe('OnlineGameSessionCore', () => {
   });
 
   describe('local move broadcast', () => {
-    // Helper: trigger a local move through GameSession's board config callback,
-    // which fires onMove(san) → OnlineGameSessionCore.#handleLocalMove → sendGameMessage.
-    function triggerLocalMove(session: OnlineGameSessionCore) {
-      const moves = session.session.possibleMoves;
-      expect(moves.length).toBeGreaterThan(0);
-      const move = moves[0];
-      // Call the board config's after callback with valid coordinates
-      const boardConfig = session.session.boardConfig;
-      boardConfig.movable.events.after({ square: move.from }, { square: move.to });
-      return move;
-    }
-
     it('broadcasts move with SAN, clock, seq, sentAt', async () => {
       core = new OnlineGameSessionCore(createDefaultConfig(mock.supabase));
       core.join();
@@ -509,6 +508,109 @@ describe('OnlineGameSessionCore', () => {
     });
   });
 
+  describe('ack retry', () => {
+    it('resends move after 3s with no ack', async () => {
+      core = new OnlineGameSessionCore(createDefaultConfig(mock.supabase));
+      core.join();
+      await vi.advanceTimersByTimeAsync(10);
+
+      mock.presenceState['opponent'] = [{
+        color: 'blue',
+        userId: OPPONENT_USER_ID,
+        presenceId: 'opponent-presence'
+      }];
+      mock.simulatePresenceSync();
+
+      triggerLocalMove(core);
+      const sendCallsBefore = (mock.mockChannel.send as ReturnType<typeof vi.fn>).mock.calls.length;
+      const firstMovePayload = (mock.mockChannel.send as ReturnType<typeof vi.fn>).mock.calls.at(-1)?.[0]
+        ?.payload as Record<string, unknown>;
+
+      // Advance 3s — should trigger retry
+      await vi.advanceTimersByTimeAsync(3000);
+
+      const sendCallsAfter = (mock.mockChannel.send as ReturnType<typeof vi.fn>).mock.calls.length;
+      expect(sendCallsAfter).toBeGreaterThan(sendCallsBefore);
+      const resentPayload = (mock.mockChannel.send as ReturnType<typeof vi.fn>).mock.calls.at(-1)?.[0]
+        ?.payload as Record<string, unknown>;
+      expect(resentPayload.event).toBe('move');
+      expect(resentPayload.seq).toBe(firstMovePayload.seq);
+      expect(resentPayload).toEqual(firstMovePayload);
+    });
+
+    it('clears retry timer on ack receipt', async () => {
+      core = new OnlineGameSessionCore(createDefaultConfig(mock.supabase));
+      core.join();
+      await vi.advanceTimersByTimeAsync(10);
+
+      mock.presenceState['opponent'] = [{
+        color: 'blue',
+        userId: OPPONENT_USER_ID,
+        presenceId: 'opponent-presence'
+      }];
+      mock.simulatePresenceSync();
+
+      triggerLocalMove(core);
+      mock.simulateGameMessage({ event: 'ack', seq: 1 });
+      expect(core.pendingAckCount).toBe(0);
+
+      const sendCallsBefore = (mock.mockChannel.send as ReturnType<typeof vi.fn>).mock.calls.length;
+
+      // Advance 3s — should NOT trigger retry since ack was received
+      await vi.advanceTimersByTimeAsync(3000);
+
+      const sendCallsAfter = (mock.mockChannel.send as ReturnType<typeof vi.fn>).mock.calls.length;
+      expect(sendCallsAfter).toBe(sendCallsBefore);
+    });
+
+    it('clears all retry timers on destroy', async () => {
+      core = new OnlineGameSessionCore(createDefaultConfig(mock.supabase));
+      core.join();
+      await vi.advanceTimersByTimeAsync(10);
+
+      mock.presenceState['opponent'] = [{
+        color: 'blue',
+        userId: OPPONENT_USER_ID,
+        presenceId: 'opponent-presence'
+      }];
+      mock.simulatePresenceSync();
+
+      triggerLocalMove(core);
+      expect(core.pendingAckCount).toBe(1);
+
+      core.destroy();
+
+      // Advance 3s — should NOT trigger retry since destroyed
+      const sendCallsBefore = (mock.mockChannel.send as ReturnType<typeof vi.fn>).mock.calls.length;
+      await vi.advanceTimersByTimeAsync(3000);
+      const sendCallsAfter = (mock.mockChannel.send as ReturnType<typeof vi.fn>).mock.calls.length;
+      expect(sendCallsAfter).toBe(sendCallsBefore);
+    });
+
+    it('clears pending retries when channel disconnects', async () => {
+      core = new OnlineGameSessionCore(createDefaultConfig(mock.supabase));
+      core.join();
+      await vi.advanceTimersByTimeAsync(10);
+
+      mock.presenceState['opponent'] = [{
+        color: 'blue',
+        userId: OPPONENT_USER_ID,
+        presenceId: 'opponent-presence'
+      }];
+      mock.simulatePresenceSync();
+
+      triggerLocalMove(core);
+      expect(core.pendingAckCount).toBe(1);
+
+      const subscribeCallback = mock.getSubscribeCallback();
+      expect(subscribeCallback).toBeTruthy();
+      subscribeCallback?.('CHANNEL_ERROR');
+
+      expect(core.connectionState).toBe('disconnected');
+      expect(core.pendingAckCount).toBe(0);
+    });
+  });
+
   describe('NoStart timeout', () => {
     it('aborts game after 30s with no moves', async () => {
       const onAbort = vi.fn();
@@ -606,6 +708,336 @@ describe('OnlineGameSessionCore', () => {
       mock.simulatePresenceSync();
 
       expect(core.opponentConnected).toBe(true);
+    });
+  });
+
+  describe('seq gap detection', () => {
+    it('sets awaitingSync when gap detected', async () => {
+      core = new OnlineGameSessionCore(createDefaultConfig(mock.supabase));
+      core.join();
+      await vi.advanceTimersByTimeAsync(10);
+
+      // Process seq=1 first
+      const moves = core.session.possibleMoves;
+      mock.simulateGameMessage({
+        event: 'move',
+        san: moves[0].san,
+        clock: 299_000,
+        seq: 1,
+        sentAt: Date.now() - 50
+      });
+
+      expect(core.awaitingSync).toBe(false);
+
+      // Skip seq=2, send seq=3 — gap detected
+      const moves2 = core.session.possibleMoves;
+      mock.simulateGameMessage({
+        event: 'move',
+        san: moves2[0].san,
+        clock: 298_000,
+        seq: 3,
+        sentAt: Date.now() - 50
+      });
+
+      expect(core.awaitingSync).toBe(true);
+      const lastPayload = (mock.mockChannel.send as ReturnType<typeof vi.fn>).mock.calls.at(-1)?.[0]
+        ?.payload as Record<string, unknown>;
+      expect(lastPayload.event).toBe('sync-request');
+      expect(lastPayload.expectedSeq).toBe(2);
+    });
+
+    it('ignores moves while awaiting sync', async () => {
+      core = new OnlineGameSessionCore(createDefaultConfig(mock.supabase));
+      core.join();
+      await vi.advanceTimersByTimeAsync(10);
+
+      // Process seq=1
+      const moves = core.session.possibleMoves;
+      mock.simulateGameMessage({
+        event: 'move',
+        san: moves[0].san,
+        clock: 299_000,
+        seq: 1,
+        sentAt: Date.now() - 50
+      });
+
+      // Trigger gap
+      const moves2 = core.session.possibleMoves;
+      mock.simulateGameMessage({
+        event: 'move',
+        san: moves2[0].san,
+        clock: 298_000,
+        seq: 3,
+        sentAt: Date.now() - 50
+      });
+
+      expect(core.awaitingSync).toBe(true);
+      const historyLen = core.session.history.length;
+
+      // Further moves should be ignored
+      mock.simulateGameMessage({
+        event: 'move',
+        san: moves2[0].san,
+        clock: 297_000,
+        seq: 4,
+        sentAt: Date.now() - 50
+      });
+
+      expect(core.session.history).toHaveLength(historyLen);
+    });
+
+    it('duplicate seq still sends ack (idempotent)', async () => {
+      core = new OnlineGameSessionCore(createDefaultConfig(mock.supabase));
+      core.join();
+      await vi.advanceTimersByTimeAsync(10);
+
+      const moves = core.session.possibleMoves;
+      mock.simulateGameMessage({
+        event: 'move',
+        san: moves[0].san,
+        clock: 299_000,
+        seq: 1,
+        sentAt: Date.now() - 50
+      });
+
+      // Send duplicate — should still get ack
+      const sendCallsBefore = (mock.mockChannel.send as ReturnType<typeof vi.fn>).mock.calls.length;
+      mock.simulateGameMessage({
+        event: 'move',
+        san: moves[0].san,
+        clock: 299_000,
+        seq: 1,
+        sentAt: Date.now() - 50
+      });
+
+      // An ack should have been sent for the duplicate
+      const sendCallsAfter = (mock.mockChannel.send as ReturnType<typeof vi.fn>).mock.calls.length;
+      expect(sendCallsAfter).toBeGreaterThan(sendCallsBefore);
+
+      // Verify it was an ack
+      const lastCall = (mock.mockChannel.send as ReturnType<typeof vi.fn>).mock.calls.at(-1);
+      expect(lastCall[0].payload.event).toBe('ack');
+      expect(lastCall[0].payload.seq).toBe(1);
+    });
+  });
+
+  describe('sync message handling', () => {
+    it('sends sync on opponent reconnect after disconnect during play', async () => {
+      core = new OnlineGameSessionCore(createDefaultConfig(mock.supabase));
+      core.join();
+      await vi.advanceTimersByTimeAsync(10);
+
+      // Connect opponent
+      mock.presenceState['opponent'] = [{
+        color: 'blue',
+        userId: OPPONENT_USER_ID,
+        presenceId: 'opponent-presence'
+      }];
+      mock.simulatePresenceSync();
+      expect(core.lifecycle).toBe('playing');
+      expect(core.opponentConnected).toBe(true);
+
+      // Disconnect opponent
+      delete mock.presenceState['opponent'];
+      mock.simulatePresenceLeave();
+      expect(core.opponentConnected).toBe(false);
+
+      // Clear sends from before
+      (mock.mockChannel.send as ReturnType<typeof vi.fn>).mockClear();
+
+      // Reconnect opponent
+      mock.presenceState['opponent'] = [{
+        color: 'blue',
+        userId: OPPONENT_USER_ID,
+        presenceId: 'opponent-presence-2'
+      }];
+      mock.simulatePresenceJoin();
+
+      // Should have sent a sync message
+      const sendCalls = (mock.mockChannel.send as ReturnType<typeof vi.fn>).mock.calls;
+      const syncSends = sendCalls.filter(
+        (c: unknown[]) => {
+          const payload = (c[0] as Record<string, Record<string, unknown>>).payload;
+          return payload && payload.event === 'sync';
+        }
+      );
+      expect(syncSends).toHaveLength(1);
+
+      // Verify sync payload contains required fields
+      const syncPayload = (syncSends[0][0] as Record<string, Record<string, unknown>>).payload;
+      expect(syncPayload.fen).toBeDefined();
+      expect(syncPayload.pgn).toBeDefined();
+      expect(syncPayload.clock).toBeDefined();
+      expect(syncPayload.seq).toBeDefined();
+    });
+
+    it('receives sync and loads game state', async () => {
+      core = new OnlineGameSessionCore(createDefaultConfig(mock.supabase));
+      core.join();
+      await vi.advanceTimersByTimeAsync(10);
+
+      // Empty PGN sync — should load successfully
+      mock.simulateGameMessage({
+        event: 'sync',
+        fen: core.session.game.fen(),
+        pgn: '*',
+        clock: { red: 250_000, blue: 280_000 },
+        seq: 5
+      });
+
+      // Clock times should be updated
+      expect(core.clock.getTime('r')).toBe(250_000);
+      expect(core.clock.getTime('b')).toBe(280_000);
+    });
+
+    it('clears awaitingSync on sync receipt', async () => {
+      core = new OnlineGameSessionCore(createDefaultConfig(mock.supabase));
+      core.join();
+      await vi.advanceTimersByTimeAsync(10);
+
+      // Trigger gap to set awaitingSync
+      const moves = core.session.possibleMoves;
+      mock.simulateGameMessage({
+        event: 'move',
+        san: moves[0].san,
+        clock: 299_000,
+        seq: 1,
+        sentAt: Date.now() - 50
+      });
+      mock.simulateGameMessage({
+        event: 'move',
+        san: 'dummy',
+        clock: 298_000,
+        seq: 3,
+        sentAt: Date.now() - 50
+      });
+      expect(core.awaitingSync).toBe(true);
+
+      // Receive sync
+      mock.simulateGameMessage({
+        event: 'sync',
+        fen: core.session.game.fen(),
+        pgn: '*',
+        clock: { red: 250_000, blue: 280_000 },
+        seq: 5
+      });
+
+      expect(core.awaitingSync).toBe(false);
+    });
+
+    it('clears pending ack timers on sync receipt', async () => {
+      core = new OnlineGameSessionCore(createDefaultConfig(mock.supabase));
+      core.join();
+      await vi.advanceTimersByTimeAsync(10);
+
+      mock.presenceState['opponent'] = [{
+        color: 'blue',
+        userId: OPPONENT_USER_ID,
+        presenceId: 'opponent-presence'
+      }];
+      mock.simulatePresenceSync();
+
+      // Make local move (creates pending ack)
+      triggerLocalMove(core);
+      expect(core.pendingAckCount).toBe(1);
+
+      // Receive sync — should clear pending acks
+      mock.simulateGameMessage({
+        event: 'sync',
+        fen: core.session.game.fen(),
+        pgn: '*',
+        clock: { red: 250_000, blue: 280_000 },
+        seq: 5
+      });
+
+      expect(core.pendingAckCount).toBe(0);
+    });
+
+    it('fires onSyncError on invalid PGN sync', async () => {
+      const onSyncError = vi.fn();
+      core = new OnlineGameSessionCore(createDefaultConfig(mock.supabase), { onSyncError });
+      core.join();
+      await vi.advanceTimersByTimeAsync(10);
+
+      mock.simulateGameMessage({
+        event: 'sync',
+        fen: 'bogus',
+        pgn: '[SetUp "1"]\n[FEN "INVALID"]\n\n*',
+        clock: { red: 250_000, blue: 280_000 },
+        seq: 5
+      });
+
+      expect(onSyncError).toHaveBeenCalledTimes(1);
+      expect(onSyncError).toHaveBeenCalledWith(
+        expect.objectContaining({
+          pgn: expect.any(String),
+          fen: expect.any(String),
+          gameId: 'test-game-id'
+        })
+      );
+    });
+
+    it('full reconnection flow: disconnect → reconnect → sync → state restored', async () => {
+      core = new OnlineGameSessionCore(createDefaultConfig(mock.supabase));
+      core.join();
+      await vi.advanceTimersByTimeAsync(10);
+
+      // Connect opponent to start game
+      mock.presenceState['opponent'] = [{
+        color: 'blue',
+        userId: OPPONENT_USER_ID,
+        presenceId: 'opponent-presence'
+      }];
+      mock.simulatePresenceSync();
+      expect(core.lifecycle).toBe('playing');
+
+      // Make a local move
+      triggerLocalMove(core);
+      expect(core.session.history.length).toBeGreaterThan(0);
+
+      // Opponent disconnects
+      delete mock.presenceState['opponent'];
+      mock.simulatePresenceLeave();
+      expect(core.opponentConnected).toBe(false);
+
+      // Opponent reconnects
+      mock.presenceState['opponent'] = [{
+        color: 'blue',
+        userId: OPPONENT_USER_ID,
+        presenceId: 'opponent-presence-2'
+      }];
+
+      (mock.mockChannel.send as ReturnType<typeof vi.fn>).mockClear();
+      mock.simulatePresenceJoin();
+      expect(core.opponentConnected).toBe(true);
+
+      // Verify sync was sent
+      const syncSends = (mock.mockChannel.send as ReturnType<typeof vi.fn>).mock.calls.filter(
+        (c: unknown[]) => (c[0] as Record<string, Record<string, unknown>>).payload?.event === 'sync'
+      );
+      expect(syncSends).toHaveLength(1);
+    });
+
+    it('sends sync when opponent explicitly requests it', async () => {
+      core = new OnlineGameSessionCore(createDefaultConfig(mock.supabase));
+      core.join();
+      await vi.advanceTimersByTimeAsync(10);
+
+      mock.presenceState['opponent'] = [{
+        color: 'blue',
+        userId: OPPONENT_USER_ID,
+        presenceId: 'opponent-presence'
+      }];
+      mock.simulatePresenceSync();
+      expect(core.lifecycle).toBe('playing');
+
+      (mock.mockChannel.send as ReturnType<typeof vi.fn>).mockClear();
+      mock.simulateGameMessage({ event: 'sync-request', expectedSeq: 2 });
+
+      const syncSends = (mock.mockChannel.send as ReturnType<typeof vi.fn>).mock.calls.filter(
+        (c: unknown[]) => (c[0] as Record<string, Record<string, unknown>>).payload?.event === 'sync'
+      );
+      expect(syncSends).toHaveLength(1);
     });
   });
 

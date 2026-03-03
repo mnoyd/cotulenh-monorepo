@@ -6,7 +6,8 @@ import {
   OnlineGameSessionCore,
   type OnlineSessionConfig,
   type ConnectionState,
-  type Lifecycle
+  type Lifecycle,
+  type SyncErrorContext
 } from './online-session-core';
 import type { GameSession } from '$lib/game-session.svelte';
 import type { ChessClockState, ClockColor } from '$lib/clock/clock.svelte';
@@ -22,14 +23,20 @@ export class OnlineGameSession {
   #lifecycle = $state<Lifecycle>('waiting');
   #opponentConnected = $state(false);
   #seqCounter = $state(0);
+  #awaitingSync = $state(false);
 
   // Reactive proxies for GameSession state (updated via version bump)
   #version = $state(0);
 
-  constructor(config: OnlineSessionConfig, onAbort?: () => void) {
+  constructor(
+    config: OnlineSessionConfig,
+    onAbort?: () => void,
+    onSyncError?: (context: SyncErrorContext) => void
+  ) {
     this.#core = new OnlineGameSessionCore(config, {
       onStateChange: () => this.#syncState(),
-      onAbort
+      onAbort,
+      onSyncError
     });
   }
 
@@ -41,6 +48,7 @@ export class OnlineGameSession {
   get lifecycle(): Lifecycle { return this.#lifecycle; }
   get opponentConnected(): boolean { return this.#opponentConnected; }
   get seqCounter(): number { return this.#seqCounter; }
+  get awaitingSync(): boolean { return this.#awaitingSync; }
   get playerColor(): 'red' | 'blue' { return this.#core.playerColor; }
   get gameId(): string { return this.#core.gameId; }
   get myClockColor(): ClockColor { return this.#core.myClockColor; }
@@ -152,6 +160,7 @@ export class OnlineGameSession {
     this.#lifecycle = this.#core.lifecycle;
     this.#opponentConnected = this.#core.opponentConnected;
     this.#seqCounter = this.#core.seqCounter;
+    this.#awaitingSync = this.#core.awaitingSync;
     this.#version++;
   }
 }

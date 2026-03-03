@@ -613,5 +613,9 @@ export const vi: TranslationKeys = {
   'game.opponentTurn': 'Lượt đối thủ',
   'game.moveCount': 'Nước {count}',
   'game.gameAborted': 'Ván đấu bị hủy — không có nước đi nào',
-  'game.connectionLost': 'Mất kết nối'
+  'game.connectionLost': 'Mất kết nối',
+  'game.opponentMayReconnect': 'Đối thủ mất kết nối — có thể kết nối lại',
+  'game.connectionRestored': 'Đã khôi phục kết nối',
+  'game.syncFailed': 'Đồng bộ thất bại — trạng thái ván đấu có thể lỗi thời',
+  'game.syncFailedReport': 'Báo lỗi'
 };

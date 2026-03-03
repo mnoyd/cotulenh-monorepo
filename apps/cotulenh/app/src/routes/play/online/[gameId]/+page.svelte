@@ -5,7 +5,9 @@
   import { toast } from 'svelte-sonner';
   import BoardContainer from '$lib/components/BoardContainer.svelte';
   import OnlineIndicator from '$lib/components/OnlineIndicator.svelte';
+  import ReconnectBanner from '$lib/components/ReconnectBanner.svelte';
   import { OnlineGameSession } from '$lib/game/online-session.svelte';
+  import { setStoredValue } from '$lib/stores/persisted.svelte';
   import { formatClockTime } from '$lib/clock/clock.svelte';
   import { getI18n } from '$lib/i18n/index.svelte';
   import type { Api } from '@cotulenh/board';
@@ -41,11 +43,16 @@
 
   let isMyTurn = $derived(
     onlineSession &&
-      onlineSession.lifecycle === 'playing' &&
-      onlineSession.opponentConnected
+      onlineSession.lifecycle === 'playing'
       ? (onlineSession.turn === 'r' && data.playerColor === 'red') ||
         (onlineSession.turn === 'b' && data.playerColor === 'blue')
       : false
+  );
+
+  let showDisconnectBanner = $derived(
+    onlineSession !== null &&
+    !onlineSession.opponentConnected &&
+    onlineSession.lifecycle === 'playing'
   );
 
   let moveCount = $derived(onlineSession ? onlineSession.history.length : 0);
@@ -87,6 +94,21 @@
         // onAbort callback
         toast.info(i18n.t('game.gameAborted'));
         goto('/play/online');
+      },
+      (errorContext) => {
+        // onSyncError callback
+        toast.error(i18n.t('game.syncFailed'), {
+          action: {
+            label: i18n.t('game.syncFailedReport'),
+            onClick: () => {
+              setStoredValue('report_pgn', errorContext.pgn);
+              setStoredValue('report_description',
+                `Game sync failed\nGame ID: ${errorContext.gameId}\nFEN: ${errorContext.fen}\nError: ${String(errorContext.error)}`
+              );
+              goto('/report-issue');
+            }
+          }
+        });
       }
     );
 
@@ -138,7 +160,7 @@
             orientation,
             viewOnly:
               onlineSession.lifecycle !== 'playing' ||
-              !onlineSession.opponentConnected ||
+              onlineSession.connectionState !== 'connected' ||
               !isMyTurn
           }}
           onApiReady={handleBoardReady}
@@ -149,6 +171,9 @@
         </div>
       {/if}
     </div>
+
+    <!-- Reconnect banner -->
+    <ReconnectBanner visible={showDisconnectBanner} />
 
     <!-- Game status bar -->
     <div class="status-bar">

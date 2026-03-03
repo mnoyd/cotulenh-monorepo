@@ -609,6 +609,10 @@ export interface TranslationKeys {
   'game.moveCount': string;
   'game.gameAborted': string;
   'game.connectionLost': string;
+  'game.opponentMayReconnect': string;
+  'game.connectionRestored': string;
+  'game.syncFailed': string;
+  'game.syncFailedReport': string;
 }
 
 export type TranslationKey = keyof TranslationKeys;

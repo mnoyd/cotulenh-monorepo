@@ -91,6 +91,19 @@ describe('GameMessage helpers', () => {
       });
     });
 
+    it('sends a sync-request message with expectedSeq', async () => {
+      const msg: GameMessage = { event: 'sync-request', senderId, expectedSeq: 4 };
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await sendGameMessage(channel as any, msg);
+
+      expect(channel.send).toHaveBeenCalledWith({
+        type: 'broadcast',
+        event: GAME_MESSAGE_EVENT,
+        payload: msg
+      });
+    });
+
     it('sends a sync message with full state', async () => {
       const msg: GameMessage = {
         event: 'sync',
@@ -210,6 +223,22 @@ describe('GameMessage helpers', () => {
       expect(handler).toHaveBeenCalledWith(msg);
     });
 
+    it('delivers sync-request messages', () => {
+      const handler = vi.fn();
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      onGameMessage(channel as any, handler);
+
+      const msg: GameMessage = {
+        event: 'sync-request',
+        senderId,
+        expectedSeq: 6
+      };
+      channel._simulateBroadcast(msg);
+
+      expect(handler).toHaveBeenCalledWith(msg);
+    });
+
     it('ignores invalid payloads and logs error', async () => {
       const handler = vi.fn();
       const { logger } = await import('@cotulenh/common');
@@ -267,8 +296,11 @@ describe('GameMessage helpers', () => {
       };
       // @ts-expect-error ack requires seq
       const invalidAck: GameMessage = { event: 'ack', senderId };
+      // @ts-expect-error sync-request requires expectedSeq
+      const invalidSyncRequest: GameMessage = { event: 'sync-request', senderId };
       void invalidMove;
       void invalidAck;
+      void invalidSyncRequest;
     });
   });
 });

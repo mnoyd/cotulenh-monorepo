@@ -20,9 +20,17 @@ export interface OnlineSessionConfig {
   supabase: SupabaseClient;
 }
 
+export interface SyncErrorContext {
+  pgn: string;
+  fen: string;
+  gameId: string;
+  error?: unknown;
+}
+
 export interface OnlineSessionCallbacks {
   onStateChange?: () => void;
   onAbort?: () => void;
+  onSyncError?: (context: SyncErrorContext) => void;
 }
 
 export class OnlineGameSessionCore {
@@ -36,7 +44,7 @@ export class OnlineGameSessionCore {
   #supabase: SupabaseClient;
   #channel: RealtimeChannel | null = null;
   #lagTracker = new LagTracker();
-  #pendingAcks = new Map<number, number>();
+  #pendingAcks = new Map<number, { timer: ReturnType<typeof setTimeout>; message: GameMessage }>();
   #presenceId = `presence-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
   #connectionState: ConnectionState = 'disconnected';
@@ -44,6 +52,8 @@ export class OnlineGameSessionCore {
   #opponentConnected = false;
   #seqCounter = 0;
   #lastProcessedSeq = 0;
+  #awaitingSync = false;
+  #opponentWasDisconnected = false;
   #noStartTimer: ReturnType<typeof setTimeout> | null = null;
   #hasMoveOccurred = false;
   #abortNotified = false;
@@ -83,6 +93,7 @@ export class OnlineGameSessionCore {
   get opponentConnected(): boolean { return this.#opponentConnected; }
   get seqCounter(): number { return this.#seqCounter; }
   get pendingAckCount(): number { return this.#pendingAcks.size; }
+  get awaitingSync(): boolean { return this.#awaitingSync; }
 
   get myClockColor(): ClockColor {
     return this.playerColor === 'red' ? 'r' : 'b';
@@ -134,6 +145,7 @@ export class OnlineGameSessionCore {
         this.#startNoStartTimer();
       } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
         this.#connectionState = 'disconnected';
+        this.#clearAllPendingAcks();
         this.#notifyStateChange();
       }
     });
@@ -144,7 +156,7 @@ export class OnlineGameSessionCore {
   destroy(): void {
     this.#clearNoStartTimer();
     this.clock.destroy();
-    this.#pendingAcks.clear();
+    this.#clearAllPendingAcks();
 
     if (this.#channel) {
       this.#supabase.removeChannel(this.#channel);
@@ -163,9 +175,8 @@ export class OnlineGameSessionCore {
       logger.warn('Cannot send move: not connected');
       return;
     }
-    if (!this.#opponentConnected || this.#lifecycle !== 'playing') {
+    if (this.#lifecycle !== 'playing') {
       logger.warn('Cannot send move: game not started', {
-        opponentConnected: this.#opponentConnected,
         lifecycle: this.#lifecycle
       });
       return;
@@ -182,17 +193,18 @@ export class OnlineGameSessionCore {
     // Read clock time before broadcasting
     const myTime = this.clock.getTime(this.myClockColor);
 
-    // Broadcast move
+    // Broadcast move with retry
     const seq = ++this.#seqCounter;
-    this.#pendingAcks.set(seq, Date.now());
-    sendGameMessage(this.#channel, {
+    const message: GameMessage = {
       event: 'move',
       senderId: this.#currentUserId,
       san,
       clock: myTime,
       seq,
       sentAt: Date.now()
-    });
+    };
+    sendGameMessage(this.#channel, message);
+    this.#startAckRetry(seq, message);
 
     // Switch clock side
     this.clock.switchSide();
@@ -222,10 +234,16 @@ export class OnlineGameSessionCore {
       case 'ack':
         this.#handleAck(msg);
         break;
+      case 'sync-request':
+        this.#handleSyncRequest();
+        break;
+      case 'sync':
+        this.#handleSync(msg);
+        break;
       case 'abort':
         this.#handleAbortMessage();
         break;
-      // Other message types will be handled by later stories (5.3-5.7)
+      // Other message types will be handled by later stories (5.4-5.7)
       default:
         break;
     }
@@ -234,16 +252,31 @@ export class OnlineGameSessionCore {
   #handleRemoteMove(msg: Extract<GameMessage, { event: 'move' }>): void {
     if (!this.#channel) return;
 
-    // Send ack immediately
-    sendGameMessage(this.#channel, {
-      event: 'ack',
-      senderId: this.#currentUserId,
-      seq: msg.seq
-    });
+    // While awaiting sync, ignore all move messages (sync will reconcile)
+    if (this.#awaitingSync) {
+      if (msg.seq >= this.#lastProcessedSeq + 1) {
+        this.#requestSyncFromOpponent(this.#channel, msg.seq);
+      }
+      logger.debug('Ignoring move while awaiting sync', { seq: msg.seq });
+      return;
+    }
 
     // Skip duplicate
     if (msg.seq <= this.#lastProcessedSeq) {
+      this.#sendAck(msg.seq);
       logger.debug('Skipping duplicate move', { seq: msg.seq, lastProcessed: this.#lastProcessedSeq });
+      return;
+    }
+
+    // Gap detection: if seq is ahead by more than 1, request sync
+    if (msg.seq > this.#lastProcessedSeq + 1) {
+      logger.warn('Seq gap detected — awaiting sync', {
+        received: msg.seq,
+        expected: this.#lastProcessedSeq + 1
+      });
+      this.#awaitingSync = true;
+      this.#requestSyncFromOpponent(this.#channel, msg.seq);
+      this.#notifyStateChange();
       return;
     }
 
@@ -269,16 +302,50 @@ export class OnlineGameSessionCore {
       this.clock.switchSide();
       this.#lagTracker.regenerate();
       this.#lastProcessedSeq = msg.seq;
+      this.#sendAck(msg.seq);
       this.#notifyStateChange();
     } else {
       // Invalid move — log error (dispute handling is Story 5.6)
       logger.error('Received invalid remote move', { san: msg.san, seq: msg.seq });
+      this.#awaitingSync = true;
+      this.#requestSyncFromOpponent(this.#channel, msg.seq);
+      this.#notifyStateChange();
     }
   }
 
   #handleAck(msg: Extract<GameMessage, { event: 'ack' }>): void {
-    const wasPending = this.#pendingAcks.delete(msg.seq);
-    logger.debug('Received ack', { seq: msg.seq, wasPending });
+    const entry = this.#pendingAcks.get(msg.seq);
+    if (entry) {
+      clearTimeout(entry.timer);
+      this.#pendingAcks.delete(msg.seq);
+    }
+    logger.debug('Received ack', { seq: msg.seq, wasPending: !!entry });
+  }
+
+  #handleSync(msg: Extract<GameMessage, { event: 'sync' }>): void {
+    const loaded = this.session.loadFromSync(msg.pgn);
+    if (!loaded) {
+      this.#callbacks.onSyncError?.({
+        pgn: msg.pgn,
+        fen: this.session.game.fen(),
+        gameId: this.gameId,
+        error: 'PGN load failed'
+      });
+      return;
+    }
+
+    // State fully reconciled — update clocks, seq, and clear pending acks
+    this.clock.setTime('r', msg.clock.red);
+    this.clock.setTime('b', msg.clock.blue);
+    this.#lastProcessedSeq = msg.seq;
+    this.#awaitingSync = false;
+    this.#clearAllPendingAcks();
+    this.#notifyStateChange();
+  }
+
+  #handleSyncRequest(): void {
+    if (!this.#channel || this.#lifecycle !== 'playing') return;
+    this.#sendSyncToOpponent(this.#channel);
   }
 
   #handleAbortMessage(): void {
@@ -287,6 +354,49 @@ export class OnlineGameSessionCore {
     this.#lifecycle = 'ended';
     this.#notifyStateChange();
     this.#notifyAbortOnce();
+  }
+
+  // ============================================================
+  // PRIVATE - Ack retry
+  // ============================================================
+
+  #startAckRetry(seq: number, message: GameMessage): void {
+    const timer = setTimeout(() => {
+      if (!this.#channel || this.#connectionState !== 'connected') return;
+      logger.debug('Retrying unacked move', { seq });
+      sendGameMessage(this.#channel, message);
+      // Restart retry timer
+      this.#startAckRetry(seq, message);
+    }, 3000);
+    this.#pendingAcks.set(seq, { timer, message });
+  }
+
+  #sendAck(seq: number): void {
+    if (!this.#channel) return;
+    sendGameMessage(this.#channel, {
+      event: 'ack',
+      senderId: this.#currentUserId,
+      seq
+    });
+  }
+
+  #requestSyncFromOpponent(channel: RealtimeChannel, receivedSeq: number): void {
+    sendGameMessage(channel, {
+      event: 'sync-request',
+      senderId: this.#currentUserId,
+      expectedSeq: this.#lastProcessedSeq + 1
+    });
+    logger.debug('Requested sync from opponent', {
+      expectedSeq: this.#lastProcessedSeq + 1,
+      receivedSeq
+    });
+  }
+
+  #clearAllPendingAcks(): void {
+    for (const entry of this.#pendingAcks.values()) {
+      clearTimeout(entry.timer);
+    }
+    this.#pendingAcks.clear();
   }
 
   // ============================================================
@@ -346,6 +456,8 @@ export class OnlineGameSessionCore {
 
   #syncPresence(channel: RealtimeChannel): void {
     const state = channel.presenceState();
+    const wasConnected = this.#opponentConnected;
+
     // Count presences that are NOT this client instance.
     let opponentFound = false;
     for (const key of Object.keys(state)) {
@@ -364,8 +476,46 @@ export class OnlineGameSessionCore {
       if (opponentFound) break;
     }
     this.#opponentConnected = opponentFound;
+
+    // Track disconnect for sync-on-reconnect
+    if (!opponentFound && wasConnected) {
+      this.#opponentWasDisconnected = true;
+    }
+
+    // Send sync when opponent reconnects after a disconnect during active play
+    if (opponentFound && this.#opponentWasDisconnected && this.#lifecycle === 'playing') {
+      this.#opponentWasDisconnected = false;
+      this.#sendSyncToOpponent(channel);
+    }
+
     this.#startGameWhenReady();
     this.#notifyStateChange();
+  }
+
+  // ============================================================
+  // PRIVATE - Sync send
+  // ============================================================
+
+  #sendSyncToOpponent(channel: RealtimeChannel): void {
+    let pgn: string;
+    try {
+      pgn = this.session.pgn;
+    } catch (error) {
+      logger.error('PGN export failed during sync send', { error, gameId: this.gameId });
+      return; // skip sync — retry/reconnect will attempt again
+    }
+
+    sendGameMessage(channel, {
+      event: 'sync',
+      senderId: this.#currentUserId,
+      fen: this.session.game.fen(),
+      pgn,
+      clock: {
+        red: this.clock.getTime('r'),
+        blue: this.clock.getTime('b')
+      },
+      seq: this.#seqCounter
+    });
   }
 
   // ============================================================

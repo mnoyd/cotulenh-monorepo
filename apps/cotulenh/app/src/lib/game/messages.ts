@@ -16,6 +16,7 @@ export type GameMessage =
   // Gameplay
   | (SenderMetadata & { event: 'move'; san: string; clock: number; seq: number; sentAt: number })
   | (SenderMetadata & { event: 'ack'; seq: number })
+  | (SenderMetadata & { event: 'sync-request'; expectedSeq: number })
   // Game end
   | (SenderMetadata & { event: 'resign' })
   | (SenderMetadata & { event: 'claim-victory' })
@@ -74,6 +75,8 @@ export function isGameMessage(value: unknown): value is GameMessage {
       );
     case 'ack':
       return isPositiveInteger(value.seq);
+    case 'sync-request':
+      return isPositiveInteger(value.expectedSeq);
     case 'dispute':
       return typeof value.san === 'string' && typeof value.pgn === 'string';
     case 'sync':

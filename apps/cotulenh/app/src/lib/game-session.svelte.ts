@@ -214,6 +214,34 @@ export class GameSession {
     return this.#game;
   }
 
+  /**
+   * Load game state from a sync PGN (reconnection scenario).
+   * On success: replaces game state, rebuilds history, bumps version.
+   * On failure: leaves current state untouched, returns false.
+   */
+  loadFromSync(pgn: string): boolean {
+    try {
+      // Create a temporary game to validate PGN before touching current state
+      const tempGame = new CoTuLenh();
+      tempGame.loadPgn(pgn);
+
+      // PGN loaded successfully — swap in the new game
+      this.#game = tempGame;
+      const engineHistory = this.#game.history({ verbose: true }) as HistoryMove[];
+      this.#history = engineHistory;
+      this.#historyViewIndex = -1;
+      this.#version++;
+      return true;
+    } catch (error) {
+      logger.error('loadFromSync failed — keeping current state', {
+        error,
+        pgn,
+        currentFen: this.#game.fen()
+      });
+      return false;
+    }
+  }
+
   applyMove(san: string): MoveResult | null {
     try {
       const result = this.#game.move(san);
