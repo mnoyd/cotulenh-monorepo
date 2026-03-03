@@ -464,4 +464,4 @@ Approved
 - `pnpm --filter @cotulenh/app test -- src/routes/user/history/[gameId]/page.server.test.ts`
 - `pnpm --filter @cotulenh/app test -- src/routes/user/history/[gameId]/replay-controls.test.ts`
 - `pnpm --filter @cotulenh/app test`
-- `pnpm --filter @cotulenh/app run check-types` (fails due pre-existing repo-wide type issues; includes one non-blocking warning in this route about intentional initial data capture)
+- `pnpm --filter @cotulenh/app run check-types` (fails due pre-existing repo-wide type issues unrelated to Story 6.2 changes)

@@ -35,9 +35,12 @@
 	let { data }: { data: PageData } = $props();
 
 	// Initialize game session and capture starting FEN before PGN load
-	const session = new GameSession();
-	const startingFen = session.fen;
-	session.loadFromSync(data.game.pgn);
+	const { session, startingFen } = (() => {
+		const replaySession = new GameSession();
+		const initialFen = replaySession.fen;
+		replaySession.loadFromSync(data.game.pgn);
+		return { session: replaySession, startingFen: initialFen };
+	})();
 
 	// Track whether we're showing the starting position (before first move)
 	let showStartPosition = $state(session.history.length > 0);
