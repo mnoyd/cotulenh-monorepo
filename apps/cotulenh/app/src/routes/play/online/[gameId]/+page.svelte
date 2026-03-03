@@ -63,6 +63,11 @@
   let moveCount = $derived(onlineSession ? onlineSession.history.length : 0);
 
   let opponentFlagged = $derived(onlineSession?.opponentFlagged ?? false);
+  let disputeActive = $derived(onlineSession?.disputeActive ?? false);
+  let disputeInfo = $derived(onlineSession?.disputeInfo);
+  let disputeDialogOpen = $derived(disputeActive && onlineSession?.lifecycle === 'playing');
+  let disputeComment = $state('');
+  let submittingDispute = $state(false);
 
   let turnLabel = $derived(
     isMyTurn ? i18n.t('game.yourTurn') : i18n.t('game.opponentTurn')
@@ -143,6 +148,17 @@
     }
   }
 
+  async function submitDispute(classification: 'bug' | 'cheat') {
+    if (!onlineSession || submittingDispute) return;
+    submittingDispute = true;
+    try {
+      await onlineSession.reportDispute(classification, disputeComment || undefined);
+      disputeComment = '';
+    } finally {
+      submittingDispute = false;
+    }
+  }
+
   $effect(() => {
     if (onlineSession) {
       onlineSession.session.setupBoardEffect();
@@ -179,6 +195,7 @@
               onlineSession.lifecycle !== 'playing' ||
               onlineSession.connectionState !== 'connected' ||
               onlineSession.clockStatus !== 'running' ||
+              onlineSession.disputeActive ||
               !isMyTurn
           }}
           onApiReady={handleBoardReady}
@@ -253,6 +270,54 @@
               }}
             >
               {i18n.t('game.resignButton')}
+            </button>
+          </Dialog.Footer>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
+
+    <!-- Dispute classification dialog (non-dismissible) -->
+    <Dialog.Root open={disputeDialogOpen}>
+      <Dialog.Portal>
+        <Dialog.Overlay />
+        <Dialog.Content
+          showCloseButton={false}
+          onInteractOutside={(e) => e.preventDefault()}
+          onEscapeKeydown={(e) => e.preventDefault()}
+          class="dispute-dialog"
+        >
+          <Dialog.Header>
+            <Dialog.Title>{i18n.t('game.disputeTitle')}</Dialog.Title>
+            <Dialog.Description>
+              {i18n.t('game.disputeMessage')}
+              {#if disputeInfo}
+                <br /><code class="dispute-san">{disputeInfo.san}</code>
+              {/if}
+            </Dialog.Description>
+          </Dialog.Header>
+          <div class="dispute-form">
+            <textarea
+              class="dispute-comment"
+              bind:value={disputeComment}
+              placeholder={i18n.t('game.disputeCommentPlaceholder')}
+              rows="2"
+              disabled={submittingDispute}
+            ></textarea>
+          </div>
+          <Dialog.Footer>
+            <button
+              class="dispute-btn bug"
+              onclick={() => void submitDispute('bug')}
+              disabled={submittingDispute}
+            >
+              {i18n.t('game.reportBug')}
+            </button>
+            <button
+              class="dispute-btn cheat"
+              onclick={() => void submitDispute('cheat')}
+              disabled={submittingDispute}
+            >
+              {i18n.t('game.reportCheat')}
             </button>
           </Dialog.Footer>
         </Dialog.Content>
@@ -448,6 +513,66 @@
   @keyframes pulse-glow {
     0%, 100% { box-shadow: 0 0 4px rgba(34, 197, 94, 0.4); }
     50% { box-shadow: 0 0 12px rgba(34, 197, 94, 0.7); }
+  }
+
+  .dispute-dialog :global([data-slot="dialog-content"]) {
+    border-color: var(--color-error, #ef4444);
+  }
+
+  .dispute-san {
+    display: inline-block;
+    margin-top: 0.25rem;
+    padding: 0.125rem 0.375rem;
+    background: rgba(239, 68, 68, 0.1);
+    border-radius: 3px;
+    font-family: var(--font-mono, monospace);
+    font-size: 0.875rem;
+    color: var(--color-error, #ef4444);
+  }
+
+  .dispute-form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .dispute-comment {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid var(--theme-border, #333);
+    border-radius: 4px;
+    background: var(--theme-bg-panel, #1a1a1a);
+    color: var(--theme-text-primary, #eee);
+    font-size: 0.8125rem;
+    resize: vertical;
+  }
+
+  .dispute-btn {
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .dispute-btn.bug {
+    border: 1px solid var(--theme-border, #333);
+    background: transparent;
+    color: var(--theme-text-primary, #eee);
+  }
+
+  .dispute-btn.bug:hover {
+    border-color: var(--theme-text-secondary, #aaa);
+  }
+
+  .dispute-btn.cheat {
+    border: 1px solid var(--color-error, #ef4444);
+    background: var(--color-error, #ef4444);
+    color: #fff;
+  }
+
+  .dispute-btn.cheat:hover {
+    opacity: 0.9;
   }
 
   .confirm-resign-btn {

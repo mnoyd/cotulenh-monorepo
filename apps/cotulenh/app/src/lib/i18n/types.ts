@@ -627,6 +627,12 @@ export interface TranslationKeys {
   'game.playAgain': string;
   'game.claimVictory': string;
   'game.resultTimeout': string;
+  'game.disputeTitle': string;
+  'game.disputeMessage': string;
+  'game.disputeCommentPlaceholder': string;
+  'game.reportBug': string;
+  'game.reportCheat': string;
+  'game.resultDispute': string;
 }
 
 export type TranslationKey = keyof TranslationKeys;

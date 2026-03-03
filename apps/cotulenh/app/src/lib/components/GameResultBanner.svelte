@@ -27,6 +27,7 @@
       case 'stalemate': return i18n.t('game.resultStalemate');
       case 'resignation': return i18n.t('game.resultResign');
       case 'timeout': return i18n.t('game.resultTimeout');
+      case 'dispute': return i18n.t('game.resultDispute');
       default: return i18n.t('game.resultDraw');
     }
   });

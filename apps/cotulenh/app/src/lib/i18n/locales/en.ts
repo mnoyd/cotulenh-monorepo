@@ -631,5 +631,11 @@ export const en: TranslationKeys = {
   'game.resignButton': 'Resign',
   'game.playAgain': 'Play Again',
   'game.claimVictory': 'Claim Victory',
-  'game.resultTimeout': 'on Time'
+  'game.resultTimeout': 'on Time',
+  'game.disputeTitle': 'Move Dispute',
+  'game.disputeMessage': 'An invalid move was detected. The game is paused for review. Please classify this incident.',
+  'game.disputeCommentPlaceholder': 'Optional comment...',
+  'game.reportBug': 'Report as Bug',
+  'game.reportCheat': 'Report as Cheat',
+  'game.resultDispute': 'Move Dispute'
 };

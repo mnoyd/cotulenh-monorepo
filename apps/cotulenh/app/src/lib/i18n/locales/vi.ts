@@ -631,5 +631,11 @@ export const vi: TranslationKeys = {
   'game.resignButton': 'Đầu Hàng',
   'game.playAgain': 'Chơi Lại',
   'game.claimVictory': 'Đòi Thắng',
-  'game.resultTimeout': 'do Hết giờ'
+  'game.resultTimeout': 'do Hết giờ',
+  'game.disputeTitle': 'Tranh Chấp Nước Đi',
+  'game.disputeMessage': 'Phát hiện nước đi không hợp lệ. Trò chơi tạm dừng để xem xét. Vui lòng phân loại sự cố.',
+  'game.disputeCommentPlaceholder': 'Bình luận (tùy chọn)...',
+  'game.reportBug': 'Báo Lỗi',
+  'game.reportCheat': 'Báo Gian Lận',
+  'game.resultDispute': 'Tranh Chấp'
 };

@@ -33,13 +33,18 @@ export class OnlineGameSession {
     config: OnlineSessionConfig,
     onAbort?: () => void,
     onSyncError?: (context: SyncErrorContext) => void,
-    onGameEnd?: (result: GameEndResult) => void
+    onGameEnd?: (result: GameEndResult) => void,
+    onDispute?: (info: { san: string; pgn: string }) => void
   ) {
     this.#core = new OnlineGameSessionCore(config, {
       onStateChange: () => this.#syncState(),
       onAbort,
       onSyncError,
-      onGameEnd
+      onGameEnd,
+      onDispute: (info) => {
+        this.#version++;
+        onDispute?.(info);
+      }
     });
   }
 
@@ -156,6 +161,16 @@ export class OnlineGameSession {
     return this.#core.opponentFlagged;
   }
 
+  get disputeActive(): boolean {
+    void this.#version;
+    return this.#core.disputeActive;
+  }
+
+  get disputeInfo(): { san: string; pgn: string } | null {
+    void this.#version;
+    return this.#core.disputeInfo;
+  }
+
   // ============================================================
   // Actions
   // ============================================================
@@ -170,6 +185,10 @@ export class OnlineGameSession {
 
   resign(): void {
     this.#core.resign();
+  }
+
+  async reportDispute(classification: 'bug' | 'cheat', comment?: string): Promise<void> {
+    return this.#core.reportDispute(classification, comment);
   }
 
   destroy(): void {

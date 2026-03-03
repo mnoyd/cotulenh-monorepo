@@ -76,7 +76,7 @@ development_status:
   5-3-move-reliability-reconnection: done
   5-4-game-end-conditions-result-recording: done
   5-5-clock-timeout-claim-victory: done
-  5-6-dispute-system: ready-for-dev
+  5-6-dispute-system: done
   5-7-draw-offers-rematch: backlog
   epic-5-retrospective: optional
 

@@ -1,6 +1,6 @@
 # Story 5.6: Dispute System
 
-Status: ready-for-dev
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -30,8 +30,8 @@ so that game integrity is protected and disputes are reviewed fairly.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Create `007_disputes.sql` migration (AC: 4)
-  - [ ] 1.1 Create `disputes` table:
+- [x]Task 1: Create `007_disputes.sql` migration (AC: 4)
+  - [x]1.1 Create `disputes` table:
     ```sql
     CREATE TABLE public.disputes (
       id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -47,8 +47,8 @@ so that game integrity is protected and disputes are reviewed fairly.
       updated_at timestamptz DEFAULT now()
     );
     ```
-  - [ ] 1.2 Enable RLS: `ALTER TABLE public.disputes ENABLE ROW LEVEL SECURITY;`
-  - [ ] 1.3 SELECT policy: game participants can read disputes for their games
+  - [x]1.2 Enable RLS: `ALTER TABLE public.disputes ENABLE ROW LEVEL SECURITY;`
+  - [x]1.3 SELECT policy: game participants can read disputes for their games
     ```sql
     CREATE POLICY "Game participants can view disputes"
       ON public.disputes FOR SELECT
@@ -60,7 +60,7 @@ so that game integrity is protected and disputes are reviewed fairly.
         )
       );
     ```
-  - [ ] 1.4 INSERT policy: game participants can insert disputes for their games
+  - [x]1.4 INSERT policy: game participants can insert disputes for their games
     ```sql
     CREATE POLICY "Game participants can report disputes"
       ON public.disputes FOR INSERT
@@ -73,24 +73,24 @@ so that game integrity is protected and disputes are reviewed fairly.
         )
       );
     ```
-  - [ ] 1.5 UPDATE policy: only admin (service_role or future moderator role) can update resolution — skip for MVP (admin uses Supabase dashboard with service_role bypass). No UPDATE policy means no client-side resolution updates.
-  - [ ] 1.6 Indexes: `CREATE INDEX idx_disputes_game_id ON public.disputes (game_id);`
-  - [ ] 1.7 Add `updated_at` trigger (same pattern as 004_games.sql)
+  - [x]1.5 UPDATE policy: only admin (service_role or future moderator role) can update resolution — skip for MVP (admin uses Supabase dashboard with service_role bypass). No UPDATE policy means no client-side resolution updates.
+  - [x]1.6 Indexes: `CREATE INDEX idx_disputes_game_id ON public.disputes (game_id);`
+  - [x]1.7 Add `updated_at` trigger (same pattern as 004_games.sql)
 
-- [ ] Task 2: Add dispute state fields to `OnlineGameSessionCore` (AC: 1)
-  - [ ] 2.1 Add private fields:
+- [x]Task 2: Add dispute state fields to `OnlineGameSessionCore` (AC: 1)
+  - [x]2.1 Add private fields:
     ```typescript
     #disputeActive = false;
     #disputeInfo: { san: string; pgn: string } | null = null;
     ```
-  - [ ] 2.2 Add public getters:
+  - [x]2.2 Add public getters:
     ```typescript
     get disputeActive(): boolean { return this.#disputeActive; }
     get disputeInfo(): { san: string; pgn: string } | null { return this.#disputeInfo; }
     ```
 
-- [ ] Task 3: Implement dispute detection in `#handleRemoteMove` (AC: 1)
-  - [ ] 3.1 In `#handleRemoteMove` (line ~411-417), replace the current error-log-and-sync fallback with dispute flow:
+- [x]Task 3: Implement dispute detection in `#handleRemoteMove` (AC: 1)
+  - [x]3.1 In `#handleRemoteMove` (line ~411-417), replace the current error-log-and-sync fallback with dispute flow:
     ```typescript
     } else {
       // Invalid move — trigger dispute flow (FR28a)
@@ -109,16 +109,16 @@ so that game integrity is protected and disputes are reviewed fairly.
       this.#notifyStateChange();
     }
     ```
-  - [ ] 3.2 Guard: only trigger dispute if `this.#lifecycle === 'playing'` and `!this.#disputeActive` (prevent double-dispute)
+  - [x]3.2 Guard: only trigger dispute if `this.#lifecycle === 'playing'` and `!this.#disputeActive` (prevent double-dispute)
 
-- [ ] Task 4: Handle incoming `dispute` message (AC: 1)
-  - [ ] 4.1 Add `case 'dispute':` to `#handleGameMessage` switch (after `case 'claim-victory':` on line ~340):
+- [x]Task 4: Handle incoming `dispute` message (AC: 1)
+  - [x]4.1 Add `case 'dispute':` to `#handleGameMessage` switch (after `case 'claim-victory':` on line ~340):
     ```typescript
     case 'dispute':
       this.#handleDisputeMessage(msg as GameMessage & { event: 'dispute' });
       break;
     ```
-  - [ ] 4.2 Implement `#handleDisputeMessage(msg: GameMessage & { event: 'dispute' }): void`:
+  - [x]4.2 Implement `#handleDisputeMessage(msg: GameMessage & { event: 'dispute' }): void`:
     - If `this.#lifecycle !== 'playing'` → return (lifecycle guard)
     - If `this.#disputeActive` → return (idempotent guard)
     - `this.#disputeActive = true`
@@ -127,10 +127,10 @@ so that game integrity is protected and disputes are reviewed fairly.
     - `this.#callbacks.onDispute?.({ san: msg.san, pgn: msg.pgn })`
     - `this.#notifyStateChange()`
 
-- [ ] Task 5: Implement `reportDispute()` public method (AC: 2, 3)
-  - [ ] 5.1 Add `reportDispute(classification: 'bug' | 'cheat', comment?: string): void` method
-  - [ ] 5.2 Guards: `if (!this.#disputeActive || this.#lifecycle !== 'playing' || !this.#disputeInfo) return`
-  - [ ] 5.3 Save dispute row to Supabase:
+- [x]Task 5: Implement `reportDispute()` public method (AC: 2, 3)
+  - [x]5.1 Add `reportDispute(classification: 'bug' | 'cheat', comment?: string): void` method
+  - [x]5.2 Guards: `if (!this.#disputeActive || this.#lifecycle !== 'playing' || !this.#disputeInfo) return`
+  - [x]5.3 Save dispute row to Supabase:
     ```typescript
     const { error } = await this.#supabase.from('disputes').insert({
       game_id: this.gameId,
@@ -144,19 +144,19 @@ so that game integrity is protected and disputes are reviewed fairly.
       logger.error('Failed to save dispute', { error, gameId: this.gameId });
     }
     ```
-  - [ ] 5.4 End game: `this.#lifecycle = 'ended'`
-  - [ ] 5.5 Set result: `this.#gameResult = { status: 'dispute', winner: null, resultReason: 'dispute', isLocalPlayerWinner: false }`
-  - [ ] 5.6 Write game result: `this.#writeGameResult('dispute', null, 'dispute')`
-  - [ ] 5.7 Fire callback: `this.#callbacks.onGameEnd?.(this.#gameResult)`
-  - [ ] 5.8 Call `this.#notifyStateChange()`
-  - [ ] 5.9 Make method `async` since it awaits Supabase insert. Return type: `Promise<void>`
+  - [x]5.4 End game: `this.#lifecycle = 'ended'`
+  - [x]5.5 Set result: `this.#gameResult = { status: 'dispute', winner: null, resultReason: 'dispute', isLocalPlayerWinner: false }`
+  - [x]5.6 Write game result: `this.#writeGameResult('dispute', null, 'dispute')`
+  - [x]5.7 Fire callback: `this.#callbacks.onGameEnd?.(this.#gameResult)`
+  - [x]5.8 Call `this.#notifyStateChange()`
+  - [x]5.9 Make method `async` since it awaits Supabase insert. Return type: `Promise<void>`
 
-- [ ] Task 6: Add `dispute` case to `#writeGameResult` (AC: 3)
-  - [ ] 6.1 In `#writeGameResult`, add to the termination string switch (after `case 'timeout':` on line ~777):
+- [x]Task 6: Add `dispute` case to `#writeGameResult` (AC: 3)
+  - [x]6.1 In `#writeGameResult`, add to the termination string switch (after `case 'timeout':` on line ~777):
     ```typescript
     case 'dispute': terminationString = 'move dispute'; break;
     ```
-  - [ ] 6.2 After the existing timeout Result header block (~line 788), add:
+  - [x]6.2 After the existing timeout Result header block (~line 788), add:
     ```typescript
     if (status === 'dispute') {
       game.setHeader('Result', '*');
@@ -164,31 +164,31 @@ so that game integrity is protected and disputes are reviewed fairly.
     ```
     (Asterisk `*` means "game in progress / result unknown" per PGN spec — appropriate for disputes awaiting admin resolution)
 
-- [ ] Task 7: Add `onDispute` callback to constructor options (AC: 1)
-  - [ ] 7.1 Add to the callbacks interface (near `onGameEnd`, `onAbort`, `onSyncError`):
+- [x]Task 7: Add `onDispute` callback to constructor options (AC: 1)
+  - [x]7.1 Add to the callbacks interface (near `onGameEnd`, `onAbort`, `onSyncError`):
     ```typescript
     onDispute?: (info: { san: string; pgn: string }) => void;
     ```
-  - [ ] 7.2 Store in `this.#callbacks` alongside existing callbacks
+  - [x]7.2 Store in `this.#callbacks` alongside existing callbacks
 
-- [ ] Task 8: Update reactive wrapper `OnlineGameSession` (AC: 1, 2)
-  - [ ] 8.1 Add `reportDispute(classification: 'bug' | 'cheat', comment?: string): Promise<void>` proxy — calls `this.#core.reportDispute(classification, comment)`
-  - [ ] 8.2 Add `get disputeActive(): boolean` reactive getter — `void this.#version; return this.#core.disputeActive;`
-  - [ ] 8.3 Add `get disputeInfo(): { san: string; pgn: string } | null` reactive getter — `void this.#version; return this.#core.disputeInfo;`
-  - [ ] 8.4 Wire `onDispute` callback in constructor to trigger `this.#version++` state change
+- [x]Task 8: Update reactive wrapper `OnlineGameSession` (AC: 1, 2)
+  - [x]8.1 Add `reportDispute(classification: 'bug' | 'cheat', comment?: string): Promise<void>` proxy — calls `this.#core.reportDispute(classification, comment)`
+  - [x]8.2 Add `get disputeActive(): boolean` reactive getter — `void this.#version; return this.#core.disputeActive;`
+  - [x]8.3 Add `get disputeInfo(): { san: string; pgn: string } | null` reactive getter — `void this.#version; return this.#core.disputeInfo;`
+  - [x]8.4 Wire `onDispute` callback in constructor to trigger `this.#version++` state change
 
-- [ ] Task 9: Add dispute overlay to game page `+page.svelte` (AC: 1, 2)
-  - [ ] 9.1 Add derived state:
+- [x]Task 9: Add dispute overlay to game page `+page.svelte` (AC: 1, 2)
+  - [x]9.1 Add derived state:
     ```typescript
     let disputeActive = $derived(onlineSession?.disputeActive ?? false);
     let disputeInfo = $derived(onlineSession?.disputeInfo);
     ```
-  - [ ] 9.2 Add local state for classification form:
+  - [x]9.2 Add local state for classification form:
     ```typescript
     let disputeDialogOpen = $derived(disputeActive);
     let disputeComment = $state('');
     ```
-  - [ ] 9.3 Add dispute dialog using existing Dialog components (follows resign dialog pattern):
+  - [x]9.3 Add dispute dialog using existing Dialog components (follows resign dialog pattern):
     ```svelte
     <Dialog.Root open={disputeDialogOpen}>
       <Dialog.Portal>
@@ -235,9 +235,9 @@ so that game integrity is protected and disputes are reviewed fairly.
       </Dialog.Portal>
     </Dialog.Root>
     ```
-  - [ ] 9.4 **Cannot be dismissed**: Dialog must NOT have close-on-backdrop-click or close-on-escape when in dispute mode. Pass `closeOnOutsideClick={false}` and `closeOnEscape={false}` (or equivalent bits-ui props) to prevent dismissal without classification. Per UX spec: "Cannot be dismissed by backdrop click — requires explicit action choice"
-  - [ ] 9.5 Style `.dispute-btn`, `.dispute-comment`, `.dispute-form` — use `--color-error` (red) theme for the dialog border/accent to signal severity. Bug button: secondary style. Cheat button: error/red style.
-  - [ ] 9.6 Update board `viewOnly` condition to include dispute state:
+  - [x]9.4 **Cannot be dismissed**: Dialog must NOT have close-on-backdrop-click or close-on-escape when in dispute mode. Pass `closeOnOutsideClick={false}` and `closeOnEscape={false}` (or equivalent bits-ui props) to prevent dismissal without classification. Per UX spec: "Cannot be dismissed by backdrop click — requires explicit action choice"
+  - [x]9.5 Style `.dispute-btn`, `.dispute-comment`, `.dispute-form` — use `--color-error` (red) theme for the dialog border/accent to signal severity. Bug button: secondary style. Cheat button: error/red style.
+  - [x]9.6 Update board `viewOnly` condition to include dispute state:
     ```typescript
     viewOnly:
       onlineSession.lifecycle !== 'playing' ||
@@ -247,28 +247,28 @@ so that game integrity is protected and disputes are reviewed fairly.
       !isMyTurn
     ```
 
-- [ ] Task 10: Add `dispute` result reason to GameResultBanner (AC: 3)
-  - [ ] 10.1 In `GameResultBanner.svelte`, add to the `reasonText` derived switch (after `case 'timeout':` on line ~31):
+- [x]Task 10: Add `dispute` result reason to GameResultBanner (AC: 3)
+  - [x]10.1 In `GameResultBanner.svelte`, add to the `reasonText` derived switch (after `case 'timeout':` on line ~31):
     ```typescript
     case 'dispute': return i18n.t('game.resultDispute');
     ```
 
-- [ ] Task 11: Add i18n strings (AC: 1, 2, 3)
-  - [ ] 11.1 Add to `types.ts`:
+- [x]Task 11: Add i18n strings (AC: 1, 2, 3)
+  - [x]11.1 Add to `types.ts`:
     - `'game.disputeTitle'`
     - `'game.disputeMessage'`
     - `'game.disputeCommentPlaceholder'`
     - `'game.reportBug'`
     - `'game.reportCheat'`
     - `'game.resultDispute'`
-  - [ ] 11.2 Add to `en.ts`:
+  - [x]11.2 Add to `en.ts`:
     - `'game.disputeTitle': 'Move Dispute'`
     - `'game.disputeMessage': 'An invalid move was detected. The game is paused for review. Please classify this incident.'`
     - `'game.disputeCommentPlaceholder': 'Optional comment...'`
     - `'game.reportBug': 'Report as Bug'`
     - `'game.reportCheat': 'Report as Cheat'`
     - `'game.resultDispute': 'Move Dispute'`
-  - [ ] 11.3 Add to `vi.ts`:
+  - [x]11.3 Add to `vi.ts`:
     - `'game.disputeTitle': 'Tranh Chấp Nước Đi'`
     - `'game.disputeMessage': 'Phát hiện nước đi không hợp lệ. Trò chơi tạm dừng để xem xét. Vui lòng phân loại sự cố.'`
     - `'game.disputeCommentPlaceholder': 'Bình luận (tùy chọn)...'`
@@ -276,17 +276,17 @@ so that game integrity is protected and disputes are reviewed fairly.
     - `'game.reportCheat': 'Báo Gian Lận'`
     - `'game.resultDispute': 'Tranh Chấp'`
 
-- [ ] Task 12: Write tests (AC: 1-4)
-  - [ ] 12.1 **Dispute detection test**: Simulate receiving an invalid SAN from opponent → verify `disputeActive` becomes `true`, `disputeInfo` contains the SAN and PGN, clock is stopped, `dispute` message is broadcast, `onDispute` callback fires
-  - [ ] 12.2 **Dispute message receive test**: Receive `{ event: 'dispute', san, pgn }` from opponent → verify `disputeActive` becomes `true`, clock stopped, `onDispute` fires
-  - [ ] 12.3 **Report dispute (bug) test**: Set dispute state, call `reportDispute('bug', 'engine issue')` → verify Supabase INSERT called with correct fields, game status updated to 'dispute', lifecycle becomes 'ended', `onGameEnd` fires with `{ status: 'dispute', winner: null }`
-  - [ ] 12.4 **Report dispute (cheat) test**: Set dispute state, call `reportDispute('cheat')` → verify INSERT called with classification='cheat', comment=null
-  - [ ] 12.5 **Report dispute guard test**: Call `reportDispute()` when `disputeActive === false` → verify nothing happens (no Supabase call, no state change)
-  - [ ] 12.6 **Dispute idempotency test**: Trigger dispute detection twice → verify only one dispute broadcast sent, `disputeActive` stays true
-  - [ ] 12.7 **Dispute lifecycle guard test**: Trigger move validation failure when `lifecycle !== 'playing'` → verify no dispute raised
-  - [ ] 12.8 **PGN dispute test**: Verify PGN includes `Termination: move dispute` header and `Result: *` on dispute
-  - [ ] 12.9 **Dispute receive lifecycle guard test**: Receive `dispute` message when `lifecycle === 'ended'` → verify no state change
-  - [ ] 12.10 **Board read-only during dispute test**: Verify that after dispute is raised, the session state reflects dispute (for UI to set board viewOnly)
+- [x]Task 12: Write tests (AC: 1-4)
+  - [x]12.1 **Dispute detection test**: Simulate receiving an invalid SAN from opponent → verify `disputeActive` becomes `true`, `disputeInfo` contains the SAN and PGN, clock is stopped, `dispute` message is broadcast, `onDispute` callback fires
+  - [x]12.2 **Dispute message receive test**: Receive `{ event: 'dispute', san, pgn }` from opponent → verify `disputeActive` becomes `true`, clock stopped, `onDispute` fires
+  - [x]12.3 **Report dispute (bug) test**: Set dispute state, call `reportDispute('bug', 'engine issue')` → verify Supabase INSERT called with correct fields, game status updated to 'dispute', lifecycle becomes 'ended', `onGameEnd` fires with `{ status: 'dispute', winner: null }`
+  - [x]12.4 **Report dispute (cheat) test**: Set dispute state, call `reportDispute('cheat')` → verify INSERT called with classification='cheat', comment=null
+  - [x]12.5 **Report dispute guard test**: Call `reportDispute()` when `disputeActive === false` → verify nothing happens (no Supabase call, no state change)
+  - [x]12.6 **Dispute idempotency test**: Trigger dispute detection twice → verify only one dispute broadcast sent, `disputeActive` stays true
+  - [x]12.7 **Dispute lifecycle guard test**: Trigger move validation failure when `lifecycle !== 'playing'` → verify no dispute raised
+  - [x]12.8 **PGN dispute test**: Verify PGN includes `Termination: move dispute` header and `Result: *` on dispute
+  - [x]12.9 **Dispute receive lifecycle guard test**: Receive `dispute` message when `lifecycle === 'ended'` → verify no state change
+  - [x]12.10 **Board read-only during dispute test**: Verify that after dispute is raised, the session state reflects dispute (for UI to set board viewOnly)
 
 ## Dev Notes
 
@@ -483,10 +483,61 @@ All dependencies are already installed:
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.6
 
 ### Debug Log References
 
+- Clock `stop()` sets status to `'idle'` not `'stopped'` — corrected test assertions accordingly.
+
 ### Completion Notes List
 
+- Task 1: Created `007_disputes.sql` migration with table, RLS (SELECT/INSERT), index, and updated_at trigger. No UPDATE policy per MVP scope.
+- Tasks 2-4: Added `#disputeActive`/`#disputeInfo` state, `onDispute` callback to interface, dispute detection in `#handleRemoteMove` (replaces sync fallback), `case 'dispute'` in message handler, and `#handleDisputeMessage` method with lifecycle/idempotency guards.
+- Tasks 5-7: Added async `reportDispute()` method that inserts dispute row to Supabase and ends game with `status='dispute'`, `winner=null`. Added `'dispute'` termination string and `Result: *` header to `#writeGameResult`.
+- Task 8: Added `disputeActive`, `disputeInfo` reactive getters and `reportDispute` proxy to `OnlineGameSession` wrapper. Wired `onDispute` callback with version bump.
+- Tasks 9-10: Added non-dismissible dispute dialog to game page (prevents Escape/outside click), dispute derived states, board `viewOnly` guard for dispute. Added `'dispute'` case to `GameResultBanner` reasonText switch.
+- Task 11: Added 6 i18n keys to types.ts, en.ts, and vi.ts.
+- Task 12: Added 10 comprehensive tests covering dispute detection, message receive, reportDispute (bug/cheat), guards, idempotency, lifecycle guards, PGN headers, and board state reflection. All 515 tests pass with zero regressions.
+- Code review follow-up (2026-03-03): fixed dispute pause gaps in core logic, ACKed invalid/dispute-phase remote moves to stop retries, added in-flight duplicate-submit guard in `reportDispute()`, added UI submit disabling/await flow, and enforced one-dispute-per-player with DB uniqueness.
+
+### Change Log
+
+- 2026-03-03: Story 5.6 Dispute System — implemented all 12 tasks. Dispute detection on invalid remote moves, dispute broadcast/receive, non-dismissible classification dialog, Supabase persistence, game result writing, i18n in EN/VI, 10 new tests.
+- 2026-03-03: Senior review fixes applied — dispute action hard-pause guards, ACK behavior for dispute paths, duplicate-report prevention (core + UI + DB), and added regression tests for these cases.
+
 ### File List
+
+- `supabase/migrations/007_disputes.sql` — NEW: disputes table, RLS, index, trigger
+- `apps/cotulenh/app/src/lib/game/online-session-core.ts` — MODIFIED: dispute state fields, detection, message handler, reportDispute(), writeGameResult dispute case, onDispute callback
+- `apps/cotulenh/app/src/lib/game/online-session.svelte.ts` — MODIFIED: disputeActive/disputeInfo reactive getters, reportDispute proxy, onDispute callback wiring
+- `apps/cotulenh/app/src/lib/game/online-session-core.test.ts` — MODIFIED: added insert mock support and dispute regression tests (ACK, idempotency, in-flight duplicate submit)
+- `apps/cotulenh/app/src/lib/components/GameResultBanner.svelte` — MODIFIED: added dispute case to reasonText switch
+- `apps/cotulenh/app/src/routes/play/online/[gameId]/+page.svelte` — MODIFIED: dispute dialog, derived states, viewOnly guard, styles
+- `apps/cotulenh/app/src/lib/i18n/types.ts` — MODIFIED: 6 dispute i18n key types
+- `apps/cotulenh/app/src/lib/i18n/locales/en.ts` — MODIFIED: English dispute translations
+- `apps/cotulenh/app/src/lib/i18n/locales/vi.ts` — MODIFIED: Vietnamese dispute translations
+
+## Senior Developer Review (AI)
+
+### Reviewer
+
+GPT-5 Codex
+
+### Date
+
+2026-03-03
+
+### Outcome
+
+Changes Requested (resolved in this pass) -> Approved
+
+### Summary of Findings and Resolutions
+
+- HIGH: Dispute state did not fully pause gameplay actions in core. Fixed by hard guards on local actions and remote move handling while dispute is active.
+- HIGH: Invalid move path did not ACK disputed sequence, causing retry pressure. Fixed by ACKing and advancing processed sequence when dispute is raised.
+- HIGH: Duplicate dispute submissions were possible during async insert. Fixed with an in-flight guard in core, disabled/awaited UI submission flow, and DB uniqueness on `(game_id, reporting_user_id)`.
+- MEDIUM: Idempotency test did not validate second invalid move behavior. Fixed by updating/adding tests for true invalid-move idempotency, dispute-phase ACK behavior, and in-flight duplicate submit prevention.
+
+### Verification
+
+- `pnpm --filter @cotulenh/app test -- src/lib/game/online-session-core.test.ts` (pass, 89 tests)

@@ -72,6 +72,10 @@ function createMockSupabase() {
   let lastUpdateOptions: Record<string, unknown> | null = null;
   const eqFilters: Array<{ column: string; value: unknown }> = [];
 
+  let insertResult = { error: null as null | Error };
+  let lastInsertValues: Record<string, unknown> | null = null;
+  let insertCallCount = 0;
+
   const supabase = {
     channel: vi.fn(() => mockChannel as unknown as RealtimeChannel),
     removeChannel: vi.fn(),
@@ -92,6 +96,11 @@ function createMockSupabase() {
             };
           })
         };
+      }),
+      insert: vi.fn(async (values?: Record<string, unknown>) => {
+        insertCallCount++;
+        lastInsertValues = values ?? null;
+        return { error: insertResult.error };
       })
     }))
   };
@@ -118,6 +127,11 @@ function createMockSupabase() {
     getLastUpdateValues: () => lastUpdateValues,
     getLastUpdateOptions: () => lastUpdateOptions,
     getEqFilters: () => [...eqFilters],
+    setInsertResult: (result: { error: null | Error }) => {
+      insertResult = result;
+    },
+    getLastInsertValues: () => lastInsertValues,
+    getInsertCallCount: () => insertCallCount,
     // Helper to simulate presence sync
     simulatePresenceSync: () => {
       const handlers = channelHandlers['presence:sync'] ?? [];
@@ -1987,6 +2001,304 @@ describe('OnlineGameSessionCore', () => {
       expect(pgn).toContain('[Result "0-1"]');
       expect(pgn).toContain('[Date "');
       expect(pgn).toContain('%clk ');
+    });
+  });
+
+  describe('dispute', () => {
+    async function setupPlayingGame() {
+      const onGameEnd = vi.fn();
+      const onDispute = vi.fn();
+      core = new OnlineGameSessionCore(createDefaultConfig(mock.supabase), { onGameEnd, onDispute });
+      core.join();
+      await vi.advanceTimersByTimeAsync(10);
+
+      mock.presenceState['opponent'] = [{
+        color: 'blue',
+        userId: OPPONENT_USER_ID,
+        presenceId: 'opponent-presence'
+      }];
+      mock.simulatePresenceSync();
+
+      return { onGameEnd, onDispute };
+    }
+
+    it('triggers dispute on invalid remote move — sets disputeActive, stops clock, broadcasts, fires callback', async () => {
+      const { onDispute } = await setupPlayingGame();
+
+      // Send an invalid SAN from opponent
+      mock.simulateGameMessage({
+        event: 'move',
+        san: 'INVALID',
+        clock: 290000,
+        seq: 1,
+        sentAt: Date.now()
+      });
+
+      expect(core.disputeActive).toBe(true);
+      expect(core.disputeInfo).toEqual(expect.objectContaining({
+        san: 'INVALID',
+        pgn: expect.any(String)
+      }));
+      expect(core.clock.status).toBe('idle');
+      expect(onDispute).toHaveBeenCalledWith(expect.objectContaining({
+        san: 'INVALID',
+        pgn: expect.any(String)
+      }));
+
+      // Should have broadcast dispute message
+      const sendCalls = (mock.mockChannel.send as ReturnType<typeof vi.fn>).mock.calls;
+      const disputeSends = sendCalls.filter(
+        (c: unknown[]) => (c[0] as Record<string, Record<string, unknown>>).payload?.event === 'dispute'
+      );
+      expect(disputeSends).toHaveLength(1);
+      const disputePayload = (disputeSends[0][0] as Record<string, Record<string, unknown>>).payload;
+      expect(disputePayload.san).toBe('INVALID');
+      expect(typeof disputePayload.pgn).toBe('string');
+
+      // Invalid move should still be acked so opponent doesn't retry forever.
+      const ackSends = sendCalls.filter(
+        (c: unknown[]) => (c[0] as Record<string, Record<string, unknown>>).payload?.event === 'ack'
+      );
+      expect(ackSends).toHaveLength(1);
+      const ackPayload = (ackSends[0][0] as Record<string, Record<string, unknown>>).payload;
+      expect(ackPayload.seq).toBe(1);
+    });
+
+    it('handles incoming dispute message — sets disputeActive, stops clock, fires callback', async () => {
+      const { onDispute } = await setupPlayingGame();
+
+      mock.simulateGameMessage({
+        event: 'dispute',
+        san: 'BAD_MOVE',
+        pgn: '1. e4'
+      });
+
+      expect(core.disputeActive).toBe(true);
+      expect(core.disputeInfo).toEqual({ san: 'BAD_MOVE', pgn: '1. e4' });
+      expect(core.clock.status).toBe('idle');
+      expect(onDispute).toHaveBeenCalledWith({ san: 'BAD_MOVE', pgn: '1. e4' });
+    });
+
+    it('reportDispute (bug) — inserts dispute row, ends game, fires onGameEnd', async () => {
+      const { onGameEnd } = await setupPlayingGame();
+
+      // Trigger dispute first
+      mock.simulateGameMessage({
+        event: 'dispute',
+        san: 'BAD',
+        pgn: '1. e4'
+      });
+
+      await core.reportDispute('bug', 'engine issue');
+
+      // Verify Supabase insert was called
+      expect(mock.supabase.from).toHaveBeenCalledWith('disputes');
+      expect(mock.getLastInsertValues()).toEqual(expect.objectContaining({
+        game_id: 'test-game-id',
+        reporting_user_id: CURRENT_USER_ID,
+        move_san: 'BAD',
+        pgn_at_point: '1. e4',
+        classification: 'bug',
+        comment: 'engine issue'
+      }));
+
+      expect(core.lifecycle).toBe('ended');
+      expect(core.gameResult).toEqual(expect.objectContaining({
+        status: 'dispute',
+        winner: null,
+        resultReason: 'dispute',
+        isLocalPlayerWinner: false
+      }));
+      expect(onGameEnd).toHaveBeenCalledWith(expect.objectContaining({
+        status: 'dispute',
+        winner: null
+      }));
+    });
+
+    it('reportDispute (cheat) — inserts with classification=cheat and null comment', async () => {
+      await setupPlayingGame();
+
+      mock.simulateGameMessage({
+        event: 'dispute',
+        san: 'BAD',
+        pgn: '1. e4'
+      });
+
+      await core.reportDispute('cheat');
+
+      expect(mock.getLastInsertValues()).toEqual(expect.objectContaining({
+        classification: 'cheat',
+        comment: null
+      }));
+    });
+
+    it('reportDispute guard — does nothing if disputeActive is false', async () => {
+      const { onGameEnd } = await setupPlayingGame();
+
+      // No dispute triggered, call reportDispute
+      await core.reportDispute('bug');
+
+      expect(core.lifecycle).toBe('playing');
+      expect(onGameEnd).not.toHaveBeenCalled();
+    });
+
+    it('dispute idempotency — second invalid move does not double-broadcast', async () => {
+      const { onDispute } = await setupPlayingGame();
+
+      // First invalid move
+      mock.simulateGameMessage({
+        event: 'move',
+        san: 'INVALID1',
+        clock: 290000,
+        seq: 1,
+        sentAt: Date.now()
+      });
+
+      expect(core.disputeActive).toBe(true);
+
+      // Second invalid move should be ignored while dispute is active
+      mock.simulateGameMessage({
+        event: 'move',
+        san: 'INVALID2',
+        clock: 289000,
+        seq: 2,
+        sentAt: Date.now()
+      });
+
+      // onDispute should only have been called once (from the first invalid move)
+      expect(onDispute).toHaveBeenCalledTimes(1);
+      const sendCalls = (mock.mockChannel.send as ReturnType<typeof vi.fn>).mock.calls;
+      const disputeSends = sendCalls.filter(
+        (c: unknown[]) => (c[0] as Record<string, Record<string, unknown>>).payload?.event === 'dispute'
+      );
+      expect(disputeSends).toHaveLength(1);
+    });
+
+    it('ignores remote moves while dispute is active and still acks incoming seq', async () => {
+      await setupPlayingGame();
+
+      // Enter dispute mode first
+      mock.simulateGameMessage({
+        event: 'dispute',
+        san: 'BAD',
+        pgn: '1. e4'
+      });
+      expect(core.disputeActive).toBe(true);
+
+      const historyLenBefore = core.session.history.length;
+      const validMove = core.session.possibleMoves[0];
+      mock.simulateGameMessage({
+        event: 'move',
+        san: validMove.san,
+        clock: 289000,
+        seq: 5,
+        sentAt: Date.now() - 50
+      });
+
+      expect(core.session.history).toHaveLength(historyLenBefore);
+      const sendCalls = (mock.mockChannel.send as ReturnType<typeof vi.fn>).mock.calls;
+      const ackSends = sendCalls.filter(
+        (c: unknown[]) => (c[0] as Record<string, Record<string, unknown>>).payload?.event === 'ack'
+      );
+      expect(ackSends.at(-1)?.[0]?.payload?.seq).toBe(5);
+    });
+
+    it('reportDispute is idempotent while first submission is in flight', async () => {
+      await setupPlayingGame();
+
+      mock.simulateGameMessage({
+        event: 'dispute',
+        san: 'BAD',
+        pgn: '1. e4'
+      });
+
+      const first = core.reportDispute('bug', 'first');
+      const second = core.reportDispute('cheat', 'second');
+      await Promise.all([first, second]);
+
+      expect(mock.getInsertCallCount()).toBe(1);
+      expect(mock.getLastInsertValues()).toEqual(expect.objectContaining({
+        classification: 'bug',
+        comment: 'first'
+      }));
+    });
+
+    it('dispute lifecycle guard — no dispute raised when lifecycle !== playing', async () => {
+      const { onDispute } = await setupPlayingGame();
+
+      // End the game first
+      core.resign();
+      expect(core.lifecycle).toBe('ended');
+
+      // Try to receive dispute message after game ended
+      mock.simulateGameMessage({
+        event: 'dispute',
+        san: 'BAD',
+        pgn: '1. e4'
+      });
+
+      expect(core.disputeActive).toBe(false);
+      expect(onDispute).not.toHaveBeenCalled();
+    });
+
+    it('PGN includes dispute termination header and Result *', async () => {
+      await setupPlayingGame();
+
+      // Make a move first so PGN has content
+      triggerLocalMove(core);
+      await vi.advanceTimersByTimeAsync(0);
+
+      // Trigger dispute
+      mock.simulateGameMessage({
+        event: 'dispute',
+        san: 'BAD',
+        pgn: '1. e4'
+      });
+
+      await core.reportDispute('bug');
+      await vi.advanceTimersByTimeAsync(0);
+
+      // Check the game result write
+      const updateValues = mock.getLastUpdateValues();
+      expect(updateValues).not.toBeNull();
+      expect(updateValues!.status).toBe('dispute');
+      expect(updateValues!.winner).toBeNull();
+
+      const pgn = String(updateValues!.pgn ?? '');
+      expect(pgn).toContain('[Termination "move dispute"]');
+      expect(pgn).toContain('[Result "*"]');
+    });
+
+    it('dispute receive lifecycle guard — no state change when lifecycle === ended', async () => {
+      const { onDispute } = await setupPlayingGame();
+
+      // Resign to end game
+      core.resign();
+
+      // Receive dispute after game ended
+      mock.simulateGameMessage({
+        event: 'dispute',
+        san: 'BAD',
+        pgn: '1. e4'
+      });
+
+      expect(core.disputeActive).toBe(false);
+      expect(onDispute).not.toHaveBeenCalled();
+    });
+
+    it('board state reflects dispute — disputeActive is true after dispute', async () => {
+      await setupPlayingGame();
+
+      expect(core.disputeActive).toBe(false);
+
+      mock.simulateGameMessage({
+        event: 'dispute',
+        san: 'BAD',
+        pgn: '1. e4'
+      });
+
+      expect(core.disputeActive).toBe(true);
+      expect(core.lifecycle).toBe('playing'); // Still playing until classification
     });
   });
 });

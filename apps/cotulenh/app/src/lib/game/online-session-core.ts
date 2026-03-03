@@ -41,6 +41,7 @@ export interface OnlineSessionCallbacks {
   onAbort?: () => void;
   onSyncError?: (context: SyncErrorContext) => void;
   onGameEnd?: (result: GameEndResult) => void;
+  onDispute?: (info: { san: string; pgn: string }) => void;
 }
 
 export class OnlineGameSessionCore {
@@ -76,6 +77,9 @@ export class OnlineGameSessionCore {
   #gameResult: GameEndResult | null = null;
   #opponentFlagged = false;
   #pendingDrawOffer = false;
+  #disputeActive = false;
+  #disputeInfo: { san: string; pgn: string } | null = null;
+  #reportingDispute = false;
 
   constructor(config: OnlineSessionConfig, callbacks: OnlineSessionCallbacks = {}) {
     this.gameId = config.gameId;
@@ -138,6 +142,14 @@ export class OnlineGameSessionCore {
     return this.#opponentFlagged;
   }
 
+  get disputeActive(): boolean {
+    return this.#disputeActive;
+  }
+
+  get disputeInfo(): { san: string; pgn: string } | null {
+    return this.#disputeInfo;
+  }
+
   setPendingDrawOffer(pending: boolean): void {
     this.#pendingDrawOffer = pending;
   }
@@ -194,6 +206,10 @@ export class OnlineGameSessionCore {
 
   claimVictory(): void {
     if (!this.#channel || this.#lifecycle !== 'playing' || !this.#opponentFlagged) return;
+    if (this.#disputeActive) {
+      logger.warn('Cannot claim victory during dispute', { gameId: this.gameId });
+      return;
+    }
 
     sendGameMessage(this.#channel, {
       event: 'claim-victory',
@@ -215,6 +231,10 @@ export class OnlineGameSessionCore {
 
   resign(): void {
     if (!this.#channel || this.#lifecycle !== 'playing') return;
+    if (this.#disputeActive) {
+      logger.warn('Cannot resign during dispute', { gameId: this.gameId });
+      return;
+    }
     if (this.clock.status === 'timeout') {
       logger.warn('Cannot resign after timeout', {
         gameId: this.gameId,
@@ -242,6 +262,38 @@ export class OnlineGameSessionCore {
     this.#notifyStateChange();
   }
 
+  async reportDispute(classification: 'bug' | 'cheat', comment?: string): Promise<void> {
+    if (!this.#disputeActive || this.#lifecycle !== 'playing' || !this.#disputeInfo || this.#reportingDispute) return;
+
+    this.#reportingDispute = true;
+    try {
+      const { error } = await this.#supabase.from('disputes').insert({
+        game_id: this.gameId,
+        reporting_user_id: this.#currentUserId,
+        move_san: this.#disputeInfo.san,
+        pgn_at_point: this.#disputeInfo.pgn,
+        classification,
+        comment: comment || null
+      });
+      if (error) {
+        logger.error('Failed to save dispute', { error, gameId: this.gameId });
+      }
+
+      this.#lifecycle = 'ended';
+      this.#gameResult = {
+        status: 'dispute',
+        winner: null,
+        resultReason: 'dispute',
+        isLocalPlayerWinner: false
+      };
+      this.#writeGameResult('dispute', null, 'dispute');
+      this.#callbacks.onGameEnd?.(this.#gameResult);
+      this.#notifyStateChange();
+    } finally {
+      this.#reportingDispute = false;
+    }
+  }
+
   destroy(): void {
     this.#clearNoStartTimer();
     this.clock.destroy();
@@ -262,6 +314,10 @@ export class OnlineGameSessionCore {
   #handleLocalMove(san: string): void {
     if (!this.#channel || this.#connectionState !== 'connected') {
       logger.warn('Cannot send move: not connected');
+      return;
+    }
+    if (this.#disputeActive) {
+      logger.warn('Cannot send move during dispute', { gameId: this.gameId });
       return;
     }
     if (this.#lifecycle !== 'playing') {
@@ -352,6 +408,9 @@ export class OnlineGameSessionCore {
       case 'claim-victory':
         this.#handleClaimVictoryMessage();
         break;
+      case 'dispute':
+        this.#handleDisputeMessage(msg as GameMessage & { event: 'dispute' });
+        break;
       case 'abort':
         this.#handleAbortMessage();
         break;
@@ -362,6 +421,12 @@ export class OnlineGameSessionCore {
 
   #handleRemoteMove(msg: Extract<GameMessage, { event: 'move' }>): void {
     if (!this.#channel) return;
+    if (this.#disputeActive) {
+      this.#lastProcessedSeq = Math.max(this.#lastProcessedSeq, msg.seq);
+      this.#sendAck(msg.seq);
+      logger.debug('Ignoring move while dispute active', { seq: msg.seq });
+      return;
+    }
 
     // While awaiting sync, ignore all move messages (sync will reconcile)
     if (this.#awaitingSync) {
@@ -422,10 +487,20 @@ export class OnlineGameSessionCore {
       // Check if this move ended the game
       this.#checkGameEnd();
     } else {
-      // Invalid move — log error (dispute handling is Story 5.6)
-      logger.error('Received invalid remote move', { san: msg.san, seq: msg.seq });
-      this.#awaitingSync = true;
-      this.#requestSyncFromOpponent(this.#channel, msg.seq);
+      // Invalid move — trigger dispute flow (FR28a)
+      if (this.#lifecycle !== 'playing' || this.#disputeActive) return;
+      this.#disputeActive = true;
+      this.#disputeInfo = { san: msg.san, pgn: this.session.pgn };
+      this.#lastProcessedSeq = msg.seq;
+      this.#sendAck(msg.seq);
+      this.clock.stop();
+      sendGameMessage(this.#channel, {
+        event: 'dispute',
+        san: msg.san,
+        pgn: this.session.pgn,
+        senderId: this.#currentUserId
+      });
+      this.#callbacks.onDispute?.({ san: msg.san, pgn: this.session.pgn });
       this.#notifyStateChange();
     }
   }
@@ -787,6 +862,16 @@ export class OnlineGameSessionCore {
     this.#notifyStateChange();
   }
 
+  #handleDisputeMessage(msg: GameMessage & { event: 'dispute' }): void {
+    if (this.#lifecycle !== 'playing') return;
+    if (this.#disputeActive) return;
+    this.#disputeActive = true;
+    this.#disputeInfo = { san: msg.san, pgn: msg.pgn };
+    this.clock.stop();
+    this.#callbacks.onDispute?.({ san: msg.san, pgn: msg.pgn });
+    this.#notifyStateChange();
+  }
+
   async #writeGameResult(status: string, winner: string | null, resultReason: string): Promise<void> {
     try {
       // Set PGN headers before export
@@ -805,6 +890,7 @@ export class OnlineGameSessionCore {
         case 'fifty_moves': terminationString = 'fifty move rule'; break;
         case 'threefold_repetition': terminationString = 'threefold repetition'; break;
         case 'timeout': terminationString = 'time forfeit'; break;
+        case 'dispute': terminationString = 'move dispute'; break;
         default: terminationString = resultReason; break;
       }
       game.setHeader('Termination', terminationString);
@@ -817,6 +903,11 @@ export class OnlineGameSessionCore {
       // For timeout, manually set Result since engine doesn't know about timeout
       if (status === 'timeout') {
         game.setHeader('Result', winner === 'red' ? '1-0' : '0-1');
+      }
+
+      // For dispute, result is unknown pending admin resolution
+      if (status === 'dispute') {
+        game.setHeader('Result', '*');
       }
 
       // Core engine accepts `clocks` but interface type doesn't expose it
