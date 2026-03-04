@@ -27,7 +27,9 @@
   let gameResult = $state<GameEndResult | null>(null);
   let resignDialogOpen = $state(false);
 
-  const orientation = data.playerColor === 'red' ? 'red' : 'blue';
+  function getOrientation(): 'red' | 'blue' {
+    return data.playerColor === 'red' ? 'red' : 'blue';
+  }
 
   // Clock display: opponent clock at top, player clock at bottom
   let opponentTime = $derived(
@@ -207,7 +209,7 @@
           bind:this={boardComponent}
           config={{
             ...onlineSession.session.boardConfig,
-            orientation,
+            orientation: getOrientation(),
             viewOnly:
               onlineSession.lifecycle !== 'playing' ||
               onlineSession.connectionState !== 'connected' ||

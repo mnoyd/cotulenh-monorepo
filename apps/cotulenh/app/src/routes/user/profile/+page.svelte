@@ -14,14 +14,21 @@
   let { data }: { data: PageData } = $props();
   let form: ActionData = $derived($page.form);
 
-  const initialDisplayName = data.profileDetail.displayName;
-  let displayName = $state(initialDisplayName);
-  let previousDisplayName = $state(initialDisplayName);
+  let displayName = $state('');
+  let previousDisplayName = $state('');
   let editing = $state(false);
   let submitting = $state(false);
 
   let touched = $state(false);
   let clientError = $state('');
+
+  $effect(() => {
+    if (!editing) {
+      const currentDisplayName = data.profileDetail.displayName;
+      displayName = currentDisplayName;
+      previousDisplayName = currentDisplayName;
+    }
+  });
 
   function validateDisplayName() {
     const result = displayNameSchema.safeParse({ displayName });

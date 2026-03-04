@@ -154,10 +154,6 @@
     line-height: 1.6;
   }
 
-  .tagline strong {
-    color: var(--theme-text-primary, #eee);
-  }
-
   .features-section,
   .coming-soon-section {
     margin-bottom: 3rem;
