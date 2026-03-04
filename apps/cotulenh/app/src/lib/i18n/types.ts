@@ -13,6 +13,11 @@ export interface TranslationKeys {
   'nav.learn': string;
   'nav.appName': string;
   'nav.menu': string;
+  'nav.signIn': string;
+  'nav.signOut': string;
+  'nav.profile': string;
+  'nav.accountSettings': string;
+  'nav.userMenu': string;
 
   // Home page
   'home.demoBadge': string;
@@ -363,6 +368,334 @@ export interface TranslationKeys {
   'report.placeholder': string;
   'report.submit': string;
   'report.submitting': string;
+
+  // Auth
+  'auth.register.title': string;
+  'auth.register.subtitle': string;
+  'auth.register.email': string;
+  'auth.register.emailPlaceholder': string;
+  'auth.register.password': string;
+  'auth.register.passwordPlaceholder': string;
+  'auth.register.displayName': string;
+  'auth.register.displayNamePlaceholder': string;
+  'auth.register.submit': string;
+  'auth.register.submitting': string;
+  'auth.register.haveAccount': string;
+  'auth.register.loginLink': string;
+  'auth.register.verifyEmail': string;
+  'auth.register.verifyEmailDesc': string;
+  'auth.validation.emailRequired': string;
+  'auth.validation.emailInvalid': string;
+  'auth.validation.passwordRequired': string;
+  'auth.validation.passwordMinLength': string;
+  'auth.validation.displayNameRequired': string;
+  'auth.validation.displayNameMinLength': string;
+  'auth.validation.displayNameMaxLength': string;
+  'auth.validation.displayNameInvalidChars': string;
+  'auth.error.generic': string;
+  'auth.error.registrationFailed': string;
+  'auth.error.title': string;
+  'auth.error.description': string;
+  'auth.error.backHome': string;
+  'auth.error.loginFailed': string;
+  'auth.login.title': string;
+  'auth.login.subtitle': string;
+  'auth.login.email': string;
+  'auth.login.emailPlaceholder': string;
+  'auth.login.password': string;
+  'auth.login.passwordPlaceholder': string;
+  'auth.login.submit': string;
+  'auth.login.submitting': string;
+  'auth.login.forgotPassword': string;
+  'auth.login.noAccount': string;
+  'auth.login.registerLink': string;
+  'auth.logout.signingOut': string;
+
+  // Forgot Password
+  'auth.forgotPassword.title': string;
+  'auth.forgotPassword.subtitle': string;
+  'auth.forgotPassword.email': string;
+  'auth.forgotPassword.emailPlaceholder': string;
+  'auth.forgotPassword.submit': string;
+  'auth.forgotPassword.submitting': string;
+  'auth.forgotPassword.backToLogin': string;
+  'auth.forgotPassword.checkEmail': string;
+  'auth.forgotPassword.checkEmailDesc': string;
+
+  // Reset Password
+  'auth.resetPassword.title': string;
+  'auth.resetPassword.subtitle': string;
+  'auth.resetPassword.newPassword': string;
+  'auth.resetPassword.newPasswordPlaceholder': string;
+  'auth.resetPassword.confirmPassword': string;
+  'auth.resetPassword.confirmPasswordPlaceholder': string;
+  'auth.resetPassword.submit': string;
+  'auth.resetPassword.submitting': string;
+  'auth.resetPassword.backToLogin': string;
+  'auth.resetPassword.success': string;
+  'auth.resetPassword.expiredLink': string;
+
+  // Additional validation keys
+  'auth.validation.confirmPasswordRequired': string;
+  'auth.validation.passwordMismatch': string;
+
+  // Additional error key
+  'auth.error.resetFailed': string;
+
+  // Profile
+  'profile.title': string;
+  'profile.displayName.label': string;
+  'profile.displayName.placeholder': string;
+  'profile.displayName.saved': string;
+  'profile.displayName.edit': string;
+  'profile.displayName.save': string;
+  'profile.displayName.saving': string;
+  'profile.memberSince': string;
+  'profile.stats.title': string;
+  'profile.stats.gamesPlayed': string;
+  'profile.stats.wins': string;
+  'profile.stats.losses': string;
+  'profile.validation.displayNameRequired': string;
+  'profile.validation.displayNameMinLength': string;
+  'profile.validation.displayNameMaxLength': string;
+  'profile.validation.displayNameInvalidChars': string;
+  'profile.error.updateFailed': string;
+
+  // Public Profile
+  'profile.public.title': string;
+  'profile.public.gameHistory.title': string;
+  'profile.public.gameHistory.empty': string;
+
+  // Account Settings
+  'accountSettings.title': string;
+  'accountSettings.account.title': string;
+  'accountSettings.email.label': string;
+  'accountSettings.email.current': string;
+  'accountSettings.email.new': string;
+  'accountSettings.email.placeholder': string;
+  'accountSettings.email.submit': string;
+  'accountSettings.email.submitting': string;
+  'accountSettings.email.success': string;
+  'accountSettings.password.title': string;
+  'accountSettings.password.new': string;
+  'accountSettings.password.newPlaceholder': string;
+  'accountSettings.password.confirm': string;
+  'accountSettings.password.confirmPlaceholder': string;
+  'accountSettings.password.submit': string;
+  'accountSettings.password.submitting': string;
+  'accountSettings.password.success': string;
+  'accountSettings.preferences.title': string;
+  'accountSettings.preferences.saved': string;
+  'accountSettings.error.emailUpdateFailed': string;
+  'accountSettings.error.passwordUpdateFailed': string;
+  'accountSettings.error.settingsUpdateFailed': string;
+  'accountSettings.validation.emailRequired': string;
+  'accountSettings.validation.emailInvalid': string;
+  'accountSettings.validation.passwordRequired': string;
+  'accountSettings.validation.passwordMinLength': string;
+  'accountSettings.validation.passwordMismatch': string;
+
+  // Friends
+  'nav.friends': string;
+  'friends.title': string;
+  'friends.search.placeholder': string;
+  'friends.search.noResults': string;
+  'friends.search.noResultsHint': string;
+  'friends.search.minChars': string;
+  'friends.search.resultsLabel': string;
+  'friends.search.resultsFound': string;
+  'friends.empty.title': string;
+  'friends.empty.subtitle': string;
+  'friends.list.title': string;
+  'friends.action.sendRequest': string;
+  'friends.action.pending': string;
+  'friends.action.friends': string;
+  'friends.action.cancel': string;
+  'friends.action.accept': string;
+  'friends.action.decline': string;
+  'friends.action.remove': string;
+  'friends.requests.incoming': string;
+  'friends.requests.sent': string;
+  'friends.requests.emptyIncoming': string;
+  'friends.toast.requestSent': string;
+  'friends.toast.requestFailed': string;
+  'friends.toast.requestAccepted': string;
+  'friends.toast.requestDeclined': string;
+  'friends.toast.requestCancelled': string;
+  'friends.toast.actionFailed': string;
+  'friends.status.online': string;
+  'friends.status.offline': string;
+  'friends.remove.button': string;
+  'friends.remove.title': string;
+  'friends.remove.description': string;
+  'friends.remove.confirm': string;
+  'friends.remove.cancel': string;
+  'friends.toast.friendRemoved': string;
+  'friends.toast.removeFailed': string;
+  'friends.error.sendFailed': string;
+  'friends.error.alreadyFriends': string;
+  'friends.error.requestAlreadyPending': string;
+  'friends.error.cannotFriendSelf': string;
+  'friends.error.userBlocked': string;
+
+  // Invitations / Online Play
+  'invitation.pageTitle': string;
+  'invitation.timeControl.title': string;
+  'invitation.timeControl.custom': string;
+  'invitation.timeControl.minutes': string;
+  'invitation.timeControl.increment': string;
+  'invitation.onlineFriends.title': string;
+  'invitation.onlineFriends.empty': string;
+  'invitation.onlineFriends.emptyLink': string;
+  'invitation.action.invite': string;
+  'invitation.action.invited': string;
+  'invitation.action.cancel': string;
+  'invitation.sent.title': string;
+  'invitation.toast.sent': string;
+  'invitation.toast.sendFailed': string;
+  'invitation.toast.cancelled': string;
+  'invitation.toast.cancelFailed': string;
+  'invitation.error.invalidGameConfig': string;
+  'invitation.error.alreadyInvited': string;
+  'invitation.error.cannotInviteSelf': string;
+
+  // Invitation — Received / Respond
+  'invitation.received.title': string;
+  'invitation.action.accept': string;
+  'invitation.action.decline': string;
+  'invitation.notification.title': string;
+  'invitation.notification.challengeMessage': string;
+  'invitation.toast.accepted': string;
+  'invitation.toast.declined': string;
+  'invitation.toast.acceptSuccess': string;
+  'invitation.toast.acceptFailed': string;
+  'invitation.toast.declineSuccess': string;
+  'invitation.toast.declineFailed': string;
+
+  // Shareable Invite Link
+  'inviteLink.pageTitle': string;
+  'inviteLink.invitedYou': string;
+  'inviteLink.acceptAndPlay': string;
+  'inviteLink.signUpToPlay': string;
+  'inviteLink.alreadyHaveAccount': string;
+  'inviteLink.logIn': string;
+  'inviteLink.expired.title': string;
+  'inviteLink.expired.description': string;
+  'inviteLink.own.title': string;
+  'inviteLink.own.description': string;
+  'inviteLink.copyLink': string;
+  'inviteLink.linkLabel': string;
+  'inviteLink.label': string;
+  'inviteLink.badge': string;
+  'inviteLink.create.title': string;
+  'inviteLink.create.description': string;
+  'inviteLink.create.button': string;
+  'inviteLink.create.another': string;
+  'inviteLink.toast.created': string;
+  'inviteLink.toast.createFailed': string;
+  'inviteLink.verifyEmailContext': string;
+
+  // Game page
+  'game.pageTitle': string;
+  'game.starting': string;
+  'game.opponent': string;
+  'game.yourColor': string;
+  'game.placeholderMessage': string;
+  'game.goToGame': string;
+  'game.connecting': string;
+  'game.waitingForOpponent': string;
+  'game.opponentConnected': string;
+  'game.opponentDisconnected': string;
+  'game.yourTurn': string;
+  'game.opponentTurn': string;
+  'game.moveCount': string;
+  'game.gameAborted': string;
+  'game.connectionLost': string;
+  'game.opponentMayReconnect': string;
+  'game.connectionRestored': string;
+  'game.syncFailed': string;
+  'game.syncFailedReport': string;
+  'game.youWin': string;
+  'game.youLose': string;
+  'game.gameDraw': string;
+  'game.resultCheckmate': string;
+  'game.resultStalemate': string;
+  'game.resultDraw': string;
+  'game.resultResign': string;
+  'game.resultCommanderCaptured': string;
+  'game.resignConfirmTitle': string;
+  'game.resignConfirmMessage': string;
+  'game.resignButton': string;
+  'game.playAgain': string;
+  'game.claimVictory': string;
+  'game.offerDraw': string;
+  'game.drawOfferSent': string;
+  'game.drawOfferReceived': string;
+  'game.acceptDraw': string;
+  'game.declineDraw': string;
+  'game.resultTimeout': string;
+  'game.disputeTitle': string;
+  'game.disputeMessage': string;
+  'game.disputeCommentPlaceholder': string;
+  'game.reportBug': string;
+  'game.reportCheat': string;
+  'game.resultDispute': string;
+  'game.resultDrawAgreement': string;
+  'game.rematch': string;
+  'game.rematchRequested': string;
+  'game.rematchReceived': string;
+  'game.acceptRematch': string;
+  'game.declineRematch': string;
+  'game.abortGame': string;
+
+  // Game History
+  'gameHistory.title': string;
+  'gameHistory.empty.title': string;
+  'gameHistory.empty.subtitle': string;
+  'gameHistory.result.win': string;
+  'gameHistory.result.loss': string;
+  'gameHistory.result.draw': string;
+  'gameHistory.result.aborted': string;
+  'gameHistory.reason.checkmate': string;
+  'gameHistory.reason.resign': string;
+  'gameHistory.reason.resignation': string;
+  'gameHistory.reason.timeout': string;
+  'gameHistory.reason.stalemate': string;
+  'gameHistory.reason.draw': string;
+  'gameHistory.reason.draw_by_agreement': string;
+  'gameHistory.reason.draw_by_timeout_with_pending_offer': string;
+  'gameHistory.reason.dispute': string;
+  'gameHistory.reason.commander_captured': string;
+  'gameHistory.reason.fifty_moves': string;
+  'gameHistory.reason.threefold_repetition': string;
+  'gameHistory.duration': string;
+  'gameHistory.viewAll': string;
+  'gameHistory.vs': string;
+
+  // Feedback
+  'nav.feedback': string;
+  'feedback.title': string;
+  'feedback.description': string;
+  'feedback.messagePlaceholder': string;
+  'feedback.submit': string;
+  'feedback.submitting': string;
+  'feedback.success': string;
+  'feedback.error': string;
+  'feedback.emptyMessage': string;
+
+  // Game Replay
+  'gameReplay.title': string;
+  'gameReplay.copyPgn': string;
+  'gameReplay.pgnCopied': string;
+  'gameReplay.backToHistory': string;
+  'gameReplay.gameNotFound': string;
+  'gameReplay.startPosition': string;
+  'gameReplay.finalPosition': string;
+  'gameReplay.moveOf': string;
+  'gameReplay.firstMove': string;
+  'gameReplay.previousMove': string;
+  'gameReplay.nextMove': string;
+  'gameReplay.lastMove': string;
 }
 
 export type TranslationKey = keyof TranslationKeys;

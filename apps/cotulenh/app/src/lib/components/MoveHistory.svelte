@@ -9,9 +9,10 @@
 
   interface Props {
     session: GameSession;
+    highlightLatestWhenNotPreviewing?: boolean;
   }
 
-  let { session }: Props = $props();
+  let { session, highlightLatestWhenNotPreviewing = true }: Props = $props();
 
   const i18n = getI18n();
 
@@ -100,7 +101,9 @@
                 ? 'border-[color:var(--theme-team-red)]/30 bg-[color:var(--theme-team-red)]/10 text-[color:var(--theme-team-red)] hover:bg-[color:var(--theme-team-red)]/20'
                 : 'border-[color:var(--theme-team-blue)]/30 bg-[color:var(--theme-team-blue)]/10 text-[color:var(--theme-team-blue)] hover:bg-[color:var(--theme-team-blue)]/20',
               (index === historyViewIndex ||
-                (historyViewIndex === -1 && index === history.length - 1)) &&
+                (highlightLatestWhenNotPreviewing &&
+                  historyViewIndex === -1 &&
+                  index === history.length - 1)) &&
                 'ring-1 ring-mw-primary border-mw-primary bg-mw-primary/10 text-white'
             )}
             onclick={() => session.previewMove(index)}

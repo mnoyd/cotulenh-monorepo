@@ -53,7 +53,7 @@ export const svelteConfig = [
     }
   },
   {
-    ignores: ['.svelte-kit/', 'build/']
+    ignores: ['.svelte-kit/', 'build/', '**/.svelte-kit/**', '**/.vercel/**']
   },
   {
     files: ['**/*.svelte'],

@@ -35,6 +35,12 @@ export class ChessClockState {
 
   #onTimeout: ((loser: ClockColor) => void) | null = null;
 
+  #onVisibilityChange = (): void => {
+    if (document.visibilityState === 'visible' && this.#status === 'running') {
+      this.#tick();
+    }
+  };
+
   constructor(config?: ClockConfig) {
     if (config) {
       this.configure(config);
@@ -84,12 +90,24 @@ export class ChessClockState {
     this.#onTimeout = callback;
   }
 
+  getTime(side: ClockColor): number {
+    return side === 'r' ? this.#redTime : this.#blueTime;
+  }
+
+  setTime(side: ClockColor, ms: number): void {
+    if (side === 'r') {
+      this.#redTime = ms;
+    } else {
+      this.#blueTime = ms;
+    }
+  }
+
   start(startingSide: ClockColor = 'r'): void {
     if (this.#status === 'timeout') return;
 
     this.#activeSide = startingSide;
     this.#status = 'running';
-    this.#lastTick = performance.now();
+    this.#lastTick = Date.now();
     this.#startInterval();
   }
 
@@ -105,7 +123,7 @@ export class ChessClockState {
     if (this.#status !== 'paused') return;
 
     this.#status = 'running';
-    this.#lastTick = performance.now();
+    this.#lastTick = Date.now();
     this.#startInterval();
   }
 
@@ -130,7 +148,7 @@ export class ChessClockState {
 
     // Switch active side
     this.#activeSide = this.#activeSide === 'r' ? 'b' : 'r';
-    this.#lastTick = performance.now();
+    this.#lastTick = Date.now();
   }
 
   reset(config?: ClockConfig): void {
@@ -150,6 +168,7 @@ export class ChessClockState {
     this.#stopInterval();
     // Update every 100ms like en-croissant
     this.#intervalId = setInterval(() => this.#tick(), 100);
+    document.addEventListener('visibilitychange', this.#onVisibilityChange);
   }
 
   #stopInterval(): void {
@@ -157,6 +176,7 @@ export class ChessClockState {
       clearInterval(this.#intervalId);
       this.#intervalId = null;
     }
+    document.removeEventListener('visibilitychange', this.#onVisibilityChange);
   }
 
   #tick(): void {
@@ -167,7 +187,7 @@ export class ChessClockState {
   #updateTime(): void {
     if (!this.#lastTick || !this.#activeSide) return;
 
-    const now = performance.now();
+    const now = Date.now();
     const elapsed = now - this.#lastTick;
     this.#lastTick = now;
 

@@ -162,7 +162,6 @@ After user makes choice:
 After user selects their continuation option, load the appropriate step file based on their choice. The step file will handle the detailed work from that point forward.
 
 Valid step files to load:
-
 - `{project-root}/_bmad/bmm/workflows/3-solutioning/create-architecture/steps/step-02-context.md`
 - `{project-root}/_bmad/bmm/workflows/3-solutioning/create-architecture/steps/step-03-starter.md`
 - `{project-root}/_bmad/bmm/workflows/3-solutioning/create-architecture/steps/step-04-decisions.md`

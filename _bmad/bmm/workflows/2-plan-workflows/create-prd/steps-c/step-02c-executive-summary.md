@@ -68,7 +68,6 @@ Draft the Executive Summary section using all discovered insights, present it fo
 ### 1. Synthesize Available Context
 
 Review all available context before drafting:
-
 - Classification from step 2: project type, domain, complexity, project context
 - Vision and differentiator from step 2b: what makes this special, core insight
 - Input documents: product briefs, research, brainstorming, project docs
@@ -76,7 +75,6 @@ Review all available context before drafting:
 ### 2. Draft Executive Summary Content
 
 Generate the Executive Summary section using the content structure below. Apply PRD quality standards:
-
 - High information density — every sentence carries weight
 - Zero fluff — no filler phrases or vague language
 - Precise and actionable — clear, specific statements
@@ -91,7 +89,6 @@ Present the drafted content to the user for review:
 Show the full drafted content using the structure from the Content Structure section below.
 
 Allow the user to:
-
 - Request specific changes to any section
 - Add missing information
 - Refine the language or emphasis
@@ -106,14 +103,12 @@ Present the executive summary content for user review, then display menu:
 Display: "**Select:** [A] Advanced Elicitation [P] Party Mode [C] Continue to Success Criteria (Step 3 of 13)"
 
 #### Menu Handling Logic:
-
 - IF A: Read fully and follow: {advancedElicitationTask} with the current executive summary content, process the enhanced content that comes back, ask user if they accept the improvements, if yes update content then redisplay menu, if no keep original content then redisplay menu
 - IF P: Read fully and follow: {partyModeWorkflow} with the current executive summary content, process the collaborative improvements, ask user if they accept the changes, if yes update content then redisplay menu, if no keep original content then redisplay menu
 - IF C: Append the final content to {outputFile}, update frontmatter by adding this step name to the end of the stepsCompleted array, then read fully and follow: {nextStepFile}
 - IF Any other: help user respond, then redisplay menu
 
 #### EXECUTION RULES:
-
 - ALWAYS halt and wait for user input after presenting menu
 - ONLY proceed to next step when user selects 'C'
 - After other menu items execution, return to this menu
@@ -137,7 +132,6 @@ When user selects 'C', append the following content structure directly to the do
 ```
 
 Where:
-
 - `{vision_alignment_content}` — Product vision, target users, and the problem being solved. Dense, precise summary drawn from step 2b vision discovery.
 - `{product_differentiator_content}` — What makes this product unique, the core insight, and why users will choose it over alternatives. Drawn from step 2b differentiator discovery.
 - `{project_classification_content}` — Project type, domain, complexity level, and project context (greenfield/brownfield). Drawn from step 2 classification.

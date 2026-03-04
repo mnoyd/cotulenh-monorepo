@@ -64,7 +64,7 @@ export class GameSession {
   #lastMovesVersion = -1;
 
   // Event callbacks
-  #onMove: (() => void) | null = null;
+  #onMove: ((san: string) => void) | null = null;
 
   constructor(fen?: string) {
     this.#originalFen = fen;
@@ -206,8 +206,54 @@ export class GameSession {
     return session !== null && session.isDeploy;
   }
 
-  set onMove(callback: (() => void) | null) {
+  set onMove(callback: ((san: string) => void) | null) {
     this.#onMove = callback;
+  }
+
+  get game(): CoTuLenhInterface {
+    return this.#game;
+  }
+
+  /**
+   * Load game state from a sync PGN (reconnection scenario).
+   * On success: replaces game state, rebuilds history, bumps version.
+   * On failure: leaves current state untouched, returns false.
+   */
+  loadFromSync(pgn: string): boolean {
+    try {
+      // Create a temporary game to validate PGN before touching current state
+      const tempGame = new CoTuLenh();
+      tempGame.loadPgn(pgn);
+
+      // PGN loaded successfully — swap in the new game
+      this.#game = tempGame;
+      const engineHistory = this.#game.history({ verbose: true }) as HistoryMove[];
+      this.#history = engineHistory;
+      this.#historyViewIndex = -1;
+      this.#version++;
+      return true;
+    } catch (error) {
+      logger.error('loadFromSync failed — keeping current state', {
+        error,
+        pgn,
+        currentFen: this.#game.fen()
+      });
+      return false;
+    }
+  }
+
+  applyMove(san: string): MoveResult | null {
+    try {
+      const result = this.#game.move(san);
+      if (result) {
+        this.#history = [...this.#history, result as HistoryMove];
+        this.#version++;
+        return result;
+      }
+      return null;
+    } catch {
+      return null;
+    }
   }
 
   // ============================================================
@@ -342,7 +388,7 @@ export class GameSession {
         if (!isDeploySession) {
           this.#history = [...this.#history, moveResult as HistoryMove];
           this.#playMoveSound(moveResult);
-          this.#onMove?.();
+          this.#onMove?.(moveResult.san);
         } else {
           // Check for auto-complete deploy when no pieces remaining
           const settings = loadSettings();
@@ -438,7 +484,7 @@ export class GameSession {
 
       this.#history = [...this.#history, result.result as HistoryMove];
       this.#playMoveSound(result.result);
-      this.#onMove?.();
+      this.#onMove?.(result.result.san);
       this.#version++;
     } catch (error) {
       logger.error('❌ Failed to commit session:', { error });

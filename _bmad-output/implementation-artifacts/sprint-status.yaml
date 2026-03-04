@@ -1,0 +1,98 @@
+# generated: 2026-02-27
+# project: cotulenh-monorepo
+# project_key: NOKEY
+# tracking_system: file-system
+# story_location: _bmad-output/implementation-artifacts
+
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic not yet started
+#   - in-progress: Epic actively being worked on
+#   - done: All stories in epic completed
+#
+# Epic Status Transitions:
+#   - backlog -> in-progress: Automatically when first story is created (via create-story)
+#   - in-progress -> done: Manually when all stories reach 'done' status
+#
+# Story Status:
+#   - backlog: Story only exists in epic file
+#   - ready-for-dev: Story file created in stories folder
+#   - in-progress: Developer actively working on implementation
+#   - review: Ready for code review (via Dev's code-review workflow)
+#   - done: Story completed
+#
+# Retrospective Status:
+#   - optional: Can be completed but not required
+#   - done: Retrospective has been completed
+#
+# WORKFLOW NOTES:
+# ===============
+# - Epic transitions to 'in-progress' automatically when first story is created
+# - Stories can be worked in parallel if team capacity allows
+# - SM typically creates next story after previous one is 'done' to incorporate learnings
+# - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
+
+generated: 2026-02-27
+project: cotulenh-monorepo
+project_key: NOKEY
+tracking_system: file-system
+story_location: _bmad-output/implementation-artifacts
+
+development_status:
+  # Epic 1: Supabase Foundation & Authentication
+  epic-1: done
+  1-1-user-registration: done
+  1-2-user-login-persistent-sessions: done
+  1-3-auth-aware-navigation-logout: done
+  1-4-password-reset-flow: done
+  epic-1-retrospective: done
+
+  # Epic 2: User Profiles & Settings
+  epic-2: done
+  2-1-display-name-own-profile: done
+  2-2-public-user-profiles: done
+  2-3-account-settings: done
+  epic-2-retrospective: done
+
+  # Epic 3: Social & Friends
+  epic-3: done
+  3-1-user-search-send-friend-request: done
+  3-2-friend-request-management: done
+  3-3-friends-list-with-online-status: done
+  epic-3-retrospective: done
+
+  # Epic 4: Match Invitations & Game Setup
+  epic-4: done
+  4-1-send-match-invitation-to-friend: done
+  4-2-view-respond-to-match-invitations: done
+  4-3-shareable-invite-link: done
+  epic-4-retrospective: done
+
+  # Epic 5: Realtime Online Gameplay
+  epic-5: done
+  5-1-delta-based-clock-gamemessage-types: done
+  5-2-online-game-session-move-broadcast: done
+  5-3-move-reliability-reconnection: done
+  5-4-game-end-conditions-result-recording: done
+  5-5-clock-timeout-claim-victory: done
+  5-6-dispute-system: done
+  5-7-draw-offers-rematch: done
+  epic-5-retrospective: done
+
+  # Epic 6: Game History & Review
+  epic-6: done
+  6-1-game-history-list: done
+  6-2-game-replay-viewer: done
+  epic-6-retrospective: done
+
+  # Epic 7: Learn Progress Persistence (parallel track - needs Epic 1 only)
+  epic-7: done
+  7-1-learn-progress-database-sync: done
+  7-2-learn-progress-migration-on-signup: done
+  epic-7-retrospective: done
+
+  # Epic 8: Feedback System (parallel track - needs Epic 1 only)
+  epic-8: done
+  8-1-in-app-feedback-submission: done
+  epic-8-retrospective: done
