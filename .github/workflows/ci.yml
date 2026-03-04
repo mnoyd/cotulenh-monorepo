@@ -9,6 +9,8 @@ on:
 env:
   TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
   TURBO_TEAM: ${{ vars.TURBO_TEAM }}
+  PUBLIC_SUPABASE_URL: https://example.supabase.co
+  PUBLIC_SUPABASE_PUBLISHABLE_KEY: example-key
 
 jobs:
   validate:
