@@ -61,6 +61,8 @@ export const en: TranslationKeys = {
   'settings.saved': 'Saved!',
   'settings.theme.modernWarfare.name': 'Modern Warfare',
   'settings.theme.modernWarfare.description': 'Tactical HUD with cyan/amber accents',
+  'settings.theme.desertOps.name': 'Desert Ops',
+  'settings.theme.desertOps.description': 'Ancient desert and warm heritage tones',
   'settings.theme.classic.name': 'Classic',
   'settings.theme.classic.description': 'Traditional warm wood tones',
   'settings.theme.forest.name': 'Forest',
@@ -583,7 +585,8 @@ export const en: TranslationKeys = {
   'inviteLink.alreadyHaveAccount': 'Already have an account?',
   'inviteLink.logIn': 'Log In',
   'inviteLink.expired.title': 'Invitation Unavailable',
-  'inviteLink.expired.description': 'This invitation has expired, been cancelled, or was already accepted.',
+  'inviteLink.expired.description':
+    'This invitation has expired, been cancelled, or was already accepted.',
   'inviteLink.own.title': 'Your Invitation',
   'inviteLink.own.description': 'Share this link with someone to invite them to play.',
   'inviteLink.copyLink': 'Copy Link',
@@ -591,19 +594,22 @@ export const en: TranslationKeys = {
   'inviteLink.label': 'Invite Link',
   'inviteLink.badge': 'Link',
   'inviteLink.create.title': 'Invite Link',
-  'inviteLink.create.description': 'Create a shareable link to invite anyone — even if they don\'t have an account yet.',
+  'inviteLink.create.description':
+    "Create a shareable link to invite anyone — even if they don't have an account yet.",
   'inviteLink.create.button': 'Create Invite Link',
   'inviteLink.create.another': 'Create Another Link',
   'inviteLink.toast.created': 'Invite link created!',
   'inviteLink.toast.createFailed': 'Failed to create invite link',
-  'inviteLink.verifyEmailContext': 'After verifying your email, you\'ll be taken to the game invitation.',
+  'inviteLink.verifyEmailContext':
+    "After verifying your email, you'll be taken to the game invitation.",
 
   // Game page
   'game.pageTitle': 'Game',
   'game.starting': 'Game Starting...',
   'game.opponent': 'Opponent',
   'game.yourColor': 'Your Color',
-  'game.placeholderMessage': 'The game board will appear here when realtime gameplay is implemented.',
+  'game.placeholderMessage':
+    'The game board will appear here when realtime gameplay is implemented.',
   'game.goToGame': 'Go to Game',
   'game.connecting': 'Connecting...',
   'game.waitingForOpponent': 'Waiting for opponent...',
@@ -638,7 +644,8 @@ export const en: TranslationKeys = {
   'game.declineDraw': 'Decline',
   'game.resultTimeout': 'on Time',
   'game.disputeTitle': 'Move Dispute',
-  'game.disputeMessage': 'An invalid move was detected. The game is paused for review. Please classify this incident.',
+  'game.disputeMessage':
+    'An invalid move was detected. The game is paused for review. Please classify this incident.',
   'game.disputeCommentPlaceholder': 'Optional comment...',
   'game.reportBug': 'Report as Bug',
   'game.reportCheat': 'Report as Cheat',

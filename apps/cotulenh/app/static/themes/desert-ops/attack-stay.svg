@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <defs>
+    <!-- Falling Javelin/Arrow -->
+    <g id="javelin">
+      <path d="M0 -15 L2 -8 L1 15 L-1 15 L-2 -8 Z" fill="#e2c290" />
+      <!-- Arrowhead -->
+      <path d="M0 22 L3 15 L-3 15 Z" fill="#ffffff" />
+      <!-- Fletching -->
+      <path d="M1 -15 L4 -22 L0 -20 L-4 -22 L-1 -15 Z" fill="#d4af37" />
+    </g>
+  </defs>
+
+  <!-- Vertical Motion Lines (Falling) -->
+  <path d="M32 0 L32 20" stroke="#ffffff" stroke-width="2" stroke-dasharray="4 4" opacity="0.6" />
+  <path d="M20 10 L20 30" stroke="#ffffff" stroke-width="1" stroke-dasharray="2 4" opacity="0.4" />
+  <path d="M44 10 L44 30" stroke="#ffffff" stroke-width="1" stroke-dasharray="2 4" opacity="0.4" />
+
+  <!-- The Falling Javelins -->
+  <g transform="translate(32, 28)">
+    <use href="#javelin" />
+  </g>
+  <g transform="translate(18, 18) scale(0.6)">
+    <use href="#javelin" />
+  </g>
+  <g transform="translate(46, 18) scale(0.6)">
+    <use href="#javelin" />
+  </g>
+
+  <!-- Impact Target / Ripple below -->
+  <g transform="translate(32, 54) scale(1, 0.5)">
+    <circle cx="0" cy="0" r="12" stroke="#d4af37" stroke-width="2" fill="none" opacity="0.9" stroke-dasharray="4 2"/>
+    <circle cx="0" cy="0" r="20" stroke="#e2c290" stroke-width="1" fill="none" opacity="0.6" />
+    <circle cx="0" cy="0" r="4" fill="#ffffff" />
+    <path d="M-8 0 L8 0 M0 -8 L0 8" stroke="#ffffff" stroke-width="2" />
+  </g>
+</svg>

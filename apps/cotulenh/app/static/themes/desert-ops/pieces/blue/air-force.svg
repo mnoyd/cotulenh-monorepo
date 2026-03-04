@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="5" stdDeviation="5" flood-color="rgba(0,0,0,0.6)" />
+    </filter>
+  </defs>
+  <!-- Base shadow on the ground to emphasize altitude -->
+  <ellipse cx="50" cy="85" rx="35" ry="6" fill="#1a1a1a" opacity="0.5" />
+  <g filter="url(#shadow)" transform="scale(0.9) translate(5.5, -5)">
+    <!-- Fuselage (F-16/F-35 style, top-down view) -->
+    <path d="M 50 10 C 55 10, 58 20, 58 40 L 58 75 C 58 85, 55 90, 50 90 C 45 90, 42 85, 42 75 L 42 40 C 42 20, 45 10, 50 10 Z" fill="#3b8cc4" stroke="#2a6d8a" stroke-width="1.5" />
+    <!-- Nosecone -->
+    <path d="M 50 10 C 52 10, 53 15, 53 20 L 47 20 C 47 15, 48 10, 50 10 Z" fill="#2a6d8a" />
+    <!-- Canopy -->
+    <ellipse cx="50" cy="35" rx="4" ry="12" fill="#1a2b3c" stroke="#2a6d8a" stroke-width="1" />
+    <!-- Delta Wings -->
+    <path d="M 42 45 L 15 65 L 15 75 L 42 70 Z" fill="#3480a8" stroke="#2a6d8a" stroke-width="1.5" />
+    <path d="M 58 45 L 85 65 L 85 75 L 58 70 Z" fill="#3480a8" stroke="#2a6d8a" stroke-width="1.5" />
+    <!-- Horizontal Stabilizers -->
+    <path d="M 45 75 L 25 85 L 25 90 L 45 85 Z" fill="#3480a8" stroke="#2a6d8a" stroke-width="1.5" />
+    <path d="M 55 75 L 75 85 L 75 90 L 55 85 Z" fill="#3480a8" stroke="#2a6d8a" stroke-width="1.5" />
+    <!-- Vertical Stabilizer (F-16 single fin, seen top down as a thick line) -->
+    <rect x="49" y="70" width="2" height="18" fill="#2c7a9e" />
+    <!-- Jet Engine Exhaust -->
+    <circle cx="50" cy="90" r="4" fill="#1a1a1a" />
+    <circle cx="50" cy="90" r="2" fill="#fb923c" /> <!-- Glow -->
+  </g>
+</svg>

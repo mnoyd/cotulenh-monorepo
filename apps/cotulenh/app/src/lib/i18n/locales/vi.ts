@@ -61,6 +61,8 @@ export const vi: TranslationKeys = {
   'settings.saved': 'Đã lưu!',
   'settings.theme.modernWarfare.name': 'Hiện đại',
   'settings.theme.modernWarfare.description': 'HUD chiến thuật với điểm nhấn cyan/hổ phách',
+  'settings.theme.desertOps.name': 'Chiến dịch Sa mạc',
+  'settings.theme.desertOps.description': 'Tông màu sa mạc cổ đại và di sản ấm áp',
   'settings.theme.classic.name': 'Cổ điển',
   'settings.theme.classic.description': 'Tông gỗ ấm truyền thống',
   'settings.theme.forest.name': 'Rừng',
@@ -591,7 +593,8 @@ export const vi: TranslationKeys = {
   'inviteLink.label': 'Liên Kết Mời',
   'inviteLink.badge': 'Liên kết',
   'inviteLink.create.title': 'Liên Kết Mời',
-  'inviteLink.create.description': 'Tạo liên kết chia sẻ để mời bất kỳ ai — kể cả người chưa có tài khoản.',
+  'inviteLink.create.description':
+    'Tạo liên kết chia sẻ để mời bất kỳ ai — kể cả người chưa có tài khoản.',
   'inviteLink.create.button': 'Tạo Liên Kết Mời',
   'inviteLink.create.another': 'Tạo Liên Kết Khác',
   'inviteLink.toast.created': 'Đã tạo liên kết mời!',
@@ -603,7 +606,8 @@ export const vi: TranslationKeys = {
   'game.starting': 'Ván Đấu Đang Bắt Đầu...',
   'game.opponent': 'Đối Thủ',
   'game.yourColor': 'Bên Của Bạn',
-  'game.placeholderMessage': 'Bàn cờ sẽ xuất hiện ở đây khi tính năng chơi thời gian thực được triển khai.',
+  'game.placeholderMessage':
+    'Bàn cờ sẽ xuất hiện ở đây khi tính năng chơi thời gian thực được triển khai.',
   'game.goToGame': 'Đi Đến Ván Đấu',
   'game.connecting': 'Đang kết nối...',
   'game.waitingForOpponent': 'Đang chờ đối thủ...',
@@ -638,7 +642,8 @@ export const vi: TranslationKeys = {
   'game.declineDraw': 'Từ Chối',
   'game.resultTimeout': 'do Hết giờ',
   'game.disputeTitle': 'Tranh Chấp Nước Đi',
-  'game.disputeMessage': 'Phát hiện nước đi không hợp lệ. Trò chơi tạm dừng để xem xét. Vui lòng phân loại sự cố.',
+  'game.disputeMessage':
+    'Phát hiện nước đi không hợp lệ. Trò chơi tạm dừng để xem xét. Vui lòng phân loại sự cố.',
   'game.disputeCommentPlaceholder': 'Bình luận (tùy chọn)...',
   'game.reportBug': 'Báo Lỗi',
   'game.reportCheat': 'Báo Gian Lận',

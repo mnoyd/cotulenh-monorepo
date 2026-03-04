@@ -208,8 +208,8 @@ cg-board square.deploy-incomplete::before {
 cg-board square.air-defense-influence {
   z-index: 3;
   --radar-color: var(--theme-board-air-friendly, rgba(59, 130, 246, 0.8));
-  --radar-ring-opacity: 0.4;
-  --radar-blip-opacity: 0.7;
+  --radar-ring-opacity: var(--theme-radar-ring-opacity, 0.4);
+  --radar-blip-opacity: var(--theme-radar-blip-opacity, 0.7);
 }
 
 /* Radar rings using radial gradient */
@@ -264,8 +264,8 @@ cg-board square.air-defense-influence::after {
 
 /* Overlap zones - more intense */
 cg-board square.air-defense-influence.overlap {
-  --radar-ring-opacity: 0.6;
-  --radar-blip-opacity: 0.9;
+  --radar-ring-opacity: var(--theme-radar-overlap-ring-opacity, 0.6);
+  --radar-blip-opacity: var(--theme-radar-overlap-blip-opacity, 0.9);
 }
 
 /* Friendly color */
