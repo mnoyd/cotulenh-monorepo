@@ -1,5 +1,4 @@
 import type { SupabaseClient, RealtimeChannel } from '@supabase/supabase-js';
-import type { MoveResult } from '@cotulenh/core';
 import { logger } from '@cotulenh/common';
 import { GameSession } from '$lib/game-session.svelte';
 import { ChessClockState, type ClockConfig, type ClockColor } from '$lib/clock/clock.svelte';
@@ -126,12 +125,24 @@ export class OnlineGameSessionCore {
   }
 
   // State getters
-  get connectionState(): ConnectionState { return this.#connectionState; }
-  get lifecycle(): Lifecycle { return this.#lifecycle; }
-  get opponentConnected(): boolean { return this.#opponentConnected; }
-  get seqCounter(): number { return this.#seqCounter; }
-  get pendingAckCount(): number { return this.#pendingAcks.size; }
-  get awaitingSync(): boolean { return this.#awaitingSync; }
+  get connectionState(): ConnectionState {
+    return this.#connectionState;
+  }
+  get lifecycle(): Lifecycle {
+    return this.#lifecycle;
+  }
+  get opponentConnected(): boolean {
+    return this.#opponentConnected;
+  }
+  get seqCounter(): number {
+    return this.#seqCounter;
+  }
+  get pendingAckCount(): number {
+    return this.#pendingAcks.size;
+  }
+  get awaitingSync(): boolean {
+    return this.#awaitingSync;
+  }
 
   get myClockColor(): ClockColor {
     return this.playerColor === 'red' ? 'r' : 'b';
@@ -355,11 +366,7 @@ export class OnlineGameSessionCore {
 
   async acceptRematch(): Promise<void> {
     if (!this.#channel) return;
-    if (
-      !this.#rematchReceived ||
-      this.#lifecycle !== 'ended' ||
-      this.#acceptingRematch
-    ) {
+    if (!this.#rematchReceived || this.#lifecycle !== 'ended' || this.#acceptingRematch) {
       return;
     }
 
@@ -472,7 +479,13 @@ export class OnlineGameSessionCore {
   }
 
   async reportDispute(classification: 'bug' | 'cheat', comment?: string): Promise<void> {
-    if (!this.#disputeActive || this.#lifecycle !== 'playing' || !this.#disputeInfo || this.#reportingDispute) return;
+    if (
+      !this.#disputeActive ||
+      this.#lifecycle !== 'playing' ||
+      !this.#disputeInfo ||
+      this.#reportingDispute
+    )
+      return;
 
     this.#reportingDispute = true;
     try {
@@ -677,7 +690,10 @@ export class OnlineGameSessionCore {
     // Skip duplicate
     if (msg.seq <= this.#lastProcessedSeq) {
       this.#sendAck(msg.seq);
-      logger.debug('Skipping duplicate move', { seq: msg.seq, lastProcessed: this.#lastProcessedSeq });
+      logger.debug('Skipping duplicate move', {
+        seq: msg.seq,
+        lastProcessed: this.#lastProcessedSeq
+      });
       return;
     }
 
@@ -792,11 +808,7 @@ export class OnlineGameSessionCore {
   }
 
   #handleDrawOfferMessage(): void {
-    if (
-      this.#lifecycle !== 'playing' ||
-      this.#disputeActive ||
-      this.#drawOfferReceived
-    ) {
+    if (this.#lifecycle !== 'playing' || this.#disputeActive || this.#drawOfferReceived) {
       return;
     }
 
@@ -1191,27 +1203,54 @@ export class OnlineGameSessionCore {
     this.#notifyStateChange();
   }
 
-  async #writeGameResult(status: string, winner: string | null, resultReason: string): Promise<void> {
+  async #writeGameResult(
+    status: string,
+    winner: string | null,
+    resultReason: string
+  ): Promise<void> {
     try {
       // Set PGN headers before export
       const game = this.session.game;
       game.setHeader('Red', this.#redPlayerName);
       game.setHeader('Blue', this.#bluePlayerName);
       game.setHeader('Date', new Date().toISOString().slice(0, 10).replace(/-/g, '.'));
-      game.setHeader('TimeControl', `${this.#timeControlMinutes * 60}+${this.#timeControlIncrement}`);
+      game.setHeader(
+        'TimeControl',
+        `${this.#timeControlMinutes * 60}+${this.#timeControlIncrement}`
+      );
 
       let terminationString: string;
       switch (resultReason) {
-        case 'checkmate': terminationString = 'checkmate'; break;
-        case 'commander_captured': terminationString = 'commander captured'; break;
-        case 'stalemate': terminationString = 'stalemate'; break;
-        case 'resignation': terminationString = 'resignation'; break;
-        case 'fifty_moves': terminationString = 'fifty move rule'; break;
-        case 'threefold_repetition': terminationString = 'threefold repetition'; break;
-        case 'timeout': terminationString = 'time forfeit'; break;
-        case 'dispute': terminationString = 'move dispute'; break;
-        case 'draw_by_agreement': terminationString = 'draw by agreement'; break;
-        default: terminationString = resultReason; break;
+        case 'checkmate':
+          terminationString = 'checkmate';
+          break;
+        case 'commander_captured':
+          terminationString = 'commander captured';
+          break;
+        case 'stalemate':
+          terminationString = 'stalemate';
+          break;
+        case 'resignation':
+          terminationString = 'resignation';
+          break;
+        case 'fifty_moves':
+          terminationString = 'fifty move rule';
+          break;
+        case 'threefold_repetition':
+          terminationString = 'threefold repetition';
+          break;
+        case 'timeout':
+          terminationString = 'time forfeit';
+          break;
+        case 'dispute':
+          terminationString = 'move dispute';
+          break;
+        case 'draw_by_agreement':
+          terminationString = 'draw by agreement';
+          break;
+        default:
+          terminationString = resultReason;
+          break;
       }
       game.setHeader('Termination', terminationString);
 
@@ -1235,7 +1274,9 @@ export class OnlineGameSessionCore {
       }
 
       // Core engine accepts `clocks` but interface type doesn't expose it
-      const fullPgn = (game as unknown as { pgn(opts: { clocks?: string[] }): string }).pgn({ clocks: this.#clockAnnotations });
+      const fullPgn = (game as unknown as { pgn(opts: { clocks?: string[] }): string }).pgn({
+        clocks: this.#clockAnnotations
+      });
 
       const { error, count } = await this.#supabase
         .from('games')

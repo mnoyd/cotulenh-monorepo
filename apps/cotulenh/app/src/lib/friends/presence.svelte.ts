@@ -5,7 +5,6 @@
 import {
   joinLobby as coreJoinLobby,
   leaveLobby as coreLeaveLobby,
-  onPresenceChange,
   _setStateChangeCallback
 } from './presence-core';
 import type { SupabaseClient } from '@supabase/supabase-js';

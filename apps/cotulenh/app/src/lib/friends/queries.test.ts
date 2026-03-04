@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import {
   canonicalPair,
   searchUsers,
@@ -95,7 +95,7 @@ describe('searchUsers', () => {
     });
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const results = await searchUsers(supabase as any, 'Player', 'user-1');
+    await searchUsers(supabase as any, 'Player', 'user-1');
     // Verify neq was called with self ID
     expect(chain.neq).toHaveBeenCalledWith('id', 'user-1');
   });

@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-const DISPLAY_NAME_BLOCKED_CHARS = /[<>]|[\u0000-\u001F\u007F]/u;
+const DISPLAY_NAME_BLOCKED_CHARS = /[<>]|\p{Cc}/u;
 
 function normalizeWhitespace(value: string): string {
   return value.trim().replace(/\s+/g, ' ');

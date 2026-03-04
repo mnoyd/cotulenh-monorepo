@@ -13,7 +13,7 @@ vi.mock('@cotulenh/common', async (importOriginal) => {
     perfTimeSync: (_label: string, fn: () => unknown) => fn(),
     perfStartMoveFlow: () => {},
     perfMarkMoveFlow: () => {},
-    perfEndMoveFlow: () => {},
+    perfEndMoveFlow: () => {}
   };
 });
 
@@ -33,7 +33,11 @@ vi.mock('$lib/debug', () => ({
   logRender: vi.fn()
 }));
 
-import { OnlineGameSessionCore, type OnlineSessionConfig } from './online-session-core';
+import {
+  OnlineGameSessionCore,
+  type OnlineSessionCallbacks,
+  type OnlineSessionConfig
+} from './online-session-core';
 import type { RealtimeChannel } from '@supabase/supabase-js';
 
 const CURRENT_USER_ID = 'user-red';
@@ -41,19 +45,20 @@ const OPPONENT_USER_ID = 'user-blue';
 
 // Helper to create a mock Supabase client
 function createMockSupabase() {
-  const channelHandlers: Record<string, Function[]> = {};
-  let subscribeCallback: Function | null = null;
+  type MockHandler = (...args: unknown[]) => void;
+  const channelHandlers: Record<string, MockHandler[]> = {};
+  let subscribeCallback: ((status: string) => void) | null = null;
   let trackData: Record<string, unknown> | null = null;
   const presenceState: Record<string, Array<Record<string, unknown>>> = {};
 
   const mockChannel: Record<string, unknown> = {
-    on: vi.fn((type: string, opts: Record<string, unknown>, handler: Function) => {
+    on: vi.fn((type: string, opts: Record<string, unknown>, handler: MockHandler) => {
       const key = type === 'broadcast' ? `broadcast:${opts.event}` : `${type}:${opts.event}`;
       if (!channelHandlers[key]) channelHandlers[key] = [];
       channelHandlers[key].push(handler);
       return mockChannel;
     }),
-    subscribe: vi.fn((cb: Function) => {
+    subscribe: vi.fn((cb: (status: string) => void) => {
       subscribeCallback = cb;
       // Auto-connect
       setTimeout(() => cb('SUBSCRIBED'), 0);
@@ -112,7 +117,7 @@ function createMockSupabase() {
         lastInsertTable = tableName;
         return {
           error: insertResult.error,
-          select: vi.fn((_columns?: string) => ({
+          select: vi.fn(() => ({
             single: vi.fn(async () => {
               if (tableName === 'game_invitations') {
                 return rematchInvitationResult;
@@ -129,7 +134,11 @@ function createMockSupabase() {
   };
 
   return {
-    supabase: supabase as unknown as Parameters<typeof OnlineGameSessionCore['prototype']['join']> extends [] ? never : typeof supabase,
+    supabase: supabase as unknown as Parameters<
+      (typeof OnlineGameSessionCore)['prototype']['join']
+    > extends []
+      ? never
+      : typeof supabase,
     mockChannel,
     channelHandlers,
     presenceState,
@@ -281,11 +290,13 @@ describe('OnlineGameSessionCore', () => {
       expect(core.lifecycle).toBe('waiting');
       expect(core.clock.status).toBe('idle');
 
-      mock.presenceState['opponent'] = [{
-        color: 'blue',
-        userId: OPPONENT_USER_ID,
-        presenceId: 'opponent-presence'
-      }];
+      mock.presenceState['opponent'] = [
+        {
+          color: 'blue',
+          userId: OPPONENT_USER_ID,
+          presenceId: 'opponent-presence'
+        }
+      ];
       mock.simulatePresenceSync();
 
       expect(core.opponentConnected).toBe(true);
@@ -311,11 +322,13 @@ describe('OnlineGameSessionCore', () => {
       core.join();
       await vi.advanceTimersByTimeAsync(10);
 
-      mock.presenceState['opponent'] = [{
-        color: 'blue',
-        userId: OPPONENT_USER_ID,
-        presenceId: 'opponent-presence'
-      }];
+      mock.presenceState['opponent'] = [
+        {
+          color: 'blue',
+          userId: OPPONENT_USER_ID,
+          presenceId: 'opponent-presence'
+        }
+      ];
       mock.simulatePresenceSync();
 
       const now = Date.now();
@@ -328,7 +341,7 @@ describe('OnlineGameSessionCore', () => {
           payload: expect.objectContaining({
             event: 'move',
             san: move.san,
-            seq: 1,
+            seq: 1
           })
         })
       );
@@ -345,11 +358,13 @@ describe('OnlineGameSessionCore', () => {
       core.join();
       await vi.advanceTimersByTimeAsync(10);
 
-      mock.presenceState['opponent'] = [{
-        color: 'blue',
-        userId: OPPONENT_USER_ID,
-        presenceId: 'opponent-presence'
-      }];
+      mock.presenceState['opponent'] = [
+        {
+          color: 'blue',
+          userId: OPPONENT_USER_ID,
+          presenceId: 'opponent-presence'
+        }
+      ];
       mock.simulatePresenceSync();
 
       // First local move (red)
@@ -374,8 +389,9 @@ describe('OnlineGameSessionCore', () => {
       const sendCalls = (mock.mockChannel.send as ReturnType<typeof vi.fn>).mock.calls;
       // Filter to move broadcasts (not ack sends)
       const moveSends = sendCalls.filter(
-        (c: unknown[]) => (c[0] as Record<string, unknown>).payload &&
-          ((c[0] as Record<string, Record<string, unknown>>).payload.event === 'move')
+        (c: unknown[]) =>
+          (c[0] as Record<string, unknown>).payload &&
+          (c[0] as Record<string, Record<string, unknown>>).payload.event === 'move'
       );
       expect(moveSends).toHaveLength(2);
       expect((moveSends[0][0] as Record<string, Record<string, unknown>>).payload.seq).toBe(1);
@@ -387,11 +403,13 @@ describe('OnlineGameSessionCore', () => {
       core.join();
       await vi.advanceTimersByTimeAsync(10);
 
-      mock.presenceState['opponent'] = [{
-        color: 'blue',
-        userId: OPPONENT_USER_ID,
-        presenceId: 'opponent-presence'
-      }];
+      mock.presenceState['opponent'] = [
+        {
+          color: 'blue',
+          userId: OPPONENT_USER_ID,
+          presenceId: 'opponent-presence'
+        }
+      ];
       mock.simulatePresenceSync();
 
       triggerLocalMove(core);
@@ -416,11 +434,13 @@ describe('OnlineGameSessionCore', () => {
       core.join();
       await vi.advanceTimersByTimeAsync(10);
 
-      mock.presenceState['opponent'] = [{
-        color: 'blue',
-        userId: OPPONENT_USER_ID,
-        presenceId: 'opponent-presence'
-      }];
+      mock.presenceState['opponent'] = [
+        {
+          color: 'blue',
+          userId: OPPONENT_USER_ID,
+          presenceId: 'opponent-presence'
+        }
+      ];
       mock.simulatePresenceSync();
 
       expect(core.clock.status).toBe('running');
@@ -586,25 +606,29 @@ describe('OnlineGameSessionCore', () => {
       core.join();
       await vi.advanceTimersByTimeAsync(10);
 
-      mock.presenceState['opponent'] = [{
-        color: 'blue',
-        userId: OPPONENT_USER_ID,
-        presenceId: 'opponent-presence'
-      }];
+      mock.presenceState['opponent'] = [
+        {
+          color: 'blue',
+          userId: OPPONENT_USER_ID,
+          presenceId: 'opponent-presence'
+        }
+      ];
       mock.simulatePresenceSync();
 
       triggerLocalMove(core);
       const sendCallsBefore = (mock.mockChannel.send as ReturnType<typeof vi.fn>).mock.calls.length;
-      const firstMovePayload = (mock.mockChannel.send as ReturnType<typeof vi.fn>).mock.calls.at(-1)?.[0]
-        ?.payload as Record<string, unknown>;
+      const firstMovePayload = (mock.mockChannel.send as ReturnType<typeof vi.fn>).mock.calls.at(
+        -1
+      )?.[0]?.payload as Record<string, unknown>;
 
       // Advance 3s — should trigger retry
       await vi.advanceTimersByTimeAsync(3000);
 
       const sendCallsAfter = (mock.mockChannel.send as ReturnType<typeof vi.fn>).mock.calls.length;
       expect(sendCallsAfter).toBeGreaterThan(sendCallsBefore);
-      const resentPayload = (mock.mockChannel.send as ReturnType<typeof vi.fn>).mock.calls.at(-1)?.[0]
-        ?.payload as Record<string, unknown>;
+      const resentPayload = (mock.mockChannel.send as ReturnType<typeof vi.fn>).mock.calls.at(
+        -1
+      )?.[0]?.payload as Record<string, unknown>;
       expect(resentPayload.event).toBe('move');
       expect(resentPayload.seq).toBe(firstMovePayload.seq);
       expect(resentPayload).toEqual(firstMovePayload);
@@ -615,11 +639,13 @@ describe('OnlineGameSessionCore', () => {
       core.join();
       await vi.advanceTimersByTimeAsync(10);
 
-      mock.presenceState['opponent'] = [{
-        color: 'blue',
-        userId: OPPONENT_USER_ID,
-        presenceId: 'opponent-presence'
-      }];
+      mock.presenceState['opponent'] = [
+        {
+          color: 'blue',
+          userId: OPPONENT_USER_ID,
+          presenceId: 'opponent-presence'
+        }
+      ];
       mock.simulatePresenceSync();
 
       triggerLocalMove(core);
@@ -640,11 +666,13 @@ describe('OnlineGameSessionCore', () => {
       core.join();
       await vi.advanceTimersByTimeAsync(10);
 
-      mock.presenceState['opponent'] = [{
-        color: 'blue',
-        userId: OPPONENT_USER_ID,
-        presenceId: 'opponent-presence'
-      }];
+      mock.presenceState['opponent'] = [
+        {
+          color: 'blue',
+          userId: OPPONENT_USER_ID,
+          presenceId: 'opponent-presence'
+        }
+      ];
       mock.simulatePresenceSync();
 
       triggerLocalMove(core);
@@ -664,11 +692,13 @@ describe('OnlineGameSessionCore', () => {
       core.join();
       await vi.advanceTimersByTimeAsync(10);
 
-      mock.presenceState['opponent'] = [{
-        color: 'blue',
-        userId: OPPONENT_USER_ID,
-        presenceId: 'opponent-presence'
-      }];
+      mock.presenceState['opponent'] = [
+        {
+          color: 'blue',
+          userId: OPPONENT_USER_ID,
+          presenceId: 'opponent-presence'
+        }
+      ];
       mock.simulatePresenceSync();
 
       triggerLocalMove(core);
@@ -743,11 +773,13 @@ describe('OnlineGameSessionCore', () => {
 
       expect(core.opponentConnected).toBe(false);
 
-      mock.presenceState['opponent'] = [{
-        color: 'blue',
-        userId: OPPONENT_USER_ID,
-        presenceId: 'opponent-presence'
-      }];
+      mock.presenceState['opponent'] = [
+        {
+          color: 'blue',
+          userId: OPPONENT_USER_ID,
+          presenceId: 'opponent-presence'
+        }
+      ];
       mock.simulatePresenceJoin({ key: 'opponent-key' });
       expect(core.opponentConnected).toBe(true);
     });
@@ -757,11 +789,13 @@ describe('OnlineGameSessionCore', () => {
       core.join();
       await vi.advanceTimersByTimeAsync(10);
 
-      mock.presenceState['opponent'] = [{
-        color: 'blue',
-        userId: OPPONENT_USER_ID,
-        presenceId: 'opponent-presence'
-      }];
+      mock.presenceState['opponent'] = [
+        {
+          color: 'blue',
+          userId: OPPONENT_USER_ID,
+          presenceId: 'opponent-presence'
+        }
+      ];
       mock.simulatePresenceJoin({ key: 'opponent-key' });
       expect(core.opponentConnected).toBe(true);
 
@@ -900,11 +934,13 @@ describe('OnlineGameSessionCore', () => {
       await vi.advanceTimersByTimeAsync(10);
 
       // Connect opponent
-      mock.presenceState['opponent'] = [{
-        color: 'blue',
-        userId: OPPONENT_USER_ID,
-        presenceId: 'opponent-presence'
-      }];
+      mock.presenceState['opponent'] = [
+        {
+          color: 'blue',
+          userId: OPPONENT_USER_ID,
+          presenceId: 'opponent-presence'
+        }
+      ];
       mock.simulatePresenceSync();
       expect(core.lifecycle).toBe('playing');
       expect(core.opponentConnected).toBe(true);
@@ -918,21 +954,21 @@ describe('OnlineGameSessionCore', () => {
       (mock.mockChannel.send as ReturnType<typeof vi.fn>).mockClear();
 
       // Reconnect opponent
-      mock.presenceState['opponent'] = [{
-        color: 'blue',
-        userId: OPPONENT_USER_ID,
-        presenceId: 'opponent-presence-2'
-      }];
+      mock.presenceState['opponent'] = [
+        {
+          color: 'blue',
+          userId: OPPONENT_USER_ID,
+          presenceId: 'opponent-presence-2'
+        }
+      ];
       mock.simulatePresenceJoin();
 
       // Should have sent a sync message
       const sendCalls = (mock.mockChannel.send as ReturnType<typeof vi.fn>).mock.calls;
-      const syncSends = sendCalls.filter(
-        (c: unknown[]) => {
-          const payload = (c[0] as Record<string, Record<string, unknown>>).payload;
-          return payload && payload.event === 'sync';
-        }
-      );
+      const syncSends = sendCalls.filter((c: unknown[]) => {
+        const payload = (c[0] as Record<string, Record<string, unknown>>).payload;
+        return payload && payload.event === 'sync';
+      });
       expect(syncSends).toHaveLength(1);
 
       // Verify sync payload contains required fields
@@ -1002,11 +1038,13 @@ describe('OnlineGameSessionCore', () => {
       core.join();
       await vi.advanceTimersByTimeAsync(10);
 
-      mock.presenceState['opponent'] = [{
-        color: 'blue',
-        userId: OPPONENT_USER_ID,
-        presenceId: 'opponent-presence'
-      }];
+      mock.presenceState['opponent'] = [
+        {
+          color: 'blue',
+          userId: OPPONENT_USER_ID,
+          presenceId: 'opponent-presence'
+        }
+      ];
       mock.simulatePresenceSync();
 
       // Make local move (creates pending ack)
@@ -1055,11 +1093,13 @@ describe('OnlineGameSessionCore', () => {
       await vi.advanceTimersByTimeAsync(10);
 
       // Connect opponent to start game
-      mock.presenceState['opponent'] = [{
-        color: 'blue',
-        userId: OPPONENT_USER_ID,
-        presenceId: 'opponent-presence'
-      }];
+      mock.presenceState['opponent'] = [
+        {
+          color: 'blue',
+          userId: OPPONENT_USER_ID,
+          presenceId: 'opponent-presence'
+        }
+      ];
       mock.simulatePresenceSync();
       expect(core.lifecycle).toBe('playing');
 
@@ -1073,11 +1113,13 @@ describe('OnlineGameSessionCore', () => {
       expect(core.opponentConnected).toBe(false);
 
       // Opponent reconnects
-      mock.presenceState['opponent'] = [{
-        color: 'blue',
-        userId: OPPONENT_USER_ID,
-        presenceId: 'opponent-presence-2'
-      }];
+      mock.presenceState['opponent'] = [
+        {
+          color: 'blue',
+          userId: OPPONENT_USER_ID,
+          presenceId: 'opponent-presence-2'
+        }
+      ];
 
       (mock.mockChannel.send as ReturnType<typeof vi.fn>).mockClear();
       mock.simulatePresenceJoin();
@@ -1085,7 +1127,8 @@ describe('OnlineGameSessionCore', () => {
 
       // Verify sync was sent
       const syncSends = (mock.mockChannel.send as ReturnType<typeof vi.fn>).mock.calls.filter(
-        (c: unknown[]) => (c[0] as Record<string, Record<string, unknown>>).payload?.event === 'sync'
+        (c: unknown[]) =>
+          (c[0] as Record<string, Record<string, unknown>>).payload?.event === 'sync'
       );
       expect(syncSends).toHaveLength(1);
     });
@@ -1095,11 +1138,13 @@ describe('OnlineGameSessionCore', () => {
       core.join();
       await vi.advanceTimersByTimeAsync(10);
 
-      mock.presenceState['opponent'] = [{
-        color: 'blue',
-        userId: OPPONENT_USER_ID,
-        presenceId: 'opponent-presence'
-      }];
+      mock.presenceState['opponent'] = [
+        {
+          color: 'blue',
+          userId: OPPONENT_USER_ID,
+          presenceId: 'opponent-presence'
+        }
+      ];
       mock.simulatePresenceSync();
       expect(core.lifecycle).toBe('playing');
 
@@ -1107,7 +1152,8 @@ describe('OnlineGameSessionCore', () => {
       mock.simulateGameMessage({ event: 'sync-request', expectedSeq: 2 });
 
       const syncSends = (mock.mockChannel.send as ReturnType<typeof vi.fn>).mock.calls.filter(
-        (c: unknown[]) => (c[0] as Record<string, Record<string, unknown>>).payload?.event === 'sync'
+        (c: unknown[]) =>
+          (c[0] as Record<string, Record<string, unknown>>).payload?.event === 'sync'
       );
       expect(syncSends).toHaveLength(1);
     });
@@ -1163,11 +1209,13 @@ describe('OnlineGameSessionCore', () => {
       core.join();
       await vi.advanceTimersByTimeAsync(10);
 
-      mock.presenceState['opponent'] = [{
-        color: 'blue',
-        userId: OPPONENT_USER_ID,
-        presenceId: 'opponent-presence'
-      }];
+      mock.presenceState['opponent'] = [
+        {
+          color: 'blue',
+          userId: OPPONENT_USER_ID,
+          presenceId: 'opponent-presence'
+        }
+      ];
       mock.simulatePresenceSync();
 
       triggerLocalMove(core);
@@ -1225,11 +1273,13 @@ describe('OnlineGameSessionCore', () => {
       core.join();
       await vi.advanceTimersByTimeAsync(10);
 
-      mock.presenceState['opponent'] = [{
-        color: 'blue',
-        userId: OPPONENT_USER_ID,
-        presenceId: 'opponent-presence'
-      }];
+      mock.presenceState['opponent'] = [
+        {
+          color: 'blue',
+          userId: OPPONENT_USER_ID,
+          presenceId: 'opponent-presence'
+        }
+      ];
       mock.simulatePresenceSync();
 
       // Make a move right away (clock is ~5:00:000 = 300000ms)
@@ -1246,31 +1296,38 @@ describe('OnlineGameSessionCore', () => {
       core.join();
       await vi.advanceTimersByTimeAsync(10);
 
-      mock.presenceState['opponent'] = [{
-        color: 'blue',
-        userId: OPPONENT_USER_ID,
-        presenceId: 'opponent-presence'
-      }];
+      mock.presenceState['opponent'] = [
+        {
+          color: 'blue',
+          userId: OPPONENT_USER_ID,
+          presenceId: 'opponent-presence'
+        }
+      ];
       mock.simulatePresenceSync();
 
       core.resign();
 
       expect(core.lifecycle).toBe('ended');
-      expect(core.gameResult).toEqual(expect.objectContaining({
-        status: 'resign',
-        winner: 'blue',
-        resultReason: 'resignation',
-        isLocalPlayerWinner: false
-      }));
-      expect(onGameEnd).toHaveBeenCalledWith(expect.objectContaining({
-        status: 'resign',
-        winner: 'blue'
-      }));
+      expect(core.gameResult).toEqual(
+        expect.objectContaining({
+          status: 'resign',
+          winner: 'blue',
+          resultReason: 'resignation',
+          isLocalPlayerWinner: false
+        })
+      );
+      expect(onGameEnd).toHaveBeenCalledWith(
+        expect.objectContaining({
+          status: 'resign',
+          winner: 'blue'
+        })
+      );
 
       // Should have sent resign message
       const sendCalls = (mock.mockChannel.send as ReturnType<typeof vi.fn>).mock.calls;
       const resignSends = sendCalls.filter(
-        (c: unknown[]) => (c[0] as Record<string, Record<string, unknown>>).payload?.event === 'resign'
+        (c: unknown[]) =>
+          (c[0] as Record<string, Record<string, unknown>>).payload?.event === 'resign'
       );
       expect(resignSends).toHaveLength(1);
     });
@@ -1291,26 +1348,32 @@ describe('OnlineGameSessionCore', () => {
       core.join();
       await vi.advanceTimersByTimeAsync(10);
 
-      mock.presenceState['opponent'] = [{
-        color: 'blue',
-        userId: OPPONENT_USER_ID,
-        presenceId: 'opponent-presence'
-      }];
+      mock.presenceState['opponent'] = [
+        {
+          color: 'blue',
+          userId: OPPONENT_USER_ID,
+          presenceId: 'opponent-presence'
+        }
+      ];
       mock.simulatePresenceSync();
 
       mock.simulateGameMessage({ event: 'resign' });
 
       expect(core.lifecycle).toBe('ended');
-      expect(core.gameResult).toEqual(expect.objectContaining({
-        status: 'resign',
-        winner: 'red',
-        resultReason: 'resignation',
-        isLocalPlayerWinner: true
-      }));
-      expect(onGameEnd).toHaveBeenCalledWith(expect.objectContaining({
-        status: 'resign',
-        winner: 'red'
-      }));
+      expect(core.gameResult).toEqual(
+        expect.objectContaining({
+          status: 'resign',
+          winner: 'red',
+          resultReason: 'resignation',
+          isLocalPlayerWinner: true
+        })
+      );
+      expect(onGameEnd).toHaveBeenCalledWith(
+        expect.objectContaining({
+          status: 'resign',
+          winner: 'red'
+        })
+      );
     });
 
     it('ignores resign message if already ended', async () => {
@@ -1319,11 +1382,13 @@ describe('OnlineGameSessionCore', () => {
       core.join();
       await vi.advanceTimersByTimeAsync(10);
 
-      mock.presenceState['opponent'] = [{
-        color: 'blue',
-        userId: OPPONENT_USER_ID,
-        presenceId: 'opponent-presence'
-      }];
+      mock.presenceState['opponent'] = [
+        {
+          color: 'blue',
+          userId: OPPONENT_USER_ID,
+          presenceId: 'opponent-presence'
+        }
+      ];
       mock.simulatePresenceSync();
 
       // First resign
@@ -1343,11 +1408,13 @@ describe('OnlineGameSessionCore', () => {
       core.join();
       await vi.advanceTimersByTimeAsync(10);
 
-      mock.presenceState['opponent'] = [{
-        color: 'blue',
-        userId: OPPONENT_USER_ID,
-        presenceId: 'opponent-presence'
-      }];
+      mock.presenceState['opponent'] = [
+        {
+          color: 'blue',
+          userId: OPPONENT_USER_ID,
+          presenceId: 'opponent-presence'
+        }
+      ];
       mock.simulatePresenceSync();
 
       const localMove = core.session.possibleMoves[0];
@@ -1356,25 +1423,33 @@ describe('OnlineGameSessionCore', () => {
 
       const statusSpy = vi.spyOn(core.session, 'status', 'get').mockReturnValue('checkmate');
       const winnerSpy = vi.spyOn(core.session, 'winner', 'get').mockReturnValue('r');
-      const commanderSpy = vi.spyOn(core.session.game, 'isCommanderCaptured').mockReturnValue(false);
+      const commanderSpy = vi
+        .spyOn(core.session.game, 'isCommanderCaptured')
+        .mockReturnValue(false);
       const checkmateSpy = vi.spyOn(core.session.game, 'isCheckmate').mockReturnValue(true);
       const stalemateSpy = vi.spyOn(core.session.game, 'isStalemate').mockReturnValue(false);
       const fiftySpy = vi.spyOn(core.session.game, 'isDrawByFiftyMoves').mockReturnValue(false);
-      const repetitionSpy = vi.spyOn(core.session.game, 'isThreefoldRepetition').mockReturnValue(false);
+      const repetitionSpy = vi
+        .spyOn(core.session.game, 'isThreefoldRepetition')
+        .mockReturnValue(false);
 
       boardConfig.movable.events.after({ square: localMove.from }, { square: localMove.to });
 
       expect(core.lifecycle).toBe('ended');
-      expect(core.gameResult).toEqual(expect.objectContaining({
-        status: 'checkmate',
-        winner: 'red',
-        resultReason: 'checkmate',
-        isLocalPlayerWinner: true
-      }));
-      expect(onGameEnd).toHaveBeenCalledWith(expect.objectContaining({
-        status: 'checkmate',
-        winner: 'red'
-      }));
+      expect(core.gameResult).toEqual(
+        expect.objectContaining({
+          status: 'checkmate',
+          winner: 'red',
+          resultReason: 'checkmate',
+          isLocalPlayerWinner: true
+        })
+      );
+      expect(onGameEnd).toHaveBeenCalledWith(
+        expect.objectContaining({
+          status: 'checkmate',
+          winner: 'red'
+        })
+      );
 
       statusSpy.mockRestore();
       winnerSpy.mockRestore();
@@ -1396,11 +1471,15 @@ describe('OnlineGameSessionCore', () => {
 
       const statusSpy = vi.spyOn(core.session, 'status', 'get').mockReturnValue('checkmate');
       const winnerSpy = vi.spyOn(core.session, 'winner', 'get').mockReturnValue('b');
-      const commanderSpy = vi.spyOn(core.session.game, 'isCommanderCaptured').mockReturnValue(false);
+      const commanderSpy = vi
+        .spyOn(core.session.game, 'isCommanderCaptured')
+        .mockReturnValue(false);
       const checkmateSpy = vi.spyOn(core.session.game, 'isCheckmate').mockReturnValue(true);
       const stalemateSpy = vi.spyOn(core.session.game, 'isStalemate').mockReturnValue(false);
       const fiftySpy = vi.spyOn(core.session.game, 'isDrawByFiftyMoves').mockReturnValue(false);
-      const repetitionSpy = vi.spyOn(core.session.game, 'isThreefoldRepetition').mockReturnValue(false);
+      const repetitionSpy = vi
+        .spyOn(core.session.game, 'isThreefoldRepetition')
+        .mockReturnValue(false);
 
       mock.simulateGameMessage({
         event: 'move',
@@ -1411,16 +1490,20 @@ describe('OnlineGameSessionCore', () => {
       });
 
       expect(core.lifecycle).toBe('ended');
-      expect(core.gameResult).toEqual(expect.objectContaining({
-        status: 'checkmate',
-        winner: 'blue',
-        resultReason: 'checkmate',
-        isLocalPlayerWinner: false
-      }));
-      expect(onGameEnd).toHaveBeenCalledWith(expect.objectContaining({
-        status: 'checkmate',
-        winner: 'blue'
-      }));
+      expect(core.gameResult).toEqual(
+        expect.objectContaining({
+          status: 'checkmate',
+          winner: 'blue',
+          resultReason: 'checkmate',
+          isLocalPlayerWinner: false
+        })
+      );
+      expect(onGameEnd).toHaveBeenCalledWith(
+        expect.objectContaining({
+          status: 'checkmate',
+          winner: 'blue'
+        })
+      );
 
       statusSpy.mockRestore();
       winnerSpy.mockRestore();
@@ -1437,11 +1520,13 @@ describe('OnlineGameSessionCore', () => {
       core.join();
       await vi.advanceTimersByTimeAsync(10);
 
-      mock.presenceState['opponent'] = [{
-        color: 'blue',
-        userId: OPPONENT_USER_ID,
-        presenceId: 'opponent-presence'
-      }];
+      mock.presenceState['opponent'] = [
+        {
+          color: 'blue',
+          userId: OPPONENT_USER_ID,
+          presenceId: 'opponent-presence'
+        }
+      ];
       mock.simulatePresenceSync();
 
       const localMove = core.session.possibleMoves[0];
@@ -1450,24 +1535,32 @@ describe('OnlineGameSessionCore', () => {
 
       const statusSpy = vi.spyOn(core.session, 'status', 'get').mockReturnValue('stalemate');
       const winnerSpy = vi.spyOn(core.session, 'winner', 'get').mockReturnValue(null);
-      const commanderSpy = vi.spyOn(core.session.game, 'isCommanderCaptured').mockReturnValue(false);
+      const commanderSpy = vi
+        .spyOn(core.session.game, 'isCommanderCaptured')
+        .mockReturnValue(false);
       const checkmateSpy = vi.spyOn(core.session.game, 'isCheckmate').mockReturnValue(false);
       const stalemateSpy = vi.spyOn(core.session.game, 'isStalemate').mockReturnValue(true);
       const fiftySpy = vi.spyOn(core.session.game, 'isDrawByFiftyMoves').mockReturnValue(false);
-      const repetitionSpy = vi.spyOn(core.session.game, 'isThreefoldRepetition').mockReturnValue(false);
+      const repetitionSpy = vi
+        .spyOn(core.session.game, 'isThreefoldRepetition')
+        .mockReturnValue(false);
 
       boardConfig.movable.events.after({ square: localMove.from }, { square: localMove.to });
 
       expect(core.lifecycle).toBe('ended');
-      expect(core.gameResult).toEqual(expect.objectContaining({
-        status: 'stalemate',
-        winner: null,
-        resultReason: 'stalemate'
-      }));
-      expect(onGameEnd).toHaveBeenCalledWith(expect.objectContaining({
-        status: 'stalemate',
-        winner: null
-      }));
+      expect(core.gameResult).toEqual(
+        expect.objectContaining({
+          status: 'stalemate',
+          winner: null,
+          resultReason: 'stalemate'
+        })
+      );
+      expect(onGameEnd).toHaveBeenCalledWith(
+        expect.objectContaining({
+          status: 'stalemate',
+          winner: null
+        })
+      );
 
       statusSpy.mockRestore();
       winnerSpy.mockRestore();
@@ -1484,11 +1577,13 @@ describe('OnlineGameSessionCore', () => {
       core.join();
       await vi.advanceTimersByTimeAsync(10);
 
-      mock.presenceState['opponent'] = [{
-        color: 'blue',
-        userId: OPPONENT_USER_ID,
-        presenceId: 'opponent-presence'
-      }];
+      mock.presenceState['opponent'] = [
+        {
+          color: 'blue',
+          userId: OPPONENT_USER_ID,
+          presenceId: 'opponent-presence'
+        }
+      ];
       mock.simulatePresenceSync();
 
       const localMove = core.session.possibleMoves[0];
@@ -1502,15 +1597,19 @@ describe('OnlineGameSessionCore', () => {
       boardConfig.movable.events.after({ square: localMove.from }, { square: localMove.to });
 
       expect(core.lifecycle).toBe('ended');
-      expect(core.gameResult).toEqual(expect.objectContaining({
-        status: 'checkmate',
-        winner: 'red',
-        resultReason: 'commander_captured'
-      }));
-      expect(onGameEnd).toHaveBeenCalledWith(expect.objectContaining({
-        status: 'checkmate',
-        resultReason: 'commander_captured'
-      }));
+      expect(core.gameResult).toEqual(
+        expect.objectContaining({
+          status: 'checkmate',
+          winner: 'red',
+          resultReason: 'commander_captured'
+        })
+      );
+      expect(onGameEnd).toHaveBeenCalledWith(
+        expect.objectContaining({
+          status: 'checkmate',
+          resultReason: 'commander_captured'
+        })
+      );
 
       statusSpy.mockRestore();
       winnerSpy.mockRestore();
@@ -1523,11 +1622,13 @@ describe('OnlineGameSessionCore', () => {
       core.join();
       await vi.advanceTimersByTimeAsync(10);
 
-      mock.presenceState['opponent'] = [{
-        color: 'blue',
-        userId: OPPONENT_USER_ID,
-        presenceId: 'opponent-presence'
-      }];
+      mock.presenceState['opponent'] = [
+        {
+          color: 'blue',
+          userId: OPPONENT_USER_ID,
+          presenceId: 'opponent-presence'
+        }
+      ];
       mock.simulatePresenceSync();
 
       const statusSpy = vi.spyOn(core.session, 'status', 'get').mockReturnValue('playing');
@@ -1550,11 +1651,13 @@ describe('OnlineGameSessionCore', () => {
       core.join();
       await vi.advanceTimersByTimeAsync(10);
 
-      mock.presenceState['opponent'] = [{
-        color: 'blue',
-        userId: OPPONENT_USER_ID,
-        presenceId: 'opponent-presence'
-      }];
+      mock.presenceState['opponent'] = [
+        {
+          color: 'blue',
+          userId: OPPONENT_USER_ID,
+          presenceId: 'opponent-presence'
+        }
+      ];
       mock.simulatePresenceSync();
 
       // Resign ends the game, which sets lifecycle to 'ended'
@@ -1571,11 +1674,13 @@ describe('OnlineGameSessionCore', () => {
       core.join();
       await vi.advanceTimersByTimeAsync(10);
 
-      mock.presenceState['opponent'] = [{
-        color: 'blue',
-        userId: OPPONENT_USER_ID,
-        presenceId: 'opponent-presence'
-      }];
+      mock.presenceState['opponent'] = [
+        {
+          color: 'blue',
+          userId: OPPONENT_USER_ID,
+          presenceId: 'opponent-presence'
+        }
+      ];
       mock.simulatePresenceSync();
 
       expect(core.gameResult).toBeNull();
@@ -1590,11 +1695,13 @@ describe('OnlineGameSessionCore', () => {
       core.join();
       await vi.advanceTimersByTimeAsync(10);
 
-      mock.presenceState['opponent'] = [{
-        color: 'blue',
-        userId: OPPONENT_USER_ID,
-        presenceId: 'opponent-presence'
-      }];
+      mock.presenceState['opponent'] = [
+        {
+          color: 'blue',
+          userId: OPPONENT_USER_ID,
+          presenceId: 'opponent-presence'
+        }
+      ];
       mock.simulatePresenceSync();
 
       // Should not throw
@@ -1611,11 +1718,13 @@ describe('OnlineGameSessionCore', () => {
       core.join();
       await vi.advanceTimersByTimeAsync(10);
 
-      mock.presenceState['opponent'] = [{
-        color: 'blue',
-        userId: OPPONENT_USER_ID,
-        presenceId: 'opponent-presence'
-      }];
+      mock.presenceState['opponent'] = [
+        {
+          color: 'blue',
+          userId: OPPONENT_USER_ID,
+          presenceId: 'opponent-presence'
+        }
+      ];
       mock.simulatePresenceSync();
 
       // Should not throw
@@ -1627,16 +1736,18 @@ describe('OnlineGameSessionCore', () => {
   });
 
   describe('clock timeout and claim victory', () => {
-    async function setupPlayingGame(callbacks: Record<string, Function> = {}) {
+    async function setupPlayingGame(callbacks: OnlineSessionCallbacks = {}) {
       core = new OnlineGameSessionCore(createDefaultConfig(mock.supabase), callbacks);
       core.join();
       await vi.advanceTimersByTimeAsync(10);
 
-      mock.presenceState['opponent'] = [{
-        color: 'blue',
-        userId: OPPONENT_USER_ID,
-        presenceId: 'opponent-presence'
-      }];
+      mock.presenceState['opponent'] = [
+        {
+          color: 'blue',
+          userId: OPPONENT_USER_ID,
+          presenceId: 'opponent-presence'
+        }
+      ];
       mock.simulatePresenceSync();
       return core;
     }
@@ -1688,22 +1799,27 @@ describe('OnlineGameSessionCore', () => {
       core.claimVictory();
 
       expect(core.lifecycle).toBe('ended');
-      expect(core.gameResult).toEqual(expect.objectContaining({
-        status: 'timeout',
-        winner: 'red',
-        resultReason: 'timeout',
-        isLocalPlayerWinner: true
-      }));
-      expect(onGameEnd).toHaveBeenCalledWith(expect.objectContaining({
-        status: 'timeout',
-        winner: 'red',
-        isLocalPlayerWinner: true
-      }));
+      expect(core.gameResult).toEqual(
+        expect.objectContaining({
+          status: 'timeout',
+          winner: 'red',
+          resultReason: 'timeout',
+          isLocalPlayerWinner: true
+        })
+      );
+      expect(onGameEnd).toHaveBeenCalledWith(
+        expect.objectContaining({
+          status: 'timeout',
+          winner: 'red',
+          isLocalPlayerWinner: true
+        })
+      );
 
       // Should have sent claim-victory message
       const sendCalls = (mock.mockChannel.send as ReturnType<typeof vi.fn>).mock.calls;
       const claimSends = sendCalls.filter(
-        (c: unknown[]) => (c[0] as Record<string, Record<string, unknown>>).payload?.event === 'claim-victory'
+        (c: unknown[]) =>
+          (c[0] as Record<string, Record<string, unknown>>).payload?.event === 'claim-victory'
       );
       expect(claimSends).toHaveLength(1);
     });
@@ -1743,17 +1859,21 @@ describe('OnlineGameSessionCore', () => {
       mock.simulateGameMessage({ event: 'claim-victory' });
 
       expect(core.lifecycle).toBe('ended');
-      expect(core.gameResult).toEqual(expect.objectContaining({
-        status: 'timeout',
-        winner: 'blue',
-        resultReason: 'timeout',
-        isLocalPlayerWinner: false
-      }));
-      expect(onGameEnd).toHaveBeenCalledWith(expect.objectContaining({
-        status: 'timeout',
-        winner: 'blue',
-        isLocalPlayerWinner: false
-      }));
+      expect(core.gameResult).toEqual(
+        expect.objectContaining({
+          status: 'timeout',
+          winner: 'blue',
+          resultReason: 'timeout',
+          isLocalPlayerWinner: false
+        })
+      );
+      expect(onGameEnd).toHaveBeenCalledWith(
+        expect.objectContaining({
+          status: 'timeout',
+          winner: 'blue',
+          isLocalPlayerWinner: false
+        })
+      );
     });
 
     it('ignores claim-victory message if local clock has not timed out', async () => {
@@ -1803,13 +1923,15 @@ describe('OnlineGameSessionCore', () => {
       expect(core.clock.status).toBe('timeout');
 
       const moveSendsBefore = (mock.mockChannel.send as ReturnType<typeof vi.fn>).mock.calls.filter(
-        (c: unknown[]) => (c[0] as Record<string, Record<string, unknown>>).payload?.event === 'move'
+        (c: unknown[]) =>
+          (c[0] as Record<string, Record<string, unknown>>).payload?.event === 'move'
       ).length;
 
       triggerLocalMove(core);
 
       const moveSendsAfter = (mock.mockChannel.send as ReturnType<typeof vi.fn>).mock.calls.filter(
-        (c: unknown[]) => (c[0] as Record<string, Record<string, unknown>>).payload?.event === 'move'
+        (c: unknown[]) =>
+          (c[0] as Record<string, Record<string, unknown>>).payload?.event === 'move'
       ).length;
 
       expect(moveSendsAfter).toBe(moveSendsBefore);
@@ -1878,9 +2000,11 @@ describe('OnlineGameSessionCore', () => {
       // We still ack to stop remote retries, but no state mutation should occur.
       const sendCalls = (mock.mockChannel.send as ReturnType<typeof vi.fn>).mock.calls;
       expect(sendCalls.length).toBe(sendCountBefore + 1);
-      expect(sendCalls.at(-1)?.[0]).toEqual(expect.objectContaining({
-        payload: expect.objectContaining({ event: 'ack', seq: 999 })
-      }));
+      expect(sendCalls.at(-1)?.[0]).toEqual(
+        expect.objectContaining({
+          payload: expect.objectContaining({ event: 'ack', seq: 999 })
+        })
+      );
     });
 
     it('writes PGN with time forfeit termination on timeout', async () => {
@@ -1918,16 +2042,20 @@ describe('OnlineGameSessionCore', () => {
 
       expect(core.opponentFlagged).toBe(false); // Should NOT be set
       expect(core.lifecycle).toBe('ended');
-      expect(core.gameResult).toEqual(expect.objectContaining({
-        status: 'draw',
-        winner: null,
-        resultReason: 'draw_by_timeout_with_pending_offer',
-        isLocalPlayerWinner: false
-      }));
-      expect(onGameEnd).toHaveBeenCalledWith(expect.objectContaining({
-        status: 'draw',
-        winner: null
-      }));
+      expect(core.gameResult).toEqual(
+        expect.objectContaining({
+          status: 'draw',
+          winner: null,
+          resultReason: 'draw_by_timeout_with_pending_offer',
+          isLocalPlayerWinner: false
+        })
+      );
+      expect(onGameEnd).toHaveBeenCalledWith(
+        expect.objectContaining({
+          status: 'draw',
+          winner: null
+        })
+      );
     });
 
     it('resets opponentFlagged on sync', async () => {
@@ -1993,20 +2121,26 @@ describe('OnlineGameSessionCore', () => {
   });
 
   describe('draw and rematch flows', () => {
-    async function setupPlayingGame(callbacks: ConstructorParameters<typeof OnlineGameSessionCore>[1] = {}) {
+    async function setupPlayingGame(
+      callbacks: ConstructorParameters<typeof OnlineGameSessionCore>[1] = {}
+    ) {
       core = new OnlineGameSessionCore(createDefaultConfig(mock.supabase), callbacks);
       core.join();
       await vi.advanceTimersByTimeAsync(10);
 
-      mock.presenceState['opponent'] = [{
-        color: 'blue',
-        userId: OPPONENT_USER_ID,
-        presenceId: 'opponent-presence'
-      }];
+      mock.presenceState['opponent'] = [
+        {
+          color: 'blue',
+          userId: OPPONENT_USER_ID,
+          presenceId: 'opponent-presence'
+        }
+      ];
       mock.simulatePresenceSync();
     }
 
-    async function setupEndedGame(callbacks: ConstructorParameters<typeof OnlineGameSessionCore>[1] = {}) {
+    async function setupEndedGame(
+      callbacks: ConstructorParameters<typeof OnlineGameSessionCore>[1] = {}
+    ) {
       await setupPlayingGame(callbacks);
       core.resign();
       await Promise.resolve();
@@ -2020,7 +2154,8 @@ describe('OnlineGameSessionCore', () => {
       expect(core.drawOfferSent).toBe(true);
       const sendCalls = (mock.mockChannel.send as ReturnType<typeof vi.fn>).mock.calls;
       const drawOffer = sendCalls.find(
-        (c: unknown[]) => (c[0] as Record<string, Record<string, unknown>>).payload?.event === 'draw-offer'
+        (c: unknown[]) =>
+          (c[0] as Record<string, Record<string, unknown>>).payload?.event === 'draw-offer'
       );
       expect(drawOffer).toBeDefined();
     });
@@ -2035,18 +2170,22 @@ describe('OnlineGameSessionCore', () => {
       await Promise.resolve();
 
       expect(core.lifecycle).toBe('ended');
-      expect(core.gameResult).toEqual(expect.objectContaining({
-        status: 'draw',
-        winner: null,
-        resultReason: 'draw_by_agreement'
-      }));
+      expect(core.gameResult).toEqual(
+        expect.objectContaining({
+          status: 'draw',
+          winner: null,
+          resultReason: 'draw_by_agreement'
+        })
+      );
 
       const updateValues = mock.getLastUpdateValues();
-      expect(updateValues).toEqual(expect.objectContaining({
-        status: 'draw',
-        winner: null,
-        result_reason: 'draw_by_agreement'
-      }));
+      expect(updateValues).toEqual(
+        expect.objectContaining({
+          status: 'draw',
+          winner: null,
+          result_reason: 'draw_by_agreement'
+        })
+      );
     });
 
     it('declineDraw clears received state and keeps gameplay running', async () => {
@@ -2061,7 +2200,8 @@ describe('OnlineGameSessionCore', () => {
       expect(core.drawOfferReceived).toBe(false);
       const sendCalls = (mock.mockChannel.send as ReturnType<typeof vi.fn>).mock.calls;
       const drawDecline = sendCalls.find(
-        (c: unknown[]) => (c[0] as Record<string, Record<string, unknown>>).payload?.event === 'draw-decline'
+        (c: unknown[]) =>
+          (c[0] as Record<string, Record<string, unknown>>).payload?.event === 'draw-decline'
       );
       expect(drawDecline).toBeDefined();
     });
@@ -2073,10 +2213,12 @@ describe('OnlineGameSessionCore', () => {
       mock.simulateGameMessage({ event: 'draw-offer' });
 
       expect(core.lifecycle).toBe('ended');
-      expect(core.gameResult).toEqual(expect.objectContaining({
-        status: 'draw',
-        resultReason: 'draw_by_agreement'
-      }));
+      expect(core.gameResult).toEqual(
+        expect.objectContaining({
+          status: 'draw',
+          resultReason: 'draw_by_agreement'
+        })
+      );
     });
 
     it('requestRematch sends rematch message after game end', async () => {
@@ -2087,7 +2229,8 @@ describe('OnlineGameSessionCore', () => {
       expect(core.rematchSent).toBe(true);
       const sendCalls = (mock.mockChannel.send as ReturnType<typeof vi.fn>).mock.calls;
       const rematchSend = sendCalls.find(
-        (c: unknown[]) => (c[0] as Record<string, Record<string, unknown>>).payload?.event === 'rematch'
+        (c: unknown[]) =>
+          (c[0] as Record<string, Record<string, unknown>>).payload?.event === 'rematch'
       );
       expect(rematchSend).toBeDefined();
     });
@@ -2107,10 +2250,13 @@ describe('OnlineGameSessionCore', () => {
 
       const sendCalls = (mock.mockChannel.send as ReturnType<typeof vi.fn>).mock.calls;
       const rematchAccept = sendCalls.find(
-        (c: unknown[]) => (c[0] as Record<string, Record<string, unknown>>).payload?.event === 'rematch-accept'
+        (c: unknown[]) =>
+          (c[0] as Record<string, Record<string, unknown>>).payload?.event === 'rematch-accept'
       );
       expect(rematchAccept).toBeDefined();
-      expect((rematchAccept?.[0] as Record<string, Record<string, unknown>>).payload?.newGameId).toBe('rematch-game-1');
+      expect(
+        (rematchAccept?.[0] as Record<string, Record<string, unknown>>).payload?.newGameId
+      ).toBe('rematch-game-1');
     });
 
     it('handles incoming rematch-accept by storing newGameId and firing callback', async () => {
@@ -2133,7 +2279,8 @@ describe('OnlineGameSessionCore', () => {
       expect(core.lifecycle).toBe('ended');
       const sendCalls = (mock.mockChannel.send as ReturnType<typeof vi.fn>).mock.calls;
       const abortSend = sendCalls.find(
-        (c: unknown[]) => (c[0] as Record<string, Record<string, unknown>>).payload?.event === 'abort'
+        (c: unknown[]) =>
+          (c[0] as Record<string, Record<string, unknown>>).payload?.event === 'abort'
       );
       expect(abortSend).toBeDefined();
     });
@@ -2145,11 +2292,13 @@ describe('OnlineGameSessionCore', () => {
       core.join();
       await vi.advanceTimersByTimeAsync(10);
 
-      mock.presenceState['opponent'] = [{
-        color: 'blue',
-        userId: OPPONENT_USER_ID,
-        presenceId: 'opponent-presence'
-      }];
+      mock.presenceState['opponent'] = [
+        {
+          color: 'blue',
+          userId: OPPONENT_USER_ID,
+          presenceId: 'opponent-presence'
+        }
+      ];
       mock.simulatePresenceSync();
 
       // Add at least one move so PGN includes move text and a clock annotation.
@@ -2185,15 +2334,20 @@ describe('OnlineGameSessionCore', () => {
     async function setupPlayingGame() {
       const onGameEnd = vi.fn();
       const onDispute = vi.fn();
-      core = new OnlineGameSessionCore(createDefaultConfig(mock.supabase), { onGameEnd, onDispute });
+      core = new OnlineGameSessionCore(createDefaultConfig(mock.supabase), {
+        onGameEnd,
+        onDispute
+      });
       core.join();
       await vi.advanceTimersByTimeAsync(10);
 
-      mock.presenceState['opponent'] = [{
-        color: 'blue',
-        userId: OPPONENT_USER_ID,
-        presenceId: 'opponent-presence'
-      }];
+      mock.presenceState['opponent'] = [
+        {
+          color: 'blue',
+          userId: OPPONENT_USER_ID,
+          presenceId: 'opponent-presence'
+        }
+      ];
       mock.simulatePresenceSync();
 
       return { onGameEnd, onDispute };
@@ -2212,23 +2366,29 @@ describe('OnlineGameSessionCore', () => {
       });
 
       expect(core.disputeActive).toBe(true);
-      expect(core.disputeInfo).toEqual(expect.objectContaining({
-        san: 'INVALID',
-        pgn: expect.any(String)
-      }));
+      expect(core.disputeInfo).toEqual(
+        expect.objectContaining({
+          san: 'INVALID',
+          pgn: expect.any(String)
+        })
+      );
       expect(core.clock.status).toBe('idle');
-      expect(onDispute).toHaveBeenCalledWith(expect.objectContaining({
-        san: 'INVALID',
-        pgn: expect.any(String)
-      }));
+      expect(onDispute).toHaveBeenCalledWith(
+        expect.objectContaining({
+          san: 'INVALID',
+          pgn: expect.any(String)
+        })
+      );
 
       // Should have broadcast dispute message
       const sendCalls = (mock.mockChannel.send as ReturnType<typeof vi.fn>).mock.calls;
       const disputeSends = sendCalls.filter(
-        (c: unknown[]) => (c[0] as Record<string, Record<string, unknown>>).payload?.event === 'dispute'
+        (c: unknown[]) =>
+          (c[0] as Record<string, Record<string, unknown>>).payload?.event === 'dispute'
       );
       expect(disputeSends).toHaveLength(1);
-      const disputePayload = (disputeSends[0][0] as Record<string, Record<string, unknown>>).payload;
+      const disputePayload = (disputeSends[0][0] as Record<string, Record<string, unknown>>)
+        .payload;
       expect(disputePayload.san).toBe('INVALID');
       expect(typeof disputePayload.pgn).toBe('string');
 
@@ -2270,26 +2430,32 @@ describe('OnlineGameSessionCore', () => {
 
       // Verify Supabase insert was called
       expect(mock.supabase.from).toHaveBeenCalledWith('disputes');
-      expect(mock.getLastInsertValues()).toEqual(expect.objectContaining({
-        game_id: 'test-game-id',
-        reporting_user_id: CURRENT_USER_ID,
-        move_san: 'BAD',
-        pgn_at_point: '1. e4',
-        classification: 'bug',
-        comment: 'engine issue'
-      }));
+      expect(mock.getLastInsertValues()).toEqual(
+        expect.objectContaining({
+          game_id: 'test-game-id',
+          reporting_user_id: CURRENT_USER_ID,
+          move_san: 'BAD',
+          pgn_at_point: '1. e4',
+          classification: 'bug',
+          comment: 'engine issue'
+        })
+      );
 
       expect(core.lifecycle).toBe('ended');
-      expect(core.gameResult).toEqual(expect.objectContaining({
-        status: 'dispute',
-        winner: null,
-        resultReason: 'dispute',
-        isLocalPlayerWinner: false
-      }));
-      expect(onGameEnd).toHaveBeenCalledWith(expect.objectContaining({
-        status: 'dispute',
-        winner: null
-      }));
+      expect(core.gameResult).toEqual(
+        expect.objectContaining({
+          status: 'dispute',
+          winner: null,
+          resultReason: 'dispute',
+          isLocalPlayerWinner: false
+        })
+      );
+      expect(onGameEnd).toHaveBeenCalledWith(
+        expect.objectContaining({
+          status: 'dispute',
+          winner: null
+        })
+      );
     });
 
     it('reportDispute (cheat) — inserts with classification=cheat and null comment', async () => {
@@ -2303,10 +2469,12 @@ describe('OnlineGameSessionCore', () => {
 
       await core.reportDispute('cheat');
 
-      expect(mock.getLastInsertValues()).toEqual(expect.objectContaining({
-        classification: 'cheat',
-        comment: null
-      }));
+      expect(mock.getLastInsertValues()).toEqual(
+        expect.objectContaining({
+          classification: 'cheat',
+          comment: null
+        })
+      );
     });
 
     it('reportDispute guard — does nothing if disputeActive is false', async () => {
@@ -2346,7 +2514,8 @@ describe('OnlineGameSessionCore', () => {
       expect(onDispute).toHaveBeenCalledTimes(1);
       const sendCalls = (mock.mockChannel.send as ReturnType<typeof vi.fn>).mock.calls;
       const disputeSends = sendCalls.filter(
-        (c: unknown[]) => (c[0] as Record<string, Record<string, unknown>>).payload?.event === 'dispute'
+        (c: unknown[]) =>
+          (c[0] as Record<string, Record<string, unknown>>).payload?.event === 'dispute'
       );
       expect(disputeSends).toHaveLength(1);
     });
@@ -2394,10 +2563,12 @@ describe('OnlineGameSessionCore', () => {
       await Promise.all([first, second]);
 
       expect(mock.getInsertCallCount()).toBe(1);
-      expect(mock.getLastInsertValues()).toEqual(expect.objectContaining({
-        classification: 'bug',
-        comment: 'first'
-      }));
+      expect(mock.getLastInsertValues()).toEqual(
+        expect.objectContaining({
+          classification: 'bug',
+          comment: 'first'
+        })
+      );
     });
 
     it('dispute lifecycle guard — no dispute raised when lifecycle !== playing', async () => {
