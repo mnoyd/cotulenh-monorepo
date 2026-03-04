@@ -34,6 +34,10 @@
     unsubscribeFromInvitations,
     onInvitationRealtimeEvent
   } from '$lib/invitations/realtime.svelte';
+  import {
+    startLearnProgressSync,
+    stopLearnProgressSync
+  } from '$lib/learn/learn-progress-sync.svelte';
   import type { InvitationRealtimeEvent } from '$lib/invitations/realtime.svelte';
   import { sanitizeName } from '$lib/invitations/queries';
   import MatchInvitationToast from '$lib/components/MatchInvitationToast.svelte';
@@ -84,17 +88,19 @@
     }
   });
 
-  // Join/leave lobby based on auth state (AC5, AC6)
+  // Join/leave lobby and sync learn progress based on auth state (AC5, AC6)
   $effect(() => {
     if (browser && isAuthenticated) {
       const user = $page.data.user;
       if (user) {
         joinLobby($page.data.supabase, user.id);
         subscribeToInvitations($page.data.supabase, user.id);
+        startLearnProgressSync($page.data.supabase, user.id);
       }
     } else if (browser && !isAuthenticated) {
       leaveLobby();
       unsubscribeFromInvitations();
+      stopLearnProgressSync();
     }
   });
 
