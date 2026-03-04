@@ -150,12 +150,14 @@
 
   const themeNameKeys: Record<ThemeId, TranslationKey> = {
     'modern-warfare': 'settings.theme.modernWarfare.name',
+    'desert-ops': 'settings.theme.desertOps.name',
     classic: 'settings.theme.classic.name',
     forest: 'settings.theme.forest.name'
   };
 
   const themeDescriptionKeys: Record<ThemeId, TranslationKey> = {
     'modern-warfare': 'settings.theme.modernWarfare.description',
+    'desert-ops': 'settings.theme.desertOps.description',
     classic: 'settings.theme.classic.description',
     forest: 'settings.theme.forest.description'
   };

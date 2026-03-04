@@ -48,11 +48,18 @@ function createMockSupabase() {
   };
 
   return {
-    supabase: supabase as never,
+    supabase,
     mockChannel,
     registrations,
     getSubscribeCallback: () => subscribeCallback
   };
+}
+
+function subscribeForTest(supabase: ReturnType<typeof createMockSupabase>['supabase']) {
+  subscribeToInvitations(
+    supabase as unknown as Parameters<typeof subscribeToInvitations>[0],
+    'user-1'
+  );
 }
 
 describe('realtime-core', () => {
@@ -65,14 +72,14 @@ describe('realtime-core', () => {
   describe('subscribeToInvitations', () => {
     it('creates a channel with user-specific name', () => {
       const { supabase } = createMockSupabase();
-      subscribeToInvitations(supabase, 'user-1');
+      subscribeForTest(supabase);
 
       expect(supabase.channel).toHaveBeenCalledWith('user:user-1:invitations');
     });
 
     it('registers INSERT, UPDATE, and DELETE handlers', () => {
       const { supabase, registrations } = createMockSupabase();
-      subscribeToInvitations(supabase, 'user-1');
+      subscribeForTest(supabase);
 
       expect(registrations).toHaveLength(3);
       expect(registrations[0].event).toBe('INSERT');
@@ -85,15 +92,15 @@ describe('realtime-core', () => {
 
     it('does not create duplicate subscription if already subscribed', () => {
       const { supabase } = createMockSupabase();
-      subscribeToInvitations(supabase, 'user-1');
-      subscribeToInvitations(supabase, 'user-1');
+      subscribeForTest(supabase);
+      subscribeForTest(supabase);
 
       expect(supabase.channel).toHaveBeenCalledTimes(1);
     });
 
     it('calls subscribe on the channel', () => {
       const { supabase, mockChannel } = createMockSupabase();
-      subscribeToInvitations(supabase, 'user-1');
+      subscribeForTest(supabase);
 
       expect(mockChannel.subscribe).toHaveBeenCalledTimes(1);
     });
@@ -103,7 +110,7 @@ describe('realtime-core', () => {
     it('fires "received" event on INSERT', () => {
       const { supabase, registrations } = createMockSupabase();
       const events: InvitationRealtimeEvent[] = [];
-      subscribeToInvitations(supabase, 'user-1');
+      subscribeForTest(supabase);
       onInvitationEvent((e) => events.push(e));
 
       // Simulate INSERT
@@ -130,7 +137,7 @@ describe('realtime-core', () => {
     it('fires "statusChanged" event on UPDATE', () => {
       const { supabase, registrations } = createMockSupabase();
       const events: InvitationRealtimeEvent[] = [];
-      subscribeToInvitations(supabase, 'user-1');
+      subscribeForTest(supabase);
       onInvitationEvent((e) => events.push(e));
 
       // Simulate UPDATE
@@ -152,7 +159,7 @@ describe('realtime-core', () => {
     it('fires "deleted" event on DELETE', () => {
       const { supabase, registrations } = createMockSupabase();
       const events: InvitationRealtimeEvent[] = [];
-      subscribeToInvitations(supabase, 'user-1');
+      subscribeForTest(supabase);
       onInvitationEvent((e) => events.push(e));
 
       // Simulate DELETE
@@ -171,7 +178,7 @@ describe('realtime-core', () => {
       const { supabase, registrations } = createMockSupabase();
       const events1: InvitationRealtimeEvent[] = [];
       const events2: InvitationRealtimeEvent[] = [];
-      subscribeToInvitations(supabase, 'user-1');
+      subscribeForTest(supabase);
       onInvitationEvent((e) => events1.push(e));
       onInvitationEvent((e) => events2.push(e));
 
@@ -194,7 +201,7 @@ describe('realtime-core', () => {
     it('unsubscribe function removes callback', () => {
       const { supabase, registrations } = createMockSupabase();
       const events: InvitationRealtimeEvent[] = [];
-      subscribeToInvitations(supabase, 'user-1');
+      subscribeForTest(supabase);
       const unsub = onInvitationEvent((e) => events.push(e));
 
       // Unsubscribe
@@ -216,7 +223,7 @@ describe('realtime-core', () => {
     it('state change callback is called on events', () => {
       const { supabase, registrations } = createMockSupabase();
       const stateCb = vi.fn();
-      subscribeToInvitations(supabase, 'user-1');
+      subscribeForTest(supabase);
       _setRealtimeStateCallback(stateCb);
 
       registrations[0].handler({
@@ -236,7 +243,7 @@ describe('realtime-core', () => {
   describe('unsubscribeFromInvitations', () => {
     it('calls unsubscribe on the channel', () => {
       const { supabase, mockChannel } = createMockSupabase();
-      subscribeToInvitations(supabase, 'user-1');
+      subscribeForTest(supabase);
       unsubscribeFromInvitations();
 
       expect(mockChannel.unsubscribe).toHaveBeenCalledTimes(1);
@@ -245,14 +252,14 @@ describe('realtime-core', () => {
     it('clears callbacks on unsubscribe', () => {
       const { supabase } = createMockSupabase();
       const events: InvitationRealtimeEvent[] = [];
-      subscribeToInvitations(supabase, 'user-1');
+      subscribeForTest(supabase);
       onInvitationEvent((e) => events.push(e));
 
       unsubscribeFromInvitations();
 
       // Re-subscribe to get fresh channel (simulates re-creation)
       const { supabase: supabase2, registrations: reg2 } = createMockSupabase();
-      subscribeToInvitations(supabase2, 'user-1');
+      subscribeForTest(supabase2);
 
       // Old callback should have been cleared
       reg2[0].handler({
@@ -270,11 +277,11 @@ describe('realtime-core', () => {
 
     it('allows re-subscribing after unsubscribe', () => {
       const { supabase } = createMockSupabase();
-      subscribeToInvitations(supabase, 'user-1');
+      subscribeForTest(supabase);
       unsubscribeFromInvitations();
 
       const { supabase: supabase2 } = createMockSupabase();
-      subscribeToInvitations(supabase2, 'user-1');
+      subscribeForTest(supabase2);
 
       expect(supabase2.channel).toHaveBeenCalledTimes(1);
     });

@@ -1,4 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
+import type { OrigMove } from '@cotulenh/board';
 
 // Mock dependencies that require Svelte component preprocessing
 vi.mock('svelte-sonner', () => ({
@@ -14,7 +15,7 @@ vi.mock('@cotulenh/common', async (importOriginal) => {
     perfTimeSync: (_label: string, fn: () => unknown) => fn(),
     perfStartMoveFlow: () => {},
     perfMarkMoveFlow: () => {},
-    perfEndMoveFlow: () => {},
+    perfEndMoveFlow: () => {}
   };
 });
 
@@ -65,9 +66,12 @@ describe('GameSession', () => {
       const firstMove = moves[0];
 
       const boardConfig = session.boardConfig;
-      boardConfig.movable.events.after(
-        { square: firstMove.from },
-        { square: firstMove.to }
+      const after = boardConfig.movable?.events?.after;
+      expect(after).toBeDefined();
+      after?.(
+        { square: firstMove.from as string } as OrigMove,
+        { square: firstMove.to as string },
+        {}
       );
 
       expect(onMoveSpy).toHaveBeenCalledTimes(1);

@@ -5,14 +5,12 @@ vi.mock('$lib/invitations/queries', () => ({
   acceptInviteLink: vi.fn()
 }));
 
-import {
-  getInvitationByCode,
-  acceptInviteLink
-} from '$lib/invitations/queries';
+import { getInvitationByCode, acceptInviteLink } from '$lib/invitations/queries';
 import { load, actions } from './+page.server';
 
 const mockGetInvitationByCode = vi.mocked(getInvitationByCode);
 const mockAcceptInviteLink = vi.mocked(acceptInviteLink);
+type InviteLoadResult = Exclude<Awaited<ReturnType<typeof load>>, void>;
 
 function createMockLocals(user: { id: string } | null = null) {
   return {
@@ -37,10 +35,10 @@ describe('invite page load', () => {
     };
     mockGetInvitationByCode.mockResolvedValue(invitation);
 
-    const result = await load({
+    const result = (await load({
       params: { code: 'abc12345' },
       locals: createMockLocals({ id: 'user-acceptor' })
-    } as never);
+    } as never)) as InviteLoadResult;
 
     expect(result.invitation).toEqual(invitation);
     expect(result.isAuthenticated).toBe(true);
@@ -58,10 +56,10 @@ describe('invite page load', () => {
     };
     mockGetInvitationByCode.mockResolvedValue(invitation);
 
-    const result = await load({
+    const result = (await load({
       params: { code: 'abc12345' },
       locals: createMockLocals(null)
-    } as never);
+    } as never)) as InviteLoadResult;
 
     expect(result.invitation).toEqual(invitation);
     expect(result.isAuthenticated).toBe(false);
@@ -71,10 +69,10 @@ describe('invite page load', () => {
   it('returns null invitation for invalid code', async () => {
     mockGetInvitationByCode.mockResolvedValue(null);
 
-    const result = await load({
+    const result = (await load({
       params: { code: 'notfound' },
       locals: createMockLocals(null)
-    } as never);
+    } as never)) as InviteLoadResult;
 
     expect(result.invitation).toBeNull();
   });
@@ -90,10 +88,10 @@ describe('invite page load', () => {
     };
     mockGetInvitationByCode.mockResolvedValue(invitation);
 
-    const result = await load({
+    const result = (await load({
       params: { code: 'abc12345' },
       locals: createMockLocals({ id: 'user-sender' })
-    } as never);
+    } as never)) as InviteLoadResult;
 
     expect(result.isOwnInvitation).toBe(true);
   });

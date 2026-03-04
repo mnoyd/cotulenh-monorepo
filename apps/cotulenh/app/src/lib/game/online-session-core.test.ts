@@ -39,6 +39,7 @@ import {
   type OnlineSessionConfig
 } from './online-session-core';
 import type { RealtimeChannel } from '@supabase/supabase-js';
+import type { OrigMove } from '@cotulenh/board';
 
 const CURRENT_USER_ID = 'user-red';
 const OPPONENT_USER_ID = 'user-blue';
@@ -134,11 +135,7 @@ function createMockSupabase() {
   };
 
   return {
-    supabase: supabase as unknown as Parameters<
-      (typeof OnlineGameSessionCore)['prototype']['join']
-    > extends []
-      ? never
-      : typeof supabase,
+    supabase,
     mockChannel,
     channelHandlers,
     presenceState,
@@ -206,6 +203,10 @@ function createDefaultConfig(supabase: unknown): OnlineSessionConfig {
   };
 }
 
+function toOrigMove(square: string): OrigMove {
+  return { square } as OrigMove;
+}
+
 // Helper: trigger a local move through GameSession's board config callback,
 // which fires onMove(san) → OnlineGameSessionCore.#handleLocalMove → sendGameMessage.
 function triggerLocalMove(session: OnlineGameSessionCore) {
@@ -213,7 +214,9 @@ function triggerLocalMove(session: OnlineGameSessionCore) {
   expect(moves.length).toBeGreaterThan(0);
   const move = moves[0];
   const boardConfig = session.session.boardConfig;
-  boardConfig.movable.events.after({ square: move.from }, { square: move.to });
+  const after = boardConfig.movable?.events?.after;
+  expect(after).toBeDefined();
+  after?.(toOrigMove(move.from as string), { square: move.to as string }, {});
   return move;
 }
 
@@ -460,7 +463,9 @@ describe('OnlineGameSessionCore', () => {
       const moves = core.session.possibleMoves;
       if (moves.length > 0) {
         const boardConfig = core.session.boardConfig;
-        boardConfig.movable.events.after({ square: moves[0].from }, { square: moves[0].to });
+        const after = boardConfig.movable?.events?.after;
+        expect(after).toBeDefined();
+        after?.(toOrigMove(moves[0].from as string), { square: moves[0].to as string }, {});
       }
 
       expect(mock.mockChannel.send).not.toHaveBeenCalled();
@@ -922,8 +927,9 @@ describe('OnlineGameSessionCore', () => {
 
       // Verify it was an ack
       const lastCall = (mock.mockChannel.send as ReturnType<typeof vi.fn>).mock.calls.at(-1);
-      expect(lastCall[0].payload.event).toBe('ack');
-      expect(lastCall[0].payload.seq).toBe(1);
+      expect(lastCall).toBeDefined();
+      expect(lastCall![0].payload.event).toBe('ack');
+      expect(lastCall![0].payload.seq).toBe(1);
     });
   });
 
@@ -1433,7 +1439,9 @@ describe('OnlineGameSessionCore', () => {
         .spyOn(core.session.game, 'isThreefoldRepetition')
         .mockReturnValue(false);
 
-      boardConfig.movable.events.after({ square: localMove.from }, { square: localMove.to });
+      const after = boardConfig.movable?.events?.after;
+      expect(after).toBeDefined();
+      after?.(toOrigMove(localMove.from as string), { square: localMove.to as string }, {});
 
       expect(core.lifecycle).toBe('ended');
       expect(core.gameResult).toEqual(
@@ -1545,7 +1553,9 @@ describe('OnlineGameSessionCore', () => {
         .spyOn(core.session.game, 'isThreefoldRepetition')
         .mockReturnValue(false);
 
-      boardConfig.movable.events.after({ square: localMove.from }, { square: localMove.to });
+      const after = boardConfig.movable?.events?.after;
+      expect(after).toBeDefined();
+      after?.(toOrigMove(localMove.from as string), { square: localMove.to as string }, {});
 
       expect(core.lifecycle).toBe('ended');
       expect(core.gameResult).toEqual(
@@ -1594,7 +1604,9 @@ describe('OnlineGameSessionCore', () => {
       const winnerSpy = vi.spyOn(core.session, 'winner', 'get').mockReturnValue('r');
       const commanderSpy = vi.spyOn(core.session.game, 'isCommanderCaptured').mockReturnValue(true);
 
-      boardConfig.movable.events.after({ square: localMove.from }, { square: localMove.to });
+      const after = boardConfig.movable?.events?.after;
+      expect(after).toBeDefined();
+      after?.(toOrigMove(localMove.from as string), { square: localMove.to as string }, {});
 
       expect(core.lifecycle).toBe('ended');
       expect(core.gameResult).toEqual(
