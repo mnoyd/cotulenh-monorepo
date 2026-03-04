@@ -17,7 +17,18 @@ import {
 /** Build a chain for delete/insert actions where single() is the terminal */
 function actionChain(singleResult: unknown) {
   const chain: Record<string, unknown> = {};
-  for (const m of ['insert', 'delete', 'update', 'eq', 'gt', 'is', 'neq', 'select', 'limit', 'order']) {
+  for (const m of [
+    'insert',
+    'delete',
+    'update',
+    'eq',
+    'gt',
+    'is',
+    'neq',
+    'select',
+    'limit',
+    'order'
+  ]) {
     chain[m] = vi.fn().mockReturnValue(chain);
   }
   chain.single = vi.fn().mockResolvedValue(singleResult);
@@ -460,7 +471,11 @@ describe('acceptInvitation', () => {
       if (callCount === 1) {
         // update invitation
         return actionChain({
-          data: { id: 'inv-1', from_user: 'user-2', game_config: { timeMinutes: 5, incrementSeconds: 0 } },
+          data: {
+            id: 'inv-1',
+            from_user: 'user-2',
+            game_config: { timeMinutes: 5, incrementSeconds: 0 }
+          },
           error: null
         });
       }
@@ -495,7 +510,11 @@ describe('acceptInvitation', () => {
       if (callCount === 1) {
         // update invitation succeeds
         return actionChain({
-          data: { id: 'inv-1', from_user: 'user-2', game_config: { timeMinutes: 5, incrementSeconds: 0 } },
+          data: {
+            id: 'inv-1',
+            from_user: 'user-2',
+            game_config: { timeMinutes: 5, incrementSeconds: 0 }
+          },
           error: null
         });
       }
@@ -679,7 +698,11 @@ describe('acceptInviteLink', () => {
       if (callCount === 1) {
         // claim step
         return actionChain({
-          data: { id: 'inv-1', from_user: 'user-sender', game_config: { timeMinutes: 5, incrementSeconds: 0 } },
+          data: {
+            id: 'inv-1',
+            from_user: 'user-sender',
+            game_config: { timeMinutes: 5, incrementSeconds: 0 }
+          },
           error: null
         });
       }
@@ -734,7 +757,11 @@ describe('acceptInviteLink', () => {
       if (callCount === 1) {
         // claim succeeds
         return actionChain({
-          data: { id: 'inv-1', from_user: 'user-sender', game_config: { timeMinutes: 5, incrementSeconds: 0 } },
+          data: {
+            id: 'inv-1',
+            from_user: 'user-sender',
+            game_config: { timeMinutes: 5, incrementSeconds: 0 }
+          },
           error: null
         });
       }
@@ -767,7 +794,11 @@ describe('acceptInviteLink', () => {
       if (callCount === 1) {
         // claim succeeds
         return actionChain({
-          data: { id: 'inv-1', from_user: 'user-sender', game_config: { timeMinutes: 5, incrementSeconds: 0 } },
+          data: {
+            id: 'inv-1',
+            from_user: 'user-sender',
+            game_config: { timeMinutes: 5, incrementSeconds: 0 }
+          },
           error: null
         });
       }

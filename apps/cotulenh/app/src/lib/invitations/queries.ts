@@ -241,10 +241,7 @@ export async function acceptInvitation(
   if (insertError || !game) {
     // Rollback invitation status on game creation failure
     logger.error(insertError as Error, 'Failed to create game after accepting invitation');
-    await supabase
-      .from('game_invitations')
-      .update({ status: 'pending' })
-      .eq('id', invitationId);
+    await supabase.from('game_invitations').update({ status: 'pending' }).eq('id', invitationId);
     return { success: false, error: 'gameCreationFailed' };
   }
 
@@ -384,10 +381,7 @@ export async function acceptInviteLink(
 
   if (acceptError) {
     // Rollback claim
-    await supabase
-      .from('game_invitations')
-      .update({ to_user: null })
-      .eq('id', claimed.id);
+    await supabase.from('game_invitations').update({ to_user: null }).eq('id', claimed.id);
     return { success: false, error: 'acceptFailed' };
   }
 
@@ -446,6 +440,9 @@ export async function createAutoFriendship(
   if (!error && data === true) return true;
 
   // Unexpected error — log but don't throw (friendship is non-blocking side effect)
-  logger.error(error ?? new Error('create_or_accept_friendship returned false'), 'createAutoFriendship failed');
+  logger.error(
+    error ?? new Error('create_or_accept_friendship returned false'),
+    'createAutoFriendship failed'
+  );
   return false;
 }

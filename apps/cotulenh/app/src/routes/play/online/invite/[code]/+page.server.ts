@@ -1,9 +1,6 @@
 import { fail, redirect } from '@sveltejs/kit';
 import { logger } from '@cotulenh/common';
-import {
-  getInvitationByCode,
-  acceptInviteLink
-} from '$lib/invitations/queries';
+import { getInvitationByCode, acceptInviteLink } from '$lib/invitations/queries';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ params, locals }) => {
@@ -31,10 +28,7 @@ export const actions: Actions = {
     const result = await acceptInviteLink(supabase, params.code, user.id);
 
     if (!result.success) {
-      logger.error(
-        new Error(result.error ?? 'Unknown'),
-        'Failed to accept invite link'
-      );
+      logger.error(new Error(result.error ?? 'Unknown'), 'Failed to accept invite link');
       return fail(400, {
         errors: { form: result.error ?? 'acceptFailed' },
         action: 'acceptInviteLink' as const

@@ -110,10 +110,7 @@ export function isGameMessage(value: unknown): value is GameMessage {
  * @param channel - A subscribed Supabase RealtimeChannel
  * @param msg - The GameMessage to send
  */
-export async function sendGameMessage(
-  channel: RealtimeChannel,
-  msg: GameMessage
-): Promise<void> {
+export async function sendGameMessage(channel: RealtimeChannel, msg: GameMessage): Promise<void> {
   try {
     const result = await channel.send({
       type: 'broadcast',

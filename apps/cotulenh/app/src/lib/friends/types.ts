@@ -1,6 +1,11 @@
 export type FriendshipStatus = 'pending' | 'accepted' | 'blocked';
 
-export type RelationshipStatus = 'none' | 'pending_sent' | 'pending_received' | 'accepted' | 'blocked';
+export type RelationshipStatus =
+  | 'none'
+  | 'pending_sent'
+  | 'pending_received'
+  | 'accepted'
+  | 'blocked';
 
 export interface FriendshipRow {
   id: string;

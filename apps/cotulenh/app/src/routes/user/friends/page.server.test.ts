@@ -55,9 +55,7 @@ describe('load', () => {
   });
 
   it('returns friends list for authenticated user', async () => {
-    const friends = [
-      { friendshipId: 'f-1', userId: 'user-2', displayName: 'Player Two' }
-    ];
+    const friends = [{ friendshipId: 'f-1', userId: 'user-2', displayName: 'Player Two' }];
     const incomingRequests = [
       {
         friendshipId: 'f-2',

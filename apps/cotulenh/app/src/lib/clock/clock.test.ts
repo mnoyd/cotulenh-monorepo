@@ -1,5 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { ChessClockState, formatClockTime, parseTimeControl, type ClockConfig } from './clock.svelte';
+import {
+  ChessClockState,
+  formatClockTime,
+  parseTimeControl,
+  type ClockConfig
+} from './clock.svelte';
 
 const DEFAULT_CONFIG: ClockConfig = {
   red: { initialTime: 300_000, increment: 2_000 },

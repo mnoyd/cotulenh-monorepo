@@ -23,9 +23,7 @@ describe('game page load', () => {
         params: { gameId: 'game-1' },
         locals
       } as never)
-    ).rejects.toEqual(
-      expect.objectContaining({ status: 303, location: '/auth/login' })
-    );
+    ).rejects.toEqual(expect.objectContaining({ status: 303, location: '/auth/login' }));
   });
 
   it('returns 404 when game not found', async () => {
@@ -42,9 +40,7 @@ describe('game page load', () => {
         params: { gameId: 'nonexistent' },
         locals
       } as never)
-    ).rejects.toEqual(
-      expect.objectContaining({ status: 404 })
-    );
+    ).rejects.toEqual(expect.objectContaining({ status: 404 }));
   });
 
   it('returns 403 when user is not a player', async () => {
@@ -71,9 +67,7 @@ describe('game page load', () => {
         params: { gameId: 'game-1' },
         locals
       } as never)
-    ).rejects.toEqual(
-      expect.objectContaining({ status: 403 })
-    );
+    ).rejects.toEqual(expect.objectContaining({ status: 403 }));
   });
 
   it('returns game data for red player', async () => {
@@ -113,10 +107,10 @@ describe('game page load', () => {
       return chain;
     });
 
-    const result = await load({
+    const result = (await load({
       params: { gameId: 'game-1' },
       locals
-    } as never) as {
+    } as never)) as {
       game: { id: string; status: string };
       currentUserId: string;
       playerColor: string;
@@ -166,10 +160,14 @@ describe('game page load', () => {
       return chain;
     });
 
-    const result = await load({
+    const result = (await load({
       params: { gameId: 'game-1' },
       locals
-    } as never) as { currentUserId: string; playerColor: string; opponent: { id: string; displayName: string } };
+    } as never)) as {
+      currentUserId: string;
+      playerColor: string;
+      opponent: { id: string; displayName: string };
+    };
 
     expect(result.currentUserId).toBe('user-2');
     expect(result.playerColor).toBe('blue');

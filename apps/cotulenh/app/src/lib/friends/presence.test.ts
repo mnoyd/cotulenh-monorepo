@@ -1,5 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { joinLobby, leaveLobby, getOnlineUsers, isUserOnline, onPresenceChange, getLobbyConnected } from './presence-core';
+import {
+  joinLobby,
+  leaveLobby,
+  getOnlineUsers,
+  isUserOnline,
+  onPresenceChange,
+  getLobbyConnected
+} from './presence-core';
 
 // Mock @cotulenh/common logger
 vi.mock('@cotulenh/common', () => ({
@@ -12,12 +19,16 @@ function createMockChannel() {
   let presenceState: Record<string, unknown[]> = {};
 
   const channel = {
-    on: vi.fn().mockImplementation((_type: string, opts: { event: string }, handler: (...args: unknown[]) => void) => {
-      const event = opts.event;
-      if (!handlers[event]) handlers[event] = [];
-      handlers[event].push(handler);
-      return channel;
-    }),
+    on: vi
+      .fn()
+      .mockImplementation(
+        (_type: string, opts: { event: string }, handler: (...args: unknown[]) => void) => {
+          const event = opts.event;
+          if (!handlers[event]) handlers[event] = [];
+          handlers[event].push(handler);
+          return channel;
+        }
+      ),
     subscribe: vi.fn().mockImplementation((cb: (status: string) => void) => {
       subscribeCallback = cb;
       return channel;
@@ -79,9 +90,7 @@ describe('presence-core', () => {
       joinLobby(supabase as any, 'user-1');
       await channel._simulateSubscribed();
 
-      expect(channel.track).toHaveBeenCalledWith(
-        expect.objectContaining({ user_id: 'user-1' })
-      );
+      expect(channel.track).toHaveBeenCalledWith(expect.objectContaining({ user_id: 'user-1' }));
     });
 
     it('does not create duplicate subscriptions', () => {
@@ -289,10 +298,7 @@ describe('presence-core', () => {
         firstChannel.track = vi.fn().mockRejectedValue(new Error('track failed'));
         const secondChannel = createMockChannel();
         const supabase = {
-          channel: vi
-            .fn()
-            .mockReturnValueOnce(firstChannel)
-            .mockReturnValueOnce(secondChannel)
+          channel: vi.fn().mockReturnValueOnce(firstChannel).mockReturnValueOnce(secondChannel)
         };
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any

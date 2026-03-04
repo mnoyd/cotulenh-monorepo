@@ -172,7 +172,8 @@ describe('registration form action', () => {
       password: 'password123',
       options: {
         data: { display_name: 'Commander' },
-        emailRedirectTo: 'http://localhost:5173/auth/callback?next=%2Fplay%2Fonline%2Finvite%2Fabc12345'
+        emailRedirectTo:
+          'http://localhost:5173/auth/callback?next=%2Fplay%2Fonline%2Finvite%2Fabc12345'
       }
     });
   });

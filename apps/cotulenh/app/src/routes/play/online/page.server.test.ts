@@ -104,9 +104,7 @@ describe('load', () => {
       load({
         locals: createMockLocals(null)
       } as never)
-    ).rejects.toEqual(
-      expect.objectContaining({ status: 303, location: '/auth/login' })
-    );
+    ).rejects.toEqual(expect.objectContaining({ status: 303, location: '/auth/login' }));
   });
 });
 
@@ -186,12 +184,10 @@ describe('actions.sendInvitation', () => {
     const data = result as { success: boolean; action: string };
     expect(data.success).toBe(true);
     expect(data.action).toBe('sendInvitation');
-    expect(mockSendInvitation).toHaveBeenCalledWith(
-      expect.anything(),
-      'user-1',
-      'user-2',
-      { timeMinutes: 5, incrementSeconds: 0 }
-    );
+    expect(mockSendInvitation).toHaveBeenCalledWith(expect.anything(), 'user-1', 'user-2', {
+      timeMinutes: 5,
+      incrementSeconds: 0
+    });
   });
 
   it('returns 400 when send fails (already invited)', async () => {
@@ -424,11 +420,10 @@ describe('actions.createShareableInvitation', () => {
     expect(data.success).toBe(true);
     expect(data.action).toBe('createShareableInvitation');
     expect(data.inviteCode).toBe('link1234');
-    expect(mockCreateShareableInvitation).toHaveBeenCalledWith(
-      expect.anything(),
-      'user-1',
-      { timeMinutes: 10, incrementSeconds: 5 }
-    );
+    expect(mockCreateShareableInvitation).toHaveBeenCalledWith(expect.anything(), 'user-1', {
+      timeMinutes: 10,
+      incrementSeconds: 5
+    });
   });
 
   it('returns 400 when creation fails', async () => {

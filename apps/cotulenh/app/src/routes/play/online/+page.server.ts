@@ -198,10 +198,7 @@ export const actions: Actions = {
     const result = await createShareableInvitation(supabase, user.id, gameConfig);
 
     if (!result.success) {
-      logger.error(
-        new Error(result.error ?? 'Unknown'),
-        'Failed to create shareable invitation'
-      );
+      logger.error(new Error(result.error ?? 'Unknown'), 'Failed to create shareable invitation');
       return fail(400, {
         errors: { form: result.error ?? 'createFailed' },
         action: 'createShareableInvitation' as const

@@ -1,10 +1,5 @@
 import { describe, it, expect, vi, beforeEach, expectTypeOf } from 'vitest';
-import {
-  sendGameMessage,
-  onGameMessage,
-  GAME_MESSAGE_EVENT,
-  type GameMessage
-} from './messages';
+import { sendGameMessage, onGameMessage, GAME_MESSAGE_EVENT, type GameMessage } from './messages';
 
 vi.mock('@cotulenh/common', () => ({
   logger: { error: vi.fn(), info: vi.fn() }

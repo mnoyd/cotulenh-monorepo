@@ -69,15 +69,33 @@ export class OnlineGameSession {
   // Online session state (reactive)
   // ============================================================
 
-  get connectionState(): ConnectionState { return this.#connectionState; }
-  get lifecycle(): Lifecycle { return this.#lifecycle; }
-  get opponentConnected(): boolean { return this.#opponentConnected; }
-  get seqCounter(): number { return this.#seqCounter; }
-  get awaitingSync(): boolean { return this.#awaitingSync; }
-  get playerColor(): 'red' | 'blue' { return this.#core.playerColor; }
-  get gameId(): string { return this.#core.gameId; }
-  get myClockColor(): ClockColor { return this.#core.myClockColor; }
-  get opponentClockColor(): ClockColor { return this.#core.opponentClockColor; }
+  get connectionState(): ConnectionState {
+    return this.#connectionState;
+  }
+  get lifecycle(): Lifecycle {
+    return this.#lifecycle;
+  }
+  get opponentConnected(): boolean {
+    return this.#opponentConnected;
+  }
+  get seqCounter(): number {
+    return this.#seqCounter;
+  }
+  get awaitingSync(): boolean {
+    return this.#awaitingSync;
+  }
+  get playerColor(): 'red' | 'blue' {
+    return this.#core.playerColor;
+  }
+  get gameId(): string {
+    return this.#core.gameId;
+  }
+  get myClockColor(): ClockColor {
+    return this.#core.myClockColor;
+  }
+  get opponentClockColor(): ClockColor {
+    return this.#core.opponentClockColor;
+  }
 
   // ============================================================
   // Proxied GameSession reactive properties
@@ -161,8 +179,12 @@ export class OnlineGameSession {
   // Direct access for board component integration
   // ============================================================
 
-  get session(): GameSession { return this.#core.session; }
-  get clock(): ChessClockState { return this.#core.clock; }
+  get session(): GameSession {
+    return this.#core.session;
+  }
+  get clock(): ChessClockState {
+    return this.#core.clock;
+  }
 
   // ============================================================
   // Game result (reactive)

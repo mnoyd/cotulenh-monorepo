@@ -14,3 +14,10 @@ pnpm-lock.yaml
 pnpm-workspace.yaml
 package-lock.json
 yarn.lock
+
+# Ignore AI/agent tooling and generated files
+_bmad-output/
+_bmad/
+.agents/
+.opencode/
+.claude/

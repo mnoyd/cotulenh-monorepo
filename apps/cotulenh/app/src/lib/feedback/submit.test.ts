@@ -71,7 +71,11 @@ describe('submitFeedback', () => {
   function createMockSupabase(insertResult: { error: unknown }) {
     const insertFn = vi.fn().mockResolvedValue(insertResult);
     const fromFn = vi.fn().mockReturnValue({ insert: insertFn });
-    return { supabase: { from: fromFn } as unknown as Parameters<typeof submitFeedback>[0], fromFn, insertFn };
+    return {
+      supabase: { from: fromFn } as unknown as Parameters<typeof submitFeedback>[0],
+      fromFn,
+      insertFn
+    };
   }
 
   beforeEach(() => {
@@ -121,9 +125,7 @@ describe('submitFeedback', () => {
     const { supabase, insertFn } = createMockSupabase({ error: null });
     await submitFeedback(supabase, 'Bug report', 'vi');
 
-    expect(insertFn).toHaveBeenCalledWith(
-      expect.objectContaining({ user_id: null })
-    );
+    expect(insertFn).toHaveBeenCalledWith(expect.objectContaining({ user_id: null }));
   });
 
   it('sanitizes HTML from message before insert', async () => {
@@ -139,9 +141,7 @@ describe('submitFeedback', () => {
     const { supabase, insertFn } = createMockSupabase({ error: null });
     await submitFeedback(supabase, '   <b>Real feedback</b>   ', 'en', 'user-1');
 
-    expect(insertFn).toHaveBeenCalledWith(
-      expect.objectContaining({ message: 'Real feedback' })
-    );
+    expect(insertFn).toHaveBeenCalledWith(expect.objectContaining({ message: 'Real feedback' }));
   });
 
   it('returns error message on supabase failure', async () => {

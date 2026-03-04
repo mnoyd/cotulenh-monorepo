@@ -214,9 +214,7 @@ export async function getPendingSentRequests(
 
   if (error || !friendships || friendships.length === 0) return [];
 
-  const recipientIds = friendships.map((f) =>
-    f.user_a === userId ? f.user_b : f.user_a
-  );
+  const recipientIds = friendships.map((f) => (f.user_a === userId ? f.user_b : f.user_a));
 
   const { data: profiles } = await supabase
     .from('profiles')

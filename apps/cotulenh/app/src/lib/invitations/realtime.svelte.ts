@@ -65,4 +65,9 @@ export function onInvitationRealtimeEvent(
 }
 
 // Re-export types
-export type { InvitationRealtimeEvent, InvitationReceivedEvent, InvitationStatusChangedEvent, InvitationDeletedEvent } from './realtime-core';
+export type {
+  InvitationRealtimeEvent,
+  InvitationReceivedEvent,
+  InvitationStatusChangedEvent,
+  InvitationDeletedEvent
+} from './realtime-core';
