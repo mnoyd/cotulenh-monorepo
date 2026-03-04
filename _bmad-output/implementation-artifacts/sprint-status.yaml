@@ -89,7 +89,7 @@ development_status:
   # Epic 7: Learn Progress Persistence (parallel track - needs Epic 1 only)
   epic-7: in-progress
   7-1-learn-progress-database-sync: done
-  7-2-learn-progress-migration-on-signup: backlog
+  7-2-learn-progress-migration-on-signup: done
   epic-7-retrospective: optional
 
   # Epic 8: Feedback System (parallel track - needs Epic 1 only)

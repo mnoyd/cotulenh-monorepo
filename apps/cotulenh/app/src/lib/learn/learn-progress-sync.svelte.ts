@@ -5,6 +5,7 @@ import { logger } from '@cotulenh/common';
 
 let currentSyncUserId: string | null = null;
 let syncSessionId = 0;
+let pendingInitialRetryUserId: string | null = null;
 let originalSave:
 	| ((lessonId: string, stars: 0 | 1 | 2 | 3, moveCount: number) => void)
 	| null = null;
@@ -55,8 +56,8 @@ async function batchUpsertProgress(
 	supabase: SupabaseClient,
 	userId: string,
 	entries: Array<{ lessonId: string; stars: number; moveCount: number }>
-): Promise<void> {
-	if (entries.length === 0) return;
+): Promise<boolean> {
+	if (entries.length === 0) return true;
 	try {
 		const rows = entries.map((e) => ({
 			user_id: userId,
@@ -69,16 +70,30 @@ async function batchUpsertProgress(
 			.upsert(rows, { onConflict: 'user_id,lesson_id' });
 		if (error) {
 			logger.error(error, 'Failed to batch sync learn progress');
+			return false;
 		}
+		return true;
 	} catch (err) {
 		logger.error(err, 'Failed to batch sync learn progress');
+		return false;
 	}
 }
 
 export function startLearnProgressSync(supabase: SupabaseClient, userId: string): void {
-	if (currentSyncUserId === userId) return; // Already syncing for this user
+	if (currentSyncUserId === userId) {
+		// Already syncing for this user. If the initial migration failed earlier,
+		// allow a retry on the next start call (e.g., next navigation).
+		if (pendingInitialRetryUserId === userId) {
+			pendingInitialRetryUserId = null;
+			syncSessionId += 1;
+			const retrySessionId = syncSessionId;
+			void performInitialSync(supabase, userId, retrySessionId);
+		}
+		return;
+	}
 	if (currentSyncUserId) stopLearnProgressSync(); // Different user — stop previous
 	currentSyncUserId = userId;
+	pendingInitialRetryUserId = null;
 	syncSessionId += 1;
 	const sessionId = syncSessionId;
 
@@ -111,6 +126,7 @@ export function startLearnProgressSync(supabase: SupabaseClient, userId: string)
 export function stopLearnProgressSync(): void {
 	// Invalidate in-flight async work for the current user/session.
 	syncSessionId += 1;
+	pendingInitialRetryUserId = null;
 	if (originalSave) {
 		subjectProgress.saveLessonProgress = originalSave;
 		originalSave = null;
@@ -136,6 +152,9 @@ async function performInitialSync(
 
 		if (error) {
 			logger.error(error, 'Failed to fetch learn progress from Supabase');
+			if (isActiveSync(userId, sessionId)) {
+				pendingInitialRetryUserId = userId;
+			}
 			return;
 		}
 
@@ -190,9 +209,21 @@ async function performInitialSync(
 		}
 
 		if (!isActiveSync(userId, sessionId)) return;
-		await batchUpsertProgress(supabase, userId, toUpsert);
+		const upsertSucceeded = await batchUpsertProgress(supabase, userId, toUpsert);
+		if (!isActiveSync(userId, sessionId)) return;
+		if (!upsertSucceeded) {
+			pendingInitialRetryUserId = userId;
+			return;
+		}
+		pendingInitialRetryUserId = null;
+		if (toUpsert.length > 0) {
+			logger.info(`Learn progress: migrated ${toUpsert.length} lesson(s) to database`);
+		}
 	} catch (err) {
 		logger.error(err, 'Failed to perform initial learn progress sync');
+		if (isActiveSync(userId, sessionId)) {
+			pendingInitialRetryUserId = userId;
+		}
 		// Non-fatal: localStorage has the data, will retry on next auth
 	}
 }

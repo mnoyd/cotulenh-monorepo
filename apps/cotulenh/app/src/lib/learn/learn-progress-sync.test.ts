@@ -327,6 +327,196 @@ describe('learn-progress-sync', () => {
 		});
 	});
 
+	describe('signup migration', () => {
+		it('migrates all localStorage progress to empty DB on signup', async () => {
+			const { logger } = await import('@cotulenh/common');
+
+			// Simulate a new user who learned 3 lessons before signing up
+			vi.mocked(subjectProgress.getAllProgress).mockReturnValue({
+				'basics-1': { lessonId: 'basics-1', completed: true, stars: 3, moveCount: 4 },
+				'basics-2': { lessonId: 'basics-2', completed: true, stars: 2, moveCount: 6 },
+				'tactics-1': { lessonId: 'tactics-1', completed: true, stars: 1, moveCount: 10 }
+			});
+
+			// Empty DB — brand new account
+			const { client, upsertFn } = createMockSupabase({ selectData: [] });
+
+			startLearnProgressSync(client, 'new-user');
+			await vi.waitFor(() => {
+				expect(upsertFn).toHaveBeenCalled();
+			});
+
+			// All 3 localStorage entries should be batch upserted to the empty DB
+			expect(upsertFn).toHaveBeenCalledWith(
+				expect.arrayContaining([
+					{ user_id: 'new-user', lesson_id: 'basics-1', stars: 3, move_count: 4 },
+					{ user_id: 'new-user', lesson_id: 'basics-2', stars: 2, move_count: 6 },
+					{ user_id: 'new-user', lesson_id: 'tactics-1', stars: 1, move_count: 10 }
+				]),
+				{ onConflict: 'user_id,lesson_id' }
+			);
+			expect(upsertFn.mock.calls[0][0]).toHaveLength(3);
+
+			// Migration log should be emitted
+			expect(logger.info).toHaveBeenCalledWith('Learn progress: migrated 3 lesson(s) to database');
+		});
+
+		it('does not log migration success when batch upsert fails', async () => {
+			const { logger } = await import('@cotulenh/common');
+
+			vi.mocked(subjectProgress.getAllProgress).mockReturnValue({
+				'basics-1': { lessonId: 'basics-1', completed: true, stars: 2, moveCount: 5 }
+			});
+
+			const { client } = createMockSupabase({
+				selectData: [],
+				upsertError: { message: 'write error' }
+			});
+
+			startLearnProgressSync(client, 'new-user');
+			await vi.waitFor(() => {
+				expect(logger.error).toHaveBeenCalledWith(
+					expect.objectContaining({ message: 'write error' }),
+					expect.stringContaining('Failed to batch sync learn progress')
+				);
+			});
+
+			expect(logger.info).not.toHaveBeenCalled();
+		});
+
+		it('handles empty localStorage on signup (no-op)', async () => {
+			// No learn progress at all
+			vi.mocked(subjectProgress.getAllProgress).mockReturnValue({});
+
+			const { client, upsertFn } = createMockSupabase({ selectData: [] });
+
+			startLearnProgressSync(client, 'new-user');
+			await new Promise((r) => setTimeout(r, 50));
+
+			// No upsert calls — nothing to migrate
+			expect(upsertFn).not.toHaveBeenCalled();
+		});
+
+		it('merges with existing DB progress on signup edge case', async () => {
+			// localStorage: A(3★), B(1★)
+			vi.mocked(subjectProgress.getAllProgress).mockReturnValue({
+				'lesson-a': { lessonId: 'lesson-a', completed: true, stars: 3, moveCount: 4 },
+				'lesson-b': { lessonId: 'lesson-b', completed: true, stars: 1, moveCount: 8 }
+			});
+
+			// Save reference to original spy before it gets wrapped
+			const originalSaveSpy = subjectProgress.saveLessonProgress as ReturnType<typeof vi.fn>;
+
+			// DB already has: B(2★), C(2★) — edge case (e.g., account recreated)
+			const { client, upsertFn } = createMockSupabase({
+				selectData: [
+					{ lesson_id: 'lesson-b', stars: 2, move_count: 5 },
+					{ lesson_id: 'lesson-c', stars: 2, move_count: 6 }
+				]
+			});
+
+			startLearnProgressSync(client, 'new-user');
+			await vi.waitFor(() => {
+				// Wait for either upsert or saveLessonProgress to be called
+				const upserted = upsertFn.mock.calls.length > 0;
+				const saved = originalSaveSpy.mock.calls.length > 0;
+				expect(upserted || saved).toBe(true);
+			});
+
+			// A: localStorage-only → upserted to DB
+			// B: localStorage(1★) < DB(2★) → DB wins, NOT upserted to DB
+			// C: DB-only → saved to localStorage
+			expect(upsertFn).toHaveBeenCalledWith(
+				[{ user_id: 'new-user', lesson_id: 'lesson-a', stars: 3, move_count: 4 }],
+				{ onConflict: 'user_id,lesson_id' }
+			);
+			// B should NOT be in the upsert (DB has higher stars)
+			const upsertedRows = upsertFn.mock.calls[0][0] as Array<{ lesson_id: string }>;
+			expect(upsertedRows.find((r) => r.lesson_id === 'lesson-b')).toBeUndefined();
+
+			// C: DB-only → saved to localStorage via saveLessonProgressLocally
+			expect(originalSaveSpy).toHaveBeenCalledWith('lesson-c', 2, 6);
+
+			// B: DB has better stars (2 > 1) → should update localStorage
+			expect(originalSaveSpy).toHaveBeenCalledWith('lesson-b', 2, 5);
+		});
+	});
+
+	describe('migration retry', () => {
+		it('retries migration on subsequent startSync call for the same user', async () => {
+			const { logger } = await import('@cotulenh/common');
+
+			vi.mocked(subjectProgress.getAllProgress).mockReturnValue({
+				'basics-1': { lessonId: 'basics-1', completed: true, stars: 2, moveCount: 5 }
+			});
+
+			const failingClient = createMockSupabase({
+				selectError: { message: 'network error' }
+			});
+
+			startLearnProgressSync(failingClient.client, 'user-retry');
+			await new Promise((r) => setTimeout(r, 50));
+
+			expect(logger.error).toHaveBeenCalledWith(
+				expect.objectContaining({ message: 'network error' }),
+				expect.stringContaining('Failed to fetch learn progress')
+			);
+
+			// Same user, no stop/start logout cycle: second start should retry migration.
+			const workingMock = createMockSupabase({ selectData: [] });
+
+			startLearnProgressSync(workingMock.client, 'user-retry');
+			await vi.waitFor(() => {
+				expect(workingMock.upsertFn).toHaveBeenCalled();
+			});
+
+			expect(workingMock.upsertFn).toHaveBeenCalledWith(
+				[{ user_id: 'user-retry', lesson_id: 'basics-1', stars: 2, move_count: 5 }],
+				{ onConflict: 'user_id,lesson_id' }
+			);
+		});
+
+		it('retries migration on next startSync call after failure', async () => {
+			const { logger } = await import('@cotulenh/common');
+
+			// User has localStorage progress
+			vi.mocked(subjectProgress.getAllProgress).mockReturnValue({
+				'basics-1': { lessonId: 'basics-1', completed: true, stars: 2, moveCount: 5 }
+			});
+
+			// First attempt: fetch fails (network error)
+			const failingClient = createMockSupabase({
+				selectError: { message: 'network error' }
+			});
+
+			startLearnProgressSync(failingClient.client, 'user-retry');
+			await new Promise((r) => setTimeout(r, 50));
+
+			// Verify the error was logged (migration failed)
+			expect(logger.error).toHaveBeenCalledWith(
+				expect.objectContaining({ message: 'network error' }),
+				expect.stringContaining('Failed to fetch learn progress')
+			);
+
+			// Stop sync (simulates user navigating away or auth state change)
+			stopLearnProgressSync();
+
+			// Second attempt: fetch succeeds (simulates page reload / auth re-trigger)
+			const workingMock = createMockSupabase({ selectData: [] });
+
+			startLearnProgressSync(workingMock.client, 'user-retry');
+			await vi.waitFor(() => {
+				expect(workingMock.upsertFn).toHaveBeenCalled();
+			});
+
+			// Migration should succeed on retry — localStorage entries upserted to DB
+			expect(workingMock.upsertFn).toHaveBeenCalledWith(
+				[{ user_id: 'user-retry', lesson_id: 'basics-1', stars: 2, move_count: 5 }],
+				{ onConflict: 'user_id,lesson_id' }
+			);
+		});
+	});
+
 	describe('session isolation', () => {
 		it('ignores stale initial sync after switching users', async () => {
 			const staleFetch = deferred<{

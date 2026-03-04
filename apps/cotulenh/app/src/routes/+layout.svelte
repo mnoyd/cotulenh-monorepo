@@ -2,7 +2,7 @@
   import { browser } from '$app/environment';
   import { deserialize } from '$app/forms';
   import { enhance } from '$app/forms';
-  import { invalidate } from '$app/navigation';
+  import { invalidate, afterNavigate } from '$app/navigation';
   import { page } from '$app/stores';
   import { onMount } from 'svelte';
   import '../app.css';
@@ -156,6 +156,14 @@
   });
 
   onMount(() => {
+    // Retry learn-progress migration after route changes if a previous initial sync failed.
+    afterNavigate(() => {
+      const user = $page.data.user;
+      if (user) {
+        startLearnProgressSync($page.data.supabase, user.id);
+      }
+    });
+
     const {
       data: { subscription }
     } = $page.data.supabase.auth.onAuthStateChange(
