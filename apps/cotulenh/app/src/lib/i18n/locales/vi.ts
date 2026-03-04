@@ -675,6 +675,17 @@ export const vi: TranslationKeys = {
   'gameHistory.viewAll': 'Xem Tất Cả Trận Đấu',
   'gameHistory.vs': 'vs',
 
+  // Feedback
+  'nav.feedback': 'Góp Ý',
+  'feedback.title': 'Gửi Góp Ý',
+  'feedback.description': 'Giúp chúng tôi cải thiện! Báo lỗi hoặc đề xuất tính năng.',
+  'feedback.messagePlaceholder': 'Mô tả vấn đề hoặc đề xuất...',
+  'feedback.submit': 'Gửi',
+  'feedback.submitting': 'Đang gửi...',
+  'feedback.success': 'Cảm ơn bạn đã góp ý!',
+  'feedback.error': 'Gửi góp ý thất bại. Vui lòng thử lại.',
+  'feedback.emptyMessage': 'Vui lòng nhập nội dung',
+
   // Game Replay
   'gameReplay.title': 'Xem Lại Trận Đấu',
   'gameReplay.copyPgn': 'Sao Chép PGN',

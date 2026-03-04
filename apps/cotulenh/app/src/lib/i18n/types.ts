@@ -670,6 +670,17 @@ export interface TranslationKeys {
   'gameHistory.viewAll': string;
   'gameHistory.vs': string;
 
+  // Feedback
+  'nav.feedback': string;
+  'feedback.title': string;
+  'feedback.description': string;
+  'feedback.messagePlaceholder': string;
+  'feedback.submit': string;
+  'feedback.submitting': string;
+  'feedback.success': string;
+  'feedback.error': string;
+  'feedback.emptyMessage': string;
+
   // Game Replay
   'gameReplay.title': string;
   'gameReplay.copyPgn': string;

@@ -11,6 +11,7 @@
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
   import SettingsDialog from '$lib/components/SettingsDialog.svelte';
   import ShortcutsDialog from '$lib/components/ShortcutsDialog.svelte';
+  import FeedbackDialog from '$lib/components/FeedbackDialog.svelte';
   import {
     Menu,
     Home,
@@ -22,7 +23,8 @@
     LogIn,
     LogOut,
     UserCircle,
-    Users
+    Users,
+    MessageSquare
   } from 'lucide-svelte';
   import { toast } from 'svelte-sonner';
   import { themeStore } from '$lib/stores/theme.svelte';
@@ -53,6 +55,7 @@
 
   let settingsOpen = $state(false);
   let shortcutsOpen = $state(false);
+  let feedbackOpen = $state(false);
   let dbSettingsSynced = false;
 
   // Invitation notification state
@@ -303,6 +306,14 @@
         <Settings class="sidebar-icon" />
         <span class="sidebar-label">{i18n.t('nav.settings')}</span>
       </button>
+      <button
+        class="sidebar-link"
+        onclick={() => (feedbackOpen = true)}
+        title={i18n.t('nav.feedback')}
+      >
+        <MessageSquare class="sidebar-icon" />
+        <span class="sidebar-label">{i18n.t('nav.feedback')}</span>
+      </button>
 
       {#if isAuthenticated}
         <!-- Desktop User Menu -->
@@ -428,6 +439,10 @@
             <Settings size={16} />
             {i18n.t('nav.settings')}
           </DropdownMenu.Item>
+          <DropdownMenu.Item onclick={() => (feedbackOpen = true)}>
+            <MessageSquare size={16} />
+            {i18n.t('nav.feedback')}
+          </DropdownMenu.Item>
           <DropdownMenu.Separator />
           {#if isAuthenticated}
             <div class="mobile-user-info">
@@ -470,6 +485,7 @@
   <!-- Dialogs -->
   <SettingsDialog bind:open={settingsOpen} />
   <ShortcutsDialog bind:open={shortcutsOpen} />
+  <FeedbackDialog bind:open={feedbackOpen} />
 
   <main class="app-content max-md:ml-0">
     {@render children()}

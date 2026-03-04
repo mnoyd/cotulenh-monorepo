@@ -675,6 +675,17 @@ export const en: TranslationKeys = {
   'gameHistory.viewAll': 'View All Games',
   'gameHistory.vs': 'vs',
 
+  // Feedback
+  'nav.feedback': 'Feedback',
+  'feedback.title': 'Send Feedback',
+  'feedback.description': 'Help us improve! Report issues or suggest features.',
+  'feedback.messagePlaceholder': 'Describe the issue or suggestion...',
+  'feedback.submit': 'Submit',
+  'feedback.submitting': 'Submitting...',
+  'feedback.success': 'Thank you for your feedback!',
+  'feedback.error': 'Failed to submit feedback. Please try again.',
+  'feedback.emptyMessage': 'Please enter a message',
+
   // Game Replay
   'gameReplay.title': 'Game Replay',
   'gameReplay.copyPgn': 'Copy PGN',

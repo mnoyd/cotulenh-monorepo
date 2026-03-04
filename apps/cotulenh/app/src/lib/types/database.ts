@@ -238,6 +238,44 @@ export interface Database {
           }
         ];
       };
+      feedback: {
+        Row: {
+          id: string;
+          user_id: string | null;
+          message: string;
+          page_url: string;
+          context_json: Json;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id?: string | null;
+          message: string;
+          page_url: string;
+          context_json?: Json;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string | null;
+          message?: string;
+          page_url?: string;
+          context_json?: Json;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'feedback_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
+            referencedColumns: ['id'];
+          }
+        ];
+      };
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;
