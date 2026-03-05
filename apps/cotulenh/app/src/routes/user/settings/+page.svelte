@@ -134,6 +134,7 @@
   let confirmReset = $state(true);
   let showDeployButtons = $state(true);
   let autoCompleteDeploy = $state(true);
+  let moveConfirmation = $state(false);
   let selectedTheme = $state<ThemeId>('modern-warfare');
   let selectedLocale = $state<Locale>(i18n.locale);
   let settingsSaving = $state(false);
@@ -159,6 +160,7 @@
       confirmReset = dbSettings.confirmReset ?? localSettings.confirmReset;
       showDeployButtons = dbSettings.showDeployButtons ?? localSettings.showDeployButtons;
       autoCompleteDeploy = dbSettings.autoCompleteDeploy ?? localSettings.autoCompleteDeploy;
+      moveConfirmation = dbSettings.moveConfirmation ?? localSettings.moveConfirmation;
       selectedTheme = dbSettings.theme ?? localSettings.theme;
     } else {
       soundsEnabled = localSettings.soundsEnabled;
@@ -167,6 +169,7 @@
       confirmReset = localSettings.confirmReset;
       showDeployButtons = localSettings.showDeployButtons;
       autoCompleteDeploy = localSettings.autoCompleteDeploy;
+      moveConfirmation = localSettings.moveConfirmation;
       selectedTheme = localSettings.theme;
     }
     selectedLocale = i18n.locale;
@@ -184,7 +187,8 @@
       confirmReset,
       showDeployButtons,
       autoCompleteDeploy,
-      theme: selectedTheme
+      theme: selectedTheme,
+      moveConfirmation
     };
   }
 
