@@ -9,9 +9,15 @@ export interface TimePreset {
 }
 
 export const TIME_PRESETS: TimePreset[] = [
+  { label: '1+0', config: { timeMinutes: 1, incrementSeconds: 0 } },
+  { label: '2+1', config: { timeMinutes: 2, incrementSeconds: 1 } },
+  { label: '3+0', config: { timeMinutes: 3, incrementSeconds: 0 } },
+  { label: '3+2', config: { timeMinutes: 3, incrementSeconds: 2 } },
   { label: '5+0', config: { timeMinutes: 5, incrementSeconds: 0 } },
+  { label: '5+3', config: { timeMinutes: 5, incrementSeconds: 3 } },
   { label: '10+0', config: { timeMinutes: 10, incrementSeconds: 0 } },
-  { label: '15+10', config: { timeMinutes: 15, incrementSeconds: 10 } }
+  { label: '15+10', config: { timeMinutes: 15, incrementSeconds: 10 } },
+  { label: '30+0', config: { timeMinutes: 30, incrementSeconds: 0 } }
 ];
 
 export type InvitationStatus = 'pending' | 'accepted' | 'declined' | 'cancelled' | 'expired';
