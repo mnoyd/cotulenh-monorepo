@@ -262,7 +262,7 @@ export const TIME_PRESETS = {
   blitz3: { initialTime: 180_000, increment: 0 },
   blitz3_2: { initialTime: 180_000, increment: 2_000 },
   blitz5: { initialTime: 300_000, increment: 0 },
-  blitz5_3: { initialTime: 300_000, increment: 3_000 },
+  blitz5_3: { initialTime: 225_000, increment: 2_000 },
   rapid10: { initialTime: 600_000, increment: 0 },
   rapid15_10: { initialTime: 900_000, increment: 10_000 },
   classical30: { initialTime: 1_800_000, increment: 0 }

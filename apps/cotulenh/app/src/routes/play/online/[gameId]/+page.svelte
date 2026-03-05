@@ -281,26 +281,28 @@
     </div>
 
     <!-- Board -->
-    {#if onlineSession}
-      <BoardContainer
-        bind:this={boardComponent}
-        config={{
-          ...onlineSession.session.boardConfig,
-          orientation: getOrientation(),
-          viewOnly:
-            onlineSession.lifecycle !== 'playing' ||
-            onlineSession.connectionState !== 'connected' ||
-            onlineSession.clockStatus !== 'running' ||
-            onlineSession.disputeActive ||
-            !isMyTurn
-        }}
-        onApiReady={handleBoardReady}
-      />
-    {:else}
-      <div class="board-placeholder">
-        <span class="text-secondary">{i18n.t('game.connecting')}</span>
-      </div>
-    {/if}
+    <div class="board-sizer">
+      {#if onlineSession}
+        <BoardContainer
+          bind:this={boardComponent}
+          config={{
+            ...onlineSession.session.boardConfig,
+            orientation: getOrientation(),
+            viewOnly:
+              onlineSession.lifecycle !== 'playing' ||
+              onlineSession.connectionState !== 'connected' ||
+              onlineSession.clockStatus !== 'running' ||
+              onlineSession.disputeActive ||
+              !isMyTurn
+          }}
+          onApiReady={handleBoardReady}
+        />
+      {:else}
+        <div class="board-placeholder">
+          <span class="text-secondary">{i18n.t('game.connecting')}</span>
+        </div>
+      {/if}
+    </div>
 
     {#if onlineSession?.lifecycle === 'ended' && gameResult}
       <div class="result-overlay">
@@ -409,6 +411,19 @@
     flex-direction: column;
     align-items: center;
     gap: 0.25rem;
+    flex: 1;
+    min-height: 0;
+  }
+
+  .board-sizer {
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+    container-type: size;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
   }
 
   .board-placeholder {

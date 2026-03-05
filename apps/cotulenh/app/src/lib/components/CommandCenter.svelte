@@ -64,8 +64,9 @@
   .command-center {
     display: grid;
     grid-template-columns: 1fr;
-    min-height: 100vh;
+    height: 100%;
     width: 100%;
+    overflow: hidden;
   }
 
   .command-center.has-right-panel {
@@ -78,6 +79,8 @@
     display: flex;
     flex-direction: column;
     padding: 0.75rem;
+    overflow-y: auto;
+    overflow-x: hidden;
   }
 
   .right-panel {

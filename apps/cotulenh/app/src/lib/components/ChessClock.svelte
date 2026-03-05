@@ -34,8 +34,8 @@
     return Math.max(0, Math.min(100, (time / initial) * 100));
   });
 
-  let isLowTime = $derived(time < 30_000 && time > 0);
-  let isCriticalTime = $derived(time < 10_000 && time > 0);
+  let isLowTime = $derived(time < 60_000 && time > 0);
+  let isCriticalTime = $derived(time < 20_000 && time > 0);
 
   let sideLabel = $derived(side === 'r' ? tRed : tBlue);
   let sideColor = $derived(side === 'r' ? 'text-red-500' : 'text-mw-primary');

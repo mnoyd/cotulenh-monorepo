@@ -56,22 +56,24 @@
 
 {#snippet centerContent()}
   <div class="board-area">
-    {#if editor.initialFen}
-      <BoardContainer
-        config={editor.createEditorConfig()}
-        onApiReady={editor.handleBoardReady}
-        onDestroy={editor.handleBoardDestroy}
-        class="board-editor-container
-             {editor.editorMode === 'delete' ? 'mode-delete' : ''}
-             {editor.selectedPiece !== null && editor.editorMode !== 'delete'
-          ? 'mode-drop'
-          : ''}"
-      />
-    {:else}
-      <div class="board-placeholder">
-        <span class="text-secondary">{i18n.t('editor.loadingBoard')}</span>
-      </div>
-    {/if}
+    <div class="board-sizer">
+      {#if editor.initialFen}
+        <BoardContainer
+          config={editor.createEditorConfig()}
+          onApiReady={editor.handleBoardReady}
+          onDestroy={editor.handleBoardDestroy}
+          class="board-editor-container
+               {editor.editorMode === 'delete' ? 'mode-delete' : ''}
+               {editor.selectedPiece !== null && editor.editorMode !== 'delete'
+            ? 'mode-drop'
+            : ''}"
+        />
+      {:else}
+        <div class="board-placeholder">
+          <span class="text-secondary">{i18n.t('editor.loadingBoard')}</span>
+        </div>
+      {/if}
+    </div>
 
     <div class="board-actions">
       <button class="text-link" onclick={editor.clearBoard}>{i18n.t('editor.clear')}</button>
@@ -161,6 +163,18 @@
     flex-direction: column;
     align-items: center;
     gap: 0.5rem;
+    flex: 1;
+    min-height: 0;
+  }
+
+  .board-sizer {
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+    container-type: size;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .board-placeholder {

@@ -259,7 +259,8 @@
 <style>
   .lesson-player {
     --board-height-budget: max(320px, calc(100dvh - 220px));
-    min-height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
     background: radial-gradient(circle at 20% 10%, rgba(34, 197, 94, 0.08), transparent 40%),
       radial-gradient(circle at 95% 20%, rgba(59, 130, 246, 0.12), transparent 45%),
       var(--theme-bg-dark, #020617);
@@ -401,7 +402,7 @@
   }
 
   .loading {
-    min-height: 100vh;
+    height: 100dvh;
     display: flex;
     align-items: center;
     justify-content: center;

@@ -493,9 +493,10 @@
   }
 
   .app-container {
-    min-height: 100vh;
+    height: 100dvh;
     display: flex;
     background: var(--theme-bg-dark, #111);
+    overflow: hidden;
   }
 
   /* Desktop Sidebar — 48px icon-only rail */
@@ -678,7 +679,8 @@
     display: flex;
     flex-direction: column;
     margin-left: 48px;
-    min-height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
   }
 
   @media (max-width: 768px) {

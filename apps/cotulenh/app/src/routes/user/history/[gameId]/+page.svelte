@@ -321,12 +321,18 @@
 		flex-direction: column;
 		gap: 0.5rem;
 		padding-top: 0.5rem;
+		flex: 1;
+		min-height: 0;
 	}
 
 	.board-wrapper {
-		container-type: size;
+		flex: 1;
+		min-height: 0;
 		width: 100%;
-		aspect-ratio: 12 / 13;
+		container-type: size;
+		display: flex;
+		align-items: center;
+		justify-content: center;
 	}
 
 	.player-bar {

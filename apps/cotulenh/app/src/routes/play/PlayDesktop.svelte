@@ -118,17 +118,21 @@
 
 {#snippet centerContent()}
   <div class="board-area">
+    <div class="board-sizer">
+      {#if session}
+        <BoardContainer
+          bind:this={boardComponent}
+          config={session.boardConfig}
+          onApiReady={(api) => session?.setBoardApi(api)}
+        />
+      {:else}
+        <div class="board-placeholder">
+          <span class="text-secondary">Loading...</span>
+        </div>
+      {/if}
+    </div>
     {#if session}
-      <BoardContainer
-        bind:this={boardComponent}
-        config={session.boardConfig}
-        onApiReady={(api) => session?.setBoardApi(api)}
-      />
       <MoveConfirmPanel {session} />
-    {:else}
-      <div class="board-placeholder">
-        <span class="text-secondary">Loading...</span>
-      </div>
     {/if}
   </div>
 {/snippet}
@@ -178,6 +182,18 @@
     flex-direction: column;
     align-items: center;
     gap: 0.5rem;
+    flex: 1;
+    min-height: 0;
+  }
+
+  .board-sizer {
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+    container-type: size;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .board-placeholder {
