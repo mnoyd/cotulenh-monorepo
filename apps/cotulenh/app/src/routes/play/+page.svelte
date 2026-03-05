@@ -1,7 +1,7 @@
 <script lang="ts">
   import ResponsiveLayout from '$lib/components/ResponsiveLayout.svelte';
-  import PlayDesktop from './PlayDesktop.svelte';
-  import PlayMobile from './PlayMobile.svelte';
+  import LobbyDesktop from './LobbyDesktop.svelte';
+  import LobbyMobile from './LobbyMobile.svelte';
 </script>
 
-<ResponsiveLayout desktop={PlayDesktop} mobile={PlayMobile} />
+<ResponsiveLayout desktop={LobbyDesktop} mobile={LobbyMobile} />
