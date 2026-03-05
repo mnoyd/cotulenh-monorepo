@@ -12,6 +12,7 @@
   import type { InvitationRealtimeEvent } from '$lib/invitations/realtime.svelte';
   import CommandCenter from '$lib/components/CommandCenter.svelte';
   import { toast } from 'svelte-sonner';
+  import { onMount } from 'svelte';
   import '$lib/styles/command-center.css';
   import type { PageData } from './$types';
 
@@ -22,6 +23,29 @@
   // Time control state — default to first preset (5+0)
   let selectedConfig = $state<GameConfig>({ ...TIME_PRESETS[0].config });
   let selectedPresetIndex = $state(0);
+
+  onMount(() => {
+    const params = $page.url.searchParams;
+    const minutes = params.get('timeMinutes');
+    const increment = params.get('incrementSeconds');
+
+    if (minutes && increment) {
+      const m = parseInt(minutes, 10);
+      const s = parseInt(increment, 10);
+      // Try to match a preset
+      const matchIndex = TIME_PRESETS.findIndex(
+        (p) => p.config.timeMinutes === m && p.config.incrementSeconds === s
+      );
+      if (matchIndex !== -1) {
+        selectedPresetIndex = matchIndex;
+        selectedConfig = { ...TIME_PRESETS[matchIndex].config };
+      } else {
+        // Custom time control
+        selectedConfig = { timeMinutes: m, incrementSeconds: s };
+        selectedPresetIndex = -1;
+      }
+    }
+  });
 
   // Optimistic states
   let optimisticInvited = $state(new Set<string>());
