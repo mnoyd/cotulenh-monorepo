@@ -1,8 +1,6 @@
 <script lang="ts">
   import * as Dialog from '$lib/components/ui/dialog';
   import { onMount } from 'svelte';
-  import { Button } from '$lib/components/ui/button';
-  import { Separator } from '$lib/components/ui/separator';
   import { toast } from 'svelte-sonner';
   import { themeStore } from '$lib/stores/theme.svelte';
   import {
@@ -37,13 +35,6 @@
     'desert-ops': 'settings.theme.desertOps.name',
     classic: 'settings.theme.classic.name',
     forest: 'settings.theme.forest.name'
-  };
-
-  const themeDescriptionKeys: Record<ThemeId, TranslationKey> = {
-    'modern-warfare': 'settings.theme.modernWarfare.description',
-    'desert-ops': 'settings.theme.desertOps.description',
-    classic: 'settings.theme.classic.description',
-    forest: 'settings.theme.forest.description'
   };
 
   function loadFromStorage() {
@@ -101,62 +92,59 @@
     </Dialog.Header>
 
     <div class="settings-content">
-      <!-- Language Selection -->
+      <!-- Language -->
       <div class="setting-section">
         <h3 class="setting-section-title">{i18n.t('settings.language')}</h3>
-        <div class="language-grid">
+        <div class="language-row">
           {#each LOCALES as locale}
             <button
-              class="language-option"
-              class:selected={selectedLocale === locale.id}
+              class="lang-btn"
+              class:active={selectedLocale === locale.id}
               onclick={() => (selectedLocale = locale.id)}
             >
-              <span class="language-name">{locale.nativeName}</span>
-              <span class="language-english">{locale.name}</span>
+              {locale.nativeName}
             </button>
           {/each}
         </div>
       </div>
 
-      <Separator />
+      <hr class="section-divider" />
 
-      <!-- Theme Selection -->
+      <!-- Theme -->
       <div class="setting-section">
         <h3 class="setting-section-title">{i18n.t('settings.theme')}</h3>
-        <div class="theme-grid">
+        <div class="theme-list">
           {#each themeStore.themes as theme}
             <button
-              class="theme-option"
-              class:selected={selectedTheme === theme.id}
-              class:loading={themeStore.isLoading && selectedTheme === theme.id}
+              class="theme-item"
+              class:active={selectedTheme === theme.id}
               disabled={themeStore.isLoading}
               onclick={() => handleThemeChange(theme.id)}
             >
-              <div class="theme-preview theme-preview-{theme.id}"></div>
-              <span class="theme-name">{i18n.t(themeNameKeys[theme.id])}</span>
-              <span class="theme-desc">{i18n.t(themeDescriptionKeys[theme.id])}</span>
+              <div class="theme-swatch theme-swatch-{theme.id}"></div>
+              <span>{i18n.t(themeNameKeys[theme.id])}</span>
               {#if themeStore.isLoading && selectedTheme === theme.id}
-                <span class="loading-indicator">{i18n.t('common.loading')}</span>
+                <span class="loading-text">…</span>
               {/if}
             </button>
           {/each}
         </div>
       </div>
 
-      <Separator />
+      <hr class="section-divider" />
 
-      <!-- Gameplay Settings -->
+      <!-- Gameplay -->
       <div class="setting-section">
         <h3 class="setting-section-title">{i18n.t('settings.gameplay')}</h3>
 
-        <label class="setting-item">
+        <label class="toggle-row">
           <input type="checkbox" bind:checked={soundsEnabled} />
           <span>{i18n.t('settings.soundEffects')}</span>
         </label>
 
         {#if soundsEnabled}
-          <div class="setting-item volume-control">
-            <span>{i18n.t('settings.volume')}</span>
+          <div class="volume-row">
+            <span class="muted">{i18n.t('settings.volume')}</span>
             <input
               type="range"
               min="0"
@@ -166,46 +154,43 @@
               onchange={() => setAudioVolume(soundVolume)}
               class="volume-slider"
             />
-            <span class="volume-value">{Math.round(soundVolume * 100)}%</span>
+            <span class="muted">{Math.round(soundVolume * 100)}%</span>
             <button
               type="button"
-              class="test-sound-btn"
-              onclick={() => {
-                setAudioVolume(soundVolume);
-                playSound('move');
-              }}
+              class="action-link"
+              onclick={() => { setAudioVolume(soundVolume); playSound('move'); }}
             >
               {i18n.t('settings.test')}
             </button>
           </div>
         {/if}
 
-        <label class="setting-item">
+        <label class="toggle-row">
           <input type="checkbox" bind:checked={showMoveHints} />
           <span>{i18n.t('settings.showMoveHints')}</span>
         </label>
 
-        <label class="setting-item">
+        <label class="toggle-row">
           <input type="checkbox" bind:checked={confirmReset} />
           <span>{i18n.t('settings.confirmBeforeReset')}</span>
         </label>
 
-        <label class="setting-item">
+        <label class="toggle-row">
           <input type="checkbox" bind:checked={showDeployButtons} />
           <span>{i18n.t('settings.showDeployButtons')}</span>
         </label>
 
-        <label class="setting-item">
+        <label class="toggle-row">
           <input type="checkbox" bind:checked={autoCompleteDeploy} />
           <span>{i18n.t('settings.autoCompleteDeploy')}</span>
         </label>
       </div>
     </div>
 
-    <Dialog.Footer>
-      <Button variant="outline" onclick={() => (open = false)}>{i18n.t('common.cancel')}</Button>
-      <Button onclick={handleSave}>{i18n.t('settings.save')}</Button>
-    </Dialog.Footer>
+    <div class="dialog-actions">
+      <button class="action-link" onclick={() => (open = false)}>{i18n.t('common.cancel')}</button>
+      <button class="action-link primary" onclick={handleSave}>{i18n.t('settings.save')}</button>
+    </div>
   </Dialog.Content>
 </Dialog.Root>
 
@@ -213,215 +198,172 @@
   .settings-content {
     display: flex;
     flex-direction: column;
-    gap: 1.25rem;
-    padding: 1rem 0;
+    gap: 0.75rem;
+    padding: 0.75rem 0;
   }
 
   .setting-section {
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
+    gap: 0.5rem;
   }
 
   .setting-section-title {
-    font-size: 0.75rem;
+    font-size: 0.6875rem;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    color: var(--theme-text-secondary);
+    color: var(--theme-text-secondary, #aaa);
     margin: 0;
   }
 
-  .language-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
+  .section-divider {
+    border: none;
+    border-top: 1px solid var(--theme-border, #333);
+    margin: 0;
+  }
+
+  .language-row {
+    display: flex;
     gap: 0.75rem;
   }
 
-  .language-option {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.25rem;
-    padding: 0.75rem;
-    background: transparent;
-    border: 1px solid var(--theme-border-subtle);
-    border-radius: 0.5rem;
+  .lang-btn {
+    background: none;
+    border: none;
+    color: var(--theme-text-secondary, #aaa);
+    font-size: 0.8125rem;
     cursor: pointer;
-    transition: all 0.2s;
+    padding: 0.125rem 0;
   }
 
-  .language-option:hover {
-    border-color: var(--theme-border);
-    background: var(--theme-primary-dim);
+  .lang-btn:hover {
+    color: var(--theme-text-primary, #eee);
   }
 
-  .language-option.selected {
-    border-color: var(--theme-primary);
-    background: var(--theme-primary-dim);
-    box-shadow: var(--theme-glow-primary);
+  .lang-btn.active {
+    color: var(--theme-primary, #06b6d4);
+    text-decoration: underline;
   }
 
-  .language-name {
-    font-size: 1rem;
-    font-weight: 600;
-    color: var(--theme-text-primary);
-  }
-
-  .language-english {
-    font-size: 0.7rem;
-    color: var(--theme-text-muted);
-  }
-
-  .theme-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 0.75rem;
-  }
-
-  .theme-option {
+  .theme-list {
     display: flex;
     flex-direction: column;
+    gap: 0.125rem;
+  }
+
+  .theme-item {
+    display: flex;
     align-items: center;
     gap: 0.5rem;
-    padding: 0.75rem;
-    background: transparent;
-    border: 1px solid var(--theme-border-subtle);
-    border-radius: 0.5rem;
+    padding: 0.25rem 0;
+    background: none;
+    border: none;
+    color: var(--theme-text-secondary, #aaa);
+    font-size: 0.8125rem;
     cursor: pointer;
-    transition: all 0.2s;
   }
 
-  .theme-option:hover {
-    border-color: var(--theme-border);
-    background: var(--theme-primary-dim);
+  .theme-item:hover {
+    color: var(--theme-text-primary, #eee);
   }
 
-  .theme-option.selected {
-    border-color: var(--theme-primary);
-    background: var(--theme-primary-dim);
-    box-shadow: var(--theme-glow-primary);
+  .theme-item.active {
+    color: var(--theme-primary, #06b6d4);
   }
 
-  .theme-option:disabled {
-    opacity: 0.7;
-    cursor: not-allowed;
+  .theme-item:disabled {
+    opacity: 0.5;
+    cursor: default;
   }
 
-  .theme-option.loading {
-    position: relative;
+  .theme-swatch {
+    width: 14px;
+    height: 14px;
+    border: 1px solid var(--theme-border, #444);
+    flex-shrink: 0;
   }
 
-  .loading-indicator {
-    font-size: 0.6rem;
-    color: var(--theme-primary);
-    opacity: 0.8;
+  .theme-swatch-modern-warfare {
+    background: linear-gradient(135deg, #050a14, #00f3ff);
   }
 
-  .theme-preview {
-    width: 100%;
-    height: 32px;
-    border-radius: 0.25rem;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+  .theme-swatch-desert-ops {
+    background: linear-gradient(135deg, #e6d8c3, #8c3a3a);
   }
 
-  .theme-preview-modern-warfare {
-    background: linear-gradient(135deg, #050a14 0%, #00f3ff 50%, #00ff41 100%);
+  .theme-swatch-classic {
+    background: linear-gradient(135deg, #262421, #f0d9b5);
   }
 
-  .theme-preview-desert-ops {
-    background: linear-gradient(135deg, #e6d8c3 0%, #d4af37 50%, #8c3a3a 100%);
+  .theme-swatch-forest {
+    background: linear-gradient(135deg, #0a1f0a, #4ade80);
   }
 
-  .theme-preview-classic {
-    background: linear-gradient(135deg, #262421 0%, #b58863 50%, #f0d9b5 100%);
+  .loading-text {
+    color: var(--theme-primary, #06b6d4);
+    font-size: 0.75rem;
   }
 
-  .theme-preview-forest {
-    background: linear-gradient(135deg, #0a1f0a 0%, #4ade80 50%, #86efac 100%);
-  }
-
-  .theme-name {
-    font-size: 0.8rem;
-    font-weight: 600;
-    color: var(--theme-text-primary);
-  }
-
-  .theme-desc {
-    font-size: 0.65rem;
-    color: var(--theme-text-muted);
-    text-align: center;
-    line-height: 1.3;
-  }
-
-  .setting-item {
+  .toggle-row {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
+    gap: 0.5rem;
     cursor: pointer;
-    padding: 0.5rem;
-    border-radius: 0.25rem;
-    transition: background 0.2s;
+    padding: 0.125rem 0;
+    font-size: 0.8125rem;
+    color: var(--theme-text-primary, #eee);
   }
 
-  .setting-item:hover {
-    background: var(--theme-primary-dim);
-  }
-
-  .setting-item input[type='checkbox'] {
-    width: 1.25rem;
-    height: 1.25rem;
-    accent-color: var(--theme-primary);
+  .toggle-row input[type='checkbox'] {
+    width: 1rem;
+    height: 1rem;
+    accent-color: var(--theme-primary, #06b6d4);
     cursor: pointer;
   }
 
-  .setting-item span {
-    font-size: 0.875rem;
-    font-weight: 500;
-    color: var(--theme-text-primary);
-    font-family: var(--font-ui);
-  }
-
-  .volume-control {
-    padding-left: 2rem;
-    flex-wrap: wrap;
+  .volume-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding-left: 1.5rem;
   }
 
   .volume-slider {
     flex: 1;
-    min-width: 80px;
+    min-width: 60px;
     height: 4px;
-    accent-color: var(--theme-primary);
+    accent-color: var(--theme-primary, #06b6d4);
     cursor: pointer;
   }
 
-  .volume-value {
-    min-width: 3rem;
-    text-align: right;
+  .muted {
     font-size: 0.75rem;
-    color: var(--theme-text-secondary);
+    color: var(--theme-text-secondary, #aaa);
   }
 
-  .test-sound-btn {
-    padding: 0.25rem 0.5rem;
-    font-size: 0.7rem;
-    font-weight: 500;
-    background: var(--theme-primary-dim);
-    border: 1px solid var(--theme-border-subtle);
-    border-radius: 0.25rem;
-    color: var(--theme-text-primary);
+  .dialog-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    padding-top: 0.5rem;
+  }
+
+  .action-link {
+    background: none;
+    border: none;
+    color: var(--theme-text-secondary, #aaa);
+    font-size: 0.8125rem;
     cursor: pointer;
-    transition: all 0.2s;
+    padding: 0.25rem 0;
   }
 
-  .test-sound-btn:hover {
-    background: var(--theme-primary);
-    border-color: var(--theme-primary);
+  .action-link:hover {
+    color: var(--theme-text-primary, #eee);
+    text-decoration: underline;
   }
 
-  @media (max-width: 480px) {
-    .theme-grid {
-      grid-template-columns: 1fr;
-    }
+  .action-link.primary {
+    color: var(--theme-primary, #06b6d4);
   }
 </style>
