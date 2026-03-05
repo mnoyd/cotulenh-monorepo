@@ -489,6 +489,11 @@
       <input type="checkbox" bind:checked={autoCompleteDeploy} onchange={handleToggle} />
       <span>{i18n.t('settings.autoCompleteDeploy')}</span>
     </label>
+
+    <label class="toggle-row">
+      <input type="checkbox" bind:checked={moveConfirmation} onchange={handleToggle} />
+      <span>{i18n.t('settings.moveConfirmation')}</span>
+    </label>
   </div>
 {/snippet}
 
