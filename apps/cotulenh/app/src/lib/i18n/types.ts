@@ -594,6 +594,7 @@ export interface TranslationKeys {
   'inviteLink.toast.created': string;
   'inviteLink.toast.createFailed': string;
   'inviteLink.verifyEmailContext': string;
+  'inviteLink.anyone': string;
 
   // Game page
   'game.pageTitle': string;

@@ -600,6 +600,7 @@ export const vi: TranslationKeys = {
   'inviteLink.toast.created': 'Đã tạo liên kết mời!',
   'inviteLink.toast.createFailed': 'Tạo liên kết mời thất bại',
   'inviteLink.verifyEmailContext': 'Sau khi xác minh email, bạn sẽ được chuyển đến lời mời chơi.',
+  'inviteLink.anyone': 'Bất kỳ ai',
 
   // Game page
   'game.pageTitle': 'Ván Đấu',

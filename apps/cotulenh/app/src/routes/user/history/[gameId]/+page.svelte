@@ -7,7 +7,6 @@
 	import BoardContainer from '$lib/components/BoardContainer.svelte';
 	import MoveHistory from '$lib/components/MoveHistory.svelte';
 	import CommandCenter from '$lib/components/CommandCenter.svelte';
-	import TabPanel from '$lib/components/TabPanel.svelte';
 	import {
 		getGameHistoryReasonKey,
 		getDurationParts,
@@ -227,8 +226,8 @@
 	}
 
 	const tabs = $derived([
-		{ id: 'moves', label: i18n.t('tabs.moves') },
-		{ id: 'info', label: i18n.t('tabs.game') }
+		{ id: 'moves', label: i18n.t('tabs.moves'), content: movesContent },
+		{ id: 'info', label: i18n.t('tabs.game'), content: infoContent }
 	]);
 </script>
 
@@ -238,7 +237,7 @@
 
 <svelte:window onkeydown={handleKeydown} />
 
-<CommandCenter center={centerContent} right={rightContent} />
+<CommandCenter center={centerContent} {tabs} />
 
 {#snippet centerContent()}
 	<div class="replay-center">
@@ -258,64 +257,62 @@
 	</div>
 {/snippet}
 
-{#snippet rightContent()}
-	<TabPanel {tabs} let:activeTab>
-		{#if activeTab === 'moves'}
-			<div class="moves-tab">
-				<div class="move-history-wrapper">
-					<MoveHistory {session} highlightLatestWhenNotPreviewing={!showStartPosition} />
-				</div>
-				<div class="nav-controls">
-					<button
-						class="text-link"
-						onclick={() => applyNavigation('first')}
-						disabled={atStart}
-						aria-label={i18n.t('gameReplay.firstMove')}
-					>|&lt;</button>
-					<button
-						class="text-link"
-						onclick={() => applyNavigation('prev')}
-						disabled={atStart}
-						aria-label={i18n.t('gameReplay.previousMove')}
-					>&lt;</button>
-					<span class="move-status">{moveStatusText}</span>
-					<button
-						class="text-link"
-						onclick={() => applyNavigation('next')}
-						disabled={atEnd}
-						aria-label={i18n.t('gameReplay.nextMove')}
-					>&gt;</button>
-					<button
-						class="text-link"
-						onclick={() => applyNavigation('last')}
-						disabled={atEnd}
-						aria-label={i18n.t('gameReplay.lastMove')}
-					>&gt;|</button>
-				</div>
-			</div>
-		{:else if activeTab === 'info'}
-			<div class="info-tab">
-				<span class="result-text" style="color: {getResultColor()}">{getResultLabel()}</span>
-				{#if getReasonText()}
-					<span class="text-secondary">{getReasonText()}</span>
-				{/if}
+{#snippet movesContent()}
+	<div class="moves-tab">
+		<div class="move-history-wrapper">
+			<MoveHistory {session} highlightLatestWhenNotPreviewing={!showStartPosition} />
+		</div>
+		<div class="nav-controls">
+			<button
+				class="text-link"
+				onclick={() => applyNavigation('first')}
+				disabled={atStart}
+				aria-label={i18n.t('gameReplay.firstMove')}
+			>|&lt;</button>
+			<button
+				class="text-link"
+				onclick={() => applyNavigation('prev')}
+				disabled={atStart}
+				aria-label={i18n.t('gameReplay.previousMove')}
+			>&lt;</button>
+			<span class="move-status">{moveStatusText}</span>
+			<button
+				class="text-link"
+				onclick={() => applyNavigation('next')}
+				disabled={atEnd}
+				aria-label={i18n.t('gameReplay.nextMove')}
+			>&gt;</button>
+			<button
+				class="text-link"
+				onclick={() => applyNavigation('last')}
+				disabled={atEnd}
+				aria-label={i18n.t('gameReplay.lastMove')}
+			>&gt;|</button>
+		</div>
+	</div>
+{/snippet}
 
-				<hr class="divider" />
-
-				<div class="meta-row">
-					<span class="text-secondary">{formatTimeControl(data.game.timeControl)}</span>
-					<span class="text-secondary">·</span>
-					<span class="text-secondary">{formatDate(data.game.endedAt ?? data.game.startedAt)}</span>
-					<span class="text-secondary">·</span>
-					<span class="text-secondary">{getDurationLabel()}</span>
-				</div>
-
-				<hr class="divider" />
-
-				<button class="text-link" onclick={copyPgn}>{i18n.t('gameReplay.copyPgn')}</button>
-			</div>
+{#snippet infoContent()}
+	<div class="info-tab">
+		<span class="result-text" style="color: {getResultColor()}">{getResultLabel()}</span>
+		{#if getReasonText()}
+			<span class="text-secondary">{getReasonText()}</span>
 		{/if}
-	</TabPanel>
+
+		<hr class="divider" />
+
+		<div class="meta-row">
+			<span class="text-secondary">{formatTimeControl(data.game.timeControl)}</span>
+			<span class="text-secondary">·</span>
+			<span class="text-secondary">{formatDate(data.game.endedAt ?? data.game.startedAt)}</span>
+			<span class="text-secondary">·</span>
+			<span class="text-secondary">{getDurationLabel()}</span>
+		</div>
+
+		<hr class="divider" />
+
+		<button class="text-link" onclick={copyPgn}>{i18n.t('gameReplay.copyPgn')}</button>
+	</div>
 {/snippet}
 
 <style>

@@ -602,6 +602,7 @@ export const en: TranslationKeys = {
   'inviteLink.toast.createFailed': 'Failed to create invite link',
   'inviteLink.verifyEmailContext':
     "After verifying your email, you'll be taken to the game invitation.",
+  'inviteLink.anyone': 'Anyone',
 
   // Game page
   'game.pageTitle': 'Game',
