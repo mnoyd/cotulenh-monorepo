@@ -1,7 +1,6 @@
 <script lang="ts">
   import { getI18n } from '$lib/i18n/index.svelte';
   import * as Dialog from '$lib/components/ui/dialog';
-  import { Button } from '$lib/components/ui/button';
 
   const i18n = getI18n();
 
@@ -24,22 +23,22 @@
 <Dialog.Root bind:open>
   <Dialog.Content class="shortcuts-dialog">
     <Dialog.Header>
-      <Dialog.Title>⌨️ {i18n.t('shortcuts.title')}</Dialog.Title>
+      <Dialog.Title>{i18n.t('shortcuts.title')}</Dialog.Title>
       <Dialog.Description>{i18n.t('shortcuts.description')}</Dialog.Description>
     </Dialog.Header>
 
     <div class="shortcuts-list">
       {#each shortcuts as shortcut}
-        <div class="shortcut-item">
+        <div class="shortcut-row">
           <kbd class="shortcut-key">{shortcut.key}</kbd>
           <span class="shortcut-action">{shortcut.action}</span>
         </div>
       {/each}
     </div>
 
-    <Dialog.Footer>
-      <Button onclick={() => (open = false)}>{i18n.t('shortcuts.gotIt')}</Button>
-    </Dialog.Footer>
+    <div class="dialog-actions">
+      <button class="action-link" onclick={() => (open = false)}>{i18n.t('shortcuts.gotIt')}</button>
+    </div>
   </Dialog.Content>
 </Dialog.Root>
 
@@ -47,37 +46,52 @@
   .shortcuts-list {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
-    padding: 1rem 0;
+    gap: 0.25rem;
+    padding: 0.75rem 0;
   }
 
-  .shortcut-item {
+  .shortcut-row {
     display: flex;
     align-items: center;
-    gap: 1rem;
-    padding: 0.5rem;
+    gap: 0.75rem;
+    padding: 0.25rem 0;
   }
 
   .shortcut-key {
-    min-width: 3rem;
-    padding: 0.25rem 0.5rem;
-    background: rgba(0, 243, 255, 0.1);
-    border: 1px solid var(--color-mw-primary);
-    border-radius: 0.25rem;
+    min-width: 2.5rem;
+    padding: 0.125rem 0.375rem;
+    background: var(--theme-bg-dark, #111);
+    border: 1px solid var(--theme-border, #333);
     text-align: center;
-    font-family: var(--font-mono);
+    font-family: var(--font-mono, monospace);
     font-weight: 700;
-    font-size: 0.875rem;
-    color: var(--color-mw-primary);
-    box-shadow: 0 0 8px rgba(0, 243, 255, 0.2);
-    text-shadow: 0 0 5px rgba(0, 243, 255, 0.5);
+    font-size: 0.8125rem;
+    color: var(--theme-text-primary, #eee);
   }
 
   .shortcut-action {
-    font-size: 0.8rem;
-    color: #94a3b8;
-    font-family: var(--font-ui);
+    font-size: 0.8125rem;
+    color: var(--theme-text-secondary, #aaa);
     flex: 1;
     min-width: 0;
+  }
+
+  .dialog-actions {
+    display: flex;
+    justify-content: flex-end;
+    padding-top: 0.5rem;
+  }
+
+  .action-link {
+    background: none;
+    border: none;
+    color: var(--theme-primary, #06b6d4);
+    font-size: 0.8125rem;
+    cursor: pointer;
+    padding: 0.25rem 0;
+  }
+
+  .action-link:hover {
+    text-decoration: underline;
   }
 </style>

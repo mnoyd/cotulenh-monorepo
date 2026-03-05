@@ -1,0 +1,109 @@
+/* Command Center Visual System — Lichess-inspired flat utilities */
+
+.section-header {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--theme-text-secondary, #aaa);
+  margin: 0;
+  padding: 0;
+}
+
+.divider {
+  border: none;
+  border-top: 1px solid var(--theme-border, #333);
+  margin: 0.75rem 0;
+}
+
+.text-link {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--theme-text-secondary, #aaa);
+  font-family: var(--font-ui);
+  font-size: 0.8125rem;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.text-link:hover {
+  color: var(--theme-primary, #06b6d4);
+  text-decoration: underline;
+}
+
+.primary-cta {
+  display: inline-block;
+  padding: 0.625rem 2rem;
+  background: var(--theme-primary, #06b6d4);
+  color: var(--theme-text-inverse, #000);
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+}
+
+.primary-cta:hover {
+  opacity: 0.85;
+}
+
+.toggle-group {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+}
+
+.toggle-group button {
+  background: none;
+  border: none;
+  padding: 0.25rem 0.5rem;
+  color: var(--theme-text-secondary, #aaa);
+  font: inherit;
+  cursor: pointer;
+}
+
+.toggle-group button.active {
+  color: var(--theme-text-primary, #eee);
+}
+
+.toggle-group .separator {
+  color: var(--theme-text-secondary, #666);
+}
+
+.flat-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.flat-list-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0;
+  font-size: 0.8125rem;
+  color: var(--theme-text-secondary, #aaa);
+}
+
+.flat-list-item:hover {
+  color: var(--theme-text-primary, #eee);
+}
+
+.status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--theme-primary, #06b6d4);
+  flex-shrink: 0;
+}
+
+.status-dot.offline {
+  background: var(--theme-text-secondary, #666);
+}

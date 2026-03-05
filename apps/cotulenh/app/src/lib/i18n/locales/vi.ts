@@ -600,6 +600,7 @@ export const vi: TranslationKeys = {
   'inviteLink.toast.created': 'Đã tạo liên kết mời!',
   'inviteLink.toast.createFailed': 'Tạo liên kết mời thất bại',
   'inviteLink.verifyEmailContext': 'Sau khi xác minh email, bạn sẽ được chuyển đến lời mời chơi.',
+  'inviteLink.anyone': 'Bất kỳ ai',
 
   // Game page
   'game.pageTitle': 'Ván Đấu',
@@ -690,6 +691,13 @@ export const vi: TranslationKeys = {
   'feedback.success': 'Cảm ơn bạn đã góp ý!',
   'feedback.error': 'Gửi góp ý thất bại. Vui lòng thử lại.',
   'feedback.emptyMessage': 'Vui lòng nhập nội dung',
+
+  // Tab labels
+  'tabs.moves': 'Nước đi',
+  'tabs.game': 'Ván đấu',
+  'tabs.pieces': 'Quân cờ',
+  'tabs.setup': 'Thiết lập',
+  'tabs.activity': 'Hoạt động',
 
   // Game Replay
   'gameReplay.title': 'Xem Lại Trận Đấu',

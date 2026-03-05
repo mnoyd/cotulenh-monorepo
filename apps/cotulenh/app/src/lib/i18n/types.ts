@@ -594,6 +594,7 @@ export interface TranslationKeys {
   'inviteLink.toast.created': string;
   'inviteLink.toast.createFailed': string;
   'inviteLink.verifyEmailContext': string;
+  'inviteLink.anyone': string;
 
   // Game page
   'game.pageTitle': string;
@@ -682,6 +683,13 @@ export interface TranslationKeys {
   'feedback.success': string;
   'feedback.error': string;
   'feedback.emptyMessage': string;
+
+  // Tab labels
+  'tabs.moves': string;
+  'tabs.game': string;
+  'tabs.pieces': string;
+  'tabs.setup': string;
+  'tabs.activity': string;
 
   // Game Replay
   'gameReplay.title': string;

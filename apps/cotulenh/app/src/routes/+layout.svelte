@@ -246,8 +246,7 @@
         class:active={$page.url.pathname === '/'}
         title={i18n.t('nav.introduction')}
       >
-        <BookOpen class="sidebar-icon" />
-        <span class="sidebar-label">{i18n.t('nav.intro')}</span>
+        <BookOpen size={20} />
       </a>
       <a
         href="/play"
@@ -255,8 +254,7 @@
         class:active={$page.url.pathname === '/play'}
         title={i18n.t('nav.play')}
       >
-        <Home class="sidebar-icon" />
-        <span class="sidebar-label">{i18n.t('nav.play')}</span>
+        <Home size={20} />
       </a>
       <a
         href="/puzzles"
@@ -264,8 +262,7 @@
         class:active={$page.url.pathname === '/puzzles'}
         title={i18n.t('nav.puzzles')}
       >
-        <Puzzle class="sidebar-icon" />
-        <span class="sidebar-label">{i18n.t('nav.puzzles')}</span>
+        <Puzzle size={20} />
       </a>
       <a
         href="/board-editor"
@@ -273,8 +270,7 @@
         class:active={$page.url.pathname === '/board-editor'}
         title={i18n.t('nav.editor')}
       >
-        <PenSquare class="sidebar-icon" />
-        <span class="sidebar-label">{i18n.t('nav.editor')}</span>
+        <PenSquare size={20} />
       </a>
       {#if isAuthenticated}
         <a
@@ -283,8 +279,7 @@
           class:active={$page.url.pathname === '/user/friends'}
           title={i18n.t('nav.friends')}
         >
-          <Users class="sidebar-icon" />
-          <span class="sidebar-label">{i18n.t('nav.friends')}</span>
+          <Users size={20} />
         </a>
       {/if}
     </nav>
@@ -295,24 +290,21 @@
         onclick={() => (shortcutsOpen = true)}
         title={i18n.t('nav.keyboardShortcuts')}
       >
-        <Keyboard class="sidebar-icon" />
-        <span class="sidebar-label">{i18n.t('nav.shortcuts')}</span>
+        <Keyboard size={20} />
       </button>
       <button
         class="sidebar-link"
         onclick={() => (settingsOpen = true)}
         title={i18n.t('nav.settings')}
       >
-        <Settings class="sidebar-icon" />
-        <span class="sidebar-label">{i18n.t('nav.settings')}</span>
+        <Settings size={20} />
       </button>
       <button
         class="sidebar-link"
         onclick={() => (feedbackOpen = true)}
         title={i18n.t('nav.feedback')}
       >
-        <MessageSquare class="sidebar-icon" />
-        <span class="sidebar-label">{i18n.t('nav.feedback')}</span>
+        <MessageSquare size={20} />
       </button>
 
       {#if isAuthenticated}
@@ -326,7 +318,6 @@
                 title={i18n.t('nav.userMenu')}
               >
                 <span class="user-avatar">{avatarLetter}</span>
-                <span class="user-name">{displayName}</span>
               </button>
             </DropdownMenu.Trigger>
             <DropdownMenu.Content align="start" side="right">
@@ -367,8 +358,7 @@
           class="sidebar-link"
           title={i18n.t('nav.signIn')}
         >
-          <LogIn class="sidebar-icon" />
-          <span class="sidebar-label">{i18n.t('nav.signIn')}</span>
+          <LogIn size={20} />
         </a>
       {/if}
     </div>
@@ -503,99 +493,81 @@
   }
 
   .app-container {
-    min-height: 100vh;
+    height: 100dvh;
     display: flex;
     background: var(--theme-bg-dark, #111);
+    overflow: hidden;
   }
 
-  /* Desktop Sidebar */
+  /* Desktop Sidebar — 48px icon-only rail */
   .sidebar {
     position: fixed;
     left: 0;
     top: 0;
     bottom: 0;
-    width: 80px;
+    width: 48px;
     background: var(--theme-bg-panel, #222);
     border-right: 1px solid var(--theme-border, #444);
     display: flex;
     flex-direction: column;
     z-index: 100;
-    padding: 1rem 0;
+    padding: 0.5rem 0;
   }
 
   .sidebar-brand {
     display: flex;
     justify-content: center;
-    padding: 0.5rem;
-    margin-bottom: 1.5rem;
+    padding: 0.25rem;
+    margin-bottom: 0.5rem;
   }
 
   .logo-icon {
-    width: 40px;
-    height: 40px;
+    width: 32px;
+    height: 32px;
   }
 
   .sidebar-nav {
     display: flex;
     flex-direction: column;
-    gap: 0.25rem;
-    padding: 0 0.5rem;
+    gap: 0;
+    padding: 0;
     flex: 1;
+    align-items: center;
   }
 
   .sidebar-footer {
     display: flex;
     flex-direction: column;
-    gap: 0.25rem;
-    padding: 0 0.5rem;
+    gap: 0;
+    padding: 0;
     border-top: 1px solid var(--theme-border, #444);
-    padding-top: 0.75rem;
-    margin-top: 0.75rem;
+    padding-top: 0.5rem;
+    margin-top: 0.5rem;
+    align-items: center;
   }
 
   .sidebar-link {
     display: flex;
-    flex-direction: column;
     align-items: center;
-    gap: 0.25rem;
-    padding: 0.75rem 0.25rem;
-    border-radius: 8px;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
     text-decoration: none;
     color: var(--theme-text-secondary, #aaa);
-    font-weight: 500;
-    font-size: 0.6rem;
-    border: 1px solid transparent;
-    font-family: var(--font-mono);
-    text-transform: uppercase;
-    letter-spacing: 0.02em;
+    border: none;
+    border-left: 2px solid transparent;
     background: transparent;
     cursor: pointer;
+    padding: 0;
   }
 
   .sidebar-link:hover {
     color: var(--theme-primary, #06b6d4);
-    background: var(--theme-bg-elevated, #333);
-    border-color: var(--theme-border, #444);
   }
 
   .sidebar-link.active {
-    color: var(--theme-text-inverse, #000);
-    background: var(--theme-primary, #06b6d4);
-    border-color: var(--theme-primary, #06b6d4);
-    font-weight: 700;
-  }
-
-  .sidebar-icon {
-    width: 22px;
-    height: 22px;
-  }
-
-  .sidebar-label {
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 100%;
-    text-align: center;
+    color: var(--theme-text-primary, #eee);
+    border-left: 2px solid var(--theme-primary, #06b6d4);
   }
 
   /* User Section */
@@ -605,35 +577,31 @@
 
   .user-trigger {
     display: flex;
-    flex-direction: column;
     align-items: center;
-    gap: 0.25rem;
-    padding: 0.5rem 0.25rem;
-    border-radius: 8px;
-    border: 1px solid transparent;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border: none;
     background: transparent;
     cursor: pointer;
-    width: 100%;
-    min-height: 44px;
+    padding: 0;
     color: var(--theme-text-secondary, #aaa);
   }
 
   .user-trigger:hover {
     color: var(--theme-primary, #06b6d4);
-    background: var(--theme-bg-elevated, #333);
-    border-color: var(--theme-border, #444);
   }
 
   .user-avatar {
-    width: 32px;
-    height: 32px;
+    width: 28px;
+    height: 28px;
     border-radius: 50%;
     background: var(--theme-primary, #06b6d4);
     color: white;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     font-weight: 700;
     font-family: var(--font-mono);
     flex-shrink: 0;
@@ -643,18 +611,6 @@
     width: 24px;
     height: 24px;
     font-size: 0.7rem;
-  }
-
-  .user-name {
-    font-size: 0.55rem;
-    font-family: var(--font-mono);
-    text-transform: uppercase;
-    letter-spacing: 0.02em;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 100%;
-    text-align: center;
   }
 
   .signout-menu-item {
@@ -722,8 +678,9 @@
     flex: 1;
     display: flex;
     flex-direction: column;
-    margin-left: 80px;
-    min-height: 100vh;
+    margin-left: 48px;
+    height: 100dvh;
+    overflow: hidden;
   }
 
   @media (max-width: 768px) {

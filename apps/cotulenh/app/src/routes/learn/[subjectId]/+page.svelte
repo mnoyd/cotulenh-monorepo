@@ -4,8 +4,9 @@
   import SubjectIntro from '$lib/learn/components/SubjectIntro.svelte';
   import SectionCard from '$lib/learn/components/SectionCard.svelte';
   import { subjectProgress } from '$lib/learn/learn-progress.svelte';
-  import { ArrowLeft, Play, RotateCcw, CheckCircle2, Lock } from 'lucide-svelte';
   import { getI18n } from '$lib/i18n/index.svelte';
+  import CommandCenter from '$lib/components/CommandCenter.svelte';
+  import '$lib/styles/command-center.css';
 
   const i18n = getI18n();
   const subjectId = $derived($page.params.subjectId ?? '');
@@ -61,355 +62,140 @@
   }
 </script>
 
-<div class="subject-page">
-  {#if subject}
-    <header>
-      <a href="/learn" class="back-link">
-        <ArrowLeft size={20} />
-        {i18n.t('learn.backToSubjects')}
-      </a>
+<CommandCenter center={centerContent} />
+
+{#snippet centerContent()}
+  <div class="subject-center">
+    {#if subject}
+      <a href="/learn" class="text-link">{i18n.t('learn.backToSubjects')}</a>
+
       <div class="title-row">
-        <span class="icon">{subject.icon}</span>
-        <div class="title-text">
-          <h1>{translatedSubject?.title}</h1>
-          <p class="subtitle">{translatedSubject?.description}</p>
-        </div>
+        <span class="subject-icon">{subject.icon}</span>
+        <h1 class="subject-title">{translatedSubject?.title}</h1>
+        <span class="progress-label">{progressPercentLabel}</span>
       </div>
-    </header>
+      <p class="text-secondary">{translatedSubject?.description}</p>
 
-    {#if nextLessonInfo}
-      <a
-        href="/learn/{subjectId}/{nextLessonInfo.sectionId}/{nextLessonInfo.lessonId}"
-        class="continue-cta hud-corners"
-      >
-        <div class="cta-content">
-          <Play size={24} />
-          <div class="cta-text">
-            <span class="cta-label">{i18n.t('learn.continue')}</span>
-            <span class="cta-lesson">{nextLessonTitle}</span>
-          </div>
-        </div>
-        <span class="cta-progress">{progressPercentLabel}</span>
-      </a>
-    {:else if progress?.completed}
-      <div class="completed-banner hud-corners">
-        <div class="cta-content">
-          <RotateCcw size={24} />
-          <div class="cta-text">
-            <span class="cta-label">{i18n.t('learn.subjectCompleted')}</span>
-            <span class="cta-lesson">{i18n.t('learn.reviewLessons')}</span>
-          </div>
-        </div>
-      </div>
-    {/if}
+      {#if nextLessonInfo}
+        <hr class="divider" />
+        <span class="section-header">{i18n.t('learn.continue')}</span>
+        <a
+          class="text-link"
+          href="/learn/{subjectId}/{nextLessonInfo.sectionId}/{nextLessonInfo.lessonId}"
+        >
+          {nextLessonTitle}
+        </a>
+      {:else if progress?.completed}
+        <hr class="divider" />
+        <span class="text-secondary">{i18n.t('learn.subjectCompleted')}</span>
+      {/if}
 
-    <section class="timeline hud-corners">
-      <h2>
-        <span class="label">{i18n.t('learn.missionTimeline')}</span>
-        <span class="line"></span>
-      </h2>
+      <hr class="divider" />
 
-      <div class="timeline-items">
+      <span class="section-header">{i18n.t('learn.missionTimeline')}</span>
+      <div class="flat-list">
         {#each subject.sections as section, index}
           {@const state = sectionState(index)}
           {@const progressInfo = sectionProgress(index)}
           {@const translatedSection = translateSection(subjectId, section, locale)}
-          <article class="timeline-item {state}">
-            <div class="state-mark">
-              {#if state === 'completed'}
-                <CheckCircle2 size={18} />
-              {:else if state === 'upcoming'}
-                <Lock size={16} />
-              {:else}
-                <Play size={16} />
-              {/if}
+          <div class="section-row" class:locked={state === 'upcoming'}>
+            <div class="section-info">
+              <span class="section-name">{translatedSection.title}</span>
+              <span class="section-meta">{progressInfo.done}/{progressInfo.total}</span>
             </div>
-
-            <div class="body">
-              <h3>{translatedSection.title}</h3>
-              <p>{translatedSection.description}</p>
-              <div class="meta">{progressInfo.done}/{progressInfo.total} {i18n.t('learn.lesson')}</div>
-            </div>
-
             {#if state === 'upcoming'}
-              <span class="action disabled">{sectionActionLabel(index)}</span>
+              <span class="text-secondary">{sectionActionLabel(index)}</span>
             {:else}
-              <a class="action" href={sectionActionLink(index)}>{sectionActionLabel(index)}</a>
+              <a class="text-link" href={sectionActionLink(index)}>{sectionActionLabel(index)}</a>
             {/if}
-          </article>
+          </div>
         {/each}
       </div>
-    </section>
 
-    <SubjectIntro {subject} />
+      <hr class="divider" />
 
-    <div class="sections-list">
-      <h2>
-        <span class="label">{i18n.t('learn.curriculum')}</span>
-        <span class="line"></span>
-      </h2>
-      {#each subject.sections as section}
-        <SectionCard {section} {subjectId} />
-      {/each}
-    </div>
-  {:else}
-    <div class="error">{i18n.t('learn.subjectNotFound')}</div>
-  {/if}
-</div>
+      <SubjectIntro {subject} />
+
+      <div class="sections-detail">
+        {#each subject.sections as section}
+          <SectionCard {section} {subjectId} />
+        {/each}
+      </div>
+    {:else}
+      <p class="text-secondary">{i18n.t('learn.subjectNotFound')}</p>
+    {/if}
+  </div>
+{/snippet}
 
 <style>
-  .subject-page {
-    max-width: 980px;
-    margin: 0 auto;
-    padding: 2rem 1rem;
-  }
-
-  header {
-    margin-bottom: 1.5rem;
-  }
-
-  .back-link {
-    display: inline-flex;
-    align-items: center;
+  .subject-center {
+    display: flex;
+    flex-direction: column;
     gap: 0.5rem;
-    color: var(--theme-text-secondary, rgba(229, 231, 235, 0.7));
-    text-decoration: none;
-    margin-bottom: 1.2rem;
-    font-size: 0.9rem;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
+    padding-top: 1rem;
   }
 
-  .back-link:hover {
-    color: var(--theme-primary, #3b82f6);
+  .text-secondary {
+    color: var(--theme-text-secondary, #aaa);
+    font-size: 0.8125rem;
+    margin: 0;
   }
 
   .title-row {
     display: flex;
     align-items: center;
-    gap: 1.1rem;
+    gap: 0.5rem;
   }
 
-  .icon {
-    font-size: 2.2rem;
-    background: var(--theme-primary-dim, rgba(59, 130, 246, 0.2));
-    border: 1px solid var(--theme-border, rgba(59, 130, 246, 0.4));
-    width: 64px;
-    height: 64px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 8px;
+  .subject-icon {
+    font-size: 1.25rem;
   }
 
-  h1 {
-    font-size: 1.8rem;
+  .subject-title {
     margin: 0;
-    color: var(--theme-primary, #3b82f6);
-  }
-
-  .subtitle {
-    margin: 0.35rem 0 0;
-    color: var(--theme-text-secondary, rgba(229, 231, 235, 0.7));
-    font-size: 0.95rem;
-  }
-
-  .timeline {
-    background: var(--theme-bg-panel, rgba(31, 41, 55, 0.95));
-    border: 1px solid var(--theme-border-subtle, rgba(59, 130, 246, 0.2));
-    border-radius: 8px;
-    padding: 1rem;
-    margin: 1.25rem 0 1.5rem;
-  }
-
-  h2 {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    margin: 0 0 0.85rem;
-    font-size: 0.75rem;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    color: var(--theme-text-secondary, rgba(229, 231, 235, 0.7));
-  }
-
-  h2 .label {
-    flex-shrink: 0;
-  }
-
-  h2 .line {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--theme-text-primary, #eee);
     flex: 1;
-    height: 1px;
-    background: linear-gradient(
-      90deg,
-      var(--theme-border, rgba(59, 130, 246, 0.4)) 0%,
-      transparent 100%
-    );
   }
 
-  .timeline-items {
-    display: flex;
-    flex-direction: column;
-    gap: 0.65rem;
-  }
-
-  .timeline-item {
-    display: grid;
-    grid-template-columns: auto 1fr auto;
-    gap: 0.75rem;
-    align-items: center;
-    border-radius: 8px;
-    padding: 0.65rem 0.75rem;
-    border: 1px solid rgba(59, 130, 246, 0.18);
-    background: rgba(31, 41, 55, 0.5);
-  }
-
-  .timeline-item.completed {
-    border-color: rgba(34, 197, 94, 0.5);
-  }
-
-  .timeline-item.active {
-    border-color: rgba(59, 130, 246, 0.55);
-  }
-
-  .timeline-item.upcoming {
-    opacity: 0.7;
-  }
-
-  .state-mark {
-    width: 28px;
-    height: 28px;
-    border-radius: 999px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--theme-text-secondary, #94a3b8);
-    border: 1px solid rgba(148, 163, 184, 0.35);
-  }
-
-  .timeline-item.completed .state-mark {
-    color: #22c55e;
-    border-color: rgba(34, 197, 94, 0.55);
-  }
-
-  .timeline-item.active .state-mark {
-    color: #60a5fa;
-    border-color: rgba(59, 130, 246, 0.55);
-  }
-
-  .body h3 {
-    margin: 0;
-    font-size: 0.98rem;
-    color: var(--theme-text-primary, #f3f4f6);
-  }
-
-  .body p {
-    margin: 0.15rem 0;
-    font-size: 0.82rem;
-    color: var(--theme-text-secondary, #cbd5e1);
-  }
-
-  .meta {
+  .progress-label {
     font-family: var(--font-mono, monospace);
-    font-size: 0.72rem;
-    color: var(--theme-text-muted, #94a3b8);
+    font-size: 0.8125rem;
+    color: var(--theme-text-secondary, #aaa);
   }
 
-  .action {
-    border: 1px solid rgba(59, 130, 246, 0.5);
-    color: #60a5fa;
-    text-decoration: none;
-    border-radius: 6px;
-    padding: 0.3rem 0.55rem;
-    font-size: 0.72rem;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    white-space: nowrap;
-  }
-
-  .action.disabled {
-    border-color: rgba(148, 163, 184, 0.3);
-    color: #94a3b8;
-  }
-
-  .sections-list {
+  .section-row {
     display: flex;
-    flex-direction: column;
-    gap: 1.25rem;
-  }
-
-  .continue-cta,
-  .completed-banner {
-    display: flex;
-    align-items: center;
     justify-content: space-between;
-    background: var(--theme-primary-dim, rgba(59, 130, 246, 0.15));
-    border: 1px solid var(--theme-primary, #3b82f6);
-    padding: 0.8rem 1rem;
-    margin-bottom: 1rem;
-    text-decoration: none;
-    color: inherit;
-    border-radius: 8px;
+    align-items: center;
+    padding: 0.25rem 0;
   }
 
-  .completed-banner {
-    background: var(--theme-secondary-dim, rgba(16, 185, 129, 0.15));
-    border-color: var(--theme-secondary, #10b981);
+  .section-row.locked {
+    opacity: 0.5;
   }
 
-  .cta-content {
+  .section-info {
     display: flex;
     align-items: center;
-    gap: 0.8rem;
-    color: var(--theme-primary, #3b82f6);
+    gap: 0.75rem;
   }
 
-  .completed-banner .cta-content {
-    color: var(--theme-secondary, #10b981);
+  .section-name {
+    font-size: 0.875rem;
+    color: var(--theme-text-primary, #eee);
   }
 
-  .cta-text {
+  .section-meta {
+    font-family: var(--font-mono, monospace);
+    font-size: 0.75rem;
+    color: var(--theme-text-secondary, #aaa);
+  }
+
+  .sections-detail {
     display: flex;
     flex-direction: column;
-    gap: 0.1rem;
-  }
-
-  .cta-label {
-    font-size: 0.95rem;
-    font-weight: 600;
-    color: var(--theme-text-primary, #f3f4f6);
-  }
-
-  .cta-lesson {
-    font-size: 0.78rem;
-    color: var(--theme-text-secondary, rgba(229, 231, 235, 0.7));
-  }
-
-  .cta-progress {
-    font-family: var(--font-mono, monospace);
-    font-size: 0.78rem;
-    color: var(--theme-secondary, #10b981);
-  }
-
-  .error {
-    text-align: center;
-    padding: 4rem;
-    color: var(--theme-text-secondary, rgba(229, 231, 235, 0.7));
-    background: var(--theme-bg-panel, rgba(31, 41, 55, 0.95));
-    border: 1px solid var(--theme-border, rgba(59, 130, 246, 0.4));
-    border-radius: 8px;
-  }
-
-  @media (max-width: 760px) {
-    .timeline-item {
-      grid-template-columns: auto 1fr;
-    }
-
-    .action,
-    .action.disabled {
-      grid-column: 1 / -1;
-      justify-self: start;
-      margin-left: 2.2rem;
-    }
+    gap: 0.75rem;
   }
 </style>

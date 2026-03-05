@@ -10,13 +10,9 @@
   import type { FriendListItem } from '$lib/friends/types';
   import { onInvitationRealtimeEvent } from '$lib/invitations/realtime.svelte';
   import type { InvitationRealtimeEvent } from '$lib/invitations/realtime.svelte';
-  import PlayerCard from '$lib/components/PlayerCard.svelte';
-  import TimeControlSelector from '$lib/components/TimeControlSelector.svelte';
-  import InvitationCard from '$lib/components/InvitationCard.svelte';
-  import ReceivedInvitationCard from '$lib/components/ReceivedInvitationCard.svelte';
-  import { Loader2, Users, Link, Copy, Check } from 'lucide-svelte';
-  import Button from '$lib/components/ui/button/button.svelte';
+  import CommandCenter from '$lib/components/CommandCenter.svelte';
   import { toast } from 'svelte-sonner';
+  import '$lib/styles/command-center.css';
   import type { PageData } from './$types';
 
   const i18n = getI18n();
@@ -25,6 +21,7 @@
 
   // Time control state — default to first preset (5+0)
   let selectedConfig = $state<GameConfig>({ ...TIME_PRESETS[0].config });
+  let selectedPresetIndex = $state(0);
 
   // Optimistic states
   let optimisticInvited = $state(new Set<string>());
@@ -81,7 +78,6 @@
     const realtimeReceived = realtimeReceivedInvitations.filter(
       (inv) => !removedReceivedInvitations.has(inv.id)
     );
-    // Deduplicate by ID (realtime might duplicate server data)
     const seen = new Set<string>();
     const result: InvitationItem[] = [];
     for (const inv of [...serverReceived, ...realtimeReceived]) {
@@ -97,7 +93,6 @@
   $effect(() => {
     const unsub = onInvitationRealtimeEvent(async (event: InvitationRealtimeEvent) => {
       if (event.type === 'received') {
-        // Add to realtime received list immediately, then fetch sender profile
         const newInvitation: InvitationItem = {
           id: event.id,
           fromUser: { id: event.fromUser, displayName: '' },
@@ -109,7 +104,6 @@
         };
         realtimeReceivedInvitations = [...realtimeReceivedInvitations, newInvitation];
 
-        // Fetch sender profile and update display name
         const { data: profile } = await $page.data.supabase
           .from('profiles')
           .select('display_name')
@@ -123,9 +117,7 @@
           );
         }
       } else if (event.type === 'statusChanged') {
-        // A sent invitation was accepted/declined — remove from sent list
         removedSentInvitations = new Set([...removedSentInvitations, event.id]);
-        // Also clear optimisticInvited for the declined/accepted user
         const inv = data.sentInvitations.find((i: InvitationItem) => i.id === event.id);
         if (inv?.toUser) {
           const next = new Set(optimisticInvited);
@@ -133,7 +125,6 @@
           optimisticInvited = next;
         }
       } else if (event.type === 'deleted') {
-        // A received invitation was cancelled by sender — remove
         removedReceivedInvitations = new Set([...removedReceivedInvitations, event.id]);
       }
     });
@@ -150,7 +141,6 @@
   }
 
   async function handleInvite(friendUserId: string) {
-    // Optimistic: mark as invited immediately
     optimisticInvited = new Set([...optimisticInvited, friendUserId]);
     loadingSend = new Set([...loadingSend, friendUserId]);
 
@@ -205,7 +195,6 @@
         return;
       }
 
-      // Find the invitation to remove its toUser from optimistic set
       const inv = data.sentInvitations.find((i: InvitationItem) => i.id === invitationId);
       if (inv?.toUser) {
         const next = new Set(optimisticInvited);
@@ -236,7 +225,6 @@
         return;
       }
 
-      // Parse response to get gameId using SvelteKit's deserialize
       const result = deserialize(await response.text());
       const gameId = result.type === 'success' ? (result.data as { gameId?: string })?.gameId : undefined;
 
@@ -316,7 +304,7 @@
     }
   }
 
-  async function handleCopyInviteLink(code: string): Promise<boolean> {
+  async function handleCopyInviteLink(code: string) {
     try {
       const url = `${window.location.origin}/play/online/invite/${code}`;
       await navigator.clipboard.writeText(url);
@@ -326,16 +314,10 @@
         copiedLink = false;
         srAnnouncement = '';
       }, 2000);
-      return true;
     } catch {
       srAnnouncement = i18n.t('share.toastCopyFailed');
       setTimeout(() => (srAnnouncement = ''), 2000);
-      return false;
     }
-  }
-
-  function handleTimeSelect(config: GameConfig) {
-    selectedConfig = config;
   }
 </script>
 
@@ -343,305 +325,186 @@
   <title>{i18n.t('invitation.pageTitle')} | {i18n.t('nav.appName')}</title>
 </svelte:head>
 
-<div class="online-page">
-  <div class="online-container">
-    <h1 class="page-title">{i18n.t('invitation.pageTitle')}</h1>
+<CommandCenter center={centerContent} />
 
-    <!-- Received Invitations (AC2, AC3, AC4) -->
-    {#if visibleReceivedInvitations.length > 0}
-      <section class="section" aria-labelledby="received-invitations-heading">
-        <h2 id="received-invitations-heading" class="section-title">
-          {i18n.t('invitation.received.title')} ({visibleReceivedInvitations.length})
-        </h2>
-        <div class="invitations-list">
-          {#each visibleReceivedInvitations as invitation (invitation.id)}
-            <ReceivedInvitationCard
-              {invitation}
-              loadingAccept={loadingAccept.has(invitation.id)}
-              loadingDecline={loadingDecline.has(invitation.id)}
-              onaccept={handleAccept}
-              ondecline={handleDecline}
-            />
-          {/each}
-        </div>
-      </section>
-    {/if}
+{#snippet centerContent()}
+  <div class="online-hub">
+    <!-- Friends Online -->
+    <h2 class="section-header">
+      {i18n.t('invitation.onlineFriends.title')} ({onlineFriends.length})
+    </h2>
 
-    <!-- Time Control Selector (AC2) -->
-    <section class="section" aria-label={i18n.t('invitation.timeControl.title')}>
-      <TimeControlSelector {selectedConfig} onselect={handleTimeSelect} />
-    </section>
-
-    <!-- Online Friends (AC1, AC3, AC4) -->
-    <section class="section" aria-labelledby="online-friends-heading">
-      <h2 id="online-friends-heading" class="section-title">
-        {i18n.t('invitation.onlineFriends.title')} ({onlineFriends.length})
-      </h2>
-
-      {#if onlineFriends.length === 0}
-        <div class="empty-state">
-          <Users size={40} class="empty-icon" />
-          <p class="empty-text">{i18n.t('invitation.onlineFriends.empty')}</p>
-          <a href="/user/friends" class="empty-link">
-            {i18n.t('invitation.onlineFriends.emptyLink')}
-          </a>
-        </div>
-      {:else}
-        <div class="friends-grid">
-          {#each onlineFriends as friend (friend.friendshipId)}
-            {@const isInvited = pendingToUserIds.has(friend.userId)}
-            {@const isSending = loadingSend.has(friend.userId)}
-            <PlayerCard
-              displayName={friend.displayName}
-              online={true}
-              showOnlineIndicator={true}
-            >
-              <Button
-                size="sm"
-                disabled={isInvited || isSending}
-                class="invite-btn"
-                onclick={() => handleInvite(friend.userId)}
-                aria-label="{isInvited ? i18n.t('invitation.action.invited') : i18n.t('invitation.action.invite')} {friend.displayName}"
-              >
-                {#if isSending}
-                  <Loader2 size={14} class="animate-spin" />
-                {/if}
-                {isInvited ? i18n.t('invitation.action.invited') : i18n.t('invitation.action.invite')}
-              </Button>
-            </PlayerCard>
-          {/each}
-        </div>
-      {/if}
-    </section>
-
-    <!-- Sent Invitations (AC5, AC6) -->
-    {#if visibleSentInvitations.length > 0}
-      <section class="section" aria-labelledby="sent-invitations-heading">
-        <h2 id="sent-invitations-heading" class="section-title">
-          {i18n.t('invitation.sent.title')} ({visibleSentInvitations.length})
-        </h2>
-        <div class="invitations-list">
-          {#each visibleSentInvitations as invitation (invitation.id)}
-            <InvitationCard
-              {invitation}
-              loading={loadingCancel.has(invitation.id)}
-              oncancel={handleCancel}
-              oncopy={invitation.toUser === null ? handleCopyInviteLink : undefined}
-            />
-          {/each}
-        </div>
-      </section>
-    {/if}
-
-    <!-- Create Invite Link -->
-    <section class="section" aria-labelledby="invite-link-heading">
-      <h2 id="invite-link-heading" class="section-title">
-        {i18n.t('inviteLink.create.title')}
-      </h2>
-      {#if createdInviteCode}
-        <div class="invite-link-result">
-          <input
-            type="text"
-            readonly
-            value="{typeof window !== 'undefined' ? window.location.origin : ''}/play/online/invite/{createdInviteCode}"
-            class="invite-link-input"
-            aria-label={i18n.t('inviteLink.linkLabel')}
-          />
-          <Button
-            size="sm"
-            class="copy-link-btn"
-            onclick={() => handleCopyInviteLink(createdInviteCode!)}
-            aria-label={copiedLink ? i18n.t('common.copied') : i18n.t('inviteLink.copyLink')}
-          >
-            {#if copiedLink}
-              <Check size={16} />
-              {i18n.t('common.copied')}
+    {#if onlineFriends.length === 0}
+      <p class="text-dim">{i18n.t('invitation.onlineFriends.empty')}</p>
+      <a href="/user/friends" class="text-link">{i18n.t('invitation.onlineFriends.emptyLink')}</a>
+    {:else}
+      <div class="flat-list">
+        {#each onlineFriends as friend (friend.friendshipId)}
+          {@const isInvited = pendingToUserIds.has(friend.userId)}
+          {@const isSending = loadingSend.has(friend.userId)}
+          <div class="flat-list-item">
+            <span class="status-dot"></span>
+            <span class="friend-name">{friend.displayName}</span>
+            {#if isInvited}
+              <span class="text-dim">{i18n.t('invitation.action.invited')}</span>
             {:else}
-              <Copy size={16} />
-              {i18n.t('inviteLink.copyLink')}
+              <button
+                class="text-link"
+                disabled={isSending}
+                onclick={() => handleInvite(friend.userId)}
+              >
+                {isSending ? '...' : i18n.t('invitation.action.invite')}
+              </button>
             {/if}
-          </Button>
-        </div>
-        <Button
-          size="sm"
-          variant="outline"
-          class="create-another-btn"
-          onclick={() => { createdInviteCode = null; }}
+          </div>
+        {/each}
+      </div>
+    {/if}
+
+    <hr class="divider" />
+
+    <!-- Received Invitations -->
+    {#if visibleReceivedInvitations.length > 0}
+      <h2 class="section-header">
+        {i18n.t('invitation.received.title')} ({visibleReceivedInvitations.length})
+      </h2>
+      <div class="flat-list">
+        {#each visibleReceivedInvitations as invitation (invitation.id)}
+          <div class="flat-list-item">
+            <span>from {invitation.fromUser?.displayName || '...'}</span>
+            <span class="text-dim">{invitation.gameConfig.timeMinutes}+{invitation.gameConfig.incrementSeconds}</span>
+            <button
+              class="text-link"
+              disabled={loadingAccept.has(invitation.id)}
+              onclick={() => handleAccept(invitation.id)}
+            >
+              {loadingAccept.has(invitation.id) ? '...' : i18n.t('invitation.action.accept')}
+            </button>
+            <button
+              class="text-link"
+              disabled={loadingDecline.has(invitation.id)}
+              onclick={() => handleDecline(invitation.id)}
+            >
+              {i18n.t('invitation.action.decline')}
+            </button>
+          </div>
+        {/each}
+      </div>
+      <hr class="divider" />
+    {/if}
+
+    <!-- Sent Invitations -->
+    {#if visibleSentInvitations.length > 0}
+      <h2 class="section-header">
+        {i18n.t('invitation.sent.title')} ({visibleSentInvitations.length})
+      </h2>
+      <div class="flat-list">
+        {#each visibleSentInvitations as invitation (invitation.id)}
+          <div class="flat-list-item">
+            <span>to {invitation.toUser?.displayName || i18n.t('inviteLink.anyone')}</span>
+            <span class="text-dim">{invitation.gameConfig.timeMinutes}+{invitation.gameConfig.incrementSeconds}</span>
+            <button
+              class="text-link"
+              disabled={loadingCancel.has(invitation.id)}
+              onclick={() => handleCancel(invitation.id)}
+            >
+              {i18n.t('invitation.action.cancel')}
+            </button>
+            {#if !invitation.toUser && invitation.inviteCode}
+              <button
+                class="text-link"
+                onclick={() => handleCopyInviteLink(invitation.inviteCode!)}
+              >
+                {copiedLink ? i18n.t('common.copied') : i18n.t('inviteLink.copyLink')}
+              </button>
+            {/if}
+          </div>
+        {/each}
+      </div>
+      <hr class="divider" />
+    {/if}
+
+    <!-- Create Game -->
+    <h2 class="section-header">{i18n.t('inviteLink.create.title')}</h2>
+
+    <div class="toggle-group">
+      {#each TIME_PRESETS as preset, idx}
+        {#if idx > 0}
+          <span class="separator">·</span>
+        {/if}
+        <button
+          class:active={selectedPresetIndex === idx}
+          onclick={() => { selectedPresetIndex = idx; selectedConfig = { ...preset.config }; }}
         >
-          {i18n.t('inviteLink.create.another')}
-        </Button>
-      {:else}
-        <p class="invite-link-desc">{i18n.t('inviteLink.create.description')}</p>
-        <Button
-          size="sm"
-          disabled={creatingLink}
-          class="create-link-btn"
-          onclick={handleCreateInviteLink}
-        >
-          {#if creatingLink}
-            <Loader2 size={14} class="animate-spin" />
-          {/if}
-          <Link size={14} />
-          {i18n.t('inviteLink.create.button')}
-        </Button>
-      {/if}
-    </section>
+          {preset.config.timeMinutes}+{preset.config.incrementSeconds}
+        </button>
+      {/each}
+    </div>
+
+    {#if createdInviteCode}
+      <div class="invite-result">
+        <input
+          type="text"
+          readonly
+          value="{typeof window !== 'undefined' ? window.location.origin : ''}/play/online/invite/{createdInviteCode}"
+          class="invite-input"
+        />
+        <button class="text-link" onclick={() => handleCopyInviteLink(createdInviteCode!)}>
+          {copiedLink ? i18n.t('common.copied') : i18n.t('inviteLink.copyLink')}
+        </button>
+      </div>
+      <button class="text-link" onclick={() => { createdInviteCode = null; }}>
+        {i18n.t('inviteLink.create.another')}
+      </button>
+    {:else}
+      <button
+        class="text-link"
+        disabled={creatingLink}
+        onclick={handleCreateInviteLink}
+      >
+        {creatingLink ? '...' : i18n.t('inviteLink.create.button')}
+      </button>
+    {/if}
   </div>
-</div>
+{/snippet}
 
 <!-- Screen reader announcements -->
 <div class="sr-only" aria-live="polite" aria-atomic="true">{srAnnouncement}</div>
 
 <style>
-  .online-page {
-    display: flex;
-    justify-content: center;
-    padding: 2rem 1rem;
-    min-height: 100vh;
-  }
-
-  .online-container {
-    width: 100%;
-    max-width: 800px;
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-  }
-
-  .page-title {
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: var(--theme-text-primary, #eee);
-    margin: 0;
-  }
-
-  .section {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-  }
-
-  .section-title {
-    font-size: 0.75rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: var(--theme-text-secondary, #aaa);
-    margin: 0;
-  }
-
-  .friends-grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 0.5rem;
-  }
-
-  .invitations-list {
+  .online-hub {
+    max-width: 600px;
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
   }
 
-  /* Empty state */
-  .empty-state {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 2rem 1rem;
-    text-align: center;
-  }
-
-  :global(.empty-icon) {
+  .text-dim {
     color: var(--theme-text-secondary, #666);
+    font-size: 0.8125rem;
   }
 
-  .empty-text {
-    font-size: 0.875rem;
-    color: var(--theme-text-secondary, #aaa);
-    margin: 0;
+  .friend-name {
+    flex: 1;
+    font-size: 0.8125rem;
+    color: var(--theme-text-primary, #eee);
   }
 
-  .empty-link {
-    font-size: 0.875rem;
-    color: var(--theme-primary, #06b6d4);
-    text-decoration: none;
-  }
-
-  .empty-link:hover {
-    text-decoration: underline;
-  }
-
-  .empty-link:focus-visible {
-    outline: 2px solid var(--theme-primary, #06b6d4);
-    outline-offset: 2px;
-    border-radius: 4px;
-  }
-
-  /* Invite button */
-  :global(.invite-btn) {
-    min-height: 44px;
-    min-width: 44px;
-  }
-
-  /* Responsive */
-  @media (min-width: 768px) {
-    .friends-grid {
-      grid-template-columns: repeat(2, 1fr);
-    }
-  }
-
-  @media (max-width: 767px) {
-    .online-page {
-      padding: 1rem 0.5rem;
-    }
-  }
-
-  /* Invite link section */
-  .invite-link-desc {
-    font-size: 0.875rem;
-    color: var(--theme-text-secondary, #aaa);
-    margin: 0;
-  }
-
-  :global(.create-link-btn) {
-    min-height: 44px;
-    min-width: 44px;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.375rem;
-  }
-
-  :global(.create-another-btn) {
-    min-height: 44px;
-  }
-
-  .invite-link-result {
+  .invite-result {
     display: flex;
     gap: 0.5rem;
+    align-items: center;
   }
 
-  .invite-link-input {
+  .invite-input {
     flex: 1;
-    padding: 0.5rem 0.75rem;
+    padding: 0.375rem 0.5rem;
     background: var(--theme-bg-dark, #111);
     border: 1px solid var(--theme-border, #444);
-    border-radius: 8px;
     color: var(--theme-text-primary, #eee);
     font-size: 0.75rem;
     overflow: hidden;
     text-overflow: ellipsis;
-  }
-
-  .invite-link-input:focus {
-    outline: 2px solid var(--theme-primary, #06b6d4);
-    outline-offset: -2px;
-  }
-
-  :global(.copy-link-btn) {
-    min-height: 44px;
-    min-width: 44px;
-    flex-shrink: 0;
   }
 
   .sr-only {
@@ -654,14 +517,5 @@
     clip: rect(0, 0, 0, 0);
     white-space: nowrap;
     border-width: 0;
-  }
-
-  :global(.animate-spin) {
-    animation: spin 1s linear infinite;
-  }
-
-  @keyframes spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
   }
 </style>

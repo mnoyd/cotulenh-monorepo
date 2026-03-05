@@ -2,7 +2,6 @@
   import { page } from '$app/stores';
   import { getI18n } from '$lib/i18n/index.svelte';
   import * as Dialog from '$lib/components/ui/dialog';
-  import { Button } from '$lib/components/ui/button';
   import { toast } from 'svelte-sonner';
   import { submitFeedback } from '$lib/feedback/submit';
 
@@ -65,14 +64,18 @@
         rows={5}
         disabled={submitting}
       ></textarea>
-      <div class="char-count">{message.length}/{MAX_LENGTH}</div>
+      <span class="char-count">{message.length}/{MAX_LENGTH}</span>
     </div>
 
-    <Dialog.Footer>
-      <Button onclick={handleSubmit} disabled={submitting || !message.trim()}>
+    <div class="dialog-actions">
+      <button
+        class="action-link primary"
+        onclick={handleSubmit}
+        disabled={submitting || !message.trim()}
+      >
         {submitting ? i18n.t('feedback.submitting') : i18n.t('feedback.submit')}
-      </Button>
-    </Dialog.Footer>
+      </button>
+    </div>
   </Dialog.Content>
 </Dialog.Root>
 
@@ -81,26 +84,23 @@
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
-    padding: 0.5rem 0;
+    padding: 0.75rem 0;
   }
 
   .feedback-textarea {
     width: 100%;
-    min-height: 120px;
-    padding: 0.75rem;
+    min-height: 100px;
+    padding: 0.5rem;
     background: var(--theme-bg-dark, #111);
-    border: 1px solid var(--theme-border, #444);
-    border-radius: 0.5rem;
+    border: 1px solid var(--theme-border, #333);
     color: var(--theme-text-primary, #eee);
-    font-family: var(--font-ui);
-    font-size: 0.875rem;
+    font-size: 0.8125rem;
     resize: vertical;
   }
 
   .feedback-textarea:focus {
     outline: none;
     border-color: var(--theme-primary, #06b6d4);
-    box-shadow: 0 0 0 1px var(--theme-primary, #06b6d4);
   }
 
   .feedback-textarea:disabled {
@@ -114,8 +114,36 @@
 
   .char-count {
     text-align: right;
-    font-size: 0.75rem;
+    font-size: 0.6875rem;
     color: var(--theme-text-secondary, #aaa);
-    font-family: var(--font-mono);
+    font-family: var(--font-mono, monospace);
+  }
+
+  .dialog-actions {
+    display: flex;
+    justify-content: flex-end;
+    padding-top: 0.5rem;
+  }
+
+  .action-link {
+    background: none;
+    border: none;
+    color: var(--theme-text-secondary, #aaa);
+    font-size: 0.8125rem;
+    cursor: pointer;
+    padding: 0.25rem 0;
+  }
+
+  .action-link:hover:not(:disabled) {
+    text-decoration: underline;
+  }
+
+  .action-link.primary {
+    color: var(--theme-primary, #06b6d4);
+  }
+
+  .action-link:disabled {
+    opacity: 0.4;
+    cursor: default;
   }
 </style>
