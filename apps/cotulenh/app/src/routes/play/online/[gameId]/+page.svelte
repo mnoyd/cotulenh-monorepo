@@ -74,6 +74,8 @@
   let submittingDispute = $state(false);
   let drawOfferSent = $derived(onlineSession?.drawOfferSent ?? false);
   let drawOfferReceived = $derived(onlineSession?.drawOfferReceived ?? false);
+  let takebackSent = $derived(onlineSession?.takebackSent ?? false);
+  let takebackReceived = $derived(onlineSession?.takebackReceived ?? false);
   let canAbort = $derived(onlineSession?.canAbort ?? false);
   let rematchSent = $derived(onlineSession?.rematchSent ?? false);
   let rematchReceived = $derived(onlineSession?.rematchReceived ?? false);
@@ -377,6 +379,26 @@
         {:else}
           <button class="text-link" onclick={() => onlineSession?.offerDraw()}>
             {i18n.t('game.offerDraw')}
+          </button>
+        {/if}
+
+        {#if takebackSent}
+          <span class="text-secondary">{i18n.t('game.takebackSent')}</span>
+        {:else if takebackReceived}
+          <div class="takeback-offer">
+            <span class="text-secondary">{i18n.t('game.takebackReceived')}</span>
+            <div class="game-actions">
+              <button class="text-link" onclick={() => onlineSession?.acceptTakeback()}>
+                {i18n.t('game.acceptTakeback')}
+              </button>
+              <button class="text-link" onclick={() => onlineSession?.declineTakeback()}>
+                {i18n.t('game.declineTakeback')}
+              </button>
+            </div>
+          </div>
+        {:else if moveCount > 0}
+          <button class="text-link" onclick={() => onlineSession?.requestTakeback()}>
+            {i18n.t('game.takebackRequest')}
           </button>
         {/if}
       {/if}
