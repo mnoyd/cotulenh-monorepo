@@ -4,9 +4,11 @@
   import { page } from '$app/stores';
   import { toast } from 'svelte-sonner';
   import BoardContainer from '$lib/components/BoardContainer.svelte';
+  import MoveHistory from '$lib/components/MoveHistory.svelte';
   import OnlineIndicator from '$lib/components/OnlineIndicator.svelte';
   import ReconnectBanner from '$lib/components/ReconnectBanner.svelte';
   import GameResultBanner from '$lib/components/GameResultBanner.svelte';
+  import CommandCenter from '$lib/components/CommandCenter.svelte';
   import * as Dialog from '$lib/components/ui/dialog';
   import { OnlineGameSession } from '$lib/game/online-session.svelte';
   import type { GameEndResult } from '$lib/game/online-session-core';
@@ -17,6 +19,7 @@
   import type { PageData } from './$types';
 
   import '$lib/styles/board.css';
+  import '$lib/styles/command-center.css';
 
   const i18n = getI18n();
 
@@ -31,7 +34,6 @@
     return data.playerColor === 'red' ? 'red' : 'blue';
   }
 
-  // Clock display: opponent clock at top, player clock at bottom
   let opponentTime = $derived(
     onlineSession
       ? onlineSession.playerColor === 'red'
@@ -116,12 +118,10 @@
         bluePlayerName
       },
       () => {
-        // onAbort callback
         toast.info(i18n.t('game.gameAborted'));
         goto('/play/online');
       },
       (errorContext) => {
-        // onSyncError callback
         toast.error(i18n.t('game.syncFailed'), {
           action: {
             label: i18n.t('game.syncFailedReport'),
@@ -136,7 +136,6 @@
         });
       },
       (result) => {
-        // onGameEnd callback
         gameResult = result;
       },
       undefined,
@@ -183,227 +182,250 @@
       onlineSession.session.setupBoardEffect();
     }
   });
+
+  let tabs = $derived([
+    { id: 'moves', label: 'Moves', content: movesTab },
+    { id: 'game', label: 'Game', content: gameTab }
+  ]);
 </script>
 
 <svelte:head>
   <title>{i18n.t('game.pageTitle')} | {i18n.t('nav.appName')}</title>
 </svelte:head>
 
-<div class="game-page">
-  <div class="game-layout">
-    <!-- Opponent info + clock (top) -->
-    <div class="player-bar opponent">
+<CommandCenter center={centerContent} {tabs} />
+
+<!-- Resign confirmation dialog -->
+<Dialog.Root bind:open={resignDialogOpen}>
+  <Dialog.Portal>
+    <Dialog.Overlay />
+    <Dialog.Content>
+      <Dialog.Header>
+        <Dialog.Title>{i18n.t('game.resignConfirmTitle')}</Dialog.Title>
+        <Dialog.Description>{i18n.t('game.resignConfirmMessage')}</Dialog.Description>
+      </Dialog.Header>
+      <Dialog.Footer>
+        <Dialog.Close>{i18n.t('common.cancel')}</Dialog.Close>
+        <button
+          class="text-link danger"
+          onclick={() => {
+            resignDialogOpen = false;
+            onlineSession?.resign();
+          }}
+        >
+          {i18n.t('game.resignButton')}
+        </button>
+      </Dialog.Footer>
+    </Dialog.Content>
+  </Dialog.Portal>
+</Dialog.Root>
+
+<!-- Dispute classification dialog (non-dismissible) -->
+<Dialog.Root open={disputeDialogOpen}>
+  <Dialog.Portal>
+    <Dialog.Overlay />
+    <Dialog.Content
+      showCloseButton={false}
+      onInteractOutside={(e) => e.preventDefault()}
+      onEscapeKeydown={(e) => e.preventDefault()}
+    >
+      <Dialog.Header>
+        <Dialog.Title>{i18n.t('game.disputeTitle')}</Dialog.Title>
+        <Dialog.Description>
+          {i18n.t('game.disputeMessage')}
+          {#if disputeInfo}
+            <br /><code class="dispute-san">{disputeInfo.san}</code>
+          {/if}
+        </Dialog.Description>
+      </Dialog.Header>
+      <div class="dispute-form">
+        <textarea
+          class="dispute-comment"
+          bind:value={disputeComment}
+          placeholder={i18n.t('game.disputeCommentPlaceholder')}
+          rows="2"
+          disabled={submittingDispute}
+        ></textarea>
+      </div>
+      <Dialog.Footer>
+        <button
+          class="text-link"
+          onclick={() => void submitDispute('bug')}
+          disabled={submittingDispute}
+        >
+          {i18n.t('game.reportBug')}
+        </button>
+        <button
+          class="text-link danger"
+          onclick={() => void submitDispute('cheat')}
+          disabled={submittingDispute}
+        >
+          {i18n.t('game.reportCheat')}
+        </button>
+      </Dialog.Footer>
+    </Dialog.Content>
+  </Dialog.Portal>
+</Dialog.Root>
+
+{#snippet centerContent()}
+  <div class="board-area">
+    <!-- Opponent bar -->
+    <div class="player-bar">
       <div class="player-info">
         <OnlineIndicator online={onlineSession?.opponentConnected ?? false} />
         <span class="player-name">{data.opponent.displayName}</span>
       </div>
-      <div class="clock" class:active={opponentClockActive}>
+      <span class="clock" class:active={opponentClockActive}>
         {formatClockTime(opponentTime)}
-      </div>
+      </span>
     </div>
 
     <!-- Board -->
-    <div class="board-area">
-      {#if onlineSession}
-        <BoardContainer
-          bind:this={boardComponent}
-          config={{
-            ...onlineSession.session.boardConfig,
-            orientation: getOrientation(),
-            viewOnly:
-              onlineSession.lifecycle !== 'playing' ||
-              onlineSession.connectionState !== 'connected' ||
-              onlineSession.clockStatus !== 'running' ||
-              onlineSession.disputeActive ||
-              !isMyTurn
-          }}
-          onApiReady={handleBoardReady}
+    {#if onlineSession}
+      <BoardContainer
+        bind:this={boardComponent}
+        config={{
+          ...onlineSession.session.boardConfig,
+          orientation: getOrientation(),
+          viewOnly:
+            onlineSession.lifecycle !== 'playing' ||
+            onlineSession.connectionState !== 'connected' ||
+            onlineSession.clockStatus !== 'running' ||
+            onlineSession.disputeActive ||
+            !isMyTurn
+        }}
+        onApiReady={handleBoardReady}
+      />
+    {:else}
+      <div class="board-placeholder">
+        <span class="text-secondary">{i18n.t('game.connecting')}</span>
+      </div>
+    {/if}
+
+    {#if onlineSession?.lifecycle === 'ended' && gameResult}
+      <div class="result-overlay">
+        <GameResultBanner
+          result={gameResult}
+          playerColor={data.playerColor as 'red' | 'blue'}
+          onPlayAgain={() => goto('/play/online')}
+          onRematch={() => onlineSession?.requestRematch()}
+          {rematchSent}
+          {rematchReceived}
+          onAcceptRematch={handleAcceptRematch}
+          onDeclineRematch={() => onlineSession?.declineRematch()}
         />
-      {:else}
-        <div class="board-loading-placeholder">
-          <p>{i18n.t('game.connecting')}</p>
-        </div>
-      {/if}
+      </div>
+    {/if}
 
-      {#if onlineSession?.lifecycle === 'ended' && gameResult}
-        <div class="result-overlay">
-          <GameResultBanner
-            result={gameResult}
-            playerColor={data.playerColor as 'red' | 'blue'}
-            onPlayAgain={() => goto('/play/online')}
-            onRematch={() => onlineSession?.requestRematch()}
-            {rematchSent}
-            {rematchReceived}
-            onAcceptRematch={handleAcceptRematch}
-            onDeclineRematch={() => onlineSession?.declineRematch()}
-          />
-        </div>
-      {/if}
-    </div>
-
-    <!-- Reconnect banner -->
     <ReconnectBanner visible={showDisconnectBanner} />
 
-    <!-- Game status bar -->
-    <div class="status-bar">
-      {#if onlineSession?.lifecycle === 'playing'}
-        <span class="turn-indicator" class:my-turn={isMyTurn}>
-          {statusLabel}
-        </span>
-        <div class="status-right">
-          <span class="move-counter">
-            {i18n.t('game.moveCount').replace('{count}', String(moveCount))}
-          </span>
-          {#if !opponentFlagged && !disputeActive}
-            {#if drawOfferSent}
-              <span class="draw-offer-pending">{i18n.t('game.drawOfferSent')}</span>
-            {:else if drawOfferReceived}
-              <div class="draw-offer-received">
-                <span>{i18n.t('game.drawOfferReceived')}</span>
-                <button class="accept-draw-btn" onclick={() => onlineSession?.acceptDraw()}>
-                  {i18n.t('game.acceptDraw')}
-                </button>
-                <button class="decline-draw-btn" onclick={() => onlineSession?.declineDraw()}>
-                  {i18n.t('game.declineDraw')}
-                </button>
-              </div>
-            {:else}
-              <button class="draw-offer-btn" onclick={() => onlineSession?.offerDraw()}>
-                {i18n.t('game.offerDraw')}
-              </button>
-            {/if}
-          {/if}
-
-          {#if opponentFlagged}
-            <button class="claim-victory-btn" onclick={() => onlineSession?.claimVictory()}>
-              {i18n.t('game.claimVictory')}
-            </button>
-          {:else if canAbort}
-            <button class="abort-btn" onclick={() => void onlineSession?.abort()}>
-              {i18n.t('game.abortGame')}
-            </button>
-          {:else}
-            <button class="resign-btn" onclick={() => { resignDialogOpen = true; }}>
-              {i18n.t('game.resignButton')}
-            </button>
-          {/if}
-        </div>
-      {:else}
-        <span class="status-text">{statusLabel}</span>
-      {/if}
-    </div>
-
-    <!-- Resign confirmation dialog -->
-    <Dialog.Root bind:open={resignDialogOpen}>
-      <Dialog.Portal>
-        <Dialog.Overlay />
-        <Dialog.Content>
-          <Dialog.Header>
-            <Dialog.Title>{i18n.t('game.resignConfirmTitle')}</Dialog.Title>
-            <Dialog.Description>{i18n.t('game.resignConfirmMessage')}</Dialog.Description>
-          </Dialog.Header>
-          <Dialog.Footer>
-            <Dialog.Close>{i18n.t('common.cancel')}</Dialog.Close>
-            <button
-              class="confirm-resign-btn"
-              onclick={() => {
-                resignDialogOpen = false;
-                onlineSession?.resign();
-              }}
-            >
-              {i18n.t('game.resignButton')}
-            </button>
-          </Dialog.Footer>
-        </Dialog.Content>
-      </Dialog.Portal>
-    </Dialog.Root>
-
-    <!-- Dispute classification dialog (non-dismissible) -->
-    <Dialog.Root open={disputeDialogOpen}>
-      <Dialog.Portal>
-        <Dialog.Overlay />
-        <Dialog.Content
-          showCloseButton={false}
-          onInteractOutside={(e) => e.preventDefault()}
-          onEscapeKeydown={(e) => e.preventDefault()}
-          class="dispute-dialog"
-        >
-          <Dialog.Header>
-            <Dialog.Title>{i18n.t('game.disputeTitle')}</Dialog.Title>
-            <Dialog.Description>
-              {i18n.t('game.disputeMessage')}
-              {#if disputeInfo}
-                <br /><code class="dispute-san">{disputeInfo.san}</code>
-              {/if}
-            </Dialog.Description>
-          </Dialog.Header>
-          <div class="dispute-form">
-            <textarea
-              class="dispute-comment"
-              bind:value={disputeComment}
-              placeholder={i18n.t('game.disputeCommentPlaceholder')}
-              rows="2"
-              disabled={submittingDispute}
-            ></textarea>
-          </div>
-          <Dialog.Footer>
-            <button
-              class="dispute-btn bug"
-              onclick={() => void submitDispute('bug')}
-              disabled={submittingDispute}
-            >
-              {i18n.t('game.reportBug')}
-            </button>
-            <button
-              class="dispute-btn cheat"
-              onclick={() => void submitDispute('cheat')}
-              disabled={submittingDispute}
-            >
-              {i18n.t('game.reportCheat')}
-            </button>
-          </Dialog.Footer>
-        </Dialog.Content>
-      </Dialog.Portal>
-    </Dialog.Root>
-
-    <!-- Player info + clock (bottom) -->
-    <div class="player-bar self">
+    <!-- Player bar -->
+    <div class="player-bar">
       <div class="player-info">
         <span class="color-dot {data.playerColor}"></span>
-        <span class="player-name you">{i18n.t('common.play')}</span>
+        <span class="player-name">{i18n.t('common.play')}</span>
       </div>
-      <div class="clock" class:active={playerClockActive}>
+      <span class="clock" class:active={playerClockActive}>
         {formatClockTime(playerTime)}
-      </div>
+      </span>
     </div>
   </div>
-</div>
+{/snippet}
+
+{#snippet movesTab()}
+  {#if onlineSession}
+    <MoveHistory session={onlineSession.session} />
+  {:else}
+    <p class="text-secondary">No moves yet</p>
+  {/if}
+{/snippet}
+
+{#snippet gameTab()}
+  <div class="game-tab">
+    <span class="section-header">Status</span>
+    {#if onlineSession?.lifecycle === 'playing'}
+      <div class="game-status">
+        <span class="status-label" class:my-turn={isMyTurn}>{statusLabel}</span>
+        <span class="text-secondary mono">
+          {i18n.t('game.moveCount').replace('{count}', String(moveCount))}
+        </span>
+      </div>
+    {:else}
+      <span class="text-secondary">{statusLabel}</span>
+    {/if}
+
+    <hr class="divider" />
+
+    {#if onlineSession?.lifecycle === 'playing'}
+      {#if !opponentFlagged && !disputeActive}
+        {#if drawOfferSent}
+          <span class="text-secondary">{i18n.t('game.drawOfferSent')}</span>
+        {:else if drawOfferReceived}
+          <div class="draw-offer">
+            <span class="text-secondary">{i18n.t('game.drawOfferReceived')}</span>
+            <div class="game-actions">
+              <button class="text-link" onclick={() => onlineSession?.acceptDraw()}>
+                {i18n.t('game.acceptDraw')}
+              </button>
+              <button class="text-link" onclick={() => onlineSession?.declineDraw()}>
+                {i18n.t('game.declineDraw')}
+              </button>
+            </div>
+          </div>
+        {:else}
+          <button class="text-link" onclick={() => onlineSession?.offerDraw()}>
+            {i18n.t('game.offerDraw')}
+          </button>
+        {/if}
+      {/if}
+
+      <div class="game-actions">
+        {#if opponentFlagged}
+          <button class="text-link accent" onclick={() => onlineSession?.claimVictory()}>
+            {i18n.t('game.claimVictory')}
+          </button>
+        {:else if canAbort}
+          <button class="text-link" onclick={() => void onlineSession?.abort()}>
+            {i18n.t('game.abortGame')}
+          </button>
+        {:else}
+          <button class="text-link" onclick={() => { resignDialogOpen = true; }}>
+            {i18n.t('game.resignButton')}
+          </button>
+        {/if}
+      </div>
+    {/if}
+
+    <hr class="divider" />
+
+    <span class="section-header">Chat</span>
+    <p class="text-secondary">Chat coming soon</p>
+  </div>
+{/snippet}
 
 <style>
-  .game-page {
-    display: flex;
-    justify-content: center;
-    align-items: flex-start;
-    padding: 0.5rem;
-    min-height: 100vh;
-  }
-
-  .game-layout {
-    width: 100%;
-    max-width: 560px;
+  .board-area {
     display: flex;
     flex-direction: column;
+    align-items: center;
     gap: 0.25rem;
+  }
+
+  .board-placeholder {
+    width: 100%;
+    aspect-ratio: 12 / 13;
+    background: var(--theme-bg-dark, #111);
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .player-bar {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0.5rem 0.75rem;
-    background: var(--theme-bg-panel, #1a1a1a);
-    border: 1px solid var(--theme-border, #333);
-    border-radius: 6px;
+    width: 100%;
+    padding: 0.25rem 0;
   }
 
   .player-info {
@@ -413,18 +435,14 @@
   }
 
   .player-name {
-    font-size: 0.875rem;
+    font-size: 0.8125rem;
     font-weight: 600;
     color: var(--theme-text-primary, #eee);
   }
 
-  .player-name.you {
-    color: var(--theme-text-secondary, #aaa);
-  }
-
   .color-dot {
-    width: 10px;
-    height: 10px;
+    width: 8px;
+    height: 8px;
     border-radius: 50%;
     flex-shrink: 0;
   }
@@ -439,26 +457,15 @@
 
   .clock {
     font-family: var(--font-mono, monospace);
-    font-size: 1.25rem;
+    font-size: 1.125rem;
     font-weight: 700;
     color: var(--theme-text-secondary, #888);
-    padding: 0.25rem 0.5rem;
-    border-radius: 4px;
     min-width: 5ch;
-    text-align: center;
+    text-align: right;
   }
 
   .clock.active {
     color: var(--theme-text-primary, #fff);
-    background: var(--theme-bg-active, rgba(6, 182, 212, 0.15));
-    border: 1px solid var(--theme-primary, #06b6d4);
-  }
-
-  .board-area {
-    container-type: size;
-    width: 100%;
-    aspect-ratio: 12 / 13;
-    position: relative;
   }
 
   .result-overlay {
@@ -471,160 +478,56 @@
     justify-content: center;
   }
 
-  .board-loading-placeholder {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    height: 100%;
-    background: var(--theme-bg-panel, #1a1a1a);
-    border-radius: 4px;
+  .text-secondary {
     color: var(--theme-text-secondary, #aaa);
-    font-size: 0.875rem;
+    font-size: 0.8125rem;
   }
 
-  .status-bar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0.375rem 0.75rem;
-    background: var(--theme-bg-panel, #1a1a1a);
-    border: 1px solid var(--theme-border, #333);
-    border-radius: 6px;
-    min-height: 2rem;
-  }
-
-  .turn-indicator {
-    font-size: 0.75rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: var(--theme-text-secondary, #aaa);
-  }
-
-  .turn-indicator.my-turn {
-    color: var(--theme-primary, #06b6d4);
-  }
-
-  .move-counter {
-    font-size: 0.75rem;
-    color: var(--theme-text-secondary, #888);
+  .mono {
     font-family: var(--font-mono, monospace);
   }
 
-  .status-right {
+  .game-tab {
     display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .game-status {
+    display: flex;
+    justify-content: space-between;
     align-items: center;
-    gap: 0.75rem;
+  }
+
+  .status-label {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: var(--theme-text-secondary, #aaa);
+  }
+
+  .status-label.my-turn {
+    color: var(--theme-primary, #06b6d4);
+  }
+
+  .draw-offer {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .game-actions {
+    display: flex;
     flex-wrap: wrap;
-    justify-content: flex-end;
+    gap: 0.75rem;
   }
 
-  .draw-offer-btn,
-  .abort-btn,
-  .accept-draw-btn,
-  .decline-draw-btn {
-    font-size: 0.6875rem;
-    font-weight: 600;
-    padding: 0.2rem 0.5rem;
-    border-radius: 4px;
-    border: 1px solid var(--theme-border, #333);
-    background: transparent;
-    cursor: pointer;
-    transition: color 0.15s, border-color 0.15s, background-color 0.15s;
-  }
-
-  .draw-offer-btn {
-    color: var(--theme-text-secondary, #aaa);
-  }
-
-  .draw-offer-btn:hover {
-    color: var(--theme-text-primary, #eee);
-    border-color: var(--theme-text-secondary, #aaa);
-  }
-
-  .draw-offer-pending {
-    font-size: 0.6875rem;
-    color: var(--theme-text-secondary, #888);
-    font-weight: 600;
-  }
-
-  .draw-offer-received {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4rem;
-    font-size: 0.6875rem;
-    color: var(--theme-text-secondary, #aaa);
-  }
-
-  .accept-draw-btn {
-    color: #22c55e;
-    border-color: rgba(34, 197, 94, 0.5);
-  }
-
-  .accept-draw-btn:hover {
-    background: rgba(34, 197, 94, 0.12);
-  }
-
-  .decline-draw-btn {
+  .danger {
     color: #ef4444;
-    border-color: rgba(239, 68, 68, 0.5);
   }
 
-  .decline-draw-btn:hover {
-    background: rgba(239, 68, 68, 0.12);
-  }
-
-  .abort-btn {
-    color: var(--theme-text-primary, #eee);
-  }
-
-  .abort-btn:hover {
-    color: #f59e0b;
-    border-color: #f59e0b;
-  }
-
-  .resign-btn {
-    font-size: 0.6875rem;
-    font-weight: 500;
-    padding: 0.2rem 0.5rem;
-    border-radius: 4px;
-    border: 1px solid var(--theme-border, #333);
-    background: transparent;
-    color: var(--theme-text-secondary, #888);
-    cursor: pointer;
-    transition: color 0.15s, border-color 0.15s;
-  }
-
-  .resign-btn:hover {
-    color: #ef4444;
-    border-color: #ef4444;
-  }
-
-  .claim-victory-btn {
-    font-size: 0.75rem;
-    font-weight: 600;
-    padding: 0.3rem 0.75rem;
-    border-radius: 4px;
-    border: 1px solid #22c55e;
-    background: #22c55e;
-    color: #000;
-    cursor: pointer;
-    animation: pulse-glow 1.5s ease-in-out infinite;
-  }
-
-  .claim-victory-btn:hover {
-    background: #16a34a;
-    border-color: #16a34a;
-  }
-
-  @keyframes pulse-glow {
-    0%, 100% { box-shadow: 0 0 4px rgba(34, 197, 94, 0.4); }
-    50% { box-shadow: 0 0 12px rgba(34, 197, 94, 0.7); }
-  }
-
-  .dispute-dialog :global([data-slot="dialog-content"]) {
-    border-color: var(--color-error, #ef4444);
+  .accent {
+    color: var(--theme-primary, #06b6d4);
   }
 
   .dispute-san {
@@ -632,7 +535,6 @@
     margin-top: 0.25rem;
     padding: 0.125rem 0.375rem;
     background: rgba(239, 68, 68, 0.1);
-    border-radius: 3px;
     font-family: var(--font-mono, monospace);
     font-size: 0.875rem;
     color: var(--color-error, #ef4444);
@@ -648,66 +550,9 @@
     width: 100%;
     padding: 0.5rem;
     border: 1px solid var(--theme-border, #333);
-    border-radius: 4px;
     background: var(--theme-bg-panel, #1a1a1a);
     color: var(--theme-text-primary, #eee);
     font-size: 0.8125rem;
     resize: vertical;
-  }
-
-  .dispute-btn {
-    padding: 0.5rem 1rem;
-    border-radius: 6px;
-    font-size: 0.875rem;
-    font-weight: 600;
-    cursor: pointer;
-  }
-
-  .dispute-btn.bug {
-    border: 1px solid var(--theme-border, #333);
-    background: transparent;
-    color: var(--theme-text-primary, #eee);
-  }
-
-  .dispute-btn.bug:hover {
-    border-color: var(--theme-text-secondary, #aaa);
-  }
-
-  .dispute-btn.cheat {
-    border: 1px solid var(--color-error, #ef4444);
-    background: var(--color-error, #ef4444);
-    color: #fff;
-  }
-
-  .dispute-btn.cheat:hover {
-    opacity: 0.9;
-  }
-
-  .confirm-resign-btn {
-    padding: 0.5rem 1rem;
-    border-radius: 6px;
-    border: 1px solid #ef4444;
-    background: #ef4444;
-    color: #fff;
-    font-size: 0.875rem;
-    font-weight: 600;
-    cursor: pointer;
-  }
-
-  .status-text {
-    font-size: 0.75rem;
-    font-weight: 500;
-    color: var(--theme-text-secondary, #aaa);
-  }
-
-  @media (min-width: 768px) {
-    .game-page {
-      align-items: center;
-      padding: 1rem;
-    }
-
-    .clock {
-      font-size: 1.5rem;
-    }
   }
 </style>
