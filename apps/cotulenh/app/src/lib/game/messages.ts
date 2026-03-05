@@ -25,6 +25,10 @@ export type GameMessage =
   | (SenderMetadata & { event: 'draw-offer' })
   | (SenderMetadata & { event: 'draw-accept' })
   | (SenderMetadata & { event: 'draw-decline' })
+  // Takeback
+  | (SenderMetadata & { event: 'takeback-request' })
+  | (SenderMetadata & { event: 'takeback-accept' })
+  | (SenderMetadata & { event: 'takeback-decline' })
   // Dispute
   | (SenderMetadata & { event: 'dispute'; san: string; pgn: string })
   // Reconnection
@@ -94,6 +98,9 @@ export function isGameMessage(value: unknown): value is GameMessage {
     case 'draw-offer':
     case 'draw-accept':
     case 'draw-decline':
+    case 'takeback-request':
+    case 'takeback-accept':
+    case 'takeback-decline':
     case 'rematch':
     case 'rematch-decline':
       return true;
