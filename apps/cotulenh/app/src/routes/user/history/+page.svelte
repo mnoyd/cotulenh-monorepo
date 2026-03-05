@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { getI18n } from '$lib/i18n/index.svelte';
 	import type { TranslationKey } from '$lib/i18n/types';
-	import { History, ChevronRight } from 'lucide-svelte';
+	import CommandCenter from '$lib/components/CommandCenter.svelte';
 	import type { PageData } from './$types';
 	import type { GameHistoryItem } from '$lib/game/history';
 	import {
@@ -10,6 +10,8 @@
 		formatTimeControl,
 		getGameHistoryReasonKey
 	} from '$lib/game/history';
+
+	import '$lib/styles/command-center.css';
 
 	const i18n = getI18n();
 
@@ -22,14 +24,10 @@
 
 	function getResultColor(result: 'win' | 'loss' | 'draw' | 'aborted'): string {
 		switch (result) {
-			case 'win':
-				return '#22c55e';
-			case 'loss':
-				return 'var(--theme-text-primary, #eee)';
-			case 'draw':
-				return '#f59e0b';
-			case 'aborted':
-				return 'var(--theme-text-secondary, #aaa)';
+			case 'win': return '#22c55e';
+			case 'loss': return 'var(--theme-text-primary, #eee)';
+			case 'draw': return '#f59e0b';
+			case 'aborted': return 'var(--theme-text-secondary, #aaa)';
 		}
 	}
 
@@ -42,8 +40,7 @@
 	function getDurationLabel(game: GameHistoryItem): string {
 		const duration = getDurationParts(game.startedAt, game.endedAt);
 		if (!duration) return '—';
-		return i18n
-			.t('gameHistory.duration')
+		return i18n.t('gameHistory.duration')
 			.replace('{minutes}', String(duration.minutes))
 			.replace('{seconds}', String(duration.seconds));
 	}
@@ -52,9 +49,7 @@
 		if (!dateStr) return '—';
 		const date = new Date(dateStr);
 		return date.toLocaleDateString(i18n.getLocale() === 'vi' ? 'vi-VN' : 'en-US', {
-			day: 'numeric',
-			month: 'short',
-			year: 'numeric'
+			day: 'numeric', month: 'short', year: 'numeric'
 		});
 	}
 </script>
@@ -63,170 +58,85 @@
 	<title>{i18n.t('gameHistory.title')} | {i18n.t('nav.appName')}</title>
 </svelte:head>
 
-<div class="history-page">
-	<div class="history-container">
-		<h1 class="history-title">{i18n.t('gameHistory.title')}</h1>
+<CommandCenter center={centerContent} />
+
+{#snippet centerContent()}
+	<div class="history-center">
+		<h1 class="section-header">{i18n.t('gameHistory.title')}</h1>
 
 		{#if data.games.length === 0}
-			<div class="empty-state">
-				<History size={48} class="empty-icon" />
-				<p class="empty-title">{i18n.t('gameHistory.empty.title')}</p>
-				<p class="empty-subtitle">{i18n.t('gameHistory.empty.subtitle')}</p>
-			</div>
+			<span class="text-secondary">{i18n.t('gameHistory.empty.title')}</span>
 		{:else}
-			<div class="game-list">
+			<div class="flat-list">
 				{#each data.games as game (game.id)}
 					{@const result = getGameResult(game)}
 					<a href="/user/history/{game.id}" class="game-row">
-						<div class="game-row-left">
+						<div class="game-left">
 							<span class="color-dot" class:red={game.playerColor === 'red'} class:blue={game.playerColor === 'blue'}></span>
-							<div class="game-info">
-								<div class="game-opponent">
-									<span class="opponent-name">{i18n.t('gameHistory.vs')} {game.opponentDisplayName}</span>
-									<span class="time-control">{formatTimeControl(game.timeControl)}</span>
-								</div>
-									<div class="game-meta">
-										<span class="game-date">{formatDate(game.endedAt ?? game.startedAt)}</span>
-										<span class="meta-sep">·</span>
-										<span class="game-duration">{getDurationLabel(game)}</span>
-									</div>
-							</div>
+							<span class="opponent">{i18n.t('gameHistory.vs')} {game.opponentDisplayName}</span>
+							<span class="time-control">{formatTimeControl(game.timeControl)}</span>
 						</div>
-						<div class="game-row-right">
-							<div class="result-info">
-								<span class="result-label" style="color: {getResultColor(result)}">{getResultLabel(result)}</span>
-								{#if getReasonLabel(game)}
-									<span class="result-reason">{getReasonLabel(game)}</span>
-								{/if}
-							</div>
-							<ChevronRight size={18} class="chevron-icon" />
+						<div class="game-right">
+							<span class="result" style="color: {getResultColor(result)}">{getResultLabel(result)}</span>
+							{#if getReasonLabel(game)}
+								<span class="reason">{getReasonLabel(game)}</span>
+							{/if}
+							<span class="date">{formatDate(game.endedAt ?? game.startedAt)}</span>
 						</div>
 					</a>
 				{/each}
 			</div>
 		{/if}
 	</div>
-</div>
+{/snippet}
 
 <style>
-	.history-page {
-		display: flex;
-		justify-content: center;
-		padding: 2rem 1rem;
-		min-height: 100vh;
-	}
-
-	.history-container {
-		width: 100%;
-		max-width: 800px;
-		display: flex;
-		flex-direction: column;
-		gap: 1.5rem;
-	}
-
-	.history-title {
-		font-size: 1.5rem;
-		font-weight: 700;
-		color: var(--theme-text-primary, #eee);
-		margin: 0;
-	}
-
-	/* Empty State */
-	.empty-state {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		gap: 0.75rem;
-		padding: 3rem 1rem;
-		text-align: center;
-	}
-
-	:global(.empty-icon) {
-		color: var(--theme-text-secondary, #666);
-	}
-
-	.empty-title {
-		font-size: 1.125rem;
-		font-weight: 600;
-		color: var(--theme-text-primary, #eee);
-		margin: 0;
-	}
-
-	.empty-subtitle {
-		font-size: 0.875rem;
-		color: var(--theme-text-secondary, #aaa);
-		margin: 0;
-	}
-
-	/* Game List */
-	.game-list {
+	.history-center {
 		display: flex;
 		flex-direction: column;
 		gap: 0.5rem;
+		padding-top: 1rem;
+	}
+
+	.text-secondary {
+		color: var(--theme-text-secondary, #aaa);
+		font-size: 0.8125rem;
 	}
 
 	.game-row {
 		display: flex;
-		align-items: center;
 		justify-content: space-between;
-		gap: 1rem;
-		padding: 0.875rem 1rem;
-		background: var(--theme-bg-panel, #222);
-		border: 1px solid var(--theme-border, #444);
-		border-radius: 12px;
+		align-items: center;
+		padding: 0.375rem 0;
 		text-decoration: none;
 		color: inherit;
-		min-height: 44px;
-		transition: border-color 0.15s;
+		gap: 0.5rem;
 	}
 
 	.game-row:hover {
-		border-color: var(--theme-primary, #06b6d4);
+		background: var(--theme-bg-dark, #111);
 	}
 
-	.game-row:focus-visible {
-		outline: 2px solid var(--theme-primary, #06b6d4);
-		outline-offset: 2px;
-	}
-
-	.game-row-left {
+	.game-left {
 		display: flex;
 		align-items: center;
-		gap: 0.75rem;
+		gap: 0.5rem;
 		min-width: 0;
 		flex: 1;
 	}
 
 	.color-dot {
-		width: 10px;
-		height: 10px;
+		width: 8px;
+		height: 8px;
 		border-radius: 50%;
 		flex-shrink: 0;
 	}
 
-	.color-dot.red {
-		background: #ef4444;
-	}
+	.color-dot.red { background: #ef4444; }
+	.color-dot.blue { background: #3b82f6; }
 
-	.color-dot.blue {
-		background: #3b82f6;
-	}
-
-	.game-info {
-		display: flex;
-		flex-direction: column;
-		gap: 0.2rem;
-		min-width: 0;
-	}
-
-	.game-opponent {
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-	}
-
-	.opponent-name {
-		font-size: 0.875rem;
+	.opponent {
+		font-size: 0.8125rem;
 		font-weight: 600;
 		color: var(--theme-text-primary, #eee);
 		white-space: nowrap;
@@ -235,64 +145,30 @@
 	}
 
 	.time-control {
-		font-size: 0.75rem;
-		color: var(--theme-text-secondary, #aaa);
-		white-space: nowrap;
-		padding: 0.1rem 0.4rem;
-		background: var(--theme-bg-dark, #111);
-		border-radius: 4px;
-	}
-
-	.game-meta {
-		display: flex;
-		align-items: center;
-		gap: 0.35rem;
-		font-size: 0.75rem;
+		font-family: var(--font-mono, monospace);
+		font-size: 0.6875rem;
 		color: var(--theme-text-secondary, #aaa);
 	}
 
-	.meta-sep {
-		opacity: 0.5;
-	}
-
-	.game-row-right {
+	.game-right {
 		display: flex;
 		align-items: center;
 		gap: 0.5rem;
 		flex-shrink: 0;
 	}
 
-	.result-info {
-		display: flex;
-		flex-direction: column;
-		align-items: flex-end;
-		gap: 0.1rem;
-	}
-
-	.result-label {
-		font-size: 0.875rem;
+	.result {
+		font-size: 0.8125rem;
 		font-weight: 700;
 	}
 
-	.result-reason {
-		font-size: 0.7rem;
+	.reason {
+		font-size: 0.6875rem;
 		color: var(--theme-text-secondary, #aaa);
-		white-space: nowrap;
 	}
 
-	:global(.chevron-icon) {
-		color: var(--theme-text-secondary, #666);
-		flex-shrink: 0;
-	}
-
-	/* Responsive */
-	@media (max-width: 767px) {
-		.history-page {
-			padding: 1rem 0.5rem;
-		}
-
-		.game-row {
-			padding: 0.75rem;
-		}
+	.date {
+		font-size: 0.6875rem;
+		color: var(--theme-text-secondary, #aaa);
 	}
 </style>

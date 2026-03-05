@@ -6,20 +6,14 @@
 	import { mapLastMoveToBoardFormat } from '$lib/features/game/utils';
 	import BoardContainer from '$lib/components/BoardContainer.svelte';
 	import MoveHistory from '$lib/components/MoveHistory.svelte';
+	import CommandCenter from '$lib/components/CommandCenter.svelte';
+	import TabPanel from '$lib/components/TabPanel.svelte';
 	import {
 		getGameHistoryReasonKey,
 		getDurationParts,
 		formatTimeControl
 	} from '$lib/game/history';
 	import { toast } from 'svelte-sonner';
-	import {
-		ArrowLeft,
-		ChevronFirst,
-		ChevronLast,
-		ChevronLeft,
-		ChevronRight,
-		Copy
-	} from 'lucide-svelte';
 	import {
 		applyReplayNavigation,
 		getReplayActionFromKey,
@@ -29,6 +23,8 @@
 		type ReplayNavigationAction
 	} from './replay-controls';
 	import type { PageData } from './$types';
+
+	import '$lib/styles/command-center.css';
 
 	const i18n = getI18n();
 
@@ -229,6 +225,11 @@
 			.replace('{minutes}', String(duration.minutes))
 			.replace('{seconds}', String(duration.seconds));
 	}
+
+	const tabs = $derived([
+		{ id: 'moves', label: i18n.t('tabs.moves') },
+		{ id: 'info', label: i18n.t('tabs.game') }
+	]);
 </script>
 
 <svelte:head>
@@ -237,403 +238,175 @@
 
 <svelte:window onkeydown={handleKeydown} />
 
-<div class="replay-page">
-	<!-- Back link -->
-	<a href="/user/history" class="back-link">
-		<ArrowLeft size={18} />
-		<span>{i18n.t('gameReplay.backToHistory')}</span>
-	</a>
+<CommandCenter center={centerContent} right={rightContent} />
 
-	<div class="replay-layout">
-		<!-- Board area -->
-		<div class="board-area">
-			<div class="board-wrapper">
-				<BoardContainer config={replayBoardConfig} />
-			</div>
+{#snippet centerContent()}
+	<div class="replay-center">
+		<a href="/user/history" class="text-link">{i18n.t('gameReplay.backToHistory')}</a>
 
-			<!-- Navigation controls (below board on mobile, in sidebar on desktop) -->
-			<div class="nav-controls mobile-only">
-				<button
-					class="nav-btn"
-					onclick={() => applyNavigation('first')}
-					disabled={atStart}
-					aria-label={i18n.t('gameReplay.firstMove')}
-				>
-					<ChevronFirst size={22} />
-				</button>
-				<button
-					class="nav-btn"
-					onclick={() => applyNavigation('prev')}
-					disabled={atStart}
-					aria-label={i18n.t('gameReplay.previousMove')}
-				>
-					<ChevronLeft size={22} />
-				</button>
-				<span class="move-status">{moveStatusText}</span>
-				<button
-					class="nav-btn"
-					onclick={() => applyNavigation('next')}
-					disabled={atEnd}
-					aria-label={i18n.t('gameReplay.nextMove')}
-				>
-					<ChevronRight size={22} />
-				</button>
-				<button
-					class="nav-btn"
-					onclick={() => applyNavigation('last')}
-					disabled={atEnd}
-					aria-label={i18n.t('gameReplay.lastMove')}
-				>
-					<ChevronLast size={22} />
-				</button>
-			</div>
+		<div class="board-wrapper">
+			<BoardContainer config={replayBoardConfig} />
 		</div>
 
-		<!-- Sidebar -->
-		<div class="sidebar">
-			<!-- Game metadata -->
-			<div class="metadata-panel">
-				<div class="players-row">
-					<div class="player">
-						<span class="color-dot red"></span>
-						<span class="player-name">{data.game.redPlayer.displayName}</span>
-					</div>
-					<span class="vs-label">{i18n.t('gameHistory.vs')}</span>
-					<div class="player">
-						<span class="color-dot blue"></span>
-						<span class="player-name">{data.game.bluePlayer.displayName}</span>
-					</div>
-				</div>
-
-				<div class="result-row">
-					<span class="result-badge" style="color: {getResultColor()}">
-						{getResultLabel()}
-					</span>
-					{#if getReasonText()}
-						<span class="result-reason">{getReasonText()}</span>
-					{/if}
-				</div>
-
-				<div class="meta-details">
-					<span class="meta-item">{formatTimeControl(data.game.timeControl)}</span>
-					<span class="meta-sep">·</span>
-					<span class="meta-item">{formatDate(data.game.endedAt ?? data.game.startedAt)}</span>
-					<span class="meta-sep">·</span>
-					<span class="meta-item">{getDurationLabel()}</span>
-				</div>
-
-				<button class="copy-pgn-btn" onclick={copyPgn}>
-					<Copy size={16} />
-					<span>{i18n.t('gameReplay.copyPgn')}</span>
-				</button>
-			</div>
-
-			<!-- Move history -->
-			<div class="move-history-wrapper">
-				<MoveHistory {session} highlightLatestWhenNotPreviewing={!showStartPosition} />
-			</div>
-
-			<!-- Navigation controls (in sidebar on desktop) -->
-			<div class="nav-controls desktop-only">
-				<button
-					class="nav-btn"
-					onclick={() => applyNavigation('first')}
-					disabled={atStart}
-					aria-label={i18n.t('gameReplay.firstMove')}
-				>
-					<ChevronFirst size={22} />
-				</button>
-				<button
-					class="nav-btn"
-					onclick={() => applyNavigation('prev')}
-					disabled={atStart}
-					aria-label={i18n.t('gameReplay.previousMove')}
-				>
-					<ChevronLeft size={22} />
-				</button>
-				<span class="move-status">{moveStatusText}</span>
-				<button
-					class="nav-btn"
-					onclick={() => applyNavigation('next')}
-					disabled={atEnd}
-					aria-label={i18n.t('gameReplay.nextMove')}
-				>
-					<ChevronRight size={22} />
-				</button>
-				<button
-					class="nav-btn"
-					onclick={() => applyNavigation('last')}
-					disabled={atEnd}
-					aria-label={i18n.t('gameReplay.lastMove')}
-				>
-					<ChevronLast size={22} />
-				</button>
-			</div>
+		<div class="player-bar">
+			<span class="color-dot red"></span>
+			<span class="player-name">{data.game.redPlayer.displayName}</span>
+			<span class="vs-text">{i18n.t('gameHistory.vs')}</span>
+			<span class="color-dot blue"></span>
+			<span class="player-name">{data.game.bluePlayer.displayName}</span>
 		</div>
 	</div>
-</div>
+{/snippet}
+
+{#snippet rightContent()}
+	<TabPanel {tabs} let:activeTab>
+		{#if activeTab === 'moves'}
+			<div class="moves-tab">
+				<div class="move-history-wrapper">
+					<MoveHistory {session} highlightLatestWhenNotPreviewing={!showStartPosition} />
+				</div>
+				<div class="nav-controls">
+					<button
+						class="text-link"
+						onclick={() => applyNavigation('first')}
+						disabled={atStart}
+						aria-label={i18n.t('gameReplay.firstMove')}
+					>|&lt;</button>
+					<button
+						class="text-link"
+						onclick={() => applyNavigation('prev')}
+						disabled={atStart}
+						aria-label={i18n.t('gameReplay.previousMove')}
+					>&lt;</button>
+					<span class="move-status">{moveStatusText}</span>
+					<button
+						class="text-link"
+						onclick={() => applyNavigation('next')}
+						disabled={atEnd}
+						aria-label={i18n.t('gameReplay.nextMove')}
+					>&gt;</button>
+					<button
+						class="text-link"
+						onclick={() => applyNavigation('last')}
+						disabled={atEnd}
+						aria-label={i18n.t('gameReplay.lastMove')}
+					>&gt;|</button>
+				</div>
+			</div>
+		{:else if activeTab === 'info'}
+			<div class="info-tab">
+				<span class="result-text" style="color: {getResultColor()}">{getResultLabel()}</span>
+				{#if getReasonText()}
+					<span class="text-secondary">{getReasonText()}</span>
+				{/if}
+
+				<hr class="divider" />
+
+				<div class="meta-row">
+					<span class="text-secondary">{formatTimeControl(data.game.timeControl)}</span>
+					<span class="text-secondary">·</span>
+					<span class="text-secondary">{formatDate(data.game.endedAt ?? data.game.startedAt)}</span>
+					<span class="text-secondary">·</span>
+					<span class="text-secondary">{getDurationLabel()}</span>
+				</div>
+
+				<hr class="divider" />
+
+				<button class="text-link" onclick={copyPgn}>{i18n.t('gameReplay.copyPgn')}</button>
+			</div>
+		{/if}
+	</TabPanel>
+{/snippet}
 
 <style>
-	.replay-page {
+	.replay-center {
 		display: flex;
 		flex-direction: column;
-		gap: 1rem;
-		padding: 1rem;
-		min-height: 100vh;
-		max-width: 1200px;
-		margin: 0 auto;
-		width: 100%;
-	}
-
-	.back-link {
-		display: inline-flex;
-		align-items: center;
 		gap: 0.5rem;
-		color: var(--theme-text-secondary, #aaa);
-		text-decoration: none;
-		font-size: 0.875rem;
-		min-height: 44px;
-		min-width: 44px;
-		padding: 0.25rem 0;
-		transition: color 0.15s;
-	}
-
-	.back-link:hover {
-		color: var(--theme-text-primary, #eee);
-	}
-
-	/* Layout */
-	.replay-layout {
-		display: flex;
-		flex-direction: column;
-		gap: 1rem;
-	}
-
-	.board-area {
-		display: flex;
-		flex-direction: column;
-		gap: 0.75rem;
+		padding-top: 0.5rem;
 	}
 
 	.board-wrapper {
 		container-type: size;
 		width: 100%;
-		max-width: 600px;
 		aspect-ratio: 12 / 13;
-		margin: 0 auto;
 	}
 
-	/* Sidebar */
-	.sidebar {
-		display: flex;
-		flex-direction: column;
-		gap: 0.75rem;
-	}
-
-	/* Metadata panel */
-	.metadata-panel {
-		background: var(--theme-bg-panel, #222);
-		border: 1px solid var(--theme-border, #444);
-		border-radius: 12px;
-		padding: 1rem;
-		display: flex;
-		flex-direction: column;
-		gap: 0.75rem;
-	}
-
-	.players-row {
+	.player-bar {
 		display: flex;
 		align-items: center;
 		gap: 0.5rem;
-		flex-wrap: wrap;
-	}
-
-	.player {
-		display: flex;
-		align-items: center;
-		gap: 0.4rem;
+		font-size: 0.8125rem;
 	}
 
 	.color-dot {
-		width: 10px;
-		height: 10px;
+		width: 8px;
+		height: 8px;
 		border-radius: 50%;
 		flex-shrink: 0;
 	}
 
-	.color-dot.red {
-		background: #ef4444;
-	}
-
-	.color-dot.blue {
-		background: #3b82f6;
-	}
+	.color-dot.red { background: #ef4444; }
+	.color-dot.blue { background: #3b82f6; }
 
 	.player-name {
-		font-size: 0.9rem;
 		font-weight: 600;
 		color: var(--theme-text-primary, #eee);
 	}
 
-	.vs-label {
-		font-size: 0.75rem;
+	.vs-text {
 		color: var(--theme-text-secondary, #aaa);
+		font-size: 0.75rem;
 	}
 
-	.result-row {
+	.text-secondary {
+		color: var(--theme-text-secondary, #aaa);
+		font-size: 0.8125rem;
+	}
+
+	.moves-tab {
 		display: flex;
-		align-items: center;
+		flex-direction: column;
 		gap: 0.5rem;
+		height: 100%;
 	}
 
-	.result-badge {
-		font-size: 0.9rem;
-		font-weight: 700;
-	}
-
-	.result-reason {
-		font-size: 0.75rem;
-		color: var(--theme-text-secondary, #aaa);
-	}
-
-	.meta-details {
-		display: flex;
-		align-items: center;
-		gap: 0.35rem;
-		font-size: 0.75rem;
-		color: var(--theme-text-secondary, #aaa);
-	}
-
-	.meta-sep {
-		opacity: 0.5;
-	}
-
-	.copy-pgn-btn {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.4rem;
-		padding: 0.4rem 0.75rem;
-		background: var(--theme-bg-dark, #111);
-		border: 1px solid var(--theme-border, #444);
-		border-radius: 8px;
-		color: var(--theme-text-secondary, #aaa);
-		font-size: 0.8rem;
-		cursor: pointer;
-		min-height: 44px;
-		min-width: 44px;
-		transition:
-			border-color 0.15s,
-			color 0.15s;
-		align-self: flex-start;
-	}
-
-	.copy-pgn-btn:hover {
-		border-color: var(--theme-primary, #06b6d4);
-		color: var(--theme-text-primary, #eee);
-	}
-
-	/* Move history wrapper */
 	.move-history-wrapper {
-		height: 200px;
+		flex: 1;
 		min-height: 120px;
 	}
 
-	/* Navigation controls */
 	.nav-controls {
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		gap: 0.25rem;
-		padding: 0.5rem;
-		background: var(--theme-bg-panel, #222);
-		border: 1px solid var(--theme-border, #444);
-		border-radius: 12px;
-	}
-
-	.nav-btn {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		min-height: 44px;
-		min-width: 44px;
-		padding: 0.5rem;
-		background: transparent;
-		border: 1px solid transparent;
-		border-radius: 8px;
-		color: var(--theme-text-primary, #eee);
-		cursor: pointer;
-		transition:
-			background 0.15s,
-			border-color 0.15s;
-	}
-
-	.nav-btn:hover:not(:disabled) {
-		background: var(--theme-bg-dark, #111);
-		border-color: var(--theme-border, #444);
-	}
-
-	.nav-btn:disabled {
-		opacity: 0.3;
-		cursor: default;
+		gap: 0.75rem;
+		padding: 0.375rem 0;
 	}
 
 	.move-status {
 		font-size: 0.75rem;
 		color: var(--theme-text-secondary, #aaa);
 		text-align: center;
-		min-width: 100px;
+		min-width: 80px;
 		white-space: nowrap;
 	}
 
-	/* Mobile/Desktop visibility */
-	.mobile-only {
+	.info-tab {
 		display: flex;
-	}
-	.desktop-only {
-		display: none;
-	}
-
-	/* Desktop layout */
-	@media (min-width: 768px) {
-		.replay-layout {
-			flex-direction: row;
-			align-items: flex-start;
-		}
-
-		.board-area {
-			flex: 0 0 62%;
-			max-width: 62%;
-		}
-
-		.board-wrapper {
-			max-width: 100%;
-		}
-
-		.sidebar {
-			flex: 1;
-			min-width: 0;
-		}
-
-		.move-history-wrapper {
-			height: 300px;
-		}
-
-		.mobile-only {
-			display: none;
-		}
-		.desktop-only {
-			display: flex;
-		}
+		flex-direction: column;
+		gap: 0.5rem;
 	}
 
-	@media (min-width: 1024px) {
-		.replay-page {
-			padding: 1.5rem 2rem;
-		}
+	.result-text {
+		font-size: 1rem;
+		font-weight: 700;
+	}
 
-		.board-area {
-			flex: 0 0 60%;
-			max-width: 60%;
-		}
+	.meta-row {
+		display: flex;
+		align-items: center;
+		gap: 0.35rem;
+		flex-wrap: wrap;
 	}
 </style>
