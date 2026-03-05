@@ -1,20 +1,209 @@
-# Command Center UI Redesign — Implementation Plan
+# Command Center Full Visual Overhaul — Implementation Plan
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
-**Goal:** Replace the current app shell with an IDE-style Command Center layout — 48px icon rail, board-dominant center, right-side tab panel.
+**Goal:** Complete Lichess-inspired visual overhaul — strip all decorative UI, flatten surfaces, densify typography, redesign every page from scratch within the Command Center layout shell.
 
-**Architecture:** Slot-based `CommandCenter.svelte` component receives center content and tab definitions as Svelte 5 snippets. Root layout provides the icon rail and mobile hamburger. Each page declares what goes in the center and which tabs appear in the right panel.
+**Architecture:** Each page imports `CommandCenter.svelte` directly with center content + tab snippets. Root layout provides only the 48px icon rail, mobile hamburger, and global dialogs. All content is text-first, no containers, no cards.
 
-**Tech Stack:** SvelteKit 2.16, Svelte 5 (runes), Tailwind CSS 4, CSS Grid, bits-ui, lucide-svelte, Vitest
+**Tech Stack:** SvelteKit 2.16, Svelte 5 (runes), Tailwind CSS 4, CSS Grid, bits-ui (dialogs only), lucide-svelte (sidebar only), Vitest
 
 **Design doc:** `docs/plans/2026-03-05-command-center-redesign-design.md`
 
 ---
 
-## Task 1: Create the TabPanel component
+## Task 1: Create CSS utility classes for the new visual system
 
-The tab switching component used inside the right panel. Build this first since CommandCenter depends on it.
+Before any components, establish the flat styling primitives all pages will use.
+
+**Files:**
+
+- Modify: `apps/cotulenh/app/src/app.css`
+- Create: `apps/cotulenh/app/src/lib/styles/command-center.css`
+
+**Step 1: Write the failing test**
+
+Create `apps/cotulenh/app/src/lib/styles/command-center.test.ts`:
+
+```ts
+import { describe, expect, it } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+
+const cssPath = resolve(process.cwd(), 'src/lib/styles/command-center.css');
+
+describe('command center CSS utilities', () => {
+  it('defines section-header class', () => {
+    const source = readFileSync(cssPath, 'utf8');
+    expect(source).toContain('.section-header');
+    expect(source).toContain('text-transform: uppercase');
+    expect(source).toContain('font-family: var(--font-mono)');
+  });
+
+  it('defines divider class', () => {
+    const source = readFileSync(cssPath, 'utf8');
+    expect(source).toContain('.divider');
+    expect(source).toContain('border-top: 1px solid');
+  });
+
+  it('defines text-link class with no background or border', () => {
+    const source = readFileSync(cssPath, 'utf8');
+    expect(source).toContain('.text-link');
+    expect(source).not.toContain('border-radius');
+  });
+
+  it('defines primary-cta with accent background', () => {
+    const source = readFileSync(cssPath, 'utf8');
+    expect(source).toContain('.primary-cta');
+    expect(source).toContain('--theme-primary');
+  });
+
+  it('defines toggle-group for text toggles', () => {
+    const source = readFileSync(cssPath, 'utf8');
+    expect(source).toContain('.toggle-group');
+  });
+
+  it('defines flat-list for dense lists', () => {
+    const source = readFileSync(cssPath, 'utf8');
+    expect(source).toContain('.flat-list');
+  });
+});
+```
+
+**Step 2: Run test to verify it fails**
+
+Run: `cd apps/cotulenh/app && npx vitest run src/lib/styles/command-center.test.ts`
+
+**Step 3: Create command-center.css**
+
+Create `apps/cotulenh/app/src/lib/styles/command-center.css`:
+
+```css
+/* Command Center Visual System — Lichess-inspired flat utilities */
+
+.section-header {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--theme-text-secondary, #aaa);
+  margin: 0;
+  padding: 0;
+}
+
+.divider {
+  border: none;
+  border-top: 1px solid var(--theme-border, #333);
+  margin: 0.75rem 0;
+}
+
+.text-link {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--theme-text-secondary, #aaa);
+  font-family: var(--font-ui);
+  font-size: 0.8125rem;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.text-link:hover {
+  color: var(--theme-primary, #06b6d4);
+  text-decoration: underline;
+}
+
+.primary-cta {
+  display: inline-block;
+  padding: 0.625rem 2rem;
+  background: var(--theme-primary, #06b6d4);
+  color: var(--theme-text-inverse, #000);
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+}
+
+.primary-cta:hover {
+  opacity: 0.85;
+}
+
+.toggle-group {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+}
+
+.toggle-group button {
+  background: none;
+  border: none;
+  padding: 0.25rem 0.5rem;
+  color: var(--theme-text-secondary, #aaa);
+  font: inherit;
+  cursor: pointer;
+}
+
+.toggle-group button.active {
+  color: var(--theme-text-primary, #eee);
+}
+
+.toggle-group .separator {
+  color: var(--theme-text-secondary, #666);
+}
+
+.flat-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.flat-list-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0;
+  font-size: 0.8125rem;
+  color: var(--theme-text-secondary, #aaa);
+}
+
+.flat-list-item:hover {
+  color: var(--theme-text-primary, #eee);
+}
+
+.status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--theme-primary, #06b6d4);
+  flex-shrink: 0;
+}
+
+.status-dot.offline {
+  background: var(--theme-text-secondary, #666);
+}
+```
+
+**Step 4: Run test to verify it passes**
+
+Run: `cd apps/cotulenh/app && npx vitest run src/lib/styles/command-center.test.ts`
+
+**Step 5: Commit**
+
+```bash
+git add apps/cotulenh/app/src/lib/styles/command-center.css apps/cotulenh/app/src/lib/styles/command-center.test.ts
+git commit -m "feat: add Lichess-style CSS utility classes for Command Center"
+```
+
+---
+
+## Task 2: Create the TabPanel component
 
 **Files:**
 
@@ -33,40 +222,34 @@ import { resolve } from 'node:path';
 const componentPath = resolve(process.cwd(), 'src/lib/components/TabPanel.svelte');
 
 describe('TabPanel component', () => {
-  it('exists and exports expected interface', () => {
+  it('exists with tab-bar and tab-content structure', () => {
     const source = readFileSync(componentPath, 'utf8');
-
-    // Props interface
-    expect(source).toContain('tabs');
-    expect(source).toContain('activeTab');
-
-    // Tab bar structure
     expect(source).toContain('tab-bar');
     expect(source).toContain('tab-button');
     expect(source).toContain('tab-content');
-
-    // Active state styling
-    expect(source).toContain('active');
   });
 
-  it('uses monospace uppercase styling for tab labels', () => {
+  it('uses monospace uppercase for tab labels', () => {
     const source = readFileSync(componentPath, 'utf8');
-
     expect(source).toContain('font-family: var(--font-mono)');
     expect(source).toContain('text-transform: uppercase');
   });
 
-  it('has no animation on tab switch', () => {
+  it('has no animation or transition', () => {
     const source = readFileSync(componentPath, 'utf8');
-
     expect(source).not.toContain('transition');
     expect(source).not.toContain('animation');
   });
 
-  it('renders tab content with independent scroll', () => {
+  it('scrolls tab content independently', () => {
     const source = readFileSync(componentPath, 'utf8');
-
     expect(source).toContain('overflow-y: auto');
+  });
+
+  it('has 2px bottom accent underline on active tab', () => {
+    const source = readFileSync(componentPath, 'utf8');
+    expect(source).toContain('border-bottom');
+    expect(source).toContain('--theme-primary');
   });
 });
 ```
@@ -74,9 +257,8 @@ describe('TabPanel component', () => {
 **Step 2: Run test to verify it fails**
 
 Run: `cd apps/cotulenh/app && npx vitest run src/lib/components/TabPanel.test.ts`
-Expected: FAIL — file does not exist
 
-**Step 3: Implement the TabPanel component**
+**Step 3: Implement TabPanel**
 
 Create `apps/cotulenh/app/src/lib/components/TabPanel.svelte`:
 
@@ -132,8 +314,7 @@ Create `apps/cotulenh/app/src/lib/components/TabPanel.svelte`:
 
   .tab-bar {
     display: flex;
-    gap: 0;
-    border-bottom: 1px solid var(--theme-border, #444);
+    border-bottom: 1px solid var(--theme-border, #333);
     flex-shrink: 0;
   }
 
@@ -144,7 +325,7 @@ Create `apps/cotulenh/app/src/lib/components/TabPanel.svelte`:
     border-bottom: 2px solid transparent;
     color: var(--theme-text-secondary, #aaa);
     font-family: var(--font-mono);
-    font-size: 0.7rem;
+    font-size: 0.6875rem;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.05em;
@@ -169,23 +350,16 @@ Create `apps/cotulenh/app/src/lib/components/TabPanel.svelte`:
 </style>
 ```
 
-**Step 4: Run test to verify it passes**
-
-Run: `cd apps/cotulenh/app && npx vitest run src/lib/components/TabPanel.test.ts`
-Expected: PASS
-
-**Step 5: Commit**
+**Step 4: Run test, verify pass. Step 5: Commit.**
 
 ```bash
 git add apps/cotulenh/app/src/lib/components/TabPanel.svelte apps/cotulenh/app/src/lib/components/TabPanel.test.ts
-git commit -m "feat: add TabPanel component for right-side tab switching"
+git commit -m "feat: add TabPanel component — monospace tabs, no animation"
 ```
 
 ---
 
-## Task 2: Create the CommandCenter layout component
-
-The 2-column layout (center + right panel) that pages use.
+## Task 3: Create the CommandCenter layout component
 
 **Files:**
 
@@ -204,39 +378,35 @@ import { resolve } from 'node:path';
 const componentPath = resolve(process.cwd(), 'src/lib/components/CommandCenter.svelte');
 
 describe('CommandCenter layout component', () => {
-  it('exists and defines the 2-column grid', () => {
+  it('defines 2-column grid with 320px right panel', () => {
     const source = readFileSync(componentPath, 'utf8');
-
     expect(source).toContain('command-center');
     expect(source).toContain('center-area');
     expect(source).toContain('right-panel');
+    expect(source).toContain('320px');
   });
 
   it('uses TabPanel for right-side tabs', () => {
     const source = readFileSync(componentPath, 'utf8');
-
     expect(source).toContain("import TabPanel from './TabPanel.svelte'");
   });
 
-  it('accepts center snippet and tabs array as props', () => {
+  it('accepts center snippet and tabs array', () => {
     const source = readFileSync(componentPath, 'utf8');
-
     expect(source).toContain('center');
     expect(source).toContain('tabs');
     expect(source).toContain('Snippet');
   });
 
-  it('has right panel fixed at 320px', () => {
+  it('has mobile overlay toggle', () => {
     const source = readFileSync(componentPath, 'utf8');
-
-    expect(source).toContain('320px');
-  });
-
-  it('hides right panel on mobile and shows toggle button', () => {
-    const source = readFileSync(componentPath, 'utf8');
-
     expect(source).toContain('mobile-panel-toggle');
     expect(source).toContain('mobile-panel-overlay');
+  });
+
+  it('imports command-center.css for utility classes', () => {
+    const source = readFileSync(componentPath, 'utf8');
+    expect(source).toContain('command-center.css');
   });
 });
 ```
@@ -244,9 +414,8 @@ describe('CommandCenter layout component', () => {
 **Step 2: Run test to verify it fails**
 
 Run: `cd apps/cotulenh/app && npx vitest run src/lib/components/CommandCenter.test.ts`
-Expected: FAIL — file does not exist
 
-**Step 3: Implement the CommandCenter component**
+**Step 3: Implement CommandCenter**
 
 Create `apps/cotulenh/app/src/lib/components/CommandCenter.svelte`:
 
@@ -255,7 +424,7 @@ Create `apps/cotulenh/app/src/lib/components/CommandCenter.svelte`:
   import { browser } from '$app/environment';
   import type { Snippet } from 'svelte';
   import TabPanel from './TabPanel.svelte';
-  import { PanelRight, X } from 'lucide-svelte';
+  import '$lib/styles/command-center.css';
 
   interface Tab {
     id: string;
@@ -280,23 +449,20 @@ Create `apps/cotulenh/app/src/lib/components/CommandCenter.svelte`:
   </div>
 
   {#if hasTabs}
-    <!-- Desktop right panel -->
     <aside class="right-panel max-md:hidden">
       <TabPanel {tabs} />
     </aside>
 
-    <!-- Mobile toggle button -->
     {#if browser}
       <button
         class="mobile-panel-toggle hidden max-md:flex"
         onclick={() => (mobileOverlayOpen = true)}
         aria-label="Open panel"
       >
-        <PanelRight size={20} />
+        ≡
       </button>
     {/if}
 
-    <!-- Mobile overlay -->
     {#if mobileOverlayOpen}
       <div class="mobile-panel-overlay" role="dialog" aria-modal="true">
         <div class="mobile-panel-header">
@@ -305,7 +471,7 @@ Create `apps/cotulenh/app/src/lib/components/CommandCenter.svelte`:
             onclick={() => (mobileOverlayOpen = false)}
             aria-label="Close panel"
           >
-            <X size={20} />
+            ×
           </button>
         </div>
         <div class="mobile-panel-content">
@@ -333,29 +499,29 @@ Create `apps/cotulenh/app/src/lib/components/CommandCenter.svelte`:
     min-height: 0;
     display: flex;
     flex-direction: column;
+    padding: 0.75rem;
   }
 
   .right-panel {
     display: flex;
     flex-direction: column;
-    border-left: 1px solid var(--theme-border, #444);
-    background: var(--theme-bg-panel, #222);
+    border-left: 1px solid var(--theme-border, #333);
+    background: var(--theme-bg-panel, #1a1a1a);
     min-height: 0;
     overflow: hidden;
   }
 
-  /* Mobile toggle */
   .mobile-panel-toggle {
     position: fixed;
     top: 0.75rem;
     right: 0.75rem;
     z-index: 140;
-    width: 40px;
-    height: 40px;
-    border-radius: 6px;
-    background: var(--theme-bg-panel, #222);
-    border: 1px solid var(--theme-border, #444);
+    width: 36px;
+    height: 36px;
+    background: var(--theme-bg-panel, #1a1a1a);
+    border: 1px solid var(--theme-border, #333);
     color: var(--theme-text-secondary, #aaa);
+    font-size: 1.25rem;
     cursor: pointer;
     display: none;
     align-items: center;
@@ -365,10 +531,8 @@ Create `apps/cotulenh/app/src/lib/components/CommandCenter.svelte`:
 
   .mobile-panel-toggle:hover {
     color: var(--theme-primary, #06b6d4);
-    border-color: var(--theme-primary, #06b6d4);
   }
 
-  /* Mobile overlay */
   .mobile-panel-overlay {
     position: fixed;
     inset: 0;
@@ -380,19 +544,18 @@ Create `apps/cotulenh/app/src/lib/components/CommandCenter.svelte`:
 
   .mobile-panel-header {
     display: flex;
-    align-items: center;
     padding: 0.5rem;
-    border-bottom: 1px solid var(--theme-border, #444);
+    border-bottom: 1px solid var(--theme-border, #333);
     flex-shrink: 0;
   }
 
   .mobile-panel-close {
-    width: 40px;
-    height: 40px;
-    border-radius: 6px;
+    width: 36px;
+    height: 36px;
     background: none;
-    border: 1px solid var(--theme-border, #444);
+    border: 1px solid var(--theme-border, #333);
     color: var(--theme-text-secondary, #aaa);
+    font-size: 1.25rem;
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -402,7 +565,6 @@ Create `apps/cotulenh/app/src/lib/components/CommandCenter.svelte`:
 
   .mobile-panel-close:hover {
     color: var(--theme-primary, #06b6d4);
-    border-color: var(--theme-primary, #06b6d4);
   }
 
   .mobile-panel-content {
@@ -427,30 +589,26 @@ Create `apps/cotulenh/app/src/lib/components/CommandCenter.svelte`:
 </style>
 ```
 
-**Step 4: Run test to verify it passes**
-
-Run: `cd apps/cotulenh/app && npx vitest run src/lib/components/CommandCenter.test.ts`
-Expected: PASS
-
-**Step 5: Commit**
+**Step 4: Run test, verify pass. Step 5: Commit.**
 
 ```bash
 git add apps/cotulenh/app/src/lib/components/CommandCenter.svelte apps/cotulenh/app/src/lib/components/CommandCenter.test.ts
-git commit -m "feat: add CommandCenter layout component with mobile overlay"
+git commit -m "feat: add CommandCenter layout — center + right panel grid with mobile overlay"
 ```
 
 ---
 
-## Task 3: Refactor root layout to 48px icon rail
+## Task 4: Refactor root layout to 48px icon rail
 
-Replace the 80px sidebar with labels → 48px icon-only rail with VS Code-style active indicator.
+Strip sidebar to icon-only. Remove text labels. Shrink to 48px. VS Code active indicator.
 
 **Files:**
 
 - Modify: `apps/cotulenh/app/src/routes/+layout.svelte`
-- Modify: `apps/cotulenh/app/src/routes/layout.feedback-ui.test.ts` (update expectations)
+- Create: `apps/cotulenh/app/src/routes/layout.icon-rail.test.ts`
+- Modify: `apps/cotulenh/app/src/routes/layout.feedback-ui.test.ts`
 
-**Step 1: Write the failing test for the new sidebar structure**
+**Step 1: Write failing test for new rail**
 
 Create `apps/cotulenh/app/src/routes/layout.icon-rail.test.ts`:
 
@@ -461,618 +619,64 @@ import { resolve } from 'node:path';
 
 const layoutPath = resolve(process.cwd(), 'src/routes/+layout.svelte');
 
-describe('icon rail layout', () => {
-  it('has 48px icon rail instead of 80px sidebar', () => {
+describe('48px icon rail', () => {
+  it('uses 48px width, not 80px', () => {
     const source = readFileSync(layoutPath, 'utf8');
-
-    // New: 48px rail
     expect(source).toContain('width: 48px');
     expect(source).toContain('margin-left: 48px');
-
-    // Old: 80px sidebar should be gone
     expect(source).not.toContain('width: 80px');
-    expect(source).not.toContain('margin-left: 80px');
   });
 
-  it('has no text labels in sidebar links', () => {
+  it('has no text labels in sidebar', () => {
     const source = readFileSync(layoutPath, 'utf8');
-
-    // sidebar-label class should be removed
     expect(source).not.toContain('sidebar-label');
   });
 
-  it('uses title attributes for tooltips on sidebar links', () => {
+  it('uses left border accent for active state', () => {
     const source = readFileSync(layoutPath, 'utf8');
-
-    // Each link should have a title for tooltip
-    expect(source).toContain('title={i18n.t(');
-  });
-
-  it('has active indicator bar instead of filled background', () => {
-    const source = readFileSync(layoutPath, 'utf8');
-
-    // Active state: left border accent, not background fill
     expect(source).toContain('border-left');
-    expect(source).toContain('--theme-primary');
   });
 });
 ```
 
 **Step 2: Run test to verify it fails**
 
-Run: `cd apps/cotulenh/app && npx vitest run src/routes/layout.icon-rail.test.ts`
-Expected: FAIL — old layout has 80px, labels, etc.
-
-**Step 3: Modify the root layout**
-
-Edit `apps/cotulenh/app/src/routes/+layout.svelte`. The changes are:
-
-1. **Remove all `<span class="sidebar-label">` elements** from both desktop sidebar and mobile menu
-2. **Remove `.sidebar-label` CSS class**
-3. **Change `.sidebar` width from `80px` to `48px`**
-4. **Change `.app-content` margin-left from `80px` to `48px`**
-5. **Change `.sidebar-link` active style** — replace background fill with left border:
-
-Replace the `.sidebar-link.active` CSS block:
-
-```css
-.sidebar-link.active {
-  color: var(--theme-primary, #06b6d4);
-  background: transparent;
-  border-left: 2px solid var(--theme-primary, #06b6d4);
-  border-radius: 0;
-}
-```
-
-6. **Change `.sidebar-icon` size** from `22px` to `20px`
-7. **Adjust `.sidebar-link` padding** to center icons in 48px rail:
-
-```css
-.sidebar-link {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  margin: 0 auto;
-  border-radius: 6px;
-  text-decoration: none;
-  color: var(--theme-text-secondary, #aaa);
-  background: transparent;
-  border: none;
-  border-left: 2px solid transparent;
-  cursor: pointer;
-  padding: 0;
-}
-```
-
-**Step 4: Update the feedback UI test to match new sidebar structure**
-
-In `apps/cotulenh/app/src/routes/layout.feedback-ui.test.ts`, update expectations that reference `sidebar-icon` class or `sidebar-label` — remove assertions about labels, keep assertions about dialog wiring.
-
-**Step 5: Run all layout tests to verify they pass**
-
-Run: `cd apps/cotulenh/app && npx vitest run src/routes/layout`
-Expected: ALL PASS
-
-**Step 6: Commit**
-
-```bash
-git add apps/cotulenh/app/src/routes/+layout.svelte apps/cotulenh/app/src/routes/layout.icon-rail.test.ts apps/cotulenh/app/src/routes/layout.feedback-ui.test.ts
-git commit -m "feat: refactor sidebar to 48px icon-only rail with accent bar active state"
-```
-
----
-
-## Task 4: Integrate CommandCenter into root layout
-
-Wire up the `CommandCenter` component so that `{@render children()}` flows through it.
-
-**Files:**
-
-- Modify: `apps/cotulenh/app/src/routes/+layout.svelte`
-
-**Step 1: Write the failing test**
-
-Create `apps/cotulenh/app/src/routes/layout.command-center.test.ts`:
-
-```ts
-import { describe, expect, it } from 'vitest';
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
-
-const layoutPath = resolve(process.cwd(), 'src/routes/+layout.svelte');
-
-describe('CommandCenter integration in root layout', () => {
-  it('imports and renders CommandCenter component', () => {
-    const source = readFileSync(layoutPath, 'utf8');
-
-    expect(source).toContain("import CommandCenter from '$lib/components/CommandCenter.svelte'");
-    expect(source).toContain('<CommandCenter');
-  });
-
-  it('passes children as center snippet to CommandCenter', () => {
-    const source = readFileSync(layoutPath, 'utf8');
-
-    // The children should be rendered inside CommandCenter's center snippet
-    expect(source).toContain('{@render children()}');
-    expect(source).toContain('center');
-  });
-});
-```
-
-**Step 2: Run test to verify it fails**
-
-Run: `cd apps/cotulenh/app && npx vitest run src/routes/layout.command-center.test.ts`
-Expected: FAIL — CommandCenter not imported yet
-
-**Step 3: Modify root layout to use CommandCenter**
+**Step 3: Modify root layout**
 
 In `apps/cotulenh/app/src/routes/+layout.svelte`:
 
-1. Add import: `import CommandCenter from '$lib/components/CommandCenter.svelte';`
-2. Replace the `<main class="app-content ...">` section with:
+1. Remove all `<span class="sidebar-label">...</span>` elements (both desktop and mobile)
+2. Change `.sidebar` width: `80px` → `48px`
+3. Change `.app-content` margin-left: `80px` → `48px`
+4. Replace `.sidebar-link` styles — remove flex-direction column, add center alignment, 40×40px, no border-radius
+5. Replace `.sidebar-link.active` — use `border-left: 2px solid var(--theme-primary)` instead of background fill
+6. Change `.sidebar-icon` from `22px` to `20px`
+7. Remove `.sidebar-label` CSS class entirely
+8. Remove `.user-name` element and CSS (just show avatar)
+9. Tighten `.sidebar-footer` and `.sidebar-nav` gaps
 
-```svelte
-<main class="app-content max-md:ml-0">
-  <CommandCenter>
-    {#snippet center()}
-      {@render children()}
-    {/snippet}
-  </CommandCenter>
-</main>
-```
+**Step 4: Update layout.feedback-ui.test.ts** — remove assertions about `sidebar-icon` class and `sidebar-label` text that no longer exist
 
-Note: At this stage, no pages pass tabs yet, so the right panel won't show. That's correct — we'll add tabs page by page in subsequent tasks.
-
-**Step 4: Run test to verify it passes**
-
-Run: `cd apps/cotulenh/app && npx vitest run src/routes/layout.command-center.test.ts`
-Expected: PASS
-
-**Step 5: Run the full test suite to verify no regressions**
-
-Run: `cd apps/cotulenh/app && npx vitest run`
-Expected: ALL PASS
-
-**Step 6: Commit**
+**Step 5: Run all layout tests. Step 6: Commit.**
 
 ```bash
-git add apps/cotulenh/app/src/routes/+layout.svelte apps/cotulenh/app/src/routes/layout.command-center.test.ts
-git commit -m "feat: integrate CommandCenter layout component into root layout"
+git add apps/cotulenh/app/src/routes/+layout.svelte apps/cotulenh/app/src/routes/layout.icon-rail.test.ts apps/cotulenh/app/src/routes/layout.feedback-ui.test.ts
+git commit -m "feat: shrink sidebar to 48px icon-only rail with accent bar active state"
 ```
 
 ---
 
-## Task 5: Migrate local play page to Command Center layout
+## Task 5: Strip app.css — remove decorative classes, add base overrides
 
-Move the controls section from PlayDesktop's right column into CommandCenter tabs.
-
-**Files:**
-
-- Modify: `apps/cotulenh/app/src/routes/play/PlayDesktop.svelte`
-- Modify: `apps/cotulenh/app/src/routes/play/+page.svelte`
-
-**Step 1: Write the failing test**
-
-Create `apps/cotulenh/app/src/routes/play/play-command-center.test.ts`:
-
-```ts
-import { describe, expect, it } from 'vitest';
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
-
-const desktopPath = resolve(process.cwd(), 'src/routes/play/PlayDesktop.svelte');
-
-describe('play page Command Center integration', () => {
-  it('exports tabs for CommandCenter consumption', () => {
-    const source = readFileSync(desktopPath, 'utf8');
-
-    // Should have tab definitions or snippets for moves/cards
-    expect(source).toContain('tabs');
-  });
-
-  it('board section takes full center area', () => {
-    const source = readFileSync(desktopPath, 'utf8');
-
-    // Board should be the primary center content
-    expect(source).toContain('BoardContainer');
-  });
-});
-```
-
-**Step 2: Run test to verify it fails**
-
-Run: `cd apps/cotulenh/app && npx vitest run src/routes/play/play-command-center.test.ts`
-Expected: FAIL
-
-**Step 3: Refactor PlayDesktop.svelte**
-
-The current PlayDesktop has a 2-column layout: board | controls. We need to:
-
-1. Make the board the only center content
-2. Move MoveHistory, GameInfo, ClockPanel, GameControls into tab snippets
-3. Export a `tabs` array that the parent page can pass to CommandCenter
-
-Key changes to `PlayDesktop.svelte`:
-
-- Remove the `controls-section` div and its 340px fixed width styling
-- Remove the `.game-layout` flex container (board now fills center area naturally)
-- Keep the board section as the sole content
-- Define `{#snippet}` blocks for Moves (MoveHistory + ClockPanel) and Controls (GameInfo + GameControls)
-- Export these as props that the parent `+page.svelte` can access
-
-Since Svelte 5 doesn't allow exporting snippets directly from child components, the approach is:
-
-- Move tab content definitions into the parent `+page.svelte`
-- `PlayDesktop.svelte` becomes a board-only wrapper
-- The parent page defines snippets for MoveHistory, GameControls etc. and passes them as tabs
-
-**Step 4: Update +page.svelte to pass tabs**
-
-The `+page.svelte` needs to be updated to not use `ResponsiveLayout` for desktop (since the layout is now handled by CommandCenter), or to make the desktop variant board-only and pass tab data up.
-
-This is a significant refactor — the exact approach depends on how the existing `ResponsiveLayout` and game session state flow. The implementor should:
-
-1. Read `PlayDesktop.svelte` and `PlayMobile.svelte` fully
-2. Extract the controls (MoveHistory, GameInfo, ClockPanel, GameControls) into snippets defined in the parent
-3. Pass them to CommandCenter via the `+page.svelte` → root layout chain
-
-**Important:** Since SvelteKit doesn't have a built-in mechanism for child pages to pass data to parent layouts, we need a pattern. Two options:
-
-- **Option A:** Use Svelte context — the page sets tabs via context, the layout reads them
-- **Option B:** Each page wraps itself in `<CommandCenter>` directly instead of the root layout doing it
-
-**Recommended: Option B.** Remove `<CommandCenter>` from the root layout. Instead, each page imports and uses `<CommandCenter>` directly. This gives each page full control over its tabs and center content.
-
-If choosing Option B, update Task 4 to NOT add CommandCenter to the root layout. Instead, the root layout just provides the 48px icon rail, and each page wraps its own content in `<CommandCenter>`.
-
-**Step 5: Run tests to verify**
-
-Run: `cd apps/cotulenh/app && npx vitest run`
-Expected: ALL PASS
-
-**Step 6: Commit**
-
-```bash
-git add apps/cotulenh/app/src/routes/play/
-git commit -m "feat: migrate local play page to Command Center layout with Moves/Controls tabs"
-```
-
----
-
-## Task 6: Migrate home page to split-pane dashboard
-
-Replace the current feature-card landing page with a Command Center split-pane dashboard.
-
-**Files:**
-
-- Modify: `apps/cotulenh/app/src/routes/+page.svelte`
-
-**Step 1: Write the failing test**
-
-Create `apps/cotulenh/app/src/routes/page.command-center.test.ts`:
-
-```ts
-import { describe, expect, it } from 'vitest';
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
-
-const pagePath = resolve(process.cwd(), 'src/routes/+page.svelte');
-
-describe('home page Command Center dashboard', () => {
-  it('uses CommandCenter component', () => {
-    const source = readFileSync(pagePath, 'utf8');
-
-    expect(source).toContain('CommandCenter');
-  });
-
-  it('has split-pane layout in center area', () => {
-    const source = readFileSync(pagePath, 'utf8');
-
-    expect(source).toContain('dashboard-split');
-  });
-
-  it('has quick play actions', () => {
-    const source = readFileSync(pagePath, 'utf8');
-
-    expect(source).toContain('href="/play"');
-  });
-
-  it('defines Activity and Friends tabs', () => {
-    const source = readFileSync(pagePath, 'utf8');
-
-    expect(source).toContain('Activity');
-    expect(source).toContain('Friends');
-  });
-});
-```
-
-**Step 2: Run test to verify it fails**
-
-Run: `cd apps/cotulenh/app && npx vitest run src/routes/page.command-center.test.ts`
-Expected: FAIL
-
-**Step 3: Redesign the home page**
-
-Replace the current feature cards with a Command Center dashboard:
-
-**Center area — split-pane:**
-
-- Left column: Quick Play button, Create Game link, recent games list (placeholder)
-- Right column: Mini-board placeholder (static board showing a position)
-
-**Right panel tabs:**
-
-- Activity: Recent activity feed (placeholder: "No recent activity")
-- Friends: Online friends list (placeholder, will wire to real data in Epic 3)
-
-Remove: feature cards, coming soon section, hero header, all the decorative styling.
-
-The page should feel dense and utilitarian — stark text, minimal decoration.
-
-**Step 4: Run test to verify it passes**
-
-Run: `cd apps/cotulenh/app && npx vitest run src/routes/page.command-center.test.ts`
-Expected: PASS
-
-**Step 5: Commit**
-
-```bash
-git add apps/cotulenh/app/src/routes/+page.svelte apps/cotulenh/app/src/routes/page.command-center.test.ts
-git commit -m "feat: redesign home page as split-pane Command Center dashboard"
-```
-
----
-
-## Task 7: Migrate puzzles page to Command Center
-
-Move puzzle content into center area with hints tab in right panel.
-
-**Files:**
-
-- Modify: `apps/cotulenh/app/src/routes/puzzles/+page.svelte`
-
-**Step 1: Write the failing test**
-
-Create `apps/cotulenh/app/src/routes/puzzles/puzzles-command-center.test.ts`:
-
-```ts
-import { describe, expect, it } from 'vitest';
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
-
-const pagePath = resolve(process.cwd(), 'src/routes/puzzles/+page.svelte');
-
-describe('puzzles page Command Center integration', () => {
-  it('uses CommandCenter component', () => {
-    const source = readFileSync(pagePath, 'utf8');
-
-    expect(source).toContain('CommandCenter');
-  });
-
-  it('removes rounded card styling', () => {
-    const source = readFileSync(pagePath, 'utf8');
-
-    expect(source).not.toContain('border-radius: 12px');
-  });
-});
-```
-
-**Step 2: Run test to verify it fails**
-
-Run: `cd apps/cotulenh/app && npx vitest run src/routes/puzzles/puzzles-command-center.test.ts`
-Expected: FAIL
-
-**Step 3: Refactor puzzles page**
-
-1. Import and wrap in `<CommandCenter>`
-2. Center area: puzzle list with flat styling (no rounded cards, no large header)
-3. Right panel tabs: Moves (placeholder), Hints (selected puzzle's hint)
-4. Remove: decorative header, rounded card containers, gradient badges
-5. Use flat dividers between puzzle entries instead of card boxes
-
-**Step 4: Run test to verify it passes**
-
-Run: `cd apps/cotulenh/app && npx vitest run src/routes/puzzles/puzzles-command-center.test.ts`
-Expected: PASS
-
-**Step 5: Commit**
-
-```bash
-git add apps/cotulenh/app/src/routes/puzzles/
-git commit -m "feat: migrate puzzles page to Command Center layout"
-```
-
----
-
-## Task 8: Migrate board editor to Command Center
-
-Move piece palettes into right panel tabs.
-
-**Files:**
-
-- Modify: `apps/cotulenh/app/src/routes/board-editor/EditorDesktop.svelte`
-- Modify: `apps/cotulenh/app/src/routes/board-editor/+page.svelte`
-
-**Step 1: Write the failing test**
-
-Create `apps/cotulenh/app/src/routes/board-editor/editor-command-center.test.ts`:
-
-```ts
-import { describe, expect, it } from 'vitest';
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
-
-const desktopPath = resolve(process.cwd(), 'src/routes/board-editor/EditorDesktop.svelte');
-
-describe('board editor Command Center integration', () => {
-  it('uses CommandCenter or provides content for it', () => {
-    const source = readFileSync(desktopPath, 'utf8');
-
-    expect(source).toContain('CommandCenter');
-  });
-});
-```
-
-**Step 2: Run test to verify it fails**
-
-Run: `cd apps/cotulenh/app && npx vitest run src/routes/board-editor/editor-command-center.test.ts`
-Expected: FAIL
-
-**Step 3: Refactor board editor**
-
-1. Board fills center area
-2. Right panel tabs: Pieces (PiecePalette components), Setup (PaletteControls)
-3. The editor's side controls move into the tab content areas
-
-**Step 4: Run test to verify it passes**
-
-Run: `cd apps/cotulenh/app && npx vitest run src/routes/board-editor/editor-command-center.test.ts`
-Expected: PASS
-
-**Step 5: Commit**
-
-```bash
-git add apps/cotulenh/app/src/routes/board-editor/
-git commit -m "feat: migrate board editor to Command Center layout"
-```
-
----
-
-## Task 9: Migrate learn pages to Command Center
-
-Move lesson controls into right panel tabs (Lesson, Hints, Progress).
-
-**Files:**
-
-- Modify: `apps/cotulenh/app/src/routes/learn/+page.svelte` (hub)
-- Modify: `apps/cotulenh/app/src/routes/learn/[subjectId]/+page.svelte` (subject)
-- Modify: `apps/cotulenh/app/src/routes/learn/[subjectId]/[sectionId]/[lessonId]/+page.svelte` (lesson)
-
-**Step 1: Write the failing test**
-
-Create `apps/cotulenh/app/src/routes/learn/learn-command-center.test.ts`:
-
-```ts
-import { describe, expect, it } from 'vitest';
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
-
-describe('learn pages Command Center integration', () => {
-  it('learn hub uses CommandCenter', () => {
-    const source = readFileSync(resolve(process.cwd(), 'src/routes/learn/+page.svelte'), 'utf8');
-    expect(source).toContain('CommandCenter');
-  });
-});
-```
-
-**Step 2: Run test to verify it fails**
-
-Run: `cd apps/cotulenh/app && npx vitest run src/routes/learn/learn-command-center.test.ts`
-Expected: FAIL
-
-**Step 3: Refactor learn pages**
-
-- **Hub page:** Center = subject list. Right panel tabs: Progress (overall progress summary)
-- **Subject page:** Center = section/lesson list. Right panel tabs: Progress (subject progress)
-- **Lesson page:** Center = board + lesson. Right panel tabs: Lesson (instructions), Hints, Progress
-
-**Step 4: Run test to verify it passes**
-
-Run: `cd apps/cotulenh/app && npx vitest run src/routes/learn/learn-command-center.test.ts`
-Expected: PASS
-
-**Step 5: Commit**
-
-```bash
-git add apps/cotulenh/app/src/routes/learn/
-git commit -m "feat: migrate learn pages to Command Center layout"
-```
-
----
-
-## Task 10: Migrate user pages to Command Center
-
-Profile, friends, settings, and history pages.
-
-**Files:**
-
-- Modify: `apps/cotulenh/app/src/routes/user/profile/+page.svelte`
-- Modify: `apps/cotulenh/app/src/routes/user/friends/+page.svelte`
-- Modify: `apps/cotulenh/app/src/routes/user/settings/+page.svelte`
-- Modify: `apps/cotulenh/app/src/routes/user/history/+page.svelte`
-
-**Step 1: Write the failing test**
-
-Create `apps/cotulenh/app/src/routes/user/user-command-center.test.ts`:
-
-```ts
-import { describe, expect, it } from 'vitest';
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
-
-describe('user pages Command Center integration', () => {
-  it('friends page uses CommandCenter', () => {
-    const source = readFileSync(
-      resolve(process.cwd(), 'src/routes/user/friends/+page.svelte'),
-      'utf8'
-    );
-    expect(source).toContain('CommandCenter');
-  });
-
-  it('profile page uses CommandCenter', () => {
-    const source = readFileSync(
-      resolve(process.cwd(), 'src/routes/user/profile/+page.svelte'),
-      'utf8'
-    );
-    expect(source).toContain('CommandCenter');
-  });
-});
-```
-
-**Step 2: Run test to verify it fails**
-
-Run: `cd apps/cotulenh/app && npx vitest run src/routes/user/user-command-center.test.ts`
-Expected: FAIL
-
-**Step 3: Refactor user pages**
-
-These are full-width center content pages. They wrap in `<CommandCenter>` with no tabs (or minimal context tabs).
-
-- **Friends:** Center = friend list. Tabs = none (single panel, friend search inline)
-- **Profile:** Center = profile content. Tabs = none
-- **Settings:** Center = settings form. Tabs = none
-- **History:** Center = game list. Tabs = none (or single "Filters" tab if useful)
-
-Main visual changes: remove rounded cards, tighten spacing, flatten surfaces.
-
-**Step 4: Run test to verify it passes**
-
-Run: `cd apps/cotulenh/app && npx vitest run src/routes/user/user-command-center.test.ts`
-Expected: PASS
-
-**Step 5: Commit**
-
-```bash
-git add apps/cotulenh/app/src/routes/user/
-git commit -m "feat: migrate user pages to Command Center layout"
-```
-
----
-
-## Task 11: Visual system cleanup
-
-Strip decorative styling across the app. Tighten spacing. Flatten surfaces.
+Clean the global stylesheet. Remove marketing/decorative classes. Set base font sizes.
 
 **Files:**
 
 - Modify: `apps/cotulenh/app/src/app.css`
-- Modify: various component files
 
-**Step 1: Write the failing test**
+**Step 1: Write failing test**
 
-Create `apps/cotulenh/app/src/routes/visual-system.test.ts`:
+Create `apps/cotulenh/app/src/lib/styles/visual-cleanup.test.ts`:
 
 ```ts
 import { describe, expect, it } from 'vitest';
@@ -1080,12 +684,21 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 describe('visual system cleanup', () => {
-  it('app.css has no border-radius: 12px (rounded cards removed)', () => {
+  it('app.css has no btn-game classes', () => {
     const source = readFileSync(resolve(process.cwd(), 'src/app.css'), 'utf8');
-    expect(source).not.toContain('border-radius: 12px');
+    expect(source).not.toContain('.btn-game-primary');
+    expect(source).not.toContain('.btn-game-alert');
+    expect(source).not.toContain('.btn-game-secondary');
+    expect(source).not.toContain('.btn-game-subtle');
+    expect(source).not.toContain('.btn-game-ghost');
   });
 
-  it('app.css retains theme variable system', () => {
+  it('sets base font size to 13px', () => {
+    const source = readFileSync(resolve(process.cwd(), 'src/app.css'), 'utf8');
+    expect(source).toContain('font-size: 13px');
+  });
+
+  it('keeps theme variable system', () => {
     const source = readFileSync(resolve(process.cwd(), 'src/app.css'), 'utf8');
     expect(source).toContain('--theme-bg-dark');
     expect(source).toContain('--theme-primary');
@@ -1096,150 +709,517 @@ describe('visual system cleanup', () => {
 
 **Step 2: Run test to verify it fails**
 
-Run: `cd apps/cotulenh/app && npx vitest run src/routes/visual-system.test.ts`
-Expected: PASS or FAIL depending on current state (app.css itself may not have 12px radius, but pages do)
+**Step 3: Modify app.css**
 
-**Step 3: Clean up visual styles**
+1. Remove all `.btn-game-*` class definitions (lines 187-257)
+2. Change `body` font-size to `13px`
+3. Keep the `@theme` block, `:root` variables, HUD corners (board may use them), and Tailwind import
+4. Keep `.panel-gradient` and `.panel-inset` for now (board might reference them)
 
-Across all modified pages:
-
-- Remove `border-radius: 12px` (use `border-radius: 4px` or `6px` max)
-- Remove `border-radius: 9999px` pill badges (use flat text labels instead)
-- Reduce padding values by ~25%
-- Remove decorative `box-shadow` usage
-- Ensure all colors use theme CSS variables (no hardcoded `#22c55e` etc.)
-
-**Step 4: Run full test suite**
-
-Run: `cd apps/cotulenh/app && npx vitest run`
-Expected: ALL PASS
-
-**Step 5: Commit**
+**Step 4: Run test, verify pass. Step 5: Commit.**
 
 ```bash
-git add -u
-git commit -m "style: flatten surfaces, tighten spacing, remove decorative styling"
+git add apps/cotulenh/app/src/app.css apps/cotulenh/app/src/lib/styles/visual-cleanup.test.ts
+git commit -m "style: strip decorative button classes, set 13px base font"
 ```
 
 ---
 
-## Task 12: i18n keys for new UI elements
+## Task 6: Redesign home page (logged in) — big play button + game feed
 
-Add translation keys for any new UI elements (tab labels, tooltips, etc.).
+Complete rewrite of the home page for logged-in users.
+
+**Files:**
+
+- Modify: `apps/cotulenh/app/src/routes/+page.svelte`
+
+**Step 1: Write failing test**
+
+Create `apps/cotulenh/app/src/routes/page.redesign.test.ts`:
+
+```ts
+import { describe, expect, it } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+
+const pagePath = resolve(process.cwd(), 'src/routes/+page.svelte');
+
+describe('home page redesign', () => {
+  it('uses CommandCenter component', () => {
+    const source = readFileSync(pagePath, 'utf8');
+    expect(source).toContain('CommandCenter');
+  });
+
+  it('has primary-cta play button', () => {
+    const source = readFileSync(pagePath, 'utf8');
+    expect(source).toContain('primary-cta');
+    expect(source).toContain('href="/play"');
+  });
+
+  it('has no feature cards', () => {
+    const source = readFileSync(pagePath, 'utf8');
+    expect(source).not.toContain('feature-card');
+    expect(source).not.toContain('coming-soon-card');
+    expect(source).not.toContain('cta-button');
+  });
+
+  it('has no decorative icons in content', () => {
+    const source = readFileSync(pagePath, 'utf8');
+    expect(source).not.toContain('BookOpen');
+    expect(source).not.toContain('Gamepad2');
+    expect(source).not.toContain('Share2');
+    expect(source).not.toContain('Bot');
+  });
+
+  it('uses section-header and divider classes', () => {
+    const source = readFileSync(pagePath, 'utf8');
+    expect(source).toContain('section-header');
+    expect(source).toContain('divider');
+  });
+
+  it('has different view for anon vs logged-in', () => {
+    const source = readFileSync(pagePath, 'utf8');
+    expect(source).toContain('isAuthenticated');
+  });
+});
+```
+
+**Step 2: Run test to verify it fails**
+
+**Step 3: Rewrite home page**
+
+Complete rewrite of `apps/cotulenh/app/src/routes/+page.svelte`:
+
+**Logged-in view:**
+
+- Import `CommandCenter`
+- Center: big PLAY button (`.primary-cta`), time control toggles, divider, recent games flat list
+- Right tabs: Friends (online friends list), Activity (placeholder "No recent activity")
+- Remove ALL icon imports (Info, Users, Share2, Puzzle, Bot, Gamepad2, BookOpen)
+- Remove ALL card styling, hero header, feature grid, coming soon section, CTA buttons
+- Use `command-center.css` utility classes throughout
+
+**Anonymous view:**
+
+- No `CommandCenter` wrapper (no right panel)
+- One-line game description
+- PLAY button (goes to `/play`)
+- "sign up to play online" text link
+- "learn the game →" and "try the editor →" text links
+- Nothing else
+
+**Step 4: Run test, verify pass. Step 5: Commit.**
+
+```bash
+git add apps/cotulenh/app/src/routes/+page.svelte apps/cotulenh/app/src/routes/page.redesign.test.ts
+git commit -m "feat: redesign home page — big play button, flat game feed, no cards"
+```
+
+---
+
+## Task 7: Redesign local play page — board-centric with Moves/Game tabs
+
+Strip PlayDesktop down to board only. Move all controls into CommandCenter tabs.
+
+**Files:**
+
+- Modify: `apps/cotulenh/app/src/routes/play/+page.svelte`
+- Modify: `apps/cotulenh/app/src/routes/play/PlayDesktop.svelte`
+
+**Step 1: Write failing test**
+
+Create `apps/cotulenh/app/src/routes/play/play-redesign.test.ts`:
+
+```ts
+import { describe, expect, it } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+
+describe('play page redesign', () => {
+  it('PlayDesktop no longer has controls-section', () => {
+    const source = readFileSync(
+      resolve(process.cwd(), 'src/routes/play/PlayDesktop.svelte'),
+      'utf8'
+    );
+    expect(source).not.toContain('controls-section');
+    expect(source).not.toContain('controls-grid');
+    expect(source).not.toContain('controls-header');
+  });
+
+  it('uses CommandCenter with tabs', () => {
+    const source = readFileSync(
+      resolve(process.cwd(), 'src/routes/play/PlayDesktop.svelte'),
+      'utf8'
+    );
+    expect(source).toContain('CommandCenter');
+    expect(source).toContain('tabs');
+  });
+
+  it('has no decorative title styling', () => {
+    const source = readFileSync(
+      resolve(process.cwd(), 'src/routes/play/PlayDesktop.svelte'),
+      'utf8'
+    );
+    expect(source).not.toContain('title-green');
+    expect(source).not.toContain('title-cyan');
+  });
+});
+```
+
+**Step 2: Run test to verify it fails**
+
+**Step 3: Refactor PlayDesktop**
+
+1. Import `CommandCenter` and wrap all content
+2. Center snippet: board only (BoardContainer + MoveConfirmPanel as text links below)
+3. Define two tab snippets:
+   - **Moves tab**: MoveHistory component
+   - **Game tab**: ClockPanel, game info (turn/status as plain text), action links (resign, draw, undo, new game as `.text-link`)
+4. Remove: `.controls-section`, `.controls-grid`, `.controls-header`, `.controls-clock`, title header with green/cyan text
+5. Remove: `.game-layout` flex (board no longer side-by-side with controls)
+6. Board section: remove fixed `width: min(760px, 100%)`, let it flex within center area
+7. Update `+page.svelte` if needed to accommodate the new structure
+
+**Step 4: Run test, verify pass. Step 5: Commit.**
+
+```bash
+git add apps/cotulenh/app/src/routes/play/
+git commit -m "feat: redesign play page — board-only center, Moves/Game tabs, text-link actions"
+```
+
+---
+
+## Task 8: Redesign online play hub — flat text lists
+
+Strip all cards from the online play hub. Replace with flat sections.
+
+**Files:**
+
+- Modify: `apps/cotulenh/app/src/routes/play/online/+page.svelte`
+
+**Step 1: Write failing test**
+
+Create `apps/cotulenh/app/src/routes/play/online/online-redesign.test.ts`:
+
+```ts
+import { describe, expect, it } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+
+describe('online hub redesign', () => {
+  it('uses CommandCenter', () => {
+    const source = readFileSync(
+      resolve(process.cwd(), 'src/routes/play/online/+page.svelte'),
+      'utf8'
+    );
+    expect(source).toContain('CommandCenter');
+  });
+
+  it('has no card containers', () => {
+    const source = readFileSync(
+      resolve(process.cwd(), 'src/routes/play/online/+page.svelte'),
+      'utf8'
+    );
+    expect(source).not.toContain('border-radius: 12px');
+  });
+
+  it('uses section-header and divider classes', () => {
+    const source = readFileSync(
+      resolve(process.cwd(), 'src/routes/play/online/+page.svelte'),
+      'utf8'
+    );
+    expect(source).toContain('section-header');
+    expect(source).toContain('divider');
+  });
+});
+```
+
+**Step 2: Run test to verify it fails**
+
+**Step 3: Redesign online hub**
+
+1. Wrap in `CommandCenter` (no right panel tabs — all content in center)
+2. Replace InvitationCard, ReceivedInvitationCard, FriendRequestCard with flat list items
+3. Friends Online: flat list — name, status dot, `invite` text link
+4. Invitations: flat list — `from [name] [time] accept` as text link
+5. Create Game: toggle group for time, toggle group for rated/casual, `create invite link` as text link
+6. Section headers as `.section-header`, dividers as `<hr class="divider">`
+7. Remove all card component imports and card styling
+8. Remove all icon imports from content
+
+**Step 4: Run test, verify pass. Step 5: Commit.**
+
+```bash
+git add apps/cotulenh/app/src/routes/play/online/+page.svelte apps/cotulenh/app/src/routes/play/online/online-redesign.test.ts
+git commit -m "feat: redesign online hub — flat text lists, no cards, section dividers"
+```
+
+---
+
+## Task 9: Redesign online game page — board + Game tab with chat
+
+**Files:**
+
+- Modify: `apps/cotulenh/app/src/routes/play/online/[gameId]/+page.svelte`
+
+**Step 1-3: Same pattern** — wrap in CommandCenter, board in center, Moves/Game tabs. Game tab includes chat at bottom. Strip all card/decorative styling. Use text links for resign/draw/rematch.
+
+**Commit:** `feat: redesign online game page — board center, Moves/Game tabs with chat`
+
+---
+
+## Task 10: Redesign puzzles page — flat list, no cards
+
+**Files:**
+
+- Modify: `apps/cotulenh/app/src/routes/puzzles/+page.svelte`
+
+**Step 1: Write failing test**
+
+Create `apps/cotulenh/app/src/routes/puzzles/puzzles-redesign.test.ts`:
+
+```ts
+import { describe, expect, it } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+
+describe('puzzles page redesign', () => {
+  it('uses CommandCenter', () => {
+    const source = readFileSync(resolve(process.cwd(), 'src/routes/puzzles/+page.svelte'), 'utf8');
+    expect(source).toContain('CommandCenter');
+  });
+
+  it('has no card containers or rounded badges', () => {
+    const source = readFileSync(resolve(process.cwd(), 'src/routes/puzzles/+page.svelte'), 'utf8');
+    expect(source).not.toContain('puzzle-card');
+    expect(source).not.toContain('border-radius: 12px');
+    expect(source).not.toContain('border-radius: 9999px');
+  });
+
+  it('has no icon imports', () => {
+    const source = readFileSync(resolve(process.cwd(), 'src/routes/puzzles/+page.svelte'), 'utf8');
+    expect(source).not.toContain('Puzzle');
+    expect(source).not.toContain('Play');
+    expect(source).not.toContain('ChevronRight');
+  });
+
+  it('uses text links for play action', () => {
+    const source = readFileSync(resolve(process.cwd(), 'src/routes/puzzles/+page.svelte'), 'utf8');
+    expect(source).toContain('text-link');
+  });
+});
+```
+
+**Step 2-3: Rewrite puzzles page**
+
+1. Wrap in `CommandCenter` (right tabs: Moves, Hints — populated when puzzle is active)
+2. Center: flat list of puzzles — `#1 Commander Capture Easy` with `play` text link
+3. Difficulty as color-coded plain text (no pill badge)
+4. Remove all icon imports (Puzzle, Play, ChevronRight)
+5. Remove card containers, rounded badges, decorative header
+6. Use `.section-header`, `.divider`, `.flat-list`, `.text-link`
+
+**Step 4-5: Run test, commit.**
+
+```bash
+git add apps/cotulenh/app/src/routes/puzzles/
+git commit -m "feat: redesign puzzles page — flat list, text links, no cards or icons"
+```
+
+---
+
+## Task 11: Redesign board editor — board center, Pieces/Setup tabs
+
+**Files:**
+
+- Modify: `apps/cotulenh/app/src/routes/board-editor/EditorDesktop.svelte`
+- Modify: `apps/cotulenh/app/src/routes/board-editor/+page.svelte`
+
+**Step 1-3:** Wrap in CommandCenter. Board in center with `clear export share` text links below. Right tabs: Pieces (piece palettes), Setup (FEN input, turn toggle). Remove card-style piece palette containers.
+
+**Commit:** `feat: redesign board editor — board center, Pieces/Setup tabs`
+
+---
+
+## Task 12: Redesign learn pages — flat lists, board-centric lessons
+
+**Files:**
+
+- Modify: `apps/cotulenh/app/src/routes/learn/+page.svelte`
+- Modify: `apps/cotulenh/app/src/routes/learn/[subjectId]/+page.svelte`
+- Modify: `apps/cotulenh/app/src/routes/learn/[subjectId]/[sectionId]/[lessonId]/+page.svelte`
+
+**Step 1: Write failing test**
+
+Create `apps/cotulenh/app/src/routes/learn/learn-redesign.test.ts`:
+
+```ts
+import { describe, expect, it } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+
+describe('learn pages redesign', () => {
+  it('learn hub uses CommandCenter', () => {
+    const source = readFileSync(resolve(process.cwd(), 'src/routes/learn/+page.svelte'), 'utf8');
+    expect(source).toContain('CommandCenter');
+  });
+
+  it('learn hub has flat subject list, no cards', () => {
+    const source = readFileSync(resolve(process.cwd(), 'src/routes/learn/+page.svelte'), 'utf8');
+    expect(source).toContain('flat-list');
+    expect(source).not.toContain('border-radius: 12px');
+  });
+});
+```
+
+**Step 2-3: Redesign learn pages**
+
+- **Hub**: Flat list of subjects with progress counts (e.g., `Basics 4/10`). No cards, no icons
+- **Subject page**: Flat list of lessons/sections. Progress bar as simple text fraction
+- **Lesson page**: Board in center, right tabs: Lesson (instructions + `[continue]` text link), Hints
+- Remove all decorative learn UI (card containers, gradient backgrounds, icon decorations)
+
+**Commit:** `feat: redesign learn pages — flat lists, board-centric lessons, Lesson/Hints tabs`
+
+---
+
+## Task 13: Redesign user pages — flat text, no cards
+
+Profile, friends, settings, history pages.
+
+**Files:**
+
+- Modify: `apps/cotulenh/app/src/routes/user/profile/+page.svelte`
+- Modify: `apps/cotulenh/app/src/routes/user/profile/[username]/+page.svelte`
+- Modify: `apps/cotulenh/app/src/routes/user/friends/+page.svelte`
+- Modify: `apps/cotulenh/app/src/routes/user/settings/+page.svelte`
+- Modify: `apps/cotulenh/app/src/routes/user/history/+page.svelte`
+- Modify: `apps/cotulenh/app/src/routes/user/history/[gameId]/+page.svelte`
+
+**Step 1-3: Redesign all user pages**
+
+All user pages:
+
+1. Wrap in `CommandCenter` (no right panel tabs)
+2. Flat text content — section headers, dividers, flat lists, text links
+3. Remove card containers, avatar circles, decorative elements
+4. Dense spacing throughout
+
+Specific pages:
+
+- **Profile**: Display name, member since, stats as plain text. No avatar circle
+- **Friends**: Flat list — name, status dot, action text links (remove, invite)
+- **Settings**: Flat form — label + input pairs, thin dividers between sections. Strip dialog-style padding
+- **History**: Flat list — opponent, result (W/L/D color-coded), time control, date. `replay` text link
+- **Game replay**: Board in center, right tabs: Moves (replay controls)
+
+**Commit:** `feat: redesign user pages — flat text, no cards, dense spacing`
+
+---
+
+## Task 14: Restyle dialogs — flatten Settings, Shortcuts, Feedback
+
+**Files:**
+
+- Modify: `apps/cotulenh/app/src/lib/components/SettingsDialog.svelte`
+- Modify: `apps/cotulenh/app/src/lib/components/ShortcutsDialog.svelte`
+- Modify: `apps/cotulenh/app/src/lib/components/FeedbackDialog.svelte`
+
+**Step 1-3: Restyle dialogs**
+
+- Remove rounded corners (2px max border-radius)
+- Flat background with 1px border
+- Dense padding (0.75rem)
+- Plain text titles (no decorative headers)
+- Text-link style for secondary actions
+- Remove any icon usage in dialog content
+
+**Commit:** `feat: restyle dialogs — flat, dense, minimal decoration`
+
+---
+
+## Task 15: i18n keys for new UI elements
 
 **Files:**
 
 - Modify: `apps/cotulenh/app/src/lib/i18n/locales/en.ts`
 - Modify: `apps/cotulenh/app/src/lib/i18n/locales/vi.ts`
-- Modify: `apps/cotulenh/app/src/lib/i18n/types.ts` (if typed keys)
+- Modify: `apps/cotulenh/app/src/lib/i18n/types.ts`
 
-**Step 1: Identify new keys needed**
+Add keys for:
 
-New i18n keys for tab labels and UI elements:
+- Tab labels: `tabs.moves`, `tabs.game`, `tabs.friends`, `tabs.activity`, `tabs.lesson`, `tabs.hints`, `tabs.pieces`, `tabs.setup`
+- Home: `home.signUpOnline`, `home.recentGames`, `home.noActivity`
+- Panel: `panel.open`, `panel.close`
+- Nav: `nav.home`
+- Play: game action text links
 
-```ts
-// Tab labels
-'tabs.moves': 'Moves',
-'tabs.cards': 'Cards',
-'tabs.chat': 'Chat',
-'tabs.activity': 'Activity',
-'tabs.friends': 'Friends',
-'tabs.lesson': 'Lesson',
-'tabs.hints': 'Hints',
-'tabs.progress': 'Progress',
-'tabs.pieces': 'Pieces',
-'tabs.setup': 'Setup',
-
-// Mobile panel
-'panel.open': 'Open panel',
-'panel.close': 'Close panel',
-
-// Dashboard
-'dashboard.quickPlay': 'Quick Play',
-'dashboard.createGame': 'Create Game',
-'dashboard.recentGames': 'Recent Games',
-'dashboard.noActivity': 'No recent activity',
-
-// Nav tooltips (may already exist as nav.* keys)
-'nav.home': 'Home',
-```
-
-**Step 2: Add keys to en.ts and vi.ts**
-
-Add the above keys to both locale files.
-
-**Step 3: Update type definitions if needed**
-
-If `types.ts` has a `TranslationKeys` type with explicit key listing, add the new keys.
-
-**Step 4: Run tests**
-
-Run: `cd apps/cotulenh/app && npx vitest run`
-Expected: ALL PASS
-
-**Step 5: Commit**
-
-```bash
-git add apps/cotulenh/app/src/lib/i18n/
-git commit -m "feat: add i18n keys for Command Center tabs, panel, and dashboard"
-```
+**Commit:** `feat: add i18n keys for Command Center tabs and redesigned pages`
 
 ---
 
-## Task 13: Final integration test and cleanup
+## Task 16: Clean up removed components and dead code
 
-Verify the full app builds and all tests pass.
+**Files:**
 
-**Step 1: Run the full monorepo test suite**
+- Potentially remove or simplify: `InvitationCard.svelte`, `ReceivedInvitationCard.svelte`, `FriendRequestCard.svelte`, `PlayerCard.svelte` if their card styling was the only purpose
+- Remove unused icon imports across all modified files
+- Remove unused CSS classes from component `<style>` blocks
 
-Run: `cd /home/noy/Work/chess/cotulenh-monorepo && pnpm test`
-Expected: ALL PASS
+**Commit:** `chore: remove dead card components and unused imports`
 
-**Step 2: Run the build**
+---
 
-Run: `cd /home/noy/Work/chess/cotulenh-monorepo && pnpm build`
-Expected: Build succeeds with no errors
+## Task 17: Final integration — build, test, verify
 
-**Step 3: Manual verification checklist**
+**Step 1:** Run full monorepo test suite: `pnpm test`
 
-Run: `cd apps/cotulenh/app && pnpm dev`
+**Step 2:** Run build: `pnpm build`
 
-Verify:
+**Step 3:** Manual verification (dev server):
 
-- [ ] 48px icon rail renders on desktop
-- [ ] Active page shows left accent bar
-- [ ] Hovering sidebar icons shows tooltips
-- [ ] Home page shows split-pane dashboard
-- [ ] Play page shows board in center, tabs on right
-- [ ] Tab switching is instant (no animation)
-- [ ] Mobile: left rail hidden, hamburger works
-- [ ] Mobile: panel toggle button shows/hides overlay
+- [ ] 48px icon rail, icon-only, accent bar active state
+- [ ] Home: big PLAY button, flat game feed, Friends/Activity tabs
+- [ ] Home (anon): minimal intro, play link, sign-up text
+- [ ] Play: board-only center, Moves/Game tabs, text-link actions
+- [ ] Online hub: flat text lists, no cards
+- [ ] Online game: board center, Moves/Game tabs with chat
+- [ ] Puzzles: flat list, text links, no cards
+- [ ] Editor: board center, Pieces/Setup tabs
+- [ ] Learn hub: flat subject list
+- [ ] Learn lesson: board center, Lesson/Hints tabs
+- [ ] User pages: flat text, no cards
+- [ ] Dialogs: flat, dense
+- [ ] Mobile: rail hidden, hamburger works, panel toggle → overlay
+- [ ] No hardcoded colors (all through CSS vars)
+- [ ] No `border-radius: 12px` anywhere
+- [ ] No icon imports in content areas (sidebar only)
 - [ ] Auth pages unchanged
 
-**Step 4: Commit any final fixes**
-
-```bash
-git add -u
-git commit -m "chore: final integration fixes for Command Center redesign"
-```
+**Commit:** `chore: final integration fixes for Command Center visual overhaul`
 
 ---
 
 ## Notes for the implementor
 
-### Key decision point in Task 5
+### Key principle
 
-The plan identifies a critical architecture decision: whether CommandCenter lives in the root layout (child pages pass tabs via context) or each page wraps itself in CommandCenter directly.
+**When in doubt, remove it.** This is a subtractive redesign. If something looks decorative, delete it. If a component exists only to wrap content in a card, inline the content and delete the component. If an icon exists in a content area, replace it with text.
 
-**Recommendation: Each page uses CommandCenter directly.** This is simpler than context-based tab registration, avoids timing issues, and gives pages full control. If you choose this approach:
+### Pattern for page migration
 
-- Task 4 should NOT add CommandCenter to root layout
-- Instead, each page imports and wraps its content in `<CommandCenter>`
-- The root layout only provides the 48px icon rail + mobile hamburger + dialogs
+Every page follows the same pattern:
 
-### Existing test pattern
-
-Tests use file-source reading (`readFileSync`) to verify component structure. Follow this pattern for all new tests. See `layout.feedback-ui.test.ts` for the established convention.
+1. Import `CommandCenter` and `'$lib/styles/command-center.css'`
+2. Wrap content in `<CommandCenter>` with `{#snippet center()}...{/snippet}`
+3. Define tab snippets if the page has right-panel content
+4. Replace cards with flat lists (`.flat-list`, `.flat-list-item`)
+5. Replace section headers with `.section-header`
+6. Replace visual separators with `<hr class="divider">`
+7. Replace buttons with `.text-link` (secondary) or `.primary-cta` (one per page max)
+8. Remove all icon imports from content
+9. Remove all card/badge/pill styling
+10. Delete unused `<style>` blocks (most pages will have much less CSS)
 
 ### Files reference
 
@@ -1254,17 +1234,23 @@ Tests use file-source reading (`readFileSync`) to verify component structure. Fo
 | Puzzles              | `apps/cotulenh/app/src/routes/puzzles/+page.svelte`                                  |
 | Board editor desktop | `apps/cotulenh/app/src/routes/board-editor/EditorDesktop.svelte`                     |
 | Learn hub            | `apps/cotulenh/app/src/routes/learn/+page.svelte`                                    |
+| Learn subject        | `apps/cotulenh/app/src/routes/learn/[subjectId]/+page.svelte`                        |
 | Learn lesson         | `apps/cotulenh/app/src/routes/learn/[subjectId]/[sectionId]/[lessonId]/+page.svelte` |
 | Friends              | `apps/cotulenh/app/src/routes/user/friends/+page.svelte`                             |
 | Profile              | `apps/cotulenh/app/src/routes/user/profile/+page.svelte`                             |
+| Public profile       | `apps/cotulenh/app/src/routes/user/profile/[username]/+page.svelte`                  |
 | Settings             | `apps/cotulenh/app/src/routes/user/settings/+page.svelte`                            |
 | History              | `apps/cotulenh/app/src/routes/user/history/+page.svelte`                             |
+| Game replay          | `apps/cotulenh/app/src/routes/user/history/[gameId]/+page.svelte`                    |
 | App CSS              | `apps/cotulenh/app/src/app.css`                                                      |
+| Command Center CSS   | `apps/cotulenh/app/src/lib/styles/command-center.css`                                |
 | i18n EN              | `apps/cotulenh/app/src/lib/i18n/locales/en.ts`                                       |
 | i18n VI              | `apps/cotulenh/app/src/lib/i18n/locales/vi.ts`                                       |
 | TabPanel             | `apps/cotulenh/app/src/lib/components/TabPanel.svelte`                               |
 | CommandCenter        | `apps/cotulenh/app/src/lib/components/CommandCenter.svelte`                          |
-| ResponsiveLayout     | `apps/cotulenh/app/src/lib/components/ResponsiveLayout.svelte`                       |
+| SettingsDialog       | `apps/cotulenh/app/src/lib/components/SettingsDialog.svelte`                         |
+| ShortcutsDialog      | `apps/cotulenh/app/src/lib/components/ShortcutsDialog.svelte`                        |
+| FeedbackDialog       | `apps/cotulenh/app/src/lib/components/FeedbackDialog.svelte`                         |
 
 ### Run commands
 
