@@ -691,6 +691,13 @@ export const vi: TranslationKeys = {
   'feedback.error': 'Gửi góp ý thất bại. Vui lòng thử lại.',
   'feedback.emptyMessage': 'Vui lòng nhập nội dung',
 
+  // Tab labels
+  'tabs.moves': 'Nước đi',
+  'tabs.game': 'Ván đấu',
+  'tabs.pieces': 'Quân cờ',
+  'tabs.setup': 'Thiết lập',
+  'tabs.activity': 'Hoạt động',
+
   // Game Replay
   'gameReplay.title': 'Xem Lại Trận Đấu',
   'gameReplay.copyPgn': 'Sao Chép PGN',

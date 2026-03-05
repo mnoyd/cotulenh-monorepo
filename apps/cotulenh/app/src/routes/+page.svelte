@@ -14,7 +14,7 @@
     center={centerContent}
     tabs={[
       { id: 'friends', label: i18n.t('nav.friends'), content: friendsTab },
-      { id: 'activity', label: 'Activity', content: activityTab }
+      { id: 'activity', label: i18n.t('tabs.activity'), content: activityTab }
     ]}
   />
 {:else}

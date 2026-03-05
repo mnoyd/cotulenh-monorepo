@@ -683,6 +683,13 @@ export interface TranslationKeys {
   'feedback.error': string;
   'feedback.emptyMessage': string;
 
+  // Tab labels
+  'tabs.moves': string;
+  'tabs.game': string;
+  'tabs.pieces': string;
+  'tabs.setup': string;
+  'tabs.activity': string;
+
   // Game Replay
   'gameReplay.title': string;
   'gameReplay.copyPgn': string;

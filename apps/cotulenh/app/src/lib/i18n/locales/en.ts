@@ -693,6 +693,13 @@ export const en: TranslationKeys = {
   'feedback.error': 'Failed to submit feedback. Please try again.',
   'feedback.emptyMessage': 'Please enter a message',
 
+  // Tab labels
+  'tabs.moves': 'Moves',
+  'tabs.game': 'Game',
+  'tabs.pieces': 'Pieces',
+  'tabs.setup': 'Setup',
+  'tabs.activity': 'Activity',
+
   // Game Replay
   'gameReplay.title': 'Game Replay',
   'gameReplay.copyPgn': 'Copy PGN',

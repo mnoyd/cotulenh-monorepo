@@ -22,8 +22,8 @@
   });
 
   let tabs = $derived([
-    { id: 'pieces', label: 'Pieces', content: piecesTab },
-    { id: 'setup', label: 'Setup', content: setupTab }
+    { id: 'pieces', label: i18n.t('tabs.pieces'), content: piecesTab },
+    { id: 'setup', label: i18n.t('tabs.setup'), content: setupTab }
   ]);
 </script>
 
