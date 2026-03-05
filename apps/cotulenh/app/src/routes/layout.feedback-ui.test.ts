@@ -12,10 +12,8 @@ describe('feedback UI wiring', () => {
     expect(source).toContain("import FeedbackDialog from '$lib/components/FeedbackDialog.svelte';");
     expect(source).toContain('let feedbackOpen = $state(false);');
 
-    // Desktop sidebar entry point
+    // Desktop sidebar entry point (icon-only rail, no text labels)
     expect(source).toContain('onclick={() => (feedbackOpen = true)}');
-    expect(source).toContain("{i18n.t('nav.feedback')}");
-    expect(source).toContain('<MessageSquare class="sidebar-icon" />');
 
     // Mobile dropdown entry point
     expect(source).toContain('<MessageSquare size={16} />');
