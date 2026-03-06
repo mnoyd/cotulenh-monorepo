@@ -43,6 +43,8 @@ export interface OnlineSessionCallbacks {
   onDispute?: (info: { san: string; pgn: string }) => void;
   onDrawOffer?: () => void;
   onDrawDeclined?: () => void;
+  onTakebackRequested?: () => void;
+  onTakebackDeclined?: () => void;
   onRematchRequested?: () => void;
   onRematchAccepted?: (newGameId: string) => void;
   onRematchDeclined?: () => void;
@@ -86,6 +88,8 @@ export class OnlineGameSessionCore {
   #disputeActive = false;
   #disputeInfo: { san: string; pgn: string } | null = null;
   #reportingDispute = false;
+  #takebackSent = false;
+  #takebackReceived = false;
   #rematchSent = false;
   #rematchReceived = false;
   #rematchGameId: string | null = null;
@@ -178,6 +182,14 @@ export class OnlineGameSessionCore {
 
   get drawOfferReceived(): boolean {
     return this.#drawOfferReceived;
+  }
+
+  get takebackSent(): boolean {
+    return this.#takebackSent;
+  }
+
+  get takebackReceived(): boolean {
+    return this.#takebackReceived;
   }
 
   get rematchSent(): boolean {
@@ -348,6 +360,57 @@ export class OnlineGameSessionCore {
 
     this.#drawOfferReceived = false;
     this.#pendingDrawOffer = false;
+    this.#notifyStateChange();
+  }
+
+  requestTakeback(): void {
+    if (!this.#channel) return;
+    if (
+      this.#lifecycle !== 'playing' ||
+      this.#disputeActive ||
+      this.#takebackSent ||
+      this.#takebackReceived ||
+      this.session.history.length === 0
+    ) {
+      return;
+    }
+
+    sendGameMessage(this.#channel, {
+      event: 'takeback-request',
+      senderId: this.#currentUserId
+    });
+
+    this.#takebackSent = true;
+    this.#notifyStateChange();
+  }
+
+  acceptTakeback(): void {
+    if (!this.#channel) return;
+    if (!this.#takebackReceived || this.#lifecycle !== 'playing') return;
+
+    sendGameMessage(this.#channel, {
+      event: 'takeback-accept',
+      senderId: this.#currentUserId
+    });
+
+    // Undo the last move
+    this.session.undo();
+    this.#takebackReceived = false;
+    // Switch clock back
+    this.clock.switchSide();
+    this.#notifyStateChange();
+  }
+
+  declineTakeback(): void {
+    if (!this.#channel) return;
+    if (!this.#takebackReceived || this.#lifecycle !== 'playing') return;
+
+    sendGameMessage(this.#channel, {
+      event: 'takeback-decline',
+      senderId: this.#currentUserId
+    });
+
+    this.#takebackReceived = false;
     this.#notifyStateChange();
   }
 
@@ -591,6 +654,15 @@ export class OnlineGameSessionCore {
       this.#pendingDrawOffer = false;
     }
 
+    // Local move while opponent takeback request is pending implicitly declines it.
+    if (this.#takebackReceived) {
+      sendGameMessage(this.#channel, {
+        event: 'takeback-decline',
+        senderId: this.#currentUserId
+      });
+      this.#takebackReceived = false;
+    }
+
     // Switch clock side
     this.clock.switchSide();
     this.#notifyStateChange();
@@ -654,6 +726,15 @@ export class OnlineGameSessionCore {
         break;
       case 'draw-decline':
         this.#handleDrawDeclineMessage();
+        break;
+      case 'takeback-request':
+        this.#handleTakebackRequestMessage();
+        break;
+      case 'takeback-accept':
+        this.#handleTakebackAcceptMessage();
+        break;
+      case 'takeback-decline':
+        this.#handleTakebackDeclineMessage();
         break;
       case 'rematch':
         this.#handleRematchMessage();
@@ -736,6 +817,9 @@ export class OnlineGameSessionCore {
       if (this.#drawOfferSent) {
         this.#drawOfferSent = false;
         this.#pendingDrawOffer = false;
+      }
+      if (this.#takebackSent) {
+        this.#takebackSent = false;
       }
       this.#lastProcessedSeq = msg.seq;
       this.#sendAck(msg.seq);
@@ -833,6 +917,43 @@ export class OnlineGameSessionCore {
     this.#drawOfferSent = false;
     this.#pendingDrawOffer = false;
     this.#callbacks.onDrawDeclined?.();
+    this.#notifyStateChange();
+  }
+
+  #handleTakebackRequestMessage(): void {
+    if (this.#lifecycle !== 'playing' || this.#disputeActive || this.#takebackReceived) {
+      return;
+    }
+
+    if (this.#takebackSent) {
+      // Both sides requested simultaneously — accept automatically
+      this.session.undo();
+      this.#takebackSent = false;
+      this.clock.switchSide();
+      this.#notifyStateChange();
+      return;
+    }
+
+    this.#takebackReceived = true;
+    this.#callbacks.onTakebackRequested?.();
+    this.#notifyStateChange();
+  }
+
+  #handleTakebackAcceptMessage(): void {
+    if (!this.#takebackSent || this.#lifecycle !== 'playing') return;
+
+    // Undo the last move
+    this.session.undo();
+    this.#takebackSent = false;
+    // Switch clock back
+    this.clock.switchSide();
+    this.#notifyStateChange();
+  }
+
+  #handleTakebackDeclineMessage(): void {
+    if (!this.#takebackSent) return;
+    this.#takebackSent = false;
+    this.#callbacks.onTakebackDeclined?.();
     this.#notifyStateChange();
   }
 
@@ -1078,6 +1199,8 @@ export class OnlineGameSessionCore {
     this.#drawOfferSent = false;
     this.#drawOfferReceived = false;
     this.#pendingDrawOffer = false;
+    this.#takebackSent = false;
+    this.#takebackReceived = false;
     this.#gameResult = {
       status: 'draw',
       winner: null,

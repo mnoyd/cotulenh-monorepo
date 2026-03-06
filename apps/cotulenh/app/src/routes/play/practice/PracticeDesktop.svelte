@@ -5,12 +5,10 @@
   import BoardContainer from '$lib/components/BoardContainer.svelte';
   import MoveConfirmPanel from '$lib/components/MoveConfirmPanel.svelte';
   import MoveHistory from '$lib/components/MoveHistory.svelte';
-  import ClockPanel from '$lib/components/ClockPanel.svelte';
   import ErrorBoundary from '$lib/components/ErrorBoundary.svelte';
   import CommandCenter from '$lib/components/CommandCenter.svelte';
   import ShareDialog from '$lib/components/ShareDialog.svelte';
   import { GameSession } from '$lib/game-session.svelte';
-  import { createChessClock, TIME_PRESETS, type ClockColor } from '$lib/clock/clock.svelte';
   import { logger } from '@cotulenh/common';
   import { getI18n } from '$lib/i18n/index.svelte';
   import { setStoredValue } from '$lib/stores/persisted.svelte';
@@ -24,19 +22,9 @@
   let session = $state<GameSession | null>(null);
   let shareOpen = $state(false);
 
-  const clock = createChessClock({
-    red: TIME_PRESETS.blitz5_3,
-    blue: TIME_PRESETS.blitz5_3
-  });
-
-  function handleTimeout(loser: ClockColor) {
-    logger.info(`${loser === 'r' ? 'Red' : 'Blue'} lost on time`);
-  }
-
   function resetGame() {
     if (confirm(i18n.t('game.resetConfirm'))) {
       session?.reset();
-      clock.reset();
     }
   }
 
@@ -72,13 +60,6 @@
 
     try {
       session = new GameSession(initialFen);
-
-      session.onMove = () => {
-        if (clock.status === 'idle') {
-          clock.start('r');
-        }
-        clock.switchSide();
-      };
     } catch (error) {
       logger.error(error, 'Failed to initialize game session:');
       throw error;
@@ -90,19 +71,12 @@
       if (session) {
         window.removeEventListener('keydown', session.handleKeydown);
       }
-      clock.destroy();
     };
   });
 
   $effect(() => {
     if (session) {
       session.setupBoardEffect();
-    }
-  });
-
-  $effect(() => {
-    if (session && session.status !== 'playing') {
-      clock.stop();
     }
   });
 
@@ -147,10 +121,6 @@
 
 {#snippet gameTab()}
   <div class="game-tab">
-    <ClockPanel {clock} onTimeout={handleTimeout} />
-
-    <hr class="divider" />
-
     {#if session}
       <div class="game-status">
         <span class="section-header">Turn</span>

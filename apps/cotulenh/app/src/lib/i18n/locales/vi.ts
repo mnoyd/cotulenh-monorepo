@@ -68,6 +68,22 @@ export const vi: TranslationKeys = {
   'settings.theme.forest.name': 'Rừng',
   'settings.theme.forest.description': 'Phong cách quân sự xanh tự nhiên',
 
+  // Play lobby
+  'play.lobby.title': 'Chơi',
+  'play.lobby.playOnline': 'Chơi Trực Tuyến',
+  'play.lobby.practice': 'Luyện Tập',
+  'play.lobby.practiceDesc': 'Chơi cả hai bên. Không đồng hồ, không áp lực. Thoải mái thử nước đi.',
+  'play.lobby.startPractice': 'Bắt Đầu Luyện Tập',
+  'play.lobby.createGame': 'Tạo Ván Đấu',
+  'play.lobby.custom': 'Tùy Chỉnh',
+  'play.lobby.customMinutes': 'Phút',
+  'play.lobby.customIncrement': 'Tăng thêm',
+
+  // Settings — move confirmation
+  'settings.moveConfirmation': 'Xác Nhận Nước Đi',
+  'settings.moveConfirmation.desc':
+    'Yêu cầu xác nhận nước đi trước khi gửi trong ván đấu trực tuyến',
+
   // Game
   'game.missionStatus': 'Trạng thái nhiệm vụ',
   'game.currentTurn': 'Lượt hiện tại',
@@ -698,6 +714,17 @@ export const vi: TranslationKeys = {
   'tabs.pieces': 'Quân cờ',
   'tabs.setup': 'Thiết lập',
   'tabs.activity': 'Hoạt động',
+
+  // Takeback
+  'game.takebackRequest': 'Yêu Cầu Hoàn Tác',
+  'game.takebackSent': 'Đã yêu cầu hoàn tác',
+  'game.takebackReceived': 'Đối thủ yêu cầu hoàn tác',
+  'game.acceptTakeback': 'Đồng Ý',
+  'game.declineTakeback': 'Từ Chối',
+
+  // Move confirmation
+  'game.confirmMove': 'Xác Nhận',
+  'game.cancelMove': 'Hủy',
 
   // Game Replay
   'gameReplay.title': 'Xem Lại Trận Đấu',

@@ -68,6 +68,21 @@ export const en: TranslationKeys = {
   'settings.theme.forest.name': 'Forest',
   'settings.theme.forest.description': 'Natural green military aesthetic',
 
+  // Play lobby
+  'play.lobby.title': 'Play',
+  'play.lobby.playOnline': 'Play Online',
+  'play.lobby.practice': 'Practice',
+  'play.lobby.practiceDesc': 'Play both sides. No clock, no pressure. Explore moves freely.',
+  'play.lobby.startPractice': 'Start Practice',
+  'play.lobby.createGame': 'Create Game',
+  'play.lobby.custom': 'Custom',
+  'play.lobby.customMinutes': 'Minutes',
+  'play.lobby.customIncrement': 'Increment',
+
+  // Settings — move confirmation
+  'settings.moveConfirmation': 'Move Confirmation',
+  'settings.moveConfirmation.desc': 'Require confirming moves before sending in online games',
+
   // Game
   'game.missionStatus': 'Mission Status',
   'game.currentTurn': 'Current Turn',
@@ -700,6 +715,17 @@ export const en: TranslationKeys = {
   'tabs.pieces': 'Pieces',
   'tabs.setup': 'Setup',
   'tabs.activity': 'Activity',
+
+  // Takeback
+  'game.takebackRequest': 'Request Takeback',
+  'game.takebackSent': 'Takeback requested',
+  'game.takebackReceived': 'Opponent requests takeback',
+  'game.acceptTakeback': 'Accept',
+  'game.declineTakeback': 'Decline',
+
+  // Move confirmation
+  'game.confirmMove': 'Confirm',
+  'game.cancelMove': 'Cancel',
 
   // Game Replay
   'gameReplay.title': 'Game Replay',

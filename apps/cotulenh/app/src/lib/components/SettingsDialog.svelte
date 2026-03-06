@@ -60,7 +60,8 @@
       confirmReset,
       showDeployButtons,
       autoCompleteDeploy,
-      theme: selectedTheme
+      theme: selectedTheme,
+      moveConfirmation: loadSettings().moveConfirmation
     };
     persistSettings(settings);
 

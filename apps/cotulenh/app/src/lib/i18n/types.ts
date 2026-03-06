@@ -67,6 +67,21 @@ export interface TranslationKeys {
   'settings.theme.forest.name': string;
   'settings.theme.forest.description': string;
 
+  // Play lobby
+  'play.lobby.title': string;
+  'play.lobby.playOnline': string;
+  'play.lobby.practice': string;
+  'play.lobby.practiceDesc': string;
+  'play.lobby.startPractice': string;
+  'play.lobby.createGame': string;
+  'play.lobby.custom': string;
+  'play.lobby.customMinutes': string;
+  'play.lobby.customIncrement': string;
+
+  // Settings — move confirmation
+  'settings.moveConfirmation': string;
+  'settings.moveConfirmation.desc': string;
+
   // Game
   'game.missionStatus': string;
   'game.currentTurn': string;
@@ -690,6 +705,17 @@ export interface TranslationKeys {
   'tabs.pieces': string;
   'tabs.setup': string;
   'tabs.activity': string;
+
+  // Takeback
+  'game.takebackRequest': string;
+  'game.takebackSent': string;
+  'game.takebackReceived': string;
+  'game.acceptTakeback': string;
+  'game.declineTakeback': string;
+
+  // Move confirmation in-game
+  'game.confirmMove': string;
+  'game.cancelMove': string;
 
   // Game Replay
   'gameReplay.title': string;

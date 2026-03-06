@@ -13,9 +13,10 @@
   import { OnlineGameSession } from '$lib/game/online-session.svelte';
   import type { GameEndResult } from '$lib/game/online-session-core';
   import { setStoredValue } from '$lib/stores/persisted.svelte';
+  import { loadSettings } from '$lib/stores/settings';
   import { formatClockTime } from '$lib/clock/clock.svelte';
   import { getI18n } from '$lib/i18n/index.svelte';
-  import type { Api } from '@cotulenh/board';
+  import type { Api, OrigMove, DestMove, MoveMetadata } from '@cotulenh/board';
   import type { PageData } from './$types';
 
   import '$lib/styles/board.css';
@@ -29,6 +30,8 @@
   let boardComponent: BoardContainer | null = $state(null);
   let gameResult = $state<GameEndResult | null>(null);
   let resignDialogOpen = $state(false);
+  let pendingMove = $state<{ orig: OrigMove; dest: DestMove; metadata: MoveMetadata } | null>(null);
+  let moveConfirmEnabled = $derived(loadSettings().moveConfirmation);
 
   function getOrientation(): 'red' | 'blue' {
     return data.playerColor === 'red' ? 'red' : 'blue';
@@ -74,6 +77,8 @@
   let submittingDispute = $state(false);
   let drawOfferSent = $derived(onlineSession?.drawOfferSent ?? false);
   let drawOfferReceived = $derived(onlineSession?.drawOfferReceived ?? false);
+  let takebackSent = $derived(onlineSession?.takebackSent ?? false);
+  let takebackReceived = $derived(onlineSession?.takebackReceived ?? false);
   let canAbort = $derived(onlineSession?.canAbort ?? false);
   let rematchSent = $derived(onlineSession?.rematchSent ?? false);
   let rematchReceived = $derived(onlineSession?.rematchReceived ?? false);
@@ -285,16 +290,34 @@
       {#if onlineSession}
         <BoardContainer
           bind:this={boardComponent}
-          config={{
-            ...onlineSession.session.boardConfig,
-            orientation: getOrientation(),
-            viewOnly:
+          config={(() => {
+            const base = onlineSession.session.boardConfig;
+            const isViewOnly =
               onlineSession.lifecycle !== 'playing' ||
               onlineSession.connectionState !== 'connected' ||
               onlineSession.clockStatus !== 'running' ||
               onlineSession.disputeActive ||
-              !isMyTurn
-          }}
+              !isMyTurn;
+
+            if (!moveConfirmEnabled || isViewOnly) {
+              return { ...base, orientation: getOrientation(), viewOnly: isViewOnly || pendingMove !== null };
+            }
+
+            return {
+              ...base,
+              orientation: getOrientation(),
+              viewOnly: pendingMove !== null,
+              movable: {
+                ...base.movable,
+                events: {
+                  ...base.movable?.events,
+                  after: (orig: OrigMove, dest: DestMove, metadata: MoveMetadata) => {
+                    pendingMove = { orig, dest, metadata };
+                  }
+                }
+              }
+            };
+          })()}
           onApiReady={handleBoardReady}
         />
       {:else}
@@ -320,6 +343,32 @@
     {/if}
 
     <ReconnectBanner visible={showDisconnectBanner} />
+
+    {#if pendingMove}
+      <div class="move-confirm-bar">
+        <button
+          class="confirm-btn"
+          onclick={() => {
+            if (pendingMove && onlineSession) {
+              const { orig, dest, metadata } = pendingMove;
+              pendingMove = null;
+              onlineSession.session.boardConfig.movable?.events?.after?.(orig, dest, metadata);
+            }
+          }}
+        >
+          {i18n.t('game.confirmMove')}
+        </button>
+        <button
+          class="cancel-btn"
+          onclick={() => {
+            pendingMove = null;
+            onlineSession?.session.setupBoardEffect();
+          }}
+        >
+          {i18n.t('game.cancelMove')}
+        </button>
+      </div>
+    {/if}
 
     <!-- Player bar -->
     <div class="player-bar">
@@ -377,6 +426,26 @@
         {:else}
           <button class="text-link" onclick={() => onlineSession?.offerDraw()}>
             {i18n.t('game.offerDraw')}
+          </button>
+        {/if}
+
+        {#if takebackSent}
+          <span class="text-secondary">{i18n.t('game.takebackSent')}</span>
+        {:else if takebackReceived}
+          <div class="takeback-offer">
+            <span class="text-secondary">{i18n.t('game.takebackReceived')}</span>
+            <div class="game-actions">
+              <button class="text-link" onclick={() => onlineSession?.acceptTakeback()}>
+                {i18n.t('game.acceptTakeback')}
+              </button>
+              <button class="text-link" onclick={() => onlineSession?.declineTakeback()}>
+                {i18n.t('game.declineTakeback')}
+              </button>
+            </div>
+          </div>
+        {:else if moveCount > 0}
+          <button class="text-link" onclick={() => onlineSession?.requestTakeback()}>
+            {i18n.t('game.takebackRequest')}
           </button>
         {/if}
       {/if}
@@ -569,5 +638,36 @@
     color: var(--theme-text-primary, #eee);
     font-size: 0.8125rem;
     resize: vertical;
+  }
+
+  .move-confirm-bar {
+    display: flex;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 0.375rem;
+  }
+
+  .confirm-btn {
+    flex: 1;
+    padding: 0.5rem;
+    background: var(--theme-primary, #06b6d4);
+    border: none;
+    color: #000;
+    font-family: var(--font-mono, monospace);
+    font-size: 0.8125rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+
+  .cancel-btn {
+    flex: 1;
+    padding: 0.5rem;
+    background: transparent;
+    border: 1px solid var(--theme-border, #333);
+    color: var(--theme-text-secondary, #aaa);
+    font-family: var(--font-mono, monospace);
+    font-size: 0.8125rem;
+    cursor: pointer;
   }
 </style>

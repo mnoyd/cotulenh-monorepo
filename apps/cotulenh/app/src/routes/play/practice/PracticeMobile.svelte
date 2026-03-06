@@ -10,7 +10,6 @@
   import ShareDialog from '$lib/components/ShareDialog.svelte';
   import ErrorBoundary from '$lib/components/ErrorBoundary.svelte';
   import { GameSession } from '$lib/game-session.svelte';
-  import { createChessClock, TIME_PRESETS, formatClockTime } from '$lib/clock/clock.svelte';
   import { logger } from '@cotulenh/common';
   import { getI18n } from '$lib/i18n/index.svelte';
 
@@ -43,12 +42,6 @@
     };
   });
 
-  const clock = createChessClock({
-    red: TIME_PRESETS.blitz5_3,
-    blue: TIME_PRESETS.blitz5_3
-  });
-
-
   onMount(() => {
     if (!browser) return;
 
@@ -66,13 +59,6 @@
 
     try {
       session = new GameSession(initialFen);
-      
-      session.onMove = () => {
-        if (clock.status === 'idle') {
-          clock.start('r');
-        }
-        clock.switchSide();
-      };
     } catch (error) {
       logger.error(error, 'Failed to initialize game session:');
       throw error;
@@ -84,19 +70,12 @@
       if (session) {
         window.removeEventListener('keydown', session.handleKeydown);
       }
-      clock.destroy();
     };
   });
 
   $effect(() => {
     if (session) {
       session.setupBoardEffect();
-    }
-  });
-
-  $effect(() => {
-    if (session && session.status !== 'playing') {
-      clock.stop();
     }
   });
 
@@ -107,7 +86,6 @@
   function resetGame() {
     if (confirm(i18n.t('game.simpleResetConfirm'))) {
       session?.reset();
-      clock.reset();
     }
   }
 
@@ -122,12 +100,8 @@
 
 <ErrorBoundary>
   <main class="game-mobile">
-    <!-- Top Bar: Clock for opponent -->
+    <!-- Top Bar -->
     <header class="top-bar">
-      <div class="clock-mini blue">
-        <span class="clock-label">{i18n.t('common.blue')}</span>
-        <span class="clock-time">{formatClockTime(clock.blueTime)}</span>
-      </div>
       <div class="game-status">
         {#if session}
           {#if session.status === 'playing'}
@@ -160,13 +134,8 @@
       {/if}
     </section>
 
-    <!-- Bottom Bar: Clock for player + Quick Actions -->
+    <!-- Bottom Bar: Quick Actions -->
     <div class="bottom-bar">
-      <div class="clock-mini red">
-        <span class="clock-label">{i18n.t('common.red')}</span>
-        <span class="clock-time">{formatClockTime(clock.redTime)}</span>
-      </div>
-
       <div class="quick-actions">
         <button
           class="action-btn"
@@ -261,51 +230,11 @@
     flex-shrink: 0;
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: center;
     padding: 0.5rem 0.75rem;
     padding-left: 60px; /* Space for mobile menu button */
     background: var(--theme-bg-panel, #111);
     border-bottom: 1px solid var(--theme-border, #333);
-  }
-
-  .clock-mini {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 0.25rem 0.75rem;
-    border-radius: 6px;
-    min-width: 70px;
-  }
-
-  .clock-mini.red {
-    background: rgba(239, 68, 68, 0.15);
-    border: 1px solid rgba(239, 68, 68, 0.4);
-  }
-
-  .clock-mini.blue {
-    background: rgba(59, 130, 246, 0.15);
-    border: 1px solid rgba(59, 130, 246, 0.4);
-  }
-
-  .clock-label {
-    font-size: 0.6rem;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    opacity: 0.7;
-  }
-
-  .clock-time {
-    font-family: var(--font-mono, monospace);
-    font-size: 1rem;
-    font-weight: 700;
-  }
-
-  .clock-mini.red .clock-time {
-    color: #ef4444;
-  }
-
-  .clock-mini.blue .clock-time {
-    color: #3b82f6;
   }
 
   .game-status {
@@ -378,7 +307,7 @@
     flex-shrink: 0;
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: center;
     padding: 0.5rem 0.75rem;
     background: var(--theme-bg-panel, #111);
     border-top: 1px solid var(--theme-border, #333);

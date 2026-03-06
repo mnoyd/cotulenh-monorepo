@@ -52,6 +52,12 @@ export class OnlineGameSession {
       onDrawDeclined: () => {
         this.#version++;
       },
+      onTakebackRequested: () => {
+        this.#version++;
+      },
+      onTakebackDeclined: () => {
+        this.#version++;
+      },
       onRematchRequested: () => {
         this.#version++;
       },
@@ -220,6 +226,16 @@ export class OnlineGameSession {
     return this.#core.drawOfferReceived;
   }
 
+  get takebackSent(): boolean {
+    void this.#version;
+    return this.#core.takebackSent;
+  }
+
+  get takebackReceived(): boolean {
+    void this.#version;
+    return this.#core.takebackReceived;
+  }
+
   get rematchSent(): boolean {
     void this.#version;
     return this.#core.rematchSent;
@@ -266,6 +282,18 @@ export class OnlineGameSession {
 
   declineDraw(): void {
     this.#core.declineDraw();
+  }
+
+  requestTakeback(): void {
+    this.#core.requestTakeback();
+  }
+
+  acceptTakeback(): void {
+    this.#core.acceptTakeback();
+  }
+
+  declineTakeback(): void {
+    this.#core.declineTakeback();
   }
 
   requestRematch(): void {

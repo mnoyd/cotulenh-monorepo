@@ -12,7 +12,8 @@ export const SettingsSchema = z.object({
   confirmReset: z.boolean().default(true),
   showDeployButtons: z.boolean().default(true),
   autoCompleteDeploy: z.boolean().default(true),
-  theme: z.enum(THEME_IDS).default('modern-warfare')
+  theme: z.enum(THEME_IDS).default('modern-warfare'),
+  moveConfirmation: z.boolean().default(false)
 });
 
 export type Settings = z.infer<typeof SettingsSchema>;
@@ -24,7 +25,8 @@ export const DEFAULT_SETTINGS: Settings = {
   confirmReset: true,
   showDeployButtons: true,
   autoCompleteDeploy: true,
-  theme: 'modern-warfare'
+  theme: 'modern-warfare',
+  moveConfirmation: false
 };
 
 const STORAGE_KEY = 'cotulenh_settings';
