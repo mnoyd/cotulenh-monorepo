@@ -4,6 +4,10 @@
 
 This document is the current rules reference for CotuLenh.
 
+Companion study guide:
+
+- `docs/cotulenh-rules-study-plan.md`
+
 It follows the same top-level mechanic grouping used by the learn system:
 
 1. Basic movement
