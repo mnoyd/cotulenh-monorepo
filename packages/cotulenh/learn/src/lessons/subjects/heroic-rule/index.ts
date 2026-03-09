@@ -5,6 +5,7 @@ import type { Subject, Section, Lesson } from '../../../types';
 const subject8Introduction = '';
 const section1HeroicPromotionIntro = '';
 const section2HeroicMovementIntro = '';
+const section3LastGuardIntro = '';
 
 const heroicPromotionLessons: Lesson[] = [
   {
@@ -50,6 +51,32 @@ const heroicMovementLessons: Lesson[] = [
   }
 ];
 
+const lastGuardLessons: Lesson[] = [
+  {
+    id: 'heroic-rule-3',
+    category: 'heroic',
+    subjectId: 'subject-8-heroic-rule',
+    sectionId: 'section-3-last-guard',
+    title: 'Last Guard Promotion',
+    description:
+      'When a side is reduced to Commander plus one non-commander atomic piece, that final guard becomes heroic.',
+    difficulty: 2,
+    startFen: '6c4/11/11/11/11/11/11/11/11/3t7/3I1I5/4C6 b - - 0 1',
+    goalFen: '6c4/11/11/11/11/11/11/11/11/11/3+t1+I5/4C6 r - - 0 2',
+    instruction:
+      'Move the blue Tank from d3 to d2 to capture the red Infantry. The last remaining red guard on f2 should promote automatically.',
+    hint:
+      'After the capture on d2, Red is reduced to Commander + 1 non-commander atomic piece, so the Infantry on f2 becomes +I.',
+    successMessage: 'Correct! Last Guard promoted the remaining Infantry on f2 to heroic.',
+    skipLastGuard: false,
+    targetSquares: ['d2'],
+    showValidMoves: true,
+    showMoveCount: true,
+    validateLegality: true,
+    grading: 'none'
+  }
+];
+
 const section1: Section = {
   id: 'section-1-heroic-promotion',
   title: 'Heroic Promotion',
@@ -66,12 +93,20 @@ const section2: Section = {
   lessons: heroicMovementLessons
 };
 
+const section3: Section = {
+  id: 'section-3-last-guard',
+  title: 'Last Guard',
+  description: 'See how the final remaining guard auto-promotes to heroic status.',
+  introduction: section3LastGuardIntro,
+  lessons: lastGuardLessons
+};
+
 export const subject8HeroicRule: Subject = {
   id: 'subject-8-heroic-rule',
   title: 'Heroic Rule',
-  description: 'Promote pieces by giving check and use heroic movement.',
+  description: 'Promote pieces by giving check, understand Last Guard, and use heroic movement.',
   icon: '⭐',
   introduction: subject8Introduction,
   prerequisites: ['subject-3-capture'],
-  sections: [section1, section2]
+  sections: [section1, section2, section3]
 };

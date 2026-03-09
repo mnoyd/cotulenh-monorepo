@@ -7,13 +7,16 @@ This guide turns the rules reference into a practical reading and review plan.
 Use it together with:
 
 - `docs/cotulenh-rules.md`
+- `docs/cotulenh-rules-worked-examples.md`
+- `docs/cotulenh-rules-assessment-fens.md`
+- `docs/cotulenh-lesson-qa-checklist.md`
 
 The goal is:
 
 1. Read the rules in a stable order
 2. Review every piece and every mechanic
 3. Use one repeatable logic for rule analysis
-4. Check understanding with 10 inference questions
+4. Check understanding with both a prose question set and a FEN-based question set
 
 ## The Review Logic
 
@@ -518,10 +521,13 @@ A reader is ready to explain the rules if they can:
 4. Explain every terrain class
 5. Explain deploy, recombine, heroic, flying general, and game-state rules
 
-## Suggested Next Step
+## Advanced FEN Assessment
 
-After the reader can answer all 10 questions, add a second question set based
-on concrete FEN positions and ask them to classify:
+After the reader can answer the 10 inference questions, use:
+
+- `docs/cotulenh-rules-assessment-fens.md`
+
+That set asks the learner to classify:
 
 - legal move
 - illegal move
@@ -532,4 +538,10 @@ on concrete FEN positions and ask them to classify:
 - legal deploy
 - illegal deploy
 - check
-- danger but not check
+- commander danger without check
+
+## Lesson QA Follow-Up
+
+When rules prose or lesson copy changes, run:
+
+- `docs/cotulenh-lesson-qa-checklist.md`

@@ -99,20 +99,22 @@ const unblockedLessons: Lesson[] = [
     category: 'basics',
     subjectId: 'subject-4-blocking',
     sectionId: 'section-2-blocking-capture',
-    title: 'Tank Shoots Over Blockers',
-    description: 'Tank cannot move through pieces AND cannot shoot over them.',
-    content: `## Shooting Over Blockers
+    title: 'Tank Cannot Capture Through Blockers',
+    description: 'Tank uses the same blocking rules for movement and capture.',
+    content: `## Tank Blocking
 
 - Tanks **cannot move through** pieces.
 - Tanks **cannot capture through** a single blocking piece.
-- This lets Tanks punish stacked defenses.`,
-    difficulty: 2,
+ - If a blocker stands in the way, the Tank must find another route or another target.`,
+    difficulty: 1,
     startFen: '11/11/11/11/11/11/4i6/4E6/4T6/11/11/11 r - - 0 1',
-    goalFen: '11/11/11/11/11/11/4T6/4E6/11/11/11/11 r - - 0 1',
     instruction:
-      'The Tank at e4 cannot move through the friendly Infantry at e5, and it CANNOT capture the enemy at e7 by shooting over the blocker.',
-    hint: 'Select the Tank and capture the enemy infantry at e7.',
-    successMessage: 'Excellent! Tank move around to capture.',
+      'Inspect the position. The Tank at e4 cannot capture the enemy at e7 because the Infantry on e5 blocks the line. Click the Tank or any square to complete the lesson.',
+    hint: 'The blocker on e5 stops both Tank movement and Tank capture along that file.',
+    successMessage: 'Correct! Tanks do not get a shoot-through capture in the current rules.',
+    targetSquares: [],
+    customCompletion: (engine) => engine.interactionCount > 0,
+    grading: 'none',
     showValidMoves: true
   },
   {

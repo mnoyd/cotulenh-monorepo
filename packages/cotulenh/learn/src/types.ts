@@ -205,6 +205,8 @@ export interface Lesson {
   // Validation configuration
   /** Validate basic move legality (default: false) */
   validateLegality?: boolean;
+  /** Skip Last Guard promotion while this lesson runs (default: true for learn mode) */
+  skipLastGuard?: boolean;
   /** Validate terrain restrictions (default: false) */
   validateTerrain?: boolean;
   /** Require exact scenario sequence (default: false) */

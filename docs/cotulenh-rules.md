@@ -7,6 +7,9 @@ This document is the current rules reference for CotuLenh.
 Companion study guide:
 
 - `docs/cotulenh-rules-study-plan.md`
+- `docs/cotulenh-rules-worked-examples.md`
+- `docs/cotulenh-rules-assessment-fens.md`
+- `docs/cotulenh-lesson-qa-checklist.md`
 
 It follows the same top-level mechanic grouping used by the learn system:
 
@@ -19,9 +22,7 @@ It follows the same top-level mechanic grouping used by the learn system:
 7. Deploy move
 8. Heroic rule
 9. Flying general
-
-It then adds a final chapter for core-enforced game-state rules that the learn
-system does not yet present as a separate subject.
+10. Game-state rules
 
 ## Source Hierarchy
 
@@ -572,6 +573,7 @@ Lessons:
 
 - `heroic-rule-1`
 - `heroic-rule-2`
+- `heroic-rule-3`
 
 ### Engine References
 
@@ -673,38 +675,20 @@ Lessons:
 - `packages/cotulenh/core/__tests__/checkmate.test.ts`
 - `packages/cotulenh/core/__tests__/cotulenh.test.ts`
 
-## Known Documentation Mismatches To Resolve
+### Learn Coverage
 
-These should be reviewed before reusing older lesson copy as formal rules text:
+Subject: `subject-10-game-state-rules`
 
-1. Artillery wording
+Lessons:
 
-- Some learn prose describes artillery as unlimited orthogonal movement.
-- Current core config gives artillery finite range with diagonal capability.
+- `game-state-1`
+- `game-state-2`
+- `game-state-3`
+- `game-state-4`
+- `game-state-5`
 
-2. Tank blocking wording
+## Companion Assets
 
-- Some older text implies tank may shoot over blockers.
-- Current core move generation does not treat tank as generally ignoring
-  blockers.
-
-3. Air Force terrain summaries
-
-- Some older helper prose suggests Air Force can occupy any square.
-- Current core allows Air Force to traverse forbidden terrain in flight, but its
-  legal move destinations still use land-style masks.
-
-4. Heroic commander interpretation
-
-- Movement config upgrades heroic commander broadly.
-- Actual commander capture logic remains adjacent-only in move generation.
-
-## Suggested Follow-Up Work
-
-1. Reconcile learn lesson copy against current core behavior.
-2. Promote `Game-State Rules` and `Last Guard` into the learn curriculum.
-3. Add example diagrams for:
-   - heavy bridge crossing
-   - air-defense pathing
-   - recombine during deploy
-   - commander exposure versus direct check
+- `docs/cotulenh-rules-worked-examples.md`
+- `docs/cotulenh-rules-assessment-fens.md`
+- `docs/cotulenh-lesson-qa-checklist.md`

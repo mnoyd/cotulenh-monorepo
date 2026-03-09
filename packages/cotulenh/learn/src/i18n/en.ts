@@ -6,7 +6,7 @@ export const en: LearnTranslations = {
       subject: {
         title: 'Basic Movement',
         description:
-          'Master the movement patterns of all 11 unit types in Cotulenh. From basic 1-square units to unlimited-range pieces.',
+          'Master the movement patterns of all 11 unit types in Cotulenh, from basic 1-square units to long-range specialists.',
         introduction: `# Welcome to Cotulenh: Basic Movement
 
 Cotulenh is a sophisticated chess variant that combines traditional strategic gameplay with modern military-themed mechanics. Before you can command your army effectively, you must understand how each unit moves.
@@ -39,11 +39,11 @@ Cotulenh features 11 distinct military units, each with unique movement patterns
 - **Anti-Air (G)**: Moves 1 square orthogonally. Provides crucial air defense coverage.
 
 ### Medium-Range Units (2-3 squares)
-- **Tank (T)**: Moves up to 2 squares orthogonally. Can carry troops and shoot over obstacles.
+- **Tank (T)**: Moves up to 2 squares orthogonally. Can carry troops and uses normal blocking rules.
 - **Missile (S)**: Unique circular pattern - 2 squares orthogonally OR 1 square diagonally. Also provides air defense.
 
 ### Long-Range Units (3+ squares)
-- **Artillery (A)**: Moves up to 3 squares in all 8 directions. Ignores blocking pieces - can shoot over them!
+- **Artillery (A)**: Moves up to 3 squares in all 8 directions. Movement is blocked, but captures have special long-range rules.
 - **Commander (C)**: Moves unlimited squares orthogonally (like a chess Rook). Your most important piece - if captured, you lose!
 
 ### Special Units
@@ -58,7 +58,7 @@ Cotulenh features 11 distinct military units, each with unique movement patterns
 
 **Range**: The maximum number of squares a piece can move. A piece can always move fewer squares than its maximum.
 
-**Blocking**: Most pieces cannot pass through other pieces. Exceptions include Artillery, Tank, Missile, Air Force, and Navy.
+**Blocking**: Most pieces cannot pass through other pieces. Air Force ignores movement blocking, and later subjects explain capture-specific exceptions.
 
 ## Why Movement Matters
 
@@ -79,7 +79,7 @@ Master the foundation with Infantry, Engineer, Militia, Commander, and Headquart
 Expand your tactical options with Tanks, Anti-Air, and Missiles. Discover the unique circular pattern of Missiles.
 
 ### Section 3: Advanced & Special Units
-Harness the power of Artillery (shoots over pieces), Air Force (ignores terrain), and Navy (controls the seas).
+Harness the power of Artillery (3-square omnidirectional movement), Air Force (4-square flight), and Navy (controls the seas).
 
 ## Learning Approach
 
@@ -121,12 +121,12 @@ They provide tactical flexibility between basic 1-square units and powerful long
         'section-3-advanced-units': {
           title: 'Advanced & Special Units',
           description:
-            'Master the powerful units: Artillery (unlimited orthogonal), Air Force (long range), and Navy (water-based).',
+            'Master the powerful units: Artillery (3-square omnidirectional), Air Force (4-square flight), and Navy (water-based).',
           introduction: `# Advanced & Special Units
 
 These units have powerful movement characteristics:
-- **Artillery**: Unlimited orthogonal range, can shoot over blocking pieces
-- **Air Force**: Fly over any obstacle with range 4
+- **Artillery**: 3-square range in all 8 directions, with special capture rules
+- **Air Force**: Range 4 flight that crosses blocking pieces but still needs a legal landing square
 - **Navy**: Restricted to water zones, 4-square range in all directions
 
 These are your most powerful pieces for controlling the board strategically.`
@@ -210,7 +210,7 @@ These are your most powerful pieces for controlling the board strategically.`
 
 - Moves **1–2 squares orthogonally**.
 - Strong mid-range mobility for ground control.
-- Later lessons cover its ability to **shoot over blockers**.`,
+- Uses the same blocking rules for movement and capture in the current core.`,
           instruction:
             'Move the Tank. Tanks move up to 2 squares orthogonally - they can move 1 or 2 squares, but not 3 or more.',
           hint: 'Think of the Tank like a more mobile Infantry. It can move 1 or 2 squares in straight lines.',
@@ -249,30 +249,32 @@ These are your most powerful pieces for controlling the board strategically.`
         'bm-3-1': {
           title: 'Artillery Movement',
           description:
-            'Artillery can move unlimited squares orthogonally, ignoring blocking pieces.',
+            'Artillery moves up to 3 squares in any direction and uses special capture rules later.',
           content: `## Artillery
 
-- Moves **any distance orthogonally**.
+- Moves **up to 3 squares in any direction**.
 - **Heavy unit**: must use **bridge squares** to cross the river.
-- Later lessons cover long-range capture rules.`,
+- Movement still needs a clear path, but later lessons cover its long-range capture rules.`,
           instruction:
-            'Move the Artillery. Artillery can move any number of squares orthogonally, like the Rook in chess. It can shoot over obstacles!',
-          hint: 'Think of Artillery as a long-range unit. It can move across the entire board in straight lines.',
+            'Move the Artillery. Artillery can move up to 3 squares in any direction, but it still needs a clear path to move.',
+          hint: 'Try a 1, 2, or 3-square move in a straight or diagonal line.',
           successMessage:
-            'Excellent! Artillery has unlimited orthogonal range - a powerful ranged unit.'
+            'Excellent! Artillery combines 3-square range with full directional movement.'
         },
         'bm-3-2': {
           title: 'Air Force Movement',
           description:
-            'Air Force units can fly to any LAND square within range 4, ignoring terrain and other pieces.',
+            'Air Force units can fly up to 4 squares in any direction, ignoring blocking while still obeying legal landing squares.',
           content: `## Air Force
 
 - Flies **up to 4 squares** in any direction.
-- **Ignores terrain and blocking**, but can only **land on land zones**.
+- **Ignores blocking** and can cross restricted terrain while flying.
+- Still has to **land on a legal destination square**.
 - Subject to enemy **air defense zones**.`,
           instruction:
-            'Move the Air Force. Air Force can reach any land square within distance 4, ignoring obstacles!',
-          hint: 'Air Force has great mobility (range 4) and ignores obstacles, but cannot land on water (files a-b).',
+            'Move the Air Force. It can reach legal destination squares within distance 4 while flying over intervening pieces.',
+          hint:
+            'Air Force can cross restricted terrain in flight, but it still cannot finish on pure navy squares.',
           successMessage: 'Amazing! Air Force is a versatile unit with high mobility and range.'
         },
         'bm-3-3': {
@@ -373,7 +375,7 @@ The **river** divides the board into northern and southern territories:
 
 **Artillery**: Water No, Coastal Yes, River Bridge only, Land Yes
 
-**Air Force**: Water Yes, Coastal Yes, River Yes, Land Yes (ignores all terrain!)
+**Air Force**: Can cross any zone in flight, but still has to finish on a legal landing square
 
 **Commander**: Water No, Coastal Yes, River Cross freely, Land Yes
 
@@ -423,7 +425,7 @@ Terrain controls where each unit can operate. Understanding terrain restrictions
 - **Navy** is water-bound - it cannot enter pure land zones
 - **Land units** cannot enter pure water zones (files a-b)
 - **Heavy units** (Artillery, Anti-Air, Missile) need bridges to cross the river
-- **Air Force** ignores all terrain - it can go anywhere!
+- **Air Force** can cross any terrain in flight, but its final destination still has to be legal
 
 These lessons teach each rule through hands-on practice.`
         }
@@ -516,7 +518,7 @@ Some pieces have **different ranges for capture vs movement**:
 
 **Commander**: Moves unlimited squares, but captures only 1 square adjacent
 
-**Heroic Commander**: Moves unlimited, captures up to 2 squares
+**Heroic Commander**: Gains broader movement, but current move generation still keeps captures adjacent-only
 
 **All other units**: Move and capture ranges are identical
 
@@ -530,7 +532,6 @@ This means the Commander is powerful for mobility but must get close to capture.
 
 **Pieces that ignore blocking**:
 - **Artillery**: Shoots over intervening pieces
-- **Tank**: Can shoot over blocking pieces
 - **Missile**: Can shoot over blocking pieces
 - **Air Force**: Flies over everything
 - **Navy**: Shoots over blocking pieces
@@ -688,9 +689,9 @@ These pieces cannot move or capture through intervening pieces:
 
 Some pieces can move and/or capture through intervening pieces:
 
-### Tank - Blocked Movement, Unblocked Capture
+### Tank - Blocked Movement, Blocked Capture
 - **Movement**: BLOCKED - Cannot move through other pieces
-- **Capture**: UNBLOCKED - Can shoot over pieces to capture ("Shoot Over Blocking")
+- **Capture**: BLOCKED - Needs a clear line to the target in the current core
 
 ### Artillery - Blocked Movement, Unblocked Capture
 - **Movement**: BLOCKED - Cannot move through other pieces
@@ -712,7 +713,7 @@ Some pieces can move and/or capture through intervening pieces:
 
 **Defensive Screens**: Place pieces in front of your Commander or high-value units. Most enemies cannot reach through your defensive line.
 
-**Ranged Attacks**: Tank, Artillery, and Missile can eliminate threats behind enemy lines by shooting over blocking pieces.
+**Ranged Attacks**: Artillery and Missile can reach through blockers for captures, while Tanks still need open lanes.
 
 **Air Superiority**: Air Force ignores all blocking, making it devastating against protected positions.
 
@@ -728,7 +729,7 @@ Some pieces can move and/or capture through intervening pieces:
 | Engineer     | Yes               | Yes              |
 | Anti-Air     | Yes               | Yes              |
 | Headquarters | Yes               | Yes              |
-| Tank         | Yes               | **No**           |
+| Tank         | Yes               | Yes              |
 | Artillery    | Yes               | **No**           |
 | Missile      | Yes               | **No**           |
 | Air Force    | **No**            | **No**           |
@@ -738,7 +739,7 @@ Some pieces can move and/or capture through intervening pieces:
 
 This subject teaches blocking mechanics through practical exercises:
 - Experience blocked movement with Infantry
-- Use Tank to shoot over blockers
+- Recognize that Tanks still need open lanes to move and capture
 - Deploy Artillery for long-range strikes through lines
 - Master Air Force's ability to bypass all obstacles
 - Navigate Navy through crowded waters
@@ -768,8 +769,7 @@ Learn how blocking affects different pieces through these exercises.`
 
 Some pieces have special abilities that let them bypass blocking:
 
-## Shoot Over Blocking (Capture Only)
-- **Tank**: Can shoot over pieces to capture
+## Capture Through Blocking (Capture Only)
 - **Artillery**: Can shoot over pieces to capture
 - **Missile**: Can shoot over pieces to capture
 
@@ -834,17 +834,17 @@ Master these abilities to break through enemy defenses!`
           successMessage: 'Correct! Navy is blocked by other ships, not land pieces on the coast.'
         },
         'blocking-4': {
-          title: 'Tank Shoots Over Blockers',
-          description: 'Tank cannot move through pieces AND cannot shoot over them.',
-          content: `## Shooting Over Blockers
+          title: 'Tank Cannot Capture Through Blockers',
+          description: 'Tank uses the same blocking rules for movement and capture.',
+          content: `## Tank Blocking
 
 - Tanks **cannot move through** pieces.
 - Tanks **cannot capture through** a single blocking piece.
-- This lets Tanks punish stacked defenses.`,
+- If a blocker stands in the way, the Tank must find another route or another target.`,
           instruction:
-            'The Tank at e4 cannot move through the friendly Infantry at e5, and it CANNOT capture the enemy at e7 by shooting over the blocker.',
-          hint: 'Select the Tank and capture the enemy infantry at e7.',
-          successMessage: 'Excellent! Tank move around to capture.'
+            'Inspect the position. The Tank at e4 cannot capture the enemy at e7 because the Infantry on e5 blocks the line. Click the Tank or any square to complete the lesson.',
+          hint: 'The blocker on e5 stops both Tank movement and Tank capture along that file.',
+          successMessage: 'Correct! Tanks do not get a shoot-through capture in the current rules.'
         },
         'blocking-5': {
           title: 'Artillery Long-Range Strike',
@@ -1207,7 +1207,7 @@ Practice finishing a deploy by moving the Air Force carrier.`
     'subject-8-heroic-rule': {
       subject: {
         title: 'Heroic Rule',
-        description: 'Promote pieces by giving check and use heroic movement.',
+        description: 'Promote pieces by giving check, understand Last Guard, and use heroic movement.',
         introduction: `# Heroic Promotion from Check
 
 When any piece **puts the enemy Commander in check**, it becomes **Heroic**.
@@ -1221,7 +1221,8 @@ Heroic pieces gain upgraded movement and capture abilities.
 ## What You'll Learn
 
 - Deliver check in one move to trigger heroic promotion
-- Use the upgraded movement of the newly heroic piece`
+- Use the upgraded movement of the newly heroic piece
+- See how **Last Guard** auto-promotes the final remaining guard`
       },
       sections: {
         'section-1-heroic-promotion': {
@@ -1237,6 +1238,13 @@ Move a piece to give check and watch it become heroic.`
           introduction: `# Move as a Heroic Piece
 
 Once promoted, the same unit has extended movement. Use that upgrade to reach a longer target.`
+        },
+        'section-3-last-guard': {
+          title: 'Last Guard',
+          description: 'See how the final remaining guard auto-promotes to heroic status.',
+          introduction: `# Last Guard Promotion
+
+When a side is reduced to **Commander + 1 non-commander atomic piece**, that final guard becomes heroic automatically.`
         }
       },
       lessons: {
@@ -1264,6 +1272,21 @@ Once promoted, the same unit has extended movement. Use that upgrade to reach a 
           instruction: 'Move the heroic Infantry from e5 to e7 in one move.',
           hint: 'Heroic Infantry can move 2 squares orthogonally.',
           successMessage: 'Nice! The heroic Infantry used its upgraded range.'
+        },
+        'heroic-rule-3': {
+          title: 'Last Guard Promotion',
+          description:
+            'When a side is reduced to Commander plus one non-commander atomic piece, that final guard becomes heroic.',
+          content: `# Last Guard
+
+- A side reduced to **Commander + 1 non-commander atomic piece** triggers **Last Guard**
+- The final guard becomes **heroic automatically**
+- This can promote Infantry, Tanks, Headquarters, or other remaining atomic pieces`,
+          instruction:
+            'Move the blue Tank from d3 to d2 to capture the red Infantry. The last remaining red guard on f2 should promote automatically.',
+          hint:
+            'After the capture on d2, Red is reduced to Commander + 1 non-commander atomic piece, so the Infantry on f2 becomes +I.',
+          successMessage: 'Correct! Last Guard promoted the remaining Infantry on f2 to heroic.'
         }
       }
     },
@@ -1309,6 +1332,121 @@ Keep a blocking piece between commanders. If a capture would clear the line, the
           hint: 'Move the Militia from c4 to c5. The Commander on e4 is blocked by the enemy Infantry on e5.',
           successMessage:
             'Correct! The militia captures safely while the commander stays protected.'
+        }
+      }
+    },
+    'subject-10-game-state-rules': {
+      subject: {
+        title: 'Game-State Rules',
+        description:
+          'Learn how CotuLenh distinguishes check, danger, terminal states, and draw conditions.',
+        introduction: `# Game-State Rules
+
+These rules decide when a position is merely dangerous, when it is check, when the game is over, and when it is drawn.
+
+## What This Subject Covers
+
+- **Commander danger** versus **check**
+- **Checkmate** versus **stalemate**
+- **Commander capture** as an immediate terminal result
+- **Fifty-move** and **threefold repetition** draw logic
+- Why active **deploy sessions** pause \`isGameOver()\` until the deploy resolves`
+      },
+      sections: {
+        'section-1-commander-state': {
+          title: 'Commander State',
+          description: 'Differentiate danger, check, checkmate, and stalemate.',
+          introduction: `# Commander State
+
+Start by separating the commander safety concepts:
+
+- **Danger** can include direct attack or exposure
+- **Check** means direct attack
+- **Checkmate** means check with no legal escape
+- **Stalemate** means no legal moves without check`
+        },
+        'section-2-terminal-and-draws': {
+          title: 'Terminal And Draw States',
+          description: 'Learn commander capture, draw triggers, and deploy timing exceptions.',
+          introduction: `# Terminal And Draw States
+
+Not every finished position ends the same way. Some are immediate wins, some are draws, and deploy sessions can delay game-over checks until the sequence is committed.`
+        }
+      },
+      lessons: {
+        'game-state-1': {
+          title: 'Commander Danger Is Broader Than Check',
+          description:
+            'Two commanders can face each other directly and create danger without the engine reporting check.',
+          content: `# Danger Versus Check
+
+- **Check** means the commander is directly attacked
+- **Commander danger** is broader and also includes exposure from the flying-general rule
+- A position can be dangerous even when \`isCheck()\` is false`,
+          instruction:
+            'Inspect this position. The commanders face each other on the same file, which is commander danger, but it is not direct check. Click any square to complete.',
+          hint:
+            'Check needs a direct attack. Commander danger also includes exposure created by the flying-general rule.',
+          successMessage:
+            'Correct! Commander danger includes exposure, even when \`isCheck()\` is false.'
+        },
+        'game-state-2': {
+          title: 'Recognize Checkmate',
+          description:
+            'Checkmate means the commander is attacked and there are no legal moves to escape.',
+          content: `# Checkmate
+
+- The commander is **in check**
+- The side to move has **no legal escape**
+- If even one legal reply exists, it is not checkmate`,
+          instruction:
+            'Inspect the board. Red is in check and has no legal reply, so this position is checkmate. Click any square to complete.',
+          hint:
+            'The Tank on f2 gives check, the Infantry on e1 and g1 block sideways movement, and e2/g2 cover the capture escapes.',
+          successMessage: 'Correct! Checkmate requires both check and zero legal escapes.'
+        },
+        'game-state-3': {
+          title: 'Recognize Stalemate',
+          description:
+            'Stalemate means the side to move is not in check but still has no legal moves.',
+          content: `# Stalemate
+
+- The side to move is **not in check**
+- That side still has **no legal moves**
+- Stalemate is a draw, not a loss by checkmate`,
+          instruction:
+            'Inspect the board. Blue is not in check, but Blue has no legal moves, so this position is stalemate. Click any square to complete.',
+          hint:
+            'Stalemate differs from checkmate because the trapped commander is not under direct attack.',
+          successMessage: 'Correct! No legal moves without check is stalemate.'
+        },
+        'game-state-4': {
+          title: 'Commander Capture Ends the Game',
+          description: 'Capturing the enemy commander is an immediate terminal result.',
+          content: `# Commander Capture
+
+- Removing either commander ends the game immediately
+- The engine tracks commander presence separately from mate detection
+- A legal commander capture is terminal as soon as it resolves`,
+          instruction:
+            'Capture the red Commander on f1 with the blue Tank from f3. Commander capture ends the game immediately.',
+          hint: 'The Tank has 2-square orthogonal capture range, so \`f3 -> f1\` is legal.',
+          successMessage: 'Correct! Commander capture is terminal as soon as the move lands.'
+        },
+        'game-state-5': {
+          title: 'Draw Rules And Deploy Timing',
+          description:
+            'Draw detection includes the fifty-move rule, repetition tracking, and a special deploy-session timing exception.',
+          content: `# Draw Rules
+
+- **Fifty-move rule** triggers when the halfmove counter reaches **100**
+- **Threefold repetition** depends on the same full position appearing three times with the same side to move
+- Active **deploy sessions** temporarily suppress \`isGameOver()\` until the deploy commits`,
+          instruction:
+            'Inspect this board. The halfmove counter already reaches the fifty-move threshold, so the position is drawable even though the board is otherwise quiet. Click any square to complete.',
+          hint:
+            'The engine also tracks threefold repetition by full-position history, and active deploy sessions pause \`isGameOver()\` until the deploy resolves.',
+          successMessage: 'Correct! Draw logic depends on both board state and game history.'
         }
       }
     }

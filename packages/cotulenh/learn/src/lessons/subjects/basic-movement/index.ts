@@ -184,7 +184,7 @@ const section2Lessons: Lesson[] = [
 
 - Moves **1–2 squares orthogonally**.
 - Strong mid-range mobility for ground control.
-- Later lessons cover its ability to **shoot over blockers**.`,
+- Uses the same blocking rules for movement and capture in the current core.`,
     difficulty: 1,
     startFen: '11/11/11/11/11/11/11/11/5T5/11/11/11 r - - 0 1',
     instruction:
@@ -263,18 +263,18 @@ const section3Lessons: Lesson[] = [
     subjectId: 'subject-1-basic-movement',
     sectionId: 'section-3-advanced-units',
     title: 'Artillery Movement',
-    description: 'Artillery can move unlimited squares orthogonally, ignoring blocking pieces.',
+    description: 'Artillery moves up to 3 squares in any direction and uses special capture rules later.',
     content: `## Artillery
 
-- Moves **any distance orthogonally**.
+- Moves **up to 3 squares in any direction**.
 - **Heavy unit**: must use **bridge squares** to cross the river.
-- Later lessons cover long-range capture rules.`,
+- Movement still needs a clear path, but later lessons cover its long-range capture rules.`,
     difficulty: 2,
     startFen: '11/11/11/11/11/11/11/11/11/3A7/11/11 r - - 0 1',
     instruction:
-      'Move the Artillery. Artillery can move any number of squares orthogonally, like the Rook in chess. It can shoot over obstacles!',
-    hint: 'Think of Artillery as a long-range unit. It can move across the entire board in straight lines.',
-    successMessage: 'Excellent! Artillery has unlimited orthogonal range - a powerful ranged unit.',
+      'Move the Artillery. Artillery can move up to 3 squares in any direction, but it still needs a clear path to move.',
+    hint: 'Try a 1, 2, or 3-square move in a straight or diagonal line.',
+    successMessage: 'Excellent! Artillery combines 3-square range with full directional movement.',
     targetSquares: [
       'c3',
       'd1',
@@ -304,17 +304,19 @@ const section3Lessons: Lesson[] = [
     sectionId: 'section-3-advanced-units',
     title: 'Air Force Movement',
     description:
-      'Air Force units can fly to any LAND square within range 4, ignoring terrain and other pieces.',
+      'Air Force units can fly up to 4 squares in any direction, ignoring blocking while still obeying legal landing squares.',
     content: `## Air Force
 
 - Flies **up to 4 squares** in any direction.
-- **Ignores terrain and blocking**, but can only **land on land zones**.
+- **Ignores blocking** and can cross restricted terrain while flying.
+- Still has to **land on a legal destination square**.
 - Subject to enemy **air defense zones**.`,
     difficulty: 2,
     startFen: '11/11/11/11/11/11/11/11/11/11/4F6/11 r - - 0 1',
     instruction:
-      'Move the Air Force. Air Force can reach any land square within distance 4, ignoring obstacles!',
-    hint: 'Air Force has great mobility (range 4) and ignores obstacles, but cannot land on water (files a-b).',
+      'Move the Air Force. It can reach legal destination squares within distance 4 while flying over intervening pieces.',
+    hint:
+      'Air Force can cross restricted terrain in flight, but it still cannot finish on pure navy squares.',
     successMessage: 'Amazing! Air Force is a versatile unit with high mobility and range.',
     // Target squares are limited to Range 4 and Land squares (c-k files)
     targetSquares: [
@@ -371,7 +373,7 @@ const section3: Section = {
   id: 'section-3-advanced-units',
   title: 'Advanced & Special Units',
   description:
-    'Master the powerful units: Artillery (unlimited orthogonal), Air Force (long range), and Navy (water-based).',
+    'Master the powerful units: Artillery (3-square omnidirectional), Air Force (4-square flight), and Navy (water-based).',
   introduction: section3AdvancedUnitsIntro,
   lessons: section3Lessons
 };
@@ -384,7 +386,7 @@ export const subject1BasicMovement: Subject = {
   id: 'subject-1-basic-movement',
   title: 'Basic Movement',
   description:
-    'Master the movement patterns of all 11 unit types in Cotulenh. From basic 1-square units to unlimited-range pieces.',
+    'Master the movement patterns of all 11 unit types in Cotulenh, from basic 1-square units to long-range specialists.',
   icon: '🎯',
   introduction: subject1Introduction,
   prerequisites: [],

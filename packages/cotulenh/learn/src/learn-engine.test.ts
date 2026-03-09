@@ -252,4 +252,47 @@ describe('LearnEngine', () => {
       expect(engine.remainingTargets).toEqual(['e7', 'f6', 'f7']);
     });
   });
+
+  describe('game-state curriculum', () => {
+    it('completes the Last Guard lesson after the triggering capture', () => {
+      const onComplete = vi.fn();
+      const engine = new LearnEngine({ onComplete });
+
+      expect(engine.loadLesson('heroic-rule-3')).toBe(true);
+      expect(engine.status).toBe('ready');
+
+      engine.makeMove('d3', 'd2');
+
+      expect(engine.status).toBe('completed');
+      expect(engine.fen).toBe('6c4/11/11/11/11/11/11/11/11/11/3+t1+I5/4C6 r - - 0 2');
+      expect(onComplete).toHaveBeenCalled();
+    });
+
+    it('completes the commander-capture lesson with the terminal move', () => {
+      const onComplete = vi.fn();
+      const engine = new LearnEngine({ onComplete });
+
+      expect(engine.loadLesson('game-state-4')).toBe(true);
+      expect(engine.status).toBe('ready');
+
+      engine.makeMove('f3', 'f1');
+
+      expect(engine.status).toBe('completed');
+      expect(engine.fen).toBe('6c4/11/11/11/11/11/11/11/11/11/11/5t5 r - - 0 2');
+      expect(onComplete).toHaveBeenCalled();
+    });
+
+    it('allows interaction-only game-state lessons to complete on inspection', () => {
+      const onComplete = vi.fn();
+      const engine = new LearnEngine({ onComplete });
+
+      expect(engine.loadLesson('game-state-1')).toBe(true);
+      expect(engine.status).toBe('ready');
+
+      engine.handleSelect('f1');
+
+      expect(engine.status).toBe('completed');
+      expect(onComplete).toHaveBeenCalled();
+    });
+  });
 });

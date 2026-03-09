@@ -296,8 +296,9 @@ export class LearnEngine {
 
     try {
       const validateLegality = lesson.validateLegality ?? false;
+      const skipLastGuard = lesson.skipLastGuard ?? true;
       this.#game = new AntiRuleCore(lesson.startFen, {
-        skipLastGuard: true,
+        skipLastGuard,
         legalMoves: validateLegality
       });
 
@@ -608,8 +609,9 @@ export class LearnEngine {
 
     try {
       const validateLegality = this.#lesson.validateLegality ?? false;
+      const skipLastGuard = this.#lesson.skipLastGuard ?? true;
       this.#game = new AntiRuleCore(this.#lesson.startFen, {
-        skipLastGuard: true,
+        skipLastGuard,
         legalMoves: validateLegality
       });
       this.#validator = ValidatorFactory.create(this.#lesson, this);
