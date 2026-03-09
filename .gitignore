@@ -43,3 +43,6 @@ build
 # Dolt database files (added by bd init)
 .dolt/
 *.db
+
+# Local git worktrees
+.worktrees/

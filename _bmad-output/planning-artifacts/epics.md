@@ -4,1116 +4,1293 @@ stepsCompleted:
   - step-02-design-epics
   - step-03-create-stories
   - step-04-final-validation
-status: 'complete'
-completedAt: '2026-02-25'
+status: complete
+completedAt: '2026-03-09'
 inputDocuments:
   - _bmad-output/planning-artifacts/prd.md
   - _bmad-output/planning-artifacts/architecture.md
+  - _bmad-output/planning-artifacts/ux-design-specification.md
 ---
 
 # cotulenh-monorepo - Epic Breakdown
 
 ## Overview
 
-This document provides the complete epic and story breakdown for cotulenh-monorepo, decomposing the requirements from the PRD and Architecture into implementable stories.
+This document provides the complete epic and story breakdown for cotulenh-monorepo, decomposing the requirements from the PRD, UX Design if it exists, and Architecture requirements into implementable stories.
 
 ## Requirements Inventory
 
 ### Functional Requirements
 
-FR1: Visitors can create an account using email and password
-FR2: Registered users can sign in with their credentials
-FR3: Authenticated users can sign out from any page
-FR4: Users remain authenticated across page navigations and browser sessions (cookie-based)
-FR5: Users can reset their password via email
-FR6: Visitors can access the learn system, local play, and board editor without creating an account
-FR7: Users can set and update their display name
-FR8: Users can view their own profile summary (display name, games played, win/loss record, member since)
-FR9: Users can view another user's public profile and game history
-FR10: Users can update account settings (email, password)
-FR11: Existing app settings (sounds, move hints, theme, language) persist to the user's account when signed in
-FR12: Users can search for other users by display name
-FR13: Users can send a friend request to another user
-FR14: Users can view their pending incoming friend requests
-FR15: Users can accept or decline a friend request
-FR16: Users can view their friends list with online/offline status
-FR17: Users can remove a friend from their friends list
-FR18: Users can send a match invitation to an online friend
-FR19: Users can view their pending match invitations (sent and received)
-FR20: Users can accept or decline a match invitation
-FR21: Users can generate a shareable invite link for unregistered users
-FR22: Users who follow an invite link are guided through signup and into the pending match
-FR23: Users can cancel a sent match invitation before it is accepted
-FR24: Users can select time control settings when creating a match invitation
-FR25: Two authenticated users can play a realtime game of CoTuLenh against each other
-FR26: When a player makes a move, the SAN is sent via Supabase Broadcast to the opponent's client
-FR27: Each client validates received moves locally using @cotulenh/core; valid moves update the board, turn, clock, and history
-FR28a: If a client receives an invalid/illegal SAN, the game is immediately paused and both players are notified of a move dispute
-FR28b: Both players can classify the incident as a bug or cheat report with optional comments
-FR28c: The dispute record (PGN, illegal move SAN, player reports) is saved to the database
-FR28d: The admin resolves disputes manually via Supabase dashboard (review PGN, replay locally, assign game result)
-FR29: The game enforces all CoTuLenh rules (including deploy sessions, stay captures, air defense) using the existing core engine
-FR30: Players can resign a game in progress
-FR31: The system detects game completion (checkmate, stalemate, commander captured, draw conditions) and records the result
-FR32: Chess clocks synchronize between players and enforce time controls
-FR33: Players can see current game status (whose turn, move count, clock time) during play
-FR34: On game completion, the full game is saved as PGN to the database (including headers, moves, result, clock data)
-FR35: Users can view a list of their past games with opponent, result, date, and duration
-FR36: Users can load and replay a completed game move-by-move using the stored PGN
-FR37: Users can navigate forward and backward through a completed game's moves
-FR38: Authenticated users' learn progress is saved to their account in the database
-FR39: Learn progress syncs across devices when users are signed in
-FR40: When a visitor with local learn progress signs up, their existing progress is migrated to their account
-FR41: The learn system continues to function for unauthenticated users using localStorage
-FR42: Star ratings, lesson completion status, and subject unlock state are all persisted
-FR43: Users can submit feedback from any page via an in-app feedback button
-FR44: Feedback submissions automatically capture contextual information (current page URL, browser, device, screen size)
-FR45: Submitted feedback is stored and accessible to the admin
-FR46: The application supports SSR for landing/public pages and SPA navigation for authenticated experiences
-FR47: All new user-facing features support English and Vietnamese (existing i18n system)
-FR48: The application works on modern desktop and mobile browsers (Chrome, Firefox, Safari, Edge)
+FR1: Visitors can access the learn system and complete interactive lessons without creating an account
+FR2: Learners can interact with an in-lesson board to practice piece movements, placement, and game mechanics
+FR3: Learners can track their lesson progress across sessions without an account
+FR4: Learners who sign up can have their anonymous lesson progress automatically migrated to their account
+FR5: Learners who complete 3 or more lessons can see a contextual prompt to sign up and play a real opponent
+FR6: Players can participate in a deploy session at the start of each game, placing deployable pieces on their side of the board, with the game clock running during deployment
+FR7: Players can make moves in alternating turns with synchronization to their opponent's board
+FR8: Players can see legal move indicators when selecting a piece
+FR9: Players can play under time-controlled conditions with synchronized countdown clocks
+FR10: Players can resign, offer a draw, or request a takeback during a game
+FR11: Players can request and accept/decline a rematch after a game ends
+FR12: Players can choose to play a rated or casual game when creating a challenge
+FR13: Players can create an open challenge with Rapid time control presets and publish it to the lobby
+FR14: Players can browse open challenges in the lobby and accept one to start a game
+FR15: Players can send a friend challenge directly to a specific player
+FR16: Players can generate and share an invite link that directs the recipient to sign up and become their friend
+FR17: Users who sign up via an invite link are automatically connected as friends with the inviter
+FR18: Players earn a Glicko-2 rating for the Rapid time control, updated after each rated game
+FR19: Players with fewer than 30 rated games are flagged as provisional with a visible indicator
+FR20: Players can see their rating change (gain/loss with delta) immediately after a rated game ends
+FR21: Players can view an activity leaderboard ranked by games played in the current month
+FR22: Visitors can create an account with email and password
+FR23: Players can sign in and maintain an authenticated session
+FR24: Players can reset their password via email link
+FR25: Players can view their own and other players' profiles showing current rating, game count, and game history
+FR26: Players can manage a friends list with online/offline status indicators
+FR27: Players can challenge online friends directly from the friends list
+FR28: Players can view a list of their completed games with opponent, result, and rating change
+FR29: Players can replay a completed game move-by-move using the move list
+FR30: Players can export a game's move record in PGN format
+FR31: Players who lose connection during a game are automatically reconnected with game state preserved
+FR32: Both players' clocks pause during a disconnection, with automatic forfeit after a 60-second timeout window
+FR33: The system records game abandonments (browser close, timeout) with a distinct status from disconnection forfeits
+FR34: Players can navigate the platform using a persistent sidebar (desktop) or bottom tab bar (mobile)
+FR35: Players see a board-centric home dashboard with single-tap navigation to play, active games, and recent games
+FR36: The game board occupies at least 60% of the viewport on all screen sizes during gameplay, with no UI elements overlapping the board area
+FR37: Players can start a game against an AI opponent at selectable difficulty levels when no human opponents are available
+FR38: Players can join and compete in time-limited arena tournaments where pairings rotate automatically and standings update within 5 seconds of each game's completion
 
 ### NonFunctional Requirements
 
-NFR1: Page initial load completes within 2 seconds on a 4G mobile connection
-NFR2: SPA route transitions complete within 300ms with no full page reload
-NFR3: Move broadcast latency (player action to opponent's board update) under 500ms on reasonable connections
-NFR4: The game board renders and remains interactive at 60fps on mid-range mobile devices
-NFR5: Client memory usage stays under 100MB during extended gameplay sessions (no leaks from realtime subscriptions or board re-renders)
-NFR6: The application loads and functions without blocking the main thread for more than 50ms (no UI jank)
-NFR7: Non-critical assets (learn system, game history) are lazy-loaded and do not impact initial page load
-NFR8: All data in transit is encrypted via HTTPS/WSS
-NFR9: User passwords are never stored in plaintext (handled by Supabase Auth with bcrypt)
-NFR10: Database access is controlled via Supabase Row Level Security — users can only read/write their own data and public profiles
-NFR11: Authentication tokens are stored in HTTP-only cookies, not localStorage (prevents XSS token theft)
-NFR12: User-generated content (display names, feedback text) is sanitized to prevent XSS
-NFR13: Game integrity is protected by client-side validation — illegal moves trigger dispute flow, not silent acceptance
-NFR14: Game state (PGN) is persisted to the database on completion — no game results are lost due to client disconnection
-NFR15: If a player's connection drops during a game, they can reconnect and resume from the last known state
-NFR16: Learn progress writes are idempotent — duplicate syncs do not corrupt data
-NFR17: The feedback system degrades gracefully — if submission fails, the user is notified and can retry
-NFR18: Supabase Realtime channel disconnections are detected and auto-reconnected with exponential backoff
+NFR1: Move synchronization between players completes in under 500ms at the 95th percentile
+NFR2: Game page reaches Time to Interactive in under 3 seconds on a 4G mobile connection
+NFR3: Landing page First Contentful Paint under 1.5 seconds, Largest Contentful Paint under 2.5 seconds
+NFR4: Initial JavaScript bundle size under 200KB gzipped, ensuring fast load on mobile networks
+NFR5: Board first render completes in under 500ms after page load
+NFR6: Clock display updates at least once per second with clock drift between players not exceeding 500ms
+NFR7: Lobby challenge list updates in real-time — accepted/cancelled challenges disappear within 1 second
+NFR8: Game state persists server-side with a 99.9% recovery success rate — no game is lost due to a single client disconnection, verified by automated reconnection tests under simulated network interruption
+NFR9: Disconnected players automatically reconnect with full game state restored, including correct clock values, within 5 seconds of network recovery
+NFR10: If a player remains disconnected beyond 60 seconds, the system forfeits the game with a "disconnection forfeit" status visible to both players
+NFR11: Rating updates are atomic with game completion — a crash between game end and rating write must not leave ratings in a partial state
+NFR12: Platform-caused game failures (bugs, crashes, desyncs) occur in fewer than 1% of completed games, as classified by server error logs correlated with game completion records
+NFR13: Game completion rate — started games that end via checkmate, resignation, draw agreement, or timeout, excluding disconnection forfeits — exceeds 90%
+NFR14: All client-server communication uses HTTPS/WSS — no unencrypted data in transit
+NFR15: User passwords are hashed and never stored or transmitted in plaintext
+NFR16: Data access controls enforce that players can only read or modify their own profile data and only submit actions for games in which they are a participant
+NFR17: Game moves are validated server-side — the client cannot submit illegal moves or moves out of turn
+NFR18: Authentication endpoints enforce rate limiting of no more than 5 failed attempts per minute per IP address, with progressive lockout after 15 failed attempts per hour
+NFR19: All text meets WCAG 2.1 AA contrast ratios — 4.5:1 for body text, 3:1 for interactive elements
+NFR20: All interactive elements are keyboard-navigable with focus indicators meeting WCAG 2.1 AA Success Criterion 2.4.7
+NFR21: Board squares are individually focusable with descriptive labels (e.g., "B4: Red Infantry")
+NFR22: Animations and pulse effects respect prefers-reduced-motion system setting
+NFR23: Game state changes (moves, clock critical, deploy progress) are announced via ARIA live regions
+NFR24: Architecture supports scaling from 5 to 500 concurrent users without requiring a rewrite, verified by load tests sustaining 500 concurrent WebSocket connections with under 1 second move latency at the 99th percentile
+NFR25: Realtime game moves use ephemeral messaging rather than database writes, keeping database operations per game under 10 (create, state snapshots, result) regardless of move count
 
 ### Additional Requirements
 
 From Architecture:
+- Starter template: vanilla create-next-app at apps/cotulenh/web, with post-init shadcn/ui, @supabase/ssr, @supabase/supabase-js, and Zustand setup
+- Turborepo pipeline configuration for the new web app
+- Supabase client helpers (browser.ts, server.ts, middleware.ts) and Next.js Middleware for auth token refresh and route protection
+- New DB table: game_states (server-side game state snapshots for reconnection + move validation)
+- New DB table: ratings (Glicko-2 rating per player per time control)
+- New DB table: tournaments (tournament metadata, standings, pairings)
+- Edge Function: validate-move (server-side move validation via @cotulenh/core replay from DEFAULT_POSITION, SELECT...FOR UPDATE concurrency locking)
+- Edge Function: complete-game (atomic game result + Glicko-2 rating update in single PostgreSQL transaction)
+- Edge Function: tournament-pair (arena tournament auto-pairing logic)
+- Deno compatibility validation: @cotulenh/core must run in Supabase Edge Functions (Deno runtime) — highest integration risk, requires early validation spike
+- supabase/functions/ directory creation during project initialization
+- Glicko-2 algorithm implementation in @cotulenh/common package (new code, shared between app and Edge Functions)
+- Deployment ordering: 1) DB migrations, 2) Edge Functions, 3) Next.js app — CI/CD must enforce this sequence
+- GitHub Actions CI pipeline: lint, type-check, test on PR with Turborepo caching
+- Vitest for unit tests (co-located), Playwright for E2E tests
+- Supabase cron job: 15-second check for disconnect forfeit (game_states where disconnect_at > 60s)
+- Supabase cron job: 24-hour abandoned game cleanup (games with status 'started' and stale updated_at set to 'aborted')
+- Broadcast channel authorization: RLS for Realtime restricting game channels to participants
+- Event ordering: monotonically increasing seq numbers on all Broadcast events, gap detection triggers full state re-fetch
+- Atomicity rule: games row and game_states row must be created in the same DB transaction
 
-- Switch `adapter-static` to `adapter-vercel` for Vercel deployment with SSR support
-- Install and configure `@supabase/supabase-js` and `@supabase/ssr` packages
-- Set up Supabase project and local dev environment (`supabase/config.toml`, CLI)
-- Create all database migrations via Supabase CLI (`supabase/migrations/`)
-- Configure `hooks.server.ts` for session validation and `+layout.server.ts` for session passing
-- Set up environment variables (`PUBLIC_SUPABASE_URL`, `PUBLIC_SUPABASE_ANON_KEY`)
-- Implement RLS policies on all 7 tables (profiles, friendships, games, game_invitations, disputes, learn_progress, feedback)
-- Implement typed `GameMessage` discriminated union for all Broadcast communication
-- Implement move reliability via `seq` counter + `ack` system with 3s retry
-- Implement lag compensation with `sentAt` timestamp and quota system (500ms max, 100ms regen per move)
-- Implement `LagTracker` class as separate testable unit
-- Upgrade existing `ChessClockState` to delta-based timing (`Date.now()` elapsed instead of fixed 100ms decrements)
-- Add `visibilitychange` handler for background tab clock accuracy
-- Implement `OnlineGameSession` composing existing `GameSession` (not replacing)
-- Implement game lifecycle states (started → checkmate/resign/timeout/stalemate/draw/abort/dispute) with optimistic concurrency on game result writes
-- Implement Claim Victory button (not auto-forfeit) for timeout wins
-- Implement NoStart timeout (30s for first move, else abort)
-- Implement draw offer + timeout interaction rule (pending draw + flag = draw)
-- Implement rematch flow via GameMessage events
-- Implement reconnect sync via `sync` message with FEN, PGN, clocks, and seq number
-- Create Supabase browser client singleton and server client factory (`$lib/supabase/`)
-- Generate and maintain Supabase TypeScript types (`$lib/types/database.ts`)
-- Evaluate and improve existing code when touching it (brownfield refactoring guideline)
-- All new i18n strings in both English and Vietnamese
+From UX Design:
+- Board-centric layout: board occupies 60%+ viewport, never resizes when panel content changes
+- Responsive breakpoints: mobile (<640px), tablet (640-1024px), desktop (>1024px)
+- Desktop: sidebar (48px) + board + right panel (280-320px). Mobile: bottom tab bar (56px) + full-width board + tabs below
+- Dark and light theme with system preference detection
+- Skeleton screens for all async content (never spinners for page loads)
+- Touch targets: 44x44px minimum on mobile, 8px gap between adjacent targets
+- System fonts only — zero font loading delay
+- Vietnamese language only for all user-facing strings (hardcoded, no i18n infrastructure)
+- WCAG 2.1 AA accessibility throughout: contrast ratios, keyboard navigation, focus rings, ARIA live regions, prefers-reduced-motion
+- Landing page: SSR-rendered, board hero visual, clear learn/play/signup CTAs
+- Deploy phase UX: piece tray, placement preview, commit/cancel controls, simultaneous blind deployment
+- Game result banner with rating change display, rematch/new game actions
+- Reconnection UX: "Reconnecting..." banner, greyed board, clock pause indicator
 
 ### FR Coverage Map
 
-FR1: Epic 1 — Visitors can create an account using email and password
-FR2: Epic 1 — Registered users can sign in with their credentials
-FR3: Epic 1 — Authenticated users can sign out from any page
-FR4: Epic 1 — Users remain authenticated across page navigations and browser sessions (cookie-based)
-FR5: Epic 1 — Users can reset their password via email
-FR6: Epic 1 — Visitors can access the learn system, local play, and board editor without creating an account
-FR7: Epic 2 — Users can set and update their display name
-FR8: Epic 2 — Users can view their own profile summary (display name, games played, win/loss record, member since)
-FR9: Epic 2 — Users can view another user's public profile and game history
-FR10: Epic 2 — Users can update account settings (email, password)
-FR11: Epic 2 — Existing app settings persist to the user's account when signed in
-FR12: Epic 3 — Users can search for other users by display name
-FR13: Epic 3 — Users can send a friend request to another user
-FR14: Epic 3 — Users can view their pending incoming friend requests
-FR15: Epic 3 — Users can accept or decline a friend request
-FR16: Epic 3 — Users can view their friends list with online/offline status
-FR17: Epic 3 — Users can remove a friend from their friends list
-FR18: Epic 4 — Users can send a match invitation to an online friend
-FR19: Epic 4 — Users can view their pending match invitations (sent and received)
-FR20: Epic 4 — Users can accept or decline a match invitation
-FR21: Epic 4 — Users can generate a shareable invite link for unregistered users
-FR22: Epic 4 — Users who follow an invite link are guided through signup and into the pending match
-FR23: Epic 4 — Users can cancel a sent match invitation before it is accepted
-FR24: Epic 4 — Users can select time control settings when creating a match invitation
-FR25: Epic 5 — Two authenticated users can play a realtime game of CoTuLenh against each other
-FR26: Epic 5 — When a player makes a move, the SAN is sent via Supabase Broadcast to the opponent's client
-FR27: Epic 5 — Each client validates received moves locally using @cotulenh/core
-FR28a: Epic 5 — Invalid/illegal SAN triggers move dispute with game pause
-FR28b: Epic 5 — Both players can classify the incident as a bug or cheat report
-FR28c: Epic 5 — The dispute record is saved to the database
-FR28d: Epic 5 — Admin resolves disputes manually via Supabase dashboard
-FR29: Epic 5 — The game enforces all CoTuLenh rules using the existing core engine
-FR30: Epic 5 — Players can resign a game in progress
-FR31: Epic 5 — The system detects game completion and records the result
-FR32: Epic 5 — Chess clocks synchronize between players and enforce time controls
-FR33: Epic 5 — Players can see current game status during play
-FR34: Epic 5 — On game completion, the full game is saved as PGN to the database
-FR35: Epic 6 — Users can view a list of their past games
-FR36: Epic 6 — Users can load and replay a completed game move-by-move
-FR37: Epic 6 — Users can navigate forward and backward through a completed game's moves
-FR38: Epic 7 — Authenticated users' learn progress is saved to their account in the database
-FR39: Epic 7 — Learn progress syncs across devices when users are signed in
-FR40: Epic 7 — Visitor with local learn progress signs up, progress is migrated
-FR41: Epic 7 — The learn system continues to function for unauthenticated users using localStorage
-FR42: Epic 7 — Star ratings, lesson completion status, and subject unlock state are all persisted
-FR43: Epic 8 — Users can submit feedback from any page via an in-app feedback button
-FR44: Epic 8 — Feedback submissions automatically capture contextual information
-FR45: Epic 8 — Submitted feedback is stored and accessible to the admin
-FR46: Epic 1 — The application supports SSR for landing/public pages and SPA navigation
-FR47: Cross-cutting — All new user-facing features support English and Vietnamese
-FR48: Cross-cutting — The application works on modern desktop and mobile browsers
+| FR | Epic | Description |
+|----|------|-------------|
+| FR1 | Epic 2 | Learn system access without account |
+| FR2 | Epic 2 | Interactive in-lesson board |
+| FR3 | Epic 2 | localStorage lesson progress tracking |
+| FR4 | Epic 2 | Progress migration on signup |
+| FR5 | Epic 2 | Signup prompt after 3+ lessons |
+| FR6 | Epic 3 | Deploy session at game start |
+| FR7 | Epic 3 | Alternating turns with sync |
+| FR8 | Epic 3 | Legal move indicators |
+| FR9 | Epic 3 | Synchronized countdown clocks |
+| FR10 | Epic 3 | Resign, draw offer, takeback |
+| FR11 | Epic 3 | Rematch after game end |
+| FR12 | Epic 3 | Rated/casual game toggle |
+| FR13 | Epic 4 | Create open challenge to lobby |
+| FR14 | Epic 4 | Browse and accept lobby challenges |
+| FR15 | Epic 4 | Send friend challenge |
+| FR16 | Epic 4 | Generate/share invite link |
+| FR17 | Epic 4 | Auto-friend on invite signup |
+| FR18 | Epic 6 | Glicko-2 rating per player |
+| FR19 | Epic 6 | Provisional rating flag |
+| FR20 | Epic 6 | Post-game rating change display |
+| FR21 | Epic 6 | Activity leaderboard |
+| FR22 | Epic 1 | Account creation (email/password) |
+| FR23 | Epic 1 | Sign in and session management |
+| FR24 | Epic 1 | Password reset via email |
+| FR25 | Epic 5 | Player profiles (own + public) |
+| FR26 | Epic 5 | Friends list with online status |
+| FR27 | Epic 5 | Challenge friends from friends list |
+| FR28 | Epic 7 | Completed games list |
+| FR29 | Epic 7 | Move-by-move game replay |
+| FR30 | Epic 7 | PGN export |
+| FR31 | Epic 3 | Auto-reconnection with state preserved |
+| FR32 | Epic 3 | Clock pause on disconnect + 60s forfeit |
+| FR33 | Epic 3 | Abandonment recording |
+| FR34 | Epic 1 | Sidebar/bottom tab bar navigation |
+| FR35 | Epic 1 | Board-centric home dashboard |
+| FR36 | Epic 3 | Board 60%+ viewport |
+| FR37 | Epic 8 | AI opponent |
+| FR38 | Epic 8 | Arena tournaments |
 
 ## Epic List
 
-### Epic 1: Supabase Foundation & Authentication
+### Epic 1: Project Foundation & App Shell
+Users can access the platform, see a landing page, sign up, sign in, reset their password, and navigate the app using a persistent sidebar (desktop) or bottom tab bar (mobile). Authenticated users see a board-centric home dashboard with single-tap navigation to play, active games, and recent games.
+**FRs covered:** FR22, FR23, FR24, FR34, FR35
+**Priority:** MVP - Must Have
 
-Users can create accounts, sign in/out, maintain persistent sessions, and reset their password. Visitors can still access the learn system, local play, and board editor without an account. The platform supports SSR for public pages and SPA navigation for authenticated experiences.
+### Epic 2: Learn the Game
+Visitors can discover Co Tu Lenh through interactive lessons without signing up. They track progress locally via localStorage, and when they create an account, their progress migrates seamlessly. After completing 3+ lessons, they see a contextual prompt to sign up and play a real opponent.
+**FRs covered:** FR1, FR2, FR3, FR4, FR5
+**Priority:** MVP - Must Have
 
-**FRs covered:** FR1, FR2, FR3, FR4, FR5, FR6, FR46
-**NFRs addressed:** NFR1, NFR2, NFR7, NFR8, NFR9, NFR10, NFR11
-**Additional requirements:**
+### Epic 3: Play a Game
+Two players can play a full game of Co Tu Lenh online — deploy session with simultaneous blind deployment, alternating moves with legal move indicators, synchronized countdown clocks, resign/draw/takeback, rated/casual toggle, rematch, and game result. The board occupies 60%+ of the viewport. Players who disconnect are automatically reconnected with game state and clocks preserved, with automatic forfeit after 60 seconds. Game abandonments are recorded distinctly.
+**FRs covered:** FR6, FR7, FR8, FR9, FR10, FR11, FR12, FR31, FR32, FR33, FR36
+**Priority:** MVP - Must Have
 
-- Switch `adapter-static` to `adapter-vercel`
-- Install and configure `@supabase/supabase-js` and `@supabase/ssr`
-- Set up Supabase project and local dev environment (`supabase/config.toml`, CLI)
-- Create migrations framework (`supabase/migrations/`)
-- Configure `hooks.server.ts` for session validation
-- Configure `+layout.server.ts` for session passing to all pages
-- Set up environment variables (`PUBLIC_SUPABASE_URL`, `PUBLIC_SUPABASE_ANON_KEY`)
-- Create Supabase browser client singleton and server client factory (`$lib/supabase/`)
-- Generate Supabase TypeScript types (`$lib/types/database.ts`)
-- Create `profiles` table with RLS (basic — display_name, created_at)
-- Auth callback route (`/auth/callback`)
-- Auth-aware root layout (user menu vs login link)
+### Epic 4: Find an Opponent
+Players can create open challenges with Rapid time control presets and publish them to the lobby, browse and accept open challenges, send friend challenges directly, and generate shareable invite links. Users who sign up via an invite link are automatically connected as friends with the inviter.
+**FRs covered:** FR13, FR14, FR15, FR16, FR17
+**Priority:** MVP - Must Have
 
-**Dependencies:** None (standalone foundation)
+### Epic 5: Social & Friends
+Players can view their own and other players' public profiles (current rating, game count, game history), manage a friends list with online/offline presence indicators, and challenge online friends directly from the friends list.
+**FRs covered:** FR25, FR26, FR27
+**Priority:** MVP - Must Have
 
----
+### Epic 6: Ratings & Leaderboard
+Players earn a Glicko-2 rating for Rapid time control updated after each rated game. Players with fewer than 30 rated games are flagged as provisional. Rating change (gain/loss delta) is displayed immediately after a rated game. An activity leaderboard ranks players by games played in the current month.
+**FRs covered:** FR18, FR19, FR20, FR21
+**Priority:** MVP - Must Have
 
-### Epic 2: User Profiles & Settings
+### Epic 7: Game History & Review
+Players can view a list of their completed games with opponent, result, and rating change. They can replay any completed game move-by-move and export the move record in PGN format.
+**FRs covered:** FR28, FR29, FR30
+**Priority:** MVP - Must Have
 
-Users can set and update their display name, view their own profile summary (display name, games played, win/loss record, member since), view other users' public profiles, update account settings (email, password), and have their app settings (sounds, move hints, theme, language) persist to their account.
-
-**FRs covered:** FR7, FR8, FR9, FR10, FR11
-**NFRs addressed:** NFR12
-**Additional requirements:**
-
-- Enhance `profiles` table (settings_json, avatar_url, locale)
-- RLS policies for profiles (public read, owner update)
-- Evaluate existing settings system (`settings.ts`, `persisted.svelte.ts`) for Supabase-backed migration
-
-**Dependencies:** Epic 1
-
----
-
-### Epic 3: Social & Friends
-
-Users can search for other players by display name, send and manage friend requests, view their friends list with online/offline status indicators, and remove friends.
-
-**FRs covered:** FR12, FR13, FR14, FR15, FR16, FR17
-**Additional requirements:**
-
-- Create `friendships` table + RLS policies
-- Presence channel (`lobby`) for online/offline status
-- `$lib/friends/` module (queries, types)
-
-**Dependencies:** Epics 1, 2
+### Epic 8: AI Opponent & Arena Tournaments
+Players can play against an AI opponent at selectable difficulty levels for practice when no human opponents are available. Players can join time-limited arena tournaments with automatic rotating pairings and live standings updates.
+**FRs covered:** FR37, FR38
+**Priority:** Stretch / Concurrent - ships when ready, not MVP-blocking
 
 ---
 
-### Epic 4: Match Invitations & Game Setup
+## Epic 1: Project Foundation & App Shell
 
-Users can invite an online friend to a match with time control settings, view and manage pending invitations (sent and received), share invite links with unregistered users who get guided through signup into the pending match, and cancel sent invitations.
+Users can access the platform, see a landing page, sign up, sign in, reset their password, and navigate the app using a persistent sidebar (desktop) or bottom tab bar (mobile). Authenticated users see a board-centric home dashboard with single-tap navigation to play, active games, and recent games.
 
-**FRs covered:** FR18, FR19, FR20, FR21, FR22, FR23, FR24
-**Additional requirements:**
+### Story 1.1: Project Initialization & Monorepo Integration
 
-- Create `game_invitations` table + RLS policies
-- Postgres Changes subscription for real-time invitation notifications
-- Invite link route (`/play/online/invite/[code]`) — public
-- `game_config` JSON schema for time controls
+As a developer,
+I want the Next.js 15 app scaffolded within the monorepo with all core dependencies and Supabase client infrastructure configured,
+So that all subsequent stories have a working foundation to build on.
 
-**Dependencies:** Epic 3
+**Acceptance Criteria:**
 
----
+**Given** the existing monorepo with pnpm + Turborepo
+**When** the initialization is complete
+**Then** a new Next.js 15 app exists at `apps/cotulenh/web` with TypeScript, Tailwind CSS 4, App Router, and `src/` directory
+**And** shadcn/ui is initialized with `components.json` configured
+**And** `@supabase/ssr`, `@supabase/supabase-js`, and `zustand` are installed
+**And** Turborepo `turbo.json` includes pipeline tasks for the `web` app (dev, build, lint, type-check)
+**And** Supabase client helpers exist at `src/lib/supabase/browser.ts`, `src/lib/supabase/server.ts`, and `src/lib/supabase/middleware.ts`
+**And** `.env.local` and `.env.example` are created with `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` placeholders
+**And** `pnpm dev --filter @cotulenh/web` starts the dev server without errors
+**And** `pnpm build --filter @cotulenh/web` completes successfully
+**And** a proof-of-concept Edge Function in `supabase/functions/` imports `@cotulenh/core` and runs a basic `game.move()` call to validate Deno compatibility
 
-### Epic 5: Realtime Online Gameplay
-
-Two players can play a full realtime game of CoTuLenh — moves sync instantly via Broadcast, clocks tick accurately with lag compensation, the game enforces all CoTuLenh rules (deploy sessions, stay captures, air defense), and handles all end conditions (checkmate, resign, timeout, stalemate, draw, abort, disputes). Players can reconnect after disconnection, request rematch, and all completed games are saved as PGN.
-
-**FRs covered:** FR25, FR26, FR27, FR28a, FR28b, FR28c, FR28d, FR29, FR30, FR31, FR32, FR33, FR34
-**NFRs addressed:** NFR3, NFR4, NFR5, NFR6, NFR13, NFR14, NFR15, NFR18
-**Additional requirements:**
-
-- Create `games` table + RLS policies (public reads for completed games)
-- Create `disputes` table + RLS policies
-- Implement typed `GameMessage` discriminated union
-- Implement `OnlineGameSession` composing existing `GameSession` (not replacing)
-- Implement move reliability via `seq` counter + `ack` system with 3s retry
-- Implement `LagTracker` class (lag compensation + quota: 500ms max, 100ms regen/move)
-- Upgrade existing `ChessClockState` to delta-based timing (`Date.now()` elapsed)
-- Add `visibilitychange` handler for background tab clock accuracy
-- Implement game lifecycle states with optimistic concurrency on result writes
-- Implement Claim Victory button (not auto-forfeit) for timeout wins
-- Implement NoStart timeout (30s for first move, else abort)
-- Implement draw offer + timeout interaction rule (pending draw + flag = draw)
-- Implement reconnect sync via `sync` message
-- Implement rematch flow via GameMessage events
-
-**Dependencies:** Epic 4
-
----
-
-### Epic 6: Game History & Review
-
-Users can browse their past games (opponent, result, date, duration) and replay any completed game move-by-move with forward/backward navigation.
-
-**FRs covered:** FR35, FR36, FR37
-**Additional requirements:**
-
-- Leverages existing `@cotulenh/core` PGN support and `GameSession` history navigation
-- Game list page (`/user/history`) and replay page (`/user/history/[gameId]`)
-- Public game history on user profiles (`/user/profile/[username]`)
-
-**Dependencies:** Epic 5
-
----
-
-### Epic 7: Learn Progress Persistence
-
-Authenticated users' learn progress saves to their account and syncs across devices. When a visitor with local learn progress signs up, their existing progress migrates automatically to their account. Anonymous users continue using localStorage as before.
-
-**FRs covered:** FR38, FR39, FR40, FR41, FR42
-**NFRs addressed:** NFR16
-**Additional requirements:**
-
-- Create `learn_progress` table + RLS policies
-- Update existing `learn-progress.svelte.ts` with Supabase sync
-- Upsert semantics (`ON CONFLICT DO UPDATE`) for idempotent writes
-
-**Dependencies:** Epic 1 (parallel track — independent of Epics 2-6)
-
----
-
-### Epic 8: Feedback System
-
-Users can submit feedback from any page via an in-app button. Contextual information (page URL, browser, device, screen size) is captured automatically. Admin reviews all feedback via Supabase dashboard.
-
-**FRs covered:** FR43, FR44, FR45
-**NFRs addressed:** NFR17
-**Additional requirements:**
-
-- Create `feedback` table + RLS policies
-- `$lib/feedback/submit.ts` helper
-- Feedback button in root layout (available on all pages)
-- `context_json` shape for browser/device context
-
-**Dependencies:** Epic 1 (parallel track — independent of Epics 2-7)
-
----
-
-### Cross-Cutting Concerns (all epics)
-
-- **FR47:** All new user-facing strings in both English and Vietnamese (i18n)
-- **FR48:** Works on modern desktop and mobile browsers (Chrome, Firefox, Safari, Edge)
-- **Brownfield refactoring:** Evaluate and improve existing code when touching it
-- **All 10 enforcement rules** from architecture apply to every story
-
-### Dependency Graph
-
-```
-Epic 1: Foundation & Auth          (standalone)
-  ├── Epic 2: Profiles & Settings  (needs Epic 1)
-  │     └── Epic 3: Social & Friends (needs Epics 1, 2)
-  │           └── Epic 4: Match Invitations (needs Epic 3)
-  │                 └── Epic 5: Online Gameplay (needs Epic 4)
-  │                       └── Epic 6: Game History (needs Epic 5)
-  ├── Epic 7: Learn Progress       (needs Epic 1 only — parallel track)
-  └── Epic 8: Feedback             (needs Epic 1 only — parallel track)
-```
-
----
-
-## Epic 1 Stories: Supabase Foundation & Authentication
-
-### Story 1.1: User Registration
+### Story 1.2: Landing Page
 
 As a visitor,
-I want to create an account with my email and password,
-So that I can access online features of the platform.
-
-**Implementation scope:** This is the foundational story — includes Supabase project setup (adapter-vercel switch, `@supabase/supabase-js` + `@supabase/ssr` installation, `supabase/config.toml`, env vars), `hooks.server.ts` for session validation, `+layout.server.ts` for session passing, Supabase browser client singleton + server client factory (`$lib/supabase/`), generated TypeScript types, `profiles` table migration with RLS, `/auth/register` page, and `/auth/callback` server route.
+I want to see an inviting landing page that introduces Co Tu Lenh and gives me clear paths to learn or play,
+So that I understand what the platform offers and can take action immediately.
 
 **Acceptance Criteria:**
 
-**Given** a visitor on the registration page
-**When** they enter a valid email and password and submit
-**Then** an account is created via Supabase Auth, a `profiles` row is auto-created, and they are redirected to the home page as an authenticated user
+**Given** an unauthenticated visitor navigates to the root URL
+**When** the landing page loads
+**Then** the page is SSR-rendered with `lang="vi"` and Vietnamese content
+**And** a board hero visual is displayed prominently
+**And** clear CTAs for "Learn", "Play", and "Sign Up" are visible
+**And** a minimal public navigation bar shows the logo, Learn link, and Sign In link
+**And** dark and light themes are supported with system preference detection via CSS `prefers-color-scheme`
+**And** the page uses system fonts only with zero font loading delay
+**And** First Contentful Paint is under 1.5 seconds and Largest Contentful Paint is under 2.5 seconds (NFR3)
+**And** the page is responsive across mobile (<640px), tablet (640-1024px), and desktop (>1024px) breakpoints
 
-**Given** a visitor attempts to register with an already-used email
-**When** they submit the form
-**Then** they see an appropriate error message (i18n: en + vi)
+**Given** an authenticated user navigates to the root URL
+**When** the page loads
+**Then** they are redirected to the dashboard
 
-**Given** a visitor submits a weak password (less than 8 characters)
-**When** they submit the form
-**Then** they see a validation error before the form is sent
+### Story 1.3: User Registration & Login
 
-**Given** the Supabase infrastructure is configured
-**When** the app starts in development
-**Then** `hooks.server.ts` validates session cookies on every request and attaches user to `event.locals`
-
-**Given** the adapter is switched to `adapter-vercel`
-**When** the app builds
-**Then** SSR works for public pages and SPA navigation works for authenticated routes (FR46)
-
----
-
-### Story 1.2: User Login & Persistent Sessions
-
-As a registered user,
-I want to sign in with my email and password and stay logged in across page navigations,
-So that I don't have to re-authenticate every time I visit.
+As a visitor,
+I want to create an account with email and password and sign in to access the platform,
+So that I can play games and track my progress.
 
 **Acceptance Criteria:**
 
-**Given** a registered user on the login page
+**Given** a visitor is on the signup page
+**When** they enter a valid email, password, and display name and submit
+**Then** an account is created via Supabase Auth
+**And** a `profiles` row is created with the display name
+**And** they are redirected to the dashboard as an authenticated user
+
+**Given** a visitor enters an email that is already registered
+**When** they submit the signup form
+**Then** an inline error message is displayed in Vietnamese
+
+**Given** a registered user is on the login page
 **When** they enter valid credentials and submit
-**Then** they are authenticated, a session cookie is set, and they are redirected to the home page
+**Then** they are signed in with a persistent session via Supabase Auth cookies
+**And** they are redirected to the dashboard
 
 **Given** a user enters incorrect credentials
 **When** they submit the login form
-**Then** they see an error message (not revealing whether email or password was wrong)
+**Then** an inline error message is displayed in Vietnamese
+**And** after 5 failed attempts per minute, further attempts are rate-limited (NFR18)
 
-**Given** a logged-in user navigates between pages or closes and reopens the browser
-**When** they return to the site
-**Then** they remain authenticated (cookie-based session persistence, FR4)
+**Given** Next.js Middleware is configured
+**When** any request hits a protected `(app)` route without a valid session
+**Then** the user is redirected to the login page
+**And** auth tokens are refreshed on every request via middleware
 
-**Given** a user was trying to access a protected page before login
-**When** they successfully log in
-**Then** they are redirected to their originally intended page (not just home)
+### Story 1.4: Password Reset
 
----
-
-### Story 1.3: Auth-Aware Navigation & Logout
-
-As an authenticated user,
-I want to see my identity in the navigation and sign out from any page,
-So that I can manage my session and visitors can still access public features.
+As a registered user,
+I want to reset my password via an email link,
+So that I can recover access to my account if I forget my password.
 
 **Acceptance Criteria:**
 
-**Given** an authenticated user on any page
-**When** the page renders
-**Then** the navigation shows their display name (or email fallback) and a sign-out option
-
-**Given** an authenticated user clicks sign out
-**When** the action completes
-**Then** the session is destroyed, the cookie is cleared, and they are redirected to the home page (FR3)
-
-**Given** a visitor (not logged in) navigates to `/learn/*`, `/play`, or `/board-editor`
-**When** the page loads
-**Then** they can access these features without being redirected to login (FR6)
-
-**Given** a visitor navigates to a protected route (`/user/*`, `/play/online/*`)
-**When** the page loads
-**Then** they are redirected to `/auth/login` with a return URL parameter
-
-**Given** the navigation layout
-**When** rendered on mobile and desktop
-**Then** the auth-aware UI is responsive and follows existing layout patterns
-
----
-
-### Story 1.4: Password Reset Flow
-
-As a user who forgot their password,
-I want to request a password reset via email and set a new password,
-So that I can regain access to my account.
-
-**Acceptance Criteria:**
-
-**Given** a user on the `/auth/forgot-password` page
+**Given** a user is on the password reset request page
 **When** they enter their registered email and submit
-**Then** Supabase sends a password reset email with a magic link
+**Then** a password reset email is sent via Supabase Auth
+**And** a confirmation message is displayed in Vietnamese
 
 **Given** a user clicks the reset link in their email
-**When** they land on `/auth/reset-password`
-**Then** they see a form to enter their new password
+**When** the reset page loads
+**Then** they can enter a new password
+**And** on submission, their password is updated
+**And** they are redirected to the login page with a success message
 
-**Given** a user enters a valid new password on the reset page
+**Given** a user enters an unregistered email on the reset page
 **When** they submit
-**Then** their password is updated and they are redirected to the login page with a success message
+**Then** the same confirmation message is shown (no email enumeration)
 
-**Given** a user enters an unregistered email on the forgot-password page
-**When** they submit
-**Then** they see the same "check your email" message (no email enumeration)
-
----
-
-## Epic 2 Stories: User Profiles & Settings
-
-### Story 2.1: Display Name & Own Profile
+### Story 1.5: App Shell & Navigation
 
 As an authenticated user,
-I want to set my display name and view my profile summary,
-So that I have an identity on the platform and can see my stats.
-
-**Implementation scope:** Enhance `profiles` table migration (add `settings_json`, `avatar_url`, `locale` columns), profile page at `/user/profile`, display name setup (prompted on first login or accessible via profile), profile summary showing display name, member since, games played, win/loss record (games played/win/loss will be 0 until Epic 5 — that's fine, the UI is ready).
+I want a persistent navigation structure that adapts to my screen size,
+So that I can move between sections of the platform quickly.
 
 **Acceptance Criteria:**
 
-**Given** a newly registered user who hasn't set a display name
-**When** they visit `/user/profile`
-**Then** they are prompted to set a display name
+**Given** an authenticated user is on any `(app)` route on desktop (>1024px)
+**When** the page renders
+**Then** a left sidebar (48px) is displayed with icon navigation items for Dashboard, Play, Friends, Leaderboard, and Settings
+**And** the active route is visually highlighted
+**And** all nav items have keyboard focus indicators meeting WCAG 2.1 AA (NFR20)
 
-**Given** an authenticated user on their profile page
-**When** the page loads
-**Then** they see their display name, member since date, and game statistics (games played, wins, losses — defaulting to 0)
+**Given** an authenticated user is on any `(app)` route on mobile (<1024px)
+**When** the page renders
+**Then** a bottom tab bar (56px) is displayed with the same navigation items
+**And** touch targets are at least 44x44px with 8px gaps between adjacent targets
 
-**Given** a user wants to change their display name
-**When** they edit and save their display name
-**Then** the `profiles` table is updated and the new name appears immediately (FR7)
+**Given** the `(app)` layout is rendering
+**When** a route change occurs within the app
+**Then** skeleton screens are shown for async content (never spinners for page loads)
+**And** the sidebar/bottom bar remains persistent and does not re-render
 
-**Given** a user enters a display name with HTML/script tags
-**When** they submit
-**Then** the input is sanitized before storage (NFR12)
+**Given** the `(auth)` route group
+**When** signup, login, or reset-password pages render
+**Then** a centered form layout is used without the app sidebar/bottom bar
 
----
-
-### Story 2.2: Public User Profiles
-
-As a user,
-I want to view another user's public profile and game history,
-So that I can learn about other players on the platform.
-
-**Acceptance Criteria:**
-
-**Given** any user (authenticated or visitor) navigates to `/user/profile/[username]`
-**When** the page loads
-**Then** they see the target user's display name, member since date, and game statistics (FR9)
-
-**Given** a user navigates to a profile for a username that doesn't exist
-**When** the page loads
-**Then** they see a "user not found" message
-
-**Given** the public profile page
-**When** rendered
-**Then** it shows a placeholder section for game history (populated when Epic 6 is complete)
-
----
-
-### Story 2.3: Account Settings
+### Story 1.6: Home Dashboard
 
 As an authenticated user,
-I want to update my email, password, and app preferences,
-So that I can manage my account and have my settings persist across devices.
-
-**Implementation scope:** `/user/settings` page with sections for account (email, password change) and app preferences. Evaluate existing `settings.ts` and `persisted.svelte.ts` — migrate app settings (sounds, move hints, theme, language) to `profiles.settings_json` so they sync across devices when signed in. localStorage remains as cache/fallback for anonymous users.
+I want a board-centric home dashboard with quick access to play, my active games, and recent games,
+So that I can jump into the action with a single tap.
 
 **Acceptance Criteria:**
 
-**Given** an authenticated user on the settings page
-**When** they change their email and submit
-**Then** Supabase Auth updates their email (with verification if required) (FR10)
-
-**Given** an authenticated user on the settings page
-**When** they change their password (entering current + new password) and submit
-**Then** their password is updated via Supabase Auth (FR10)
-
-**Given** an authenticated user changes app settings (sounds, move hints, theme, language)
-**When** they toggle a setting
-**Then** the setting is saved to `profiles.settings_json` in the database AND localStorage (FR11)
-
-**Given** an authenticated user logs in on a new device
-**When** the app loads
-**Then** their app settings are loaded from `profiles.settings_json` and applied (FR11)
-
-**Given** a visitor (not logged in) changes app settings
-**When** they toggle a setting
-**Then** the setting is saved to localStorage only (existing behavior preserved)
-
----
-
-## Epic 3 Stories: Social & Friends
-
-### Story 3.1: User Search & Send Friend Request
-
-As an authenticated user,
-I want to search for other players by display name and send them a friend request,
-So that I can connect with people I want to play with.
-
-**Implementation scope:** Create `friendships` table migration + RLS policies, `/user/friends` page with search UI, `$lib/friends/` module (queries, types), search query against `profiles.display_name`.
-
-**Acceptance Criteria:**
-
-**Given** an authenticated user on the friends page
-**When** they type a display name in the search field
-**Then** they see matching users (partial match, case-insensitive) with their display name and a "Send Request" button (FR12)
-
-**Given** a user finds someone in search results
-**When** they click "Send Request"
-**Then** a `friendships` row is created with `status = 'pending'` and `initiated_by` set to the sender (FR13)
-
-**Given** a user searches for someone they've already sent a request to
-**When** the results load
-**Then** the button shows "Pending" instead of "Send Request"
-
-**Given** a user searches for someone who is already their friend
-**When** the results load
-**Then** the button shows "Friends" instead of "Send Request"
-
-**Given** a user tries to send a friend request to themselves
-**When** they attempt the action
-**Then** it is prevented (no self-friending)
-
----
-
-### Story 3.2: Friend Request Management
-
-As an authenticated user,
-I want to view my incoming friend requests and accept or decline them,
-So that I can control who is on my friends list.
-
-**Acceptance Criteria:**
-
-**Given** an authenticated user on the friends page
+**Given** an authenticated user navigates to the dashboard
 **When** the page loads
-**Then** they see a section showing pending incoming friend requests with sender's display name and Accept/Decline buttons (FR14)
+**Then** a board-centric layout is displayed with navigation cards for "Play", "Active Games", and "Recent Games"
+**And** each card is tappable/clickable and navigates to the appropriate section
+**And** the layout is responsive — single column on mobile, multi-column on desktop
 
-**Given** a user clicks "Accept" on an incoming request
-**When** the action completes
-**Then** the `friendships` row is updated to `status = 'accepted'` and both users see each other on their friends list (FR15)
+**Given** a new user with no game history
+**When** they view the dashboard
+**Then** appropriate empty states are shown for active games and recent games with encouraging CTAs (e.g., "Start your first game" in Vietnamese)
 
-**Given** a user clicks "Decline" on an incoming request
-**When** the action completes
-**Then** the `friendships` row is deleted and the request disappears (FR15)
+**Given** the dashboard page is loading
+**When** data is being fetched
+**Then** skeleton screens are displayed for all async content sections
 
-**Given** a user has no pending requests
+## Epic 2: Learn the Game
+
+Visitors can discover Co Tu Lenh through interactive lessons without signing up. They track progress locally via localStorage, and when they create an account, their progress migrates seamlessly. After completing 3+ lessons, they see a contextual prompt to sign up and play a real opponent.
+
+### Story 2.1: Learn Hub & Lesson Navigation
+
+As a visitor,
+I want to browse a learn hub showing all available subjects and lessons,
+So that I can choose what to learn about Co Tu Lenh at my own pace.
+
+**Acceptance Criteria:**
+
+**Given** a visitor (authenticated or not) navigates to `/learn`
 **When** the page loads
-**Then** the pending requests section shows an empty state message
+**Then** a grid of lesson subjects is displayed, sourced from the `@cotulenh/learn` package
+**And** each subject shows its title, description, and number of lessons
+**And** the page is SSR-rendered for SEO with appropriate `title` and `description` meta tags
+**And** no login prompt or auth gate is shown
+**And** the page is responsive — single column on mobile, multi-column on desktop
+**And** all text is in Vietnamese
 
----
+**Given** a visitor clicks on a subject
+**When** the subject page loads
+**Then** the individual lessons within that subject are listed in order
+**And** each lesson shows its title and a brief description
 
-### Story 3.3: Friends List with Online Status
+**Given** the learn hub is loading
+**When** data is being prepared
+**Then** skeleton screens are shown for the subject grid
 
-As an authenticated user,
-I want to see my friends list with who's currently online,
-So that I can find someone available to play.
+### Story 2.2: Interactive Lesson Board
 
-**Implementation scope:** Supabase Presence channel (`lobby`) — authenticated users subscribe on login, unsubscribe on logout. Friends list UI showing online/offline indicators. Remove friend functionality.
+As a learner,
+I want to interact with a board during lessons to practice piece movements and game mechanics,
+So that I learn by doing rather than just reading.
 
 **Acceptance Criteria:**
 
-**Given** an authenticated user on the friends page
+**Given** a learner navigates to a lesson page at `/learn/[subject]/[id]`
 **When** the page loads
-**Then** they see their complete friends list with display names and online/offline indicators (FR16)
+**Then** an interactive `cotulenh-board` is mounted via the `useBoard` hook in a non-realtime context
+**And** lesson instructions are displayed in a panel (right panel on desktop, below board on mobile)
+**And** the board renders within 500ms of page load (NFR5)
 
-**Given** a friend comes online (joins the `lobby` Presence channel)
-**When** the Presence state updates
-**Then** their indicator updates to "online" in real-time without page refresh
+**Given** a lesson step asks the learner to move a specific piece
+**When** the learner taps/clicks a piece on the board
+**Then** legal move indicators are shown on valid destination squares
+**And** when the learner makes the correct move, positive feedback is displayed (e.g., green flash)
+**And** when the learner makes an incorrect move, gentle corrective feedback is shown
 
-**Given** a friend goes offline (leaves the `lobby` Presence channel)
-**When** the Presence state updates
-**Then** their indicator updates to "offline"
+**Given** a lesson has multiple steps
+**When** the learner completes a step
+**Then** the next step loads automatically with updated board position and instructions
+**And** a progress indicator shows current step out of total steps
 
-**Given** a user wants to remove a friend
-**When** they click "Remove" on a friend and confirm
-**Then** the `friendships` row is deleted and the friend disappears from both users' lists (FR17)
+**Given** a learner is on a lesson page
+**When** they want to go back to the learn hub
+**Then** navigation back to `/learn` is available without losing their place in the lesson
 
-**Given** an authenticated user logs in
-**When** the app initializes
-**Then** they automatically join the `lobby` Presence channel (making them visible as online to their friends)
+**Given** the board is rendered
+**When** keyboard navigation is used
+**Then** board squares are individually focusable with descriptive aria-labels (NFR21)
+**And** game state changes are announced via ARIA live regions (NFR23)
 
----
+### Story 2.3: Lesson Progress Tracking
 
-## Epic 4 Stories: Match Invitations & Game Setup
-
-### Story 4.1: Send Match Invitation to Friend
-
-As an authenticated user,
-I want to invite an online friend to a match with time control settings,
-So that we can start a game together.
-
-**Implementation scope:** Create `game_invitations` table migration + RLS policies, `/play/online` page (lobby/invite UI), time control selector (e.g., 5+0, 10+0, 15+10, custom), `game_config` JSON schema. Integration with friends list from Epic 3 — show online friends with "Invite" button.
+As a learner without an account,
+I want my lesson progress saved automatically across browser sessions,
+So that I can return later and continue where I left off.
 
 **Acceptance Criteria:**
 
-**Given** an authenticated user on the online play page
+**Given** a learner completes a lesson
+**When** the lesson ends
+**Then** completion status is saved to localStorage keyed by lesson ID
+**And** the `useLearnStore` Zustand store reflects the updated progress
+
+**Given** a learner returns to the learn hub after completing some lessons
 **When** the page loads
-**Then** they see their online friends with an "Invite" button next to each (FR18)
+**Then** completed lessons show a completion indicator
+**And** subjects show progress (e.g., "3/5 lessons completed")
+**And** progress is read from localStorage on mount
 
-**Given** a user selects time control settings and clicks "Invite" on a friend
-**When** the action completes
-**Then** a `game_invitations` row is created with `status = 'pending'`, the selected `game_config`, and an auto-generated `invite_code` (FR18, FR24)
+**Given** a learner clears their browser data
+**When** they return to the learn hub
+**Then** all progress indicators reset to zero (expected behavior, no error)
 
-**Given** a user has already sent a pending invitation to a friend
-**When** they view that friend
-**Then** the button shows "Invited" instead of "Invite"
+**Given** a learner has progress in localStorage
+**When** they navigate between learn pages
+**Then** progress state is consistent and does not flicker or reset
 
-**Given** the time control selector
-**When** a user configures it
-**Then** they can choose from presets (5+0, 10+0, 15+10) or set custom minutes + increment (FR24)
+### Story 2.4: Progress Migration & Signup Prompt
 
----
-
-### Story 4.2: View & Respond to Match Invitations
-
-As an authenticated user,
-I want to see my pending match invitations and accept or decline them,
-So that I can join games my friends want to play.
-
-**Implementation scope:** Postgres Changes subscription on `game_invitations` (where `to_user = me`) in root layout for real-time notification. Invitation list UI on `/play/online`. Accept creates a `games` row with `status = 'started'` and redirects both players to `/play/online/[gameId]`.
+As a learner who has completed several lessons,
+I want to be prompted to sign up and have my progress carry over to my new account,
+So that I can start playing real opponents without losing what I've learned.
 
 **Acceptance Criteria:**
 
-**Given** an authenticated user on any page
-**When** a new match invitation is inserted for them
-**Then** they receive a real-time notification (toast or badge) via Postgres Changes subscription (FR19)
-
-**Given** an authenticated user on the online play page
-**When** the page loads
-**Then** they see their pending invitations (sent and received) with opponent name, time control, and Accept/Decline/Cancel buttons (FR19)
-
-**Given** a user clicks "Accept" on a received invitation
-**When** the action completes
-**Then** the invitation status is updated, a `games` row is created with `status = 'started'`, and both players are navigated to `/play/online/[gameId]` (FR20)
-
-**Given** a user clicks "Decline" on a received invitation
-**When** the action completes
-**Then** the invitation status is updated to `declined` and it disappears from both users' views (FR20)
-
-**Given** a user clicks "Cancel" on a sent invitation
-**When** the action completes
-**Then** the invitation is deleted and removed from the recipient's view (FR23)
-
----
-
-### Story 4.3: Shareable Invite Link
-
-As an authenticated user,
-I want to generate a shareable invite link for someone who doesn't have an account yet,
-So that I can bring new players to the platform and play with them.
-
-**Implementation scope:** Generate shareable URL using `invite_code` from `game_invitations`. Public route `/play/online/invite/[code]` that shows game details and guides visitors through signup → redirect back to accept the invitation.
-
-**Acceptance Criteria:**
-
-**Given** an authenticated user on the online play page
-**When** they click "Create Invite Link" and select time controls
-**Then** a `game_invitations` row is created with an `invite_code` and they see a copyable URL like `/play/online/invite/[code]` (FR21)
-
-**Given** a visitor (not logged in) follows an invite link
-**When** the page loads
-**Then** they see the inviter's name, time control, and a prompt to sign up or log in (FR22)
-
-**Given** a visitor signs up through the invite link flow
-**When** registration completes
-**Then** they are redirected back to the invite page, now authenticated, with an "Accept & Play" button (FR22)
-
-**Given** a user accepts an invite link
-**When** the action completes
-**Then** the invitation is accepted, a game is created, and both players are directed to the game page
-
-**Given** an invite link for an expired or cancelled invitation
-**When** a visitor follows the link
-**Then** they see a message that the invitation is no longer available
-
----
-
-## Epic 5 Stories: Realtime Online Gameplay
-
-### Story 5.1: Delta-Based Clock & GameMessage Types
-
-As a player,
-I want accurate chess clocks that don't drift in background tabs or under CPU load,
-So that time controls are fair regardless of device or browser behavior.
-
-**Implementation scope:** Upgrade existing `ChessClockState` to delta-based timing (`Date.now()` elapsed instead of fixed 100ms decrements). Add `visibilitychange` handler. Create `GameMessage` discriminated union type and `sendGameMessage`/handler helpers in `$lib/game/messages.ts`. Create `LagTracker` class in `$lib/game/lag-tracker.ts` with unit tests. These are testable units with no network dependency — foundation for all subsequent stories.
-
-**Acceptance Criteria:**
-
-**Given** the existing `ChessClockState` class
-**When** upgraded to delta-based timing
-**Then** each tick computes `elapsed = Date.now() - lastTick` instead of assuming 100ms, and `lastTick` is reset each tick
-
-**Given** a game running in a background tab (browser throttles setInterval to 1/sec)
-**When** the user returns to the tab (visibilitychange fires)
-**Then** the clock immediately catches up by computing the full elapsed delta since the last tick
-
-**Given** the `LagTracker` class initialized with defaults (500ms max quota, 100ms regen per move)
-**When** `debit(estimatedLag)` is called
-**Then** it returns `min(estimatedLag, currentQuota)` and reduces the quota accordingly
-
-**Given** the `LagTracker` after a debit
-**When** `regenerate()` is called (once per move)
-**Then** the quota increases by 100ms up to the 500ms cap
-
-**Given** the `GameMessage` type definition
-**When** a developer creates a message
-**Then** TypeScript enforces the correct fields for each event type (move requires san+clock+seq+sentAt, ack requires seq, etc.)
-
-**Given** the existing local play flow
-**When** a user plays a local game after the clock upgrade
-**Then** the game functions identically — delta-based timing is transparent to the UI
-
----
-
-### Story 5.2: Online Game Session & Move Broadcast
-
-As a player,
-I want to play a realtime game where my moves are sent to my opponent instantly,
-So that we can play CoTuLenh online against each other.
-
-**Implementation scope:** Create `games` table migration + RLS. Create `OnlineGameSession` class (`$lib/game/online-session.svelte.ts`) composing existing `GameSession`. Implement Broadcast channel (`game:{gameId}`), Presence for connection tracking, move sending (SAN + clock + seq + sentAt), move receiving with local validation via `@cotulenh/core`. Create `/play/online/[gameId]` page composing existing board components. NoStart timeout (30s).
-
-**Acceptance Criteria:**
-
-**Given** two players are navigated to `/play/online/[gameId]` after accepting an invitation
-**When** both join the game channel
-**Then** the game starts, the board shows the correct orientation for each player (red/blue), and clocks begin for the first player's turn (FR25)
-
-**Given** a player makes a move on their board
-**When** the move is valid
-**Then** a `GameMessage` with `event: 'move'` (including SAN, clock, seq, sentAt) is broadcast to the opponent (FR26)
-
-**Given** a player receives a move broadcast
-**When** the SAN is validated by `@cotulenh/core`
-**Then** the board updates, the turn switches, clocks update with lag compensation, and an ack is sent back (FR27)
-
-**Given** the game page
-**When** the game is in progress
-**Then** both players see whose turn it is, move count, and both clock times (FR33)
-
-**Given** neither player has moved within 30 seconds of game start
-**When** the timeout fires
-**Then** the game is aborted (`status = 'aborted'`) and both players are notified
-
-**Given** the `OnlineGameSession` class
-**When** inspected
-**Then** it composes `GameSession` (not replaces it) — all existing game logic is reused
-
----
-
-### Story 5.3: Move Reliability & Reconnection
-
-As a player,
-I want my moves to be reliably delivered even on unstable connections, and to reconnect seamlessly if I drop,
-So that no moves are lost and games survive temporary disconnections.
-
-**Implementation scope:** Implement seq counter + ack system with 3s retry. Implement Presence-based disconnect detection. Implement reconnect sync (`sync` message with FEN, PGN, clocks, seq). Implement `ReconnectBanner.svelte` component. Auto-reconnect for Supabase Realtime with exponential backoff.
-
-**Acceptance Criteria:**
-
-**Given** a player sends a move
-**When** no ack is received within 3 seconds
-**Then** the same move (same seq) is resent automatically
-
-**Given** a player receives a duplicate seq
-**When** processing the message
-**Then** the duplicate is ignored (idempotent) and an ack is sent
-
-**Given** a player receives seq=5 but their last was seq=3
-**When** the gap is detected
-**Then** they request a `sync` instead of processing individual moves
-
-**Given** a player's connection drops during a game
-**When** Presence fires a `leave` event (~10s)
-**Then** the opponent sees a "Opponent disconnected" banner with the clock still ticking (NFR15)
-
-**Given** a disconnected player reconnects
-**When** Presence fires a `join` event
-**Then** the connected player sends a `sync` message with current FEN, PGN, clocks, and seq number, and the reconnecting player loads this state
-
-**Given** the reconnecting player receives the sync
-**When** state is loaded
-**Then** the banner dismisses and gameplay resumes from the correct position (NFR18)
-
----
-
-### Story 5.4: Game End Conditions & Result Recording
-
-As a player,
-I want the game to detect all end conditions and save the result,
-So that completed games are recorded accurately and no results are lost.
-
-**Implementation scope:** Implement checkmate/stalemate/commander-captured/draw detection (leveraging `@cotulenh/core`), resign flow, game result writing with optimistic concurrency (`UPDATE ... WHERE status = 'started'`), PGN save on completion with headers and clock annotations.
-
-**Acceptance Criteria:**
-
-**Given** a move results in checkmate, stalemate, or commander capture
-**When** the core engine detects the end condition
-**Then** the game ends, `games` row is updated with appropriate `status` and `winner`, and the full PGN is saved (FR31, FR34)
-
-**Given** a player clicks "Resign"
-**When** they confirm
-**Then** a `resign` message is broadcast, the game ends with `status = 'resign'`, `winner` set to the opponent, and PGN is saved (FR30)
-
-**Given** both clients detect the same game end simultaneously
-**When** both attempt to write the result
-**Then** only one succeeds due to `WHERE status = 'started'` (optimistic concurrency), and the other client reads the saved result (NFR14)
-
-**Given** a completed game's PGN
-**When** saved to the database
-**Then** it includes all headers (players, date, result, time control), move list, `[%clk]` annotations, and result token (FR34)
-
-**Given** the game enforces CoTuLenh rules
-**When** a deploy session, stay capture, or air defense scenario occurs
-**Then** the existing `@cotulenh/core` engine handles it correctly in the online context (FR29)
-
----
-
-### Story 5.5: Clock Timeout & Claim Victory
-
-As a player,
-I want to claim victory when my opponent's clock runs out,
-So that time controls are enforced and stalling is prevented.
-
-**Implementation scope:** Clock flag detection (0ms), Claim Victory button UI, `claim-victory` message, timeout result writing. Draw offer + timeout interaction rule (pending draw + flag = draw).
-
-**Acceptance Criteria:**
-
-**Given** the opponent's clock reaches 0
-**When** the local player sees the flag
-**Then** a "Claim Victory" button appears (not auto-forfeit)
-
-**Given** a player clicks "Claim Victory"
-**When** the action completes
-**Then** a `claim-victory` message is broadcast, `games` row is updated with `status = 'timeout'` and the claiming player as `winner`
-
-**Given** a draw offer is pending from the opponent and the opponent's clock reaches 0
-**When** the flag condition is checked
-**Then** the result is a draw (not timeout win) — pending draw + flag = draw
-
-**Given** a player's own clock reaches 0
-**When** the opponent hasn't claimed victory yet
-**Then** the game continues until the opponent actively claims (giving maximum reconnection time)
-
----
-
-### Story 5.6: Dispute System
-
-As a player,
-I want the game to pause and let me report if my opponent sends an illegal move,
-So that game integrity is protected and disputes are reviewed fairly.
-
-**Implementation scope:** Create `disputes` table migration + RLS. Implement dispute detection (invalid SAN from opponent), dispute UI (pause game, report classification), dispute record saving, admin review via Supabase dashboard.
-
-**Acceptance Criteria:**
-
-**Given** a player receives a SAN that `@cotulenh/core` rejects as invalid
-**When** validation fails
-**Then** the game is immediately paused and a `dispute` message is broadcast with the illegal SAN and current PGN (FR28a)
-
-**Given** both players see the dispute UI
-**When** they submit their classification
-**Then** they can choose "bug" or "cheat" with optional comments, and a `disputes` row is saved with the PGN, illegal SAN, and both players' reports (FR28b, FR28c)
-
-**Given** a dispute is recorded
-**When** the game ends with `status = 'dispute'`
-**Then** the admin can review the PGN, replay the game locally, and assign a result via Supabase dashboard (FR28d)
-
-**Given** a dispute occurs
-**When** the dispute record is saved
-**Then** RLS ensures only game participants can insert and only admin can update resolution
-
----
-
-### Story 5.7: Draw Offers & Rematch
-
-As a player,
-I want to offer a draw during a game and request a rematch after it ends,
-So that we have sportsmanlike game flow options.
-
-**Implementation scope:** Draw offer/accept/decline messages and UI. Rematch flow — after game ends, either player sends `rematch`, if accepted a new `game_invitations` row is created with swapped colors and same time control. Abort flow (leave before both sides have moved).
-
-**Acceptance Criteria:**
-
-**Given** a player during an active game
-**When** they click "Offer Draw"
-**Then** a `draw-offer` message is sent and the opponent sees an Accept/Decline prompt
-
-**Given** the opponent accepts a draw offer
-**When** they click "Accept"
-**Then** a `draw-accept` message is sent, the game ends with `status = 'draw'`, `winner = null`, and PGN is saved
-
-**Given** the opponent declines a draw offer
-**When** they click "Decline"
-**Then** a `draw-decline` message is sent and gameplay continues
-
-**Given** a game has just ended
-**When** either player clicks "Rematch"
-**Then** a `rematch` message is sent and the opponent sees a "Rematch?" prompt
-
-**Given** the opponent accepts a rematch
-**When** they click "Accept"
-**Then** a new `game_invitations` row is created with swapped colors and the same time control, and both players are navigated to the new game
-
-**Given** a player leaves before both sides have made a move
-**When** the abort condition is detected
-**Then** the game is aborted (`status = 'aborted'`), no penalty, both players notified
-
----
-
-## Epic 6 Stories: Game History & Review
-
-### Story 6.1: Game History List
-
-As an authenticated user,
-I want to see a list of my past games,
-So that I can track my play history and find games to review.
-
-**Implementation scope:** `/user/history` page querying the `games` table (completed games where user is red_player or blue_player). Display opponent name, result, date, duration. Also show game history on public profiles (`/user/profile/[username]`).
-
-**Acceptance Criteria:**
-
-**Given** an authenticated user navigates to `/user/history`
-**When** the page loads
-**Then** they see a list of their completed games showing opponent display name, result (win/loss/draw), date, and game duration, ordered by most recent (FR35)
-
-**Given** a user has no completed games
-**When** the page loads
-**Then** they see an empty state message encouraging them to play
-
-**Given** a user views another user's public profile at `/user/profile/[username]`
-**When** the page loads
-**Then** the game history section shows that user's completed games (FR9 — public game history)
-
-**Given** the game list
-**When** a user clicks on a game entry
-**Then** they are navigated to `/user/history/[gameId]` for replay
-
----
-
-### Story 6.2: Game Replay Viewer
-
-As a user,
-I want to replay a completed game move-by-move with forward/backward navigation,
-So that I can review what happened and learn from past games.
-
-**Implementation scope:** `/user/history/[gameId]` page. Load PGN from `games` table, create a `GameSession` via `core.loadPgn(pgn)`, reuse existing `MoveHistory` component, keyboard handlers, and `historyViewIndex` navigation. Board set to `viewOnly: true`.
-
-**Acceptance Criteria:**
-
-**Given** a user navigates to `/user/history/[gameId]`
-**When** the page loads
-**Then** the game's PGN is loaded, the board shows the starting position, and the move list is displayed (FR36)
-
-**Given** a user viewing a replayed game
-**When** they click forward (or press right arrow)
-**Then** the board advances one move and the current move is highlighted in the move list (FR37)
-
-**Given** a user viewing a replayed game
-**When** they click backward (or press left arrow)
-**Then** the board goes back one move (FR37)
-
-**Given** a user viewing a replayed game
-**When** they click on a specific move in the move list
-**Then** the board jumps to that position
-
-**Given** the replay viewer
-**When** rendered
-**Then** game metadata is shown (players, result, date, time control) and the board is in view-only mode (no piece interaction)
-
----
-
-## Epic 7 Stories: Learn Progress Persistence
-
-### Story 7.1: Learn Progress Database Sync
-
-As an authenticated user,
-I want my learn progress to save to my account and sync across devices,
-So that I don't lose progress when switching browsers or devices.
-
-**Implementation scope:** Create `learn_progress` table migration + RLS. Update existing `learn-progress.svelte.ts` to detect auth state — when signed in, read/write progress from Supabase alongside localStorage (localStorage remains as local cache). Upsert semantics (`ON CONFLICT DO UPDATE`) for idempotent writes.
-
-**Acceptance Criteria:**
+**Given** an unauthenticated learner has completed 3 or more lessons
+**When** they finish a lesson
+**Then** a contextual, non-blocking prompt appears suggesting they sign up to play a real opponent
+**And** the prompt is in Vietnamese and dismissible
+**And** the prompt does not appear if already dismissed in this session
+
+**Given** a learner with localStorage progress signs up for an account
+**When** account creation completes
+**Then** the `migrateProgress` Server Action reads localStorage lesson data and writes it to the `learn_progress` DB table for the new user
+**And** localStorage progress is cleared after successful migration
+**And** the user sees their existing progress intact on the learn hub
+
+**Given** a learner with localStorage progress logs into an existing account
+**When** login completes
+**Then** if the account has no existing learn progress, localStorage progress is migrated
+**And** if the account already has learn progress, the more complete set is kept (no overwrite of existing DB progress)
 
 **Given** an authenticated user completes a lesson
-**When** progress is saved
-**Then** it is written to both `learn_progress` table and localStorage (FR38)
+**When** the lesson ends
+**Then** progress is written directly to the `learn_progress` DB table (not localStorage)
 
-**Given** an authenticated user opens the app on a different device
-**When** the learn system loads
-**Then** their progress is fetched from Supabase and applied (FR39)
+## Epic 3: Play a Game
 
-**Given** an unauthenticated user completes a lesson
-**When** progress is saved
-**Then** it is written to localStorage only (existing behavior, FR41)
+Two players can play a full game of Co Tu Lenh online — deploy session with simultaneous blind deployment, alternating moves with legal move indicators, synchronized countdown clocks, resign/draw/takeback, rated/casual toggle, rematch, and game result. The board occupies 60%+ of the viewport. Players who disconnect are automatically reconnected with game state and clocks preserved, with automatic forfeit after 60 seconds. Game abandonments are recorded distinctly.
 
-**Given** a duplicate progress write (same user, same lesson)
-**When** the upsert executes
-**Then** the existing row is updated, not duplicated (NFR16 — idempotent)
+### Story 3.1: Game Page Layout & Board Integration
 
-**Given** star ratings, lesson completion, and subject unlock state
-**When** persisted
-**Then** all are correctly saved and restored (FR42)
-
----
-
-### Story 7.2: Learn Progress Migration on Signup
-
-As a visitor who has been learning without an account,
-I want my existing learn progress to migrate to my account when I sign up,
-So that I don't lose the progress I've already made.
+As a player,
+I want a game page with a board-centric layout that adapts to my screen size,
+So that the board is always the focus and I can see game information without distraction.
 
 **Acceptance Criteria:**
 
-**Given** a visitor has learn progress in localStorage and then creates an account
-**When** registration completes and they are authenticated
-**Then** all localStorage learn progress is synced to the `learn_progress` table (FR40)
+**Given** a player navigates to `/game/[id]`
+**When** the page loads
+**Then** the `cotulenh-board` is mounted via the `useBoard` hook into a container ref
+**And** the board occupies at least 60% of the viewport on all screen sizes (FR36)
+**And** no UI elements overlap the board area
+**And** the board renders within 500ms of page load (NFR5)
 
-**Given** the migration encounters progress that already exists in the database (edge case)
-**When** the upsert runs
-**Then** the higher star rating / completed status is kept (merge, don't overwrite)
+**Given** the player is on desktop (>1024px)
+**When** the game page renders
+**Then** player info bars are shown above and below the board
+**And** a tabbed right panel (280-320px) displays move list, game controls, and chat placeholder
+**And** the board never resizes when panel content changes
 
-**Given** the migration completes
-**When** the user continues learning
-**Then** new progress writes go to both Supabase and localStorage seamlessly
+**Given** the player is on mobile (<1024px)
+**When** the game page renders
+**Then** the board is full-width
+**And** player info bars are compact above and below the board
+**And** game information is accessible via tabs below the board
 
----
+**Given** the game page is loading
+**When** data is being fetched
+**Then** skeleton screens are displayed for the board area and panels
+**And** the page reaches Time to Interactive in under 3 seconds on 4G (NFR2)
 
-## Epic 8 Stories: Feedback System
+**Given** the board is rendered
+**When** keyboard navigation is used
+**Then** board squares are individually focusable with descriptive aria-labels (NFR21)
 
-### Story 8.1: In-App Feedback Submission
+### Story 3.2: Game Creation & Database Setup
 
-As a user,
-I want to submit feedback from any page via a feedback button,
-So that I can report issues or suggest improvements directly to the developer.
-
-**Implementation scope:** Create `feedback` table migration + RLS. Create `$lib/feedback/submit.ts` helper. Add feedback button to root layout (floating button or nav item). Feedback dialog captures message + automatically collects page URL, browser, device, screen size. Works for authenticated users (user_id saved) and optionally anonymous visitors.
+As a player,
+I want to create a new game with rated or casual options,
+So that a game record exists and both players can join.
 
 **Acceptance Criteria:**
 
-**Given** a user on any page
-**When** they click the feedback button
-**Then** a dialog opens with a text input for their message (FR43)
+**Given** a new `game_states` migration is applied
+**When** the migration runs
+**Then** the `game_states` table exists with columns: `id` (uuid PK), `game_id` (uuid FK to games), `move_history` (text[]), `fen` (text), `deploy_state` (jsonb), `phase` (text), `clocks` (jsonb), `updated_at` (timestamptz)
+**And** RLS policies restrict read access to game participants and write access to Edge Functions (service role)
 
-**Given** a user submits feedback
-**When** the form is sent
-**Then** the `feedback` row includes: user_id (if authenticated), message, page_url, and `context_json` with browser, device type, and screen size (FR44)
+**Given** a game creation is initiated (via Server Action)
+**When** the creation request is processed
+**Then** a `games` row and a `game_states` row are created in the same database transaction (atomicity rule)
+**And** the game has `status = 'started'` and the `game_states` has `phase = 'deploying'`
+**And** clocks are initialized based on the selected Rapid time control preset
+**And** the `is_rated` flag is set based on the player's choice (FR12)
 
-**Given** feedback is submitted
-**When** the admin views the Supabase dashboard
-**Then** they can see all feedback entries with full context (FR45)
+**Given** a game is created without a corresponding `game_states` row
+**When** this invalid state is detected
+**Then** the transaction rolls back and an error is returned (no orphaned games)
 
-**Given** a feedback submission fails (network error)
-**When** the error is caught
-**Then** the user sees a notification that submission failed and can retry (NFR17)
+### Story 3.3: Deploy Session
 
-**Given** a user submits feedback with HTML/script in the message
-**When** the input is processed
-**Then** it is sanitized before storage (NFR12)
+As a player,
+I want to place my deployable pieces on my side of the board before the game begins,
+So that I can set up my strategy without my opponent seeing my placements.
+
+**Acceptance Criteria:**
+
+**Given** both players have joined a game and the phase is `'deploying'`
+**When** the deploy session starts
+**Then** the game clock starts running during deployment (FR6)
+**And** each player sees a piece tray showing their deployable pieces
+**And** a deploy progress counter shows "Piece X of Y"
+
+**Given** a player is in the deploy phase
+**When** they tap a deployable piece and then a valid board square
+**Then** the piece is placed on the board as a local preview via `game.move({ from, to, deploy: true })`
+**And** the placement accumulates in a `MoveSession` on the client
+**And** the player can cancel and redo placements via `game.cancelSession()`
+
+**Given** a player is satisfied with their deployment
+**When** they tap "Commit"
+**Then** `game.commitSession()` is called locally and the committed SAN array is sent to the validate-move Edge Function
+**And** the Edge Function validates the deploy sequence against authoritative game state
+**And** on success, a `deploy_submitted` event is broadcast to the opponent (without revealing placement)
+
+**Given** both players have submitted valid deployments
+**When** the Edge Function confirms both submissions
+**Then** `deploy_commit` events are broadcast to both players with each other's deploy SANs
+**And** the `game_states.phase` transitions from `'deploying'` to `'playing'`
+**And** both players see the full board with all pieces placed
+
+**Given** only one player has submitted their deployment
+**When** the other player is still placing pieces
+**Then** a "Waiting for opponent..." indicator is shown to the player who submitted
+**And** the opponent's deployment is not revealed
+
+### Story 3.4: Move Execution & Server-Side Validation
+
+As a player,
+I want my moves validated by the server and synchronized to my opponent in real-time,
+So that the game is fair and both players always see the same board state.
+
+**Acceptance Criteria:**
+
+**Given** the game phase is `'playing'` and it is the player's turn
+**When** the player selects a piece
+**Then** legal move indicators are shown on valid destination squares (FR8)
+
+**Given** the player selects a destination square
+**When** the move is submitted
+**Then** the move is applied optimistically on the client via `game.move(san)`
+**And** the SAN string is sent to the validate-move Edge Function
+**And** the Edge Function reads `game_states.move_history` from DB using `SELECT ... FOR UPDATE` for concurrency locking
+**And** the Edge Function replays all moves from `DEFAULT_POSITION` using `CoTuLenh` engine to reconstruct authoritative state
+**And** the proposed move is validated against the reconstructed state
+
+**Given** the Edge Function validates the move successfully
+**When** validation completes
+**Then** the move is appended to `game_states.move_history`, `fen` is updated
+**And** a `move` event with `{ san, fen }` and a monotonically increasing `seq` number is broadcast via the game channel
+**And** move synchronization completes in under 500ms at the 95th percentile (NFR1)
+
+**Given** the Edge Function rejects the move
+**When** the rejection is received by the client
+**Then** the optimistic move is rolled back on the board
+**And** an error toast is shown in Vietnamese
+
+**Given** it is not the player's turn
+**When** they attempt to interact with the board
+**Then** no move is allowed and the Edge Function returns `WRONG_TURN` (HTTP 403) if a request reaches it
+
+**Given** the client receives a Broadcast event
+**When** the event's `seq` number has a gap (seq > last_seen_seq + 1)
+**Then** the client triggers a full state re-fetch from `game_states` and replays the authoritative `move_history`
+
+**Given** the client receives a Broadcast event
+**When** the event's `seq` is less than or equal to `last_seen_seq`
+**Then** the event is discarded (duplicate)
+
+### Story 3.5: Chess Clocks & Time Control
+
+As a player,
+I want synchronized countdown clocks showing remaining time for both players,
+So that I can manage my time and know how much time my opponent has.
+
+**Acceptance Criteria:**
+
+**Given** a game is in progress
+**When** the game page is displayed
+**Then** both players' clocks are shown with remaining time
+**And** the active player's clock counts down locally
+**And** the clock display updates at least once per second (NFR6)
+
+**Given** a move is confirmed by the server
+**When** the `move` event is broadcast
+**Then** a `clock_sync` payload is piggybacked with authoritative clock values `{ red: number, blue: number }` in milliseconds
+**And** the client updates its local clock to match the server-authoritative values
+**And** clock drift between players does not exceed 500ms (NFR6)
+
+**Given** a player's clock reaches a critical threshold (e.g., under 30 seconds)
+**When** the clock updates
+**Then** a visual warning is shown (e.g., clock turns red)
+**And** the critical state is announced via ARIA live region (NFR23)
+
+**Given** the local client clock is running between server syncs
+**When** the display updates
+**Then** the local clock is display-only and the server clock remains authoritative
+
+### Story 3.6: Game End Conditions & Result
+
+As a player,
+I want the game to end correctly when checkmate, stalemate, or timeout occurs,
+So that the result is recorded accurately and I see the outcome clearly.
+
+**Acceptance Criteria:**
+
+**Given** a move results in checkmate
+**When** the validate-move Edge Function detects checkmate after applying the move
+**Then** the complete-game Edge Function is called with status `'checkmate'` and the winner
+**And** the `games` row is updated atomically with `status` and `winner`
+**And** a game end event is broadcast to both players
+
+**Given** a move results in stalemate
+**When** the validate-move Edge Function detects stalemate
+**Then** the complete-game Edge Function is called with status `'stalemate'`
+**And** the game is recorded as a draw
+
+**Given** a player's server-side clock reaches zero
+**When** the opponent sends a `timeout_claim` to the complete-game Edge Function
+**Then** the server recalculates from `last_move_timestamp` plus accumulated deltas
+**And** if the server-side clock is also <= 0, the game is completed with status `'timeout'` and the opponent wins
+**And** if the server-side clock is not <= 0, a `clock_sync` correction is broadcast instead
+
+**Given** a game has ended
+**When** the result is displayed
+**Then** a game result banner shows the outcome (win/loss/draw), the method (checkmate/stalemate/timeout/resign/draw), and both players' final positions
+**And** action buttons for rematch and new game are shown
+
+### Story 3.7: Resign, Draw Offer & Takeback
+
+As a player,
+I want to resign, offer a draw, or request a takeback during a game,
+So that I have full control over my game experience.
+
+**Acceptance Criteria:**
+
+**Given** a player is in an active game
+**When** they tap "Resign"
+**Then** a confirmation dialog appears
+**And** on confirmation, a resign action is sent to the complete-game Edge Function
+**And** the game ends with status `'resign'` and the opponent wins
+**And** a `resign` event is broadcast to the opponent
+
+**Given** a player is in an active game
+**When** they tap "Offer Draw"
+**Then** a `draw_offer` event is broadcast to the opponent
+**And** the opponent sees accept/decline buttons
+
+**Given** a draw offer has been sent
+**When** the opponent accepts
+**Then** a `draw_accept` event is broadcast
+**And** the complete-game Edge Function records status `'draw'`
+
+**Given** a draw offer has been sent
+**When** 60 seconds pass or the offering player makes their next move
+**Then** the draw offer expires
+**And** a `draw_offer_expired` event is broadcast
+**And** the draw offer UI is cleared on both clients
+
+**Given** a player is in an active game
+**When** they tap "Request Takeback"
+**Then** a `takeback_request` event is broadcast to the opponent
+**And** the opponent sees accept/decline buttons
+
+**Given** a takeback request has been sent
+**When** the opponent accepts
+**Then** the server verifies `move_history.length` has not changed since the request
+**And** if valid, the last move is removed from `move_history` and `fen` is recalculated
+**And** a `takeback_accept` event is broadcast and both clients undo the last move
+
+**Given** a takeback request has been sent
+**When** 30 seconds pass or either player makes a move
+**Then** the takeback request expires
+**And** a `takeback_expired` event is broadcast
+
+### Story 3.8: Rematch Flow
+
+As a player who just finished a game,
+I want to request a rematch with my opponent,
+So that we can play again quickly without going back to the lobby.
+
+**Acceptance Criteria:**
+
+**Given** a game has ended and the result banner is displayed
+**When** a player taps "Rematch"
+**Then** a rematch request is sent to the opponent via Broadcast
+**And** the opponent sees an "Accept Rematch" button on their result banner
+
+**Given** a rematch request has been sent
+**When** the opponent accepts
+**Then** a new game is created with the same time control and rated/casual setting
+**And** colors are swapped (red becomes blue and vice versa)
+**And** both players are navigated to the new game page
+
+**Given** a rematch request has been sent
+**When** the opponent declines or navigates away
+**Then** the requesting player is notified that the rematch was declined
+**And** they can return to the lobby or dashboard
+
+### Story 3.9: Reconnection & Disconnect Handling
+
+As a player who loses connection during a game,
+I want to be automatically reconnected with my game state preserved,
+So that I don't lose the game due to a temporary network issue.
+
+**Acceptance Criteria:**
+
+**Given** a player loses their WebSocket connection during a game
+**When** the disconnect is detected
+**Then** a "Reconnecting..." banner appears at the top of the screen
+**And** the board greys out slightly but remains visible (position preserved)
+**And** the client attempts to reconnect with exponential backoff
+
+**Given** a player disconnects from the game channel
+**When** the server detects the presence leave
+**Then** `disconnect_at` is recorded in `game_states`
+**And** both players' clocks are paused server-side
+
+**Given** a disconnected player's network recovers
+**When** the WebSocket reconnects
+**Then** the client re-fetches `game_states` from the database
+**And** replays `move_history` from `DEFAULT_POSITION` to reconstruct board state
+**And** restores clock values from the server
+**And** re-subscribes to the game Broadcast channel
+**And** `disconnect_at` is cleared in `game_states`
+**And** full state is restored within 5 seconds of network recovery (NFR9)
+**And** the "Reconnecting..." banner disappears
+
+**Given** a player has been disconnected for more than 60 seconds
+**When** the Supabase cron job runs (every 15 seconds)
+**Then** the game is forfeited via the complete-game Edge Function with status `'timeout'`
+**And** a "disconnection forfeit" status is visible to both players (NFR10)
+
+**Given** both players disconnect simultaneously
+**When** the cron job checks
+**Then** the game is forfeited for whichever player disconnected first (earliest `disconnect_at`)
+
+### Story 3.10: Game Abandonment & Cleanup
+
+As a platform operator,
+I want abandoned games cleaned up and game channels secured,
+So that the system stays healthy and players can only interact with their own games.
+
+**Acceptance Criteria:**
+
+**Given** a player closes their browser during a game without resigning
+**When** the disconnection is detected
+**Then** the game follows the disconnect/forfeit flow from Story 3.9
+**And** the game record includes a distinct abandonment indicator separate from disconnection forfeits (FR33)
+
+**Given** a game has `status = 'started'` and `updated_at` is older than 24 hours
+**When** the Supabase cron job runs
+**Then** the game status is set to `'aborted'`
+**And** no rating changes are applied for aborted games
+
+**Given** Supabase Realtime channel authorization is configured
+**When** a client attempts to send or receive on a `game:{gameId}` Broadcast channel
+**Then** only the two game participants (matching `games.red_player` / `games.blue_player`) are allowed
+**And** unauthorized clients are rejected by RLS for Realtime policies
+
+## Epic 4: Find an Opponent
+
+Players can create open challenges with Rapid time control presets and publish them to the lobby, browse and accept open challenges, send friend challenges directly, and generate shareable invite links. Users who sign up via an invite link are automatically connected as friends with the inviter.
+
+### Story 4.1: Create & Browse Open Challenges (Lobby)
+
+As a player,
+I want to create an open challenge or browse and accept existing challenges in the lobby,
+So that I can find an opponent and start a game quickly.
+
+**Acceptance Criteria:**
+
+**Given** an authenticated player navigates to `/play`
+**When** the page loads
+**Then** the lobby page displays a list of open challenges from the `game_invitations` table (where `to_user IS NULL`)
+**And** each challenge shows the creator's display name, rating, time control preset, and rated/casual flag
+**And** the lobby subscribes to Postgres Changes on `game_invitations` for live updates
+
+**Given** a player wants to create an open challenge
+**When** they select a Rapid time control preset and rated/casual option and submit
+**Then** a `game_invitations` row is created via Server Action with `to_user = NULL` (FR13)
+**And** the challenge appears in the lobby for all other authenticated users
+**And** the creator sees their pending challenge with a cancel option
+
+**Given** a player sees an open challenge in the lobby
+**When** they tap "Accept"
+**Then** the `game_invitations` row is updated via Server Action (accepted)
+**And** a new game is created (games + game_states atomically, per Story 3.2)
+**And** both players are navigated to the game page
+
+**Given** a challenge is accepted or cancelled
+**When** the status changes in the database
+**Then** the challenge disappears from all lobby views within 1 second (NFR7)
+
+**Given** a player has an active open challenge
+**When** they tap "Cancel"
+**Then** the `game_invitations` row is deleted or marked cancelled
+**And** the challenge is removed from the lobby
+
+**Given** the lobby page is loading
+**When** data is being fetched
+**Then** skeleton screens are shown for the challenge list
+
+### Story 4.2: Friend Challenge
+
+As a player,
+I want to send a game challenge directly to a specific friend,
+So that I can play with someone I know without using the public lobby.
+
+**Acceptance Criteria:**
+
+**Given** a player wants to challenge a friend
+**When** they send a friend challenge (from the friends list or play page)
+**Then** a `game_invitations` row is created with `to_user` set to the friend's ID (FR15)
+**And** the friend sees the incoming challenge via Postgres Changes subscription
+
+**Given** a friend receives a challenge
+**When** they view the challenge notification
+**Then** they see the challenger's display name, rating, time control, and rated/casual flag
+**And** they can accept or decline
+
+**Given** a friend accepts the challenge
+**When** they tap "Accept"
+**Then** a new game is created and both players are navigated to the game page
+
+**Given** a friend declines the challenge
+**When** they tap "Decline"
+**Then** the challenger is notified that the challenge was declined
+**And** the `game_invitations` row is updated accordingly
+
+### Story 4.3: Invite Links & Auto-Friend
+
+As a player,
+I want to generate a shareable invite link that brings a friend to the platform and automatically connects us,
+So that I can grow the community by inviting people I know.
+
+**Acceptance Criteria:**
+
+**Given** an authenticated player wants to invite someone
+**When** they generate an invite link
+**Then** a `shareable_invite_links` row is created with a unique code
+**And** the link is displayed in a shareable format (e.g., `cotulenh.com/invite/[code]`) with a copy button (FR16)
+
+**Given** a new visitor clicks an invite link
+**When** they navigate to `/invite/[code]`
+**Then** an SSR-rendered invite landing page shows the inviter's display name and a "Sign Up" / "Sign In" CTA
+**And** the page is in Vietnamese with a board visual background
+
+**Given** a visitor signs up via the invite link
+**When** account creation completes
+**Then** a friendship is automatically created between the new user and the inviter (FR17)
+**And** the `shareable_invite_links` row is marked as used
+**And** the new user is redirected to the dashboard where they see the inviter as a friend
+
+**Given** an already-registered user clicks an invite link
+**When** they sign in
+**Then** a friendship is created with the inviter if one doesn't already exist
+**And** they are redirected to the dashboard
+
+**Given** an invite link with an invalid or expired code is accessed
+**When** the page loads
+**Then** a friendly error message is shown in Vietnamese with a link to sign up normally
+
+## Epic 5: Social & Friends
+
+Players can view their own and other players' public profiles (current rating, game count, game history), manage a friends list with online/offline presence indicators, and challenge online friends directly from the friends list.
+
+### Story 5.1: Player Profiles
+
+As a player,
+I want to view my own and other players' profiles showing their rating, game count, and history,
+So that I can see my progress and learn about my opponents.
+
+**Acceptance Criteria:**
+
+**Given** a player navigates to `/@username` (or `/profile/[username]`)
+**When** the page loads
+**Then** the profile displays the player's display name, current Glicko-2 rating (or "Unrated" if no rated games), total game count, and join date
+**And** a list of recent games is shown with opponent, result, and date
+**And** the page is in Vietnamese
+
+**Given** a player navigates to `/@username` via the URL
+**When** Next.js Middleware processes the request
+**Then** `/@username` is rewritten to `/profile/username` internally
+**And** direct navigation to `/profile/username` redirects to `/@username` for canonical URL consistency
+
+**Given** a player views their own profile
+**When** the page loads
+**Then** additional options are shown (e.g., link to settings)
+**And** the profile data matches their authenticated session
+
+**Given** a player views another player's profile
+**When** the page loads
+**Then** an "Add Friend" button is shown if they are not already friends
+**And** a "Challenge" button is shown if the player is online
+
+**Given** the profile page is loading
+**When** data is being fetched
+**Then** skeleton screens are displayed for all profile sections
+
+### Story 5.2: Friends List & Online Presence
+
+As a player,
+I want to manage my friends and see who is online,
+So that I can find someone to play with.
+
+**Acceptance Criteria:**
+
+**Given** an authenticated player navigates to `/friends`
+**When** the page loads
+**Then** their friends list is displayed with each friend's display name, rating, and online/offline status indicator (FR26)
+**And** online friends are sorted to the top
+
+**Given** the `(app)` layout mounts
+**When** the user is authenticated
+**Then** `useAuthStore` calls `track()` on the shared `online` Supabase Presence channel
+**And** on unmount, `untrack()` is called
+
+**Given** the friends page is displayed
+**When** a friend comes online or goes offline
+**Then** their status indicator updates in real-time
+**And** `useFriendsStore` reads the shared presence state from the `online` channel to filter online friends
+
+**Given** a player wants to add a friend
+**When** they send a friend request (via profile page or username search on friends page)
+**Then** a friendship request is created via the `sendFriendRequest` Server Action
+**And** the request appears in the recipient's pending requests
+
+**Given** a player has pending friend requests
+**When** they view the friends page
+**Then** incoming requests are shown with accept/decline buttons
+**And** accepting creates a bidirectional friendship in the `friendships` table via the `create_or_accept_friendship` DB function
+**And** declining removes the request
+
+**Given** a player wants to remove a friend
+**When** they tap "Remove Friend"
+**Then** a confirmation dialog appears
+**And** on confirmation, the friendship row is deleted via Server Action
+
+### Story 5.3: Challenge Friends from Friends List
+
+As a player,
+I want to challenge an online friend directly from my friends list,
+So that I can start a game with them in two taps.
+
+**Acceptance Criteria:**
+
+**Given** a player is on the friends page and a friend is online
+**When** they tap the "Challenge" button next to the friend's name
+**Then** a challenge dialog appears with time control preset and rated/casual options (FR27)
+
+**Given** the player submits the challenge
+**When** the challenge is created
+**Then** a `game_invitations` row is created with `to_user` set to the friend's ID (reuses Epic 4 Story 4.2 flow)
+**And** the friend receives the challenge notification
+
+**Given** a friend is offline
+**When** the player views the friends list
+**Then** the "Challenge" button is disabled or hidden for offline friends
+
+## Epic 6: Ratings & Leaderboard
+
+Players earn a Glicko-2 rating for Rapid time control updated after each rated game. Players with fewer than 30 rated games are flagged as provisional. Rating change (gain/loss delta) is displayed immediately after a rated game. An activity leaderboard ranks players by games played in the current month.
+
+### Story 6.1: Glicko-2 Rating System
+
+As a player,
+I want to earn a rating that reflects my skill level and updates after each rated game,
+So that I can track my improvement and play against similarly skilled opponents.
+
+**Acceptance Criteria:**
+
+**Given** a new `ratings` migration is applied
+**When** the migration runs
+**Then** the `ratings` table exists with columns for player ID, time control, rating, rating deviation, volatility, games played count, and timestamps
+**And** RLS policies allow players to read any rating but only service role can write
+
+**Given** the Glicko-2 algorithm is implemented
+**When** the code is added to `@cotulenh/common`
+**Then** it correctly calculates new rating, rating deviation, and volatility given two players' current ratings and a game result
+**And** unit tests verify the calculation against known Glicko-2 reference outputs
+
+**Given** a rated game ends (checkmate, resign, timeout, or draw)
+**When** the complete-game Edge Function processes the result
+**Then** both players' ratings are updated atomically in the same PostgreSQL transaction as the game result write (NFR11)
+**And** if either the game status write or the rating update fails, the entire transaction rolls back
+**And** a new `ratings` row is created for a player if they have no existing rating (default: 1500 rating, 350 RD)
+
+**Given** a player has completed fewer than 30 rated games
+**When** their rating is displayed anywhere on the platform
+**Then** a provisional indicator (e.g., "?" suffix) is shown next to their rating (FR19)
+
+**Given** a casual game ends
+**When** the result is processed
+**Then** no rating changes are applied
+
+### Story 6.2: Post-Game Rating Display
+
+As a player,
+I want to see how my rating changed immediately after a rated game,
+So that I know the impact of the game on my ranking.
+
+**Acceptance Criteria:**
+
+**Given** a rated game has ended
+**When** the game result banner is displayed
+**Then** both players see their rating change as a delta (e.g., "1492 -> 1504 (+12)" in green for gains, "1492 -> 1484 (-8)" in red for losses) (FR20)
+**And** the new rating is fetched from the server after the complete-game Edge Function completes
+
+**Given** a rated game ends in a draw
+**When** the result banner is displayed
+**Then** both players see their rating change (which may be positive, negative, or zero depending on RD and opponent rating)
+
+**Given** a casual game has ended
+**When** the result banner is displayed
+**Then** no rating change is shown
+**And** ratings are not mentioned in the result banner
+
+### Story 6.3: Activity Leaderboard
+
+As a player,
+I want to see a leaderboard of the most active players this month,
+So that I feel part of a community and have motivation to play more.
+
+**Acceptance Criteria:**
+
+**Given** an authenticated player navigates to `/leaderboard`
+**When** the page loads
+**Then** a leaderboard is displayed ranking players by number of games played in the current calendar month (FR21)
+**And** each row shows rank, display name, games played this month, and current rating
+**And** the current user's row is highlighted if they appear on the leaderboard
+
+**Given** the leaderboard data is queried
+**When** the results are returned
+**Then** only completed games (not aborted) are counted
+**And** the leaderboard is sorted by games played descending
+
+**Given** the leaderboard page is loading
+**When** data is being fetched
+**Then** skeleton screens are shown for the table
+
+**Given** a player is on mobile
+**When** the leaderboard renders
+**Then** the layout is responsive — compact list or card view on small screens, table on desktop
+
+## Epic 7: Game History & Review
+
+Players can view a list of their completed games with opponent, result, and rating change. They can replay any completed game move-by-move and export the move record in PGN format.
+
+### Story 7.1: Game History List
+
+As a player,
+I want to see a list of my completed games with key details,
+So that I can track my results and find games I want to review.
+
+**Acceptance Criteria:**
+
+**Given** a player views their profile or game history section
+**When** the history loads
+**Then** a paginated list of completed games is displayed (FR28)
+**And** each entry shows opponent display name, result (win/loss/draw), method (checkmate/resign/timeout/draw/stalemate), rating change (if rated), and date
+**And** the list is sorted by most recent first
+
+**Given** a player has no completed games
+**When** they view their game history
+**Then** an empty state is shown with an encouraging CTA to play a game
+
+**Given** the game history list has more entries than fit on one page
+**When** the player scrolls or taps "Load More"
+**Then** additional games are loaded (paginated query)
+
+**Given** a player taps on a game in the history list
+**When** the game entry is selected
+**Then** they are navigated to the game review page at `/game/[id]`
+
+### Story 7.2: Game Replay Viewer
+
+As a player,
+I want to replay a completed game move-by-move,
+So that I can study the game and understand what happened at each position.
+
+**Acceptance Criteria:**
+
+**Given** a player navigates to `/game/[id]` for a completed game
+**When** the page loads
+**Then** the game page renders in review mode (not live mode)
+**And** the board shows the final position via the `useBoard` hook
+**And** a move list is displayed in the right panel (desktop) or tabs below (mobile)
+
+**Given** the game is in review mode
+**When** the player uses the move list navigation (forward/back buttons or clicks a move)
+**Then** the board updates to show the position after the selected move (FR29)
+**And** the current move is highlighted in the move list
+**And** first/previous/next/last navigation controls are available
+
+**Given** the player navigates through moves
+**When** keyboard arrow keys are pressed
+**Then** left arrow goes to the previous move and right arrow goes to the next move
+
+**Given** a completed game's review page loads
+**When** the game data is fetched
+**Then** the `move_history` from `game_states` is used to reconstruct all positions via `CoTuLenh` engine replay from `DEFAULT_POSITION`
+
+### Story 7.3: PGN Export
+
+As a player,
+I want to export a game's move record in PGN format,
+So that I can save, share, or analyze the game externally.
+
+**Acceptance Criteria:**
+
+**Given** a player is on the game review page
+**When** they tap the "Export PGN" button
+**Then** a PGN-formatted string is generated from `@cotulenh/core`'s existing PGN export functionality (FR30)
+**And** the PGN includes game metadata (players, date, result, time control)
+
+**Given** PGN has been generated
+**When** the export action completes
+**Then** the player can copy the PGN to clipboard via a "Copy" button
+**And** a toast confirms the copy action in Vietnamese
+
+**Given** a player wants to download the PGN
+**When** they tap "Download"
+**Then** a `.pgn` file is downloaded with a filename based on players and date
+
+## Epic 8: AI Opponent & Arena Tournaments
+
+Players can play against an AI opponent at selectable difficulty levels for practice when no human opponents are available. Players can join time-limited arena tournaments with automatic rotating pairings and live standings updates.
+
+**Priority:** Stretch / Concurrent - ships when ready, not MVP-blocking
+
+### Story 8.1: AI Opponent
+
+As a player,
+I want to play against an AI opponent when no human opponents are available,
+So that I can practice and experiment with strategies anytime.
+
+**Acceptance Criteria:**
+
+**Given** the AI engine is ready and the feature is enabled
+**When** a player navigates to `/game/ai`
+**Then** a difficulty selector is displayed with selectable levels (e.g., Easy, Medium, Hard)
+**And** on selection, a local game starts using `@cotulenh/core` engine running client-side only (no server, no Edge Functions, no Realtime)
+**And** the game uses the same board layout, deploy session, clocks, and result UX as multiplayer (reuses game page components)
+**And** the AI responds to moves locally using the engine
+**And** the game is always unrated (no Glicko-2 impact)
+
+**Given** the AI engine is not yet ready
+**When** a player navigates to `/game/ai` or taps "Play vs AI" anywhere on the platform
+**Then** a "Coming Soon" page is displayed with a friendly Vietnamese message (e.g., "We're working hard on this feature — coming soon!")
+**And** a board visual is shown in the background to maintain the platform's look and feel
+**And** a CTA directs the player to the lobby to find a human opponent instead
+
+**Given** the AI feature transitions from "coming soon" to available
+**When** the feature flag or route is enabled
+**Then** the "Coming Soon" content is replaced with the difficulty selector and AI game flow
+**And** no user-facing announcement is needed — the feature simply becomes available
+
+**Given** an AI game ends
+**When** the result is displayed
+**Then** a game result banner shows the outcome
+**And** "Play Again" and "Change Difficulty" buttons are shown
+**And** no rating change is displayed
+
+### Story 8.2: Arena Tournament Lobby & Registration
+
+As a player,
+I want to browse and join arena tournaments,
+So that I can compete in organized events with other players.
+
+**Acceptance Criteria:**
+
+**Given** a new `tournaments` migration is applied
+**When** the migration runs
+**Then** the `tournaments` table exists with columns for tournament ID, title, time control, start time, duration, status (upcoming/active/completed), and standings (jsonb)
+**And** RLS policies allow all authenticated users to read tournaments and only service role to write
+
+**Given** an authenticated player navigates to `/tournament`
+**When** the page loads
+**Then** upcoming, active, and recently completed tournaments are displayed
+**And** each tournament shows title, time control, start time, duration, and participant count
+
+**Given** a player wants to join an upcoming tournament
+**When** they tap "Join"
+**Then** they are registered via `joinTournament` Server Action
+**And** the participant count updates in real-time via Postgres Changes
+
+**Given** a player wants to leave a tournament they joined (before it starts)
+**When** they tap "Leave"
+**Then** they are unregistered via `leaveTournament` Server Action
+
+**Given** the tournament lobby is loading
+**When** data is being fetched
+**Then** skeleton screens are shown for the tournament list
+
+### Story 8.3: Arena Tournament Gameplay & Live Standings
+
+As a tournament participant,
+I want to play automatic pairings and see live standings,
+So that I experience competitive, organized play with real-time results.
+
+**Acceptance Criteria:**
+
+**Given** a tournament's start time arrives
+**When** the tournament becomes active
+**Then** the tournament-pair Edge Function generates the first round pairings
+**And** paired players are navigated to their game pages
+**And** players with no opponent (odd count) receive a bye with 1 point awarded
+
+**Given** a tournament game ends
+**When** the result is recorded
+**Then** the tournament standings are updated within 5 seconds (FR38)
+**And** standings updates are broadcast to all tournament participants via Postgres Changes on the `tournaments` table
+**And** the participant sees their updated score and ranking
+
+**Given** a tournament round's games have all completed
+**When** the last game ends
+**Then** the tournament-pair Edge Function generates the next round pairings
+**And** players are paired with opponents of similar current tournament score (Swiss-style or arena-style rotation)
+**And** the new round starts immediately
+
+**Given** the tournament duration expires
+**When** the timer runs out
+**Then** all active tournament games are allowed to finish
+**And** final standings are calculated and displayed
+**And** the tournament status transitions to `'completed'`
+
+**Given** a participant navigates to `/tournament/[id]`
+**When** the page loads
+**Then** live standings are displayed showing rank, player name, score, and games played
+**And** standings update in real-time as games complete

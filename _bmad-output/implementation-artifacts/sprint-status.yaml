@@ -1,4 +1,4 @@
-# generated: 2026-02-27
+# generated: 2026-03-09
 # project: cotulenh-monorepo
 # project_key: NOKEY
 # tracking_system: file-system
@@ -33,66 +33,76 @@
 # - SM typically creates next story after previous one is 'done' to incorporate learnings
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
-generated: 2026-02-27
+generated: 2026-03-09
 project: cotulenh-monorepo
 project_key: NOKEY
 tracking_system: file-system
 story_location: _bmad-output/implementation-artifacts
 
 development_status:
-  # Epic 1: Supabase Foundation & Authentication
-  epic-1: done
-  1-1-user-registration: done
-  1-2-user-login-persistent-sessions: done
-  1-3-auth-aware-navigation-logout: done
-  1-4-password-reset-flow: done
-  epic-1-retrospective: done
+  # Epic 1: Project Foundation & App Shell
+  epic-1: in-progress
+  1-1-project-initialization-monorepo-integration: done
+  1-2-landing-page: backlog
+  1-3-user-registration-login: backlog
+  1-4-password-reset: backlog
+  1-5-app-shell-navigation: backlog
+  1-6-home-dashboard: backlog
+  epic-1-retrospective: optional
 
-  # Epic 2: User Profiles & Settings
-  epic-2: done
-  2-1-display-name-own-profile: done
-  2-2-public-user-profiles: done
-  2-3-account-settings: done
-  epic-2-retrospective: done
+  # Epic 2: Learn the Game
+  epic-2: backlog
+  2-1-learn-hub-lesson-navigation: backlog
+  2-2-interactive-lesson-board: backlog
+  2-3-lesson-progress-tracking: backlog
+  2-4-progress-migration-signup-prompt: backlog
+  epic-2-retrospective: optional
 
-  # Epic 3: Social & Friends
-  epic-3: done
-  3-1-user-search-send-friend-request: done
-  3-2-friend-request-management: done
-  3-3-friends-list-with-online-status: done
-  epic-3-retrospective: done
+  # Epic 3: Play a Game
+  epic-3: backlog
+  3-1-game-page-layout-board-integration: backlog
+  3-2-game-creation-database-setup: backlog
+  3-3-deploy-session: backlog
+  3-4-move-execution-server-side-validation: backlog
+  3-5-chess-clocks-time-control: backlog
+  3-6-game-end-conditions-result: backlog
+  3-7-resign-draw-offer-takeback: backlog
+  3-8-rematch-flow: backlog
+  3-9-reconnection-disconnect-handling: backlog
+  3-10-game-abandonment-cleanup: backlog
+  epic-3-retrospective: optional
 
-  # Epic 4: Match Invitations & Game Setup
-  epic-4: done
-  4-1-send-match-invitation-to-friend: done
-  4-2-view-respond-to-match-invitations: done
-  4-3-shareable-invite-link: done
-  epic-4-retrospective: done
+  # Epic 4: Find an Opponent
+  epic-4: backlog
+  4-1-create-browse-open-challenges-lobby: backlog
+  4-2-friend-challenge: backlog
+  4-3-invite-links-auto-friend: backlog
+  epic-4-retrospective: optional
 
-  # Epic 5: Realtime Online Gameplay
-  epic-5: done
-  5-1-delta-based-clock-gamemessage-types: done
-  5-2-online-game-session-move-broadcast: done
-  5-3-move-reliability-reconnection: done
-  5-4-game-end-conditions-result-recording: done
-  5-5-clock-timeout-claim-victory: done
-  5-6-dispute-system: done
-  5-7-draw-offers-rematch: done
-  epic-5-retrospective: done
+  # Epic 5: Social & Friends
+  epic-5: backlog
+  5-1-player-profiles: backlog
+  5-2-friends-list-online-presence: backlog
+  5-3-challenge-friends-from-friends-list: backlog
+  epic-5-retrospective: optional
 
-  # Epic 6: Game History & Review
-  epic-6: done
-  6-1-game-history-list: done
-  6-2-game-replay-viewer: done
-  epic-6-retrospective: done
+  # Epic 6: Ratings & Leaderboard
+  epic-6: backlog
+  6-1-glicko-2-rating-system: backlog
+  6-2-post-game-rating-display: backlog
+  6-3-activity-leaderboard: backlog
+  epic-6-retrospective: optional
 
-  # Epic 7: Learn Progress Persistence (parallel track - needs Epic 1 only)
-  epic-7: done
-  7-1-learn-progress-database-sync: done
-  7-2-learn-progress-migration-on-signup: done
-  epic-7-retrospective: done
+  # Epic 7: Game History & Review
+  epic-7: backlog
+  7-1-game-history-list: backlog
+  7-2-game-replay-viewer: backlog
+  7-3-pgn-export: backlog
+  epic-7-retrospective: optional
 
-  # Epic 8: Feedback System (parallel track - needs Epic 1 only)
-  epic-8: done
-  8-1-in-app-feedback-submission: done
-  epic-8-retrospective: done
+  # Epic 8: AI Opponent & Arena Tournaments
+  epic-8: backlog
+  8-1-ai-opponent: backlog
+  8-2-arena-tournament-lobby-registration: backlog
+  8-3-arena-tournament-gameplay-live-standings: backlog
+  epic-8-retrospective: optional
