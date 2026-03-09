@@ -1,0 +1,8 @@
+{
+  "imports": {
+    "@cotulenh/core": "../../../packages/cotulenh/core/dist/cotulenh.js",
+    "@cotulenh/common": "../../../packages/cotulenh/common/dist/index.js",
+    "@cotulenh/combine-piece": "../../../packages/cotulenh/combine-piece/dist/index.js",
+    "quick-lru": "npm:quick-lru@^7.0.1"
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "version": "5",
+  "specifiers": {
+    "npm:quick-lru@^7.0.1": "7.3.0"
+  },
+  "npm": {
+    "quick-lru@7.3.0": {
+      "integrity": "sha512-k9lSsjl36EJdK7I06v7APZCbyGT2vMTsYSRX1Q2nbYmnkBqgUhRkAuzH08Ciotteu/PLJmIF2+tti7o3C/ts2g=="
+    }
+  },
+  "workspace": {
+    "dependencies": [
+      "npm:quick-lru@^7.0.1"
+    ]
+  }
+}
