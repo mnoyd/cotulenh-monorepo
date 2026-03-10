@@ -16,11 +16,26 @@ export async function createClient() {
             cookiesToSet.forEach(({ name, value, options }) =>
               cookieStore.set(name, value, options)
             );
-          } catch {
-            // Server Components cannot persist cookies directly; middleware handles refresh writes.
+          } catch (error) {
+            if (isReadonlyCookieStoreError(error)) {
+              return;
+            }
+
+            throw error;
           }
         }
       }
     }
+  );
+}
+
+function isReadonlyCookieStoreError(error: unknown) {
+  if (!(error instanceof Error)) {
+    return false;
+  }
+
+  return (
+    error.message.includes('Cookies can only be modified in a Server Action or Route Handler') ||
+    error.message.includes('ReadonlyRequestCookies cannot be modified')
   );
 }

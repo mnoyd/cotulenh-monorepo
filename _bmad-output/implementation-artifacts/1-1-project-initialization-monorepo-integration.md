@@ -343,19 +343,22 @@ Claude Opus 4.6
 - Verified: `pnpm dev`, `pnpm build`, `tsc --noEmit`, and `eslint` all pass cleanly
 - Created Edge Function proof-of-concept at supabase/functions/validate-move/index.ts with function-local `deno.json` import mapping and a verified legal `game.move()` call for Deno compatibility
 - Added design system CSS custom properties: color tokens (light/dark), spacing tokens (4px base), typography tokens (system fonts, type scale), prefers-color-scheme media query support
-- Created cn.ts utility at src/lib/utils/cn.ts with re-export from src/lib/utils.ts for shadcn compatibility
+- Created cn.ts utility at src/lib/utils/cn.ts and configured shadcn to import it directly
 - Created empty src/stores/ directory for future Zustand stores
 - Configured next.config.ts with transpilePackages for workspace dependencies
 - Review remediation applied: removed accidental nested Git repository in `apps/cotulenh/web/.git`
 - Review remediation applied: `.env.example` is now explicitly tracked while `.env.local` remains ignored
 - Review remediation applied: default home page copy changed to Vietnamese and README updated to project-specific instructions
 - Review remediation applied: Supabase server helper now tolerates cookie writes from Server Components without throwing
+- Review remediation applied: semantic design tokens now drive the active Tailwind/shadcn theme, spacing tokens cover `--space-1` through `--space-16`, and reduced-motion is respected
+- Review remediation applied: button primitives now honor the 0px radius requirement globally and no longer rely on a barrel export alias
 
 ### Change Log
 
 - 2026-03-09: Initial implementation of Story 1.1 — all 9 tasks completed
 - 2026-03-09: Senior review fixes applied (5 issues fixed: 2 high, 3 medium)
 - 2026-03-09: Code review remediation applied (3 issues fixed: 1 high, 1 medium, 1 low)
+- 2026-03-10: Follow-up review fixes applied for design-token wiring, 0px radius compliance, direct utility imports, and safer Supabase cookie error handling
 
 ### File List
 
@@ -377,7 +380,6 @@ New files:
 - apps/cotulenh/web/src/lib/supabase/browser.ts
 - apps/cotulenh/web/src/lib/supabase/server.ts
 - apps/cotulenh/web/src/lib/supabase/middleware.ts
-- apps/cotulenh/web/src/lib/utils.ts
 - apps/cotulenh/web/src/lib/utils/cn.ts
 - apps/cotulenh/web/src/components/ui/button.tsx
 - apps/cotulenh/web/public/file.svg
@@ -411,6 +413,11 @@ Review findings addressed:
 6. **HIGH** — Edge Function proof-of-concept used an illegal move (`Bb3`), so it did not validate `game.move()` at all: fixed by switching to the verified legal move `c5-c6`.
 7. **MEDIUM** — Server Supabase helper attempted cookie writes from Server Components, which can throw during token refresh: fixed by using a no-op fallback when cookie persistence is unavailable.
 8. **LOW** — App metadata description remained in English: fixed to Vietnamese.
+9. **HIGH** — Semantic design tokens were defined but not wired into the live Tailwind/shadcn theme: fixed by mapping active theme tokens to the Story 1.1 color system.
+10. **HIGH** — Button primitives still rendered rounded corners despite the global 0px radius requirement: fixed by removing residual radius utilities from the shadcn button implementation.
+11. **MEDIUM** — Design token contract was incomplete (`--color-border` mismatch, sparse spacing scale, no reduced-motion fallback): fixed in `globals.css`.
+12. **MEDIUM** — `src/lib/utils.ts` introduced a barrel export against architecture rules: fixed by removing the re-export and pointing shadcn imports at `src/lib/utils/cn.ts` directly.
+13. **MEDIUM** — Server Supabase helper swallowed all cookie-write errors, masking real auth regressions: fixed by only ignoring the known readonly-cookie cases.
 
 Verification after fixes:
 
