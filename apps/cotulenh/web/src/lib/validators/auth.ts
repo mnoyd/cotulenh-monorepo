@@ -23,5 +23,21 @@ export const loginSchema = z.object({
   password: loginPasswordSchema
 });
 
+export const resetRequestSchema = z.object({
+  email: emailSchema
+});
+
+export const updatePasswordSchema = z
+  .object({
+    password: signupPasswordSchema,
+    confirm_password: z.string().min(1, 'Vui lòng xác nhận mật khẩu')
+  })
+  .refine((data) => data.password === data.confirm_password, {
+    message: 'Mật khẩu không khớp',
+    path: ['confirm_password']
+  });
+
 export type SignupInput = z.infer<typeof signupSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
+export type ResetRequestInput = z.infer<typeof resetRequestSchema>;
+export type UpdatePasswordInput = z.infer<typeof updatePasswordSchema>;

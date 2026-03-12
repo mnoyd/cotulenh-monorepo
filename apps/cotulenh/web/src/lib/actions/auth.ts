@@ -4,13 +4,20 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
 import { createClient } from '@/lib/supabase/server';
-import { loginSchema, signupSchema } from '@/lib/validators/auth';
+import {
+  loginSchema,
+  resetRequestSchema,
+  signupSchema,
+  updatePasswordSchema
+} from '@/lib/validators/auth';
 
-type AuthFieldName = 'email' | 'password' | 'display_name';
+type AuthFieldName = 'email' | 'password' | 'display_name' | 'confirm_password';
 
 type AuthValues = Partial<Record<AuthFieldName, string>>;
 
 type AuthFieldErrors = Partial<Record<AuthFieldName, string>>;
+
+type SignupValues = Pick<Required<AuthValues>, 'email' | 'password' | 'display_name'>;
 
 export type AuthActionState = {
   success: boolean;
@@ -96,7 +103,7 @@ export async function login(
   redirect('/dashboard');
 }
 
-function extractSignupValues(formData: FormData): Required<AuthValues> {
+function extractSignupValues(formData: FormData): SignupValues {
   return {
     email: getString(formData.get('email')),
     password: getString(formData.get('password')),
@@ -141,6 +148,100 @@ function mapSignupError(error: { message?: string; status?: number; code?: strin
   }
 
   return 'Không thể tạo tài khoản lúc này';
+}
+
+export async function requestPasswordReset(
+  _previousState: AuthActionState,
+  formData: FormData
+): Promise<AuthActionState> {
+  const values = { email: getString(formData.get('email')) };
+  const parsed = resetRequestSchema.safeParse(values);
+
+  if (!parsed.success) {
+    return {
+      success: false,
+      error: 'Vui lòng kiểm tra lại thông tin.',
+      fieldErrors: flattenFieldErrors(parsed.error.flatten().fieldErrors),
+      values
+    };
+  }
+
+  const supabase = await createClient();
+  const origin = await getOrigin();
+
+  // Always call Supabase but ignore errors to prevent email enumeration
+  await supabase.auth.resetPasswordForEmail(parsed.data.email, {
+    redirectTo: `${origin}/auth/callback?next=/reset-password/update`
+  });
+
+  return { success: true };
+}
+
+export async function updatePassword(
+  _previousState: AuthActionState,
+  formData: FormData
+): Promise<AuthActionState> {
+  const values = {
+    password: getString(formData.get('password')),
+    confirm_password: getString(formData.get('confirm_password'))
+  };
+  const parsed = updatePasswordSchema.safeParse(values);
+
+  if (!parsed.success) {
+    return {
+      success: false,
+      error: 'Vui lòng kiểm tra lại thông tin.',
+      fieldErrors: flattenFieldErrors(parsed.error.flatten().fieldErrors),
+      values: { password: values.password, confirm_password: values.confirm_password }
+    };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.auth.updateUser({ password: parsed.data.password });
+
+  if (error) {
+    return {
+      success: false,
+      error: mapUpdatePasswordError(error),
+      values: { password: values.password, confirm_password: values.confirm_password }
+    };
+  }
+
+  const { error: signOutError } = await supabase.auth.signOut();
+
+  if (signOutError) {
+    return {
+      success: false,
+      error: 'Không thể cập nhật mật khẩu lúc này',
+      values: { password: values.password, confirm_password: values.confirm_password }
+    };
+  }
+
+  redirect('/login?reset=success');
+}
+
+async function getOrigin() {
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
+
+  if (siteUrl) {
+    try {
+      return new URL(siteUrl).origin;
+    } catch {
+      // Fall through to localhost when NEXT_PUBLIC_SITE_URL is invalid.
+    }
+  }
+
+  return 'http://localhost:3000';
+}
+
+function mapUpdatePasswordError(error: { message?: string; status?: number; code?: string }) {
+  const message = error.message?.toLowerCase() ?? '';
+
+  if (error.status === 429 || message.includes('rate limit')) {
+    return 'Vui lòng thử lại sau';
+  }
+
+  return 'Không thể cập nhật mật khẩu lúc này';
 }
 
 function mapLoginError(error: { message?: string; status?: number; code?: string }) {

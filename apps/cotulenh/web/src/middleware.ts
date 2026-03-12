@@ -12,7 +12,7 @@ const protectedRoutePrefixes = [
   '/profile'
 ] as const;
 
-const authRoutes = new Set(['/login', '/signup']);
+const authRoutes = new Set(['/login', '/signup', '/reset-password']);
 
 export async function middleware(request: NextRequest) {
   const { response, user } = await updateSession(request);

@@ -64,8 +64,9 @@ describe('Auth pages', () => {
     });
   });
 
-  it('renders the login form with Vietnamese labels and links', () => {
-    render(<LoginPage />);
+  it('renders the login form with Vietnamese labels and links', async () => {
+    const page = await LoginPage({ searchParams: Promise.resolve({}) });
+    render(page);
 
     expect(screen.getByRole('heading', { name: 'Đăng nhập' })).toBeInTheDocument();
     expect(screen.getByLabelText('Email')).toBeInTheDocument();
@@ -82,7 +83,8 @@ describe('Auth pages', () => {
   });
 
   it('shows login validation feedback and enables submit when complete', async () => {
-    render(<LoginPage />);
+    const page = await LoginPage({ searchParams: Promise.resolve({}) });
+    render(page);
 
     fireEvent.blur(screen.getByLabelText('Email'));
     expect(await screen.findByText('Email không hợp lệ')).toBeInTheDocument();
@@ -98,7 +100,8 @@ describe('Auth pages', () => {
   });
 
   it('submits the login form through the server action', async () => {
-    render(<LoginPage />);
+    const page = await LoginPage({ searchParams: Promise.resolve({}) });
+    render(page);
 
     fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'noy@example.com' } });
     fireEvent.change(screen.getByLabelText('Mật khẩu'), { target: { value: 'matkhau123' } });
@@ -107,5 +110,12 @@ describe('Auth pages', () => {
     await waitFor(() => {
       expect(mockLogin).toHaveBeenCalled();
     });
+  });
+
+  it('shows reset success banner when reset=success in searchParams', async () => {
+    const page = await LoginPage({ searchParams: Promise.resolve({ reset: 'success' }) });
+    render(page);
+
+    expect(screen.getByText('Mật khẩu đã được cập nhật. Vui lòng đăng nhập.')).toBeInTheDocument();
   });
 });

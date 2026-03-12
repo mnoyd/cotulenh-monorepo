@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
-import { loginSchema, signupSchema } from '@/lib/validators/auth';
+import {
+  loginSchema,
+  resetRequestSchema,
+  signupSchema,
+  updatePasswordSchema
+} from '@/lib/validators/auth';
 
 describe('auth validators', () => {
   it('accepts a valid signup payload and trims the display name', () => {
@@ -46,5 +51,60 @@ describe('auth validators', () => {
       expect(parsed.error.flatten().fieldErrors.email).toContain('Email không hợp lệ');
       expect(parsed.error.flatten().fieldErrors.password).toContain('Vui lòng nhập mật khẩu');
     }
+  });
+
+  describe('resetRequestSchema', () => {
+    it('accepts a valid email', () => {
+      const parsed = resetRequestSchema.safeParse({ email: 'noy@example.com' });
+      expect(parsed.success).toBe(true);
+    });
+
+    it('rejects invalid email with Vietnamese message', () => {
+      const parsed = resetRequestSchema.safeParse({ email: 'khong-hop-le' });
+      expect(parsed.success).toBe(false);
+      if (!parsed.success) {
+        expect(parsed.error.flatten().fieldErrors.email).toContain('Email không hợp lệ');
+      }
+    });
+
+    it('rejects empty email', () => {
+      const parsed = resetRequestSchema.safeParse({ email: '' });
+      expect(parsed.success).toBe(false);
+    });
+  });
+
+  describe('updatePasswordSchema', () => {
+    it('accepts matching passwords with 8+ chars', () => {
+      const parsed = updatePasswordSchema.safeParse({
+        password: 'matkhau123',
+        confirm_password: 'matkhau123'
+      });
+      expect(parsed.success).toBe(true);
+    });
+
+    it('rejects password shorter than 8 chars', () => {
+      const parsed = updatePasswordSchema.safeParse({
+        password: '123',
+        confirm_password: '123'
+      });
+      expect(parsed.success).toBe(false);
+      if (!parsed.success) {
+        expect(parsed.error.flatten().fieldErrors.password).toContain(
+          'Mật khẩu phải có ít nhất 8 ký tự'
+        );
+      }
+    });
+
+    it('rejects mismatched passwords', () => {
+      const parsed = updatePasswordSchema.safeParse({
+        password: 'matkhau123',
+        confirm_password: 'matkhau456'
+      });
+      expect(parsed.success).toBe(false);
+      if (!parsed.success) {
+        const fieldErrors = parsed.error.flatten().fieldErrors;
+        expect(fieldErrors.confirm_password).toContain('Mật khẩu không khớp');
+      }
+    });
   });
 });

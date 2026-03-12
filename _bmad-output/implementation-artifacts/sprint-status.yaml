@@ -45,7 +45,7 @@ development_status:
   1-1-project-initialization-monorepo-integration: done
   1-2-landing-page: done
   1-3-user-registration-login: done
-  1-4-password-reset: backlog
+  1-4-password-reset: done
   1-5-app-shell-navigation: backlog
   1-6-home-dashboard: backlog
   epic-1-retrospective: optional
