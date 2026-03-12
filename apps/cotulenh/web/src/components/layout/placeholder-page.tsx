@@ -23,11 +23,19 @@ export function PlaceholderPage({
   secondaryAction
 }: PlaceholderPageProps) {
   return (
-    <main className="px-[var(--space-4)] py-[var(--space-12)] sm:py-[var(--space-16)]">
+    <section
+      aria-labelledby="placeholder-page-title"
+      className="px-[var(--space-4)] py-[var(--space-12)] sm:py-[var(--space-16)]"
+    >
       <div className="mx-auto flex max-w-[720px] flex-col gap-[var(--space-6)] border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-[var(--space-8)]">
         <div className="space-y-[var(--space-3)]">
           <p className="text-[var(--text-sm)] font-medium text-[var(--color-primary)]">CoTuLenh</p>
-          <h1 className="text-[var(--text-2xl)] font-semibold text-[var(--color-text)]">{title}</h1>
+          <h1
+            id="placeholder-page-title"
+            className="text-[var(--text-2xl)] font-semibold text-[var(--color-text)]"
+          >
+            {title}
+          </h1>
           <p className="text-[var(--text-base)] text-[var(--color-text-muted)]">{description}</p>
         </div>
         <div className="flex flex-col gap-[var(--space-3)] sm:flex-row">
@@ -47,6 +55,6 @@ export function PlaceholderPage({
           ) : null}
         </div>
       </div>
-    </main>
+    </section>
   );
 }

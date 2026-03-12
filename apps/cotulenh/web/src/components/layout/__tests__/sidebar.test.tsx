@@ -57,6 +57,18 @@ describe('Sidebar', () => {
     expect(screen.getByRole('link', { name: 'Trang chủ' })).not.toHaveAttribute('aria-current');
   });
 
+  it('treats nested route segments as active for parent section', () => {
+    vi.mocked(usePathname).mockReturnValue('/dashboard/history');
+    render(<Sidebar />);
+    expect(screen.getByRole('link', { name: 'Trang chủ' })).toHaveAttribute('aria-current', 'page');
+  });
+
+  it('does not mark similarly prefixed routes as active', () => {
+    vi.mocked(usePathname).mockReturnValue('/playground');
+    render(<Sidebar />);
+    expect(screen.getByRole('link', { name: 'Chơi' })).not.toHaveAttribute('aria-current');
+  });
+
   it('renders links in logical keyboard tab order', () => {
     render(<Sidebar />);
     const links = screen.getAllByRole('link');

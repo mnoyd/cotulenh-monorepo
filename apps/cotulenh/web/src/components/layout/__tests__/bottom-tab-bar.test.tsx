@@ -51,6 +51,18 @@ describe('BottomTabBar', () => {
     expect(screen.getByRole('link', { name: 'Trang chủ' })).not.toHaveAttribute('aria-current');
   });
 
+  it('treats nested route segments as active for parent tab', () => {
+    vi.mocked(usePathname).mockReturnValue('/friends/requests');
+    render(<BottomTabBar />);
+    expect(screen.getByRole('link', { name: 'Bạn bè' })).toHaveAttribute('aria-current', 'page');
+  });
+
+  it('does not mark similarly prefixed routes as active', () => {
+    vi.mocked(usePathname).mockReturnValue('/playground');
+    render(<BottomTabBar />);
+    expect(screen.getByRole('link', { name: 'Chơi' })).not.toHaveAttribute('aria-current');
+  });
+
   it('renders links in logical keyboard tab order', () => {
     render(<BottomTabBar />);
     const links = screen.getAllByRole('link');
@@ -68,6 +80,7 @@ describe('BottomTabBar', () => {
     const nav = screen.getByRole('navigation', { name: 'Thanh điều hướng' });
     expect(nav.className).toContain('lg:hidden');
     expect(nav.className).toContain('flex');
+    expect(nav.className).toContain('h-[calc(56px+env(safe-area-inset-bottom))]');
   });
 
   it('all links have visible focus indicators', () => {

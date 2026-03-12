@@ -12,6 +12,10 @@ const navItems = [
   { href: '/settings', label: 'Cài đặt', icon: Settings }
 ] as const;
 
+function isRouteActive(pathname: string, href: string) {
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
+
 export function Sidebar() {
   const pathname = usePathname();
 
@@ -22,7 +26,7 @@ export function Sidebar() {
     >
       <div className="flex flex-1 flex-col items-center pt-[var(--space-2)]">
         {navItems.map((item) => {
-          const isActive = pathname.startsWith(item.href);
+          const isActive = isRouteActive(pathname, item.href);
           return (
             <Link
               key={item.href}

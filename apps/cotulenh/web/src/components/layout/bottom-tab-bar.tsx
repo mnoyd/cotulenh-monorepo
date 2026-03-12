@@ -12,16 +12,20 @@ const tabItems = [
   { href: '/settings', label: 'Cài đặt', icon: Settings }
 ] as const;
 
+function isRouteActive(pathname: string, href: string) {
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
+
 export function BottomTabBar() {
   const pathname = usePathname();
 
   return (
     <nav
       aria-label="Thanh điều hướng"
-      className="fixed bottom-0 left-0 z-40 flex h-[56px] w-full gap-[var(--space-2)] border-t border-[var(--color-border)] bg-[var(--color-surface)] px-[var(--space-2)] pb-[env(safe-area-inset-bottom)] lg:hidden"
+      className="fixed bottom-0 left-0 z-40 flex h-[calc(56px+env(safe-area-inset-bottom))] w-full gap-[var(--space-2)] border-t border-[var(--color-border)] bg-[var(--color-surface)] px-[var(--space-2)] pb-[env(safe-area-inset-bottom)] lg:hidden"
     >
       {tabItems.map((item) => {
-        const isActive = pathname.startsWith(item.href);
+        const isActive = isRouteActive(pathname, item.href);
         return (
           <Link
             key={item.href}
