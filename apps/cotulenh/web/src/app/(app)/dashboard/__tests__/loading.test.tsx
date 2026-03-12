@@ -6,14 +6,20 @@ import DashboardLoading from '../loading';
 describe('DashboardLoading', () => {
   it('renders skeleton elements with pulse animation', () => {
     const { container } = render(<DashboardLoading />);
-    const pulseElement = container.querySelector('.animate-pulse');
-    expect(pulseElement).toBeInTheDocument();
+    const pulseElements = container.querySelectorAll('.animate-pulse');
+    expect(pulseElements.length).toBeGreaterThan(0);
   });
 
-  it('renders 3 card-shaped skeleton placeholders', () => {
+  it('renders two-column grid skeleton on desktop', () => {
     const { container } = render(<DashboardLoading />);
-    const skeletonCards = container.querySelectorAll('.h-32');
-    expect(skeletonCards).toHaveLength(3);
+    const grid = container.firstElementChild;
+    expect(grid?.className).toContain('lg:grid-cols-[1fr_320px]');
+  });
+
+  it('renders 4 quick-action skeleton cards', () => {
+    const { container } = render(<DashboardLoading />);
+    const quickActionSkeletons = container.querySelectorAll('.h-\\[100px\\]');
+    expect(quickActionSkeletons).toHaveLength(4);
   });
 
   it('uses design token background color for skeletons', () => {

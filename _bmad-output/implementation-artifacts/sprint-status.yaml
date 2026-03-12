@@ -47,7 +47,7 @@ development_status:
   1-3-user-registration-login: done
   1-4-password-reset: done
   1-5-app-shell-navigation: done
-  1-6-home-dashboard: backlog
+  1-6-home-dashboard: done
   epic-1-retrospective: optional
 
   # Epic 2: Learn the Game
