@@ -188,6 +188,24 @@ export class ProgressManager {
   }
 
   /**
+   * Replace all progress with a snapshot.
+   * By default this persists to the storage adapter.
+   */
+  replaceAllProgress(
+    progress: Record<string, LessonProgress>,
+    options?: { persist?: boolean }
+  ): void {
+    this.#lessonProgress = { ...progress };
+
+    if (options?.persist === false) {
+      this.#onChange?.(this.#lessonProgress);
+      return;
+    }
+
+    this.#persist();
+  }
+
+  /**
    * Get all lesson progress (snapshot)
    */
   getAllProgress(): Record<string, LessonProgress> {

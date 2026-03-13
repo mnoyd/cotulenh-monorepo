@@ -26,6 +26,11 @@ type LearnState = {
   getCompletedLessonCount: (subjectId: SubjectId) => number;
   getSubjectStarCount: (subjectId: SubjectId) => { earned: number; total: number };
   hasAnyProgress: () => boolean;
+  getTotalCompletedCount: () => number;
+  replaceAllProgress: (
+    progress: Record<string, LessonProgress>,
+    options?: { persist?: boolean }
+  ) => void;
 };
 
 const emptyProgress: SubjectProgress = {
@@ -127,5 +132,17 @@ export const useLearnStore = create<LearnState>((set, get) => ({
     const pm = get().progressManager;
     if (!pm) return false;
     return Object.keys(pm.getAllProgress()).length > 0;
+  },
+
+  getTotalCompletedCount: () => {
+    const pm = get().progressManager;
+    if (!pm) return 0;
+    return Object.keys(pm.getAllProgress()).length;
+  },
+
+  replaceAllProgress: (progress, options) => {
+    const pm = get().progressManager;
+    if (!pm) return;
+    pm.replaceAllProgress(progress, options);
   }
 }));

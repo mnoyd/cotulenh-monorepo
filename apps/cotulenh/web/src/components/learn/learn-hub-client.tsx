@@ -2,10 +2,11 @@
 
 import Link from 'next/link';
 
-import { useLearnProgress } from '@/hooks/use-learn-progress';
+import { useAuthLearnProgress } from '@/hooks/use-auth-learn-progress';
 import { useLearnStore } from '@/stores/learn-store';
 import { subjects, setLearnLocale, tSubjectTitle, tLessonTitle } from '@cotulenh/learn';
 
+import { SignupPrompt } from './signup-prompt';
 import { SubjectGrid } from './subject-grid';
 
 type SubjectData = {
@@ -24,12 +25,13 @@ type LearnHubClientProps = {
 };
 
 export function LearnHubClient({ subjectData }: LearnHubClientProps) {
-  const { initialized, progressVersion } = useLearnProgress();
+  const { initialized, progressVersion, authState } = useAuthLearnProgress();
   const getSubjectProgress = useLearnStore((s) => s.getSubjectProgress);
   const getCompletedLessonCount = useLearnStore((s) => s.getCompletedLessonCount);
   const getSubjectStarCount = useLearnStore((s) => s.getSubjectStarCount);
   const getNextIncompleteLesson = useLearnStore((s) => s.getNextIncompleteLesson);
   const hasAnyProgress = useLearnStore((s) => s.hasAnyProgress);
+  const getTotalCompletedCount = useLearnStore((s) => s.getTotalCompletedCount);
 
   const progressPending = !initialized && progressVersion === 0;
 
@@ -121,6 +123,11 @@ export function LearnHubClient({ subjectData }: LearnHubClientProps) {
           </Link>
         </div>
       ) : null}
+      <SignupPrompt
+        isAuthenticated={authState === 'authenticated'}
+        completedLessonCount={getTotalCompletedCount()}
+        className="mb-[var(--space-6)]"
+      />
       <SubjectGrid subjects={enrichedSubjects} />
     </>
   );

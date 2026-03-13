@@ -3,9 +3,11 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { LearnHubClient } from '../learn-hub-client';
 
-const learnProgressState = {
+const authLearnProgressState = {
   initialized: true,
-  progressVersion: 1
+  progressVersion: 1,
+  authState: 'unauthenticated' as 'loading' | 'authenticated' | 'unauthenticated',
+  saveLessonProgress: vi.fn()
 };
 
 const storeState = {
@@ -22,11 +24,12 @@ const storeState = {
     sectionId: 'section-1-basic-units',
     title: 'Infantry Movement'
   }),
-  hasAnyProgress: () => true
+  hasAnyProgress: () => true,
+  getTotalCompletedCount: () => 3
 };
 
-vi.mock('@/hooks/use-learn-progress', () => ({
-  useLearnProgress: () => learnProgressState
+vi.mock('@/hooks/use-auth-learn-progress', () => ({
+  useAuthLearnProgress: () => authLearnProgressState
 }));
 
 vi.mock('@/stores/learn-store', () => ({
@@ -48,8 +51,8 @@ vi.mock('@cotulenh/learn', () => ({
 
 describe('LearnHubClient', () => {
   it('renders loading placeholders before progress hydration completes', () => {
-    learnProgressState.initialized = false;
-    learnProgressState.progressVersion = 0;
+    authLearnProgressState.initialized = false;
+    authLearnProgressState.progressVersion = 0;
 
     render(
       <LearnHubClient
@@ -69,8 +72,8 @@ describe('LearnHubClient', () => {
   });
 
   it('links the continue banner to the current lesson anchor', () => {
-    learnProgressState.initialized = true;
-    learnProgressState.progressVersion = 1;
+    authLearnProgressState.initialized = true;
+    authLearnProgressState.progressVersion = 1;
 
     render(
       <LearnHubClient
@@ -90,8 +93,8 @@ describe('LearnHubClient', () => {
   });
 
   it('shows aggregated subject progress from stored completions', () => {
-    learnProgressState.initialized = true;
-    learnProgressState.progressVersion = 1;
+    authLearnProgressState.initialized = true;
+    authLearnProgressState.progressVersion = 1;
 
     render(
       <LearnHubClient

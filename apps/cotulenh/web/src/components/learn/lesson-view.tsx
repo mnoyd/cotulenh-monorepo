@@ -26,6 +26,7 @@ import type {
 } from '@cotulenh/learn';
 import type { Dests, Key, OrigMoveKey, Piece, SquareClasses } from '@cotulenh/board';
 
+import { useAuthLearnProgress } from '@/hooks/use-auth-learn-progress';
 import { useBoard } from '@/hooks/use-board';
 import type { BoardHandle } from '@/hooks/use-board';
 import { useLearnStore } from '@/stores/learn-store';
@@ -34,6 +35,7 @@ import { HintDisplay } from './hint-display';
 import { LessonCompletion } from './lesson-completion';
 import { LessonLayout } from './lesson-layout';
 import { LessonMarkdown } from './lesson-markdown';
+import { SignupPrompt } from './signup-prompt';
 
 type BoardDrawShape = { orig: string; dest?: string; brush: string };
 type LessonViewProps = {
@@ -240,7 +242,8 @@ export function LessonView({ lessonId, subjectId }: LessonViewProps) {
   const [ariaMessage, setAriaMessage] = useState('');
 
   const initializeLearnStore = useLearnStore((state) => state.initialize);
-  const saveLessonProgress = useLearnStore((state) => state.saveLessonProgress);
+  const { authState, saveLessonProgress } = useAuthLearnProgress();
+  const getTotalCompletedCount = useLearnStore((s) => s.getTotalCompletedCount);
 
   const syncBoardAccessibility = useCallback(() => {
     const boardHandle = boardHandleRef.current;
@@ -759,6 +762,11 @@ export function LessonView({ lessonId, subjectId }: LessonViewProps) {
             nextLessonHref={nextLessonHref}
             subjectHref={subjectHref}
             onRestart={handleRestart}
+          />
+          <SignupPrompt
+            isAuthenticated={authState === 'authenticated'}
+            completedLessonCount={getTotalCompletedCount()}
+            className="mt-[var(--space-4)]"
           />
         </div>
       ) : null}

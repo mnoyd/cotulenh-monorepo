@@ -106,16 +106,27 @@ vi.mock('@/hooks/use-board', () => ({
   useBoard: () => null // Board won't actually mount in tests
 }));
 
+vi.mock('@/hooks/use-auth-learn-progress', () => ({
+  useAuthLearnProgress: () => ({
+    initialized: true,
+    progressVersion: 0,
+    authState: 'unauthenticated',
+    saveLessonProgress: mockSaveLessonProgress
+  })
+}));
+
 vi.mock('@/stores/learn-store', () => ({
   useLearnStore: (
     selector: (state: {
       initialize: typeof mockInitializeLearnStore;
       saveLessonProgress: typeof mockSaveLessonProgress;
+      getTotalCompletedCount: () => number;
     }) => unknown
   ) =>
     selector({
       initialize: mockInitializeLearnStore,
-      saveLessonProgress: mockSaveLessonProgress
+      saveLessonProgress: mockSaveLessonProgress,
+      getTotalCompletedCount: () => 0
     })
 }));
 
