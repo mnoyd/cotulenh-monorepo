@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { ProgressManager, MemoryStorageAdapter } from './index';
+import { ProgressManager, MemoryStorageAdapter, LocalStorageAdapter } from './index';
 
 describe('ProgressManager', () => {
   let storage: MemoryStorageAdapter;
@@ -123,5 +123,30 @@ describe('MemoryStorageAdapter', () => {
     storage.clear();
     expect(storage.get('key1')).toBeNull();
     expect(storage.get('key2')).toBeNull();
+  });
+});
+
+describe('LocalStorageAdapter', () => {
+  it('swallows remove errors when storage is unavailable', () => {
+    const adapter = new LocalStorageAdapter();
+    const originalLocalStorage = globalThis.localStorage;
+
+    Object.defineProperty(globalThis, 'localStorage', {
+      configurable: true,
+      value: {
+        getItem: () => null,
+        setItem: () => undefined,
+        removeItem: () => {
+          throw new Error('blocked');
+        }
+      }
+    });
+
+    expect(() => adapter.remove('learn-progress')).not.toThrow();
+
+    Object.defineProperty(globalThis, 'localStorage', {
+      configurable: true,
+      value: originalLocalStorage
+    });
   });
 });

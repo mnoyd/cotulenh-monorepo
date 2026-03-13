@@ -74,6 +74,10 @@ export class LocalStorageAdapter implements StorageAdapter {
 
   remove(key: string): void {
     if (typeof localStorage === 'undefined') return;
-    localStorage.removeItem(key);
+    try {
+      localStorage.removeItem(key);
+    } catch {
+      // Storage unavailable
+    }
   }
 }

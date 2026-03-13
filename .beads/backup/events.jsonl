@@ -37,3 +37,5 @@
 {"actor":"Hoang Manh","comment":null,"created_at":"2026-03-09T21:04:16Z","event_type":"closed","id":37,"issue_id":"cotulenh-monorepo-frh","new_value":"Done","old_value":""}
 {"actor":"Hoang Manh","comment":null,"created_at":"2026-03-09T21:04:16Z","event_type":"closed","id":38,"issue_id":"cotulenh-monorepo-frh","new_value":"all steps complete","old_value":""}
 {"actor":"Hoang Manh","comment":null,"created_at":"2026-03-09T21:05:35Z","event_type":"created","id":39,"issue_id":"cotulenh-monorepo-lt3","new_value":"","old_value":""}
+{"actor":"Hoang Manh","comment":null,"created_at":"2026-03-10T10:06:22Z","event_type":"created","id":40,"issue_id":"cotulenh-monorepo-344","new_value":"","old_value":""}
+{"actor":"Hoang Manh","comment":null,"created_at":"2026-03-10T10:06:35Z","event_type":"closed","id":41,"issue_id":"cotulenh-monorepo-344","new_value":"Completed","old_value":""}

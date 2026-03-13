@@ -14,6 +14,9 @@ type SubjectData = {
   description: string;
   lessonCount: number;
   completedLessons?: number;
+  earnedStars?: number;
+  totalStars?: number;
+  progressPending?: boolean;
 };
 
 type LearnHubClientProps = {
@@ -24,17 +27,29 @@ export function LearnHubClient({ subjectData }: LearnHubClientProps) {
   const { initialized, progressVersion } = useLearnProgress();
   const getSubjectProgress = useLearnStore((s) => s.getSubjectProgress);
   const getCompletedLessonCount = useLearnStore((s) => s.getCompletedLessonCount);
+  const getSubjectStarCount = useLearnStore((s) => s.getSubjectStarCount);
   const getNextIncompleteLesson = useLearnStore((s) => s.getNextIncompleteLesson);
   const hasAnyProgress = useLearnStore((s) => s.hasAnyProgress);
 
+  const progressPending = !initialized && progressVersion === 0;
+
   const enrichedSubjects = subjectData.map((subject) => {
-    if (!initialized && progressVersion === 0) return subject;
+    if (progressPending) {
+      return {
+        ...subject,
+        progressPending: true
+      };
+    }
 
     const completedLessons = getCompletedLessonCount(subject.id);
+    const starCount = getSubjectStarCount(subject.id);
 
     return {
       ...subject,
-      completedLessons: completedLessons > 0 ? completedLessons : undefined
+      completedLessons: completedLessons > 0 ? completedLessons : undefined,
+      earnedStars: completedLessons > 0 ? starCount.earned : undefined,
+      totalStars: completedLessons > 0 ? starCount.total : undefined,
+      progressPending: false
     };
   });
 
@@ -69,7 +84,22 @@ export function LearnHubClient({ subjectData }: LearnHubClientProps) {
 
   return (
     <>
-      {continueBanner && (
+      {progressPending ? (
+        <div
+          className="mb-[var(--space-6)] border border-[var(--color-border)] p-[var(--space-4)]"
+          aria-label="Đang tải tiến độ học"
+        >
+          <div className="h-4 w-24 animate-pulse bg-[var(--color-border)]" aria-hidden="true" />
+          <div
+            className="mt-[var(--space-2)] h-5 w-48 animate-pulse bg-[var(--color-border)]"
+            aria-hidden="true"
+          />
+          <div
+            className="mt-[var(--space-2)] h-1 w-full animate-pulse bg-[var(--color-border)]"
+            aria-hidden="true"
+          />
+        </div>
+      ) : continueBanner ? (
         <div className="mb-[var(--space-6)] border border-[var(--color-primary)] p-[var(--space-4)]">
           <p className="text-[var(--text-sm)] font-medium text-[var(--color-primary)]">
             Tiếp tục học
@@ -90,7 +120,7 @@ export function LearnHubClient({ subjectData }: LearnHubClientProps) {
             Tiếp tục
           </Link>
         </div>
-      )}
+      ) : null}
       <SubjectGrid subjects={enrichedSubjects} />
     </>
   );

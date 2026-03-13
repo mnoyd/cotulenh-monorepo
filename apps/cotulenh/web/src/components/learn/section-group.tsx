@@ -22,6 +22,8 @@ type SectionGroupProps = {
 export function SectionGroup({ subjectId, title, lessons, startIndex = 1 }: SectionGroupProps) {
   const { initialized, progressVersion } = useLearnProgress();
   const isLessonCompleted = useLearnStore((s) => s.isLessonCompleted);
+  const getLessonProgress = useLearnStore((s) => s.getLessonProgress);
+  const progressPending = !initialized && progressVersion === 0;
 
   return (
     <section>
@@ -35,6 +37,9 @@ export function SectionGroup({ subjectId, title, lessons, startIndex = 1 }: Sect
               ? isLessonCompleted(lesson.lessonId)
               : lesson.completed;
 
+          const progress =
+            initialized && progressVersion >= 0 ? getLessonProgress(lesson.lessonId) : null;
+
           return (
             <LessonListItem
               key={lesson.lessonId}
@@ -44,6 +49,8 @@ export function SectionGroup({ subjectId, title, lessons, startIndex = 1 }: Sect
               description={lesson.description}
               index={startIndex + i}
               completed={completed}
+              stars={progress?.stars}
+              progressPending={progressPending}
             />
           );
         })}

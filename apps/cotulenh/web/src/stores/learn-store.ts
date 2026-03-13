@@ -4,6 +4,7 @@ import {
   getSubjectById,
   LocalStorageAdapter,
   MemoryStorageAdapter,
+  type LessonProgress,
   type ProgressManager,
   type SubjectProgress,
   type SubjectId
@@ -18,10 +19,12 @@ type LearnState = {
   saveLessonProgress: (lessonId: string, stars?: 0 | 1 | 2 | 3, moveCount?: number) => void;
   getSubjectProgress: (subjectId: SubjectId) => SubjectProgress;
   isLessonCompleted: (lessonId: string) => boolean;
+  getLessonProgress: (lessonId: string) => LessonProgress | null;
   getNextIncompleteLesson: (
     subjectId: SubjectId
   ) => { lessonId: string; sectionId: string; title: string } | null;
   getCompletedLessonCount: (subjectId: SubjectId) => number;
+  getSubjectStarCount: (subjectId: SubjectId) => { earned: number; total: number };
   hasAnyProgress: () => boolean;
 };
 
@@ -70,6 +73,12 @@ export const useLearnStore = create<LearnState>((set, get) => ({
     return pm.isLessonCompleted(lessonId);
   },
 
+  getLessonProgress: (lessonId) => {
+    const pm = get().progressManager;
+    if (!pm) return null;
+    return pm.getLessonProgress(lessonId);
+  },
+
   getNextIncompleteLesson: (subjectId) => {
     const pm = get().progressManager;
     if (!pm) return null;
@@ -92,6 +101,26 @@ export const useLearnStore = create<LearnState>((set, get) => ({
     }
 
     return completed;
+  },
+
+  getSubjectStarCount: (subjectId) => {
+    const pm = get().progressManager;
+    const subject = getSubjectById(subjectId);
+    if (!pm || !subject) return { earned: 0, total: 0 };
+
+    let earned = 0;
+    let total = 0;
+    for (const section of subject.sections) {
+      for (const lesson of section.lessons) {
+        total += 3;
+        const progress = pm.getLessonProgress(lesson.id);
+        if (progress) {
+          earned += progress.stars;
+        }
+      }
+    }
+
+    return { earned, total };
   },
 
   hasAnyProgress: () => {

@@ -6,6 +6,9 @@ type SubjectData = {
   description: string;
   lessonCount: number;
   completedLessons?: number;
+  earnedStars?: number;
+  totalStars?: number;
+  progressPending?: boolean;
 };
 
 type SubjectGridProps = {
@@ -23,6 +26,9 @@ export function SubjectGrid({ subjects }: SubjectGridProps) {
           description={subject.description}
           lessonCount={subject.lessonCount}
           completedLessons={subject.completedLessons}
+          earnedStars={subject.earnedStars}
+          totalStars={subject.totalStars}
+          progressPending={subject.progressPending}
         />
       ))}
     </div>

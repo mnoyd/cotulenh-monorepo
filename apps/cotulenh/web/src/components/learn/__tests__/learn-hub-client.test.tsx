@@ -3,6 +3,11 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { LearnHubClient } from '../learn-hub-client';
 
+const learnProgressState = {
+  initialized: true,
+  progressVersion: 1
+};
+
 const storeState = {
   getSubjectProgress: () => ({
     subjectId: 'subject-1-basic-movement',
@@ -11,6 +16,7 @@ const storeState = {
     progress: 50
   }),
   getCompletedLessonCount: () => 3,
+  getSubjectStarCount: () => ({ earned: 7, total: 15 }),
   getNextIncompleteLesson: () => ({
     lessonId: 'bm-1-2',
     sectionId: 'section-1-basic-units',
@@ -20,10 +26,7 @@ const storeState = {
 };
 
 vi.mock('@/hooks/use-learn-progress', () => ({
-  useLearnProgress: () => ({
-    initialized: true,
-    progressVersion: 1
-  })
+  useLearnProgress: () => learnProgressState
 }));
 
 vi.mock('@/stores/learn-store', () => ({
@@ -44,7 +47,31 @@ vi.mock('@cotulenh/learn', () => ({
 }));
 
 describe('LearnHubClient', () => {
+  it('renders loading placeholders before progress hydration completes', () => {
+    learnProgressState.initialized = false;
+    learnProgressState.progressVersion = 0;
+
+    render(
+      <LearnHubClient
+        subjectData={[
+          {
+            id: 'subject-1-basic-movement',
+            title: 'Di chuyển cơ bản',
+            description: 'Mô tả',
+            lessonCount: 5
+          }
+        ]}
+      />
+    );
+
+    expect(screen.getByLabelText('Đang tải tiến độ học')).toBeInTheDocument();
+    expect(screen.queryByText('3/5 bài học')).not.toBeInTheDocument();
+  });
+
   it('links the continue banner to the current lesson anchor', () => {
+    learnProgressState.initialized = true;
+    learnProgressState.progressVersion = 1;
+
     render(
       <LearnHubClient
         subjectData={[
@@ -63,6 +90,9 @@ describe('LearnHubClient', () => {
   });
 
   it('shows aggregated subject progress from stored completions', () => {
+    learnProgressState.initialized = true;
+    learnProgressState.progressVersion = 1;
+
     render(
       <LearnHubClient
         subjectData={[

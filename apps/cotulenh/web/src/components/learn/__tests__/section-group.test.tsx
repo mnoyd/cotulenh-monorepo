@@ -63,4 +63,41 @@ describe('SectionGroup', () => {
 
     expect(screen.getByText('✓')).toBeInTheDocument();
   });
+
+  it('passes star data from store to lesson list items', () => {
+    useLearnStore.getState().initialize();
+    useLearnStore.getState().saveLessonProgress('bm-1-1', 3, 5);
+
+    render(<SectionGroup subjectId="subject-1-basic-movement" title="Section" lessons={lessons} />);
+
+    expect(screen.getByLabelText('3 sao')).toBeInTheDocument();
+  });
+
+  it('does not show stars for incomplete lessons', () => {
+    useLearnStore.getState().initialize();
+
+    render(<SectionGroup subjectId="subject-1-basic-movement" title="Section" lessons={lessons} />);
+
+    expect(screen.queryByLabelText(/sao/)).not.toBeInTheDocument();
+  });
+
+  it('shows stars on first render when localStorage has progress (eager init)', () => {
+    // Pre-populate localStorage with progress before initialization
+    window.localStorage.setItem(
+      'learn-progress',
+      JSON.stringify({
+        'bm-1-1': { lessonId: 'bm-1-1', completed: true, moveCount: 3, stars: 2 }
+      })
+    );
+
+    // Eager init: store reads localStorage synchronously at module scope,
+    // so progress is available before the first React render — no flicker.
+    useLearnStore.getState().initialize();
+
+    render(<SectionGroup subjectId="subject-1-basic-movement" title="Section" lessons={lessons} />);
+
+    // Stars and checkmark visible on the very first paint
+    expect(screen.getByLabelText('2 sao')).toBeInTheDocument();
+    expect(screen.getByText('✓')).toBeInTheDocument();
+  });
 });

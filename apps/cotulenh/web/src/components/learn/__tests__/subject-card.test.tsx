@@ -37,4 +37,30 @@ describe('SubjectCard', () => {
     render(<SubjectCard {...defaultProps} />);
     expect(screen.queryByText(/3\/5/)).not.toBeInTheDocument();
   });
+
+  it('renders star aggregate when earnedStars and totalStars provided', () => {
+    render(<SubjectCard {...defaultProps} completedLessons={3} earnedStars={7} totalStars={15} />);
+    expect(screen.getByText(/★ 7\/15/)).toBeInTheDocument();
+  });
+
+  it('does not render star aggregate when no star data provided', () => {
+    render(<SubjectCard {...defaultProps} completedLessons={3} />);
+    expect(screen.queryByText(/★/)).not.toBeInTheDocument();
+  });
+
+  it('renders star aggregate with earnedStars=0 when there is progress', () => {
+    render(<SubjectCard {...defaultProps} completedLessons={2} earnedStars={0} totalStars={15} />);
+    expect(screen.getByText(/★ 0\/15/)).toBeInTheDocument();
+  });
+
+  it('does not render star aggregate when no progress even with star data', () => {
+    render(<SubjectCard {...defaultProps} earnedStars={0} totalStars={15} />);
+    expect(screen.queryByText(/★/)).not.toBeInTheDocument();
+  });
+
+  it('renders loading placeholders while progress is hydrating', () => {
+    render(<SubjectCard {...defaultProps} progressPending />);
+    expect(screen.queryByText(/★/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/\/5 bài học/)).not.toBeInTheDocument();
+  });
 });
