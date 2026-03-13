@@ -1,0 +1,97 @@
+'use client';
+
+import Link from 'next/link';
+
+import { useLearnProgress } from '@/hooks/use-learn-progress';
+import { useLearnStore } from '@/stores/learn-store';
+import { subjects, setLearnLocale, tSubjectTitle, tLessonTitle } from '@cotulenh/learn';
+
+import { SubjectGrid } from './subject-grid';
+
+type SubjectData = {
+  id: string;
+  title: string;
+  description: string;
+  lessonCount: number;
+  completedLessons?: number;
+};
+
+type LearnHubClientProps = {
+  subjectData: SubjectData[];
+};
+
+export function LearnHubClient({ subjectData }: LearnHubClientProps) {
+  const { initialized, progressVersion } = useLearnProgress();
+  const getSubjectProgress = useLearnStore((s) => s.getSubjectProgress);
+  const getCompletedLessonCount = useLearnStore((s) => s.getCompletedLessonCount);
+  const getNextIncompleteLesson = useLearnStore((s) => s.getNextIncompleteLesson);
+  const hasAnyProgress = useLearnStore((s) => s.hasAnyProgress);
+
+  const enrichedSubjects = subjectData.map((subject) => {
+    if (!initialized && progressVersion === 0) return subject;
+
+    const completedLessons = getCompletedLessonCount(subject.id);
+
+    return {
+      ...subject,
+      completedLessons: completedLessons > 0 ? completedLessons : undefined
+    };
+  });
+
+  // Find first in-progress subject for continue banner
+  let continueBanner: {
+    subjectId: string;
+    subjectTitle: string;
+    lessonTitle: string;
+    progress: number;
+    lessonId: string;
+  } | null = null;
+
+  if ((initialized || progressVersion > 0) && hasAnyProgress()) {
+    setLearnLocale('vi');
+    for (const subject of subjects) {
+      const progress = getSubjectProgress(subject.id);
+      if (progress.progress > 0 && !progress.completed) {
+        const nextLesson = getNextIncompleteLesson(subject.id);
+        if (nextLesson) {
+          continueBanner = {
+            subjectId: subject.id,
+            subjectTitle: tSubjectTitle(subject.id, subject.title),
+            lessonTitle: tLessonTitle(subject.id, nextLesson.lessonId, nextLesson.title),
+            progress: progress.progress,
+            lessonId: nextLesson.lessonId
+          };
+          break;
+        }
+      }
+    }
+  }
+
+  return (
+    <>
+      {continueBanner && (
+        <div className="mb-[var(--space-6)] border border-[var(--color-primary)] p-[var(--space-4)]">
+          <p className="text-[var(--text-sm)] font-medium text-[var(--color-primary)]">
+            Tiếp tục học
+          </p>
+          <p className="mt-[var(--space-1)] text-[var(--text-base)] font-semibold text-[var(--color-text)]">
+            {continueBanner.subjectTitle} — {continueBanner.lessonTitle}
+          </p>
+          <div className="mt-[var(--space-2)] h-1 w-full bg-[var(--color-border)]">
+            <div
+              className="h-full bg-[var(--color-primary)]"
+              style={{ width: `${continueBanner.progress}%` }}
+            />
+          </div>
+          <Link
+            href={`/learn/${continueBanner.subjectId}#lesson-${continueBanner.lessonId}`}
+            className="mt-[var(--space-3)] inline-block text-[var(--text-sm)] font-medium text-[var(--color-primary)] hover:underline"
+          >
+            Tiếp tục
+          </Link>
+        </div>
+      )}
+      <SubjectGrid subjects={enrichedSubjects} />
+    </>
+  );
+}

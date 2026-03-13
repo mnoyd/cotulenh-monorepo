@@ -41,7 +41,7 @@ story_location: _bmad-output/implementation-artifacts
 
 development_status:
   # Epic 1: Project Foundation & App Shell
-  epic-1: in-progress
+  epic-1: done
   1-1-project-initialization-monorepo-integration: done
   1-2-landing-page: done
   1-3-user-registration-login: done
@@ -51,8 +51,8 @@ development_status:
   epic-1-retrospective: optional
 
   # Epic 2: Learn the Game
-  epic-2: backlog
-  2-1-learn-hub-lesson-navigation: backlog
+  epic-2: in-progress
+  2-1-learn-hub-lesson-navigation: done
   2-2-interactive-lesson-board: backlog
   2-3-lesson-progress-tracking: backlog
   2-4-progress-migration-signup-prompt: backlog

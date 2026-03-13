@@ -186,6 +186,9 @@ importers:
       '@cotulenh/core':
         specifier: workspace:^
         version: link:../../../packages/cotulenh/core
+      '@cotulenh/learn':
+        specifier: workspace:^
+        version: link:../../../packages/cotulenh/learn
       '@supabase/ssr':
         specifier: ^0.8.0
         version: 0.8.0(@supabase/supabase-js@2.98.0)
