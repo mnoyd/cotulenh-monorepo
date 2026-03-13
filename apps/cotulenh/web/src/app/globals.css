@@ -1,6 +1,9 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
 @import 'shadcn/tailwind.css';
+@import '@cotulenh/board/assets/commander-chess.base.css';
+@import '@cotulenh/board/assets/commander-chess.pieces.css';
+@import '@cotulenh/board/assets/commander-chess.clasic.css';
 
 @custom-variant dark (&:is(.dark *));
 
@@ -237,4 +240,48 @@
   html {
     @apply font-sans;
   }
+}
+
+@keyframes lesson-pulse {
+  0%,
+  100% {
+    box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--color-warning) 60%, transparent);
+  }
+
+  50% {
+    box-shadow: inset 0 0 0 4px color-mix(in srgb, var(--color-warning) 85%, transparent);
+  }
+}
+
+square.lesson-highlight,
+square.lesson-target,
+square.lesson-correct-move,
+square.lesson-wrong-move,
+square.lesson-pulse {
+  position: relative;
+}
+
+square.lesson-highlight {
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--color-primary) 45%, transparent);
+}
+
+square.lesson-target {
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--color-primary) 70%, transparent);
+}
+
+square.lesson-correct-move {
+  box-shadow: inset 0 0 0 4px color-mix(in srgb, var(--color-success) 88%, transparent);
+}
+
+square.lesson-wrong-move {
+  box-shadow: inset 0 0 0 4px color-mix(in srgb, var(--color-error) 88%, transparent);
+}
+
+square.lesson-pulse {
+  animation: lesson-pulse 1.1s ease-in-out infinite;
+}
+
+square[data-lesson-focusable='true']:focus-visible {
+  outline: 3px solid var(--color-primary);
+  outline-offset: -3px;
 }
