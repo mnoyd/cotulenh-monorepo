@@ -48,23 +48,23 @@ development_status:
   1-4-password-reset: done
   1-5-app-shell-navigation: done
   1-6-home-dashboard: done
-  epic-1-retrospective: optional
+  epic-1-retrospective: done
 
   # Epic 2: Learn the Game
-  epic-2: in-progress
+  epic-2: done
   2-1-learn-hub-lesson-navigation: done
   2-2-interactive-lesson-board: done
   2-3-lesson-progress-tracking: done
   2-4-progress-migration-signup-prompt: done
-  epic-2-retrospective: optional
+  epic-2-retrospective: done
 
   # Epic 3: Play a Game
-  epic-3: backlog
-  3-1-game-page-layout-board-integration: backlog
-  3-2-game-creation-database-setup: backlog
-  3-3-deploy-session: backlog
-  3-4-move-execution-server-side-validation: backlog
-  3-5-chess-clocks-time-control: backlog
+  epic-3: in-progress
+  3-1-game-page-layout-board-integration: done
+  3-2-game-creation-database-setup: done
+  3-3-deploy-session: done
+  3-4-move-execution-server-side-validation: done
+  3-5-chess-clocks-time-control: ready-for-dev
   3-6-game-end-conditions-result: backlog
   3-7-resign-draw-offer-takeback: backlog
   3-8-rematch-flow: backlog
