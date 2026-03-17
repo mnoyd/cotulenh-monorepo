@@ -20,6 +20,13 @@ export function useAuthLearnProgress() {
   const replaceAllProgress = useLearnStore((s) => s.replaceAllProgress);
   const progressManager = useLearnStore((s) => s.progressManager);
 
+  const hydrateFromDb = useCallback(async () => {
+    const dbResult = await getDbProgress();
+    if (dbResult.success && dbResult.data) {
+      replaceAllProgress(dbResult.data, { persist: false });
+    }
+  }, [replaceAllProgress]);
+
   const flushPendingSaves = useCallback(async () => {
     if (authState !== 'authenticated' || pendingSavesRef.current.length === 0) return;
 
@@ -32,14 +39,7 @@ export function useAuthLearnProgress() {
         pendingSavesRef.current.push(save);
       }
     }
-
-    if (pendingSavesRef.current.length === 0) {
-      const dbResult = await getDbProgress();
-      if (dbResult.success && dbResult.data) {
-        replaceAllProgress(dbResult.data, { persist: false });
-      }
-    }
-  }, [authState, replaceAllProgress]);
+  }, [authState]);
 
   // Check auth state and listen for changes
   useEffect(() => {
@@ -105,10 +105,7 @@ export function useAuthLearnProgress() {
 
         const saveResult = await saveDbProgress(lessonId, stars, moveCount);
         if (saveResult.success) {
-          const dbResult = await getDbProgress();
-          if (dbResult.success && dbResult.data) {
-            replaceAllProgress(dbResult.data, { persist: false });
-          }
+          await hydrateFromDb();
           return;
         }
 
@@ -119,7 +116,7 @@ export function useAuthLearnProgress() {
       // Unauthenticated flow uses local storage.
       saveLessonProgressLocal(lessonId, stars, moveCount);
     },
-    [authState, flushPendingSaves, replaceAllProgress, saveLessonProgressLocal]
+    [authState, flushPendingSaves, hydrateFromDb, saveLessonProgressLocal]
   );
 
   useEffect(() => {
@@ -134,8 +131,14 @@ export function useAuthLearnProgress() {
       return;
     }
 
-    void flushPendingSaves();
-  }, [authState, flushPendingSaves, saveLessonProgressLocal]);
+    const flushAndHydrate = async () => {
+      await flushPendingSaves();
+      if (pendingSavesRef.current.length === 0) {
+        await hydrateFromDb();
+      }
+    };
+    void flushAndHydrate();
+  }, [authState, flushPendingSaves, hydrateFromDb, saveLessonProgressLocal]);
 
   // Dual-mode save function
   const saveLessonProgressDual = useCallback(

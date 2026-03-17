@@ -287,6 +287,7 @@ Recent commits follow format: `feat(web): description` or `fix(web): description
 - 2026-03-14: Senior Developer Review (AI) completed; story moved back to in-progress with follow-up items
 - 2026-03-14: Applied code review follow-up fixes for auth-aware migration/save flow and added hook coverage
 - 2026-03-14: Follow-up review passed after fixes; story marked done
+- 2026-03-14: Second code review (adversarial): 0 CRITICAL, 0 HIGH, 3 MEDIUM (all fixed/documented), 3 LOW (2 fixed). 252 tests passing
 
 ## Dev Agent Record
 
@@ -340,18 +341,18 @@ Noy
 
 2026-03-14
 
-### Outcome
+### Outcome (Review 1)
 
 Changes Requested
 
-### Findings Summary
+### Findings Summary (Review 1)
 
 - CRITICAL: 2
 - HIGH: 2
 - MEDIUM: 2
 - LOW: 0
 
-### Key Findings
+### Key Findings (Review 1)
 
 1. Task 5.4 is marked complete but login merge flow (`getDbProgress` + conditional migrate/merge) is not implemented.
 2. Tasks 9.6/9.7 are marked complete but required test coverage is not present.
@@ -360,6 +361,32 @@ Changes Requested
 5. DB save errors are ignored in hook path.
 6. Story file list does not include all actual changed files.
 
-### Recommendation
+### Recommendation (Review 1)
 
 Resolve all CRITICAL and HIGH follow-ups, then rerun code review before setting status back to `review`.
+
+---
+
+### Outcome (Review 2)
+
+Approved with fixes applied
+
+### Findings Summary (Review 2)
+
+- CRITICAL: 0
+- HIGH: 0
+- MEDIUM: 3
+- LOW: 3
+
+### Key Findings (Review 2)
+
+1. [MEDIUM][FIXED] N+1 DB reads: `flushPendingSaves` and `persistProgress` each called `getDbProgress` separately. Extracted `hydrateFromDb` helper, single call per save path.
+2. [MEDIUM][FIXED] `getTotalCompletedCount` counted all progress keys, not just entries with `completed: true`. Filtered by `completed` flag.
+3. [MEDIUM][DOCUMENTED] TOCTOU race in `saveDbProgress` between SELECT and UPSERT. Documented as accepted at MVP scale; atomic RPC recommended for production.
+4. [LOW][FIXED] SignupPrompt could flash during `authState='loading'`. Added `authState !== 'loading'` guard in both `learn-hub-client.tsx` and `lesson-view.tsx`.
+5. [LOW][FIXED] No test for failed save retry/queue behavior. Added `queues failed DB save and retries on next persistProgress call` test.
+6. [LOW] `validateProgressEntry` accepts `stars: 0` with `completed: true`. Semantically odd but not harmful.
+
+### Recommendation (Review 2)
+
+All prior CRITICAL/HIGH issues resolved. MEDIUM issues fixed or documented. Story approved — 252 tests passing, types clean, lint clean.

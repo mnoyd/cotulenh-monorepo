@@ -123,11 +123,13 @@ export function LearnHubClient({ subjectData }: LearnHubClientProps) {
           </Link>
         </div>
       ) : null}
-      <SignupPrompt
-        isAuthenticated={authState === 'authenticated'}
-        completedLessonCount={getTotalCompletedCount()}
-        className="mb-[var(--space-6)]"
-      />
+      {authState !== 'loading' && (
+        <SignupPrompt
+          isAuthenticated={authState === 'authenticated'}
+          completedLessonCount={getTotalCompletedCount()}
+          className="mb-[var(--space-6)]"
+        />
+      )}
       <SubjectGrid subjects={enrichedSubjects} />
     </>
   );

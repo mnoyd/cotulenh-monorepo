@@ -137,7 +137,7 @@ export const useLearnStore = create<LearnState>((set, get) => ({
   getTotalCompletedCount: () => {
     const pm = get().progressManager;
     if (!pm) return 0;
-    return Object.keys(pm.getAllProgress()).length;
+    return Object.values(pm.getAllProgress()).filter((p) => p.completed).length;
   },
 
   replaceAllProgress: (progress, options) => {

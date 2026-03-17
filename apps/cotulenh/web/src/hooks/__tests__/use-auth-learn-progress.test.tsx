@@ -200,4 +200,54 @@ describe('useAuthLearnProgress', () => {
       });
     });
   });
+
+  it('queues failed DB save and retries on next persistProgress call', async () => {
+    mockGetSession.mockResolvedValue({ data: { session: { user: { id: 'user-1' } } } });
+
+    const { result } = renderHook(() => useAuthLearnProgress());
+
+    await waitFor(() => {
+      expect(result.current.authState).toBe('authenticated');
+    });
+
+    // Wait for initial migration/hydration to complete, then clear mocks
+    await waitFor(() => {
+      expect(mockGetDbProgress).toHaveBeenCalled();
+    });
+    vi.clearAllMocks();
+    mockSaveDbProgress.mockResolvedValue({ success: true });
+    mockGetDbProgress.mockResolvedValue({ success: true, data: {} });
+
+    // First save fails
+    mockSaveDbProgress.mockResolvedValueOnce({ success: false, error: 'DB error' });
+
+    act(() => {
+      result.current.saveLessonProgress('lesson-fail', 2, 5);
+    });
+
+    await waitFor(() => {
+      expect(mockSaveDbProgress).toHaveBeenCalledWith('lesson-fail', 2, 5);
+    });
+
+    // Should NOT have hydrated since save failed
+    expect(mockReplaceAllProgress).not.toHaveBeenCalled();
+
+    // Second save succeeds — should also flush the queued failed save
+    mockSaveDbProgress.mockResolvedValue({ success: true });
+
+    act(() => {
+      result.current.saveLessonProgress('lesson-ok', 3, 4);
+    });
+
+    await waitFor(() => {
+      // The queued 'lesson-fail' should be retried before 'lesson-ok'
+      expect(mockSaveDbProgress).toHaveBeenCalledWith('lesson-fail', 2, 5);
+      expect(mockSaveDbProgress).toHaveBeenCalledWith('lesson-ok', 3, 4);
+    });
+
+    // Should hydrate after successful save
+    await waitFor(() => {
+      expect(mockReplaceAllProgress).toHaveBeenCalledWith({}, { persist: false });
+    });
+  });
 });

@@ -763,11 +763,13 @@ export function LessonView({ lessonId, subjectId }: LessonViewProps) {
             subjectHref={subjectHref}
             onRestart={handleRestart}
           />
-          <SignupPrompt
-            isAuthenticated={authState === 'authenticated'}
-            completedLessonCount={getTotalCompletedCount()}
-            className="mt-[var(--space-4)]"
-          />
+          {authState !== 'loading' && (
+            <SignupPrompt
+              isAuthenticated={authState === 'authenticated'}
+              completedLessonCount={getTotalCompletedCount()}
+              className="mt-[var(--space-4)]"
+            />
+          )}
         </div>
       ) : null}
 

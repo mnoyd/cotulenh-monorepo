@@ -125,7 +125,9 @@ export async function saveDbProgress(
     return { success: false, error: 'Bạn cần đăng nhập để lưu tiến độ' };
   }
 
-  // Check existing stars
+  // Check existing stars (TOCTOU: a concurrent request could race between
+  // this SELECT and the UPSERT below — acceptable at MVP scale; an atomic
+  // RPC with GREATEST(stars, $new) would eliminate the window)
   const { data: existing, error: fetchError } = await supabase
     .from('learn_progress')
     .select('stars')
