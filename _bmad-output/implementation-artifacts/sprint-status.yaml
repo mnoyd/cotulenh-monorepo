@@ -64,8 +64,8 @@ development_status:
   3-2-game-creation-database-setup: done
   3-3-deploy-session: done
   3-4-move-execution-server-side-validation: done
-  3-5-chess-clocks-time-control: ready-for-dev
-  3-6-game-end-conditions-result: backlog
+  3-5-chess-clocks-time-control: done
+  3-6-game-end-conditions-result: done
   3-7-resign-draw-offer-takeback: backlog
   3-8-rematch-flow: backlog
   3-9-reconnection-disconnect-handling: backlog
