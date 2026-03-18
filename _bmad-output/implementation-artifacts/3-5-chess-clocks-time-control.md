@@ -1,6 +1,6 @@
 # Story 3.5: Chess Clocks & Time Control
 
-Status: ready-for-dev
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -28,46 +28,46 @@ So that I can manage my time and know how much time my opponent has.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Create ChessClock component (AC: #1, #4, #6, #7)
-  - [ ] 1.1 Create `apps/cotulenh/web/src/components/game/chess-clock.tsx` with props: `timeMs: number`, `isRunning: boolean`, `isPlayerClock: boolean`
-  - [ ] 1.2 Implement local countdown via `useEffect` + `setInterval(100ms)` when `isRunning=true` — decrement display time locally, clear on unmount
-  - [ ] 1.3 Format display: `M:SS` normally, `M:SS.T` (tenths) when under 10 seconds
-  - [ ] 1.4 Apply critical styles: `<30s` danger text color, `<10s` danger background pulse via CSS animation
-  - [ ] 1.5 Add `prefers-reduced-motion` media query to disable pulse animation
-  - [ ] 1.6 Set `role="timer"` always; add `aria-live="polite"` when critical threshold crossed (announce once on transition, not every tick)
-  - [ ] 1.7 Monospace font with `font-variant-numeric: tabular-nums` to prevent layout shift
-  - [ ] 1.8 Write tests in `apps/cotulenh/web/src/components/game/__tests__/chess-clock.test.tsx`
+- [x] Task 1: Create ChessClock component (AC: #1, #4, #6, #7)
+  - [x] 1.1 Create `apps/cotulenh/web/src/components/game/chess-clock.tsx` with props: `timeMs: number`, `isRunning: boolean`, `isPlayerClock: boolean`
+  - [x] 1.2 Implement local countdown via `useEffect` + `setInterval(100ms)` when `isRunning=true` — decrement display time locally, clear on unmount
+  - [x] 1.3 Format display: `M:SS` normally, `M:SS.T` (tenths) when under 10 seconds
+  - [x] 1.4 Apply critical styles: `<30s` danger text color, `<10s` danger background pulse via CSS animation
+  - [x] 1.5 Add `prefers-reduced-motion` media query to disable pulse animation
+  - [x] 1.6 Set `role="timer"` always; add `aria-live="polite"` when critical threshold crossed (announce once on transition, not every tick)
+  - [x] 1.7 Monospace font with `font-variant-numeric: tabular-nums` to prevent layout shift
+  - [x] 1.8 Write tests in `apps/cotulenh/web/src/components/game/__tests__/chess-clock.test.tsx`
 
-- [ ] Task 2: Add clock countdown logic to game store (AC: #1, #2, #3, #5)
-  - [ ] 2.1 Add `activeColor: 'red' | 'blue' | null` derived state — `null` during deploy/ended, set to `engine.turn()` during playing
-  - [ ] 2.2 Add `clockRunning: boolean` derived state — `true` only when `phase === 'playing'` and game not ended
-  - [ ] 2.3 Modify `syncClocks` to reset local countdown reference point (store `lastSyncTime: number` and `syncedClocks: { red, blue }`)
-  - [ ] 2.4 Add `getDisplayClocks()` selector: returns current display values by calculating elapsed since last sync for active player only
-  - [ ] 2.5 Ensure `applyOpponentMove` and `makeMove` success paths trigger clock switch (active color flips via engine.turn())
-  - [ ] 2.6 Write tests in `apps/cotulenh/web/src/stores/__tests__/game-store-clocks.test.ts`
+- [x] Task 2: Add clock countdown logic to game store (AC: #1, #2, #3, #5)
+  - [x] 2.1 Add `activeColor: 'red' | 'blue' | null` derived state — `null` during deploy/ended, set to `engine.turn()` during playing
+  - [x] 2.2 Add `clockRunning: boolean` derived state — `true` only when `phase === 'playing'` and game not ended
+  - [x] 2.3 Modify `syncClocks` to reset local countdown reference point (store `lastSyncTime: number` and `syncedClocks: { red, blue }`)
+  - [x] 2.4 Add `getDisplayClocks()` selector: returns current display values by calculating elapsed since last sync for active player only
+  - [x] 2.5 Ensure `applyOpponentMove` and `makeMove` success paths trigger clock switch (active color flips via engine.turn())
+  - [x] 2.6 Write tests in `apps/cotulenh/web/src/stores/__tests__/game-store-clocks.test.ts`
 
-- [ ] Task 3: Integrate ChessClock into game page (AC: #1, #6, #7)
-  - [ ] 3.1 Replace raw `formatClock()` in `player-info-bar.tsx` with `<ChessClock>` component
-  - [ ] 3.2 Pass `isRunning` prop: `true` when `clockRunning && thisPlayerColor === activeColor`
-  - [ ] 3.3 Pass `timeMs` from `getDisplayClocks()` selector (not raw `clocks` state)
-  - [ ] 3.4 Update `game-page-client.tsx` to provide clock display values and running state to PlayerInfoBar
-  - [ ] 3.5 Verify AI game detection path (no clock rendered when opponent is AI — stub for future)
-  - [ ] 3.6 Update existing PlayerInfoBar and game-page-client tests for new clock props
+- [x] Task 3: Integrate ChessClock into game page (AC: #1, #6, #7)
+  - [x] 3.1 Replace raw `formatClock()` in `player-info-bar.tsx` with `<ChessClock>` component
+  - [x] 3.2 Pass `isRunning` prop: `true` when `clockRunning && thisPlayerColor === activeColor`
+  - [x] 3.3 Pass `timeMs` from `getDisplayClocks()` selector (not raw `clocks` state)
+  - [x] 3.4 Update `game-page-client.tsx` to provide clock display values and running state to PlayerInfoBar
+  - [x] 3.5 Verify AI game detection path (no clock rendered when opponent is AI — stub for future)
+  - [x] 3.6 Update existing PlayerInfoBar and game-page-client tests for new clock props
 
-- [ ] Task 4: Implement Fischer increment on server (AC: #3)
-  - [ ] 4.1 In `validate-move/index.ts` playing-phase path: after deducting elapsed time, add increment from `games.time_control.incrementSeconds * 1000` to the moving player's clock
-  - [ ] 4.2 Read `time_control` from `games` row (already fetched in game status check) — extract `incrementSeconds`
-  - [ ] 4.3 Updated clocks (with increment) are already broadcast via `clock_sync` — no additional broadcast needed
-  - [ ] 4.4 Write/update Edge Function tests for increment application
+- [x] Task 4: Implement Fischer increment on server (AC: #3)
+  - [x] 4.1 In `validate-move/index.ts` playing-phase path: after deducting elapsed time, add increment from `games.time_control.incrementSeconds * 1000` to the moving player's clock
+  - [x] 4.2 Read `time_control` from `games` row (already fetched in game status check) — extract `incrementSeconds`
+  - [x] 4.3 Updated clocks (with increment) are already broadcast via `clock_sync` — no additional broadcast needed
+  - [x] 4.4 Write/update Edge Function tests for increment application
 
-- [ ] Task 5: Integration testing & regression (AC: #1-7)
-  - [ ] 5.1 Test clock countdown: verify display decrements when running, stops when paused
-  - [ ] 5.2 Test clock sync: verify server sync overrides local countdown
-  - [ ] 5.3 Test critical warnings: verify visual changes at 30s and 10s thresholds
-  - [ ] 5.4 Test clock switching: verify correct clock runs after move confirmation
-  - [ ] 5.5 Test pause states: verify no countdown during deploy or ended phases
-  - [ ] 5.6 Test tenths display: verify `M:SS.T` format when under 10 seconds
-  - [ ] 5.7 Run full test suite — all existing tests must pass (357+ tests baseline from story 3.4)
+- [x] Task 5: Integration testing & regression (AC: #1-7)
+  - [x] 5.1 Test clock countdown: verify display decrements when running, stops when paused
+  - [x] 5.2 Test clock sync: verify server sync overrides local countdown
+  - [x] 5.3 Test critical warnings: verify visual changes at 30s and 10s thresholds
+  - [x] 5.4 Test clock switching: verify correct clock runs after move confirmation
+  - [x] 5.5 Test pause states: verify no countdown during deploy or ended phases
+  - [x] 5.6 Test tenths display: verify `M:SS.T` format when under 10 seconds
+  - [x] 5.7 Run full test suite — all existing tests must pass (357+ tests baseline from story 3.4)
 
 ## Dev Notes
 
@@ -211,10 +211,66 @@ Files NOT to modify:
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.6
 
 ### Debug Log References
 
+- Fixed mock engine missing `turn()` method in `game-store-deploy.test.ts` — required by new `deriveClockState` helper
+- Fixed realtime event dedupe to process `move` and `clock_sync` events that share the same `seq`
+
 ### Completion Notes List
 
+- Task 1: Created `ChessClock` component with 100ms tick interval, `M:SS` / `M:SS.T` formatting, critical/danger styling, `role="timer"`, `aria-live`, monospace tabular-nums. 19 unit tests.
+- Task 2: Extended game store with `activeColor`, `clockRunning`, `lastSyncTime`, `getDisplayClocks()`. Updated `syncClocks`, `applyOpponentMove`, `applyDeployCommit`, `syncFromServerState`, `initializeEngine`, and `reset` to derive clock state. 14 unit tests.
+- Task 3: Replaced inline `formatClock()` in PlayerInfoBar with `<ChessClock>` component. Updated `PlayerInfoBar` props from `clock` to `clockMs`+`clockRunning`. Updated `game-page-client.tsx` to compute and pass `clockRunning` per player. Updated existing tests for new prop API.
+- Task 4: Added Fischer increment to `validate-move` Edge Function — reads `time_control.incrementSeconds` from games row, applies after clock deduction. Added `time_control` to SELECT query.
+- Task 5: 7 integration tests covering countdown, sync override, critical warnings, clock switching, pause states, and tenths display.
+- Code review fixes: wired `getDisplayClocks()` usage in game page, fixed same-seq realtime event processing, added one-time critical-time announcement live region, added AI-game clock hide stub, and added Edge Function clock arithmetic tests.
+- Quality gates: web suite 401/401 passing (57 files) and Deno tests 4/4 passing for `validate-move` clock logic.
+
+### Change Log
+
+- 2026-03-18: Implemented chess clocks & time control (story 3.5) — ChessClock component, store countdown logic, game page integration, Fischer increment on server, integration tests
+- 2026-03-18: Senior code review fixes — AC/task alignment fixes, realtime same-seq event fix, AI clock-hide stub, accessibility transition announcement, and Edge Function unit tests
+
 ### File List
+
+New files:
+- apps/cotulenh/web/src/components/game/chess-clock.tsx
+- apps/cotulenh/web/src/components/game/__tests__/chess-clock.test.tsx
+- apps/cotulenh/web/src/components/game/__tests__/chess-clock-integration.test.tsx
+- apps/cotulenh/web/src/stores/__tests__/game-store-clocks.test.ts
+
+Modified files:
+- apps/cotulenh/web/src/stores/game-store.ts
+- apps/cotulenh/web/src/components/game/player-info-bar.tsx
+- apps/cotulenh/web/src/components/game/game-page-client.tsx
+- apps/cotulenh/web/src/components/game/chess-clock.tsx
+- apps/cotulenh/web/src/components/game/__tests__/player-info-bar.test.tsx
+- apps/cotulenh/web/src/components/game/__tests__/game-page-client.test.tsx
+- apps/cotulenh/web/src/stores/__tests__/game-store-deploy.test.ts
+- apps/cotulenh/web/src/hooks/use-game-channel.ts
+- apps/cotulenh/web/src/hooks/__tests__/use-game-channel.test.tsx
+- apps/cotulenh/web/src/app/globals.css
+- supabase/functions/validate-move/index.ts
+- supabase/functions/validate-move/clock.ts
+- supabase/functions/validate-move/clock.test.ts
+- _bmad-output/implementation-artifacts/sprint-status.yaml
+
+## Senior Developer Review (AI)
+
+### Review Date
+
+2026-03-18
+
+### Outcome
+
+Approved after fixes
+
+### Findings Resolved
+
+- Fixed `getDisplayClocks()` not being used by game page clock props
+- Fixed realtime `clock_sync` drop when `move` and `clock_sync` shared the same sequence number
+- Implemented and validated AI-game clock hide stub path
+- Added transition-only critical-time live announcement behavior
+- Added missing Edge Function clock increment unit tests

@@ -7,7 +7,7 @@ import { createClient } from '@/lib/supabase/browser';
 import { useGameStore } from '@/stores/game-store';
 
 type GameEventEnvelope = {
-  type: 'deploy_submitted' | 'deploy_commit' | 'move' | 'clock_sync';
+  type: 'deploy_submitted' | 'deploy_commit' | 'move' | 'clock_sync' | 'game_end';
   payload: Record<string, unknown>;
   seq: number;
 };
@@ -24,11 +24,13 @@ type LegacyGameEvent = {
 
 export function useGameChannel(gameId: string | null) {
   const lastSeenSeqRef = useRef(0);
+  const processedEventKeysRef = useRef<Set<string>>(new Set());
   const setOpponentDeploySubmitted = useGameStore((s) => s.setOpponentDeploySubmitted);
   const applyDeployCommit = useGameStore((s) => s.applyDeployCommit);
   const syncFromServerState = useGameStore((s) => s.syncFromServerState);
   const applyOpponentMove = useGameStore((s) => s.applyOpponentMove);
   const syncClocks = useGameStore((s) => s.syncClocks);
+  const handleGameEnd = useGameStore((s) => s.handleGameEnd);
   const setLastSeenSeq = useGameStore((s) => s.setLastSeenSeq);
 
   const refreshFromServer = useCallback(async () => {
@@ -46,17 +48,25 @@ export function useGameChannel(gameId: string | null) {
       const eventType = isEnvelope ? rawEvent.type : undefined;
       const eventPayload = isEnvelope ? rawEvent.payload : rawEvent;
       const eventSeq = rawEvent.seq;
+      const eventKey = `${eventSeq}:${eventType ?? 'legacy'}`;
 
       // Discard stale or malformed events.
       if (!Number.isFinite(eventSeq) || eventSeq <= 0) return;
-      if (eventSeq <= lastSeenSeqRef.current) return;
+      if (processedEventKeysRef.current.has(eventKey)) return;
+      if (eventSeq < lastSeenSeqRef.current) return;
 
       // Detect gaps and trigger full state re-fetch.
       if (lastSeenSeqRef.current > 0 && eventSeq > lastSeenSeqRef.current + 1) {
         await refreshFromServer();
       }
-      lastSeenSeqRef.current = eventSeq;
-      setLastSeenSeq(eventSeq);
+      lastSeenSeqRef.current = Math.max(lastSeenSeqRef.current, eventSeq);
+      setLastSeenSeq(lastSeenSeqRef.current);
+      processedEventKeysRef.current.add(eventKey);
+
+      if (processedEventKeysRef.current.size > 200) {
+        const keys = Array.from(processedEventKeysRef.current).slice(-100);
+        processedEventKeysRef.current = new Set(keys);
+      }
 
       switch (eventType) {
         case 'deploy_submitted': {
@@ -82,6 +92,15 @@ export function useGameChannel(gameId: string | null) {
           syncClocks(red, blue);
           break;
         }
+        case 'game_end': {
+          const { status, winner, result_reason } = eventPayload as {
+            status: string;
+            winner: 'red' | 'blue' | null;
+            result_reason: string | null;
+          };
+          handleGameEnd(status as import('@/lib/types/game').GameStatus, winner, result_reason);
+          break;
+        }
       }
     },
     [
@@ -89,6 +108,7 @@ export function useGameChannel(gameId: string | null) {
       applyDeployCommit,
       applyOpponentMove,
       syncClocks,
+      handleGameEnd,
       refreshFromServer,
       setLastSeenSeq
     ]
@@ -98,6 +118,7 @@ export function useGameChannel(gameId: string | null) {
     if (!gameId) return;
 
     lastSeenSeqRef.current = 0;
+    processedEventKeysRef.current = new Set();
 
     const supabase = createClient();
     const channel = supabase.channel(`game:${gameId}`);
@@ -113,6 +134,9 @@ export function useGameChannel(gameId: string | null) {
         void handleEvent(payload as GameEventEnvelope);
       })
       .on('broadcast', { event: 'clock_sync' }, ({ payload }: { payload: unknown }) => {
+        void handleEvent(payload as GameEventEnvelope);
+      })
+      .on('broadcast', { event: 'game_end' }, ({ payload }: { payload: unknown }) => {
         void handleEvent(payload as GameEventEnvelope);
       })
       .subscribe();

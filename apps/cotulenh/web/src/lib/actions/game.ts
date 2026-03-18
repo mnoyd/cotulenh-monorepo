@@ -31,6 +31,9 @@ export async function getGame(gameId: string): Promise<GetGameResult> {
       blue_player,
       is_rated,
       created_at,
+      winner,
+      result_reason,
+      ended_at,
       game_states (
         move_history,
         fen,
@@ -86,6 +89,8 @@ export async function getGame(gameId: string): Promise<GetGameResult> {
     my_color: game.red_player === user.id ? 'red' : 'blue',
     is_rated: game.is_rated,
     created_at: game.created_at,
+    winner: game.winner ?? null,
+    result_reason: game.result_reason ?? null,
     game_state: {
       move_history: gameState?.move_history ?? [],
       fen: gameState?.fen ?? 'start',

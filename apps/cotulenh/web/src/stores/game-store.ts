@@ -11,9 +11,14 @@ type GameStore = {
   phase: ClientPhase;
   moveHistory: string[];
   clocks: { red: number; blue: number } | null;
+  lastSyncTime: number | null;
+  activeColor: 'red' | 'blue' | null;
+  clockRunning: boolean;
   myColor: 'red' | 'blue' | null;
   gameId: string | null;
   gameStatus: GameStatus | null;
+  winner: 'red' | 'blue' | null;
+  resultReason: string | null;
   redPlayer: { id: string; name: string; rating: number } | null;
   bluePlayer: { id: string; name: string; rating: number } | null;
   deploySubmitted: boolean;
@@ -21,6 +26,7 @@ type GameStore = {
   lastSeenSeq: number;
   pendingMove: string | null;
   moveError: string | null;
+  timeoutClaimSent: boolean;
 
   initializeGame: (gameId: string, gameData: GameData) => void;
   initializeEngine: (fen: string) => void;
@@ -30,6 +36,12 @@ type GameStore = {
   syncClocks: (red: number, blue: number) => void;
   setLastSeenSeq: (seq: number) => void;
   getLegalMoves: (square: string) => string[];
+  getDisplayClocks: () => { red: number; blue: number } | null;
+  handleGameEnd: (
+    status: GameStatus,
+    winner: 'red' | 'blue' | null,
+    resultReason: string | null
+  ) => void;
   deployMove: (from: string, to: string, pieceType?: string) => unknown | null;
   cancelDeploy: () => void;
   commitDeploy: () => string[] | null;
@@ -40,6 +52,7 @@ type GameStore = {
   submitDeploy: (sans: string[]) => Promise<{ success: boolean; error?: string }>;
   getDeployablePieces: () => Array<{ type: string; color: string }>;
   getDeployProgress: () => { current: number; total: number };
+  claimTimeout: () => Promise<void>;
   reset: () => void;
 };
 
@@ -59,14 +72,36 @@ function resolveClientPhase(dbStatus: GameStatus, gamePhase: 'deploying' | 'play
   return 'idle';
 }
 
+function deriveClockState(
+  phase: ClientPhase,
+  engine: CoTuLenh | null
+): {
+  activeColor: 'red' | 'blue' | null;
+  clockRunning: boolean;
+} {
+  if (phase !== 'playing' || !engine) {
+    return { activeColor: null, clockRunning: false };
+  }
+  const turn = engine.turn();
+  return {
+    activeColor: turn === 'r' ? 'red' : 'blue',
+    clockRunning: true
+  };
+}
+
 export const useGameStore = create<GameStore>((set, get) => ({
   engine: null,
   phase: 'idle',
   moveHistory: [],
   clocks: null,
+  lastSyncTime: null,
+  activeColor: null,
+  clockRunning: false,
   myColor: null,
   gameId: null,
   gameStatus: null,
+  winner: null,
+  resultReason: null,
   redPlayer: null,
   bluePlayer: null,
   deploySubmitted: false,
@@ -74,6 +109,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   lastSeenSeq: 0,
   pendingMove: null,
   moveError: null,
+  timeoutClaimSent: false,
 
   setLastSeenSeq: (seq) => {
     set({ lastSeenSeq: seq });
@@ -88,7 +124,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
       phase: clientPhase,
       moveHistory: gameData.game_state.move_history,
       clocks: gameData.game_state.clocks,
+      lastSyncTime: Date.now(),
       myColor: gameData.my_color,
+      winner: gameData.winner ?? null,
+      resultReason: gameData.result_reason ?? null,
       redPlayer: {
         id: gameData.red_player.id,
         name: gameData.red_player.display_name,
@@ -104,7 +143,9 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   initializeEngine: (fen) => {
     const engine = new CoTuLenh(fen);
-    set({ engine });
+    const { phase } = get();
+    const clockState = deriveClockState(phase, engine);
+    set({ engine, ...clockState });
   },
 
   makeMove: async (san) => {
@@ -228,15 +269,61 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const pendingMoveConfirmed = state.pendingMove === san;
     const lastSan = state.moveHistory[state.moveHistory.length - 1];
     const alreadyApplied = lastSan === san;
+    const clockState = deriveClockState(state.phase, newEngine);
     set({
       engine: newEngine,
       moveHistory: alreadyApplied ? state.moveHistory : [...state.moveHistory, san],
-      pendingMove: pendingMoveConfirmed ? null : state.pendingMove
+      pendingMove: pendingMoveConfirmed ? null : state.pendingMove,
+      ...clockState
     });
   },
 
   syncClocks: (red, blue) => {
-    set({ clocks: { red, blue } });
+    set({ clocks: { red, blue }, lastSyncTime: Date.now() });
+  },
+
+  handleGameEnd: (status, winner, resultReason) => {
+    set({
+      gameStatus: status,
+      winner,
+      resultReason,
+      phase: 'ended',
+      clockRunning: false
+    });
+  },
+
+  claimTimeout: async () => {
+    const { gameId, myColor, timeoutClaimSent } = get();
+    if (!gameId || !myColor || timeoutClaimSent) return;
+
+    set({ timeoutClaimSent: true });
+
+    try {
+      const supabase = createClient();
+      const response = await supabase.functions.invoke('validate-move', {
+        body: { game_id: gameId, action: 'timeout_claim', claiming_color: myColor }
+      });
+
+      if (response.error) {
+        set({ timeoutClaimSent: false });
+      }
+
+      // Response handled via game_end broadcast or clock_sync broadcast
+    } catch {
+      // Reset flag on network error so claim can be retried
+      set({ timeoutClaimSent: false });
+    }
+  },
+
+  getDisplayClocks: () => {
+    const { clocks, lastSyncTime, activeColor, phase } = get();
+    if (!clocks) return null;
+    if (phase !== 'playing' || !activeColor) return clocks;
+    const elapsed = Date.now() - (lastSyncTime ?? Date.now());
+    return {
+      red: activeColor === 'red' ? Math.max(0, clocks.red - elapsed) : clocks.red,
+      blue: activeColor === 'blue' ? Math.max(0, clocks.blue - elapsed) : clocks.blue
+    };
   },
 
   getLegalMoves: (square) => {
@@ -300,19 +387,23 @@ export const useGameStore = create<GameStore>((set, get) => ({
     // Reinitialize engine with final FEN if available
     if (engine && fen) {
       const newEngine = new CoTuLenh(fen);
+      const clockState = deriveClockState('playing', newEngine);
       set({
         phase: 'playing',
         moveHistory: nextMoveHistory,
         deploySubmitted: false,
         opponentDeploySubmitted: false,
-        engine: newEngine
+        engine: newEngine,
+        lastSyncTime: Date.now(),
+        ...clockState
       });
     } else {
       set({
         phase: 'playing',
         moveHistory: nextMoveHistory,
         deploySubmitted: false,
-        opponentDeploySubmitted: false
+        opponentDeploySubmitted: false,
+        clockRunning: true
       });
     }
   },
@@ -322,14 +413,25 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const nextPhase = current.gameStatus
       ? resolveClientPhase(current.gameStatus, serverState.phase)
       : current.phase;
-    set({
-      phase: nextPhase,
-      moveHistory: serverState.move_history,
-      clocks: serverState.clocks
-    });
 
     if (current.engine) {
-      set({ engine: new CoTuLenh(serverState.fen) });
+      const newEngine = new CoTuLenh(serverState.fen);
+      const clockState = deriveClockState(nextPhase, newEngine);
+      set({
+        phase: nextPhase,
+        moveHistory: serverState.move_history,
+        clocks: serverState.clocks,
+        lastSyncTime: Date.now(),
+        engine: newEngine,
+        ...clockState
+      });
+    } else {
+      set({
+        phase: nextPhase,
+        moveHistory: serverState.move_history,
+        clocks: serverState.clocks,
+        lastSyncTime: Date.now()
+      });
     }
   },
 
@@ -391,16 +493,22 @@ export const useGameStore = create<GameStore>((set, get) => ({
       phase: 'idle',
       moveHistory: [],
       clocks: null,
+      lastSyncTime: null,
+      activeColor: null,
+      clockRunning: false,
       myColor: null,
       gameId: null,
       gameStatus: null,
+      winner: null,
+      resultReason: null,
       redPlayer: null,
       bluePlayer: null,
       deploySubmitted: false,
       opponentDeploySubmitted: false,
       lastSeenSeq: 0,
       pendingMove: null,
-      moveError: null
+      moveError: null,
+      timeoutClaimSent: false
     });
   }
 }));

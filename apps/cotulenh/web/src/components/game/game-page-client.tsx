@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useCallback, useState, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 
 import type { GameData } from '@/lib/types/game';
 import type { Dests } from '@cotulenh/board';
@@ -13,6 +14,7 @@ import { GameRightPanel } from './game-right-panel';
 import { DeployPieceTray } from './deploy-piece-tray';
 import { DeployProgressCounter } from './deploy-progress-counter';
 import { DeployControls } from './deploy-controls';
+import { GameResultBanner } from './game-result-banner';
 
 type GamePageClientProps = {
   gameData: GameData;
@@ -24,6 +26,10 @@ export function GamePageClient({ gameData }: GamePageClientProps) {
   const phase = useGameStore((s) => s.phase);
   const moveHistory = useGameStore((s) => s.moveHistory);
   const clocks = useGameStore((s) => s.clocks);
+  const getDisplayClocks = useGameStore((s) => s.getDisplayClocks);
+  const claimTimeout = useGameStore((s) => s.claimTimeout);
+  const activeColor = useGameStore((s) => s.activeColor);
+  const clockRunning = useGameStore((s) => s.clockRunning);
   const redPlayer = useGameStore((s) => s.redPlayer);
   const bluePlayer = useGameStore((s) => s.bluePlayer);
   const myColor = useGameStore((s) => s.myColor);
@@ -42,8 +48,13 @@ export function GamePageClient({ gameData }: GamePageClientProps) {
   const getLegalMoves = useGameStore((s) => s.getLegalMoves);
   const moveError = useGameStore((s) => s.moveError);
   const pendingMove = useGameStore((s) => s.pendingMove);
+  const winner = useGameStore((s) => s.winner);
+  const gameStatus = useGameStore((s) => s.gameStatus);
+  const resultReason = useGameStore((s) => s.resultReason);
 
+  const router = useRouter();
   const [selectedPiece, setSelectedPiece] = useState<string | null>(null);
+  const [bannerDismissed, setBannerDismissed] = useState(false);
   const [boardFen, setBoardFen] = useState(gameData.game_state.fen);
   const [moveRejected, setMoveRejected] = useState(false);
   const [errorToast, setErrorToast] = useState<string | null>(null);
@@ -123,6 +134,15 @@ export function GamePageClient({ gameData }: GamePageClientProps) {
 
   const isDeploying = phase === 'deploying';
   const isPlaying = phase === 'playing';
+  const isEnded = phase === 'ended';
+
+  const handleNewGame = useCallback(() => {
+    router.push('/dashboard');
+  }, [router]);
+
+  const handleDismissBanner = useCallback(() => {
+    setBannerDismissed(true);
+  }, []);
   const deployPieces = isDeploying ? getDeployablePieces() : [];
   const deployProgress = isDeploying ? getDeployProgress() : { current: 0, total: 0 };
   const canCommit = isDeploying && engine ? engine.canCommitSession() : false;
@@ -184,10 +204,46 @@ export function GamePageClient({ gameData }: GamePageClientProps) {
   const bottomPlayer = orientation === 'red' ? redPlayer : bluePlayer;
   const topColor = orientation === 'red' ? 'blue' : 'red';
   const bottomColor = orientation === 'red' ? 'red' : 'blue';
+  // AI detection stub for future backend fields.
+  const isAIGame =
+    isAIPlayer(gameData.red_player as unknown) || isAIPlayer(gameData.blue_player as unknown);
+  const displayClocks = getDisplayClocks() ?? clocks;
   const topActive = topColor === 'red' ? isRedTurn : !isRedTurn;
   const bottomActive = bottomColor === 'red' ? isRedTurn : !isRedTurn;
-  const topClock = clocks ? (topColor === 'red' ? clocks.red : clocks.blue) : null;
-  const bottomClock = clocks ? (bottomColor === 'red' ? clocks.red : clocks.blue) : null;
+  const topClock = isAIGame
+    ? null
+    : displayClocks
+      ? topColor === 'red'
+        ? displayClocks.red
+        : displayClocks.blue
+      : null;
+  const bottomClock = isAIGame
+    ? null
+    : displayClocks
+      ? bottomColor === 'red'
+        ? displayClocks.red
+        : displayClocks.blue
+      : null;
+  const topClockRunning = clockRunning && topColor === activeColor;
+  const bottomClockRunning = clockRunning && bottomColor === activeColor;
+
+  useEffect(() => {
+    if (!isPlaying || !myColor || !clockRunning) return;
+
+    const intervalId = window.setInterval(() => {
+      const currentClocks = getDisplayClocks();
+      if (!currentClocks) return;
+
+      const opponentClock = myColor === 'red' ? currentClocks.blue : currentClocks.red;
+      if (opponentClock <= 0) {
+        void claimTimeout();
+      }
+    }, 500);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, [isPlaying, myColor, clockRunning, getDisplayClocks, claimTimeout]);
 
   return (
     <div className="flex h-full flex-col lg:flex-row">
@@ -201,7 +257,8 @@ export function GamePageClient({ gameData }: GamePageClientProps) {
               rating={topPlayer.rating}
               color={topColor}
               isActive={topActive && (phase === 'playing' || phase === 'deploying')}
-              clock={topClock}
+              clockMs={topClock}
+              clockRunning={topClockRunning}
             />
           </div>
         ) : null}
@@ -218,7 +275,7 @@ export function GamePageClient({ gameData }: GamePageClientProps) {
         ) : null}
 
         {/* Board */}
-        <div className={`${boardTrackClass} shrink-0`}>
+        <div className={`${boardTrackClass} relative shrink-0`}>
           <BoardContainer
             fen={boardFen}
             orientation={orientation}
@@ -234,6 +291,16 @@ export function GamePageClient({ gameData }: GamePageClientProps) {
             lastMove={lastMove}
             moveRejected={moveRejected}
           />
+          {isEnded && !bannerDismissed && gameStatus ? (
+            <GameResultBanner
+              status={gameStatus}
+              winner={winner}
+              myColor={myColor ?? 'red'}
+              resultReason={resultReason}
+              onNewGame={handleNewGame}
+              onDismiss={handleDismissBanner}
+            />
+          ) : null}
         </div>
 
         {/* Error toast */}
@@ -285,7 +352,8 @@ export function GamePageClient({ gameData }: GamePageClientProps) {
               rating={bottomPlayer.rating}
               color={bottomColor}
               isActive={bottomActive && (phase === 'playing' || phase === 'deploying')}
-              clock={bottomClock}
+              clockMs={bottomClock}
+              clockRunning={bottomClockRunning}
             />
           </div>
         ) : null}
@@ -326,5 +394,17 @@ export function GamePageClient({ gameData }: GamePageClientProps) {
         )}
       </div>
     </div>
+  );
+}
+
+function isAIPlayer(player: unknown): boolean {
+  if (!player || typeof player !== 'object') return false;
+  const record = player as Record<string, unknown>;
+  return (
+    record.is_ai === true ||
+    record.player_type === 'ai' ||
+    record.kind === 'ai' ||
+    (typeof record.id === 'string' &&
+      (record.id === 'ai' || record.id.startsWith('ai_') || record.id.startsWith('bot_')))
   );
 }

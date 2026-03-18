@@ -58,6 +58,8 @@ const mockPlayingGameData: GameData = {
   my_color: 'red',
   is_rated: true,
   created_at: '2026-03-17T00:00:00Z',
+  winner: null,
+  result_reason: null,
   game_state: {
     move_history: ['deploy1', 'deploy2'],
     fen: 'playing_fen r - - 0 1',

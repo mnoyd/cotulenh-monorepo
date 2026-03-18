@@ -31,5 +31,7 @@ export interface GameData {
   my_color: 'red' | 'blue';
   is_rated: boolean;
   created_at: string;
+  winner: 'red' | 'blue' | null;
+  result_reason: string | null;
   game_state: GameStateData;
 }

@@ -1,15 +1,24 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 
 import { PlayerInfoBar } from '../player-info-bar';
 
 describe('PlayerInfoBar', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   const defaultProps = {
     name: 'Nguoi choi 1',
     rating: 1500,
     color: 'red' as const,
     isActive: false,
-    clock: 600000
+    clockMs: 600000,
+    clockRunning: false
   };
 
   it('renders player name', () => {
@@ -28,12 +37,12 @@ describe('PlayerInfoBar', () => {
   });
 
   it('formats clock with leading zero seconds', () => {
-    render(<PlayerInfoBar {...defaultProps} clock={65000} />);
+    render(<PlayerInfoBar {...defaultProps} clockMs={65000} />);
     expect(screen.getByText('1:05')).toBeDefined();
   });
 
   it('does not render clock when null', () => {
-    render(<PlayerInfoBar {...defaultProps} clock={null} />);
+    render(<PlayerInfoBar {...defaultProps} clockMs={null} />);
     expect(screen.queryByRole('timer')).toBeNull();
   });
 
@@ -67,15 +76,22 @@ describe('PlayerInfoBar', () => {
     expect(screen.getByText('NC')).toBeDefined();
   });
 
-  it('clock has aria-live polite when under 30s', () => {
-    render(<PlayerInfoBar {...defaultProps} clock={25000} />);
+  it('clock timer keeps aria-live off when under 30s', () => {
+    render(<PlayerInfoBar {...defaultProps} clockMs={25000} />);
     const timer = screen.getByRole('timer');
-    expect(timer.getAttribute('aria-live')).toBe('polite');
+    expect(timer.getAttribute('aria-live')).toBe('off');
   });
 
   it('clock has aria-live off when above 30s', () => {
-    render(<PlayerInfoBar {...defaultProps} clock={600000} />);
+    render(<PlayerInfoBar {...defaultProps} clockMs={600000} />);
     const timer = screen.getByRole('timer');
     expect(timer.getAttribute('aria-live')).toBe('off');
+  });
+
+  it('renders ChessClock component with correct props', () => {
+    render(<PlayerInfoBar {...defaultProps} clockRunning={true} />);
+    const timer = screen.getByRole('timer');
+    expect(timer).toBeDefined();
+    expect(screen.getByText('10:00')).toBeDefined();
   });
 });

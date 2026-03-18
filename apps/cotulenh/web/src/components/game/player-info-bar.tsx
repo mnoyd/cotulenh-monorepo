@@ -1,22 +1,17 @@
 'use client';
 
 import { cn } from '@/lib/utils/cn';
+import { ChessClock } from './chess-clock';
 
 type PlayerInfoBarProps = {
   name: string;
   rating: number;
   color: 'red' | 'blue';
   isActive: boolean;
-  clock: number | null;
+  clockMs: number | null;
+  clockRunning: boolean;
   className?: string;
 };
-
-function formatClock(milliseconds: number): string {
-  const totalSeconds = Math.max(0, Math.floor(milliseconds / 1000));
-  const mins = Math.floor(totalSeconds / 60);
-  const secs = totalSeconds % 60;
-  return `${mins}:${secs.toString().padStart(2, '0')}`;
-}
 
 function getInitials(name: string): string {
   return name
@@ -32,7 +27,8 @@ export function PlayerInfoBar({
   rating,
   color,
   isActive,
-  clock,
+  clockMs,
+  clockRunning,
   className
 }: PlayerInfoBarProps) {
   const borderColor = color === 'red' ? 'border-l-[hsl(0,70%,50%)]' : 'border-l-[hsl(210,70%,50%)]';
@@ -65,17 +61,15 @@ export function PlayerInfoBar({
         </span>
       </div>
 
-      {/* Clock placeholder */}
-      {clock !== null ? (
+      {/* Clock */}
+      {clockMs !== null ? (
         <div
           className={cn(
-            'shrink-0 px-[var(--space-2)] py-[var(--space-1)] font-[family-name:var(--font-mono)] text-[var(--text-sm)] tabular-nums',
+            'shrink-0 px-[var(--space-2)] py-[var(--space-1)] text-[var(--text-sm)]',
             clockBg
           )}
-          role="timer"
-          aria-live={clock < 30_000 ? 'polite' : 'off'}
         >
-          {formatClock(clock)}
+          <ChessClock timeMs={clockMs} isRunning={clockRunning} isPlayerClock={isActive} />
         </div>
       ) : null}
     </div>

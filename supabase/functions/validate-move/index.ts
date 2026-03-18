@@ -1,5 +1,7 @@
 import { CoTuLenh, DEFAULT_POSITION } from '@cotulenh/core';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
+import { applyElapsedAndIncrement } from './clock.ts';
+import { completeGame, determineGameEndResult } from './game-end.ts';
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -60,7 +62,13 @@ Deno.serve(async (req) => {
 
     // Parse request body
     const body = await req.json();
-    const { game_id, sans, san } = body as { game_id?: string; sans?: string[]; san?: string };
+    const { game_id, sans, san, action, claiming_color } = body as {
+      game_id?: string;
+      sans?: string[];
+      san?: string;
+      action?: string;
+      claiming_color?: 'red' | 'blue';
+    };
 
     if (!game_id || typeof game_id !== 'string') {
       return errorResponse('Missing game_id', 'INVALID_INPUT', 400);
@@ -68,8 +76,9 @@ Deno.serve(async (req) => {
 
     // Playing phase sends single `san`; deploy phase sends `sans` array
     const isPlayingMove = typeof san === 'string' && san.length > 0;
+    const isTimeoutClaim = action === 'timeout_claim';
 
-    if (!isPlayingMove) {
+    if (!isPlayingMove && !isTimeoutClaim) {
       if (
         !Array.isArray(sans) ||
         sans.length === 0 ||
@@ -82,7 +91,7 @@ Deno.serve(async (req) => {
     // 1.10: Verify game status is 'started'
     const { data: gameRow, error: gameError } = await supabase
       .from('games')
-      .select('id, status, red_player, blue_player')
+      .select('id, status, red_player, blue_player, time_control')
       .eq('id', game_id)
       .single();
 
@@ -124,6 +133,79 @@ Deno.serve(async (req) => {
       updated_at: string | null;
     } = stateRows[0];
 
+    // === TIMEOUT CLAIM HANDLING (Task 2: AC #4) ===
+    if (isTimeoutClaim) {
+      if (!claiming_color || (claiming_color !== 'red' && claiming_color !== 'blue')) {
+        return errorResponse('Invalid claiming_color', 'INVALID_INPUT', 400);
+      }
+
+      // Claimant must be a participant and claiming their own color
+      if (claiming_color !== playerColor) {
+        return errorResponse('Can only claim timeout for yourself', 'FORBIDDEN', 403);
+      }
+
+      const tcClocks = gameState.clocks ?? { red: 0, blue: 0 };
+      const tcUpdatedAt = gameState.updated_at
+        ? new Date(gameState.updated_at).getTime()
+        : Date.now();
+      const tcElapsed = Math.max(0, Date.now() - tcUpdatedAt);
+
+      // Determine whose turn it is from move history
+      const tcEngine = new CoTuLenh(DEFAULT_POSITION);
+      for (const historySan of gameState.move_history) {
+        tcEngine.move(historySan);
+      }
+      const activeTurn = tcEngine.turn(); // 'r' | 'b'
+      const activePlayerColor = activeTurn === 'r' ? 'red' : 'blue';
+
+      // Only the active player's clock is ticking
+      const opponentColor: 'red' | 'blue' = playerColor === 'red' ? 'blue' : 'red';
+      const activePlayerClock = activePlayerColor === 'red' ? tcClocks.red : tcClocks.blue;
+      const recalculatedClock =
+        activePlayerColor === opponentColor ? activePlayerClock - tcElapsed : activePlayerClock; // Claimant's opponent must be the active player
+
+      if (activePlayerColor !== opponentColor) {
+        // The opponent is not the active player, so their clock isn't ticking
+        return errorResponse('Opponent clock is not active', 'INVALID_CLAIM', 400);
+      }
+
+      if (recalculatedClock <= 0) {
+        // Opponent's time has expired — claimant wins
+        const tcSeq = gameState.move_history.length + 1;
+        const endResult = await completeGame(
+          supabase as never,
+          game_id,
+          { status: 'timeout', winner: playerColor, result_reason: null },
+          tcSeq
+        );
+
+        if (!endResult.success) {
+          return errorResponse('Failed to complete game', 'INTERNAL_ERROR', 500);
+        }
+
+        return jsonResponse({ data: { status: 'timeout', winner: playerColor } });
+      } else {
+        // Clock not expired — broadcast correction
+        const channel = supabase.channel(`game:${game_id}`);
+        const correctedClocks = {
+          red: activePlayerColor === 'red' ? recalculatedClock : tcClocks.red,
+          blue: activePlayerColor === 'blue' ? recalculatedClock : tcClocks.blue
+        };
+        const tcSyncSeq = gameState.move_history.length;
+        await channel.send({
+          type: 'broadcast',
+          event: 'clock_sync',
+          payload: {
+            type: 'clock_sync',
+            payload: { red: correctedClocks.red, blue: correctedClocks.blue },
+            seq: tcSyncSeq
+          }
+        });
+
+        return jsonResponse({ data: { clock_correction: true, clocks: correctedClocks } });
+      }
+    }
+
     // Phase-based routing
     if (gameState.phase === 'playing') {
       // === PLAYING PHASE: Single-move validation ===
@@ -146,6 +228,41 @@ Deno.serve(async (req) => {
         return errorResponse('Not your turn', 'WRONG_TURN', 403);
       }
 
+      // Clock deduction: calculate elapsed time from updated_at delta
+      const clocks = gameState.clocks ?? { red: 0, blue: 0 };
+      const updatedAt = gameState.updated_at
+        ? new Date(gameState.updated_at).getTime()
+        : Date.now();
+      const elapsed = Math.max(0, Date.now() - updatedAt);
+      const incrementSeconds =
+        (gameRow.time_control as { incrementSeconds?: number } | null)?.incrementSeconds ?? 0;
+
+      // AC7: Check if moving player's clock expired BEFORE applying the move
+      const clocksBeforeIncrement = applyElapsedAndIncrement({
+        clocks,
+        playerColor,
+        elapsedMs: elapsed,
+        incrementSeconds: 0 // No increment yet — check raw time
+      });
+
+      const movingPlayerClock =
+        playerColor === 'red' ? clocksBeforeIncrement.red : clocksBeforeIncrement.blue;
+      if (movingPlayerClock <= 0) {
+        // Player ran out of time — move rejected, game over
+        const timeoutOpponent: 'red' | 'blue' = playerColor === 'red' ? 'blue' : 'red';
+        const timeoutSeq = gameState.move_history.length + 1;
+        const timeoutResult = await completeGame(
+          supabase as never,
+          game_id,
+          { status: 'timeout', winner: timeoutOpponent, result_reason: null },
+          timeoutSeq
+        );
+        if (!timeoutResult.success) {
+          return errorResponse('Failed to complete game', 'INTERNAL_ERROR', 500);
+        }
+        return errorResponse('time_expired', 'TIME_EXPIRED', 409);
+      }
+
       // Validate proposed move against reconstructed state
       const moveResult = engine.move(san!);
       if (!moveResult) {
@@ -156,16 +273,13 @@ Deno.serve(async (req) => {
       const newMoveHistory = [...gameState.move_history, san!];
       const nowIso = new Date().toISOString();
 
-      // Clock deduction: calculate elapsed time from updated_at delta
-      const clocks = gameState.clocks ?? { red: 0, blue: 0 };
-      const updatedAt = gameState.updated_at
-        ? new Date(gameState.updated_at).getTime()
-        : Date.now();
-      const elapsed = Math.max(0, Date.now() - updatedAt);
-      const updatedClocks = {
-        red: playerColor === 'red' ? Math.max(0, clocks.red - elapsed) : clocks.red,
-        blue: playerColor === 'blue' ? Math.max(0, clocks.blue - elapsed) : clocks.blue
-      };
+      // Apply with increment now that we know clock is valid
+      const updatedClocks = applyElapsedAndIncrement({
+        clocks,
+        playerColor,
+        elapsedMs: elapsed,
+        incrementSeconds
+      });
 
       // Persist: append move to history, update FEN and clocks
       let moveUpdateQuery = supabase
@@ -215,6 +329,20 @@ Deno.serve(async (req) => {
           seq: moveSeq
         }
       });
+
+      // AC1-3: Game-end detection after successful move
+      const gameEndResult = determineGameEndResult(engine, playerColor);
+      if (gameEndResult) {
+        const endSeq = moveSeq + 1;
+        const endResult = await completeGame(supabase as never, game_id, gameEndResult, endSeq);
+        if (!endResult.success) {
+          return errorResponse('Failed to complete game', 'INTERNAL_ERROR', 500);
+        }
+
+        return jsonResponse({
+          data: { san: san!, fen: newFen, seq: moveSeq, game_end: gameEndResult }
+        });
+      }
 
       return jsonResponse({
         data: { san: san!, fen: newFen, seq: moveSeq }

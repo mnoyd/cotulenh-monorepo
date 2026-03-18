@@ -12,6 +12,8 @@ const mockGameData: GameData = {
   my_color: 'red',
   is_rated: true,
   created_at: '2026-03-17T00:00:00Z',
+  winner: null,
+  result_reason: null,
   game_state: {
     move_history: [],
     fen: 'start',

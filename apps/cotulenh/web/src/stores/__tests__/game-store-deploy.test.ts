@@ -23,7 +23,8 @@ vi.mock('@cotulenh/core', () => ({
     getDeployState: mockGetDeployState,
     fen: mockFen,
     history: mockHistory,
-    moves: mockMoves
+    moves: mockMoves,
+    turn: vi.fn().mockReturnValue('r')
   })),
   DEFAULT_POSITION: 'default_fen r - - 0 1'
 }));
@@ -36,6 +37,8 @@ const mockDeployingGameData: GameData = {
   my_color: 'red',
   is_rated: true,
   created_at: '2026-03-17T00:00:00Z',
+  winner: null,
+  result_reason: null,
   game_state: {
     move_history: [],
     fen: 'default_fen r - - 0 1',

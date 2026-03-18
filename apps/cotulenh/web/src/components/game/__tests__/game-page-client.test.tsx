@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 
 import type { GameData } from '@/lib/types/game';
 import { useGameStore } from '@/stores/game-store';
@@ -49,6 +49,16 @@ vi.mock('@/hooks/use-game-channel', () => ({
   useGameChannel: vi.fn()
 }));
 
+// Mock next/navigation
+vi.mock('next/navigation', () => ({
+  useRouter: vi.fn().mockReturnValue({
+    push: vi.fn(),
+    replace: vi.fn(),
+    back: vi.fn(),
+    prefetch: vi.fn()
+  })
+}));
+
 // Mock supabase browser client
 vi.mock('@/lib/supabase/browser', () => ({
   createClient: vi.fn().mockReturnValue({
@@ -68,6 +78,8 @@ const mockGameData: GameData = {
   my_color: 'red',
   is_rated: true,
   created_at: '2026-03-17T00:00:00Z',
+  winner: null,
+  result_reason: null,
   game_state: {
     move_history: [],
     fen: 'start',
@@ -115,6 +127,19 @@ describe('GamePageClient', () => {
     expect(timers.length).toBe(2);
   });
 
+  it('hides clocks in AI games', () => {
+    const aiGameData: GameData = {
+      ...mockGameData,
+      blue_player: {
+        ...mockGameData.blue_player,
+        id: 'ai_bot_1'
+      }
+    };
+
+    render(<GamePageClient gameData={aiGameData} />);
+    expect(screen.queryAllByRole('timer').length).toBe(0);
+  });
+
   it('shows moves when game has move history', () => {
     const dataWithMoves: GameData = {
       ...mockGameData,
@@ -150,5 +175,29 @@ describe('GamePageClient', () => {
 
     const board = screen.getByTestId('board-container');
     expect(board.getAttribute('data-orientation')).toBe('blue');
+  });
+
+  it('claims timeout when opponent display clock reaches zero', () => {
+    vi.useFakeTimers();
+    const claimTimeout = vi.fn();
+    useGameStore.setState({ claimTimeout });
+
+    const timedOutOpponentData: GameData = {
+      ...mockGameData,
+      game_state: {
+        ...mockGameData.game_state,
+        phase: 'playing',
+        clocks: { red: 600000, blue: 0 }
+      }
+    };
+
+    render(<GamePageClient gameData={timedOutOpponentData} />);
+
+    act(() => {
+      vi.advanceTimersByTime(600);
+    });
+
+    expect(claimTimeout).toHaveBeenCalled();
+    vi.useRealTimers();
   });
 });
