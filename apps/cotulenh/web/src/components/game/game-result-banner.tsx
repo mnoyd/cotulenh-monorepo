@@ -27,6 +27,7 @@ function getMethodText(status: GameStatus, resultReason?: string | null): string
     case 'stalemate':
       return 'Bế tắc';
     case 'draw': {
+      if (resultReason === 'mutual_agreement') return 'Đồng ý hòa';
       if (resultReason === 'fifty_move_rule') return 'Hòa theo luật 50 nước';
       if (resultReason === 'threefold_repetition') return 'Hòa do lặp lại 3 lần';
       return 'Hòa';
@@ -113,14 +114,18 @@ export function GameResultBanner({
         role="alertdialog"
         aria-modal="true"
         aria-label={outcomeText}
-        className="mt-[var(--space-2)] w-full max-w-[280px] rounded-lg bg-[var(--color-surface-elevated)] p-[var(--space-3)] text-center shadow-lg sm:mt-0 sm:max-w-[400px] sm:p-[var(--space-4)]"
+        className="mt-[var(--space-2)] w-full max-w-[280px] border border-[var(--color-border)] bg-[var(--color-surface-elevated)] p-[var(--space-3)] text-center sm:mt-0 sm:max-w-[400px] sm:p-[var(--space-4)]"
         onKeyDown={handleKeyDown}
         data-testid="game-result-banner"
       >
         {/* Outcome text */}
         <h2
           className={`text-[var(--text-2xl)] font-bold ${
-            isWin ? 'text-green-400' : isDraw ? 'text-yellow-400' : 'text-red-400'
+            isWin
+              ? 'text-[var(--color-success)]'
+              : isDraw
+                ? 'text-[var(--color-warning)]'
+                : 'text-[var(--color-error)]'
           }`}
           data-testid="game-result-outcome"
         >
@@ -141,21 +146,21 @@ export function GameResultBanner({
         <div className="mt-[var(--space-4)] flex flex-col gap-[var(--space-2)] sm:flex-row sm:justify-center">
           <button
             disabled
-            className="rounded border border-[var(--color-border)] px-[var(--space-4)] py-[var(--space-2)] text-[var(--text-sm)] text-[var(--color-text-muted)] opacity-50"
+            className="border border-[var(--color-border)] px-[var(--space-4)] py-[var(--space-2)] text-[var(--text-sm)] text-[var(--color-text-muted)] opacity-50"
             data-testid="game-result-rematch"
           >
             Tái đấu
           </button>
           <button
             onClick={onNewGame}
-            className="rounded bg-[var(--color-primary)] px-[var(--space-4)] py-[var(--space-2)] text-[var(--text-sm)] text-white hover:bg-[var(--color-primary-hover)]"
+            className="bg-[var(--color-primary)] px-[var(--space-4)] py-[var(--space-2)] text-[var(--text-sm)] text-white hover:bg-[var(--color-primary-hover)]"
             data-testid="game-result-new-game"
           >
             Ván mới
           </button>
           <button
             disabled
-            className="rounded border border-[var(--color-border)] px-[var(--space-4)] py-[var(--space-2)] text-[var(--text-sm)] text-[var(--color-text-muted)] opacity-50"
+            className="border border-[var(--color-border)] px-[var(--space-4)] py-[var(--space-2)] text-[var(--text-sm)] text-[var(--color-text-muted)] opacity-50"
             data-testid="game-result-review"
           >
             Xem lại

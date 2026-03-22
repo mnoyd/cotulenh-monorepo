@@ -23,18 +23,18 @@ describe('BottomTabBar', () => {
     render(<BottomTabBar />);
     expect(screen.getByText('Trang chủ')).toBeInTheDocument();
     expect(screen.getByText('Chơi')).toBeInTheDocument();
-    expect(screen.getByText('Bạn bè')).toBeInTheDocument();
-    expect(screen.getByText('BXH')).toBeInTheDocument();
-    expect(screen.getByText('Cài đặt')).toBeInTheDocument();
+    expect(screen.getByText('Học')).toBeInTheDocument();
+    expect(screen.getByText('Hồ sơ')).toBeInTheDocument();
+    expect(screen.getByText('Thêm')).toBeInTheDocument();
   });
 
   it('renders correct href for each tab', () => {
     render(<BottomTabBar />);
     expect(screen.getByRole('link', { name: 'Trang chủ' })).toHaveAttribute('href', '/dashboard');
     expect(screen.getByRole('link', { name: 'Chơi' })).toHaveAttribute('href', '/play');
-    expect(screen.getByRole('link', { name: 'Bạn bè' })).toHaveAttribute('href', '/friends');
-    expect(screen.getByRole('link', { name: 'BXH' })).toHaveAttribute('href', '/leaderboard');
-    expect(screen.getByRole('link', { name: 'Cài đặt' })).toHaveAttribute('href', '/settings');
+    expect(screen.getByRole('link', { name: 'Học' })).toHaveAttribute('href', '/learn');
+    expect(screen.getByRole('link', { name: 'Hồ sơ' })).toHaveAttribute('href', '/profile');
+    expect(screen.getByRole('link', { name: 'Thêm' })).toHaveAttribute('href', '/more');
   });
 
   it('highlights active tab with aria-current="page"', () => {
@@ -45,16 +45,16 @@ describe('BottomTabBar', () => {
   });
 
   it('highlights different tab when pathname changes', () => {
-    vi.mocked(usePathname).mockReturnValue('/friends');
+    vi.mocked(usePathname).mockReturnValue('/profile');
     render(<BottomTabBar />);
-    expect(screen.getByRole('link', { name: 'Bạn bè' })).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByRole('link', { name: 'Hồ sơ' })).toHaveAttribute('aria-current', 'page');
     expect(screen.getByRole('link', { name: 'Trang chủ' })).not.toHaveAttribute('aria-current');
   });
 
   it('treats nested route segments as active for parent tab', () => {
-    vi.mocked(usePathname).mockReturnValue('/friends/requests');
+    vi.mocked(usePathname).mockReturnValue('/learn/openings');
     render(<BottomTabBar />);
-    expect(screen.getByRole('link', { name: 'Bạn bè' })).toHaveAttribute('aria-current', 'page');
+    expect(screen.getByRole('link', { name: 'Học' })).toHaveAttribute('aria-current', 'page');
   });
 
   it('does not mark similarly prefixed routes as active', () => {
@@ -69,9 +69,9 @@ describe('BottomTabBar', () => {
     expect(links.map((link) => link.getAttribute('href'))).toEqual([
       '/dashboard',
       '/play',
-      '/friends',
-      '/leaderboard',
-      '/settings'
+      '/learn',
+      '/profile',
+      '/more'
     ]);
   });
 
@@ -96,6 +96,6 @@ describe('BottomTabBar', () => {
     const links = screen.getAllByRole('link');
     expect(links).toHaveLength(5);
     const labels = links.map((link) => link.getAttribute('aria-label'));
-    expect(labels).toEqual(['Trang chủ', 'Chơi', 'Bạn bè', 'BXH', 'Cài đặt']);
+    expect(labels).toEqual(['Trang chủ', 'Chơi', 'Học', 'Hồ sơ', 'Thêm']);
   });
 });

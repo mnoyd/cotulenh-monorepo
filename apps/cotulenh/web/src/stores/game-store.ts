@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 
 import { CoTuLenh } from '@cotulenh/core';
-import type { GameData, GameStateData, GameStatus } from '@/lib/types/game';
+import type { GameData, GameStateData, GameStatus, PendingActionData } from '@/lib/types/game';
 import { createClient } from '@/lib/supabase/browser';
 
 type ClientPhase = 'idle' | 'deploying' | 'playing' | 'ended';
@@ -27,6 +27,8 @@ type GameStore = {
   pendingMove: string | null;
   moveError: string | null;
   timeoutClaimSent: boolean;
+  pendingDrawOffer: 'sent' | 'received' | null;
+  pendingTakeback: 'sent' | 'received' | null;
 
   initializeGame: (gameId: string, gameData: GameData) => void;
   initializeEngine: (fen: string) => void;
@@ -53,6 +55,22 @@ type GameStore = {
   getDeployablePieces: () => Array<{ type: string; color: string }>;
   getDeployProgress: () => { current: number; total: number };
   claimTimeout: () => Promise<void>;
+  resign: () => Promise<void>;
+  offerDraw: () => Promise<void>;
+  acceptDraw: () => Promise<void>;
+  declineDraw: () => Promise<void>;
+  expireDrawOffer: () => Promise<void>;
+  requestTakeback: () => Promise<void>;
+  acceptTakeback: () => Promise<void>;
+  declineTakeback: () => Promise<void>;
+  expireTakeback: () => Promise<void>;
+  handleDrawOffer: (offeringColor: 'red' | 'blue') => void;
+  handleDrawDeclined: () => void;
+  handleDrawExpired: () => void;
+  handleTakebackRequest: (requestingColor: 'red' | 'blue') => void;
+  handleTakebackAccept: (fen: string) => void;
+  handleTakebackDeclined: () => void;
+  handleTakebackExpired: () => void;
   reset: () => void;
 };
 
@@ -89,6 +107,23 @@ function deriveClockState(
   };
 }
 
+function derivePendingActionState(
+  pendingAction: PendingActionData | null,
+  myColor: 'red' | 'blue' | null
+): Pick<GameStore, 'pendingDrawOffer' | 'pendingTakeback'> {
+  if (!pendingAction || !myColor) {
+    return { pendingDrawOffer: null, pendingTakeback: null };
+  }
+
+  const ownership = pendingAction.color === myColor ? 'sent' : 'received';
+
+  if (pendingAction.type === 'draw_offer') {
+    return { pendingDrawOffer: ownership, pendingTakeback: null };
+  }
+
+  return { pendingDrawOffer: null, pendingTakeback: ownership };
+}
+
 export const useGameStore = create<GameStore>((set, get) => ({
   engine: null,
   phase: 'idle',
@@ -110,6 +145,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
   pendingMove: null,
   moveError: null,
   timeoutClaimSent: false,
+  pendingDrawOffer: null,
+  pendingTakeback: null,
 
   setLastSeenSeq: (seq) => {
     set({ lastSeenSeq: seq });
@@ -117,6 +154,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   initializeGame: (gameId, gameData) => {
     const clientPhase = resolveClientPhase(gameData.status, gameData.game_state.phase);
+    const pendingActionState = derivePendingActionState(
+      gameData.game_state.pending_action,
+      gameData.my_color
+    );
 
     set({
       gameId,
@@ -137,7 +178,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
         id: gameData.blue_player.id,
         name: gameData.blue_player.display_name,
         rating: gameData.blue_player.rating
-      }
+      },
+      ...pendingActionState
     });
   },
 
@@ -176,7 +218,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
         get().rollbackMove();
         const { data: serverState } = await supabase
           .from('game_states')
-          .select('move_history, fen, phase, clocks')
+          .select('move_history, fen, phase, clocks, pending_action')
           .eq('game_id', state.gameId)
           .single();
         if (serverState) {
@@ -193,7 +235,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
         get().rollbackMove();
         const { data: serverState } = await supabase
           .from('game_states')
-          .select('move_history, fen, phase, clocks')
+          .select('move_history, fen, phase, clocks, pending_action')
           .eq('game_id', state.gameId)
           .single();
         if (serverState) {
@@ -211,7 +253,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
         get().rollbackMove();
         const { data: serverState } = await supabase
           .from('game_states')
-          .select('move_history, fen, phase, clocks')
+          .select('move_history, fen, phase, clocks, pending_action')
           .eq('game_id', state.gameId)
           .single();
         if (serverState) {
@@ -235,7 +277,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       const supabase = createClient();
       const { data: serverState } = await supabase
         .from('game_states')
-        .select('move_history, fen, phase, clocks')
+        .select('move_history, fen, phase, clocks, pending_action')
         .eq('game_id', state.gameId)
         .single();
       if (serverState) {
@@ -288,7 +330,9 @@ export const useGameStore = create<GameStore>((set, get) => ({
       winner,
       resultReason,
       phase: 'ended',
-      clockRunning: false
+      clockRunning: false,
+      pendingDrawOffer: null,
+      pendingTakeback: null
     });
   },
 
@@ -313,6 +357,202 @@ export const useGameStore = create<GameStore>((set, get) => ({
       // Reset flag on network error so claim can be retried
       set({ timeoutClaimSent: false });
     }
+  },
+
+  resign: async () => {
+    const { gameId, phase } = get();
+    if (!gameId || phase !== 'playing') return;
+
+    try {
+      const supabase = createClient();
+      await supabase.functions.invoke('validate-move', {
+        body: { game_id: gameId, action: 'resign' }
+      });
+      // game_end broadcast will handle state transition
+    } catch {
+      // Network error — no-op, game_end broadcast is authoritative
+    }
+  },
+
+  offerDraw: async () => {
+    const { gameId, phase, pendingDrawOffer } = get();
+    if (!gameId || phase !== 'playing' || pendingDrawOffer !== null) return;
+
+    set({ pendingDrawOffer: 'sent' });
+
+    try {
+      const supabase = createClient();
+      const response = await supabase.functions.invoke('validate-move', {
+        body: { game_id: gameId, action: 'draw_offer' }
+      });
+
+      if (response.error) {
+        set({ pendingDrawOffer: null });
+      }
+    } catch {
+      set({ pendingDrawOffer: null });
+    }
+  },
+
+  acceptDraw: async () => {
+    const { gameId, pendingDrawOffer } = get();
+    if (!gameId || pendingDrawOffer !== 'received') return;
+
+    try {
+      const supabase = createClient();
+      await supabase.functions.invoke('validate-move', {
+        body: { game_id: gameId, action: 'draw_accept' }
+      });
+      // game_end broadcast handles transition
+    } catch {
+      // No-op
+    }
+  },
+
+  declineDraw: async () => {
+    const { gameId, pendingDrawOffer } = get();
+    if (!gameId || pendingDrawOffer !== 'received') return;
+
+    set({ pendingDrawOffer: null });
+
+    try {
+      const supabase = createClient();
+      await supabase.functions.invoke('validate-move', {
+        body: { game_id: gameId, action: 'draw_decline' }
+      });
+    } catch {
+      // No-op
+    }
+  },
+
+  expireDrawOffer: async () => {
+    const { gameId, pendingDrawOffer } = get();
+    if (!gameId || pendingDrawOffer !== 'sent') return;
+
+    set({ pendingDrawOffer: null });
+
+    try {
+      const supabase = createClient();
+      await supabase.functions.invoke('validate-move', {
+        body: { game_id: gameId, action: 'expire_pending_action', pending_type: 'draw_offer' }
+      });
+    } catch {
+      // Local clear is the UX requirement; server expiry is best-effort.
+    }
+  },
+
+  requestTakeback: async () => {
+    const { gameId, phase, moveHistory, pendingTakeback } = get();
+    if (!gameId || phase !== 'playing' || moveHistory.length === 0 || pendingTakeback !== null)
+      return;
+
+    set({ pendingTakeback: 'sent' });
+
+    try {
+      const supabase = createClient();
+      const response = await supabase.functions.invoke('validate-move', {
+        body: { game_id: gameId, action: 'takeback_request' }
+      });
+
+      if (response.error) {
+        set({ pendingTakeback: null });
+      }
+    } catch {
+      set({ pendingTakeback: null });
+    }
+  },
+
+  acceptTakeback: async () => {
+    const { gameId, pendingTakeback } = get();
+    if (!gameId || pendingTakeback !== 'received') return;
+
+    try {
+      const supabase = createClient();
+      await supabase.functions.invoke('validate-move', {
+        body: { game_id: gameId, action: 'takeback_accept' }
+      });
+      // takeback_accept broadcast handles state update
+    } catch {
+      // No-op
+    }
+  },
+
+  declineTakeback: async () => {
+    const { gameId, pendingTakeback } = get();
+    if (!gameId || pendingTakeback !== 'received') return;
+
+    set({ pendingTakeback: null });
+
+    try {
+      const supabase = createClient();
+      await supabase.functions.invoke('validate-move', {
+        body: { game_id: gameId, action: 'takeback_decline' }
+      });
+    } catch {
+      // No-op
+    }
+  },
+
+  expireTakeback: async () => {
+    const { gameId, pendingTakeback } = get();
+    if (!gameId || pendingTakeback !== 'sent') return;
+
+    set({ pendingTakeback: null });
+
+    try {
+      const supabase = createClient();
+      await supabase.functions.invoke('validate-move', {
+        body: { game_id: gameId, action: 'expire_pending_action', pending_type: 'takeback_request' }
+      });
+    } catch {
+      // Local clear is the UX requirement; server expiry is best-effort.
+    }
+  },
+
+  handleDrawOffer: (offeringColor) => {
+    const { myColor } = get();
+    if (offeringColor !== myColor) {
+      set({ pendingDrawOffer: 'received' });
+    }
+  },
+
+  handleDrawDeclined: () => {
+    set({ pendingDrawOffer: null });
+  },
+
+  handleDrawExpired: () => {
+    set({ pendingDrawOffer: null });
+  },
+
+  handleTakebackRequest: (requestingColor) => {
+    const { myColor } = get();
+    if (requestingColor !== myColor) {
+      set({ pendingTakeback: 'received' });
+    }
+  },
+
+  handleTakebackAccept: (fen) => {
+    const currentState = get();
+    if (currentState.engine) {
+      const newEngine = new CoTuLenh(fen);
+      const clockState = deriveClockState(currentState.phase, newEngine);
+      set({
+        engine: newEngine,
+        moveHistory: currentState.moveHistory.slice(0, -1),
+        pendingTakeback: null,
+        ...clockState
+      });
+    } else {
+      set({ pendingTakeback: null });
+    }
+  },
+
+  handleTakebackDeclined: () => {
+    set({ pendingTakeback: null });
+  },
+
+  handleTakebackExpired: () => {
+    set({ pendingTakeback: null });
   },
 
   getDisplayClocks: () => {
@@ -413,6 +653,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const nextPhase = current.gameStatus
       ? resolveClientPhase(current.gameStatus, serverState.phase)
       : current.phase;
+    const pendingActionState = derivePendingActionState(
+      serverState.pending_action,
+      current.myColor
+    );
 
     if (current.engine) {
       const newEngine = new CoTuLenh(serverState.fen);
@@ -423,6 +667,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
         clocks: serverState.clocks,
         lastSyncTime: Date.now(),
         engine: newEngine,
+        ...pendingActionState,
         ...clockState
       });
     } else {
@@ -430,7 +675,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
         phase: nextPhase,
         moveHistory: serverState.move_history,
         clocks: serverState.clocks,
-        lastSyncTime: Date.now()
+        lastSyncTime: Date.now(),
+        ...pendingActionState
       });
     }
   },
@@ -508,7 +754,9 @@ export const useGameStore = create<GameStore>((set, get) => ({
       lastSeenSeq: 0,
       pendingMove: null,
       moveError: null,
-      timeoutClaimSent: false
+      timeoutClaimSent: false,
+      pendingDrawOffer: null,
+      pendingTakeback: null
     });
   }
 }));

@@ -116,4 +116,102 @@ describe('useGameChannel', () => {
 
     expect(handleGameEnd).toHaveBeenCalledWith('timeout', 'red', null);
   });
+
+  it('processes draw offer lifecycle events', async () => {
+    const handleDrawOffer = vi.fn();
+    const handleDrawExpired = vi.fn();
+    const handleDrawDeclined = vi.fn();
+
+    useGameStore.setState({
+      handleDrawOffer,
+      handleDrawExpired,
+      handleDrawDeclined
+    });
+
+    render(<Harness gameId="game-3" />);
+
+    act(() => {
+      handlers.draw_offer({
+        payload: {
+          type: 'draw_offer',
+          payload: { offering_color: 'blue' },
+          seq: 12
+        }
+      });
+      handlers.draw_offer_expired({
+        payload: {
+          type: 'draw_offer_expired',
+          payload: {},
+          seq: 13
+        }
+      });
+      handlers.draw_declined({
+        payload: {
+          type: 'draw_declined',
+          payload: {},
+          seq: 14
+        }
+      });
+    });
+
+    await Promise.resolve();
+
+    expect(handleDrawOffer).toHaveBeenCalledWith('blue');
+    expect(handleDrawExpired).toHaveBeenCalledOnce();
+    expect(handleDrawDeclined).toHaveBeenCalledOnce();
+  });
+
+  it('processes takeback lifecycle events', async () => {
+    const handleTakebackRequest = vi.fn();
+    const handleTakebackAccept = vi.fn();
+    const handleTakebackDeclined = vi.fn();
+    const handleTakebackExpired = vi.fn();
+
+    useGameStore.setState({
+      handleTakebackRequest,
+      handleTakebackAccept,
+      handleTakebackDeclined,
+      handleTakebackExpired
+    });
+
+    render(<Harness gameId="game-4" />);
+
+    act(() => {
+      handlers.takeback_request({
+        payload: {
+          type: 'takeback_request',
+          payload: { requesting_color: 'blue', move_count: 2 },
+          seq: 15
+        }
+      });
+      handlers.takeback_accept({
+        payload: {
+          type: 'takeback_accept',
+          payload: { fen: 'rewound-fen' },
+          seq: 16
+        }
+      });
+      handlers.takeback_declined({
+        payload: {
+          type: 'takeback_declined',
+          payload: {},
+          seq: 17
+        }
+      });
+      handlers.takeback_expired({
+        payload: {
+          type: 'takeback_expired',
+          payload: {},
+          seq: 18
+        }
+      });
+    });
+
+    await Promise.resolve();
+
+    expect(handleTakebackRequest).toHaveBeenCalledWith('blue');
+    expect(handleTakebackAccept).toHaveBeenCalledWith('rewound-fen');
+    expect(handleTakebackDeclined).toHaveBeenCalledOnce();
+    expect(handleTakebackExpired).toHaveBeenCalledOnce();
+  });
 });

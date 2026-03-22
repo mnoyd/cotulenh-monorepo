@@ -159,6 +159,26 @@ Deno.test('completeGame returns error when DB update fails', async () => {
   assertEquals(mock.calls.broadcast, undefined); // No broadcast on failure
 });
 
+Deno.test('completeGame sets resign status with opponent as winner', async () => {
+  const mock = createMockSupabase();
+
+  const result = await completeGame(
+    mock.client,
+    'game-resign',
+    {
+      status: 'resign',
+      winner: 'blue',
+      result_reason: null
+    },
+    6
+  );
+
+  assertEquals(result.success, true);
+  assertEquals(mock.calls.update?.data.status, 'resign');
+  assertEquals(mock.calls.update?.data.winner, 'blue');
+  assertEquals(mock.calls.update?.data.result_reason, null);
+});
+
 function createProbe(overrides?: Partial<Record<string, boolean>>) {
   return {
     isGameOver: () => overrides?.isGameOver ?? false,

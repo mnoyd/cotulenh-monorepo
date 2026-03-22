@@ -51,6 +51,17 @@ export function GamePageClient({ gameData }: GamePageClientProps) {
   const winner = useGameStore((s) => s.winner);
   const gameStatus = useGameStore((s) => s.gameStatus);
   const resultReason = useGameStore((s) => s.resultReason);
+  const pendingDrawOffer = useGameStore((s) => s.pendingDrawOffer);
+  const pendingTakeback = useGameStore((s) => s.pendingTakeback);
+  const resign = useGameStore((s) => s.resign);
+  const offerDraw = useGameStore((s) => s.offerDraw);
+  const acceptDraw = useGameStore((s) => s.acceptDraw);
+  const declineDraw = useGameStore((s) => s.declineDraw);
+  const requestTakeback = useGameStore((s) => s.requestTakeback);
+  const acceptTakeback = useGameStore((s) => s.acceptTakeback);
+  const declineTakeback = useGameStore((s) => s.declineTakeback);
+  const expireDrawOffer = useGameStore((s) => s.expireDrawOffer);
+  const expireTakeback = useGameStore((s) => s.expireTakeback);
 
   const router = useRouter();
   const [selectedPiece, setSelectedPiece] = useState<string | null>(null);
@@ -390,7 +401,22 @@ export function GamePageClient({ gameData }: GamePageClientProps) {
             )}
           </div>
         ) : (
-          <GameRightPanel moveHistory={moveHistory} />
+          <GameRightPanel
+            moveHistory={moveHistory}
+            phase={phase}
+            myColor={myColor}
+            pendingDrawOffer={pendingDrawOffer}
+            pendingTakeback={pendingTakeback}
+            onResign={resign}
+            onOfferDraw={offerDraw}
+            onAcceptDraw={acceptDraw}
+            onDeclineDraw={declineDraw}
+            onExpireDrawOffer={expireDrawOffer}
+            onRequestTakeback={requestTakeback}
+            onAcceptTakeback={acceptTakeback}
+            onDeclineTakeback={declineTakeback}
+            onExpireTakeback={expireTakeback}
+          />
         )}
       </div>
     </div>

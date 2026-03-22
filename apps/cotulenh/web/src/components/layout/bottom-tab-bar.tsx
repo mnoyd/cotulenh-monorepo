@@ -1,15 +1,15 @@
 'use client';
 
-import { Home, Medal, Settings, Swords, Users } from 'lucide-react';
+import { BookOpen, Home, MoreHorizontal, Swords, User } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 const tabItems = [
   { href: '/dashboard', label: 'Trang chủ', icon: Home },
   { href: '/play', label: 'Chơi', icon: Swords },
-  { href: '/friends', label: 'Bạn bè', icon: Users },
-  { href: '/leaderboard', label: 'BXH', icon: Medal },
-  { href: '/settings', label: 'Cài đặt', icon: Settings }
+  { href: '/learn', label: 'Học', icon: BookOpen },
+  { href: '/profile', label: 'Hồ sơ', icon: User },
+  { href: '/more', label: 'Thêm', icon: MoreHorizontal }
 ] as const;
 
 function isRouteActive(pathname: string, href: string) {

@@ -3,13 +3,43 @@
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils/cn';
 import { MoveList } from './move-list';
+import { GameControls } from './game-controls';
 
 type GameRightPanelProps = {
   moveHistory: string[];
+  phase: 'idle' | 'deploying' | 'playing' | 'ended';
+  myColor: 'red' | 'blue' | null;
+  pendingDrawOffer: 'sent' | 'received' | null;
+  pendingTakeback: 'sent' | 'received' | null;
+  onResign: () => void;
+  onOfferDraw: () => void;
+  onAcceptDraw: () => void;
+  onDeclineDraw: () => void;
+  onExpireDrawOffer: () => void;
+  onRequestTakeback: () => void;
+  onAcceptTakeback: () => void;
+  onDeclineTakeback: () => void;
+  onExpireTakeback: () => void;
   className?: string;
 };
 
-export function GameRightPanel({ moveHistory, className }: GameRightPanelProps) {
+export function GameRightPanel({
+  moveHistory,
+  phase,
+  myColor,
+  pendingDrawOffer,
+  pendingTakeback,
+  onResign,
+  onOfferDraw,
+  onAcceptDraw,
+  onDeclineDraw,
+  onExpireDrawOffer,
+  onRequestTakeback,
+  onAcceptTakeback,
+  onDeclineTakeback,
+  onExpireTakeback,
+  className
+}: GameRightPanelProps) {
   const hasMoves = moveHistory.length > 0;
 
   return (
@@ -68,33 +98,23 @@ export function GameRightPanel({ moveHistory, className }: GameRightPanelProps) 
             </button>
           </div>
 
-          {/* Game controls placeholder */}
-          <div className="flex shrink-0 items-center justify-center gap-[var(--space-2)] border-t border-[var(--color-border)] p-[var(--space-2)]">
-            <button
-              type="button"
-              disabled
-              className="min-h-[44px] flex-1 border border-[var(--color-border)] text-[var(--text-sm)] text-[var(--color-text)] disabled:opacity-50"
-              title="Xin dau"
-            >
-              Xin dau
-            </button>
-            <button
-              type="button"
-              disabled
-              className="min-h-[44px] flex-1 border border-[var(--color-border)] text-[var(--text-sm)] text-[var(--color-text)] disabled:opacity-50"
-              title="Hoa"
-            >
-              Hoa
-            </button>
-            <button
-              type="button"
-              disabled
-              className="min-h-[44px] flex-1 border border-[var(--color-border)] text-[var(--text-sm)] text-[var(--color-text)] disabled:opacity-50"
-              title="Xin di lai"
-            >
-              Xin di lai
-            </button>
-          </div>
+          {/* Game controls */}
+          <GameControls
+            phase={phase}
+            myColor={myColor}
+            pendingDrawOffer={pendingDrawOffer}
+            pendingTakeback={pendingTakeback}
+            moveHistoryLength={moveHistory.length}
+            onResign={onResign}
+            onOfferDraw={onOfferDraw}
+            onAcceptDraw={onAcceptDraw}
+            onDeclineDraw={onDeclineDraw}
+            onExpireDrawOffer={onExpireDrawOffer}
+            onRequestTakeback={onRequestTakeback}
+            onAcceptTakeback={onAcceptTakeback}
+            onDeclineTakeback={onDeclineTakeback}
+            onExpireTakeback={onExpireTakeback}
+          />
         </TabsContent>
 
         <TabsContent value="chat" className="flex-1 p-[var(--space-3)]">

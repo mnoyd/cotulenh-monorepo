@@ -38,7 +38,8 @@ export async function getGame(gameId: string): Promise<GetGameResult> {
         move_history,
         fen,
         phase,
-        clocks
+        clocks,
+        pending_action
       )
     `
     )
@@ -95,7 +96,8 @@ export async function getGame(gameId: string): Promise<GetGameResult> {
       move_history: gameState?.move_history ?? [],
       fen: gameState?.fen ?? 'start',
       phase: gameState?.phase ?? 'deploying',
-      clocks: gameState?.clocks ?? { red: 600, blue: 600 }
+      clocks: gameState?.clocks ?? { red: 600, blue: 600 },
+      pending_action: gameState?.pending_action ?? null
     }
   };
 

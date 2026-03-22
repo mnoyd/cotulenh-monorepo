@@ -7,7 +7,19 @@ import { createClient } from '@/lib/supabase/browser';
 import { useGameStore } from '@/stores/game-store';
 
 type GameEventEnvelope = {
-  type: 'deploy_submitted' | 'deploy_commit' | 'move' | 'clock_sync' | 'game_end';
+  type:
+    | 'deploy_submitted'
+    | 'deploy_commit'
+    | 'move'
+    | 'clock_sync'
+    | 'game_end'
+    | 'draw_offer'
+    | 'draw_declined'
+    | 'draw_offer_expired'
+    | 'takeback_request'
+    | 'takeback_accept'
+    | 'takeback_declined'
+    | 'takeback_expired';
   payload: Record<string, unknown>;
   seq: number;
 };
@@ -31,6 +43,13 @@ export function useGameChannel(gameId: string | null) {
   const applyOpponentMove = useGameStore((s) => s.applyOpponentMove);
   const syncClocks = useGameStore((s) => s.syncClocks);
   const handleGameEnd = useGameStore((s) => s.handleGameEnd);
+  const handleDrawOffer = useGameStore((s) => s.handleDrawOffer);
+  const handleDrawDeclined = useGameStore((s) => s.handleDrawDeclined);
+  const handleDrawExpired = useGameStore((s) => s.handleDrawExpired);
+  const handleTakebackRequest = useGameStore((s) => s.handleTakebackRequest);
+  const handleTakebackAccept = useGameStore((s) => s.handleTakebackAccept);
+  const handleTakebackDeclined = useGameStore((s) => s.handleTakebackDeclined);
+  const handleTakebackExpired = useGameStore((s) => s.handleTakebackExpired);
   const setLastSeenSeq = useGameStore((s) => s.setLastSeenSeq);
 
   const refreshFromServer = useCallback(async () => {
@@ -101,6 +120,37 @@ export function useGameChannel(gameId: string | null) {
           handleGameEnd(status as import('@/lib/types/game').GameStatus, winner, result_reason);
           break;
         }
+        case 'draw_offer': {
+          const { offering_color } = eventPayload as { offering_color: 'red' | 'blue' };
+          handleDrawOffer(offering_color);
+          break;
+        }
+        case 'draw_declined': {
+          handleDrawDeclined();
+          break;
+        }
+        case 'draw_offer_expired': {
+          handleDrawExpired();
+          break;
+        }
+        case 'takeback_request': {
+          const { requesting_color } = eventPayload as { requesting_color: 'red' | 'blue' };
+          handleTakebackRequest(requesting_color);
+          break;
+        }
+        case 'takeback_accept': {
+          const { fen: takebackFen } = eventPayload as { fen: string };
+          handleTakebackAccept(takebackFen);
+          break;
+        }
+        case 'takeback_declined': {
+          handleTakebackDeclined();
+          break;
+        }
+        case 'takeback_expired': {
+          handleTakebackExpired();
+          break;
+        }
       }
     },
     [
@@ -109,6 +159,13 @@ export function useGameChannel(gameId: string | null) {
       applyOpponentMove,
       syncClocks,
       handleGameEnd,
+      handleDrawOffer,
+      handleDrawDeclined,
+      handleDrawExpired,
+      handleTakebackRequest,
+      handleTakebackAccept,
+      handleTakebackDeclined,
+      handleTakebackExpired,
       refreshFromServer,
       setLastSeenSeq
     ]
@@ -137,6 +194,27 @@ export function useGameChannel(gameId: string | null) {
         void handleEvent(payload as GameEventEnvelope);
       })
       .on('broadcast', { event: 'game_end' }, ({ payload }: { payload: unknown }) => {
+        void handleEvent(payload as GameEventEnvelope);
+      })
+      .on('broadcast', { event: 'draw_offer' }, ({ payload }: { payload: unknown }) => {
+        void handleEvent(payload as GameEventEnvelope);
+      })
+      .on('broadcast', { event: 'draw_declined' }, ({ payload }: { payload: unknown }) => {
+        void handleEvent(payload as GameEventEnvelope);
+      })
+      .on('broadcast', { event: 'draw_offer_expired' }, ({ payload }: { payload: unknown }) => {
+        void handleEvent(payload as GameEventEnvelope);
+      })
+      .on('broadcast', { event: 'takeback_request' }, ({ payload }: { payload: unknown }) => {
+        void handleEvent(payload as GameEventEnvelope);
+      })
+      .on('broadcast', { event: 'takeback_accept' }, ({ payload }: { payload: unknown }) => {
+        void handleEvent(payload as GameEventEnvelope);
+      })
+      .on('broadcast', { event: 'takeback_declined' }, ({ payload }: { payload: unknown }) => {
+        void handleEvent(payload as GameEventEnvelope);
+      })
+      .on('broadcast', { event: 'takeback_expired' }, ({ payload }: { payload: unknown }) => {
         void handleEvent(payload as GameEventEnvelope);
       })
       .subscribe();

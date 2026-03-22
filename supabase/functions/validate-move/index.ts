@@ -2,6 +2,11 @@ import { CoTuLenh, DEFAULT_POSITION } from '@cotulenh/core';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { applyElapsedAndIncrement } from './clock.ts';
 import { completeGame, determineGameEndResult } from './game-end.ts';
+import {
+  getPendingActionExpiryEvent,
+  isPendingActionExpired,
+  type PendingAction
+} from './pending-action.ts';
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -67,6 +72,7 @@ Deno.serve(async (req) => {
       sans?: string[];
       san?: string;
       action?: string;
+      pending_type?: 'draw_offer' | 'takeback_request';
       claiming_color?: 'red' | 'blue';
     };
 
@@ -77,8 +83,25 @@ Deno.serve(async (req) => {
     // Playing phase sends single `san`; deploy phase sends `sans` array
     const isPlayingMove = typeof san === 'string' && san.length > 0;
     const isTimeoutClaim = action === 'timeout_claim';
+    const isResign = action === 'resign';
+    const isDrawOffer = action === 'draw_offer';
+    const isDrawAccept = action === 'draw_accept';
+    const isDrawDecline = action === 'draw_decline';
+    const isTakebackRequest = action === 'takeback_request';
+    const isTakebackAccept = action === 'takeback_accept';
+    const isTakebackDecline = action === 'takeback_decline';
+    const isPendingActionExpire = action === 'expire_pending_action';
+    const isGameAction =
+      isResign ||
+      isDrawOffer ||
+      isDrawAccept ||
+      isDrawDecline ||
+      isTakebackRequest ||
+      isTakebackAccept ||
+      isTakebackDecline ||
+      isPendingActionExpire;
 
-    if (!isPlayingMove && !isTimeoutClaim) {
+    if (!isPlayingMove && !isTimeoutClaim && !isGameAction) {
       if (
         !Array.isArray(sans) ||
         sans.length === 0 ||
@@ -131,7 +154,61 @@ Deno.serve(async (req) => {
       phase: string;
       clocks: { red: number; blue: number } | null;
       updated_at: string | null;
+      pending_action: PendingAction;
     } = stateRows[0];
+
+    const expirePendingAction = async (pendingAction: Exclude<PendingAction, null>) => {
+      const { error: clearPendingError } = await supabase
+        .from('game_states')
+        .update({ pending_action: null })
+        .eq('id', gameState.id);
+
+      if (clearPendingError) {
+        return { success: false as const };
+      }
+
+      const expiryEvent = getPendingActionExpiryEvent(pendingAction);
+      const expiryChannel = supabase.channel(`game:${game_id}`);
+      const expirySeq = gameState.move_history.length;
+
+      await expiryChannel.send({
+        type: 'broadcast',
+        event: expiryEvent,
+        payload: {
+          type: expiryEvent,
+          payload: {},
+          seq: expirySeq
+        }
+      });
+
+      return { success: true as const, event: expiryEvent };
+    };
+
+    if (isPendingActionExpire) {
+      if (gameState.phase !== 'playing') {
+        return errorResponse(
+          'Can only expire pending actions during playing phase',
+          'PHASE_MISMATCH',
+          400
+        );
+      }
+
+      const expiringPending = gameState.pending_action;
+      if (!expiringPending || (pending_type && expiringPending.type !== pending_type)) {
+        return jsonResponse({ data: { expired: false } });
+      }
+
+      if (!isPendingActionExpired(expiringPending)) {
+        return jsonResponse({ data: { expired: false } });
+      }
+
+      const expireResult = await expirePendingAction(expiringPending);
+      if (!expireResult.success) {
+        return errorResponse('Failed to expire pending action', 'INTERNAL_ERROR', 500);
+      }
+
+      return jsonResponse({ data: { expired: true, type: expiringPending.type } });
+    }
 
     // === TIMEOUT CLAIM HANDLING (Task 2: AC #4) ===
     if (isTimeoutClaim) {
@@ -204,6 +281,368 @@ Deno.serve(async (req) => {
 
         return jsonResponse({ data: { clock_correction: true, clocks: correctedClocks } });
       }
+    }
+
+    // === RESIGN HANDLING (Story 3.7: AC #1, #11) ===
+    if (isResign) {
+      if (gameState.phase !== 'playing') {
+        return errorResponse('Can only resign during playing phase', 'PHASE_MISMATCH', 400);
+      }
+
+      const resignOpponentColor: 'red' | 'blue' = playerColor === 'red' ? 'blue' : 'red';
+      const resignSeq = gameState.move_history.length + 1;
+      const resignResult = await completeGame(
+        supabase as never,
+        game_id,
+        { status: 'resign', winner: resignOpponentColor, result_reason: null },
+        resignSeq
+      );
+
+      if (!resignResult.success) {
+        return errorResponse('Failed to complete game', 'INTERNAL_ERROR', 500);
+      }
+
+      return jsonResponse({ data: { status: 'resign', winner: resignOpponentColor } });
+    }
+
+    // === DRAW OFFER HANDLING (Story 3.7: AC #2, #10, #11) ===
+    if (isDrawOffer) {
+      if (gameState.phase !== 'playing') {
+        return errorResponse('Can only offer draw during playing phase', 'PHASE_MISMATCH', 400);
+      }
+
+      let pendingAction = gameState.pending_action;
+      if (pendingAction && isPendingActionExpired(pendingAction)) {
+        const expireResult = await expirePendingAction(pendingAction);
+        if (!expireResult.success) {
+          return errorResponse('Failed to expire pending action', 'INTERNAL_ERROR', 500);
+        }
+        pendingAction = null;
+      }
+      if (pendingAction && pendingAction.color === playerColor) {
+        return errorResponse('You already have a pending offer', 'DUPLICATE_ACTION', 400);
+      }
+
+      const drawOfferPending: PendingAction = {
+        type: 'draw_offer',
+        color: playerColor,
+        created_at: new Date().toISOString()
+      };
+
+      const { error: drawOfferUpdateError } = await supabase
+        .from('game_states')
+        .update({ pending_action: drawOfferPending })
+        .eq('id', gameState.id);
+
+      if (drawOfferUpdateError) {
+        return errorResponse('Failed to store draw offer', 'INTERNAL_ERROR', 500);
+      }
+
+      const drawOfferSeq = gameState.move_history.length;
+      const drawOfferChannel = supabase.channel(`game:${game_id}`);
+      await drawOfferChannel.send({
+        type: 'broadcast',
+        event: 'draw_offer',
+        payload: {
+          type: 'draw_offer',
+          payload: { offering_color: playerColor },
+          seq: drawOfferSeq
+        }
+      });
+
+      return jsonResponse({ data: { draw_offer: true } });
+    }
+
+    // === DRAW ACCEPT HANDLING (Story 3.7: AC #3, #10, #11) ===
+    if (isDrawAccept) {
+      if (gameState.phase !== 'playing') {
+        return errorResponse('Can only accept draw during playing phase', 'PHASE_MISMATCH', 400);
+      }
+
+      const drawAcceptPending = gameState.pending_action;
+      if (drawAcceptPending && isPendingActionExpired(drawAcceptPending)) {
+        const expireResult = await expirePendingAction(drawAcceptPending);
+        if (!expireResult.success) {
+          return errorResponse('Failed to expire pending action', 'INTERNAL_ERROR', 500);
+        }
+        return errorResponse('Draw offer has expired', 'EXPIRED_ACTION', 409);
+      }
+      if (
+        !drawAcceptPending ||
+        drawAcceptPending.type !== 'draw_offer' ||
+        drawAcceptPending.color === playerColor
+      ) {
+        return errorResponse('No pending draw offer from opponent', 'INVALID_ACTION', 400);
+      }
+
+      // Clear pending action
+      const { error: drawAcceptClearError } = await supabase
+        .from('game_states')
+        .update({ pending_action: null })
+        .eq('id', gameState.id);
+
+      if (drawAcceptClearError) {
+        return errorResponse('Failed to clear draw offer', 'INTERNAL_ERROR', 500);
+      }
+
+      const drawAcceptSeq = gameState.move_history.length + 1;
+      const drawAcceptResult = await completeGame(
+        supabase as never,
+        game_id,
+        { status: 'draw', winner: null, result_reason: 'mutual_agreement' },
+        drawAcceptSeq
+      );
+
+      if (!drawAcceptResult.success) {
+        return errorResponse('Failed to complete game', 'INTERNAL_ERROR', 500);
+      }
+
+      return jsonResponse({
+        data: { status: 'draw', winner: null, result_reason: 'mutual_agreement' }
+      });
+    }
+
+    // === DRAW DECLINE HANDLING (Story 3.7: AC #4) ===
+    if (isDrawDecline) {
+      if (gameState.phase !== 'playing') {
+        return errorResponse('Can only decline draw during playing phase', 'PHASE_MISMATCH', 400);
+      }
+
+      const drawDeclinePending = gameState.pending_action;
+      if (drawDeclinePending && isPendingActionExpired(drawDeclinePending)) {
+        const expireResult = await expirePendingAction(drawDeclinePending);
+        if (!expireResult.success) {
+          return errorResponse('Failed to expire pending action', 'INTERNAL_ERROR', 500);
+        }
+        return errorResponse('Draw offer has expired', 'EXPIRED_ACTION', 409);
+      }
+      if (
+        !drawDeclinePending ||
+        drawDeclinePending.type !== 'draw_offer' ||
+        drawDeclinePending.color === playerColor
+      ) {
+        return errorResponse('No pending draw offer from opponent', 'INVALID_ACTION', 400);
+      }
+
+      const { error: drawDeclineClearError } = await supabase
+        .from('game_states')
+        .update({ pending_action: null })
+        .eq('id', gameState.id);
+
+      if (drawDeclineClearError) {
+        return errorResponse('Failed to clear draw offer', 'INTERNAL_ERROR', 500);
+      }
+
+      const drawDeclineSeq = gameState.move_history.length;
+      const drawDeclineChannel = supabase.channel(`game:${game_id}`);
+      await drawDeclineChannel.send({
+        type: 'broadcast',
+        event: 'draw_declined',
+        payload: {
+          type: 'draw_declined',
+          payload: {},
+          seq: drawDeclineSeq
+        }
+      });
+
+      return jsonResponse({ data: { draw_declined: true } });
+    }
+
+    // === TAKEBACK REQUEST HANDLING (Story 3.7: AC #6, #10, #11) ===
+    if (isTakebackRequest) {
+      if (gameState.phase !== 'playing') {
+        return errorResponse(
+          'Can only request takeback during playing phase',
+          'PHASE_MISMATCH',
+          400
+        );
+      }
+
+      if (gameState.move_history.length === 0) {
+        return errorResponse('No moves to take back', 'INVALID_ACTION', 400);
+      }
+
+      let takebackReqPending = gameState.pending_action;
+      if (takebackReqPending && isPendingActionExpired(takebackReqPending)) {
+        const expireResult = await expirePendingAction(takebackReqPending);
+        if (!expireResult.success) {
+          return errorResponse('Failed to expire pending action', 'INTERNAL_ERROR', 500);
+        }
+        takebackReqPending = null;
+      }
+      if (takebackReqPending && takebackReqPending.color === playerColor) {
+        return errorResponse('You already have a pending request', 'DUPLICATE_ACTION', 400);
+      }
+
+      const takebackPending: PendingAction = {
+        type: 'takeback_request',
+        color: playerColor,
+        move_count: gameState.move_history.length,
+        created_at: new Date().toISOString()
+      };
+
+      const { error: takebackReqUpdateError } = await supabase
+        .from('game_states')
+        .update({ pending_action: takebackPending })
+        .eq('id', gameState.id);
+
+      if (takebackReqUpdateError) {
+        return errorResponse('Failed to store takeback request', 'INTERNAL_ERROR', 500);
+      }
+
+      const takebackReqSeq = gameState.move_history.length;
+      const takebackReqChannel = supabase.channel(`game:${game_id}`);
+      await takebackReqChannel.send({
+        type: 'broadcast',
+        event: 'takeback_request',
+        payload: {
+          type: 'takeback_request',
+          payload: { requesting_color: playerColor, move_count: gameState.move_history.length },
+          seq: takebackReqSeq
+        }
+      });
+
+      return jsonResponse({ data: { takeback_request: true } });
+    }
+
+    // === TAKEBACK ACCEPT HANDLING (Story 3.7: AC #7, #10) ===
+    if (isTakebackAccept) {
+      if (gameState.phase !== 'playing') {
+        return errorResponse(
+          'Can only accept takeback during playing phase',
+          'PHASE_MISMATCH',
+          400
+        );
+      }
+
+      const takebackAcceptPending = gameState.pending_action;
+      if (takebackAcceptPending && isPendingActionExpired(takebackAcceptPending)) {
+        const expireResult = await expirePendingAction(takebackAcceptPending);
+        if (!expireResult.success) {
+          return errorResponse('Failed to expire pending action', 'INTERNAL_ERROR', 500);
+        }
+        return errorResponse('Takeback request has expired', 'EXPIRED_ACTION', 409);
+      }
+      if (
+        !takebackAcceptPending ||
+        takebackAcceptPending.type !== 'takeback_request' ||
+        takebackAcceptPending.color === playerColor
+      ) {
+        return errorResponse('No pending takeback request from opponent', 'INVALID_ACTION', 400);
+      }
+
+      // Verify no moves have been made since the request
+      if (gameState.move_history.length !== takebackAcceptPending.move_count) {
+        return errorResponse(
+          'Takeback request is stale — moves have been made since',
+          'STALE_STATE',
+          409
+        );
+      }
+
+      // Undo last move: replay shortened history from DEFAULT_POSITION
+      const shortenedHistory = gameState.move_history.slice(0, -1);
+      const undoEngine = new CoTuLenh(DEFAULT_POSITION);
+      for (const historySan of shortenedHistory) {
+        const replayResult = undoEngine.move(historySan);
+        if (!replayResult) {
+          return errorResponse('Failed to replay move history for undo', 'INTERNAL_ERROR', 500);
+        }
+      }
+      const undoFen = undoEngine.fen();
+
+      // Atomically update game_states
+      const undoNowIso = new Date().toISOString();
+      const { error: undoUpdateError } = await supabase
+        .from('game_states')
+        .update({
+          move_history: shortenedHistory,
+          fen: undoFen,
+          pending_action: null,
+          updated_at: undoNowIso
+        })
+        .eq('id', gameState.id);
+
+      if (undoUpdateError) {
+        return errorResponse('Failed to undo move', 'INTERNAL_ERROR', 500);
+      }
+
+      const takebackAcceptSeq = gameState.move_history.length;
+      const takebackAcceptChannel = supabase.channel(`game:${game_id}`);
+      const currentClocks = gameState.clocks ?? { red: 0, blue: 0 };
+
+      await takebackAcceptChannel.send({
+        type: 'broadcast',
+        event: 'takeback_accept',
+        payload: {
+          type: 'takeback_accept',
+          payload: { fen: undoFen },
+          seq: takebackAcceptSeq
+        }
+      });
+
+      // Piggyback clock_sync to keep clients in sync
+      await takebackAcceptChannel.send({
+        type: 'broadcast',
+        event: 'clock_sync',
+        payload: {
+          type: 'clock_sync',
+          payload: { red: currentClocks.red, blue: currentClocks.blue },
+          seq: takebackAcceptSeq
+        }
+      });
+
+      return jsonResponse({ data: { takeback_accept: true, fen: undoFen } });
+    }
+
+    // === TAKEBACK DECLINE HANDLING (Story 3.7: AC #8) ===
+    if (isTakebackDecline) {
+      if (gameState.phase !== 'playing') {
+        return errorResponse(
+          'Can only decline takeback during playing phase',
+          'PHASE_MISMATCH',
+          400
+        );
+      }
+
+      const takebackDeclinePending = gameState.pending_action;
+      if (takebackDeclinePending && isPendingActionExpired(takebackDeclinePending)) {
+        const expireResult = await expirePendingAction(takebackDeclinePending);
+        if (!expireResult.success) {
+          return errorResponse('Failed to expire pending action', 'INTERNAL_ERROR', 500);
+        }
+        return errorResponse('Takeback request has expired', 'EXPIRED_ACTION', 409);
+      }
+      if (
+        !takebackDeclinePending ||
+        takebackDeclinePending.type !== 'takeback_request' ||
+        takebackDeclinePending.color === playerColor
+      ) {
+        return errorResponse('No pending takeback request from opponent', 'INVALID_ACTION', 400);
+      }
+
+      const { error: takebackDeclineClearError } = await supabase
+        .from('game_states')
+        .update({ pending_action: null })
+        .eq('id', gameState.id);
+
+      if (takebackDeclineClearError) {
+        return errorResponse('Failed to clear takeback request', 'INTERNAL_ERROR', 500);
+      }
+
+      const takebackDeclineSeq = gameState.move_history.length;
+      const takebackDeclineChannel = supabase.channel(`game:${game_id}`);
+      await takebackDeclineChannel.send({
+        type: 'broadcast',
+        event: 'takeback_declined',
+        payload: {
+          type: 'takeback_declined',
+          payload: {},
+          seq: takebackDeclineSeq
+        }
+      });
+
+      return jsonResponse({ data: { takeback_declined: true } });
     }
 
     // Phase-based routing
@@ -281,14 +720,15 @@ Deno.serve(async (req) => {
         incrementSeconds
       });
 
-      // Persist: append move to history, update FEN and clocks
+      // Persist: append move to history, update FEN, clocks, and clear pending action
       let moveUpdateQuery = supabase
         .from('game_states')
         .update({
           move_history: newMoveHistory,
           fen: newFen,
           clocks: updatedClocks,
-          updated_at: nowIso
+          updated_at: nowIso,
+          pending_action: null
         })
         .eq('id', gameState.id);
 
@@ -329,6 +769,34 @@ Deno.serve(async (req) => {
           seq: moveSeq
         }
       });
+
+      // Story 3.7: Pending action expiry on move (AC #5, #9)
+      if (gameState.pending_action) {
+        const pending = gameState.pending_action;
+        if (pending.type === 'draw_offer' && pending.color === playerColor) {
+          // Draw offer expires when the offering player makes a move
+          await channel.send({
+            type: 'broadcast',
+            event: 'draw_offer_expired',
+            payload: {
+              type: 'draw_offer_expired',
+              payload: {},
+              seq: moveSeq
+            }
+          });
+        } else if (pending.type === 'takeback_request') {
+          // Takeback request expires when any player makes a move
+          await channel.send({
+            type: 'broadcast',
+            event: 'takeback_expired',
+            payload: {
+              type: 'takeback_expired',
+              payload: {},
+              seq: moveSeq
+            }
+          });
+        }
+      }
 
       // AC1-3: Game-end detection after successful move
       const gameEndResult = determineGameEndResult(engine, playerColor);

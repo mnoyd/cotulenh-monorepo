@@ -110,21 +110,40 @@ describe('GameResultBanner', () => {
     expect(screen.getByText('Xem lại')).toBeDefined();
   });
 
+  it('renders resign method text', () => {
+    render(<GameResultBanner {...defaultProps} status="resign" winner="blue" />);
+    expect(screen.getByTestId('game-result-method').textContent).toBe('Đầu hàng');
+    expect(screen.getByTestId('game-result-outcome').textContent).toBe('Bạn thua!');
+  });
+
+  it('renders mutual agreement draw method text', () => {
+    render(
+      <GameResultBanner
+        {...defaultProps}
+        status="draw"
+        winner={null}
+        resultReason="mutual_agreement"
+      />
+    );
+    expect(screen.getByTestId('game-result-method').textContent).toBe('Đồng ý hòa');
+    expect(screen.getByTestId('game-result-outcome').textContent).toBe('Hòa!');
+  });
+
   it('applies win styling class for winner', () => {
     render(<GameResultBanner {...defaultProps} />);
     const outcome = screen.getByTestId('game-result-outcome');
-    expect(outcome.className).toContain('text-green-400');
+    expect(outcome.className).toContain('text-[var(--color-success)]');
   });
 
   it('applies loss styling class for loser', () => {
     render(<GameResultBanner {...defaultProps} winner="blue" />);
     const outcome = screen.getByTestId('game-result-outcome');
-    expect(outcome.className).toContain('text-red-400');
+    expect(outcome.className).toContain('text-[var(--color-error)]');
   });
 
   it('applies draw styling class for draw', () => {
     render(<GameResultBanner {...defaultProps} status="stalemate" winner={null} />);
     const outcome = screen.getByTestId('game-result-outcome');
-    expect(outcome.className).toContain('text-yellow-400');
+    expect(outcome.className).toContain('text-[var(--color-warning)]');
   });
 });

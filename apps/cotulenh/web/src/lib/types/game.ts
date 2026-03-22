@@ -10,6 +10,15 @@ export type GameStatus =
 
 export type GamePhase = 'deploying' | 'playing';
 
+export type PendingActionData =
+  | { type: 'draw_offer'; color: 'red' | 'blue'; created_at: string }
+  | {
+      type: 'takeback_request';
+      color: 'red' | 'blue';
+      move_count: number;
+      created_at: string;
+    };
+
 export interface PlayerInfo {
   id: string;
   display_name: string;
@@ -21,6 +30,7 @@ export interface GameStateData {
   fen: string;
   phase: GamePhase;
   clocks: { red: number; blue: number };
+  pending_action: PendingActionData | null;
 }
 
 export interface GameData {

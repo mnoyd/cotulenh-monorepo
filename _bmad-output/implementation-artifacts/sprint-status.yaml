@@ -1,4 +1,4 @@
-# generated: 2026-03-09
+# generated: 2026-03-19
 # project: cotulenh-monorepo
 # project_key: NOKEY
 # tracking_system: file-system
@@ -33,7 +33,7 @@
 # - SM typically creates next story after previous one is 'done' to incorporate learnings
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
-generated: 2026-03-09
+generated: 2026-03-19
 project: cotulenh-monorepo
 project_key: NOKEY
 tracking_system: file-system
@@ -66,7 +66,7 @@ development_status:
   3-4-move-execution-server-side-validation: done
   3-5-chess-clocks-time-control: done
   3-6-game-end-conditions-result: done
-  3-7-resign-draw-offer-takeback: backlog
+  3-7-resign-draw-offer-takeback: done
   3-8-rematch-flow: backlog
   3-9-reconnection-disconnect-handling: backlog
   3-10-game-abandonment-cleanup: backlog

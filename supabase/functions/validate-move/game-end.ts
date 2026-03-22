@@ -1,4 +1,4 @@
-export type GameEndStatus = 'checkmate' | 'stalemate' | 'timeout' | 'draw';
+export type GameEndStatus = 'checkmate' | 'stalemate' | 'timeout' | 'draw' | 'resign';
 
 export type GameEndResult = {
   status: GameEndStatus;

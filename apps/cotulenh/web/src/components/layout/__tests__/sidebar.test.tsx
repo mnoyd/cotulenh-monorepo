@@ -23,8 +23,8 @@ describe('Sidebar', () => {
     render(<Sidebar />);
     expect(screen.getByRole('link', { name: 'Trang chủ' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Chơi' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Bạn bè' })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Bảng xếp hạng' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Học' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Hồ sơ' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Cài đặt' })).toBeInTheDocument();
   });
 
@@ -32,11 +32,8 @@ describe('Sidebar', () => {
     render(<Sidebar />);
     expect(screen.getByRole('link', { name: 'Trang chủ' })).toHaveAttribute('href', '/dashboard');
     expect(screen.getByRole('link', { name: 'Chơi' })).toHaveAttribute('href', '/play');
-    expect(screen.getByRole('link', { name: 'Bạn bè' })).toHaveAttribute('href', '/friends');
-    expect(screen.getByRole('link', { name: 'Bảng xếp hạng' })).toHaveAttribute(
-      'href',
-      '/leaderboard'
-    );
+    expect(screen.getByRole('link', { name: 'Học' })).toHaveAttribute('href', '/learn');
+    expect(screen.getByRole('link', { name: 'Hồ sơ' })).toHaveAttribute('href', '/profile');
     expect(screen.getByRole('link', { name: 'Cài đặt' })).toHaveAttribute('href', '/settings');
   });
 
@@ -48,12 +45,9 @@ describe('Sidebar', () => {
   });
 
   it('highlights different route when pathname changes', () => {
-    vi.mocked(usePathname).mockReturnValue('/leaderboard');
+    vi.mocked(usePathname).mockReturnValue('/profile');
     render(<Sidebar />);
-    expect(screen.getByRole('link', { name: 'Bảng xếp hạng' })).toHaveAttribute(
-      'aria-current',
-      'page'
-    );
+    expect(screen.getByRole('link', { name: 'Hồ sơ' })).toHaveAttribute('aria-current', 'page');
     expect(screen.getByRole('link', { name: 'Trang chủ' })).not.toHaveAttribute('aria-current');
   });
 
@@ -75,8 +69,8 @@ describe('Sidebar', () => {
     expect(links.map((link) => link.getAttribute('href'))).toEqual([
       '/dashboard',
       '/play',
-      '/friends',
-      '/leaderboard',
+      '/learn',
+      '/profile',
       '/settings'
     ]);
   });
