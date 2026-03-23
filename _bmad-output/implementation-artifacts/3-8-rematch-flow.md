@@ -49,7 +49,7 @@ So that we can play again quickly without going back to the lobby.
   - [x] 2.4 `rematch_accept` handler: validate `pending_action.type === 'rematch_offer'` and `pending_action.color !== playerColor` (opponent offered), check expiry via `isPendingActionExpired()` (60s), call `create_rematch_game` RPC with `game_id` and `DEFAULT_POSITION` FEN, clear `pending_action`, broadcast `rematch_accepted` event `{ type: 'rematch_accepted', payload: { new_game_id }, seq }`
   - [x] 2.5 `rematch_decline` handler: validate `pending_action.type === 'rematch_offer'` and `pending_action.color !== playerColor`, clear `pending_action`, broadcast `rematch_declined` event
   - [x] 2.6 Add `REMATCH_OFFER_EXPIRY_MS = 60_000` to `pending-action.ts`, update `isPendingActionExpired()` to handle `'rematch_offer'` type
-  - [ ] 2.7 Write Deno tests: offer rematch on ended game, accept rematch (verify new game created with swapped colors), decline rematch, offer on non-terminal game (rejected), double offer (rejected), accept expired offer (rejected), accept own offer (rejected)
+  - [x] 2.7 Write Deno tests: offer rematch on ended game, accept rematch (verify new game created with swapped colors), decline rematch, offer on non-terminal game (rejected), double offer (rejected), accept expired offer (rejected), accept own offer (rejected)
 
 - [x] Task 3: Update PendingAction type in pending-action.ts (AC: #1, #4, #5)
   - [x] 3.1 Add `{ type: 'rematch_offer'; color: 'red' | 'blue'; created_at: string }` to the `PendingAction` union type
@@ -91,7 +91,7 @@ So that we can play again quickly without going back to the lobby.
   - [x] 7.5 Handle `rematch_decline` on page leave: in the channel cleanup/unmount, if `rematchStatus === 'received'`, send decline action (best-effort, don't block unmount). Server-side expiry is the fallback.
 
 - [x] Task 8: Testing & regression (AC: #1-#7)
-  - [ ] 8.1 Deno Edge Function tests: rematch offer on ended game, accept creates new game with swapped colors/same settings, decline clears state, offer on active game rejected, expired offer rejection, double offer rejection, accept own offer rejected
+  - [x] 8.1 Deno Edge Function tests: rematch offer on ended game, accept creates new game with swapped colors/same settings, decline clears state, offer on active game rejected, expired offer rejection, double offer rejection, accept own offer rejected
   - [x] 8.2 Game store tests: all rematch actions (offerRematch, acceptRematch, declineRematch), all event handlers (handleRematchOffer, handleRematchAccepted, handleRematchDeclined, handleRematchExpired), reset clears rematch fields
   - [x] 8.3 Component tests: GameResultBanner renders all rematch states (idle/enabled, sent/countdown, received/accept-decline, accepted/loading, declined/message, expired/re-enabled), button hidden for aborted games
   - [x] 8.4 Integration tests: use-game-channel processes all rematch event types, game-page-client navigates on rematch accepted
@@ -293,12 +293,14 @@ No debug issues encountered.
 - Wired rematch in `game-page-client`: navigation on accept, banner re-show on received offer, client-side 60s expiry timer
 - Hidden rematch button for aborted/disputed games
 - Review fixes applied for server-side rematch expiry, best-effort decline on page leave, declined-to-idle recovery, and missing game-page rematch tests
-- Focused rematch suites pass: 87 web tests across affected files and 16 Deno helper/game-end tests; validate-move rematch integration tests remain tracked in `cotulenh-monorepo-331`
+- Extracted rematch server logic into `supabase/functions/validate-move/rematch.ts` and added Deno coverage for terminal-status guard, offer, duplicate offer rejection, accept, own-offer rejection, stale-offer expiry, and decline
+- Focused rematch suites pass: 87 web tests across affected files and 24 Deno tests across rematch/pending-action/game-end helpers
 
 ### Change Log
 
 - 2026-03-23: Implemented rematch flow — story 3.8
 - 2026-03-23: Applied review fixes for rematch expiry/decline handling and corrected incomplete test claims
+- 2026-03-23: Added extracted validate-move rematch test coverage and closed the remaining review test gap
 
 ### File List
 
@@ -309,6 +311,8 @@ Modified files:
 - supabase/functions/validate-move/index.ts
 - supabase/functions/validate-move/pending-action.ts
 - supabase/functions/validate-move/pending-action.test.ts
+- supabase/functions/validate-move/rematch.ts
+- supabase/functions/validate-move/rematch.test.ts
 - apps/cotulenh/web/src/lib/types/game.ts
 - apps/cotulenh/web/src/stores/game-store.ts
 - apps/cotulenh/web/src/stores/__tests__/game-store-actions.test.ts

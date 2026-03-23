@@ -3,10 +3,13 @@ import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { applyElapsedAndIncrement } from './clock.ts';
 import { completeGame, determineGameEndResult } from './game-end.ts';
 import {
-  getPendingActionExpiryEvent,
-  isPendingActionExpired,
-  type PendingAction
-} from './pending-action.ts';
+  expirePendingAction,
+  handleRematchAccept,
+  handleRematchDecline,
+  handleRematchOffer,
+  isRematchTerminalStatus
+} from './rematch.ts';
+import { isPendingActionExpired, type PendingAction } from './pending-action.ts';
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -128,10 +131,8 @@ Deno.serve(async (req) => {
       return errorResponse('Game not found', 'NOT_FOUND', 404);
     }
 
-    // Rematch actions require terminal game status — handle before the started-only gate
-    const TERMINAL_STATUSES = ['checkmate', 'resign', 'timeout', 'stalemate', 'draw'];
     if (isRematchAction || isRematchPendingExpiry) {
-      if (!TERMINAL_STATUSES.includes(gameRow.status)) {
+      if (!isRematchTerminalStatus(gameRow.status)) {
         return errorResponse('Rematch only available for ended games', 'INVALID_ACTION', 400);
       }
     } else if (gameRow.status !== 'started') {
@@ -169,36 +170,6 @@ Deno.serve(async (req) => {
       pending_action: PendingAction;
     } = stateRows[0];
 
-    const expirePendingAction = async (pendingAction: Exclude<PendingAction, null>) => {
-      const { error: clearPendingError } = await supabase
-        .from('game_states')
-        .update({ pending_action: null })
-        .eq('id', gameState.id);
-
-      if (clearPendingError) {
-        return { success: false as const };
-      }
-
-      const expiryEvent = getPendingActionExpiryEvent(pendingAction);
-      const expiryChannel = supabase.channel(`game:${game_id}`);
-      const expirySeq =
-        pendingAction.type === 'rematch_offer'
-          ? gameState.move_history.length + 1
-          : gameState.move_history.length;
-
-      await expiryChannel.send({
-        type: 'broadcast',
-        event: expiryEvent,
-        payload: {
-          type: expiryEvent,
-          payload: {},
-          seq: expirySeq
-        }
-      });
-
-      return { success: true as const, event: expiryEvent };
-    };
-
     if (isPendingActionExpire) {
       const isRematchExpiry = pending_type === 'rematch_offer';
       if (!isRematchExpiry && gameState.phase !== 'playing') {
@@ -218,7 +189,10 @@ Deno.serve(async (req) => {
         return jsonResponse({ data: { expired: false } });
       }
 
-      const expireResult = await expirePendingAction(expiringPending);
+      const expireResult = await expirePendingAction(
+        { supabase, gameId: game_id, gameState },
+        expiringPending
+      );
       if (!expireResult.success) {
         return errorResponse('Failed to expire pending action', 'INTERNAL_ERROR', 500);
       }
@@ -228,134 +202,39 @@ Deno.serve(async (req) => {
 
     // === REMATCH OFFER HANDLING (Story 3.8: AC #1, #5, #7) ===
     if (isRematchOffer) {
-      const rematchOfferPending = gameState.pending_action;
-      if (rematchOfferPending) {
-        return errorResponse('A pending action already exists', 'DUPLICATE_ACTION', 400);
+      const result = await handleRematchOffer(
+        { supabase, gameId: game_id, gameState },
+        playerColor
+      );
+      if (!result.ok) {
+        return errorResponse(result.error, result.code, result.status);
       }
-
-      const rematchOfferAction: PendingAction = {
-        type: 'rematch_offer',
-        color: playerColor,
-        created_at: new Date().toISOString()
-      };
-
-      const { error: rematchOfferUpdateError } = await supabase
-        .from('game_states')
-        .update({ pending_action: rematchOfferAction })
-        .eq('id', gameState.id);
-
-      if (rematchOfferUpdateError) {
-        return errorResponse('Failed to store rematch offer', 'INTERNAL_ERROR', 500);
-      }
-
-      const rematchOfferSeq = gameState.move_history.length + 1;
-      const rematchOfferChannel = supabase.channel(`game:${game_id}`);
-      await rematchOfferChannel.send({
-        type: 'broadcast',
-        event: 'rematch_offer',
-        payload: {
-          type: 'rematch_offer',
-          payload: { offering_color: playerColor },
-          seq: rematchOfferSeq
-        }
-      });
-
-      return jsonResponse({ data: { rematch_offer: true } });
+      return jsonResponse({ data: result.data });
     }
 
     // === REMATCH ACCEPT HANDLING (Story 3.8: AC #2) ===
     if (isRematchAccept) {
-      const rematchAcceptPending = gameState.pending_action;
-      if (rematchAcceptPending && isPendingActionExpired(rematchAcceptPending)) {
-        const expireResult = await expirePendingAction(rematchAcceptPending);
-        if (!expireResult.success) {
-          return errorResponse('Failed to expire pending action', 'INTERNAL_ERROR', 500);
-        }
-        return errorResponse('Rematch offer has expired', 'EXPIRED_ACTION', 409);
-      }
-      if (
-        !rematchAcceptPending ||
-        rematchAcceptPending.type !== 'rematch_offer' ||
-        rematchAcceptPending.color === playerColor
-      ) {
-        return errorResponse('No pending rematch offer from opponent', 'INVALID_ACTION', 400);
-      }
-
-      // Create the rematch game via RPC
-      const { data: newGameId, error: rematchCreateError } = await supabase.rpc(
-        'create_rematch_game',
-        { p_original_game_id: game_id, p_fen: DEFAULT_POSITION }
+      const result = await handleRematchAccept(
+        { supabase, gameId: game_id, gameState },
+        playerColor,
+        DEFAULT_POSITION
       );
-
-      if (rematchCreateError || !newGameId) {
-        return errorResponse('Failed to create rematch game', 'INTERNAL_ERROR', 500);
+      if (!result.ok) {
+        return errorResponse(result.error, result.code, result.status);
       }
-
-      // Clear pending action
-      const { error: rematchAcceptClearError } = await supabase
-        .from('game_states')
-        .update({ pending_action: null })
-        .eq('id', gameState.id);
-
-      if (rematchAcceptClearError) {
-        return errorResponse('Failed to clear rematch offer', 'INTERNAL_ERROR', 500);
-      }
-
-      const rematchAcceptSeq = gameState.move_history.length + 2;
-      const rematchAcceptChannel = supabase.channel(`game:${game_id}`);
-      await rematchAcceptChannel.send({
-        type: 'broadcast',
-        event: 'rematch_accepted',
-        payload: {
-          type: 'rematch_accepted',
-          payload: { new_game_id: newGameId },
-          seq: rematchAcceptSeq
-        }
-      });
-
-      return jsonResponse({ data: { rematch_accepted: true, new_game_id: newGameId } });
+      return jsonResponse({ data: result.data });
     }
 
     // === REMATCH DECLINE HANDLING (Story 3.8: AC #3) ===
     if (isRematchDecline) {
-      const rematchDeclinePending = gameState.pending_action;
-      if (rematchDeclinePending && isPendingActionExpired(rematchDeclinePending)) {
-        const expireResult = await expirePendingAction(rematchDeclinePending);
-        if (!expireResult.success) {
-          return errorResponse('Failed to expire pending action', 'INTERNAL_ERROR', 500);
-        }
-        return errorResponse('Rematch offer has expired', 'EXPIRED_ACTION', 409);
+      const result = await handleRematchDecline(
+        { supabase, gameId: game_id, gameState },
+        playerColor
+      );
+      if (!result.ok) {
+        return errorResponse(result.error, result.code, result.status);
       }
-      if (
-        !rematchDeclinePending ||
-        rematchDeclinePending.type !== 'rematch_offer' ||
-        rematchDeclinePending.color === playerColor
-      ) {
-        return errorResponse('No pending rematch offer from opponent', 'INVALID_ACTION', 400);
-      }
-
-      const { error: rematchDeclineClearError } = await supabase
-        .from('game_states')
-        .update({ pending_action: null })
-        .eq('id', gameState.id);
-
-      if (rematchDeclineClearError) {
-        return errorResponse('Failed to clear rematch offer', 'INTERNAL_ERROR', 500);
-      }
-
-      const rematchDeclineSeq = gameState.move_history.length + 1;
-      const rematchDeclineChannel = supabase.channel(`game:${game_id}`);
-      await rematchDeclineChannel.send({
-        type: 'broadcast',
-        event: 'rematch_declined',
-        payload: {
-          type: 'rematch_declined',
-          payload: {},
-          seq: rematchDeclineSeq
-        }
-      });
-
-      return jsonResponse({ data: { rematch_declined: true } });
+      return jsonResponse({ data: result.data });
     }
 
     // === TIMEOUT CLAIM HANDLING (Task 2: AC #4) ===
