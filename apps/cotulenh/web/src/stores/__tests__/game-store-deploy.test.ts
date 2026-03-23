@@ -43,7 +43,8 @@ const mockDeployingGameData: GameData = {
     move_history: [],
     fen: 'default_fen r - - 0 1',
     phase: 'deploying',
-    clocks: { red: 600000, blue: 600000 }
+    clocks: { red: 600000, blue: 600000 },
+    pending_action: null
   }
 };
 

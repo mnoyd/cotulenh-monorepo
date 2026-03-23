@@ -44,7 +44,8 @@ const mockPlayingGameData: GameData = {
     move_history: ['e2e4'],
     fen: 'some-fen',
     phase: 'playing',
-    clocks: { red: 600000, blue: 600000 }
+    clocks: { red: 600000, blue: 600000 },
+    pending_action: null
   }
 };
 
@@ -54,7 +55,8 @@ const mockDeployGameData: GameData = {
     move_history: [],
     fen: 'start',
     phase: 'deploying',
-    clocks: { red: 600000, blue: 600000 }
+    clocks: { red: 600000, blue: 600000 },
+    pending_action: null
   }
 };
 

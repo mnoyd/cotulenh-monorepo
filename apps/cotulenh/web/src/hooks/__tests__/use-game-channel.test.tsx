@@ -3,25 +3,29 @@ import { render, act } from '@testing-library/react';
 
 import { useGameStore } from '@/stores/game-store';
 
+type ChannelHandler = (event: { payload: unknown }) => void;
+type MockChannel = {
+  on: (type: string, config: { event: string }, cb: ChannelHandler) => MockChannel;
+  subscribe: () => MockChannel;
+};
+
 const {
   handlers,
   mockChannel,
   removeChannel
 }: {
-  handlers: Record<string, (event: { payload: unknown }) => void>;
-  mockChannel: {
-    on: ReturnType<typeof vi.fn>;
-    subscribe: ReturnType<typeof vi.fn>;
-  };
+  handlers: Record<string, ChannelHandler>;
+  mockChannel: MockChannel;
   removeChannel: ReturnType<typeof vi.fn>;
 } = vi.hoisted(() => {
-  const handlers: Record<string, (event: { payload: unknown }) => void> = {};
-  const mockChannel = {
-    on: vi.fn((_: string, config: { event: string }, cb: (event: { payload: unknown }) => void) => {
+  const handlers: Record<string, ChannelHandler> = {};
+  let mockChannel!: MockChannel;
+  mockChannel = {
+    on: vi.fn((_: string, config: { event: string }, cb: ChannelHandler): MockChannel => {
       handlers[config.event] = cb;
       return mockChannel;
     }),
-    subscribe: vi.fn(() => mockChannel)
+    subscribe: vi.fn((): MockChannel => mockChannel)
   };
   const removeChannel = vi.fn();
   return { handlers, mockChannel, removeChannel };
