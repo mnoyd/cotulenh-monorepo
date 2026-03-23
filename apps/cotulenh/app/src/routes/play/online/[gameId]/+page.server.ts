@@ -5,14 +5,30 @@ export const load: PageServerLoad = async ({ params, locals: { supabase, safeGet
   const { user } = await safeGetSession();
   if (!user) throw redirect(303, '/auth/login');
 
-  const { data: game, error: fetchError } = await supabase
-    .from('games')
-    .select('id, red_player, blue_player, status, time_control, started_at')
-    .eq('id', params.gameId)
-    .single();
+  const [{ data: game, error: fetchError }, { data: gameState, error: stateError }] =
+    await Promise.all([
+      supabase
+        .from('games')
+        .select(
+          'id, red_player, blue_player, status, time_control, started_at, winner, result_reason'
+        )
+        .eq('id', params.gameId)
+        .single(),
+      supabase
+        .from('game_states')
+        .select(
+          'move_history, fen, phase, clocks, disconnect_red_at, disconnect_blue_at, clocks_paused'
+        )
+        .eq('game_id', params.gameId)
+        .single()
+    ]);
 
   if (fetchError || !game) {
     throw error(404, 'Game not found');
+  }
+
+  if (stateError || !gameState) {
+    throw error(404, 'Game state not found');
   }
 
   // Verify current user is a player in this game
@@ -36,7 +52,18 @@ export const load: PageServerLoad = async ({ params, locals: { supabase, safeGet
       id: game.id,
       status: game.status,
       timeControl: game.time_control as { timeMinutes: number; incrementSeconds: number },
-      startedAt: game.started_at
+      startedAt: game.started_at,
+      winner: game.winner,
+      resultReason: game.result_reason
+    },
+    gameState: {
+      moveHistory: gameState.move_history as string[],
+      fen: gameState.fen,
+      phase: gameState.phase,
+      clocks: gameState.clocks as { red: number; blue: number },
+      disconnectRedAt: gameState.disconnect_red_at,
+      disconnectBlueAt: gameState.disconnect_blue_at,
+      clocksPaused: gameState.clocks_paused
     },
     currentUserId: user.id,
     playerColor,

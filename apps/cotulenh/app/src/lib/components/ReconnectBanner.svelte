@@ -3,13 +3,42 @@
 
   const i18n = getI18n();
 
-  let { visible }: { visible: boolean } = $props();
+  type Props = {
+    visible: boolean;
+    mode: 'self' | 'opponent';
+    remainingSeconds?: number;
+    timedOut?: boolean;
+  };
+
+  let {
+    visible,
+    mode,
+    remainingSeconds = 60,
+    timedOut = false
+  }: Props = $props();
+
+  let opponentCountdownText = $derived.by(() =>
+    i18n.t('game.opponentReconnectCountdown').replace('{seconds}', String(remainingSeconds))
+  );
 </script>
 
 {#if visible}
-  <div class="reconnect-banner" role="status">
+  <div
+    class="reconnect-banner"
+    class:self-mode={mode === 'self'}
+    class:timeout-mode={timedOut}
+    role="alert"
+  >
     <span class="pulse-dot"></span>
-    <span class="banner-text">{i18n.t('game.opponentMayReconnect')}</span>
+    <span class="banner-text">
+      {#if mode === 'self'}
+        {i18n.t('game.reconnecting')}
+      {:else if timedOut}
+        {i18n.t('game.opponentDisconnectForfeit')}
+      {:else}
+        {opponentCountdownText}
+      {/if}
+    </span>
   </div>
 {/if}
 
@@ -22,7 +51,6 @@
     padding: 0.375rem 0.75rem;
     background: var(--theme-warning-bg, rgba(245, 158, 11, 0.15));
     border: 1px solid var(--theme-warning, #f59e0b);
-    border-radius: 6px;
     color: var(--theme-warning, #f59e0b);
     font-size: 0.75rem;
     font-weight: 600;
@@ -39,8 +67,28 @@
   }
 
   .banner-text {
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.03em;
+  }
+
+  .self-mode {
+    background: rgba(239, 68, 68, 0.12);
+    border-color: #ef4444;
+    color: #ef4444;
+  }
+
+  .self-mode .pulse-dot {
+    background: #ef4444;
+  }
+
+  .timeout-mode {
+    background: rgba(16, 185, 129, 0.14);
+    border-color: #10b981;
+    color: #10b981;
+  }
+
+  .timeout-mode .pulse-dot {
+    background: #10b981;
+    animation: none;
   }
 
   @keyframes pulse {
@@ -51,5 +99,12 @@
   @keyframes fadeIn {
     from { opacity: 0; }
     to { opacity: 1; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .reconnect-banner,
+    .pulse-dot {
+      animation: none;
+    }
   }
 </style>

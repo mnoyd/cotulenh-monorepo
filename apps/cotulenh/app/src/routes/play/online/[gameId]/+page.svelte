@@ -24,7 +24,23 @@
 
   const i18n = getI18n();
 
-  let { data }: { data: PageData } = $props();
+  type OnlineGamePageData = PageData & {
+    game: PageData['game'] & {
+      winner: 'red' | 'blue' | null;
+      resultReason: string | null;
+    };
+    gameState: {
+      moveHistory: string[];
+      fen: string;
+      phase: string;
+      clocks: { red: number; blue: number };
+      disconnectRedAt: string | null;
+      disconnectBlueAt: string | null;
+      clocksPaused: boolean;
+    };
+  };
+
+  let { data }: { data: OnlineGamePageData } = $props();
 
   let onlineSession = $state<OnlineGameSession | null>(null);
   let boardComponent: BoardContainer | null = $state(null);
@@ -32,6 +48,7 @@
   let resignDialogOpen = $state(false);
   let pendingMove = $state<{ orig: OrigMove; dest: DestMove; metadata: MoveMetadata } | null>(null);
   let moveConfirmEnabled = $derived(loadSettings().moveConfirmation);
+  let nowMs = $state(Date.now());
 
   function getOrientation(): 'red' | 'blue' {
     return data.playerColor === 'red' ? 'red' : 'blue';
@@ -61,10 +78,30 @@
       : false
   );
 
-  let showDisconnectBanner = $derived(
+  let showSelfDisconnectBanner = $derived(
     onlineSession !== null &&
-    !onlineSession.opponentConnected &&
-    onlineSession.lifecycle === 'playing'
+      onlineSession.selfDisconnected &&
+      (onlineSession.connectionState === 'disconnected' ||
+        onlineSession.connectionState === 'reconnecting')
+  );
+
+  let showOpponentDisconnectBanner = $derived(
+    onlineSession !== null &&
+      onlineSession.lifecycle === 'playing' &&
+      onlineSession.opponentDisconnectAt !== null &&
+      !onlineSession.selfDisconnected
+  );
+
+  let opponentReconnectSecondsRemaining = $derived.by(() => {
+    if (!onlineSession?.opponentDisconnectAt) return 60;
+    const elapsedSeconds = Math.floor(
+      (nowMs - new Date(onlineSession.opponentDisconnectAt).getTime()) / 1000
+    );
+    return Math.max(0, 60 - elapsedSeconds);
+  });
+
+  let opponentDisconnectTimedOut = $derived(
+    showOpponentDisconnectBanner && opponentReconnectSecondsRemaining === 0
   );
 
   let moveCount = $derived(onlineSession ? onlineSession.history.length : 0);
@@ -90,6 +127,7 @@
   let statusLabel = $derived.by(() => {
     if (!onlineSession) return i18n.t('game.connecting');
     if (onlineSession.connectionState === 'connecting') return i18n.t('game.connecting');
+    if (onlineSession.connectionState === 'reconnecting') return i18n.t('game.reconnecting');
     if (onlineSession.connectionState === 'disconnected') return i18n.t('game.connectionLost');
     if (onlineSession.lifecycle === 'waiting') return i18n.t('game.waitingForOpponent');
     if (onlineSession.lifecycle === 'ended') return '';
@@ -120,7 +158,19 @@
         timeControl: data.game.timeControl,
         supabase,
         redPlayerName,
-        bluePlayerName
+        bluePlayerName,
+        initialSnapshot: {
+          gameStatus: data.game.status,
+          winner: data.game.winner,
+          resultReason: data.game.resultReason,
+          moveHistory: data.gameState.moveHistory,
+          fen: data.gameState.fen,
+          phase: data.gameState.phase,
+          clocks: data.gameState.clocks,
+          disconnectRedAt: data.gameState.disconnectRedAt,
+          disconnectBlueAt: data.gameState.disconnectBlueAt,
+          clocksPaused: data.gameState.clocksPaused
+        }
       },
       () => {
         toast.info(i18n.t('game.gameAborted'));
@@ -150,6 +200,7 @@
     );
 
     onlineSession = session;
+    gameResult = session.gameResult;
     session.join();
 
     return () => {
@@ -185,6 +236,22 @@
   $effect(() => {
     if (onlineSession) {
       onlineSession.session.setupBoardEffect();
+    }
+  });
+
+  $effect(() => {
+    if (onlineSession?.opponentDisconnectAt) {
+      nowMs = Date.now();
+      const timer = setInterval(() => {
+        nowMs = Date.now();
+      }, 1000);
+      return () => clearInterval(timer);
+    }
+  });
+
+  $effect(() => {
+    if (onlineSession?.gameResult) {
+      gameResult = onlineSession.gameResult;
     }
   });
 
@@ -280,13 +347,18 @@
         <OnlineIndicator online={onlineSession?.opponentConnected ?? false} />
         <span class="player-name">{data.opponent.displayName}</span>
       </div>
-      <span class="clock" class:active={opponentClockActive}>
-        {formatClockTime(opponentTime)}
-      </span>
+      <div class="clock-group">
+        {#if onlineSession?.clocksPaused}
+          <span class="clock-indicator">{i18n.t('game.clocksPaused')}</span>
+        {/if}
+        <span class="clock" class:active={opponentClockActive}>
+          {formatClockTime(opponentTime)}
+        </span>
+      </div>
     </div>
 
     <!-- Board -->
-    <div class="board-sizer">
+    <div class="board-sizer" class:self-disconnected={showSelfDisconnectBanner}>
       {#if onlineSession}
         <BoardContainer
           bind:this={boardComponent}
@@ -342,7 +414,13 @@
       </div>
     {/if}
 
-    <ReconnectBanner visible={showDisconnectBanner} />
+    <ReconnectBanner visible={showSelfDisconnectBanner} mode="self" />
+    <ReconnectBanner
+      visible={showOpponentDisconnectBanner}
+      mode="opponent"
+      remainingSeconds={opponentReconnectSecondsRemaining}
+      timedOut={opponentDisconnectTimedOut}
+    />
 
     {#if pendingMove}
       <div class="move-confirm-bar">
@@ -376,9 +454,14 @@
         <span class="color-dot {data.playerColor}"></span>
         <span class="player-name">{i18n.t('common.play')}</span>
       </div>
-      <span class="clock" class:active={playerClockActive}>
-        {formatClockTime(playerTime)}
-      </span>
+      <div class="clock-group">
+        {#if onlineSession?.clocksPaused}
+          <span class="clock-indicator">{i18n.t('game.clocksPaused')}</span>
+        {/if}
+        <span class="clock" class:active={playerClockActive}>
+          {formatClockTime(playerTime)}
+        </span>
+      </div>
     </div>
   </div>
 {/snippet}
@@ -550,6 +633,23 @@
 
   .clock.active {
     color: var(--theme-text-primary, #fff);
+  }
+
+  .clock-group {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .clock-indicator {
+    font-size: 0.75rem;
+    letter-spacing: 0.03em;
+    color: var(--theme-warning, #f59e0b);
+  }
+
+  .board-sizer.self-disconnected {
+    opacity: 0.55;
+    pointer-events: none;
   }
 
   .result-overlay {

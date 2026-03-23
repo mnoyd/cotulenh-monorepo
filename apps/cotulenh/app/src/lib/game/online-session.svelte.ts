@@ -23,6 +23,9 @@ export class OnlineGameSession {
   #connectionState = $state<ConnectionState>('disconnected');
   #lifecycle = $state<Lifecycle>('waiting');
   #opponentConnected = $state(false);
+  #selfDisconnected = $state(false);
+  #clocksPaused = $state(false);
+  #opponentDisconnectAt = $state<string | null>(null);
   #seqCounter = $state(0);
   #awaitingSync = $state(false);
 
@@ -83,6 +86,15 @@ export class OnlineGameSession {
   }
   get opponentConnected(): boolean {
     return this.#opponentConnected;
+  }
+  get selfDisconnected(): boolean {
+    return this.#selfDisconnected;
+  }
+  get clocksPaused(): boolean {
+    return this.#clocksPaused;
+  }
+  get opponentDisconnectAt(): string | null {
+    return this.#opponentDisconnectAt;
   }
   get seqCounter(): number {
     return this.#seqCounter;
@@ -328,6 +340,9 @@ export class OnlineGameSession {
     this.#connectionState = this.#core.connectionState;
     this.#lifecycle = this.#core.lifecycle;
     this.#opponentConnected = this.#core.opponentConnected;
+    this.#selfDisconnected = this.#core.selfDisconnected;
+    this.#clocksPaused = this.#core.clocksPaused;
+    this.#opponentDisconnectAt = this.#core.opponentDisconnectAt;
     this.#seqCounter = this.#core.seqCounter;
     this.#awaitingSync = this.#core.awaitingSync;
     this.#version++;

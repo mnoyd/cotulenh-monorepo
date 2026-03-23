@@ -82,6 +82,7 @@ function createMockSupabase() {
   let lastInsertValues: Record<string, unknown> | null = null;
   let lastInsertTable: string | null = null;
   let insertCallCount = 0;
+  let lastInvokeBody: Record<string, unknown> | null = null;
   let rematchInvitationResult: { data: { id: string } | null; error: null | Error } = {
     data: { id: 'invitation-1' },
     error: null
@@ -90,11 +91,44 @@ function createMockSupabase() {
     data: { id: 'rematch-game-1' },
     error: null
   };
+  let gamesSelectResult: { data: Record<string, unknown> | null; error: null | Error } = {
+    data: {
+      status: 'started',
+      winner: null,
+      result_reason: null
+    },
+    error: null
+  };
+  let gameStateSelectResult: { data: Record<string, unknown> | null; error: null | Error } = {
+    data: {
+      move_history: [],
+      fen: '6c4/1n2fh1hf2/3a2s2a1/2n1gt1tg2/2ie2m2ei/11/11/2IE2M2EI/2N1GT1TG2/3A2S2A1/1N2FH1HF2/6C4 r - - 0 1',
+      phase: 'playing',
+      clocks: { red: 300_000, blue: 300_000 },
+      disconnect_red_at: null,
+      disconnect_blue_at: null,
+      clocks_paused: false
+    },
+    error: null
+  };
 
   const supabase = {
     channel: vi.fn(() => mockChannel as unknown as RealtimeChannel),
     removeChannel: vi.fn(),
     from: vi.fn((tableName: string) => ({
+      select: vi.fn(() => ({
+        eq: vi.fn(() => ({
+          single: vi.fn(async () => {
+            if (tableName === 'games') {
+              return gamesSelectResult;
+            }
+            if (tableName === 'game_states') {
+              return gameStateSelectResult;
+            }
+            return { data: null, error: null };
+          })
+        }))
+      })),
       update: vi.fn((values?: Record<string, unknown>, options?: Record<string, unknown>) => {
         lastUpdateValues = values ?? null;
         lastUpdateOptions = options ?? null;
@@ -131,7 +165,35 @@ function createMockSupabase() {
           }))
         };
       })
-    }))
+    })),
+    functions: {
+      invoke: vi.fn(async (_name: string, options?: { body?: Record<string, unknown> }) => {
+        lastInvokeBody = options?.body ?? null;
+        if (options?.body?.action === 'report_disconnect') {
+          return {
+            data: {
+              data: {
+                disconnect_red_at: null,
+                disconnect_blue_at: '2026-03-24T00:00:00.000Z',
+                clocks_paused: true
+              }
+            },
+            error: null
+          };
+        }
+
+        return {
+          data: {
+            data: {
+              disconnect_red_at: null,
+              disconnect_blue_at: null,
+              clocks_paused: false
+            }
+          },
+          error: null
+        };
+      })
+    }
   };
 
   return {
@@ -167,6 +229,19 @@ function createMockSupabase() {
     },
     setRematchGameResult: (result: { data: { id: string } | null; error: null | Error }) => {
       rematchGameResult = result;
+    },
+    getLastInvokeBody: () => lastInvokeBody,
+    setGamesSelectResult: (result: {
+      data: Record<string, unknown> | null;
+      error: null | Error;
+    }) => {
+      gamesSelectResult = result;
+    },
+    setGameStateSelectResult: (result: {
+      data: Record<string, unknown> | null;
+      error: null | Error;
+    }) => {
+      gameStateSelectResult = result;
     },
     // Helper to simulate presence sync
     simulatePresenceSync: () => {
@@ -809,6 +884,36 @@ describe('OnlineGameSessionCore', () => {
       expect(core.opponentConnected).toBe(false);
     });
 
+    it('reports opponent disconnect and pauses clocks on presence leave', async () => {
+      core = new OnlineGameSessionCore(createDefaultConfig(mock.supabase));
+      core.join();
+      await vi.advanceTimersByTimeAsync(10);
+
+      mock.presenceState['opponent'] = [
+        {
+          color: 'blue',
+          userId: OPPONENT_USER_ID,
+          presenceId: 'opponent-presence'
+        }
+      ];
+      mock.simulatePresenceJoin({ key: 'opponent-key' });
+
+      expect(core.lifecycle).toBe('playing');
+      expect(core.clock.status).toBe('running');
+
+      delete mock.presenceState['opponent'];
+      mock.simulatePresenceLeave({ key: 'opponent-key' });
+
+      expect(mock.getLastInvokeBody()).toMatchObject({
+        game_id: 'test-game-id',
+        action: 'report_disconnect',
+        disconnected_color: 'blue'
+      });
+      expect(core.clocksPaused).toBe(true);
+      expect(core.clock.status).toBe('paused');
+      expect(core.opponentDisconnectAt).not.toBeNull();
+    });
+
     it('syncs presence state correctly', async () => {
       core = new OnlineGameSessionCore(createDefaultConfig(mock.supabase));
       core.join();
@@ -819,6 +924,53 @@ describe('OnlineGameSessionCore', () => {
       mock.simulatePresenceSync();
 
       expect(core.opponentConnected).toBe(true);
+    });
+
+    it('restores authoritative state and clears self disconnect on re-subscribe', async () => {
+      core = new OnlineGameSessionCore(createDefaultConfig(mock.supabase));
+      core.join();
+      await vi.advanceTimersByTimeAsync(10);
+
+      mock.presenceState['opponent'] = [
+        {
+          color: 'blue',
+          userId: OPPONENT_USER_ID,
+          presenceId: 'opponent-presence'
+        }
+      ];
+      mock.simulatePresenceJoin({ key: 'opponent-key' });
+
+      const firstMove = triggerLocalMove(core);
+      mock.setGameStateSelectResult({
+        data: {
+          move_history: [firstMove.san],
+          fen: core.session.fen,
+          phase: 'playing',
+          clocks: { red: 250_000, blue: 280_000 },
+          disconnect_red_at: null,
+          disconnect_blue_at: null,
+          clocks_paused: false
+        },
+        error: null
+      });
+
+      const subscribeCallback = mock.getSubscribeCallback();
+      expect(subscribeCallback).toBeTruthy();
+
+      subscribeCallback?.('CHANNEL_ERROR');
+      expect(core.selfDisconnected).toBe(true);
+      expect(core.connectionState).toBe('disconnected');
+
+      await subscribeCallback?.('SUBSCRIBED');
+
+      expect(mock.getLastInvokeBody()).toMatchObject({
+        game_id: 'test-game-id',
+        action: 'report_reconnect'
+      });
+      expect(core.selfDisconnected).toBe(false);
+      expect(core.connectionState).toBe('connected');
+      expect(core.clock.getTime('r')).toBe(250_000);
+      expect(core.clock.getTime('b')).toBe(280_000);
     });
   });
 

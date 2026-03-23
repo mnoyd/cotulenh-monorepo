@@ -627,8 +627,13 @@ export interface TranslationKeys {
   'game.moveCount': string;
   'game.gameAborted': string;
   'game.connectionLost': string;
+  'game.reconnecting': string;
   'game.opponentMayReconnect': string;
+  'game.opponentReconnectCountdown': string;
+  'game.opponentDisconnectForfeit': string;
   'game.connectionRestored': string;
+  'game.clocksPaused': string;
+  'game.disconnectForfeit': string;
   'game.syncFailed': string;
   'game.syncFailedReport': string;
   'game.youWin': string;

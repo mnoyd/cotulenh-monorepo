@@ -5,7 +5,7 @@ import { ChessClockState, type ClockConfig, type ClockColor } from '$lib/clock/c
 import { LagTracker } from '$lib/game/lag-tracker';
 import { sendGameMessage, onGameMessage, type GameMessage } from '$lib/game/messages';
 
-export type ConnectionState = 'disconnected' | 'connecting' | 'connected';
+export type ConnectionState = 'disconnected' | 'connecting' | 'reconnecting' | 'connected';
 export type Lifecycle = 'waiting' | 'playing' | 'ended';
 
 const NOSTART_TIMEOUT_MS = 30_000;
@@ -19,6 +19,20 @@ export interface OnlineSessionConfig {
   supabase: SupabaseClient;
   redPlayerName: string;
   bluePlayerName: string;
+  initialSnapshot?: OnlineSessionSnapshot;
+}
+
+export interface OnlineSessionSnapshot {
+  gameStatus: string;
+  winner: 'red' | 'blue' | null;
+  resultReason: string | null;
+  moveHistory: string[];
+  fen: string;
+  phase: string;
+  clocks: { red: number; blue: number };
+  disconnectRedAt: string | null;
+  disconnectBlueAt: string | null;
+  clocksPaused: boolean;
 }
 
 export interface GameEndResult {
@@ -71,6 +85,9 @@ export class OnlineGameSessionCore {
   #connectionState: ConnectionState = 'disconnected';
   #lifecycle: Lifecycle = 'waiting';
   #opponentConnected = false;
+  #selfDisconnected = false;
+  #clocksPaused = false;
+  #opponentDisconnectAt: string | null = null;
   #seqCounter = 0;
   #lastProcessedSeq = 0;
   #awaitingSync = false;
@@ -94,6 +111,7 @@ export class OnlineGameSessionCore {
   #rematchReceived = false;
   #rematchGameId: string | null = null;
   #acceptingRematch = false;
+  #disconnectPollTimer: ReturnType<typeof setInterval> | null = null;
 
   constructor(config: OnlineSessionConfig, callbacks: OnlineSessionCallbacks = {}) {
     this.gameId = config.gameId;
@@ -126,6 +144,11 @@ export class OnlineGameSessionCore {
 
     // Hook into local move events
     this.session.onMove = (san: string) => this.#handleLocalMove(san);
+
+    if (config.initialSnapshot) {
+      this.#selfDisconnected = this.#getOwnDisconnectAt(config.initialSnapshot) !== null;
+      this.#applyServerSnapshot(config.initialSnapshot);
+    }
   }
 
   // State getters
@@ -137,6 +160,15 @@ export class OnlineGameSessionCore {
   }
   get opponentConnected(): boolean {
     return this.#opponentConnected;
+  }
+  get selfDisconnected(): boolean {
+    return this.#selfDisconnected;
+  }
+  get clocksPaused(): boolean {
+    return this.#clocksPaused;
+  }
+  get opponentDisconnectAt(): string | null {
+    return this.#opponentDisconnectAt;
   }
   get seqCounter(): number {
     return this.#seqCounter;
@@ -236,20 +268,27 @@ export class OnlineGameSessionCore {
     // Subscribe and track own presence
     channel.subscribe(async (status) => {
       if (status === 'SUBSCRIBED') {
-        this.#connectionState = 'connected';
-        this.#lifecycle = 'waiting';
+        const wasSelfDisconnected = this.#selfDisconnected;
+        this.#connectionState = wasSelfDisconnected ? 'reconnecting' : 'connected';
         await channel.track({
           color: this.playerColor,
           userId: this.#currentUserId,
           presenceId: this.#presenceId
         });
         this.#syncPresence(channel);
-        this.#notifyStateChange();
+        if (wasSelfDisconnected) {
+          await this.#restoreAfterReconnect();
+        } else {
+          this.#notifyStateChange();
+        }
 
-        // Start NoStart timeout
-        this.#startNoStartTimer();
-      } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+        if (this.#lifecycle === 'waiting' && this.session.history.length === 0) {
+          this.#startNoStartTimer();
+        }
+      } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+        this.#selfDisconnected = true;
         this.#connectionState = 'disconnected';
+        this.#pauseClockForDisconnect();
         this.#clearAllPendingAcks();
         this.#notifyStateChange();
       }
@@ -271,6 +310,7 @@ export class OnlineGameSessionCore {
     });
 
     this.clock.stop();
+    this.#clearDisconnectState();
     this.#lifecycle = 'ended';
     this.#gameResult = {
       status: 'timeout',
@@ -304,6 +344,7 @@ export class OnlineGameSessionCore {
 
     const winner = this.playerColor === 'red' ? 'blue' : 'red';
     this.clock.stop();
+    this.#clearDisconnectState();
     this.#lifecycle = 'ended';
     this.#gameResult = {
       status: 'resign',
@@ -519,6 +560,7 @@ export class OnlineGameSessionCore {
     if (!this.#channel || !this.canAbort) return;
     if (this.#disputeActive) return;
 
+    this.#clearDisconnectState();
     this.#lifecycle = 'ended';
     this.clock.stop();
     this.#notifyStateChange();
@@ -564,6 +606,7 @@ export class OnlineGameSessionCore {
         logger.error('Failed to save dispute', { error, gameId: this.gameId });
       }
 
+      this.#clearDisconnectState();
       this.#lifecycle = 'ended';
       this.#gameResult = {
         status: 'dispute',
@@ -581,6 +624,7 @@ export class OnlineGameSessionCore {
 
   destroy(): void {
     this.#clearNoStartTimer();
+    this.#stopDisconnectPolling();
     this.clock.destroy();
     this.#clearAllPendingAcks();
 
@@ -875,6 +919,8 @@ export class OnlineGameSessionCore {
     this.#syncOpponentFlaggedFromClockState();
     this.#clockAnnotations = [];
     this.#clearAllPendingAcks();
+    this.#clocksPaused = false;
+    this.#resumeClockIfNeeded();
     this.#notifyStateChange();
   }
 
@@ -1088,6 +1134,240 @@ export class OnlineGameSessionCore {
     this.#notifyAbortOnce();
   }
 
+  async #reportDisconnect(disconnectedColor: 'red' | 'blue'): Promise<void> {
+    try {
+      const { data, error } = await this.#supabase.functions.invoke('validate-move', {
+        body: {
+          game_id: this.gameId,
+          action: 'report_disconnect',
+          disconnected_color: disconnectedColor
+        }
+      });
+
+      if (error) {
+        logger.error('Failed to report disconnect', {
+          gameId: this.gameId,
+          disconnectedColor,
+          error
+        });
+        return;
+      }
+
+      const response = data as {
+        data?: {
+          disconnect_red_at?: string | null;
+          disconnect_blue_at?: string | null;
+          clocks_paused?: boolean;
+        };
+      };
+
+      this.#applyDisconnectMetadata({
+        disconnectRedAt: response.data?.disconnect_red_at ?? null,
+        disconnectBlueAt: response.data?.disconnect_blue_at ?? null,
+        clocksPaused: response.data?.clocks_paused ?? true
+      });
+      this.#notifyStateChange();
+    } catch (error) {
+      logger.error('Unexpected disconnect report failure', {
+        gameId: this.gameId,
+        disconnectedColor,
+        error
+      });
+    }
+  }
+
+  async #restoreAfterReconnect(): Promise<void> {
+    try {
+      const before = await this.#fetchServerSnapshot();
+      if (!before) {
+        this.#selfDisconnected = false;
+        this.#connectionState = 'connected';
+        this.#notifyStateChange();
+        return;
+      }
+
+      if (before.gameStatus === 'started') {
+        await this.#supabase.functions.invoke('validate-move', {
+          body: {
+            game_id: this.gameId,
+            action: 'report_reconnect'
+          }
+        });
+      }
+
+      const after = (await this.#fetchServerSnapshot()) ?? before;
+      const previousLifecycle = this.#lifecycle;
+      this.#applyServerSnapshot(after);
+      this.#selfDisconnected = false;
+      this.#connectionState = 'connected';
+
+      if (previousLifecycle !== 'ended' && this.#lifecycle === 'ended' && this.#gameResult) {
+        this.#callbacks.onGameEnd?.(this.#gameResult);
+      }
+
+      this.#notifyStateChange();
+    } catch (error) {
+      logger.error('Failed to restore after reconnect', { gameId: this.gameId, error });
+      this.#selfDisconnected = false;
+      this.#connectionState = 'connected';
+      this.#notifyStateChange();
+    }
+  }
+
+  async #fetchServerSnapshot(): Promise<OnlineSessionSnapshot | null> {
+    const [{ data: game, error: gameError }, { data: gameState, error: gameStateError }] =
+      await Promise.all([
+        this.#supabase
+          .from('games')
+          .select('status, winner, result_reason')
+          .eq('id', this.gameId)
+          .single(),
+        this.#supabase
+          .from('game_states')
+          .select(
+            'move_history, fen, phase, clocks, disconnect_red_at, disconnect_blue_at, clocks_paused'
+          )
+          .eq('game_id', this.gameId)
+          .single()
+      ]);
+
+    if (gameError || !game || gameStateError || !gameState) {
+      logger.error('Failed to fetch authoritative game state', {
+        gameId: this.gameId,
+        gameError,
+        gameStateError
+      });
+      return null;
+    }
+
+    return {
+      gameStatus: game.status as string,
+      winner: (game.winner as 'red' | 'blue' | null) ?? null,
+      resultReason: (game.result_reason as string | null) ?? null,
+      moveHistory: (gameState.move_history as string[] | null) ?? [],
+      fen: gameState.fen as string,
+      phase: gameState.phase as string,
+      clocks: (gameState.clocks as { red: number; blue: number }) ?? { red: 0, blue: 0 },
+      disconnectRedAt: (gameState.disconnect_red_at as string | null) ?? null,
+      disconnectBlueAt: (gameState.disconnect_blue_at as string | null) ?? null,
+      clocksPaused: Boolean(gameState.clocks_paused)
+    };
+  }
+
+  #applyServerSnapshot(snapshot: OnlineSessionSnapshot): void {
+    if (snapshot.moveHistory.length > 0) {
+      const restored = this.session.restoreFromHistory(snapshot.moveHistory, snapshot.fen);
+      if (!restored) {
+        this.#callbacks.onSyncError?.({
+          pgn: snapshot.moveHistory.join(' '),
+          fen: snapshot.fen,
+          gameId: this.gameId,
+          error: 'history restore failed'
+        });
+      }
+    }
+
+    this.clock.stop();
+    this.clock.setTime('r', snapshot.clocks.red);
+    this.clock.setTime('b', snapshot.clocks.blue);
+    this.#applyDisconnectMetadata(snapshot);
+    this.#syncOpponentFlaggedFromClockState();
+
+    if (snapshot.gameStatus === 'started') {
+      this.#gameResult = null;
+      this.#lifecycle = 'playing';
+      this.clock.start(this.session.turn === 'b' ? 'b' : 'r');
+      if (this.#clocksPaused) {
+        this.clock.pause();
+      }
+      if (this.#opponentDisconnectAt) {
+        this.#startDisconnectPolling();
+      } else {
+        this.#stopDisconnectPolling();
+      }
+      return;
+    }
+
+    this.#stopDisconnectPolling();
+    this.#clocksPaused = false;
+    this.#opponentDisconnectAt = null;
+    this.#lifecycle = 'ended';
+    this.#gameResult = {
+      status: snapshot.gameStatus,
+      winner: snapshot.winner,
+      resultReason: snapshot.resultReason ?? snapshot.gameStatus,
+      isLocalPlayerWinner: snapshot.winner === this.playerColor
+    };
+  }
+
+  #applyDisconnectMetadata(snapshot: {
+    disconnectRedAt: string | null;
+    disconnectBlueAt: string | null;
+    clocksPaused: boolean;
+  }): void {
+    this.#clocksPaused = snapshot.clocksPaused;
+    this.#opponentDisconnectAt =
+      this.playerColor === 'red' ? snapshot.disconnectBlueAt : snapshot.disconnectRedAt;
+  }
+
+  #getOwnDisconnectAt(snapshot: {
+    disconnectRedAt: string | null;
+    disconnectBlueAt: string | null;
+  }): string | null {
+    return this.playerColor === 'red' ? snapshot.disconnectRedAt : snapshot.disconnectBlueAt;
+  }
+
+  #pauseClockForDisconnect(): void {
+    if (this.clock.status === 'running') {
+      this.clock.pause();
+    }
+  }
+
+  #resumeClockIfNeeded(): void {
+    if (
+      !this.#clocksPaused &&
+      !this.#selfDisconnected &&
+      this.#lifecycle === 'playing' &&
+      this.clock.status === 'paused'
+    ) {
+      this.clock.resume();
+    }
+  }
+
+  #startDisconnectPolling(): void {
+    this.#stopDisconnectPolling();
+    this.#disconnectPollTimer = setInterval(async () => {
+      const snapshot = await this.#fetchServerSnapshot();
+      if (!snapshot) return;
+
+      if (snapshot.gameStatus !== 'started') {
+        this.#applyServerSnapshot(snapshot);
+        this.#notifyStateChange();
+        return;
+      }
+
+      this.#applyDisconnectMetadata(snapshot);
+      if (!this.#opponentDisconnectAt && !this.#clocksPaused) {
+        this.#stopDisconnectPolling();
+        this.#resumeClockIfNeeded();
+      }
+      this.#notifyStateChange();
+    }, 1000);
+  }
+
+  #stopDisconnectPolling(): void {
+    if (this.#disconnectPollTimer) {
+      clearInterval(this.#disconnectPollTimer);
+      this.#disconnectPollTimer = null;
+    }
+  }
+
+  #clearDisconnectState(): void {
+    this.#stopDisconnectPolling();
+    this.#clocksPaused = false;
+    this.#opponentDisconnectAt = null;
+  }
+
   // ============================================================
   // PRIVATE - Presence
   // ============================================================
@@ -1118,11 +1398,22 @@ export class OnlineGameSessionCore {
     // Track disconnect for sync-on-reconnect
     if (!opponentFound && wasConnected) {
       this.#opponentWasDisconnected = true;
+      this.#pauseClockForDisconnect();
+      this.#clocksPaused = true;
+      if (!this.#opponentDisconnectAt) {
+        this.#opponentDisconnectAt = new Date().toISOString();
+      }
+      this.#startDisconnectPolling();
+      void this.#reportDisconnect(this.playerColor === 'red' ? 'blue' : 'red');
     }
 
     // Send sync when opponent reconnects after a disconnect during active play
     if (opponentFound && this.#opponentWasDisconnected && this.#lifecycle === 'playing') {
       this.#opponentWasDisconnected = false;
+      this.#opponentDisconnectAt = null;
+      this.#clocksPaused = false;
+      this.#stopDisconnectPolling();
+      this.#resumeClockIfNeeded();
       this.#sendSyncToOpponent(channel);
     }
 
@@ -1194,6 +1485,7 @@ export class OnlineGameSessionCore {
 
   #endGameAsDraw(resultReason: string): void {
     if (this.#lifecycle === 'ended') return;
+    this.#clearDisconnectState();
     this.#lifecycle = 'ended';
     this.clock.stop();
     this.#drawOfferSent = false;
@@ -1251,6 +1543,7 @@ export class OnlineGameSessionCore {
     const engineWinner = this.session.winner;
     const dbWinner = engineWinner === 'r' ? 'red' : engineWinner === 'b' ? 'blue' : null;
 
+    this.#clearDisconnectState();
     this.clock.stop();
     this.#lifecycle = 'ended';
     this.#gameResult = {
@@ -1268,6 +1561,7 @@ export class OnlineGameSessionCore {
     if (this.#lifecycle === 'ended') return;
 
     const winner = this.playerColor; // Local player wins when opponent resigns
+    this.#clearDisconnectState();
     this.clock.stop();
     this.#lifecycle = 'ended';
     this.#gameResult = {
@@ -1303,6 +1597,7 @@ export class OnlineGameSessionCore {
     }
 
     const winner = this.playerColor === 'red' ? 'blue' : 'red';
+    this.#clearDisconnectState();
     this.clock.stop();
     this.#lifecycle = 'ended';
     this.#gameResult = {

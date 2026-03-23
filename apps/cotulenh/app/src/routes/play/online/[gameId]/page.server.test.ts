@@ -56,7 +56,9 @@ describe('game page load', () => {
         blue_player: 'user-2',
         status: 'started',
         time_control: { timeMinutes: 5, incrementSeconds: 0 },
-        started_at: '2024-01-01T00:00:00Z'
+        started_at: '2024-01-01T00:00:00Z',
+        winner: null,
+        result_reason: null
       },
       error: null
     });
@@ -89,7 +91,28 @@ describe('game page load', () => {
             blue_player: 'user-2',
             status: 'started',
             time_control: { timeMinutes: 5, incrementSeconds: 0 },
-            started_at: '2024-01-01T00:00:00Z'
+            started_at: '2024-01-01T00:00:00Z',
+            winner: null,
+            result_reason: null
+          },
+          error: null
+        });
+        return chain;
+      }
+      if (callCount === 2) {
+        const chain: Record<string, unknown> = {};
+        for (const m of ['select', 'eq']) {
+          chain[m] = vi.fn().mockReturnValue(chain);
+        }
+        chain.single = vi.fn().mockResolvedValue({
+          data: {
+            move_history: [],
+            fen: 'fen',
+            phase: 'deploying',
+            clocks: { red: 300_000, blue: 300_000 },
+            disconnect_red_at: null,
+            disconnect_blue_at: null,
+            clocks_paused: false
           },
           error: null
         });
@@ -112,6 +135,7 @@ describe('game page load', () => {
       locals
     } as never)) as {
       game: { id: string; status: string };
+      gameState: { phase: string };
       currentUserId: string;
       playerColor: string;
       opponent: { id: string; displayName: string };
@@ -119,6 +143,7 @@ describe('game page load', () => {
 
     expect(result.game.id).toBe('game-1');
     expect(result.game.status).toBe('started');
+    expect(result.gameState.phase).toBe('deploying');
     expect(result.currentUserId).toBe('user-1');
     expect(result.playerColor).toBe('red');
     expect(result.opponent.id).toBe('user-2');
@@ -143,7 +168,28 @@ describe('game page load', () => {
             blue_player: 'user-2',
             status: 'started',
             time_control: { timeMinutes: 10, incrementSeconds: 5 },
-            started_at: '2024-01-01T00:00:00Z'
+            started_at: '2024-01-01T00:00:00Z',
+            winner: null,
+            result_reason: null
+          },
+          error: null
+        });
+        return chain;
+      }
+      if (callCount === 2) {
+        const chain: Record<string, unknown> = {};
+        for (const m of ['select', 'eq']) {
+          chain[m] = vi.fn().mockReturnValue(chain);
+        }
+        chain.single = vi.fn().mockResolvedValue({
+          data: {
+            move_history: [],
+            fen: 'fen',
+            phase: 'deploying',
+            clocks: { red: 600_000, blue: 600_000 },
+            disconnect_red_at: null,
+            disconnect_blue_at: null,
+            clocks_paused: false
           },
           error: null
         });

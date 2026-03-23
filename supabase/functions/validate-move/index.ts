@@ -70,14 +70,16 @@ Deno.serve(async (req) => {
 
     // Parse request body
     const body = await req.json();
-    const { game_id, sans, san, action, pending_type, claiming_color } = body as {
-      game_id?: string;
-      sans?: string[];
-      san?: string;
-      action?: string;
-      pending_type?: 'draw_offer' | 'takeback_request' | 'rematch_offer';
-      claiming_color?: 'red' | 'blue';
-    };
+    const { game_id, sans, san, action, pending_type, claiming_color, disconnected_color } =
+      body as {
+        game_id?: string;
+        sans?: string[];
+        san?: string;
+        action?: string;
+        pending_type?: 'draw_offer' | 'takeback_request' | 'rematch_offer';
+        claiming_color?: 'red' | 'blue';
+        disconnected_color?: 'red' | 'blue';
+      };
 
     if (!game_id || typeof game_id !== 'string') {
       return errorResponse('Missing game_id', 'INVALID_INPUT', 400);
@@ -94,6 +96,8 @@ Deno.serve(async (req) => {
     const isTakebackAccept = action === 'takeback_accept';
     const isTakebackDecline = action === 'takeback_decline';
     const isPendingActionExpire = action === 'expire_pending_action';
+    const isReportDisconnect = action === 'report_disconnect';
+    const isReportReconnect = action === 'report_reconnect';
     const isRematchOffer = action === 'rematch_offer';
     const isRematchAccept = action === 'rematch_accept';
     const isRematchDecline = action === 'rematch_decline';
@@ -108,6 +112,8 @@ Deno.serve(async (req) => {
       isTakebackAccept ||
       isTakebackDecline ||
       isPendingActionExpire ||
+      isReportDisconnect ||
+      isReportReconnect ||
       isRematchAction;
 
     if (!isPlayingMove && !isTimeoutClaim && !isGameAction) {
@@ -123,7 +129,7 @@ Deno.serve(async (req) => {
     // 1.10: Verify game status is 'started'
     const { data: gameRow, error: gameError } = await supabase
       .from('games')
-      .select('id, status, red_player, blue_player, time_control')
+      .select('id, status, red_player, blue_player, time_control, winner, result_reason')
       .eq('id', game_id)
       .single();
 
@@ -168,7 +174,52 @@ Deno.serve(async (req) => {
       clocks: { red: number; blue: number } | null;
       updated_at: string | null;
       pending_action: PendingAction;
+      disconnect_red_at: string | null;
+      disconnect_blue_at: string | null;
+      clocks_paused: boolean;
     } = stateRows[0];
+
+    if (isReportDisconnect) {
+      if (disconnected_color !== 'red' && disconnected_color !== 'blue') {
+        return errorResponse('Invalid disconnected_color', 'INVALID_INPUT', 400);
+      }
+
+      const { data: disconnectRows, error: disconnectError } = await supabase.rpc(
+        'record_player_disconnect',
+        { p_game_id: game_id, p_color: disconnected_color }
+      );
+
+      if (disconnectError || !disconnectRows || disconnectRows.length === 0) {
+        return errorResponse('Failed to record disconnect', 'INTERNAL_ERROR', 500);
+      }
+
+      return jsonResponse({
+        data: {
+          disconnect_red_at: disconnectRows[0].disconnect_red_at,
+          disconnect_blue_at: disconnectRows[0].disconnect_blue_at,
+          clocks_paused: disconnectRows[0].clocks_paused
+        }
+      });
+    }
+
+    if (isReportReconnect) {
+      const { data: reconnectRows, error: reconnectError } = await supabase.rpc(
+        'clear_player_disconnect',
+        { p_game_id: game_id, p_color: playerColor }
+      );
+
+      if (reconnectError || !reconnectRows || reconnectRows.length === 0) {
+        return errorResponse('Failed to clear disconnect', 'INTERNAL_ERROR', 500);
+      }
+
+      return jsonResponse({
+        data: {
+          disconnect_red_at: reconnectRows[0].disconnect_red_at,
+          disconnect_blue_at: reconnectRows[0].disconnect_blue_at,
+          clocks_paused: reconnectRows[0].clocks_paused
+        }
+      });
+    }
 
     if (isPendingActionExpire) {
       const isRematchExpiry = pending_type === 'rematch_offer';
@@ -699,7 +750,7 @@ Deno.serve(async (req) => {
       const updatedAt = gameState.updated_at
         ? new Date(gameState.updated_at).getTime()
         : Date.now();
-      const elapsed = Math.max(0, Date.now() - updatedAt);
+      const elapsed = gameState.clocks_paused ? 0 : Math.max(0, Date.now() - updatedAt);
       const incrementSeconds =
         (gameRow.time_control as { incrementSeconds?: number } | null)?.incrementSeconds ?? 0;
 

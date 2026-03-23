@@ -242,6 +242,36 @@ export class GameSession {
     }
   }
 
+  restoreFromHistory(history: string[], expectedFen?: string): boolean {
+    try {
+      const tempGame = new CoTuLenh();
+      for (const san of history) {
+        const result = tempGame.move(san);
+        if (!result) {
+          throw new Error(`Failed to replay move: ${san}`);
+        }
+      }
+
+      if (expectedFen && tempGame.fen() !== expectedFen) {
+        throw new Error('Replayed FEN does not match expected server FEN');
+      }
+
+      this.#game = tempGame;
+      this.#history = this.#game.history({ verbose: true }) as HistoryMove[];
+      this.#historyViewIndex = -1;
+      this.#version++;
+      return true;
+    } catch (error) {
+      logger.error('restoreFromHistory failed — keeping current state', {
+        error,
+        history,
+        expectedFen,
+        currentFen: this.#game.fen()
+      });
+      return false;
+    }
+  }
+
   applyMove(san: string): MoveResult | null {
     try {
       const result = this.#game.move(san);
