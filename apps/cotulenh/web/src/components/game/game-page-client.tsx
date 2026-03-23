@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useCallback, useState, useMemo } from 'react';
+import { useEffect, useCallback, useState, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 
 import type { GameData } from '@/lib/types/game';
@@ -45,9 +45,7 @@ export function GamePageClient({ gameData }: GamePageClientProps) {
   const getDeployablePieces = useGameStore((s) => s.getDeployablePieces);
   const getDeployProgress = useGameStore((s) => s.getDeployProgress);
   const storeMakeMove = useGameStore((s) => s.makeMove);
-  const getLegalMoves = useGameStore((s) => s.getLegalMoves);
   const moveError = useGameStore((s) => s.moveError);
-  const pendingMove = useGameStore((s) => s.pendingMove);
   const winner = useGameStore((s) => s.winner);
   const gameStatus = useGameStore((s) => s.gameStatus);
   const resultReason = useGameStore((s) => s.resultReason);
@@ -62,6 +60,13 @@ export function GamePageClient({ gameData }: GamePageClientProps) {
   const declineTakeback = useGameStore((s) => s.declineTakeback);
   const expireDrawOffer = useGameStore((s) => s.expireDrawOffer);
   const expireTakeback = useGameStore((s) => s.expireTakeback);
+  const rematchStatus = useGameStore((s) => s.rematchStatus);
+  const rematchNewGameId = useGameStore((s) => s.rematchNewGameId);
+  const offerRematch = useGameStore((s) => s.offerRematch);
+  const acceptRematch = useGameStore((s) => s.acceptRematch);
+  const declineRematch = useGameStore((s) => s.declineRematch);
+  const expireRematchOffer = useGameStore((s) => s.expireRematchOffer);
+  const storeReset = useGameStore((s) => s.reset);
 
   const router = useRouter();
   const [selectedPiece, setSelectedPiece] = useState<string | null>(null);
@@ -69,6 +74,7 @@ export function GamePageClient({ gameData }: GamePageClientProps) {
   const [boardFen, setBoardFen] = useState(gameData.game_state.fen);
   const [moveRejected, setMoveRejected] = useState(false);
   const [errorToast, setErrorToast] = useState<string | null>(null);
+  const rematchStatusRef = useRef(rematchStatus);
 
   // Subscribe to realtime game events
   useGameChannel(gameId);
@@ -84,6 +90,10 @@ export function GamePageClient({ gameData }: GamePageClientProps) {
       setBoardFen(engine.fen());
     }
   }, [engine, phase]);
+
+  useEffect(() => {
+    rematchStatusRef.current = rematchStatus;
+  }, [rematchStatus]);
 
   const handleDeployMove = useCallback(
     (orig: string, dest: string) => {
@@ -153,6 +163,50 @@ export function GamePageClient({ gameData }: GamePageClientProps) {
 
   const handleDismissBanner = useCallback(() => {
     setBannerDismissed(true);
+  }, []);
+
+  // Navigate to new game on rematch accepted
+  useEffect(() => {
+    if (rematchStatus === 'accepted' && rematchNewGameId) {
+      storeReset();
+      router.push(`/game/${rematchNewGameId}`);
+    }
+  }, [rematchStatus, rematchNewGameId, storeReset, router]);
+
+  // Re-show banner when rematch offer received while dismissed
+  useEffect(() => {
+    if (rematchStatus === 'received' && bannerDismissed) {
+      setBannerDismissed(false);
+    }
+  }, [rematchStatus, bannerDismissed]);
+
+  // Client-side rematch expiry timer
+  useEffect(() => {
+    if (rematchStatus !== 'sent') return;
+
+    const timerId = window.setTimeout(() => {
+      void expireRematchOffer();
+    }, 60_000);
+
+    return () => window.clearTimeout(timerId);
+  }, [rematchStatus, expireRematchOffer]);
+
+  useEffect(() => {
+    if (rematchStatus !== 'declined') return;
+
+    const timerId = window.setTimeout(() => {
+      useGameStore.getState().handleRematchExpired();
+    }, 3_000);
+
+    return () => window.clearTimeout(timerId);
+  }, [rematchStatus]);
+
+  useEffect(() => {
+    return () => {
+      if (rematchStatusRef.current === 'received') {
+        void useGameStore.getState().declineRematch();
+      }
+    };
   }, []);
   const deployPieces = isDeploying ? getDeployablePieces() : [];
   const deployProgress = isDeploying ? getDeployProgress() : { current: 0, total: 0 };
@@ -308,7 +362,11 @@ export function GamePageClient({ gameData }: GamePageClientProps) {
               winner={winner}
               myColor={myColor ?? 'red'}
               resultReason={resultReason}
+              rematchStatus={rematchStatus}
               onNewGame={handleNewGame}
+              onRematch={offerRematch}
+              onAcceptRematch={acceptRematch}
+              onDeclineRematch={declineRematch}
               onDismiss={handleDismissBanner}
             />
           ) : null}

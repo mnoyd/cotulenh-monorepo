@@ -1,19 +1,25 @@
 export type PendingAction =
   | { type: 'draw_offer'; color: 'red' | 'blue'; created_at: string }
   | { type: 'takeback_request'; color: 'red' | 'blue'; move_count: number; created_at: string }
+  | { type: 'rematch_offer'; color: 'red' | 'blue'; created_at: string }
   | null;
 
 export const DRAW_OFFER_EXPIRY_MS = 60_000;
 export const TAKEBACK_REQUEST_EXPIRY_MS = 30_000;
+export const REMATCH_OFFER_EXPIRY_MS = 60_000;
 
 export function getPendingActionExpiryMs(type: NonNullable<PendingAction>['type']): number {
-  return type === 'draw_offer' ? DRAW_OFFER_EXPIRY_MS : TAKEBACK_REQUEST_EXPIRY_MS;
+  if (type === 'draw_offer') return DRAW_OFFER_EXPIRY_MS;
+  if (type === 'rematch_offer') return REMATCH_OFFER_EXPIRY_MS;
+  return TAKEBACK_REQUEST_EXPIRY_MS;
 }
 
 export function getPendingActionExpiryEvent(
   pendingAction: NonNullable<PendingAction>
-): 'draw_offer_expired' | 'takeback_expired' {
-  return pendingAction.type === 'draw_offer' ? 'draw_offer_expired' : 'takeback_expired';
+): 'draw_offer_expired' | 'takeback_expired' | 'rematch_expired' {
+  if (pendingAction.type === 'draw_offer') return 'draw_offer_expired';
+  if (pendingAction.type === 'rematch_offer') return 'rematch_expired';
+  return 'takeback_expired';
 }
 
 export function isPendingActionExpired(

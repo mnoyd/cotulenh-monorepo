@@ -214,4 +214,58 @@ describe('useGameChannel', () => {
     expect(handleTakebackDeclined).toHaveBeenCalledOnce();
     expect(handleTakebackExpired).toHaveBeenCalledOnce();
   });
+
+  it('processes rematch lifecycle events', async () => {
+    const handleRematchOffer = vi.fn();
+    const handleRematchAccepted = vi.fn();
+    const handleRematchDeclined = vi.fn();
+    const handleRematchExpired = vi.fn();
+
+    useGameStore.setState({
+      handleRematchOffer,
+      handleRematchAccepted,
+      handleRematchDeclined,
+      handleRematchExpired
+    });
+
+    render(<Harness gameId="game-5" />);
+
+    act(() => {
+      handlers.rematch_offer({
+        payload: {
+          type: 'rematch_offer',
+          payload: { offering_color: 'blue' },
+          seq: 20
+        }
+      });
+      handlers.rematch_accepted({
+        payload: {
+          type: 'rematch_accepted',
+          payload: { new_game_id: 'new-game-abc' },
+          seq: 21
+        }
+      });
+      handlers.rematch_declined({
+        payload: {
+          type: 'rematch_declined',
+          payload: {},
+          seq: 22
+        }
+      });
+      handlers.rematch_expired({
+        payload: {
+          type: 'rematch_expired',
+          payload: {},
+          seq: 23
+        }
+      });
+    });
+
+    await Promise.resolve();
+
+    expect(handleRematchOffer).toHaveBeenCalledWith('blue');
+    expect(handleRematchAccepted).toHaveBeenCalledWith('new-game-abc');
+    expect(handleRematchDeclined).toHaveBeenCalledOnce();
+    expect(handleRematchExpired).toHaveBeenCalledOnce();
+  });
 });

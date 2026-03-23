@@ -4,6 +4,9 @@ import { act, render, screen } from '@testing-library/react';
 import type { GameData } from '@/lib/types/game';
 import { useGameStore } from '@/stores/game-store';
 
+const mockPush = vi.fn();
+const mockInvoke = vi.fn();
+
 // Mock dynamic import for BoardContainer
 vi.mock('next/dynamic', () => ({
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -52,7 +55,7 @@ vi.mock('@/hooks/use-game-channel', () => ({
 // Mock next/navigation
 vi.mock('next/navigation', () => ({
   useRouter: vi.fn().mockReturnValue({
-    push: vi.fn(),
+    push: mockPush,
     replace: vi.fn(),
     back: vi.fn(),
     prefetch: vi.fn()
@@ -63,7 +66,7 @@ vi.mock('next/navigation', () => ({
 vi.mock('@/lib/supabase/browser', () => ({
   createClient: vi.fn().mockReturnValue({
     auth: { getSession: vi.fn().mockResolvedValue({ data: { session: null } }) },
-    functions: { invoke: vi.fn() }
+    functions: { invoke: (...args: unknown[]) => mockInvoke(...args) }
   })
 }));
 
@@ -91,6 +94,9 @@ const mockGameData: GameData = {
 describe('GamePageClient', () => {
   beforeEach(() => {
     useGameStore.getState().reset();
+    mockPush.mockReset();
+    mockInvoke.mockReset();
+    mockInvoke.mockResolvedValue({ data: {}, error: null });
   });
 
   it('renders board container', () => {
@@ -199,5 +205,113 @@ describe('GamePageClient', () => {
 
     expect(claimTimeout).toHaveBeenCalled();
     vi.useRealTimers();
+  });
+
+  it('navigates to the rematch game after a rematch is accepted', () => {
+    const endedGameData: GameData = {
+      ...mockGameData,
+      status: 'checkmate',
+      winner: 'red',
+      game_state: {
+        ...mockGameData.game_state,
+        phase: 'playing'
+      }
+    };
+
+    render(<GamePageClient gameData={endedGameData} />);
+
+    act(() => {
+      useGameStore.getState().handleGameEnd('checkmate', 'red', null);
+      useGameStore.getState().handleRematchAccepted('rematch-123');
+    });
+
+    expect(mockPush).toHaveBeenCalledWith('/game/rematch-123');
+    expect(useGameStore.getState().gameId).toBeNull();
+  });
+
+  it('expires a sent rematch through validate-move after 60 seconds', async () => {
+    vi.useFakeTimers();
+    const endedGameData: GameData = {
+      ...mockGameData,
+      status: 'checkmate',
+      winner: 'red',
+      game_state: {
+        ...mockGameData.game_state,
+        phase: 'playing'
+      }
+    };
+
+    render(<GamePageClient gameData={endedGameData} />);
+
+    act(() => {
+      useGameStore.getState().handleGameEnd('checkmate', 'red', null);
+      useGameStore.setState({ rematchStatus: 'sent' });
+    });
+
+    await act(async () => {
+      vi.advanceTimersByTime(60_000);
+      await Promise.resolve();
+    });
+
+    expect(mockInvoke).toHaveBeenCalledWith('validate-move', {
+      body: {
+        game_id: 'game-abc',
+        action: 'expire_pending_action',
+        pending_type: 'rematch_offer'
+      }
+    });
+    vi.useRealTimers();
+  });
+
+  it('returns the rematch CTA to idle three seconds after a decline', () => {
+    vi.useFakeTimers();
+    const endedGameData: GameData = {
+      ...mockGameData,
+      status: 'checkmate',
+      winner: 'red',
+      game_state: {
+        ...mockGameData.game_state,
+        phase: 'playing'
+      }
+    };
+
+    render(<GamePageClient gameData={endedGameData} />);
+
+    act(() => {
+      useGameStore.getState().handleGameEnd('checkmate', 'red', null);
+      useGameStore.getState().handleRematchDeclined();
+    });
+
+    act(() => {
+      vi.advanceTimersByTime(3_000);
+    });
+
+    expect(useGameStore.getState().rematchStatus).toBe('idle');
+    vi.useRealTimers();
+  });
+
+  it('sends a best-effort rematch decline when unmounting with a received offer', () => {
+    const endedGameData: GameData = {
+      ...mockGameData,
+      status: 'checkmate',
+      winner: 'red',
+      game_state: {
+        ...mockGameData.game_state,
+        phase: 'playing'
+      }
+    };
+
+    const view = render(<GamePageClient gameData={endedGameData} />);
+
+    act(() => {
+      useGameStore.getState().handleGameEnd('checkmate', 'red', null);
+      useGameStore.setState({ rematchStatus: 'received' });
+    });
+
+    view.unmount();
+
+    expect(mockInvoke).toHaveBeenCalledWith('validate-move', {
+      body: { game_id: 'game-abc', action: 'rematch_decline' }
+    });
   });
 });

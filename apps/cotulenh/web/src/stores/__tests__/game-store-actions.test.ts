@@ -335,13 +335,229 @@ describe('useGameStore - resign/draw/takeback actions', () => {
     it('clears new state fields on reset', () => {
       useGameStore.setState({
         pendingDrawOffer: 'sent',
-        pendingTakeback: 'received'
+        pendingTakeback: 'received',
+        rematchStatus: 'sent',
+        rematchNewGameId: 'some-id'
       });
 
       useGameStore.getState().reset();
 
       expect(useGameStore.getState().pendingDrawOffer).toBeNull();
       expect(useGameStore.getState().pendingTakeback).toBeNull();
+      expect(useGameStore.getState().rematchStatus).toBe('idle');
+      expect(useGameStore.getState().rematchNewGameId).toBeNull();
+    });
+  });
+});
+
+const mockEndedGameData: GameData = {
+  id: 'game-ended-1',
+  status: 'checkmate',
+  red_player: { id: 'p1', display_name: 'Nguoi choi 1', rating: 1500 },
+  blue_player: { id: 'p2', display_name: 'Nguoi choi 2', rating: 1600 },
+  my_color: 'red',
+  is_rated: true,
+  created_at: '2026-03-17T00:00:00Z',
+  winner: 'red',
+  result_reason: null,
+  game_state: {
+    move_history: ['e2e4', 'e7e5', 'f1c4', 'a7a6', 'q1h5', 'b7b5', 'h5f7'],
+    fen: 'ended-fen',
+    phase: 'playing',
+    clocks: { red: 500000, blue: 400000 },
+    pending_action: null
+  }
+};
+
+describe('useGameStore - rematch actions', () => {
+  beforeEach(() => {
+    useGameStore.getState().reset();
+    vi.clearAllMocks();
+  });
+
+  describe('offerRematch', () => {
+    it('sets rematchStatus to sent optimistically', async () => {
+      useGameStore.getState().initializeGame('game-ended-1', mockEndedGameData);
+      useGameStore.getState().initializeEngine('ended-fen');
+
+      const promise = useGameStore.getState().offerRematch();
+      expect(useGameStore.getState().rematchStatus).toBe('sent');
+      await promise;
+    });
+
+    it('calls validate-move with rematch_offer action', async () => {
+      useGameStore.getState().initializeGame('game-ended-1', mockEndedGameData);
+      useGameStore.getState().initializeEngine('ended-fen');
+
+      await useGameStore.getState().offerRematch();
+
+      expect(mockInvoke).toHaveBeenCalledWith('validate-move', {
+        body: { game_id: 'game-ended-1', action: 'rematch_offer' }
+      });
+    });
+
+    it('does nothing when phase is not ended', async () => {
+      useGameStore.getState().initializeGame('game-actions-1', mockPlayingGameData);
+      useGameStore.getState().initializeEngine('some-fen');
+
+      await useGameStore.getState().offerRematch();
+      expect(mockInvoke).not.toHaveBeenCalled();
+    });
+
+    it('does nothing when rematchStatus is not idle', async () => {
+      useGameStore.getState().initializeGame('game-ended-1', mockEndedGameData);
+      useGameStore.getState().initializeEngine('ended-fen');
+      useGameStore.setState({ rematchStatus: 'sent' });
+
+      await useGameStore.getState().offerRematch();
+      expect(mockInvoke).not.toHaveBeenCalled();
+    });
+
+    it('resets rematchStatus to idle on error', async () => {
+      mockInvoke.mockResolvedValueOnce({ data: null, error: { message: 'fail' } });
+      useGameStore.getState().initializeGame('game-ended-1', mockEndedGameData);
+      useGameStore.getState().initializeEngine('ended-fen');
+
+      await useGameStore.getState().offerRematch();
+      expect(useGameStore.getState().rematchStatus).toBe('idle');
+    });
+
+    it('rehydrates a sent rematch offer from server state', () => {
+      useGameStore.getState().initializeGame('game-ended-1', {
+        ...mockEndedGameData,
+        game_state: {
+          ...mockEndedGameData.game_state,
+          pending_action: {
+            type: 'rematch_offer',
+            color: 'red',
+            created_at: '2026-03-23T00:00:00Z'
+          }
+        }
+      });
+
+      expect(useGameStore.getState().rematchStatus).toBe('sent');
+    });
+
+    it('rehydrates a received rematch offer from server state', () => {
+      useGameStore.getState().initializeGame('game-ended-1', {
+        ...mockEndedGameData,
+        game_state: {
+          ...mockEndedGameData.game_state,
+          pending_action: {
+            type: 'rematch_offer',
+            color: 'blue',
+            created_at: '2026-03-23T00:00:00Z'
+          }
+        }
+      });
+
+      expect(useGameStore.getState().rematchStatus).toBe('received');
+    });
+  });
+
+  describe('acceptRematch', () => {
+    it('calls validate-move with rematch_accept action', async () => {
+      useGameStore.getState().initializeGame('game-ended-1', mockEndedGameData);
+      useGameStore.setState({ rematchStatus: 'received' });
+
+      await useGameStore.getState().acceptRematch();
+
+      expect(mockInvoke).toHaveBeenCalledWith('validate-move', {
+        body: { game_id: 'game-ended-1', action: 'rematch_accept' }
+      });
+    });
+
+    it('does nothing when rematchStatus is not received', async () => {
+      useGameStore.getState().initializeGame('game-ended-1', mockEndedGameData);
+
+      await useGameStore.getState().acceptRematch();
+      expect(mockInvoke).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('declineRematch', () => {
+    it('sets rematchStatus to declined and calls server', async () => {
+      useGameStore.getState().initializeGame('game-ended-1', mockEndedGameData);
+      useGameStore.setState({ rematchStatus: 'received' });
+
+      await useGameStore.getState().declineRematch();
+
+      expect(useGameStore.getState().rematchStatus).toBe('declined');
+      expect(mockInvoke).toHaveBeenCalledWith('validate-move', {
+        body: { game_id: 'game-ended-1', action: 'rematch_decline' }
+      });
+    });
+
+    it('does nothing when rematchStatus is not received', async () => {
+      useGameStore.getState().initializeGame('game-ended-1', mockEndedGameData);
+
+      await useGameStore.getState().declineRematch();
+      expect(mockInvoke).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('expireRematchOffer', () => {
+    it('calls validate-move with rematch expiry action and clears local state on success', async () => {
+      useGameStore.getState().initializeGame('game-ended-1', mockEndedGameData);
+      useGameStore.setState({ rematchStatus: 'sent' });
+
+      await useGameStore.getState().expireRematchOffer();
+
+      expect(mockInvoke).toHaveBeenCalledWith('validate-move', {
+        body: {
+          game_id: 'game-ended-1',
+          action: 'expire_pending_action',
+          pending_type: 'rematch_offer'
+        }
+      });
+      expect(useGameStore.getState().rematchStatus).toBe('idle');
+    });
+
+    it('keeps sent state when the expiry request fails', async () => {
+      mockInvoke.mockResolvedValueOnce({ data: null, error: { message: 'fail' } });
+      useGameStore.getState().initializeGame('game-ended-1', mockEndedGameData);
+      useGameStore.setState({ rematchStatus: 'sent' });
+
+      await useGameStore.getState().expireRematchOffer();
+
+      expect(useGameStore.getState().rematchStatus).toBe('sent');
+    });
+  });
+
+  describe('rematch event handlers', () => {
+    it('handleRematchOffer sets received when from opponent', () => {
+      useGameStore.getState().initializeGame('game-ended-1', mockEndedGameData);
+
+      useGameStore.getState().handleRematchOffer('blue');
+      expect(useGameStore.getState().rematchStatus).toBe('received');
+    });
+
+    it('handleRematchOffer ignores own offer', () => {
+      useGameStore.getState().initializeGame('game-ended-1', mockEndedGameData);
+
+      useGameStore.getState().handleRematchOffer('red');
+      expect(useGameStore.getState().rematchStatus).toBe('idle');
+    });
+
+    it('handleRematchAccepted sets accepted and stores newGameId', () => {
+      useGameStore.getState().handleRematchAccepted('new-game-123');
+
+      expect(useGameStore.getState().rematchStatus).toBe('accepted');
+      expect(useGameStore.getState().rematchNewGameId).toBe('new-game-123');
+    });
+
+    it('handleRematchDeclined sets declined', () => {
+      useGameStore.setState({ rematchStatus: 'sent' });
+
+      useGameStore.getState().handleRematchDeclined();
+      expect(useGameStore.getState().rematchStatus).toBe('declined');
+    });
+
+    it('handleRematchExpired sets idle (re-enables button)', () => {
+      useGameStore.setState({ rematchStatus: 'sent' });
+
+      useGameStore.getState().handleRematchExpired();
+      expect(useGameStore.getState().rematchStatus).toBe('idle');
     });
   });
 });

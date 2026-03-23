@@ -3,6 +3,7 @@ import { assertEquals } from 'https://deno.land/std@0.224.0/assert/assert_equals
 import {
   DRAW_OFFER_EXPIRY_MS,
   TAKEBACK_REQUEST_EXPIRY_MS,
+  REMATCH_OFFER_EXPIRY_MS,
   getPendingActionExpiryEvent,
   getPendingActionExpiryMs,
   isPendingActionExpired
@@ -44,6 +45,23 @@ Deno.test('takeback requests expire after 30 seconds', () => {
     true
   );
   assertEquals(getPendingActionExpiryEvent(pendingAction), 'takeback_expired');
+});
+
+Deno.test('rematch offers expire after 60 seconds', () => {
+  const createdAtMs = Date.parse('2026-03-20T00:00:00.000Z');
+  const pendingAction = {
+    type: 'rematch_offer' as const,
+    color: 'red' as const,
+    created_at: '2026-03-20T00:00:00.000Z'
+  };
+
+  assertEquals(getPendingActionExpiryMs(pendingAction.type), REMATCH_OFFER_EXPIRY_MS);
+  assertEquals(
+    isPendingActionExpired(pendingAction, createdAtMs + REMATCH_OFFER_EXPIRY_MS - 1),
+    false
+  );
+  assertEquals(isPendingActionExpired(pendingAction, createdAtMs + REMATCH_OFFER_EXPIRY_MS), true);
+  assertEquals(getPendingActionExpiryEvent(pendingAction), 'rematch_expired');
 });
 
 Deno.test('invalid timestamps are treated as not expired', () => {

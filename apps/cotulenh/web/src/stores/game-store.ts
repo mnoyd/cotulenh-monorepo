@@ -29,6 +29,8 @@ type GameStore = {
   timeoutClaimSent: boolean;
   pendingDrawOffer: 'sent' | 'received' | null;
   pendingTakeback: 'sent' | 'received' | null;
+  rematchStatus: 'idle' | 'sent' | 'received' | 'accepted' | 'declined' | 'expired';
+  rematchNewGameId: string | null;
 
   initializeGame: (gameId: string, gameData: GameData) => void;
   initializeEngine: (fen: string) => void;
@@ -71,6 +73,14 @@ type GameStore = {
   handleTakebackAccept: (fen: string) => void;
   handleTakebackDeclined: () => void;
   handleTakebackExpired: () => void;
+  offerRematch: () => Promise<void>;
+  acceptRematch: () => Promise<void>;
+  declineRematch: () => Promise<void>;
+  expireRematchOffer: () => Promise<void>;
+  handleRematchOffer: (offeringColor: 'red' | 'blue') => void;
+  handleRematchAccepted: (newGameId: string) => void;
+  handleRematchDeclined: () => void;
+  handleRematchExpired: () => void;
   reset: () => void;
 };
 
@@ -110,18 +120,22 @@ function deriveClockState(
 function derivePendingActionState(
   pendingAction: PendingActionData | null,
   myColor: 'red' | 'blue' | null
-): Pick<GameStore, 'pendingDrawOffer' | 'pendingTakeback'> {
+): Pick<GameStore, 'pendingDrawOffer' | 'pendingTakeback' | 'rematchStatus'> {
   if (!pendingAction || !myColor) {
-    return { pendingDrawOffer: null, pendingTakeback: null };
+    return { pendingDrawOffer: null, pendingTakeback: null, rematchStatus: 'idle' };
   }
 
   const ownership = pendingAction.color === myColor ? 'sent' : 'received';
 
   if (pendingAction.type === 'draw_offer') {
-    return { pendingDrawOffer: ownership, pendingTakeback: null };
+    return { pendingDrawOffer: ownership, pendingTakeback: null, rematchStatus: 'idle' };
   }
 
-  return { pendingDrawOffer: null, pendingTakeback: ownership };
+  if (pendingAction.type === 'rematch_offer') {
+    return { pendingDrawOffer: null, pendingTakeback: null, rematchStatus: ownership };
+  }
+
+  return { pendingDrawOffer: null, pendingTakeback: ownership, rematchStatus: 'idle' };
 }
 
 export const useGameStore = create<GameStore>((set, get) => ({
@@ -147,6 +161,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
   timeoutClaimSent: false,
   pendingDrawOffer: null,
   pendingTakeback: null,
+  rematchStatus: 'idle',
+  rematchNewGameId: null,
 
   setLastSeenSeq: (seq) => {
     set({ lastSeenSeq: seq });
@@ -555,6 +571,94 @@ export const useGameStore = create<GameStore>((set, get) => ({
     set({ pendingTakeback: null });
   },
 
+  offerRematch: async () => {
+    const { gameId, phase, rematchStatus } = get();
+    if (!gameId || phase !== 'ended' || rematchStatus !== 'idle') return;
+
+    set({ rematchStatus: 'sent' });
+
+    try {
+      const supabase = createClient();
+      const response = await supabase.functions.invoke('validate-move', {
+        body: { game_id: gameId, action: 'rematch_offer' }
+      });
+
+      if (response.error) {
+        set({ rematchStatus: 'idle' });
+      }
+    } catch {
+      set({ rematchStatus: 'idle' });
+    }
+  },
+
+  acceptRematch: async () => {
+    const { gameId, rematchStatus } = get();
+    if (!gameId || rematchStatus !== 'received') return;
+
+    try {
+      const supabase = createClient();
+      await supabase.functions.invoke('validate-move', {
+        body: { game_id: gameId, action: 'rematch_accept' }
+      });
+      // rematch_accepted broadcast handles state update
+    } catch {
+      // No-op
+    }
+  },
+
+  declineRematch: async () => {
+    const { gameId, rematchStatus } = get();
+    if (!gameId || rematchStatus !== 'received') return;
+
+    set({ rematchStatus: 'declined' });
+
+    try {
+      const supabase = createClient();
+      await supabase.functions.invoke('validate-move', {
+        body: { game_id: gameId, action: 'rematch_decline' }
+      });
+    } catch {
+      // No-op
+    }
+  },
+
+  expireRematchOffer: async () => {
+    const { gameId, rematchStatus } = get();
+    if (!gameId || rematchStatus !== 'sent') return;
+
+    try {
+      const supabase = createClient();
+      const response = await supabase.functions.invoke('validate-move', {
+        body: { game_id: gameId, action: 'expire_pending_action', pending_type: 'rematch_offer' }
+      });
+
+      if (!response.error) {
+        set({ rematchStatus: 'idle' });
+      }
+    } catch {
+      // Keep current state; server expiry is authoritative.
+    }
+  },
+
+  handleRematchOffer: (offeringColor) => {
+    const { myColor } = get();
+    if (offeringColor !== myColor) {
+      set({ rematchStatus: 'received' });
+    }
+  },
+
+  handleRematchAccepted: (newGameId) => {
+    set({ rematchStatus: 'accepted', rematchNewGameId: newGameId });
+  },
+
+  handleRematchDeclined: () => {
+    set({ rematchStatus: 'declined', rematchNewGameId: null });
+  },
+
+  handleRematchExpired: () => {
+    set({ rematchStatus: 'idle', rematchNewGameId: null });
+  },
+
   getDisplayClocks: () => {
     const { clocks, lastSyncTime, activeColor, phase } = get();
     if (!clocks) return null;
@@ -756,7 +860,9 @@ export const useGameStore = create<GameStore>((set, get) => ({
       moveError: null,
       timeoutClaimSent: false,
       pendingDrawOffer: null,
-      pendingTakeback: null
+      pendingTakeback: null,
+      rematchStatus: 'idle',
+      rematchNewGameId: null
     });
   }
 }));

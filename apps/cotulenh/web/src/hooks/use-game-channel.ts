@@ -19,7 +19,11 @@ type GameEventEnvelope = {
     | 'takeback_request'
     | 'takeback_accept'
     | 'takeback_declined'
-    | 'takeback_expired';
+    | 'takeback_expired'
+    | 'rematch_offer'
+    | 'rematch_accepted'
+    | 'rematch_declined'
+    | 'rematch_expired';
   payload: Record<string, unknown>;
   seq: number;
 };
@@ -50,6 +54,10 @@ export function useGameChannel(gameId: string | null) {
   const handleTakebackAccept = useGameStore((s) => s.handleTakebackAccept);
   const handleTakebackDeclined = useGameStore((s) => s.handleTakebackDeclined);
   const handleTakebackExpired = useGameStore((s) => s.handleTakebackExpired);
+  const handleRematchOffer = useGameStore((s) => s.handleRematchOffer);
+  const handleRematchAccepted = useGameStore((s) => s.handleRematchAccepted);
+  const handleRematchDeclined = useGameStore((s) => s.handleRematchDeclined);
+  const handleRematchExpired = useGameStore((s) => s.handleRematchExpired);
   const setLastSeenSeq = useGameStore((s) => s.setLastSeenSeq);
 
   const refreshFromServer = useCallback(async () => {
@@ -151,6 +159,24 @@ export function useGameChannel(gameId: string | null) {
           handleTakebackExpired();
           break;
         }
+        case 'rematch_offer': {
+          const { offering_color } = eventPayload as { offering_color: 'red' | 'blue' };
+          handleRematchOffer(offering_color);
+          break;
+        }
+        case 'rematch_accepted': {
+          const { new_game_id } = eventPayload as { new_game_id: string };
+          handleRematchAccepted(new_game_id);
+          break;
+        }
+        case 'rematch_declined': {
+          handleRematchDeclined();
+          break;
+        }
+        case 'rematch_expired': {
+          handleRematchExpired();
+          break;
+        }
       }
     },
     [
@@ -166,6 +192,10 @@ export function useGameChannel(gameId: string | null) {
       handleTakebackAccept,
       handleTakebackDeclined,
       handleTakebackExpired,
+      handleRematchOffer,
+      handleRematchAccepted,
+      handleRematchDeclined,
+      handleRematchExpired,
       refreshFromServer,
       setLastSeenSeq
     ]
@@ -215,6 +245,18 @@ export function useGameChannel(gameId: string | null) {
         void handleEvent(payload as GameEventEnvelope);
       })
       .on('broadcast', { event: 'takeback_expired' }, ({ payload }: { payload: unknown }) => {
+        void handleEvent(payload as GameEventEnvelope);
+      })
+      .on('broadcast', { event: 'rematch_offer' }, ({ payload }: { payload: unknown }) => {
+        void handleEvent(payload as GameEventEnvelope);
+      })
+      .on('broadcast', { event: 'rematch_accepted' }, ({ payload }: { payload: unknown }) => {
+        void handleEvent(payload as GameEventEnvelope);
+      })
+      .on('broadcast', { event: 'rematch_declined' }, ({ payload }: { payload: unknown }) => {
+        void handleEvent(payload as GameEventEnvelope);
+      })
+      .on('broadcast', { event: 'rematch_expired' }, ({ payload }: { payload: unknown }) => {
         void handleEvent(payload as GameEventEnvelope);
       })
       .subscribe();

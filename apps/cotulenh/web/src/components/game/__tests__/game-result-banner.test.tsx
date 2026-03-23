@@ -77,10 +77,10 @@ describe('GameResultBanner', () => {
     expect(onNewGame).toHaveBeenCalledOnce();
   });
 
-  it('rematch button is disabled', () => {
+  it('rematch button is enabled in idle state', () => {
     render(<GameResultBanner {...defaultProps} />);
     const rematch = screen.getByTestId('game-result-rematch');
-    expect(rematch.hasAttribute('disabled')).toBe(true);
+    expect(rematch.hasAttribute('disabled')).toBe(false);
   });
 
   it('review button is disabled', () => {
@@ -145,5 +145,63 @@ describe('GameResultBanner', () => {
     render(<GameResultBanner {...defaultProps} status="stalemate" winner={null} />);
     const outcome = screen.getByTestId('game-result-outcome');
     expect(outcome.className).toContain('text-[var(--color-warning)]');
+  });
+
+  describe('rematch states', () => {
+    it('calls onRematch when rematch button clicked in idle state', () => {
+      const onRematch = vi.fn();
+      render(<GameResultBanner {...defaultProps} onRematch={onRematch} />);
+      fireEvent.click(screen.getByTestId('game-result-rematch'));
+      expect(onRematch).toHaveBeenCalledOnce();
+    });
+
+    it('shows sent state with countdown text', () => {
+      render(<GameResultBanner {...defaultProps} rematchStatus="sent" />);
+      const rematch = screen.getByTestId('game-result-rematch');
+      expect(rematch.hasAttribute('disabled')).toBe(true);
+      expect(rematch.textContent).toContain('Đã mời tái đấu');
+      expect(rematch.textContent).toContain('s)');
+    });
+
+    it('shows received state with accept/decline buttons', () => {
+      const onAcceptRematch = vi.fn();
+      const onDeclineRematch = vi.fn();
+      render(
+        <GameResultBanner
+          {...defaultProps}
+          rematchStatus="received"
+          onAcceptRematch={onAcceptRematch}
+          onDeclineRematch={onDeclineRematch}
+        />
+      );
+      expect(screen.getByTestId('game-result-rematch-received')).toBeDefined();
+      expect(screen.getByText('Đối thủ mời tái đấu')).toBeDefined();
+
+      fireEvent.click(screen.getByTestId('game-result-rematch-accept'));
+      expect(onAcceptRematch).toHaveBeenCalledOnce();
+
+      fireEvent.click(screen.getByTestId('game-result-rematch-decline'));
+      expect(onDeclineRematch).toHaveBeenCalledOnce();
+    });
+
+    it('shows accepted state with loading text', () => {
+      render(<GameResultBanner {...defaultProps} rematchStatus="accepted" />);
+      const rematch = screen.getByTestId('game-result-rematch');
+      expect(rematch.hasAttribute('disabled')).toBe(true);
+      expect(rematch.textContent).toBe('Đang tạo ván mới...');
+    });
+
+    it('shows declined state with declined text', () => {
+      render(<GameResultBanner {...defaultProps} rematchStatus="declined" />);
+      const rematch = screen.getByTestId('game-result-rematch');
+      expect(rematch.hasAttribute('disabled')).toBe(true);
+      expect(rematch.textContent).toBe('Đối thủ từ chối tái đấu');
+    });
+
+    it('hides rematch button for aborted games', () => {
+      render(<GameResultBanner {...defaultProps} status="aborted" winner={null} />);
+      expect(screen.queryByTestId('game-result-rematch')).toBeNull();
+      expect(screen.queryByTestId('game-result-rematch-received')).toBeNull();
+    });
   });
 });

@@ -17,7 +17,8 @@ export type PendingActionData =
       color: 'red' | 'blue';
       move_count: number;
       created_at: string;
-    };
+    }
+  | { type: 'rematch_offer'; color: 'red' | 'blue'; created_at: string };
 
 export interface PlayerInfo {
   id: string;
