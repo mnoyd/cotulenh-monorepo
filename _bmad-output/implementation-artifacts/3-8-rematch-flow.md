@@ -1,6 +1,6 @@
 # Story 3.8: Rematch Flow
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -301,6 +301,7 @@ No debug issues encountered.
 - 2026-03-23: Implemented rematch flow — story 3.8
 - 2026-03-23: Applied review fixes for rematch expiry/decline handling and corrected incomplete test claims
 - 2026-03-23: Added extracted validate-move rematch test coverage and closed the remaining review test gap
+- 2026-03-24: Verified review follow-ups were landed and marked Story 3.8 done in BMAD artifacts
 
 ### File List
 

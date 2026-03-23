@@ -67,7 +67,7 @@ development_status:
   3-5-chess-clocks-time-control: done
   3-6-game-end-conditions-result: done
   3-7-resign-draw-offer-takeback: done
-  3-8-rematch-flow: review
+  3-8-rematch-flow: done
   3-9-reconnection-disconnect-handling: backlog
   3-10-game-abandonment-cleanup: backlog
   epic-3-retrospective: optional
