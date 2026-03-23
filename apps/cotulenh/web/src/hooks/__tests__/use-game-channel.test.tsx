@@ -19,14 +19,14 @@ const {
   removeChannel: ReturnType<typeof vi.fn>;
 } = vi.hoisted(() => {
   const handlers: Record<string, ChannelHandler> = {};
-  let mockChannel!: MockChannel;
-  mockChannel = {
-    on: vi.fn((_: string, config: { event: string }, cb: ChannelHandler): MockChannel => {
+  const mockChannel = {} as MockChannel;
+  mockChannel.on = vi.fn(
+    (_: string, config: { event: string }, cb: ChannelHandler): MockChannel => {
       handlers[config.event] = cb;
       return mockChannel;
-    }),
-    subscribe: vi.fn((): MockChannel => mockChannel)
-  };
+    }
+  );
+  mockChannel.subscribe = vi.fn((): MockChannel => mockChannel);
   const removeChannel = vi.fn();
   return { handlers, mockChannel, removeChannel };
 });

@@ -9,15 +9,10 @@ vi.mock('next/navigation', () => ({
   }
 }));
 
-vi.mock('next/dynamic', () => ({
-  __esModule: true,
-  default: () => {
-    const Component = ({ lessonId, subjectId }: { lessonId: string; subjectId: string }) => (
-      <div data-testid="lesson-view" data-lesson-id={lessonId} data-subject-id={subjectId} />
-    );
-    Component.displayName = 'DynamicLessonView';
-    return Component;
-  }
+vi.mock('@/components/learn/lesson-view-client', () => ({
+  LessonViewClient: ({ lessonId, subjectId }: { lessonId: string; subjectId: string }) => (
+    <div data-testid="lesson-view" data-lesson-id={lessonId} data-subject-id={subjectId} />
+  )
 }));
 
 vi.mock('@cotulenh/learn', () => ({

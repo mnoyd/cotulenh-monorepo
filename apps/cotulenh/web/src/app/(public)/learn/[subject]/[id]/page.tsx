@@ -1,5 +1,4 @@
 import type { Metadata } from 'next';
-import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
@@ -12,11 +11,7 @@ import {
   tLessonTitle,
   tLessonDescription
 } from '@cotulenh/learn';
-
-const LessonView = dynamic(
-  () => import('@/components/learn/lesson-view').then((m) => ({ default: m.LessonView })),
-  { ssr: false }
-);
+import { LessonViewClient } from '@/components/learn/lesson-view-client';
 
 type LessonPageProps = {
   params: Promise<{ subject: string; id: string }>;
@@ -75,7 +70,7 @@ export default async function LessonPage({ params }: LessonPageProps) {
         <h1 className="text-[var(--text-lg)] font-bold text-[var(--color-text)]">{lessonTitle}</h1>
       </div>
       <div className="min-h-0 flex-1">
-        <LessonView lessonId={lessonId} subjectId={subjectId} />
+        <LessonViewClient lessonId={lessonId} subjectId={subjectId} />
       </div>
     </div>
   );
