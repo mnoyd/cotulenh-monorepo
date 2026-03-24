@@ -112,6 +112,7 @@ export class OnlineGameSessionCore {
   #rematchGameId: string | null = null;
   #acceptingRematch = false;
   #disconnectPollTimer: ReturnType<typeof setInterval> | null = null;
+  #restoreRetryTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(config: OnlineSessionConfig, callbacks: OnlineSessionCallbacks = {}) {
     this.gameId = config.gameId;
@@ -288,6 +289,7 @@ export class OnlineGameSessionCore {
       } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
         this.#selfDisconnected = true;
         this.#connectionState = 'disconnected';
+        this.#clearRestoreRetry();
         this.#pauseClockForDisconnect();
         this.#clearAllPendingAcks();
         this.#notifyStateChange();
@@ -625,6 +627,7 @@ export class OnlineGameSessionCore {
   destroy(): void {
     this.#clearNoStartTimer();
     this.#stopDisconnectPolling();
+    this.#clearRestoreRetry();
     this.clock.destroy();
     this.#clearAllPendingAcks();
 
@@ -1177,29 +1180,43 @@ export class OnlineGameSessionCore {
   }
 
   async #restoreAfterReconnect(): Promise<void> {
+    this.#clearRestoreRetry();
     try {
       const before = await this.#fetchServerSnapshot();
       if (!before) {
-        this.#selfDisconnected = false;
-        this.#connectionState = 'connected';
-        this.#notifyStateChange();
+        this.#handleReconnectRestoreFailure();
         return;
       }
 
       if (before.gameStatus === 'started') {
-        await this.#supabase.functions.invoke('validate-move', {
+        const { error } = await this.#supabase.functions.invoke('validate-move', {
           body: {
             game_id: this.gameId,
             action: 'report_reconnect'
           }
         });
+        if (error) {
+          logger.error('Failed to clear disconnect after reconnect', {
+            gameId: this.gameId,
+            error
+          });
+        }
       }
 
       const after = (await this.#fetchServerSnapshot()) ?? before;
       const previousLifecycle = this.#lifecycle;
       this.#applyServerSnapshot(after);
-      this.#selfDisconnected = false;
-      this.#connectionState = 'connected';
+      const ownDisconnectAt =
+        after.gameStatus === 'started' ? this.#getOwnDisconnectAt(after) : null;
+      this.#selfDisconnected = ownDisconnectAt !== null;
+      this.#connectionState = ownDisconnectAt ? 'reconnecting' : 'connected';
+
+      if (ownDisconnectAt) {
+        this.#pauseClockForDisconnect();
+        this.#scheduleRestoreRetry();
+        this.#notifyStateChange();
+        return;
+      }
 
       if (previousLifecycle !== 'ended' && this.#lifecycle === 'ended' && this.#gameResult) {
         this.#callbacks.onGameEnd?.(this.#gameResult);
@@ -1208,9 +1225,7 @@ export class OnlineGameSessionCore {
       this.#notifyStateChange();
     } catch (error) {
       logger.error('Failed to restore after reconnect', { gameId: this.gameId, error });
-      this.#selfDisconnected = false;
-      this.#connectionState = 'connected';
-      this.#notifyStateChange();
+      this.#handleReconnectRestoreFailure(error);
     }
   }
 
@@ -1255,16 +1270,14 @@ export class OnlineGameSessionCore {
   }
 
   #applyServerSnapshot(snapshot: OnlineSessionSnapshot): void {
-    if (snapshot.moveHistory.length > 0) {
-      const restored = this.session.restoreFromHistory(snapshot.moveHistory, snapshot.fen);
-      if (!restored) {
-        this.#callbacks.onSyncError?.({
-          pgn: snapshot.moveHistory.join(' '),
-          fen: snapshot.fen,
-          gameId: this.gameId,
-          error: 'history restore failed'
-        });
-      }
+    const restored = this.session.restoreFromHistory(snapshot.moveHistory, snapshot.fen);
+    if (!restored) {
+      this.#callbacks.onSyncError?.({
+        pgn: snapshot.moveHistory.join(' '),
+        fen: snapshot.fen,
+        gameId: this.gameId,
+        error: 'history restore failed'
+      });
     }
 
     this.clock.stop();
@@ -1362,8 +1375,36 @@ export class OnlineGameSessionCore {
     }
   }
 
+  #scheduleRestoreRetry(): void {
+    this.#clearRestoreRetry();
+    this.#restoreRetryTimer = setTimeout(() => {
+      this.#restoreRetryTimer = null;
+      if (!this.#selfDisconnected || !this.#channel) return;
+      void this.#restoreAfterReconnect();
+    }, 1000);
+  }
+
+  #clearRestoreRetry(): void {
+    if (this.#restoreRetryTimer) {
+      clearTimeout(this.#restoreRetryTimer);
+      this.#restoreRetryTimer = null;
+    }
+  }
+
+  #handleReconnectRestoreFailure(error?: unknown): void {
+    if (error) {
+      logger.error('Reconnect restore remains pending', { gameId: this.gameId, error });
+    }
+    this.#selfDisconnected = true;
+    this.#connectionState = 'reconnecting';
+    this.#pauseClockForDisconnect();
+    this.#scheduleRestoreRetry();
+    this.#notifyStateChange();
+  }
+
   #clearDisconnectState(): void {
     this.#stopDisconnectPolling();
+    this.#clearRestoreRetry();
     this.#clocksPaused = false;
     this.#opponentDisconnectAt = null;
   }

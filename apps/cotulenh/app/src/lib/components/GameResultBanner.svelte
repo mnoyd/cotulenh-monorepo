@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import { getI18n } from '$lib/i18n/index.svelte';
   import type { GameEndResult } from '$lib/game/online-session-core';
+  import { getGameResultReasonKey } from '$lib/components/game-result';
 
   const i18n = getI18n();
 
@@ -31,16 +32,7 @@
   });
 
   let reasonText = $derived.by(() => {
-    switch (result.resultReason) {
-      case 'checkmate': return i18n.t('game.resultCheckmate');
-      case 'commander_captured': return i18n.t('game.resultCommanderCaptured');
-      case 'stalemate': return i18n.t('game.resultStalemate');
-      case 'resignation': return i18n.t('game.resultResign');
-      case 'timeout': return i18n.t('game.resultTimeout');
-      case 'dispute': return i18n.t('game.resultDispute');
-      case 'draw_by_agreement': return i18n.t('game.resultDrawAgreement');
-      default: return i18n.t('game.resultDraw');
-    }
+    return i18n.t(getGameResultReasonKey(result));
   });
 
   let bannerClass = $derived.by(() => {

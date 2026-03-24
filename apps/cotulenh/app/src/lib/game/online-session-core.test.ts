@@ -972,6 +972,83 @@ describe('OnlineGameSessionCore', () => {
       expect(core.clock.getTime('r')).toBe(250_000);
       expect(core.clock.getTime('b')).toBe(280_000);
     });
+
+    it('keeps the session in reconnecting state when authoritative restore fails', async () => {
+      core = new OnlineGameSessionCore(createDefaultConfig(mock.supabase));
+      core.join();
+      await vi.advanceTimersByTimeAsync(10);
+
+      mock.presenceState['opponent'] = [
+        {
+          color: 'blue',
+          userId: OPPONENT_USER_ID,
+          presenceId: 'opponent-presence'
+        }
+      ];
+      mock.simulatePresenceJoin({ key: 'opponent-key' });
+
+      const subscribeCallback = mock.getSubscribeCallback();
+      expect(subscribeCallback).toBeTruthy();
+
+      subscribeCallback?.('CHANNEL_ERROR');
+      expect(core.selfDisconnected).toBe(true);
+      expect(core.connectionState).toBe('disconnected');
+
+      mock.setGameStateSelectResult({
+        data: null,
+        error: new Error('snapshot failed')
+      });
+
+      await subscribeCallback?.('SUBSCRIBED');
+
+      expect(core.selfDisconnected).toBe(true);
+      expect(core.connectionState).toBe('reconnecting');
+      expect(core.clock.status).toBe('paused');
+    });
+
+    it('resets stale local history when the server snapshot is empty after reconnect', async () => {
+      core = new OnlineGameSessionCore(createDefaultConfig(mock.supabase));
+      core.join();
+      await vi.advanceTimersByTimeAsync(10);
+
+      mock.presenceState['opponent'] = [
+        {
+          color: 'blue',
+          userId: OPPONENT_USER_ID,
+          presenceId: 'opponent-presence'
+        }
+      ];
+      mock.simulatePresenceJoin({ key: 'opponent-key' });
+
+      triggerLocalMove(core);
+      expect(core.session.history).toHaveLength(1);
+
+      mock.setGameStateSelectResult({
+        data: {
+          move_history: [],
+          fen: '6c4/1n2fh1hf2/3a2s2a1/2n1gt1tg2/2ie2m2ei/11/11/2IE2M2EI/2N1GT1TG2/3A2S2A1/1N2FH1HF2/6C4 r - - 0 1',
+          phase: 'playing',
+          clocks: { red: 300_000, blue: 300_000 },
+          disconnect_red_at: null,
+          disconnect_blue_at: null,
+          clocks_paused: false
+        },
+        error: null
+      });
+
+      const subscribeCallback = mock.getSubscribeCallback();
+      expect(subscribeCallback).toBeTruthy();
+
+      subscribeCallback?.('CHANNEL_ERROR');
+      await subscribeCallback?.('SUBSCRIBED');
+
+      expect(core.selfDisconnected).toBe(false);
+      expect(core.connectionState).toBe('connected');
+      expect(core.session.history).toHaveLength(0);
+      expect(core.session.fen).toBe(
+        '6c4/1n2fh1hf2/3a2s2a1/2n1gt1tg2/2ie2m2ei/11/11/2IE2M2EI/2N1GT1TG2/3A2S2A1/1N2FH1HF2/6C4 r - - 0 1'
+      );
+    });
   });
 
   describe('seq gap detection', () => {
