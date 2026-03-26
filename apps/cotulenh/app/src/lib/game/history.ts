@@ -31,7 +31,9 @@ const RESULT_REASON_TO_KEY: Record<string, TranslationKey> = {
   dispute: 'gameHistory.reason.dispute',
   commander_captured: 'gameHistory.reason.commander_captured',
   fifty_moves: 'gameHistory.reason.fifty_moves',
-  threefold_repetition: 'gameHistory.reason.threefold_repetition'
+  threefold_repetition: 'gameHistory.reason.threefold_repetition',
+  abandonment: 'gameHistory.reason.abandonment',
+  stale_cleanup: 'gameHistory.reason.stale_cleanup'
 };
 
 async function queryGameHistory(

@@ -22,6 +22,10 @@ export function getGameResultReasonKey(result: GameEndResult): TranslationKey {
       return result.isLocalPlayerWinner
         ? 'game.opponentDisconnectForfeit'
         : 'game.disconnectForfeit';
+    case 'abandonment':
+      return result.isLocalPlayerWinner ? 'game.opponentAbandoned' : 'game.youAbandoned';
+    case 'stale_cleanup':
+      return 'game.gameStaleCleanup';
     default:
       return 'game.resultDraw';
   }

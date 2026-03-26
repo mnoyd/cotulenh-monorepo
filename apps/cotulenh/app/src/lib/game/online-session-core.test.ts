@@ -335,7 +335,9 @@ describe('OnlineGameSessionCore', () => {
       core = new OnlineGameSessionCore(createDefaultConfig(mock.supabase));
       core.join();
 
-      expect(mock.supabase.channel).toHaveBeenCalledWith('game:test-game-id');
+      expect(mock.supabase.channel).toHaveBeenCalledWith('game:test-game-id', {
+        config: { private: true }
+      });
       expect(core.connectionState).toBe('connecting');
 
       // Wait for subscribe callback

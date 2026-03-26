@@ -12,6 +12,11 @@ const cronMigrationPath = resolve(
   '../../..',
   'supabase/migrations/019_disconnect_forfeit_cron.sql'
 );
+const abandonmentMigrationPath = resolve(
+  process.cwd(),
+  '../../..',
+  'supabase/migrations/020_abandonment_cleanup.sql'
+);
 
 describe('disconnect migration contract', () => {
   it('adds disconnect tracking columns and extends the lock RPC', () => {
@@ -68,6 +73,50 @@ describe('disconnect cron migration contract', () => {
     expect(source).toContain('CREATE EXTENSION IF NOT EXISTS pg_cron;');
     expect(source).toMatch(
       /SELECT cron\.schedule\([\s\S]*'forfeit-disconnected-games'[\s\S]*'15 seconds'[\s\S]*SELECT public\.forfeit_disconnected_games\(\);/
+    );
+  });
+});
+
+describe('abandonment cleanup migration contract', () => {
+  it('adds reconnect_attempted and rewires disconnect RPCs around it', () => {
+    const source = readFileSync(abandonmentMigrationPath, 'utf8');
+    expect(source).toContain('ADD COLUMN reconnect_attempted boolean NOT NULL DEFAULT false;');
+    expect(source).toMatch(
+      /CREATE OR REPLACE FUNCTION public\.record_player_disconnect\([\s\S]*reconnect_attempted = false[\s\S]*updated_at = v_now/
+    );
+    expect(source).toMatch(
+      /CREATE OR REPLACE FUNCTION public\.clear_player_disconnect\([\s\S]*reconnect_attempted = true[\s\S]*updated_at = v_now/
+    );
+    expect(source).toMatch(
+      /CREATE OR REPLACE FUNCTION public\.lock_game_state_for_update\(p_game_id uuid\)[\s\S]*reconnect_attempted boolean[\s\S]*gs\.reconnect_attempted/
+    );
+  });
+
+  it('distinguishes abandonment from disconnect forfeits in the cron RPC', () => {
+    const source = readFileSync(abandonmentMigrationPath, 'utf8');
+    expect(source).toMatch(
+      /CREATE OR REPLACE FUNCTION public\.forfeit_disconnected_games\(\)[\s\S]*gs\.reconnect_attempted[\s\S]*'disconnect_forfeit' ELSE 'abandonment'/
+    );
+  });
+
+  it('uses authoritative activity timestamps for stale cleanup and schedules the cleanup cron', () => {
+    const source = readFileSync(abandonmentMigrationPath, 'utf8');
+    expect(source).toMatch(
+      /CREATE OR REPLACE FUNCTION public\.cleanup_stale_games\(\)[\s\S]*COALESCE\([\s\S]*GREATEST\(public\.games\.updated_at, gs\.updated_at\)[\s\S]*public\.games\.updated_at[\s\S]*interval '24 hours'/
+    );
+    expect(source).toMatch(
+      /SELECT cron\.schedule\([\s\S]*'cleanup-stale-games'[\s\S]*'0 \*\/6 \* \* \*'[\s\S]*SELECT public\.cleanup_stale_games\(\);/
+    );
+  });
+
+  it('restricts realtime game channels to participants for broadcast and presence', () => {
+    const source = readFileSync(abandonmentMigrationPath, 'utf8');
+    expect(source).toContain('ALTER TABLE realtime.messages ENABLE ROW LEVEL SECURITY;');
+    expect(source).toMatch(
+      /CREATE POLICY "game participants can receive realtime broadcast and presence"[\s\S]*FOR SELECT[\s\S]*realtime\.messages\.extension IN \('broadcast', 'presence'\)[\s\S]*auth\.uid\(\) IN \(g\.red_player, g\.blue_player\)/
+    );
+    expect(source).toMatch(
+      /CREATE POLICY "game participants can send realtime broadcast and presence"[\s\S]*FOR INSERT[\s\S]*realtime\.messages\.extension IN \('broadcast', 'presence'\)[\s\S]*auth\.uid\(\) IN \(g\.red_player, g\.blue_player\)/
     );
   });
 });

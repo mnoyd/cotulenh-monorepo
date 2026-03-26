@@ -21,7 +21,10 @@ type SupabaseClient = {
       eq: (col: string, val: string) => Promise<{ error: unknown }>;
     };
   };
-  channel: (name: string) => {
+  channel: (
+    name: string,
+    opts?: { config?: { private?: boolean } }
+  ) => {
     send: (msg: Record<string, unknown>) => Promise<unknown>;
   };
 };
@@ -77,7 +80,7 @@ export async function completeGame(
   }
 
   // Broadcast game_end event
-  const channel = supabase.channel(`game:${gameId}`);
+  const channel = supabase.channel(`game:${gameId}`, { config: { private: true } });
   await channel.send({
     type: 'broadcast',
     event: 'game_end',

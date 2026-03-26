@@ -17,6 +17,10 @@ const CORS_HEADERS = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS'
 };
 
+function gameChannel(supabase: ReturnType<typeof createClient>, gameId: string) {
+  return supabase.channel(`game:${gameId}`, { config: { private: true } });
+}
+
 function jsonResponse(body: Record<string, unknown>, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
@@ -177,6 +181,7 @@ Deno.serve(async (req) => {
       disconnect_red_at: string | null;
       disconnect_blue_at: string | null;
       clocks_paused: boolean;
+      reconnect_attempted: boolean;
     } = stateRows[0];
 
     if (isReportDisconnect) {
@@ -341,7 +346,7 @@ Deno.serve(async (req) => {
         return jsonResponse({ data: { status: 'timeout', winner: playerColor } });
       } else {
         // Clock not expired — broadcast correction
-        const channel = supabase.channel(`game:${game_id}`);
+        const channel = gameChannel(supabase, game_id);
         const correctedClocks = {
           red: activePlayerColor === 'red' ? recalculatedClock : tcClocks.red,
           blue: activePlayerColor === 'blue' ? recalculatedClock : tcClocks.blue
@@ -417,7 +422,7 @@ Deno.serve(async (req) => {
       }
 
       const drawOfferSeq = gameState.move_history.length;
-      const drawOfferChannel = supabase.channel(`game:${game_id}`);
+      const drawOfferChannel = gameChannel(supabase, game_id);
       await drawOfferChannel.send({
         type: 'broadcast',
         event: 'draw_offer',
@@ -512,7 +517,7 @@ Deno.serve(async (req) => {
       }
 
       const drawDeclineSeq = gameState.move_history.length;
-      const drawDeclineChannel = supabase.channel(`game:${game_id}`);
+      const drawDeclineChannel = gameChannel(supabase, game_id);
       await drawDeclineChannel.send({
         type: 'broadcast',
         event: 'draw_declined',
@@ -569,7 +574,7 @@ Deno.serve(async (req) => {
       }
 
       const takebackReqSeq = gameState.move_history.length;
-      const takebackReqChannel = supabase.channel(`game:${game_id}`);
+      const takebackReqChannel = gameChannel(supabase, game_id);
       await takebackReqChannel.send({
         type: 'broadcast',
         event: 'takeback_request',
@@ -646,7 +651,7 @@ Deno.serve(async (req) => {
       }
 
       const takebackAcceptSeq = gameState.move_history.length;
-      const takebackAcceptChannel = supabase.channel(`game:${game_id}`);
+      const takebackAcceptChannel = gameChannel(supabase, game_id);
       const currentClocks = gameState.clocks ?? { red: 0, blue: 0 };
 
       await takebackAcceptChannel.send({
@@ -709,7 +714,7 @@ Deno.serve(async (req) => {
       }
 
       const takebackDeclineSeq = gameState.move_history.length;
-      const takebackDeclineChannel = supabase.channel(`game:${game_id}`);
+      const takebackDeclineChannel = gameChannel(supabase, game_id);
       await takebackDeclineChannel.send({
         type: 'broadcast',
         event: 'takeback_declined',
@@ -825,7 +830,7 @@ Deno.serve(async (req) => {
 
       // Broadcast move event with seq = new move_history length
       const moveSeq = newMoveHistory.length;
-      const channel = supabase.channel(`game:${game_id}`);
+      const channel = gameChannel(supabase, game_id);
 
       await channel.send({
         type: 'broadcast',
@@ -999,7 +1004,7 @@ Deno.serve(async (req) => {
       }
 
       // 1.8 & 1.9: Broadcast deploy_commit to both players with each other's deploy SANs
-      const channel = supabase.channel(`game:${game_id}`);
+      const channel = gameChannel(supabase, game_id);
 
       await channel.send({
         type: 'broadcast',
@@ -1050,7 +1055,7 @@ Deno.serve(async (req) => {
       }
 
       // 1.7 & 1.9: Broadcast deploy_submitted with color only (no placement reveal)
-      const channel = supabase.channel(`game:${game_id}`);
+      const channel = gameChannel(supabase, game_id);
 
       await channel.send({
         type: 'broadcast',

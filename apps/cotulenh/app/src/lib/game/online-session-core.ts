@@ -250,7 +250,9 @@ export class OnlineGameSessionCore {
     this.#connectionState = 'connecting';
     this.#notifyStateChange();
 
-    const channel = this.#supabase.channel(`game:${this.gameId}`);
+    const channel = this.#supabase.channel(`game:${this.gameId}`, {
+      config: { private: true }
+    });
 
     // Register broadcast listener BEFORE subscribe (Supabase requirement)
     onGameMessage(channel, (msg: GameMessage) => this.#handleGameMessage(msg));
@@ -1365,7 +1367,7 @@ export class OnlineGameSessionCore {
         this.#resumeClockIfNeeded();
       }
       this.#notifyStateChange();
-    }, 1000);
+    }, 5000);
   }
 
   #stopDisconnectPolling(): void {
@@ -1448,13 +1450,14 @@ export class OnlineGameSessionCore {
       void this.#reportDisconnect(this.playerColor === 'red' ? 'blue' : 'red');
     }
 
-    // Send sync when opponent reconnects after a disconnect during active play
+    // Send sync when opponent reconnects after a disconnect during active play.
+    // Clear opponent-disconnect UI state immediately but let the server-authoritative
+    // poll cycle confirm clocks_paused before resuming clocks (avoids a brief
+    // client/server desync while the reconnecting client's report_reconnect RPC
+    // is still in flight).
     if (opponentFound && this.#opponentWasDisconnected && this.#lifecycle === 'playing') {
       this.#opponentWasDisconnected = false;
       this.#opponentDisconnectAt = null;
-      this.#clocksPaused = false;
-      this.#stopDisconnectPolling();
-      this.#resumeClockIfNeeded();
       this.#sendSyncToOpponent(channel);
     }
 

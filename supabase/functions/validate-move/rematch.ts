@@ -20,7 +20,10 @@ type RematchSupabaseClient = {
       eq: (column: string, value: string) => Promise<{ error: unknown }>;
     };
   };
-  channel: (name: string) => {
+  channel: (
+    name: string,
+    opts?: { config?: { private?: boolean } }
+  ) => {
     send: (message: Record<string, unknown>) => Promise<unknown>;
   };
   rpc: (fn: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: unknown }>;
@@ -81,7 +84,7 @@ export async function expirePendingAction(
       ? gameState.move_history.length + 1
       : gameState.move_history.length;
 
-  await supabase.channel(`game:${gameId}`).send({
+  await supabase.channel(`game:${gameId}`, { config: { private: true } }).send({
     type: 'broadcast',
     event: expiryEvent,
     payload: {
@@ -118,7 +121,7 @@ export async function handleRematchOffer(
     return failure('Failed to store rematch offer', 'INTERNAL_ERROR', 500);
   }
 
-  await supabase.channel(`game:${gameId}`).send({
+  await supabase.channel(`game:${gameId}`, { config: { private: true } }).send({
     type: 'broadcast',
     event: 'rematch_offer',
     payload: {
@@ -173,7 +176,7 @@ export async function handleRematchAccept(
     return failure('Failed to clear rematch offer', 'INTERNAL_ERROR', 500);
   }
 
-  await supabase.channel(`game:${gameId}`).send({
+  await supabase.channel(`game:${gameId}`, { config: { private: true } }).send({
     type: 'broadcast',
     event: 'rematch_accepted',
     payload: {
@@ -218,7 +221,7 @@ export async function handleRematchDecline(
     return failure('Failed to clear rematch offer', 'INTERNAL_ERROR', 500);
   }
 
-  await supabase.channel(`game:${gameId}`).send({
+  await supabase.channel(`game:${gameId}`, { config: { private: true } }).send({
     type: 'broadcast',
     event: 'rematch_declined',
     payload: {

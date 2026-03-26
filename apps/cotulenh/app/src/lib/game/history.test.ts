@@ -310,6 +310,11 @@ describe('game history query functions', () => {
       );
     });
 
+    it('maps abandonment and stale cleanup to localized history reason keys', () => {
+      expect(getGameHistoryReasonKey('abandonment')).toBe('gameHistory.reason.abandonment');
+      expect(getGameHistoryReasonKey('stale_cleanup')).toBe('gameHistory.reason.stale_cleanup');
+    });
+
     it('returns null for unknown or missing reason', () => {
       expect(getGameHistoryReasonKey('unknown_reason')).toBeNull();
       expect(getGameHistoryReasonKey(null)).toBeNull();

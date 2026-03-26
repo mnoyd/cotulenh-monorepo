@@ -22,6 +22,37 @@ describe('getGameResultReasonKey', () => {
     ).toBe('game.disconnectForfeit');
   });
 
+  it('maps abandonment to winner and loser specific copy', () => {
+    expect(
+      getGameResultReasonKey({
+        status: 'timeout',
+        winner: 'blue',
+        resultReason: 'abandonment',
+        isLocalPlayerWinner: true
+      })
+    ).toBe('game.opponentAbandoned');
+
+    expect(
+      getGameResultReasonKey({
+        status: 'timeout',
+        winner: 'red',
+        resultReason: 'abandonment',
+        isLocalPlayerWinner: false
+      })
+    ).toBe('game.youAbandoned');
+  });
+
+  it('maps stale_cleanup to game aborted label', () => {
+    expect(
+      getGameResultReasonKey({
+        status: 'aborted',
+        winner: null,
+        resultReason: 'stale_cleanup',
+        isLocalPlayerWinner: false
+      })
+    ).toBe('game.gameStaleCleanup');
+  });
+
   it('maps persisted mutual agreement results to the draw agreement label', () => {
     expect(
       getGameResultReasonKey({
