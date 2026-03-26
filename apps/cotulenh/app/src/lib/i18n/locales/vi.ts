@@ -677,6 +677,9 @@ export const vi: TranslationKeys = {
   'game.acceptRematch': 'Đồng Ý',
   'game.declineRematch': 'Từ Chối',
   'game.abortGame': 'Hủy Ván',
+  'game.opponentAbandoned': 'Đối thủ rời trận — bạn thắng',
+  'game.youAbandoned': 'Bạn rời trận — đối thủ thắng',
+  'game.gameStaleCleanup': 'Trận đấu bị huỷ',
 
   // Game History
   'gameHistory.title': 'Lịch Sử Trận Đấu',
@@ -698,6 +701,8 @@ export const vi: TranslationKeys = {
   'gameHistory.reason.commander_captured': 'do bắt tư lệnh',
   'gameHistory.reason.fifty_moves': 'do luật 50 nước',
   'gameHistory.reason.threefold_repetition': 'do lặp lại thế cờ 3 lần',
+  'gameHistory.reason.abandonment': 'do rời trận',
+  'gameHistory.reason.stale_cleanup': 'do không hoạt động',
   'gameHistory.duration': '{minutes}p {seconds}g',
   'gameHistory.viewAll': 'Xem Tất Cả Trận Đấu',
   'gameHistory.vs': 'vs',
@@ -730,6 +735,28 @@ export const vi: TranslationKeys = {
   // Move confirmation
   'game.confirmMove': 'Xác Nhận',
   'game.cancelMove': 'Hủy',
+
+  // Lobby (Open Challenges)
+  'lobby.title': 'Sảnh Thách Đấu',
+  'lobby.createChallenge': 'Tạo Thách Đấu',
+  'lobby.openChallenges': 'Thách Đấu Mở',
+  'lobby.noOpenChallenges': 'Không có thách đấu',
+  'lobby.createGame': 'Tạo Ván Đấu',
+  'lobby.playAI': 'Chơi Với AI',
+  'lobby.accept': 'Chấp Nhận',
+  'lobby.cancel': 'Hủy',
+  'lobby.rated': 'Xếp Hạng',
+  'lobby.casual': 'Giao Hữu',
+  'lobby.yourChallenge': 'Thách đấu của bạn',
+  'lobby.alreadyHasChallenge': 'Bạn đã có thách đấu mở. Hủy thách đấu hiện tại trước.',
+  'lobby.cannotAcceptOwn': 'Không thể chấp nhận thách đấu của chính mình.',
+  'lobby.toast.created': 'Đã tạo thách đấu',
+  'lobby.toast.createFailed': 'Tạo thách đấu thất bại',
+  'lobby.toast.accepted': 'Đã chấp nhận — bắt đầu ván đấu',
+  'lobby.toast.acceptFailed': 'Chấp nhận thách đấu thất bại',
+  'lobby.toast.cancelled': 'Đã hủy thách đấu',
+  'lobby.toast.cancelFailed': 'Hủy thách đấu thất bại',
+  'lobby.toast.challengeAccepted': 'Thách đấu đã được chấp nhận!',
 
   // Game Replay
   'gameReplay.title': 'Xem Lại Trận Đấu',

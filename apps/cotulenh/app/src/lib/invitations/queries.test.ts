@@ -1,4 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
+import { DEFAULT_POSITION } from '@cotulenh/core';
 import {
   validateGameConfig,
   hasPendingInvitation,
@@ -11,7 +12,12 @@ import {
   getInvitationByCode,
   createShareableInvitation,
   acceptInviteLink,
-  createAutoFriendship
+  createAutoFriendship,
+  getMyActiveOpenChallenge,
+  createOpenChallenge,
+  getOpenChallenges,
+  acceptOpenChallenge,
+  cancelOpenChallenge
 } from './queries';
 
 /** Build a chain for delete/insert actions where single() is the terminal */
@@ -23,6 +29,7 @@ function actionChain(singleResult: unknown) {
     'update',
     'eq',
     'gt',
+    'lt',
     'is',
     'neq',
     'select',
@@ -47,6 +54,7 @@ describe('validateGameConfig', () => {
     expect(validateGameConfig({ timeMinutes: 5, incrementSeconds: 0 })).toBe(true);
     expect(validateGameConfig({ timeMinutes: 60, incrementSeconds: 30 })).toBe(true);
     expect(validateGameConfig({ timeMinutes: 1, incrementSeconds: 0 })).toBe(true);
+    expect(validateGameConfig({ timeMinutes: 5, incrementSeconds: 0, isRated: true })).toBe(true);
   });
 
   it('rejects null/undefined', () => {
@@ -79,6 +87,10 @@ describe('validateGameConfig', () => {
   it('rejects non-number fields', () => {
     expect(validateGameConfig({ timeMinutes: '5', incrementSeconds: 0 })).toBe(false);
     expect(validateGameConfig({ timeMinutes: 5, incrementSeconds: '0' })).toBe(false);
+  });
+
+  it('rejects invalid isRated values', () => {
+    expect(validateGameConfig({ timeMinutes: 5, incrementSeconds: 0, isRated: 'yes' })).toBe(false);
   });
 });
 
@@ -848,5 +860,411 @@ describe('createAutoFriendship', () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const result = await createAutoFriendship(supabase as any, 'user-a', 'user-b');
     expect(result).toBe(false);
+  });
+});
+
+// ─── Open Challenge (Lobby) Tests ───────────────────────────────────
+
+describe('getMyActiveOpenChallenge', () => {
+  it('returns null when no active open challenge exists', async () => {
+    const { supabase, mockFrom } = createMockSupabase();
+    const chain: Record<string, unknown> = {};
+    for (const m of ['select', 'eq', 'is', 'gt', 'limit']) {
+      chain[m] = vi.fn().mockReturnValue(chain);
+    }
+    chain.single = vi.fn().mockResolvedValue({ data: null, error: { code: 'PGRST116' } });
+    mockFrom.mockReturnValue(chain);
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = await getMyActiveOpenChallenge(supabase as any, 'user-1');
+    expect(result).toBeNull();
+  });
+
+  it('returns invitation when active open challenge exists', async () => {
+    const { supabase, mockFrom } = createMockSupabase();
+    const chain: Record<string, unknown> = {};
+    for (const m of ['select', 'eq', 'is', 'gt', 'limit']) {
+      chain[m] = vi.fn().mockReturnValue(chain);
+    }
+    chain.single = vi.fn().mockResolvedValue({
+      data: {
+        id: 'inv-1',
+        from_user: 'user-1',
+        to_user: null,
+        game_config: { timeMinutes: 5, incrementSeconds: 0 },
+        invite_code: null,
+        status: 'pending',
+        created_at: '2024-01-01T00:00:00Z'
+      },
+      error: null
+    });
+    mockFrom.mockReturnValue(chain);
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = await getMyActiveOpenChallenge(supabase as any, 'user-1');
+    expect(result).not.toBeNull();
+    expect(result!.id).toBe('inv-1');
+    expect(result!.toUser).toBeNull();
+    expect(result!.gameConfig).toEqual({ timeMinutes: 5, incrementSeconds: 0 });
+  });
+});
+
+describe('createOpenChallenge', () => {
+  it('rejects when user already has an active open challenge', async () => {
+    const { supabase, mockFrom } = createMockSupabase();
+    let callCount = 0;
+
+    mockFrom.mockImplementation(() => {
+      callCount++;
+      if (callCount === 1) {
+        const chain: Record<string, unknown> = {};
+        for (const m of ['update', 'eq', 'is', 'lt']) {
+          chain[m] = vi.fn().mockReturnValue(chain);
+        }
+        return chain;
+      }
+
+      const chain: Record<string, unknown> = {};
+      for (const m of ['select', 'eq', 'is', 'gt', 'limit']) {
+        chain[m] = vi.fn().mockReturnValue(chain);
+      }
+      chain.single = vi.fn().mockResolvedValue({
+        data: {
+          id: 'existing',
+          from_user: 'user-1',
+          to_user: null,
+          game_config: {},
+          invite_code: null,
+          status: 'pending',
+          created_at: ''
+        },
+        error: null
+      });
+      return chain;
+    });
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = await createOpenChallenge(supabase as any, 'user-1', {
+      timeMinutes: 5,
+      incrementSeconds: 0
+    });
+    expect(result.success).toBe(false);
+    expect(result.error).toBe('alreadyHasChallenge');
+  });
+
+  it('creates challenge with to_user=null and invite_code=null', async () => {
+    const { supabase, mockFrom } = createMockSupabase();
+    let callCount = 0;
+
+    mockFrom.mockImplementation(() => {
+      callCount++;
+      if (callCount === 1) {
+        const chain: Record<string, unknown> = {};
+        for (const m of ['update', 'eq', 'is', 'lt']) {
+          chain[m] = vi.fn().mockReturnValue(chain);
+        }
+        return chain;
+      }
+      if (callCount === 2) {
+        // getMyActiveOpenChallenge — no existing
+        const chain: Record<string, unknown> = {};
+        for (const m of ['select', 'eq', 'is', 'gt', 'limit']) {
+          chain[m] = vi.fn().mockReturnValue(chain);
+        }
+        chain.single = vi.fn().mockResolvedValue({ data: null, error: { code: 'PGRST116' } });
+        return chain;
+      }
+      // insert chain
+      return actionChain({ data: { id: 'inv-new' }, error: null });
+    });
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = await createOpenChallenge(supabase as any, 'user-1', {
+      timeMinutes: 10,
+      incrementSeconds: 5
+    });
+    expect(result.success).toBe(true);
+    expect(result.invitationId).toBe('inv-new');
+  });
+
+  it('returns error when insert fails', async () => {
+    const { supabase, mockFrom } = createMockSupabase();
+    let callCount = 0;
+
+    mockFrom.mockImplementation(() => {
+      callCount++;
+      if (callCount === 1) {
+        const chain: Record<string, unknown> = {};
+        for (const m of ['update', 'eq', 'is', 'lt']) {
+          chain[m] = vi.fn().mockReturnValue(chain);
+        }
+        return chain;
+      }
+      if (callCount === 2) {
+        const chain: Record<string, unknown> = {};
+        for (const m of ['select', 'eq', 'is', 'gt', 'limit']) {
+          chain[m] = vi.fn().mockReturnValue(chain);
+        }
+        chain.single = vi.fn().mockResolvedValue({ data: null, error: { code: 'PGRST116' } });
+        return chain;
+      }
+      return actionChain({ data: null, error: { message: 'insert failed' } });
+    });
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = await createOpenChallenge(supabase as any, 'user-1', {
+      timeMinutes: 5,
+      incrementSeconds: 0
+    });
+    expect(result.success).toBe(false);
+    expect(result.error).toBe('createFailed');
+  });
+
+  it('returns alreadyHasChallenge when the unique index rejects a racing insert', async () => {
+    const { supabase, mockFrom } = createMockSupabase();
+    let callCount = 0;
+
+    mockFrom.mockImplementation(() => {
+      callCount++;
+      if (callCount === 1) {
+        const chain: Record<string, unknown> = {};
+        for (const m of ['update', 'eq', 'is', 'lt']) {
+          chain[m] = vi.fn().mockReturnValue(chain);
+        }
+        return chain;
+      }
+      if (callCount === 2) {
+        const chain: Record<string, unknown> = {};
+        for (const m of ['select', 'eq', 'is', 'gt', 'limit']) {
+          chain[m] = vi.fn().mockReturnValue(chain);
+        }
+        chain.single = vi.fn().mockResolvedValue({ data: null, error: { code: 'PGRST116' } });
+        return chain;
+      }
+      return actionChain({ data: null, error: { code: '23505', message: 'duplicate key value' } });
+    });
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = await createOpenChallenge(supabase as any, 'user-1', {
+      timeMinutes: 5,
+      incrementSeconds: 0
+    });
+    expect(result.success).toBe(false);
+    expect(result.error).toBe('alreadyHasChallenge');
+  });
+});
+
+describe('getOpenChallenges', () => {
+  it('returns empty array when no challenges exist', async () => {
+    const { supabase, mockFrom } = createMockSupabase();
+    const chain: Record<string, unknown> = {};
+    for (const m of ['select', 'eq', 'is', 'gt', 'order']) {
+      chain[m] = vi.fn().mockReturnValue(chain);
+    }
+    chain.order = vi.fn().mockResolvedValue({ data: [], error: null });
+    mockFrom.mockReturnValue(chain);
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = await getOpenChallenges(supabase as any);
+    expect(result).toEqual([]);
+  });
+
+  it('returns challenges with creator display names', async () => {
+    const { supabase, mockFrom } = createMockSupabase();
+    let callCount = 0;
+
+    mockFrom.mockImplementation(() => {
+      callCount++;
+      if (callCount === 1) {
+        const chain: Record<string, unknown> = {};
+        for (const m of ['select', 'eq', 'is', 'gt', 'order']) {
+          chain[m] = vi.fn().mockReturnValue(chain);
+        }
+        chain.order = vi.fn().mockResolvedValue({
+          data: [
+            {
+              id: 'inv-1',
+              from_user: 'user-2',
+              to_user: null,
+              game_config: { timeMinutes: 5, incrementSeconds: 0 },
+              invite_code: null,
+              status: 'pending',
+              created_at: '2024-01-01T00:00:00Z'
+            }
+          ],
+          error: null
+        });
+        return chain;
+      }
+      return {
+        select: vi.fn().mockReturnValue({
+          in: vi.fn().mockResolvedValue({
+            data: [{ id: 'user-2', display_name: 'Challenger' }],
+            error: null
+          })
+        })
+      };
+    });
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = await getOpenChallenges(supabase as any);
+    expect(result).toHaveLength(1);
+    expect(result[0].fromUser.displayName).toBe('Challenger');
+    expect(result[0].toUser).toBeNull();
+    expect(result[0].inviteCode).toBeNull();
+  });
+
+  it('sanitizes creator display names', async () => {
+    const { supabase, mockFrom } = createMockSupabase();
+    let callCount = 0;
+
+    mockFrom.mockImplementation(() => {
+      callCount++;
+      if (callCount === 1) {
+        const chain: Record<string, unknown> = {};
+        for (const m of ['select', 'eq', 'is', 'gt', 'order']) {
+          chain[m] = vi.fn().mockReturnValue(chain);
+        }
+        chain.order = vi.fn().mockResolvedValue({
+          data: [
+            {
+              id: 'inv-1',
+              from_user: 'user-2',
+              to_user: null,
+              game_config: { timeMinutes: 5, incrementSeconds: 0 },
+              invite_code: null,
+              status: 'pending',
+              created_at: '2024-01-01T00:00:00Z'
+            }
+          ],
+          error: null
+        });
+        return chain;
+      }
+      return {
+        select: vi.fn().mockReturnValue({
+          in: vi.fn().mockResolvedValue({
+            data: [{ id: 'user-2', display_name: '<b>Evil</b>' }],
+            error: null
+          })
+        })
+      };
+    });
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = await getOpenChallenges(supabase as any);
+    expect(result[0].fromUser.displayName).toBe('Evil');
+  });
+});
+
+describe('acceptOpenChallenge', () => {
+  it('claims, accepts, and creates game on success', async () => {
+    const { supabase, mockFrom, mockRpc } = createMockSupabase();
+    let callCount = 0;
+    mockRpc.mockResolvedValue({ data: 'game-1', error: null });
+
+    mockFrom.mockImplementation(() => {
+      callCount++;
+      if (callCount === 1) {
+        // claim step
+        return actionChain({
+          data: {
+            id: 'inv-1',
+            from_user: 'user-creator',
+            game_config: { timeMinutes: 5, incrementSeconds: 0 }
+          },
+          error: null
+        });
+      }
+      if (callCount === 2) {
+        // accept step
+        return actionChain({ data: { id: 'inv-1' }, error: null });
+      }
+      return actionChain({ data: { id: 'inv-1' }, error: null });
+    });
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = await acceptOpenChallenge(supabase as any, 'inv-1', 'user-acceptor');
+    expect(result.success).toBe(true);
+    expect(result.gameId).toBe('game-1');
+    expect(mockRpc).toHaveBeenCalledWith('create_game_with_state', {
+      p_invitation_id: 'inv-1',
+      p_fen: DEFAULT_POSITION
+    });
+  });
+
+  it('prevents self-accept via neq filter', async () => {
+    const { supabase, mockFrom } = createMockSupabase();
+    const chain = actionChain({ data: null, error: { code: 'PGRST116' } });
+    mockFrom.mockReturnValue(chain);
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = await acceptOpenChallenge(supabase as any, 'inv-1', 'user-creator');
+    expect(result.success).toBe(false);
+    expect(result.error).toBe('acceptFailed');
+  });
+
+  it('fails when challenge already accepted (race condition)', async () => {
+    const { supabase, mockFrom } = createMockSupabase();
+    const chain = actionChain({ data: null, error: { code: 'PGRST116' } });
+    mockFrom.mockReturnValue(chain);
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = await acceptOpenChallenge(supabase as any, 'inv-1', 'user-late');
+    expect(result.success).toBe(false);
+    expect(result.error).toBe('acceptFailed');
+  });
+
+  it('rolls back on game creation failure', async () => {
+    const { supabase, mockFrom, mockRpc } = createMockSupabase();
+    let callCount = 0;
+    const rollbackChain = actionChain({ data: { id: 'inv-1' }, error: null });
+    mockRpc.mockResolvedValue({ data: null, error: { message: 'rpc failed' } });
+
+    mockFrom.mockImplementation(() => {
+      callCount++;
+      if (callCount === 1) {
+        return actionChain({
+          data: {
+            id: 'inv-1',
+            from_user: 'user-creator',
+            game_config: { timeMinutes: 5, incrementSeconds: 0 }
+          },
+          error: null
+        });
+      }
+      if (callCount === 2) {
+        return actionChain({ data: { id: 'inv-1' }, error: null });
+      }
+      return rollbackChain;
+    });
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = await acceptOpenChallenge(supabase as any, 'inv-1', 'user-acceptor');
+    expect(result.success).toBe(false);
+    expect(result.error).toBe('gameCreationFailed');
+  });
+});
+
+describe('cancelOpenChallenge', () => {
+  it('delegates to cancelInvitation', async () => {
+    const { supabase, mockFrom } = createMockSupabase();
+    const chain = actionChain({ data: { id: 'inv-1' }, error: null });
+    mockFrom.mockReturnValue(chain);
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = await cancelOpenChallenge(supabase as any, 'inv-1', 'user-1');
+    expect(result.success).toBe(true);
+  });
+
+  it('fails when user is not the creator', async () => {
+    const { supabase, mockFrom } = createMockSupabase();
+    const chain = actionChain({ data: null, error: { code: 'PGRST116' } });
+    mockFrom.mockReturnValue(chain);
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = await cancelOpenChallenge(supabase as any, 'inv-1', 'not-creator');
+    expect(result.success).toBe(false);
+    expect(result.error).toBe('cancelFailed');
   });
 });

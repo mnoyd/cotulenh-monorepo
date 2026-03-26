@@ -8,11 +8,19 @@
   import { TIME_PRESETS } from '$lib/invitations/types';
   import { sanitizeName } from '$lib/invitations/queries';
   import type { FriendListItem } from '$lib/friends/types';
-  import { onInvitationRealtimeEvent } from '$lib/invitations/realtime.svelte';
+  import {
+    onInvitationRealtimeEvent,
+    subscribeToInvitations,
+    unsubscribeFromInvitations
+  } from '$lib/invitations/realtime.svelte';
   import type { InvitationRealtimeEvent } from '$lib/invitations/realtime.svelte';
+  import { onLobbyRealtimeEvent } from '$lib/invitations/lobby-realtime.svelte';
+  import { subscribeToLobby, unsubscribeFromLobby } from '$lib/invitations/lobby-realtime.svelte';
+  import type { LobbyChallengeEvent } from '$lib/invitations/lobby-realtime.svelte';
+  import LobbyChallengeList from '$lib/components/LobbyChallengeList.svelte';
   import CommandCenter from '$lib/components/CommandCenter.svelte';
   import { toast } from 'svelte-sonner';
-  import { onMount } from 'svelte';
+  import { onMount, onDestroy } from 'svelte';
   import '$lib/styles/command-center.css';
   import type { PageData } from './$types';
 
@@ -23,6 +31,7 @@
   // Time control state — default to first preset (5+0)
   let selectedConfig = $state<GameConfig>({ ...TIME_PRESETS[0].config });
   let selectedPresetIndex = $state(0);
+  let openChallengeRated = $state(false);
 
   onMount(() => {
     const params = $page.url.searchParams;
@@ -32,7 +41,6 @@
     if (minutes && increment) {
       const m = parseInt(minutes, 10);
       const s = parseInt(increment, 10);
-      // Try to match a preset
       const matchIndex = TIME_PRESETS.findIndex(
         (p) => p.config.timeMinutes === m && p.config.incrementSeconds === s
       );
@@ -40,11 +48,23 @@
         selectedPresetIndex = matchIndex;
         selectedConfig = { ...TIME_PRESETS[matchIndex].config };
       } else {
-        // Custom time control
         selectedConfig = { timeMinutes: m, incrementSeconds: s };
         selectedPresetIndex = -1;
       }
     }
+
+    // Subscribe to lobby realtime
+    subscribeToLobby($page.data.supabase);
+    const userId = $page.data.session?.user?.id;
+    if (userId) {
+      subscribeToInvitations($page.data.supabase, userId);
+    }
+    lobbyLoading = false;
+  });
+
+  onDestroy(() => {
+    unsubscribeFromLobby();
+    unsubscribeFromInvitations();
   });
 
   // Optimistic states
@@ -55,6 +75,30 @@
   let loadingCancel = $state(new Set<string>());
   let loadingAccept = $state(new Set<string>());
   let loadingDecline = $state(new Set<string>());
+
+  // Lobby states
+  let lobbyChallenges = $state<InvitationItem[]>([]);
+  let removedLobbyChallenges = $state(new Set<string>());
+  let loadingLobbyAccept = $state(new Set<string>());
+  let loadingLobbyCancel = $state(new Set<string>());
+  let creatingChallenge = $state(false);
+  let lobbyLoading = $state(true);
+
+  // Initialize lobby challenges from server data
+  $effect(() => {
+    lobbyChallenges = [...data.openChallenges];
+  });
+
+  // Visible lobby challenges — server + realtime, minus removed
+  let visibleLobbyChallenges = $derived(
+    lobbyChallenges.filter((c) => !removedLobbyChallenges.has(c.id))
+  );
+
+  // Whether current user has an active open challenge
+  let hasActiveChallenge = $derived(
+    data.myActiveChallenge !== null ||
+    lobbyChallenges.some((c) => c.fromUser.id === $page.data.session?.user?.id && !removedLobbyChallenges.has(c.id))
+  );
 
   // Invite link state
   let creatingLink = $state(false);
@@ -113,7 +157,7 @@
     return result;
   });
 
-  // Listen for realtime invitation events on this page
+  // Listen for realtime invitation events (friend challenges)
   $effect(() => {
     const unsub = onInvitationRealtimeEvent(async (event: InvitationRealtimeEvent) => {
       if (event.type === 'received') {
@@ -148,8 +192,68 @@
           next.delete(inv.toUser.id);
           optimisticInvited = next;
         }
+
+        // If our open challenge was accepted, navigate to game
+        if (event.newStatus === 'accepted') {
+          const myChallenge = lobbyChallenges.find(
+            (c) => c.id === event.id && c.fromUser.id === $page.data.session?.user?.id
+          );
+          if (myChallenge) {
+            removedLobbyChallenges = new Set([...removedLobbyChallenges, event.id]);
+            toast.success(i18n.t('lobby.toast.challengeAccepted'), { duration: 4000 });
+            const game = await waitForGameByInvitation(event.id);
+            if (game) {
+              goto(`/play/online/${game.id}`);
+            }
+          }
+        }
       } else if (event.type === 'deleted') {
         removedReceivedInvitations = new Set([...removedReceivedInvitations, event.id]);
+      }
+    });
+
+    return unsub;
+  });
+
+  // Listen for lobby realtime events (open challenges)
+  $effect(() => {
+    const unsub = onLobbyRealtimeEvent(async (event: LobbyChallengeEvent) => {
+      const currentUserId = $page.data.session?.user?.id;
+      if (event.type === 'insert') {
+        // Don't add our own challenge (already shown via optimistic update)
+        if (event.fromUser === currentUserId) return;
+
+        const newChallenge: InvitationItem = {
+          id: event.id,
+          fromUser: { id: event.fromUser, displayName: '' },
+          toUser: null,
+          gameConfig: event.gameConfig,
+          inviteCode: null,
+          status: 'pending',
+          createdAt: event.createdAt
+        };
+        lobbyChallenges = [newChallenge, ...lobbyChallenges];
+
+        // Fetch display name
+        const { data: profile } = await $page.data.supabase
+          .from('profiles')
+          .select('display_name')
+          .eq('id', event.fromUser)
+          .single();
+        if (profile) {
+          lobbyChallenges = lobbyChallenges.map((c) =>
+            c.id === event.id
+              ? { ...c, fromUser: { ...c.fromUser, displayName: sanitizeName(profile.display_name) } }
+              : c
+          );
+        }
+      } else if (event.type === 'update') {
+        // Challenge accepted, cancelled, or expired — remove from lobby
+        if (event.newStatus !== 'pending') {
+          removedLobbyChallenges = new Set([...removedLobbyChallenges, event.id]);
+        }
+      } else if (event.type === 'delete') {
+        removedLobbyChallenges = new Set([...removedLobbyChallenges, event.id]);
       }
     });
 
@@ -163,6 +267,131 @@
       headers: { 'x-sveltekit-action': 'true' }
     });
   }
+
+  async function refreshLobbyData(): Promise<void> {
+    lobbyLoading = true;
+    try {
+      await invalidateAll();
+    } finally {
+      lobbyLoading = false;
+    }
+  }
+
+  async function waitForGameByInvitation(
+    invitationId: string,
+    retries = 5,
+    delayMs = 200
+  ): Promise<{ id: string } | null> {
+    for (let attempt = 0; attempt < retries; attempt++) {
+      const { data: game } = await $page.data.supabase
+        .from('games')
+        .select('id')
+        .eq('invitation_id', invitationId)
+        .single();
+
+      if (game) {
+        return game;
+      }
+
+      if (attempt < retries - 1) {
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
+      }
+    }
+
+    return null;
+  }
+
+  // ─── Lobby handlers ─────────────────────────────────────────────
+
+  async function handleCreateChallenge() {
+    if (hasActiveChallenge) {
+      toast.error(i18n.t('lobby.alreadyHasChallenge'));
+      return;
+    }
+
+    creatingChallenge = true;
+    try {
+      const response = await postAction('createOpenChallenge', {
+        gameConfig: JSON.stringify({ ...selectedConfig, isRated: openChallengeRated })
+      });
+
+      if (!response.ok) {
+        const result = deserialize(await response.text());
+        const errorCode = result.type === 'failure'
+          ? (result.data as { errors?: { form?: string } } | null)?.errors?.form
+          : undefined;
+        if (errorCode === 'alreadyHasChallenge') {
+          toast.error(i18n.t('lobby.alreadyHasChallenge'));
+        } else if (errorCode === 'invalidGameConfig') {
+          toast.error(i18n.t('invitation.error.invalidGameConfig'));
+        } else {
+          toast.error(i18n.t('lobby.toast.createFailed'));
+        }
+        return;
+      }
+
+      toast.success(i18n.t('lobby.toast.created'), { duration: 4000 });
+      await refreshLobbyData();
+    } catch {
+      toast.error(i18n.t('lobby.toast.createFailed'));
+    } finally {
+      creatingChallenge = false;
+    }
+  }
+
+  async function handleAcceptChallenge(invitationId: string) {
+    loadingLobbyAccept = new Set([...loadingLobbyAccept, invitationId]);
+
+    try {
+      const response = await postAction('acceptOpenChallenge', { invitationId });
+
+      if (!response.ok) {
+        toast.error(i18n.t('lobby.toast.acceptFailed'));
+        return;
+      }
+
+      const result = deserialize(await response.text());
+      const gameId = result.type === 'success' ? (result.data as { gameId?: string })?.gameId : undefined;
+
+      removedLobbyChallenges = new Set([...removedLobbyChallenges, invitationId]);
+      toast.success(i18n.t('lobby.toast.accepted'), { duration: 4000 });
+
+      if (gameId) {
+        goto(`/play/online/${gameId}`);
+      }
+    } catch {
+      toast.error(i18n.t('lobby.toast.acceptFailed'));
+    } finally {
+      const next = new Set(loadingLobbyAccept);
+      next.delete(invitationId);
+      loadingLobbyAccept = next;
+    }
+  }
+
+  async function handleCancelChallenge(invitationId: string) {
+    loadingLobbyCancel = new Set([...loadingLobbyCancel, invitationId]);
+
+    try {
+      const response = await postAction('cancelOpenChallenge', { invitationId });
+
+      if (!response.ok) {
+        toast.error(i18n.t('lobby.toast.cancelFailed'));
+        return;
+      }
+
+      removedLobbyChallenges = new Set([...removedLobbyChallenges, invitationId]);
+      toast.success(i18n.t('lobby.toast.cancelled'), { duration: 4000 });
+      await refreshLobbyData();
+    } catch {
+      toast.error(i18n.t('lobby.toast.cancelFailed'));
+    } finally {
+      const next = new Set(loadingLobbyCancel);
+      next.delete(invitationId);
+      loadingLobbyCancel = next;
+    }
+  }
+
+  // ─── Friend invitation handlers ─────────────────────────────────
 
   async function handleInvite(friendUserId: string) {
     optimisticInvited = new Set([...optimisticInvited, friendUserId]);
@@ -195,7 +424,7 @@
       }
 
       toast.success(i18n.t('invitation.toast.sent'), { duration: 4000 });
-      invalidateAll();
+      await refreshLobbyData();
     } catch {
       const next = new Set(optimisticInvited);
       next.delete(friendUserId);
@@ -228,7 +457,7 @@
 
       removedSentInvitations = new Set([...removedSentInvitations, invitationId]);
       toast.success(i18n.t('invitation.toast.cancelled'), { duration: 4000 });
-      invalidateAll();
+      await refreshLobbyData();
     } catch {
       toast.error(i18n.t('invitation.toast.cancelFailed'));
     } finally {
@@ -319,7 +548,7 @@
       if (inviteCode) {
         createdInviteCode = inviteCode;
         toast.success(i18n.t('inviteLink.toast.created'), { duration: 4000 });
-        invalidateAll();
+        await refreshLobbyData();
       }
     } catch {
       toast.error(i18n.t('inviteLink.toast.createFailed'));
@@ -353,6 +582,96 @@
 
 {#snippet centerContent()}
   <div class="online-hub">
+    <!-- Open Challenges Lobby -->
+    <h2 class="section-header">
+      {i18n.t('lobby.openChallenges')} ({visibleLobbyChallenges.length})
+    </h2>
+
+    <LobbyChallengeList
+      challenges={visibleLobbyChallenges}
+      currentUserId={$page.data.session?.user?.id ?? ''}
+      loading={lobbyLoading}
+      loadingAcceptIds={loadingLobbyAccept}
+      loadingCancelIds={loadingLobbyCancel}
+      onaccept={handleAcceptChallenge}
+      oncancel={handleCancelChallenge}
+      oncreate={handleCreateChallenge}
+    />
+
+    <hr class="divider" />
+
+    <!-- Create Challenge / Time Control -->
+    <h2 class="section-header">{i18n.t('lobby.createChallenge')}</h2>
+
+    <div class="toggle-group">
+      {#each TIME_PRESETS as preset, idx}
+        {#if idx > 0}
+          <span class="separator">·</span>
+        {/if}
+        <button
+          class:active={selectedPresetIndex === idx}
+          onclick={() => { selectedPresetIndex = idx; selectedConfig = { ...preset.config }; }}
+        >
+          {preset.config.timeMinutes}+{preset.config.incrementSeconds}
+        </button>
+      {/each}
+    </div>
+
+    <div class="toggle-group match-type-toggle" role="group" aria-label={i18n.t('lobby.createChallenge')}>
+      <button
+        class:active={!openChallengeRated}
+        type="button"
+        onclick={() => { openChallengeRated = false; }}
+      >
+        {i18n.t('lobby.casual')}
+      </button>
+      <span class="separator">·</span>
+      <button
+        class:active={openChallengeRated}
+        type="button"
+        onclick={() => { openChallengeRated = true; }}
+      >
+        {i18n.t('lobby.rated')}
+      </button>
+    </div>
+
+    <div class="challenge-actions">
+      <button
+        class="text-link"
+        disabled={creatingChallenge || hasActiveChallenge}
+        onclick={handleCreateChallenge}
+      >
+        {creatingChallenge ? '...' : i18n.t('lobby.createGame')}
+      </button>
+      <span class="separator">·</span>
+      {#if createdInviteCode}
+        <div class="invite-result">
+          <input
+            type="text"
+            readonly
+            value="{typeof window !== 'undefined' ? window.location.origin : ''}/play/online/invite/{createdInviteCode}"
+            class="invite-input"
+          />
+          <button class="text-link" onclick={() => handleCopyInviteLink(createdInviteCode!)}>
+            {copiedLink ? i18n.t('common.copied') : i18n.t('inviteLink.copyLink')}
+          </button>
+        </div>
+        <button class="text-link" onclick={() => { createdInviteCode = null; }}>
+          {i18n.t('inviteLink.create.another')}
+        </button>
+      {:else}
+        <button
+          class="text-link"
+          disabled={creatingLink}
+          onclick={handleCreateInviteLink}
+        >
+          {creatingLink ? '...' : i18n.t('inviteLink.create.button')}
+        </button>
+      {/if}
+    </div>
+
+    <hr class="divider" />
+
     <!-- Friends Online -->
     <h2 class="section-header">
       {i18n.t('invitation.onlineFriends.title')} ({onlineFriends.length})
@@ -385,10 +704,9 @@
       </div>
     {/if}
 
-    <hr class="divider" />
-
     <!-- Received Invitations -->
     {#if visibleReceivedInvitations.length > 0}
+      <hr class="divider" />
       <h2 class="section-header">
         {i18n.t('invitation.received.title')} ({visibleReceivedInvitations.length})
       </h2>
@@ -414,11 +732,11 @@
           </div>
         {/each}
       </div>
-      <hr class="divider" />
     {/if}
 
     <!-- Sent Invitations -->
     {#if visibleSentInvitations.length > 0}
+      <hr class="divider" />
       <h2 class="section-header">
         {i18n.t('invitation.sent.title')} ({visibleSentInvitations.length})
       </h2>
@@ -445,49 +763,6 @@
           </div>
         {/each}
       </div>
-      <hr class="divider" />
-    {/if}
-
-    <!-- Create Game -->
-    <h2 class="section-header">{i18n.t('inviteLink.create.title')}</h2>
-
-    <div class="toggle-group">
-      {#each TIME_PRESETS as preset, idx}
-        {#if idx > 0}
-          <span class="separator">·</span>
-        {/if}
-        <button
-          class:active={selectedPresetIndex === idx}
-          onclick={() => { selectedPresetIndex = idx; selectedConfig = { ...preset.config }; }}
-        >
-          {preset.config.timeMinutes}+{preset.config.incrementSeconds}
-        </button>
-      {/each}
-    </div>
-
-    {#if createdInviteCode}
-      <div class="invite-result">
-        <input
-          type="text"
-          readonly
-          value="{typeof window !== 'undefined' ? window.location.origin : ''}/play/online/invite/{createdInviteCode}"
-          class="invite-input"
-        />
-        <button class="text-link" onclick={() => handleCopyInviteLink(createdInviteCode!)}>
-          {copiedLink ? i18n.t('common.copied') : i18n.t('inviteLink.copyLink')}
-        </button>
-      </div>
-      <button class="text-link" onclick={() => { createdInviteCode = null; }}>
-        {i18n.t('inviteLink.create.another')}
-      </button>
-    {:else}
-      <button
-        class="text-link"
-        disabled={creatingLink}
-        onclick={handleCreateInviteLink}
-      >
-        {creatingLink ? '...' : i18n.t('inviteLink.create.button')}
-      </button>
     {/if}
   </div>
 {/snippet}
@@ -512,6 +787,17 @@
     flex: 1;
     font-size: 0.8125rem;
     color: var(--theme-text-primary, #eee);
+  }
+
+  .challenge-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .challenge-actions .separator {
+    color: var(--theme-text-secondary, #666);
   }
 
   .invite-result {

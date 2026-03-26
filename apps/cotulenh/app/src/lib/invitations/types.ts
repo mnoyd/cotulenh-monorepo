@@ -1,6 +1,7 @@
 export interface GameConfig {
   timeMinutes: number; // 1-60
   incrementSeconds: number; // 0-30
+  isRated?: boolean;
 }
 
 export interface TimePreset {
@@ -27,7 +28,7 @@ export interface InvitationItem {
   fromUser: { id: string; displayName: string };
   toUser: { id: string; displayName: string } | null;
   gameConfig: GameConfig;
-  inviteCode: string;
+  inviteCode: string | null;
   status: InvitationStatus;
   createdAt: string;
 }

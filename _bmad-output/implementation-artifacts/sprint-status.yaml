@@ -68,13 +68,13 @@ development_status:
   3-6-game-end-conditions-result: done
   3-7-resign-draw-offer-takeback: done
   3-8-rematch-flow: done
-  3-9-reconnection-disconnect-handling: in-progress
-  3-10-game-abandonment-cleanup: backlog
+  3-9-reconnection-disconnect-handling: done
+  3-10-game-abandonment-cleanup: done
   epic-3-retrospective: optional
 
   # Epic 4: Find an Opponent
-  epic-4: backlog
-  4-1-create-browse-open-challenges-lobby: backlog
+  epic-4: in-progress
+  4-1-create-browse-open-challenges-lobby: in-progress
   4-2-friend-challenge: backlog
   4-3-invite-links-auto-friend: backlog
   epic-4-retrospective: optional

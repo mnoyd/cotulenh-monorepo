@@ -678,6 +678,9 @@ export const en: TranslationKeys = {
   'game.acceptRematch': 'Accept',
   'game.declineRematch': 'Decline',
   'game.abortGame': 'Abort',
+  'game.opponentAbandoned': 'Opponent left — you win',
+  'game.youAbandoned': 'You left — opponent wins',
+  'game.gameStaleCleanup': 'Game aborted',
 
   // Game History
   'gameHistory.title': 'Game History',
@@ -699,6 +702,8 @@ export const en: TranslationKeys = {
   'gameHistory.reason.commander_captured': 'by commander captured',
   'gameHistory.reason.fifty_moves': 'by fifty-move rule',
   'gameHistory.reason.threefold_repetition': 'by threefold repetition',
+  'gameHistory.reason.abandonment': 'by abandonment',
+  'gameHistory.reason.stale_cleanup': 'by inactivity',
   'gameHistory.duration': '{minutes}m {seconds}s',
   'gameHistory.viewAll': 'View All Games',
   'gameHistory.vs': 'vs',
@@ -731,6 +736,28 @@ export const en: TranslationKeys = {
   // Move confirmation
   'game.confirmMove': 'Confirm',
   'game.cancelMove': 'Cancel',
+
+  // Lobby (Open Challenges)
+  'lobby.title': 'Challenge Lobby',
+  'lobby.createChallenge': 'Create Challenge',
+  'lobby.openChallenges': 'Open Challenges',
+  'lobby.noOpenChallenges': 'No open challenges',
+  'lobby.createGame': 'Create Game',
+  'lobby.playAI': 'Play AI',
+  'lobby.accept': 'Accept',
+  'lobby.cancel': 'Cancel',
+  'lobby.rated': 'Rated',
+  'lobby.casual': 'Casual',
+  'lobby.yourChallenge': 'Your challenge',
+  'lobby.alreadyHasChallenge': 'You already have an open challenge. Cancel it first.',
+  'lobby.cannotAcceptOwn': 'Cannot accept your own challenge.',
+  'lobby.toast.created': 'Challenge created',
+  'lobby.toast.createFailed': 'Failed to create challenge',
+  'lobby.toast.accepted': 'Challenge accepted — starting game',
+  'lobby.toast.acceptFailed': 'Failed to accept challenge',
+  'lobby.toast.cancelled': 'Challenge cancelled',
+  'lobby.toast.cancelFailed': 'Failed to cancel challenge',
+  'lobby.toast.challengeAccepted': 'Your challenge was accepted!',
 
   // Game Replay
   'gameReplay.title': 'Game Replay',

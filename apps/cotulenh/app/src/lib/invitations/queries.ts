@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { DEFAULT_POSITION } from '@cotulenh/core';
 import type { GameConfig, InvitationItem } from './types';
 import { logger } from '@cotulenh/common';
 
@@ -21,8 +22,25 @@ export function validateGameConfig(config: unknown): config is GameConfig {
     typeof c.incrementSeconds === 'number' &&
     Number.isInteger(c.incrementSeconds) &&
     c.incrementSeconds >= 0 &&
-    c.incrementSeconds <= 30
+    c.incrementSeconds <= 30 &&
+    (typeof c.isRated === 'undefined' || typeof c.isRated === 'boolean')
   );
+}
+
+async function createGameWithInitialState(
+  supabase: SupabaseClient,
+  invitationId: string
+): Promise<{ gameId?: string; error?: unknown }> {
+  const { data, error } = await supabase.rpc('create_game_with_state', {
+    p_invitation_id: invitationId,
+    p_fen: DEFAULT_POSITION
+  });
+
+  if (error || typeof data !== 'string') {
+    return { error: error ?? new Error('create_game_with_state returned invalid game id') };
+  }
+
+  return { gameId: data };
 }
 
 /**
@@ -419,6 +437,206 @@ export async function acceptInviteLink(
   }
 
   return { success: true, gameId: game.id, inviterUserId: claimed.from_user };
+}
+
+// ────────────────────────────────────────────────────────────────
+// Open Challenge (Lobby) Helpers
+// ────────────────────────────────────────────────────────────────
+
+/**
+ * Check if a user already has a pending open challenge.
+ * Returns the invitation if found, null otherwise.
+ */
+export async function getMyActiveOpenChallenge(
+  supabase: SupabaseClient,
+  userId: string
+): Promise<InvitationItem | null> {
+  const { data, error } = await supabase
+    .from('game_invitations')
+    .select('id, from_user, to_user, game_config, invite_code, status, created_at')
+    .eq('from_user', userId)
+    .is('to_user', null)
+    .is('invite_code', null)
+    .eq('status', 'pending')
+    .gt('expires_at', new Date().toISOString())
+    .limit(1)
+    .single();
+
+  if (error || !data) return null;
+
+  return {
+    id: data.id,
+    fromUser: { id: data.from_user, displayName: '' },
+    toUser: null,
+    gameConfig: data.game_config as GameConfig,
+    inviteCode: data.invite_code,
+    status: data.status,
+    createdAt: data.created_at
+  };
+}
+
+/**
+ * Create an open challenge visible in the lobby.
+ * Open challenges have to_user = NULL and invite_code = NULL.
+ * Enforces one active open challenge per player.
+ */
+export async function createOpenChallenge(
+  supabase: SupabaseClient,
+  fromUserId: string,
+  gameConfig: GameConfig
+): Promise<{ success: boolean; error?: string; invitationId?: string }> {
+  await supabase
+    .from('game_invitations')
+    .update({ status: 'expired' })
+    .eq('from_user', fromUserId)
+    .is('to_user', null)
+    .is('invite_code', null)
+    .eq('status', 'pending')
+    .lt('expires_at', new Date().toISOString());
+
+  // Check for existing active open challenge (AC8)
+  const existing = await getMyActiveOpenChallenge(supabase, fromUserId);
+  if (existing) {
+    return { success: false, error: 'alreadyHasChallenge' };
+  }
+
+  const { data, error } = await supabase
+    .from('game_invitations')
+    .insert({
+      from_user: fromUserId,
+      to_user: null,
+      invite_code: null,
+      game_config: gameConfig,
+      status: 'pending'
+    })
+    .select('id')
+    .single();
+
+  if (error || !data) {
+    if ((error as { code?: string } | null)?.code === '23505') {
+      return { success: false, error: 'alreadyHasChallenge' };
+    }
+    logger.error(error ?? new Error('Unknown'), 'createOpenChallenge: insert failed');
+    return { success: false, error: 'createFailed' };
+  }
+
+  return { success: true, invitationId: data.id };
+}
+
+/**
+ * Get all open challenges for the lobby.
+ * Returns challenges where to_user IS NULL AND invite_code IS NULL,
+ * ordered by newest first, with creator display names.
+ */
+export async function getOpenChallenges(supabase: SupabaseClient): Promise<InvitationItem[]> {
+  const { data: challenges, error } = await supabase
+    .from('game_invitations')
+    .select('id, from_user, to_user, game_config, invite_code, status, created_at')
+    .is('to_user', null)
+    .is('invite_code', null)
+    .eq('status', 'pending')
+    .gt('expires_at', new Date().toISOString())
+    .order('created_at', { ascending: false });
+
+  if (error || !challenges || challenges.length === 0) return [];
+
+  // Get creator profiles
+  const creatorIds = challenges.map((c) => c.from_user);
+
+  let profileMap = new Map<string, string>();
+  if (creatorIds.length > 0) {
+    const { data: profiles } = await supabase
+      .from('profiles')
+      .select('id, display_name')
+      .in('id', creatorIds);
+
+    if (profiles) {
+      profileMap = new Map(profiles.map((p) => [p.id, p.display_name]));
+    }
+  }
+
+  return challenges.map((c) => ({
+    id: c.id,
+    fromUser: {
+      id: c.from_user,
+      displayName: sanitizeName(profileMap.get(c.from_user) ?? '')
+    },
+    toUser: null,
+    gameConfig: c.game_config as GameConfig,
+    inviteCode: c.invite_code,
+    status: c.status,
+    createdAt: c.created_at
+  }));
+}
+
+/**
+ * Accept an open challenge from the lobby.
+ * Uses claim-then-accept pattern: set to_user, then update status and create game.
+ * Prevents self-accept.
+ */
+export async function acceptOpenChallenge(
+  supabase: SupabaseClient,
+  invitationId: string,
+  userId: string
+): Promise<{ success: boolean; error?: string; gameId?: string }> {
+  // Step 1: Claim — set to_user atomically where to_user IS NULL
+  const { data: claimed, error: claimError } = await supabase
+    .from('game_invitations')
+    .update({ to_user: userId })
+    .eq('id', invitationId)
+    .is('to_user', null)
+    .is('invite_code', null)
+    .eq('status', 'pending')
+    .gt('expires_at', new Date().toISOString())
+    .neq('from_user', userId)
+    .select('id, from_user, game_config')
+    .single();
+
+  if (claimError || !claimed) {
+    return { success: false, error: 'acceptFailed' };
+  }
+
+  // Step 2: Accept — update status
+  const { error: acceptError } = await supabase
+    .from('game_invitations')
+    .update({ status: 'accepted' })
+    .eq('id', claimed.id)
+    .eq('to_user', userId)
+    .eq('status', 'pending')
+    .select('id')
+    .single();
+
+  if (acceptError) {
+    // Rollback claim
+    await supabase.from('game_invitations').update({ to_user: null }).eq('id', claimed.id);
+    return { success: false, error: 'acceptFailed' };
+  }
+
+  // Step 3: Create game + game state atomically.
+  const { gameId, error: gameError } = await createGameWithInitialState(supabase, claimed.id);
+
+  if (gameError || !gameId) {
+    logger.error(gameError as Error, 'acceptOpenChallenge: game creation failed, rolling back');
+    await supabase
+      .from('game_invitations')
+      .update({ status: 'pending', to_user: null })
+      .eq('id', claimed.id);
+    return { success: false, error: 'gameCreationFailed' };
+  }
+
+  return { success: true, gameId };
+}
+
+/**
+ * Cancel an open challenge — only the creator can cancel.
+ * Reuses the same delete pattern as cancelInvitation.
+ */
+export async function cancelOpenChallenge(
+  supabase: SupabaseClient,
+  invitationId: string,
+  userId: string
+): Promise<{ success: boolean; error?: string }> {
+  return cancelInvitation(supabase, invitationId, userId);
 }
 
 /**

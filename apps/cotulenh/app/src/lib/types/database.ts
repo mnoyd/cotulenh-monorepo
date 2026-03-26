@@ -100,7 +100,7 @@ export interface Database {
           to_user: string | null;
           status: 'pending' | 'accepted' | 'declined' | 'cancelled' | 'expired';
           game_config: Json;
-          invite_code: string;
+          invite_code: string | null;
           created_at: string;
           updated_at: string;
           expires_at: string;
@@ -111,7 +111,7 @@ export interface Database {
           to_user?: string | null;
           status?: 'pending' | 'accepted' | 'declined' | 'cancelled' | 'expired';
           game_config: Json;
-          invite_code?: string;
+          invite_code?: string | null;
           created_at?: string;
           updated_at?: string;
           expires_at?: string;
@@ -122,7 +122,7 @@ export interface Database {
           to_user?: string | null;
           status?: 'pending' | 'accepted' | 'declined' | 'cancelled' | 'expired';
           game_config?: Json;
-          invite_code?: string;
+          invite_code?: string | null;
           created_at?: string;
           updated_at?: string;
           expires_at?: string;

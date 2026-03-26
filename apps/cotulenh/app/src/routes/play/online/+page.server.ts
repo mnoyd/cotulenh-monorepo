@@ -9,7 +9,12 @@ import {
   acceptInvitation,
   declineInvitation,
   validateGameConfig,
-  createShareableInvitation
+  createShareableInvitation,
+  getOpenChallenges,
+  getMyActiveOpenChallenge,
+  createOpenChallenge,
+  acceptOpenChallenge,
+  cancelOpenChallenge
 } from '$lib/invitations/queries';
 import type { Actions, PageServerLoad } from './$types';
 
@@ -17,13 +22,16 @@ export const load: PageServerLoad = async ({ locals: { supabase, safeGetSession 
   const { user } = await safeGetSession();
   if (!user) redirect(303, '/auth/login');
 
-  const [friends, sentInvitations, receivedInvitations] = await Promise.all([
-    getFriendsList(supabase, user.id),
-    getSentInvitations(supabase, user.id),
-    getReceivedInvitations(supabase, user.id)
-  ]);
+  const [friends, sentInvitations, receivedInvitations, openChallenges, myActiveChallenge] =
+    await Promise.all([
+      getFriendsList(supabase, user.id),
+      getSentInvitations(supabase, user.id),
+      getReceivedInvitations(supabase, user.id),
+      getOpenChallenges(supabase),
+      getMyActiveOpenChallenge(supabase, user.id)
+    ]);
 
-  return { friends, sentInvitations, receivedInvitations };
+  return { friends, sentInvitations, receivedInvitations, openChallenges, myActiveChallenge };
 };
 
 export const actions: Actions = {
@@ -210,5 +218,117 @@ export const actions: Actions = {
       action: 'createShareableInvitation' as const,
       inviteCode: result.inviteCode
     };
+  },
+
+  createOpenChallenge: async ({ request, locals: { supabase, safeGetSession } }) => {
+    const { user } = await safeGetSession();
+    if (!user) {
+      return fail(401, {
+        errors: { form: 'unauthorized' },
+        action: 'createOpenChallenge' as const
+      });
+    }
+
+    const formData = await request.formData();
+    let gameConfig: unknown;
+    try {
+      gameConfig = JSON.parse(String(formData.get('gameConfig') ?? ''));
+    } catch {
+      return fail(400, {
+        errors: { form: 'invalidGameConfig' },
+        action: 'createOpenChallenge' as const
+      });
+    }
+
+    if (!validateGameConfig(gameConfig)) {
+      return fail(400, {
+        errors: { form: 'invalidGameConfig' },
+        action: 'createOpenChallenge' as const
+      });
+    }
+
+    const result = await createOpenChallenge(supabase, user.id, gameConfig);
+
+    if (!result.success) {
+      logger.error(new Error(result.error ?? 'Unknown'), 'Failed to create open challenge');
+      return fail(400, {
+        errors: { form: result.error ?? 'createFailed' },
+        action: 'createOpenChallenge' as const
+      });
+    }
+
+    return {
+      success: true,
+      action: 'createOpenChallenge' as const,
+      invitationId: result.invitationId
+    };
+  },
+
+  acceptOpenChallenge: async ({ request, locals: { supabase, safeGetSession } }) => {
+    const { user } = await safeGetSession();
+    if (!user) {
+      return fail(401, {
+        errors: { form: 'unauthorized' },
+        action: 'acceptOpenChallenge' as const
+      });
+    }
+
+    const formData = await request.formData();
+    const invitationId = String(formData.get('invitationId') ?? '');
+
+    if (!invitationId) {
+      return fail(400, {
+        errors: { form: 'missingInvitationId' },
+        action: 'acceptOpenChallenge' as const
+      });
+    }
+
+    const result = await acceptOpenChallenge(supabase, invitationId, user.id);
+
+    if (!result.success) {
+      logger.error(new Error(result.error ?? 'Unknown'), 'Failed to accept open challenge');
+      return fail(400, {
+        errors: { form: result.error ?? 'acceptFailed' },
+        action: 'acceptOpenChallenge' as const
+      });
+    }
+
+    return {
+      success: true,
+      action: 'acceptOpenChallenge' as const,
+      gameId: result.gameId
+    };
+  },
+
+  cancelOpenChallenge: async ({ request, locals: { supabase, safeGetSession } }) => {
+    const { user } = await safeGetSession();
+    if (!user) {
+      return fail(401, {
+        errors: { form: 'unauthorized' },
+        action: 'cancelOpenChallenge' as const
+      });
+    }
+
+    const formData = await request.formData();
+    const invitationId = String(formData.get('invitationId') ?? '');
+
+    if (!invitationId) {
+      return fail(400, {
+        errors: { form: 'missingInvitationId' },
+        action: 'cancelOpenChallenge' as const
+      });
+    }
+
+    const result = await cancelOpenChallenge(supabase, invitationId, user.id);
+
+    if (!result.success) {
+      logger.error(new Error(result.error ?? 'Unknown'), 'Failed to cancel open challenge');
+      return fail(400, {
+        errors: { form: result.error ?? 'cancelFailed' },
+        action: 'cancelOpenChallenge' as const
+      });
+    }
+
+    return { success: true, action: 'cancelOpenChallenge' as const };
   }
 };

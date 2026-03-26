@@ -668,6 +668,9 @@ export interface TranslationKeys {
   'game.acceptRematch': string;
   'game.declineRematch': string;
   'game.abortGame': string;
+  'game.opponentAbandoned': string;
+  'game.youAbandoned': string;
+  'game.gameStaleCleanup': string;
 
   // Game History
   'gameHistory.title': string;
@@ -689,6 +692,8 @@ export interface TranslationKeys {
   'gameHistory.reason.commander_captured': string;
   'gameHistory.reason.fifty_moves': string;
   'gameHistory.reason.threefold_repetition': string;
+  'gameHistory.reason.abandonment': string;
+  'gameHistory.reason.stale_cleanup': string;
   'gameHistory.duration': string;
   'gameHistory.viewAll': string;
   'gameHistory.vs': string;
@@ -721,6 +726,28 @@ export interface TranslationKeys {
   // Move confirmation in-game
   'game.confirmMove': string;
   'game.cancelMove': string;
+
+  // Lobby (Open Challenges)
+  'lobby.title': string;
+  'lobby.createChallenge': string;
+  'lobby.openChallenges': string;
+  'lobby.noOpenChallenges': string;
+  'lobby.createGame': string;
+  'lobby.playAI': string;
+  'lobby.accept': string;
+  'lobby.cancel': string;
+  'lobby.rated': string;
+  'lobby.casual': string;
+  'lobby.yourChallenge': string;
+  'lobby.alreadyHasChallenge': string;
+  'lobby.cannotAcceptOwn': string;
+  'lobby.toast.created': string;
+  'lobby.toast.createFailed': string;
+  'lobby.toast.accepted': string;
+  'lobby.toast.acceptFailed': string;
+  'lobby.toast.cancelled': string;
+  'lobby.toast.cancelFailed': string;
+  'lobby.toast.challengeAccepted': string;
 
   // Game Replay
   'gameReplay.title': string;
