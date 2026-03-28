@@ -2,6 +2,8 @@
 -- Updates lock_game_state_for_update RPC to also return clocks and updated_at
 -- Needed by validate-move Edge Function for clock deduction during playing phase
 
+DROP FUNCTION IF EXISTS public.lock_game_state_for_update(uuid);
+
 CREATE OR REPLACE FUNCTION public.lock_game_state_for_update(p_game_id uuid)
 RETURNS TABLE (
   id uuid,

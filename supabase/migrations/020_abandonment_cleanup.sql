@@ -226,6 +226,8 @@ REVOKE ALL ON FUNCTION public.forfeit_disconnected_games() FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.forfeit_disconnected_games() TO service_role;
 
 -- 1.7: Update lock_game_state_for_update to include reconnect_attempted
+DROP FUNCTION IF EXISTS public.lock_game_state_for_update(uuid);
+
 CREATE OR REPLACE FUNCTION public.lock_game_state_for_update(p_game_id uuid)
 RETURNS TABLE (
   id uuid,

@@ -7,6 +7,8 @@ node_modules
 
 # testing
 coverage
+playwright-report
+test-results
 
 # svelte
 .svelte-kit
@@ -32,6 +34,8 @@ yarn-error.log*
 tsconfig.tsbuildinfo
 
 **/chrome-debug-profile
+**/playwright-report
+**/test-results
 
 # deployment
 build
@@ -43,6 +47,8 @@ build
 # Dolt database files (added by bd init)
 .dolt/
 *.db
+supabase/.branches/
+supabase/.temp/
 
 # Local git worktrees
 .worktrees/
