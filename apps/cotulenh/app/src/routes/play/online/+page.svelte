@@ -311,7 +311,7 @@
 
   async function waitForGameByInvitation(
     invitationId: string,
-    retries = 5,
+    retries = 25,
     delayMs = 200
   ): Promise<{ id: string } | null> {
     for (let attempt = 0; attempt < retries; attempt++) {

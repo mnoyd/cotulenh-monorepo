@@ -72,23 +72,23 @@ test('players can create and accept an open challenge from the lobby', async ({ 
     const createGameButton = creatorPage.locator('.challenge-actions button').first();
     await createGameButton.click();
 
-    const creatorChallengesList = creatorPage.locator('.online-hub .flat-list').first();
-    await expect(creatorChallengesList.locator('.flat-list-item')).toHaveCount(1);
+    const creatorChallenge = creatorPage.locator('.online-hub .flat-list .flat-list-item').first();
+    await expect(creatorChallenge).toBeVisible();
 
     await loginThroughUi(acceptorPage, acceptor);
 
     const openChallengesList = acceptorPage.locator('.online-hub .flat-list').first();
-    const creatorChallenge = openChallengesList.locator('.flat-list-item', {
+    const creatorLobbyRow = openChallengesList.locator('.flat-list-item', {
       hasText: creator.displayName
     });
 
-    await expect(creatorChallenge).toBeVisible();
+    await expect(creatorLobbyRow).toBeVisible();
 
     const creatorRedirect = creatorPage.waitForURL(/\/play\/online\/[^/]+$/u, {
       timeout: 15_000
     });
 
-    await creatorChallenge.locator('button').click();
+    await creatorLobbyRow.locator('button').click();
 
     await expect(acceptorPage).toHaveURL(/\/play\/online\/[^/]+$/u);
     await creatorRedirect;

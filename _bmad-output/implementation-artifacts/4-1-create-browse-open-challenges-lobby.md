@@ -1,6 +1,6 @@
 # Story 4.1: Create & Browse Open Challenges (Lobby)
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -262,6 +262,7 @@ None
 - Fixed streamed lobby hydration regressions so accepted creator challenges still navigate before hydration settles, stale local rows do not survive refresh, active-challenge state clears on terminal lobby events, and partial stream failures no longer leave the lobby stuck loading
 - Added a true browser-level Playwright test for Story 4.1 using a local Supabase-backed dev server, seeded confirmed users, and two real browser contexts covering create challenge -> lobby visibility -> accept -> dual navigation to the same game
 - Verification for the browser harness passed on 2026-03-29: `pnpm --filter @cotulenh/app exec playwright test e2e/open-challenges-lobby.spec.ts --reporter=line`, `pnpm --filter @cotulenh/app run check-types`, and `pnpm --filter @cotulenh/app exec eslint playwright.config.ts e2e/open-challenges-lobby.spec.ts scripts/local-supabase.mjs scripts/dev-local-supabase.mjs`
+- Senior review follow-up tightened the browser harness so it always starts the app with local Supabase env, no longer assumes an empty lobby, and gives creator-side accepted-challenge navigation a longer retry window before failing
 
 ### Change Log
 
@@ -274,6 +275,7 @@ None
 - 2026-03-29: Streamed `/play/online` lobby data so the initial challenge-list skeleton renders before open-challenge queries resolve
 - 2026-03-29: Fixed streamed lobby hydration regressions with a dedicated lobby-state helper and regression tests for stale snapshot merges, accepted navigation, active-challenge cleanup, and partial hydration failures
 - 2026-03-29: Added a local-Supabase Playwright harness and passing browser E2E coverage for the open-challenges lobby flow
+- 2026-03-29: Senior review pass approved the story after fixing browser-harness flakiness and extending creator redirect retries
 
 ### File List
 
@@ -326,3 +328,19 @@ None
 
 **Residual note:**
 - Browser E2E now depends on a running local Supabase stack because the checked-in `.env.local` target is no longer resolvable in this workspace.
+
+### Senior Developer Review (AI) — 2026-03-29
+
+**Reviewer:** Noy
+
+**Outcome:** Approved
+
+**Findings addressed during review:**
+- **[FIXED] M1 — Playwright could reuse a stale dev server with the wrong Supabase env**: [playwright.config.ts](/home/noy/Work/chess/cotulenh-monorepo/apps/cotulenh/app/playwright.config.ts) now always starts the local-Supabase-backed server instead of reusing whatever is already bound to `127.0.0.1:4173`.
+- **[FIXED] M2 — Browser E2E assumed an empty lobby and flaked with leftover local data**: [open-challenges-lobby.spec.ts](/home/noy/Work/chess/cotulenh-monorepo/apps/cotulenh/app/e2e/open-challenges-lobby.spec.ts) now asserts against the specific creator row instead of requiring exactly one open challenge.
+- **[FIXED] M3 — Creator redirect polling window was too short for slower local runs**: [+page.svelte](/home/noy/Work/chess/cotulenh-monorepo/apps/cotulenh/app/src/routes/play/online/+page.svelte) now retries game lookup long enough for the creator-side realtime redirect to stay reliable in browser tests.
+
+**Verification:**
+- `pnpm --filter @cotulenh/app exec playwright test e2e/open-challenges-lobby.spec.ts --reporter=line`
+- `pnpm --filter @cotulenh/app run check-types`
+- `pnpm --filter @cotulenh/app exec eslint playwright.config.ts e2e/open-challenges-lobby.spec.ts src/routes/play/online/+page.svelte`

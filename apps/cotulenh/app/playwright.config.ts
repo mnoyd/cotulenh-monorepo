@@ -28,7 +28,7 @@ export default defineConfig({
     command: 'pnpm dev:local-supabase',
     cwd: appDir,
     url: `${baseURL}/auth/login`,
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: false,
     timeout: 180_000
   }
 });
