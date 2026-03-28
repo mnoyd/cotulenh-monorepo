@@ -5,6 +5,11 @@ import path from 'path';
 export default defineConfig(({ mode }) => {
   const config: Record<string, unknown> = {
     plugins: [sveltekit()],
+    resolve: process.env.VITEST
+      ? {
+          conditions: ['browser']
+        }
+      : undefined,
     test: {
       globals: true,
       environment: 'jsdom',
@@ -54,6 +59,7 @@ export default defineConfig(({ mode }) => {
   // Only add aliases in development mode for source debugging
   if (mode === 'development') {
     config.resolve = {
+      ...(typeof config.resolve === 'object' && config.resolve ? config.resolve : {}),
       alias: {
         // Development: Point to source entry files for seamless debugging
         // Circular dependency fixed via popup registry pattern

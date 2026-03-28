@@ -1,36 +1,70 @@
-import { describe, expect, it } from 'vitest';
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { flushSync, mount, unmount } from 'svelte';
+import { installMockLocalStorage } from '../../test/local-storage';
 
-const componentPath = resolve(process.cwd(), 'src/lib/components/LobbyEmptyState.svelte');
+const { goto } = vi.hoisted(() => ({
+  goto: vi.fn()
+}));
+
+vi.mock('$app/navigation', () => ({
+  goto
+}));
+
+import LobbyEmptyState from './LobbyEmptyState.svelte';
 
 describe('LobbyEmptyState component', () => {
-  const source = readFileSync(componentPath, 'utf8');
+  let target: HTMLDivElement;
+  let component: ReturnType<typeof render> | undefined;
 
-  it('accepts oncreate callback prop', () => {
-    expect(source).toContain('oncreate');
-    expect(source).toContain('() => void');
+  beforeEach(() => {
+    target = document.createElement('div');
+    document.body.appendChild(target);
+    installMockLocalStorage();
   });
 
-  it('displays no open challenges message', () => {
-    expect(source).toContain("i18n.t('lobby.noOpenChallenges')");
+  afterEach(() => {
+    if (component) {
+      unmount(component);
+      component = undefined;
+    }
+    target.remove();
+    goto.mockReset();
   });
 
-  it('has create game action button', () => {
-    expect(source).toContain("i18n.t('lobby.createGame')");
-    expect(source).toContain('onclick={oncreate}');
+  function render(oncreate = vi.fn()) {
+    const mounted = mount(LobbyEmptyState, {
+      target,
+      props: { oncreate }
+    });
+    flushSync();
+    return mounted;
+  }
+
+  it('renders the empty-state copy and both actions', () => {
+    component = render();
+
+    expect(target.textContent).toContain('Không có thách đấu');
+    const buttons = Array.from(target.querySelectorAll('button'));
+    expect(buttons.map((button) => button.textContent?.trim())).toEqual([
+      'Tạo Ván Đấu',
+      'Chơi Với AI'
+    ]);
   });
 
-  it('has play AI action button', () => {
-    expect(source).toContain("i18n.t('lobby.playAI')");
-    expect(source).toContain("goto('/play/practice')");
+  it('calls oncreate when the create button is clicked', () => {
+    const oncreate = vi.fn();
+    component = render(oncreate);
+
+    target.querySelectorAll('button')[0]?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+    expect(oncreate).toHaveBeenCalledTimes(1);
   });
 
-  it('uses empty-state layout class', () => {
-    expect(source).toContain('empty-state');
-  });
+  it('navigates to practice mode when the AI button is clicked', () => {
+    component = render();
 
-  it('uses text-link class for action button', () => {
-    expect(source).toContain('text-link');
+    target.querySelectorAll('button')[1]?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+    expect(goto).toHaveBeenCalledWith('/play/practice');
   });
 });

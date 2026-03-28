@@ -1,60 +1,108 @@
-import { describe, expect, it } from 'vitest';
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { flushSync, mount, unmount } from 'svelte';
+import OpenChallengeRow from './OpenChallengeRow.svelte';
+import { installMockLocalStorage } from '../../test/local-storage';
 
-const componentPath = resolve(process.cwd(), 'src/lib/components/OpenChallengeRow.svelte');
+const baseChallenge = {
+  id: 'challenge-1',
+  fromUser: { id: 'creator-1', displayName: 'Creator Name' },
+  toUser: null,
+  gameConfig: { timeMinutes: 15, incrementSeconds: 10, isRated: true },
+  inviteCode: null,
+  status: 'pending' as const,
+  createdAt: '2026-03-28T00:00:00Z'
+};
 
 describe('OpenChallengeRow component', () => {
-  const source = readFileSync(componentPath, 'utf8');
+  let target: HTMLDivElement;
+  let component: ReturnType<typeof render> | undefined;
 
-  it('accepts challenge, currentUserId, loadingAccept, loadingCancel, onaccept, oncancel props', () => {
-    expect(source).toContain('challenge');
-    expect(source).toContain('currentUserId');
-    expect(source).toContain('loadingAccept');
-    expect(source).toContain('loadingCancel');
-    expect(source).toContain('onaccept');
-    expect(source).toContain('oncancel');
+  beforeEach(() => {
+    target = document.createElement('div');
+    document.body.appendChild(target);
+    installMockLocalStorage();
   });
 
-  it('derives isOwn by comparing challenge creator to current user', () => {
-    expect(source).toContain('isOwn');
-    expect(source).toContain('challenge.fromUser.id === currentUserId');
+  afterEach(() => {
+    if (component) {
+      unmount(component);
+      component = undefined;
+    }
+    target.remove();
+    vi.clearAllMocks();
   });
 
-  it('displays time control label from gameConfig', () => {
-    expect(source).toContain('timeLabel');
-    expect(source).toContain('challenge.gameConfig.timeMinutes');
-    expect(source).toContain('challenge.gameConfig.incrementSeconds');
+  function render(
+    overrides: Partial<{
+      challenge: typeof baseChallenge;
+      currentUserId: string;
+      loadingAccept: boolean;
+      loadingCancel: boolean;
+      onaccept: (id: string) => void;
+      oncancel: (id: string) => void;
+    }> = {}
+  ) {
+    const onaccept = overrides.onaccept ?? vi.fn();
+    const oncancel = overrides.oncancel ?? vi.fn();
+    const mounted = mount(OpenChallengeRow, {
+      target,
+      props: {
+        challenge: overrides.challenge ?? baseChallenge,
+        currentUserId: overrides.currentUserId ?? 'viewer-1',
+        loadingAccept: overrides.loadingAccept ?? false,
+        loadingCancel: overrides.loadingCancel ?? false,
+        onaccept,
+        oncancel
+      }
+    });
+    flushSync();
+    return mounted;
+  }
+
+  it('renders another player challenge with time control and rated badge', () => {
+    component = render();
+
+    expect(target.textContent).toContain('Creator Name');
+    expect(target.textContent).toContain('15+10');
+    expect(target.textContent).toContain('Xếp Hạng');
+    expect(target.querySelectorAll('button')).toHaveLength(1);
+    expect(target.querySelector('button')?.textContent?.trim()).toBe('Chấp Nhận');
   });
 
-  it('shows rated or casual label from gameConfig.isRated', () => {
-    expect(source).toContain('matchTypeLabel');
-    expect(source).toContain('challenge.gameConfig.isRated');
-    expect(source).toContain("i18n.t('lobby.rated')");
-    expect(source).toContain("i18n.t('lobby.casual')");
+  it('invokes onaccept for another player challenge', () => {
+    const onaccept = vi.fn();
+    component = render({ onaccept });
+
+    target.querySelector('button')?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+    expect(onaccept).toHaveBeenCalledWith('challenge-1');
   });
 
-  it('shows yourChallenge text and cancel button for own challenges', () => {
-    expect(source).toContain("i18n.t('lobby.yourChallenge')");
-    expect(source).toContain("i18n.t('lobby.cancel')");
-    expect(source).toContain('oncancel(challenge.id)');
+  it('renders own challenge with cancel action instead of accept', () => {
+    const oncancel = vi.fn();
+    component = render({ currentUserId: 'creator-1', oncancel });
+
+    expect(target.textContent).toContain('Thách đấu của bạn');
+    expect(target.querySelector('button')?.textContent?.trim()).toBe('Hủy');
+
+    target.querySelector('button')?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+    expect(oncancel).toHaveBeenCalledWith('challenge-1');
   });
 
-  it('shows display name and accept button for other challenges', () => {
-    expect(source).toContain('challenge.fromUser.displayName');
-    expect(source).toContain("i18n.t('lobby.accept')");
-    expect(source).toContain('onaccept(challenge.id)');
+  it('disables accept while accept is loading', () => {
+    component = render({ loadingAccept: true });
+
+    const button = target.querySelector('button');
+    expect(button?.textContent?.trim()).toBe('...');
+    expect(button?.disabled).toBe(true);
   });
 
-  it('disables accept button when loadingAccept is true', () => {
-    expect(source).toContain('disabled={loadingAccept}');
-  });
+  it('disables cancel while cancel is loading', () => {
+    component = render({ currentUserId: 'creator-1', loadingCancel: true });
 
-  it('disables cancel button when loadingCancel is true', () => {
-    expect(source).toContain('disabled={loadingCancel}');
-  });
-
-  it('uses flat-list-item class for consistent styling', () => {
-    expect(source).toContain('flat-list-item');
+    const button = target.querySelector('button');
+    expect(button?.textContent?.trim()).toBe('...');
+    expect(button?.disabled).toBe(true);
   });
 });

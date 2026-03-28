@@ -1,51 +1,140 @@
-import { describe, expect, it } from 'vitest';
-import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { flushSync, mount, unmount } from 'svelte';
+import { installMockLocalStorage } from '../../test/local-storage';
 
-const componentPath = resolve(process.cwd(), 'src/lib/components/LobbyChallengeList.svelte');
+const { goto } = vi.hoisted(() => ({
+  goto: vi.fn()
+}));
+
+vi.mock('$app/navigation', () => ({
+  goto
+}));
+
+import LobbyChallengeList from './LobbyChallengeList.svelte';
+
+const otherChallenge = {
+  id: 'challenge-other',
+  fromUser: { id: 'creator-2', displayName: 'Other Player' },
+  toUser: null,
+  gameConfig: { timeMinutes: 10, incrementSeconds: 5, isRated: false },
+  inviteCode: null,
+  status: 'pending' as const,
+  createdAt: '2026-03-28T00:00:00Z'
+};
+
+const myChallenge = {
+  id: 'challenge-mine',
+  fromUser: { id: 'viewer-1', displayName: 'Me' },
+  toUser: null,
+  gameConfig: { timeMinutes: 15, incrementSeconds: 10, isRated: true },
+  inviteCode: null,
+  status: 'pending' as const,
+  createdAt: '2026-03-28T00:00:00Z'
+};
 
 describe('LobbyChallengeList component', () => {
-  const source = readFileSync(componentPath, 'utf8');
+  let target: HTMLDivElement;
+  let component: ReturnType<typeof render> | undefined;
 
-  it('accepts challenges, currentUserId, loading, loadingAcceptIds, loadingCancelIds, onaccept, oncancel, oncreate props', () => {
-    expect(source).toContain('challenges');
-    expect(source).toContain('currentUserId');
-    expect(source).toContain('loading');
-    expect(source).toContain('loadingAcceptIds');
-    expect(source).toContain('loadingCancelIds');
-    expect(source).toContain('onaccept');
-    expect(source).toContain('oncancel');
-    expect(source).toContain('oncreate');
+  beforeEach(() => {
+    target = document.createElement('div');
+    document.body.appendChild(target);
+    installMockLocalStorage();
   });
 
-  it('shows skeleton loading state with 3 placeholder items', () => {
-    expect(source).toContain('skeleton-item');
-    expect(source).toContain('[1, 2, 3]');
-    expect(source).toContain('skeleton-bar');
+  afterEach(() => {
+    if (component) {
+      unmount(component);
+      component = undefined;
+    }
+    target.remove();
+    goto.mockReset();
   });
 
-  it('shows empty state when no challenges and not loading', () => {
-    expect(source).toContain('LobbyEmptyState');
-    expect(source).toContain('challenges.length === 0');
+  function render(
+    overrides: Partial<{
+      challenges: Array<typeof otherChallenge>;
+      currentUserId: string;
+      loading: boolean;
+      loadingAcceptIds: Set<string>;
+      loadingCancelIds: Set<string>;
+      onaccept: (id: string) => void;
+      oncancel: (id: string) => void;
+      oncreate: () => void;
+    }> = {}
+  ) {
+    const mounted = mount(LobbyChallengeList, {
+      target,
+      props: {
+        challenges: overrides.challenges ?? [],
+        currentUserId: overrides.currentUserId ?? 'viewer-1',
+        loading: overrides.loading ?? false,
+        loadingAcceptIds: overrides.loadingAcceptIds ?? new Set<string>(),
+        loadingCancelIds: overrides.loadingCancelIds ?? new Set<string>(),
+        onaccept: overrides.onaccept ?? vi.fn(),
+        oncancel: overrides.oncancel ?? vi.fn(),
+        oncreate: overrides.oncreate ?? vi.fn()
+      }
+    });
+    flushSync();
+    return mounted;
+  }
+
+  it('renders skeleton rows while loading', () => {
+    component = render({ loading: true });
+
+    expect(target.querySelectorAll('.skeleton-item')).toHaveLength(3);
+    expect(target.querySelectorAll('.skeleton-bar')).toHaveLength(9);
   });
 
-  it('renders OpenChallengeRow for each challenge', () => {
-    expect(source).toContain('OpenChallengeRow');
-    expect(source).toContain('#each challenges as challenge');
-    expect(source).toContain('challenge.id');
+  it('renders the empty state and wires both empty-state actions', () => {
+    const oncreate = vi.fn();
+    component = render({ oncreate });
+
+    expect(target.textContent).toContain('Không có thách đấu');
+
+    const buttons = target.querySelectorAll('button');
+    buttons[0]?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    buttons[1]?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+    expect(oncreate).toHaveBeenCalledTimes(1);
+    expect(goto).toHaveBeenCalledWith('/play/practice');
   });
 
-  it('passes loadingAccept and loadingCancel per challenge', () => {
-    expect(source).toContain('loadingAcceptIds.has(challenge.id)');
-    expect(source).toContain('loadingCancelIds.has(challenge.id)');
+  it('renders populated challenges and routes accept/cancel callbacks by row ownership', () => {
+    const onaccept = vi.fn();
+    const oncancel = vi.fn();
+    component = render({
+      challenges: [otherChallenge, myChallenge],
+      onaccept,
+      oncancel
+    });
+
+    expect(target.textContent).toContain('Other Player');
+    expect(target.textContent).toContain('10+5');
+    expect(target.textContent).toContain('Giao Hữu');
+    expect(target.textContent).toContain('Thách đấu của bạn');
+    expect(target.textContent).toContain('Xếp Hạng');
+
+    const buttons = Array.from(target.querySelectorAll('button'));
+    expect(buttons.map((button) => button.textContent?.trim())).toEqual(['Chấp Nhận', 'Hủy']);
+
+    buttons[0]?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    buttons[1]?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+    expect(onaccept).toHaveBeenCalledWith('challenge-other');
+    expect(oncancel).toHaveBeenCalledWith('challenge-mine');
   });
 
-  it('uses flat-list class for challenge list', () => {
-    expect(source).toContain('flat-list');
-  });
+  it('forwards per-row loading state to nested action buttons', () => {
+    component = render({
+      challenges: [otherChallenge, myChallenge],
+      loadingAcceptIds: new Set(['challenge-other']),
+      loadingCancelIds: new Set(['challenge-mine'])
+    });
 
-  it('has pulse animation for skeleton bars', () => {
-    expect(source).toContain('animation: pulse');
-    expect(source).toContain('@keyframes pulse');
+    const buttons = Array.from(target.querySelectorAll('button'));
+    expect(buttons.every((button) => button.disabled)).toBe(true);
+    expect(buttons.map((button) => button.textContent?.trim())).toEqual(['...', '...']);
   });
 });

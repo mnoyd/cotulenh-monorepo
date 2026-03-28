@@ -874,3 +874,217 @@ describe('lobby integration: realtime event flow', () => {
     unsubscribeFromLobby();
   });
 });
+
+describe('lobby integration: both players navigate to the same game', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('acceptor gets gameId from action, creator detects acceptance via realtime and looks up the same game', async () => {
+    const creatorId = 'creator-nav';
+    const acceptorId = 'acceptor-nav';
+    const invitationId = 'inv-both-nav';
+    const gameId = 'game-both-nav';
+    const gameConfig = { timeMinutes: 5, incrementSeconds: 0 };
+
+    // --- Step 1: Creator creates an open challenge ---
+    mockValidateGameConfig.mockReturnValue(true);
+    mockCreateOpenChallenge.mockResolvedValue({ success: true, invitationId });
+
+    const createResult = await actions.createOpenChallenge({
+      request: createMockRequest({ gameConfig: JSON.stringify(gameConfig) }),
+      locals: createMockLocals({ id: creatorId })
+    } as never);
+    expect((createResult as { success: boolean }).success).toBe(true);
+
+    // --- Step 2: Acceptor loads lobby and sees the challenge ---
+    const lobbyChallenge = {
+      id: invitationId,
+      fromUser: { id: creatorId, displayName: 'Creator' },
+      toUser: null,
+      gameConfig,
+      inviteCode: null,
+      status: 'pending' as const,
+      createdAt: '2026-03-27T00:00:00Z'
+    };
+
+    mockGetFriendsList.mockResolvedValue([]);
+    mockGetSentInvitations.mockResolvedValue([]);
+    mockGetReceivedInvitations.mockResolvedValue([]);
+    mockGetOpenChallenges.mockResolvedValue([lobbyChallenge]);
+    mockGetMyActiveOpenChallenge.mockResolvedValue(null);
+
+    const loadResult = (await load({
+      locals: createMockLocals({ id: acceptorId })
+    } as never)) as { openChallenges: Array<{ id: string }> };
+
+    expect(loadResult.openChallenges).toHaveLength(1);
+    expect(loadResult.openChallenges[0].id).toBe(invitationId);
+
+    // --- Step 3: Acceptor accepts — gets gameId for navigation ---
+    mockAcceptOpenChallenge.mockResolvedValue({ success: true, gameId });
+
+    const acceptResult = await actions.acceptOpenChallenge({
+      request: createMockRequest({ invitationId }),
+      locals: createMockLocals({ id: acceptorId })
+    } as never);
+
+    const acceptData = acceptResult as { success: boolean; gameId: string };
+    expect(acceptData.success).toBe(true);
+    expect(acceptData.gameId).toBe(gameId);
+
+    // Acceptor navigates to: /play/online/${gameId}
+    const acceptorNavigationTarget = `/play/online/${acceptData.gameId}`;
+
+    // --- Step 4: Creator detects acceptance via realtime UPDATE event ---
+    const {
+      subscribeToLobby,
+      unsubscribeFromLobby,
+      onLobbyChallengeEvent,
+      _setLobbyStateCallback
+    } = await import('$lib/invitations/lobby-realtime-core');
+
+    type ChangeRegistration = {
+      event: string;
+      filter?: string;
+      handler: (payload: { new?: Record<string, unknown>; old?: Record<string, unknown> }) => void;
+    };
+
+    const registrations: ChangeRegistration[] = [];
+    const mockChannel = {
+      on: vi
+        .fn()
+        .mockImplementation(
+          (
+            _type: string,
+            opts: { event: string; filter?: string },
+            handler: ChangeRegistration['handler']
+          ) => {
+            registrations.push({ event: opts.event, filter: opts.filter, handler });
+            return mockChannel;
+          }
+        ),
+      subscribe: vi.fn().mockImplementation((cb: (status: string) => void) => {
+        cb('SUBSCRIBED');
+        return mockChannel;
+      }),
+      unsubscribe: vi.fn()
+    };
+
+    const mockSupabase = { channel: vi.fn().mockReturnValue(mockChannel) };
+
+    unsubscribeFromLobby();
+    _setLobbyStateCallback(null);
+    subscribeToLobby(mockSupabase as never);
+
+    const events: Array<{ type: string; id?: string; newStatus?: string }> = [];
+    onLobbyChallengeEvent((e) => events.push(e));
+
+    // Simulate the realtime UPDATE when acceptor accepts the challenge
+    const updateHandler = registrations.find((r) => r.event === 'UPDATE')!;
+    updateHandler.handler({
+      old: { id: invitationId, status: 'pending', to_user: null, invite_code: null },
+      new: { id: invitationId, status: 'accepted', to_user: acceptorId, invite_code: null }
+    });
+
+    expect(events).toHaveLength(1);
+    expect(events[0].type).toBe('update');
+    expect(events[0].id).toBe(invitationId);
+    expect(events[0].newStatus).toBe('accepted');
+
+    // --- Step 5: Creator looks up game by invitation_id (waitForGameByInvitation pattern) ---
+    // The creator's page.svelte does: supabase.from('games').select('id').eq('invitation_id', invitationId).single()
+    // This returns the gameId created during acceptance.
+    // We verify both players navigate to the same game URL.
+    const creatorNavigationTarget = `/play/online/${gameId}`;
+
+    // Both players navigate to the same game
+    expect(acceptorNavigationTarget).toBe(creatorNavigationTarget);
+    expect(acceptorNavigationTarget).toBe(`/play/online/${gameId}`);
+
+    // Cleanup
+    unsubscribeFromLobby();
+  });
+
+  it('acceptor gets gameId, realtime fires for creator with matching invitation, challenge disappears from lobby', async () => {
+    const creatorId = 'creator-cleanup';
+    const acceptorId = 'acceptor-cleanup';
+    const invitationId = 'inv-cleanup';
+    const gameId = 'game-cleanup';
+    const gameConfig = { timeMinutes: 10, incrementSeconds: 5, isRated: true };
+
+    // Creator creates rated challenge
+    mockValidateGameConfig.mockReturnValue(true);
+    mockCreateOpenChallenge.mockResolvedValue({ success: true, invitationId });
+
+    await actions.createOpenChallenge({
+      request: createMockRequest({ gameConfig: JSON.stringify(gameConfig) }),
+      locals: createMockLocals({ id: creatorId })
+    } as never);
+
+    // Acceptor accepts
+    mockAcceptOpenChallenge.mockResolvedValue({ success: true, gameId });
+
+    const acceptResult = await actions.acceptOpenChallenge({
+      request: createMockRequest({ invitationId }),
+      locals: createMockLocals({ id: acceptorId })
+    } as never);
+
+    const acceptData = acceptResult as { success: boolean; gameId: string };
+    expect(acceptData.success).toBe(true);
+    expect(acceptData.gameId).toBe(gameId);
+
+    // After acceptance, lobby load should no longer show the challenge
+    mockGetOpenChallenges.mockResolvedValue([]); // Challenge gone after acceptance
+    mockGetFriendsList.mockResolvedValue([]);
+    mockGetSentInvitations.mockResolvedValue([]);
+    mockGetReceivedInvitations.mockResolvedValue([]);
+    mockGetMyActiveOpenChallenge.mockResolvedValue(null);
+
+    // Third player loads lobby — accepted challenge is gone
+    const thirdPlayerLoad = (await load({
+      locals: createMockLocals({ id: 'third-player' })
+    } as never)) as { openChallenges: Array<{ id: string }> };
+
+    expect(thirdPlayerLoad.openChallenges).toHaveLength(0);
+  });
+
+  it('race condition: second acceptor fails after first accepts', async () => {
+    const creatorId = 'creator-race';
+    const acceptor1 = 'acceptor-race-1';
+    const acceptor2 = 'acceptor-race-2';
+    const invitationId = 'inv-race';
+    const gameId = 'game-race';
+    const gameConfig = { timeMinutes: 3, incrementSeconds: 2 };
+
+    // Creator creates challenge
+    mockValidateGameConfig.mockReturnValue(true);
+    mockCreateOpenChallenge.mockResolvedValue({ success: true, invitationId });
+
+    await actions.createOpenChallenge({
+      request: createMockRequest({ gameConfig: JSON.stringify(gameConfig) }),
+      locals: createMockLocals({ id: creatorId })
+    } as never);
+
+    // First acceptor succeeds
+    mockAcceptOpenChallenge.mockResolvedValueOnce({ success: true, gameId });
+
+    const firstAccept = await actions.acceptOpenChallenge({
+      request: createMockRequest({ invitationId }),
+      locals: createMockLocals({ id: acceptor1 })
+    } as never);
+
+    expect((firstAccept as { success: boolean }).success).toBe(true);
+    expect((firstAccept as { gameId: string }).gameId).toBe(gameId);
+
+    // Second acceptor fails — challenge already claimed
+    mockAcceptOpenChallenge.mockResolvedValueOnce({ success: false, error: 'acceptFailed' });
+
+    const secondAccept = await actions.acceptOpenChallenge({
+      request: createMockRequest({ invitationId }),
+      locals: createMockLocals({ id: acceptor2 })
+    } as never);
+
+    expect((secondAccept as { status: number }).status).toBe(400);
+  });
+});

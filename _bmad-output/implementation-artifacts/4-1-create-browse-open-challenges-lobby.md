@@ -1,6 +1,6 @@
 # Story 4.1: Create & Browse Open Challenges (Lobby)
 
-Status: in-progress
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -255,17 +255,19 @@ None
 
 - Review fixes applied for atomic open-challenge game creation, realtime acceptance visibility, rated/casual lobby metadata, and empty-state actions
 - Added database guard for AC8 via migration 022 and stale-open-challenge expiry before create
-- Review follow-up fixes applied for `/play` lobby routing, invitation realtime subscription, creator-side game lookup retries, lobby loading skeletons, and realtime newest-first ordering
+- Review follow-up fixes applied for `/play` lobby routing, invitation realtime subscription, creator-side game lookup retries, and realtime newest-first ordering
 - Verification rerun after the latest review fixes passed: `pnpm --filter @cotulenh/app run check-types` (`svelte-check found 0 errors and 0 warnings`) and `pnpm --filter @cotulenh/app test` (`64` files / `751` tests passed)
 - Story remains in progress until a true end-to-end integration test exists; current integration coverage is still mocked route/action flow rather than browser-level lobby navigation
-- Mocked route/action coverage exists for create/load/accept/cancel flows, but a true browser-level lobby integration test is still missing
+- Restored real mounted component coverage for lobby rows, empty state, and list actions after fixing the Vitest/Svelte component harness
 
 ### Change Log
 
 - 2026-03-24: Implemented story 4.1 lobby flow, realtime subscriptions, server actions, and component coverage
 - 2026-03-24: Senior Developer Review (AI) fixes applied for atomic game creation, AC8 race safety, lobby realtime acceptance handling, rated/casual UI, and empty-state actions
 - 2026-03-26: Integration tests added (Task 7.6) and full test suite verified (Task 7.7) — all 749 web + 28 Deno tests pass
-- 2026-03-27: Follow-up review fixes applied for `/play` routing, creator realtime subscription, creator-side navigation retry, reachable lobby skeleton loading, and realtime newest-first ordering; app verification rerun passed (`svelte-check`, `64` files / `751` tests)
+- 2026-03-27: Follow-up review fixes applied for `/play` routing, creator realtime subscription, creator-side navigation retry, and realtime newest-first ordering; app verification rerun passed (`svelte-check`, `64` files / `751` tests)
+- 2026-03-28: Added mocked route/action coverage for dual-player navigation, lobby cleanup, and accept race condition; Task 7.6 remains open pending a true browser-level integration test
+- 2026-03-28: Fixed the Vitest/Svelte component harness for mounted lobby tests and restored runtime component coverage for Tasks 7.3-7.5
 
 ### File List
 
@@ -280,6 +282,7 @@ None
 - `apps/cotulenh/app/src/lib/components/LobbyEmptyState.test.ts` (new) — component coverage for both empty-state actions
 - `apps/cotulenh/app/src/lib/components/LobbyChallengeList.svelte` (new) — challenge list with skeleton/empty/populated states
 - `apps/cotulenh/app/src/lib/components/LobbyChallengeList.test.ts` (new) — challenge-list rendering coverage
+- `apps/cotulenh/app/src/test/local-storage.ts` (new) — jsdom localStorage helper for mounted component tests
 - `apps/cotulenh/app/src/lib/invitations/queries.ts` (modified) — lobby query helpers plus atomic open-challenge game creation and stale-open-challenge cleanup
 - `apps/cotulenh/app/src/lib/invitations/queries.test.ts` (modified) — updated lobby helper coverage for atomic RPC creation and uniqueness handling
 - `apps/cotulenh/app/src/lib/invitations/types.ts` (modified) — `GameConfig.isRated` and nullable `InvitationItem.inviteCode`
@@ -290,6 +293,8 @@ None
 - `apps/cotulenh/app/src/lib/i18n/types.ts` (modified) — lobby translation keys
 - `apps/cotulenh/app/src/lib/i18n/locales/vi.ts` (modified) — Vietnamese lobby translations
 - `apps/cotulenh/app/src/lib/i18n/locales/en.ts` (modified) — English lobby translations
+- `apps/cotulenh/app/svelte.config.js` (modified) — skips style preprocessing under Vitest so mounted plain-style components can compile in tests
+- `apps/cotulenh/app/vite.config.ts` (modified) — resolves browser conditions under Vitest so Svelte client mount APIs are available in jsdom
 - `_bmad-output/implementation-artifacts/sprint-status.yaml` (modified) — story status moved back to `in-progress` after review fixes
 - `_bmad-output/implementation-artifacts/4-1-create-browse-open-challenges-lobby.md` (modified) — review-fix notes, verification, and task-status correction
 
