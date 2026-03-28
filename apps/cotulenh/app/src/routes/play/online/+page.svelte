@@ -19,6 +19,12 @@
   import type { LobbyChallengeEvent } from '$lib/invitations/lobby-realtime.svelte';
   import LobbyChallengeList from '$lib/components/LobbyChallengeList.svelte';
   import CommandCenter from '$lib/components/CommandCenter.svelte';
+  import {
+    clearMyActiveChallenge,
+    hydrateLobbyChallenges,
+    resolveLobbyHydration,
+    shouldNavigateOnAcceptedSentInvitation
+  } from './lobby-state';
   import { toast } from 'svelte-sonner';
   import { onMount, onDestroy } from 'svelte';
   import '$lib/styles/command-center.css';
@@ -32,6 +38,7 @@
   let selectedConfig = $state<GameConfig>({ ...TIME_PRESETS[0].config });
   let selectedPresetIndex = $state(0);
   let openChallengeRated = $state(false);
+  let lobbyHydrationVersion = 0;
 
   onMount(() => {
     const params = $page.url.searchParams;
@@ -59,7 +66,6 @@
     if (userId) {
       subscribeToInvitations($page.data.supabase, userId);
     }
-    lobbyLoading = false;
   });
 
   onDestroy(() => {
@@ -83,10 +89,29 @@
   let loadingLobbyCancel = $state(new Set<string>());
   let creatingChallenge = $state(false);
   let lobbyLoading = $state(true);
+  let myActiveChallenge = $state<InvitationItem | null>(null);
 
-  // Initialize lobby challenges from server data
   $effect(() => {
-    lobbyChallenges = [...data.openChallenges];
+    const version = ++lobbyHydrationVersion;
+    lobbyLoading = true;
+
+    void resolveLobbyHydration(data.openChallenges, data.myActiveChallenge).then((hydration) => {
+      if (version !== lobbyHydrationVersion) return;
+
+      if (hydration.openChallenges) {
+        lobbyChallenges = hydrateLobbyChallenges(
+          hydration.openChallenges,
+          lobbyChallenges,
+          removedLobbyChallenges
+        );
+      }
+
+      if (hydration.myActiveChallenge !== undefined) {
+        myActiveChallenge = hydration.myActiveChallenge;
+      }
+
+      lobbyLoading = false;
+    });
   });
 
   // Visible lobby challenges — server + realtime, minus removed
@@ -96,7 +121,7 @@
 
   // Whether current user has an active open challenge
   let hasActiveChallenge = $derived(
-    data.myActiveChallenge !== null ||
+    myActiveChallenge !== null ||
     lobbyChallenges.some((c) => c.fromUser.id === $page.data.session?.user?.id && !removedLobbyChallenges.has(c.id))
   );
 
@@ -195,11 +220,15 @@
 
         // If our open challenge was accepted, navigate to game
         if (event.newStatus === 'accepted') {
-          const myChallenge = lobbyChallenges.find(
-            (c) => c.id === event.id && c.fromUser.id === $page.data.session?.user?.id
-          );
-          if (myChallenge) {
+          if (
+            shouldNavigateOnAcceptedSentInvitation(
+              event.id,
+              myActiveChallenge,
+              data.sentInvitations
+            )
+          ) {
             removedLobbyChallenges = new Set([...removedLobbyChallenges, event.id]);
+            myActiveChallenge = clearMyActiveChallenge(myActiveChallenge, event.id);
             toast.success(i18n.t('lobby.toast.challengeAccepted'), { duration: 4000 });
             const game = await waitForGameByInvitation(event.id);
             if (game) {
@@ -251,9 +280,11 @@
         // Challenge accepted, cancelled, or expired — remove from lobby
         if (event.newStatus !== 'pending') {
           removedLobbyChallenges = new Set([...removedLobbyChallenges, event.id]);
+          myActiveChallenge = clearMyActiveChallenge(myActiveChallenge, event.id);
         }
       } else if (event.type === 'delete') {
         removedLobbyChallenges = new Set([...removedLobbyChallenges, event.id]);
+        myActiveChallenge = clearMyActiveChallenge(myActiveChallenge, event.id);
       }
     });
 
@@ -272,8 +303,9 @@
     lobbyLoading = true;
     try {
       await invalidateAll();
-    } finally {
+    } catch (error) {
       lobbyLoading = false;
+      throw error;
     }
   }
 
@@ -304,6 +336,10 @@
   // ─── Lobby handlers ─────────────────────────────────────────────
 
   async function handleCreateChallenge() {
+    if (lobbyLoading) {
+      return;
+    }
+
     if (hasActiveChallenge) {
       toast.error(i18n.t('lobby.alreadyHasChallenge'));
       return;
@@ -328,6 +364,25 @@
           toast.error(i18n.t('lobby.toast.createFailed'));
         }
         return;
+      }
+
+      const result = deserialize(await response.text());
+      const invitationId =
+        result.type === 'success' ? (result.data as { invitationId?: string })?.invitationId : undefined;
+
+      if (invitationId) {
+        myActiveChallenge = {
+          id: invitationId,
+          fromUser: {
+            id: $page.data.session?.user?.id ?? '',
+            displayName: $page.data.session?.user?.user_metadata?.display_name ?? ''
+          },
+          toUser: null,
+          gameConfig: { ...selectedConfig, isRated: openChallengeRated },
+          inviteCode: null,
+          status: 'pending',
+          createdAt: new Date().toISOString()
+        };
       }
 
       toast.success(i18n.t('lobby.toast.created'), { duration: 4000 });
@@ -380,6 +435,7 @@
       }
 
       removedLobbyChallenges = new Set([...removedLobbyChallenges, invitationId]);
+      myActiveChallenge = clearMyActiveChallenge(myActiveChallenge, invitationId);
       toast.success(i18n.t('lobby.toast.cancelled'), { duration: 4000 });
       await refreshLobbyData();
     } catch {
@@ -638,7 +694,7 @@
     <div class="challenge-actions">
       <button
         class="text-link"
-        disabled={creatingChallenge || hasActiveChallenge}
+        disabled={creatingChallenge || lobbyLoading || hasActiveChallenge}
         onclick={handleCreateChallenge}
       >
         {creatingChallenge ? '...' : i18n.t('lobby.createGame')}

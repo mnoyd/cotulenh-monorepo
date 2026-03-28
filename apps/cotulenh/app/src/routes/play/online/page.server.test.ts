@@ -67,6 +67,28 @@ function createMockRequest(data: Record<string, string>) {
   } as unknown as Request;
 }
 
+function createDeferred<T>() {
+  let resolve!: (value: T) => void;
+  let reject!: (reason?: unknown) => void;
+
+  const promise = new Promise<T>((res, rej) => {
+    resolve = res;
+    reject = rej;
+  });
+
+  return { promise, resolve, reject };
+}
+
+type LoadedLobbyPage = Exclude<Awaited<ReturnType<typeof load>>, void>;
+
+async function resolveLobbyLoad(result: LoadedLobbyPage) {
+  return {
+    ...result,
+    openChallenges: await result.openChallenges,
+    myActiveChallenge: await result.myActiveChallenge
+  };
+}
+
 describe('load', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -104,22 +126,53 @@ describe('load', () => {
     mockGetOpenChallenges.mockResolvedValue(openChallenges);
     mockGetMyActiveOpenChallenge.mockResolvedValue(myActiveChallenge);
 
-    const result = await load({
+    const result = (await load({
       locals: createMockLocals()
-    } as never);
+    } as never)) as LoadedLobbyPage;
 
-    expect(result).toEqual({
+    expect(result).toMatchObject({
       friends,
       sentInvitations,
-      receivedInvitations,
-      openChallenges,
-      myActiveChallenge
+      receivedInvitations
     });
+    await expect(result.openChallenges).resolves.toEqual(openChallenges);
+    await expect(result.myActiveChallenge).resolves.toBeNull();
     expect(mockGetFriendsList).toHaveBeenCalledWith(expect.anything(), 'user-1');
     expect(mockGetSentInvitations).toHaveBeenCalledWith(expect.anything(), 'user-1');
     expect(mockGetReceivedInvitations).toHaveBeenCalledWith(expect.anything(), 'user-1');
     expect(mockGetOpenChallenges).toHaveBeenCalledWith(expect.anything());
     expect(mockGetMyActiveOpenChallenge).toHaveBeenCalledWith(expect.anything(), 'user-1');
+  });
+
+  it('streams lobby data without blocking the page load on open challenge queries', async () => {
+    const openChallengesDeferred = createDeferred<never[]>();
+    const myActiveChallengeDeferred = createDeferred<null>();
+
+    mockGetFriendsList.mockResolvedValue([]);
+    mockGetSentInvitations.mockResolvedValue([]);
+    mockGetReceivedInvitations.mockResolvedValue([]);
+    mockGetOpenChallenges.mockReturnValue(openChallengesDeferred.promise);
+    mockGetMyActiveOpenChallenge.mockReturnValue(myActiveChallengeDeferred.promise);
+
+    const result = (await load({
+      locals: createMockLocals()
+    } as never)) as LoadedLobbyPage;
+
+    expect(result.friends).toEqual([]);
+    expect(result.sentInvitations).toEqual([]);
+    expect(result.receivedInvitations).toEqual([]);
+    await expect(
+      Promise.race([result.openChallenges.then(() => 'resolved'), Promise.resolve('pending')])
+    ).resolves.toBe('pending');
+    await expect(
+      Promise.race([result.myActiveChallenge.then(() => 'resolved'), Promise.resolve('pending')])
+    ).resolves.toBe('pending');
+
+    openChallengesDeferred.resolve([]);
+    myActiveChallengeDeferred.resolve(null);
+
+    await expect(result.openChallenges).resolves.toEqual([]);
+    await expect(result.myActiveChallenge).resolves.toBeNull();
   });
 
   it('redirects unauthenticated users to login', async () => {
@@ -683,14 +736,11 @@ describe('lobby integration: create → appears in lobby → accept → navigate
     mockGetOpenChallenges.mockResolvedValue([lobbyChallenge]);
     mockGetMyActiveOpenChallenge.mockResolvedValue(null);
 
-    const loadResult = (await load({
-      locals: createMockLocals({ id: acceptorId })
-    } as never)) as {
-      openChallenges: Array<{
-        id: string;
-        fromUser: { displayName: string };
-      }>;
-    };
+    const loadResult = await resolveLobbyLoad(
+      (await load({
+        locals: createMockLocals({ id: acceptorId })
+      } as never)) as LoadedLobbyPage
+    );
 
     expect(loadResult.openChallenges).toHaveLength(1);
     expect(loadResult.openChallenges[0].id).toBe(invitationId);
@@ -744,11 +794,11 @@ describe('lobby integration: create → appears in lobby → accept → navigate
     mockGetOpenChallenges.mockResolvedValue([activeChallenge]);
     mockGetMyActiveOpenChallenge.mockResolvedValue(activeChallenge);
 
-    const loadResult = (await load({
-      locals: createMockLocals({ id: creatorId })
-    } as never)) as {
-      myActiveChallenge: { id: string } | null;
-    };
+    const loadResult = await resolveLobbyLoad(
+      (await load({
+        locals: createMockLocals({ id: creatorId })
+      } as never)) as LoadedLobbyPage
+    );
 
     expect(loadResult.myActiveChallenge).not.toBeNull();
     expect(loadResult.myActiveChallenge!.id).toBe(invitationId);
@@ -914,9 +964,11 @@ describe('lobby integration: both players navigate to the same game', () => {
     mockGetOpenChallenges.mockResolvedValue([lobbyChallenge]);
     mockGetMyActiveOpenChallenge.mockResolvedValue(null);
 
-    const loadResult = (await load({
-      locals: createMockLocals({ id: acceptorId })
-    } as never)) as { openChallenges: Array<{ id: string }> };
+    const loadResult = await resolveLobbyLoad(
+      (await load({
+        locals: createMockLocals({ id: acceptorId })
+      } as never)) as LoadedLobbyPage
+    );
 
     expect(loadResult.openChallenges).toHaveLength(1);
     expect(loadResult.openChallenges[0].id).toBe(invitationId);
@@ -1042,9 +1094,11 @@ describe('lobby integration: both players navigate to the same game', () => {
     mockGetMyActiveOpenChallenge.mockResolvedValue(null);
 
     // Third player loads lobby — accepted challenge is gone
-    const thirdPlayerLoad = (await load({
-      locals: createMockLocals({ id: 'third-player' })
-    } as never)) as { openChallenges: Array<{ id: string }> };
+    const thirdPlayerLoad = await resolveLobbyLoad(
+      (await load({
+        locals: createMockLocals({ id: 'third-player' })
+      } as never)) as LoadedLobbyPage
+    );
 
     expect(thirdPlayerLoad.openChallenges).toHaveLength(0);
   });

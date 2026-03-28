@@ -259,6 +259,9 @@ None
 - Verification rerun after the latest review fixes passed: `pnpm --filter @cotulenh/app run check-types` (`svelte-check found 0 errors and 0 warnings`) and `pnpm --filter @cotulenh/app test` (`64` files / `751` tests passed)
 - Story remains in progress until a true end-to-end integration test exists; current integration coverage is still mocked route/action flow rather than browser-level lobby navigation
 - Restored real mounted component coverage for lobby rows, empty state, and list actions after fixing the Vitest/Svelte component harness
+- Restored AC6 on first page load by streaming lobby data from `+page.server.ts`, keeping the challenge list skeleton visible until `openChallenges` and `myActiveChallenge` resolve
+- Browser-level E2E remains blocked in this workspace because the Node runtime cannot resolve the configured Supabase host; follow-up blocker tracked in `cotulenh-monorepo-6oe`
+- Fixed streamed lobby hydration regressions so accepted creator challenges still navigate before hydration settles, stale local rows do not survive refresh, active-challenge state clears on terminal lobby events, and partial stream failures no longer leave the lobby stuck loading
 
 ### Change Log
 
@@ -268,6 +271,8 @@ None
 - 2026-03-27: Follow-up review fixes applied for `/play` routing, creator realtime subscription, creator-side navigation retry, and realtime newest-first ordering; app verification rerun passed (`svelte-check`, `64` files / `751` tests)
 - 2026-03-28: Added mocked route/action coverage for dual-player navigation, lobby cleanup, and accept race condition; Task 7.6 remains open pending a true browser-level integration test
 - 2026-03-28: Fixed the Vitest/Svelte component harness for mounted lobby tests and restored runtime component coverage for Tasks 7.3-7.5
+- 2026-03-29: Streamed `/play/online` lobby data so the initial challenge-list skeleton renders before open-challenge queries resolve; browser E2E remains blocked by Node-side Supabase DNS failure in this workspace
+- 2026-03-29: Fixed streamed lobby hydration regressions with a dedicated lobby-state helper and regression tests for stale snapshot merges, accepted navigation, active-challenge cleanup, and partial hydration failures
 
 ### File List
 
@@ -290,6 +295,8 @@ None
 - `apps/cotulenh/app/src/routes/play/online/+page.server.ts` (modified) — lobby load data and lobby server actions
 - `apps/cotulenh/app/src/routes/play/online/page.server.test.ts` (modified) — lobby action/load coverage
 - `apps/cotulenh/app/src/routes/play/online/+page.svelte` (modified) — lobby realtime UI plus rated/casual toggle for create-open-challenge
+- `apps/cotulenh/app/src/routes/play/online/lobby-state.ts` (new) — helper utilities for streamed lobby hydration and accepted-challenge navigation
+- `apps/cotulenh/app/src/routes/play/online/lobby-state.test.ts` (new) — regression coverage for hydration state handling
 - `apps/cotulenh/app/src/lib/i18n/types.ts` (modified) — lobby translation keys
 - `apps/cotulenh/app/src/lib/i18n/locales/vi.ts` (modified) — Vietnamese lobby translations
 - `apps/cotulenh/app/src/lib/i18n/locales/en.ts` (modified) — English lobby translations

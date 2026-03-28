@@ -22,16 +22,25 @@ export const load: PageServerLoad = async ({ locals: { supabase, safeGetSession 
   const { user } = await safeGetSession();
   if (!user) redirect(303, '/auth/login');
 
-  const [friends, sentInvitations, receivedInvitations, openChallenges, myActiveChallenge] =
-    await Promise.all([
-      getFriendsList(supabase, user.id),
-      getSentInvitations(supabase, user.id),
-      getReceivedInvitations(supabase, user.id),
-      getOpenChallenges(supabase),
-      getMyActiveOpenChallenge(supabase, user.id)
-    ]);
+  const friendsPromise = getFriendsList(supabase, user.id);
+  const sentInvitationsPromise = getSentInvitations(supabase, user.id);
+  const receivedInvitationsPromise = getReceivedInvitations(supabase, user.id);
+  const openChallengesPromise = getOpenChallenges(supabase);
+  const myActiveChallengePromise = getMyActiveOpenChallenge(supabase, user.id);
 
-  return { friends, sentInvitations, receivedInvitations, openChallenges, myActiveChallenge };
+  const [friends, sentInvitations, receivedInvitations] = await Promise.all([
+    friendsPromise,
+    sentInvitationsPromise,
+    receivedInvitationsPromise
+  ]);
+
+  return {
+    friends,
+    sentInvitations,
+    receivedInvitations,
+    openChallenges: openChallengesPromise,
+    myActiveChallenge: myActiveChallengePromise
+  };
 };
 
 export const actions: Actions = {
