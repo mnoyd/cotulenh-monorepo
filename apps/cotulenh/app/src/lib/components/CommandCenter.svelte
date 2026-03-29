@@ -13,9 +13,11 @@
   interface Props {
     center: Snippet;
     tabs?: Tab[];
+    loading?: boolean;
+    loadingContent?: Snippet;
   }
 
-  let { center, tabs = [] }: Props = $props();
+  let { center, tabs = [], loading = false, loadingContent }: Props = $props();
 
   let mobileOverlayOpen = $state(false);
   let hasTabs = $derived(tabs.length > 0);
@@ -23,7 +25,11 @@
 
 <div class="command-center" class:has-right-panel={hasTabs}>
   <div class="center-area">
-    {@render center()}
+    {#if loading && loadingContent}
+      {@render loadingContent()}
+    {:else}
+      {@render center()}
+    {/if}
   </div>
 
   {#if hasTabs}

@@ -58,6 +58,18 @@ describe('user layout server load', () => {
     expect(result).toEqual({});
   });
 
+  it('allows unauthenticated visitors to /@username routes (rerouted)', async () => {
+    const mockEvent = {
+      locals: {
+        safeGetSession: vi.fn().mockResolvedValue({ session: null, user: null })
+      },
+      url: new URL('http://localhost/@SomePlayer')
+    } as unknown as Parameters<typeof load>[0];
+
+    const result = await load(mockEvent);
+    expect(result).toEqual({});
+  });
+
   it('allows authenticated users through', async () => {
     const mockEvent = {
       locals: {

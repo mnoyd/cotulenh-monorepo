@@ -80,8 +80,8 @@ development_status:
   epic-4-retrospective: optional
 
   # Epic 5: Social & Friends
-  epic-5: backlog
-  5-1-player-profiles: backlog
+  epic-5: in-progress
+  5-1-player-profiles: done
   5-2-friends-list-online-presence: backlog
   5-3-challenge-friends-from-friends-list: backlog
   epic-5-retrospective: optional

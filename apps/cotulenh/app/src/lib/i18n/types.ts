@@ -480,6 +480,13 @@ export interface TranslationKeys {
   'profile.public.title': string;
   'profile.public.gameHistory.title': string;
   'profile.public.gameHistory.empty': string;
+  'profile.rating': string;
+  'profile.rating.unrated': string;
+  'profile.addFriend': string;
+  'profile.challenge': string;
+  'profile.pendingSent': string;
+  'profile.settings': string;
+  'profile.skeleton.loading': string;
 
   // Account Settings
   'accountSettings.title': string;

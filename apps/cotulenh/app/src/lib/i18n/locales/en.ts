@@ -484,6 +484,13 @@ export const en: TranslationKeys = {
   'profile.public.title': "{username}'s Profile",
   'profile.public.gameHistory.title': 'Game History',
   'profile.public.gameHistory.empty': 'No games played yet',
+  'profile.rating': 'Rating',
+  'profile.rating.unrated': 'Unrated',
+  'profile.addFriend': 'Add Friend',
+  'profile.challenge': 'Challenge',
+  'profile.pendingSent': 'Request Sent',
+  'profile.settings': 'Settings',
+  'profile.skeleton.loading': 'Loading...',
 
   // Account Settings
   'accountSettings.title': 'Account Settings',

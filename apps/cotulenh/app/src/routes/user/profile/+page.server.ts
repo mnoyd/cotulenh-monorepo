@@ -1,6 +1,7 @@
 import { fail, redirect } from '@sveltejs/kit';
 import { displayNameSchema } from './validation';
 import type { Actions, PageServerLoad } from './$types';
+import { getPublicGameHistory, computeGameStats } from '$lib/game/history';
 
 export const load: PageServerLoad = async ({ locals: { supabase, safeGetSession } }) => {
   const { user } = await safeGetSession();
@@ -8,21 +9,22 @@ export const load: PageServerLoad = async ({ locals: { supabase, safeGetSession 
 
   const { data: profileData } = await supabase
     .from('profiles')
-    .select('display_name, avatar_url, created_at')
+    .select('username, display_name, avatar_url, created_at, rating')
     .eq('id', user.id)
     .single();
 
+  const games = await getPublicGameHistory(supabase, user.id);
+  const stats = computeGameStats(games);
+
   return {
     profileDetail: {
+      username: profileData?.username ?? '',
       displayName: profileData?.display_name ?? '',
       avatarUrl: profileData?.avatar_url ?? null,
-      createdAt: profileData?.created_at ?? new Date().toISOString()
+      createdAt: profileData?.created_at ?? new Date().toISOString(),
+      rating: (profileData?.rating as number | null) ?? null
     },
-    stats: {
-      gamesPlayed: 0,
-      wins: 0,
-      losses: 0
-    }
+    stats
   };
 };
 

@@ -43,48 +43,78 @@ describe('profile page server', () => {
     } as unknown as Parameters<typeof load>[0];
   }
 
-  describe('load function', () => {
-    it('returns profile data and placeholder stats', async () => {
-      const selectMock = vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          single: vi.fn().mockResolvedValue({
-            data: {
-              display_name: 'Commander',
-              avatar_url: null,
-              created_at: '2026-01-15T00:00:00Z'
-            },
-            error: null
-          })
+  function mockProfileAndGamesForLoad(profileData: unknown, gamesData: unknown[] = []) {
+    // Profile chain
+    const profileSelectMock = vi.fn().mockReturnValue({
+      eq: vi.fn().mockReturnValue({
+        single: vi.fn().mockResolvedValue({
+          data: profileData,
+          error: profileData ? null : { message: 'not found' }
         })
-      });
-      mockSupabase.from.mockReturnValue({ select: selectMock });
+      })
+    });
+
+    // Games chain
+    const gamesOrderMock = vi.fn().mockResolvedValue({ data: gamesData, error: null });
+    const neqMock = vi.fn().mockReturnValue({ order: gamesOrderMock });
+    const orMock = vi.fn().mockReturnValue({ neq: neqMock });
+    const gamesSelectMock = vi.fn().mockReturnValue({ or: orMock });
+
+    mockSupabase.from.mockImplementation((table: string) => {
+      if (table === 'profiles') return { select: profileSelectMock };
+      if (table === 'games') return { select: gamesSelectMock };
+      return { select: vi.fn() };
+    });
+  }
+
+  describe('load function', () => {
+    it('returns profile data and real game stats', async () => {
+      mockProfileAndGamesForLoad(
+        {
+          username: 'commander',
+          display_name: 'Commander',
+          avatar_url: null,
+          created_at: '2026-01-15T00:00:00Z',
+          rating: 1500
+        },
+        [
+          {
+            id: 'g1',
+            status: 'checkmate',
+            winner: 'red',
+            result_reason: 'checkmate',
+            time_control: { timeMinutes: 10, incrementSeconds: 5 },
+            started_at: '2026-03-01T10:00:00Z',
+            ended_at: '2026-03-01T10:30:00Z',
+            red_player: 'user-123',
+            blue_player: 'user-2',
+            red_profile: { display_name: 'Commander' },
+            blue_profile: { display_name: 'Opponent' }
+          }
+        ]
+      );
 
       const event = createMockLoadEvent();
       const result = (await load(event)) as Record<string, unknown>;
 
       expect(result.profileDetail).toEqual({
+        username: 'commander',
         displayName: 'Commander',
         avatarUrl: null,
-        createdAt: '2026-01-15T00:00:00Z'
+        createdAt: '2026-01-15T00:00:00Z',
+        rating: 1500
       });
       expect(result.stats).toEqual({
-        gamesPlayed: 0,
-        wins: 0,
+        gamesPlayed: 1,
+        wins: 1,
         losses: 0
       });
       expect(mockSupabase.from).toHaveBeenCalledWith('profiles');
+      expect(mockSupabase.from).toHaveBeenCalledWith('games');
     });
 
     it('returns defaults when profile data is null', async () => {
-      const selectMock = vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          single: vi.fn().mockResolvedValue({
-            data: null,
-            error: { message: 'not found' }
-          })
-        })
-      });
-      mockSupabase.from.mockReturnValue({ select: selectMock });
+      mockProfileAndGamesForLoad(null);
 
       const event = createMockLoadEvent();
       const result = (await load(event)) as Record<string, unknown>;
@@ -92,6 +122,7 @@ describe('profile page server', () => {
 
       expect(profileDetail.displayName).toBe('');
       expect(profileDetail.avatarUrl).toBeNull();
+      expect(profileDetail.rating).toBeNull();
     });
   });
 

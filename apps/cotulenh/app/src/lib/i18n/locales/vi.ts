@@ -485,6 +485,13 @@ export const vi: TranslationKeys = {
   'profile.public.title': 'Hồ sơ của {username}',
   'profile.public.gameHistory.title': 'Lịch Sử Trận Đấu',
   'profile.public.gameHistory.empty': 'Chưa có trận đấu nào',
+  'profile.rating': 'Xếp Hạng',
+  'profile.rating.unrated': 'Chưa xếp hạng',
+  'profile.addFriend': 'Thêm bạn',
+  'profile.challenge': 'Thách đấu',
+  'profile.pendingSent': 'Đã gửi lời mời',
+  'profile.settings': 'Cài đặt',
+  'profile.skeleton.loading': 'Đang tải...',
 
   // Account Settings
   'accountSettings.title': 'Cài Đặt Tài Khoản',

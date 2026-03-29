@@ -6,6 +6,7 @@ export interface Database {
       profiles: {
         Row: {
           id: string;
+          username: string;
           display_name: string;
           rating: number | null;
           avatar_url: string | null;
@@ -16,6 +17,7 @@ export interface Database {
         };
         Insert: {
           id: string;
+          username: string;
           display_name: string;
           rating?: number | null;
           avatar_url?: string | null;
@@ -26,6 +28,7 @@ export interface Database {
         };
         Update: {
           id?: string;
+          username?: string;
           display_name?: string;
           rating?: number | null;
           avatar_url?: string | null;

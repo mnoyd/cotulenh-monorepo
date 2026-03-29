@@ -1,5 +1,6 @@
 <script lang="ts">
   import { getI18n } from '$lib/i18n/index.svelte';
+  import type { TranslationKey } from '$lib/i18n/types';
   import * as Dialog from '$lib/components/ui/dialog';
   import { Button } from '$lib/components/ui/button';
   import { TIME_PRESETS, type GameConfig } from '$lib/invitations/types';
@@ -10,19 +11,20 @@
     open: boolean;
     friend: { id: string; displayName: string; rating?: number };
     onsubmit: (config: GameConfig & { toUserId: string }) => void;
+    translate?: (key: TranslationKey) => string;
   }
 
-  let { open = $bindable(), friend, onsubmit }: Props = $props();
+  let { open = $bindable(), friend, onsubmit, translate = i18n.t }: Props = $props();
 
   let selectedPresetIndex = $state(7); // Default to 15+10 (Rapid)
   let isRated = $state(false);
   let preferredColor = $state<'random' | 'red' | 'blue'>('random');
 
   let dialogTitle = $derived(
-    i18n.t('friend.challenge.dialog.title').replace('{name}', friend.displayName)
+    translate('friend.challenge.dialog.title').replace('{name}', friend.displayName)
   );
   let dialogRating = $derived(
-    i18n.t('friend.challenge.dialog.rating').replace('{rating}', String(friend.rating ?? ''))
+    translate('friend.challenge.dialog.rating').replace('{rating}', String(friend.rating ?? ''))
   );
 
   function handleSubmit() {
@@ -50,7 +52,7 @@
     <div class="dialog-body">
       <!-- Time control presets -->
       <div class="field-group">
-        <span class="field-label">{i18n.t('invitation.timeControl.title')}</span>
+        <span class="field-label">{translate('invitation.timeControl.title')}</span>
         <div class="toggle-group">
           {#each TIME_PRESETS as preset, idx}
             {#if idx > 0}
@@ -75,7 +77,7 @@
             class:active={!isRated}
             onclick={() => { isRated = false; }}
           >
-            {i18n.t('lobby.casual')}
+            {translate('lobby.casual')}
           </button>
           <span class="separator">·</span>
           <button
@@ -83,20 +85,20 @@
             class:active={isRated}
             onclick={() => { isRated = true; }}
           >
-            {i18n.t('lobby.rated')}
+            {translate('lobby.rated')}
           </button>
         </div>
       </div>
 
       <div class="field-group">
-        <span class="field-label">{i18n.t('friend.challenge.colorChoice.label')}</span>
+        <span class="field-label">{translate('friend.challenge.colorChoice.label')}</span>
         <div class="toggle-group" role="group">
           <button
             type="button"
             class:active={preferredColor === 'random'}
             onclick={() => { preferredColor = 'random'; }}
           >
-            {i18n.t('friend.challenge.colorChoice.random')}
+            {translate('friend.challenge.colorChoice.random')}
           </button>
           <span class="separator">·</span>
           <button
@@ -104,7 +106,7 @@
             class:active={preferredColor === 'red'}
             onclick={() => { preferredColor = 'red'; }}
           >
-            {i18n.t('common.red')}
+            {translate('common.red')}
           </button>
           <span class="separator">·</span>
           <button
@@ -112,7 +114,7 @@
             class:active={preferredColor === 'blue'}
             onclick={() => { preferredColor = 'blue'; }}
           >
-            {i18n.t('common.blue')}
+            {translate('common.blue')}
           </button>
         </div>
       </div>
@@ -120,10 +122,10 @@
 
     <Dialog.Footer>
       <Button variant="outline" onclick={() => (open = false)}>
-        {i18n.t('common.cancel')}
+        {translate('common.cancel')}
       </Button>
       <Button onclick={handleSubmit}>
-        {i18n.t('friend.challenge.action.send')}
+        {translate('friend.challenge.action.send')}
       </Button>
     </Dialog.Footer>
   </Dialog.Content>
