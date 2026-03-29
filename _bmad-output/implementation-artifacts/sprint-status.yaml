@@ -75,7 +75,7 @@ development_status:
   # Epic 4: Find an Opponent
   epic-4: in-progress
   4-1-create-browse-open-challenges-lobby: done
-  4-2-friend-challenge: backlog
+  4-2-friend-challenge: done
   4-3-invite-links-auto-friend: backlog
   epic-4-retrospective: optional
 

@@ -27,6 +27,7 @@ export interface FriendListItem {
   friendshipId: string;
   userId: string;
   displayName: string;
+  rating?: number;
 }
 
 export interface PendingRequestItem {

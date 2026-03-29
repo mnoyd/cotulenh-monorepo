@@ -65,6 +65,7 @@
     fromDisplayName: string;
     gameConfig: { timeMinutes: number; incrementSeconds: number };
   } | null>(null);
+  let invitationToastTimer: ReturnType<typeof setTimeout> | null = null;
 
   let isAuthenticated = $derived(!!$page.data.user);
 
@@ -113,19 +114,32 @@
 
     const unsub = onInvitationRealtimeEvent(async (event: InvitationRealtimeEvent) => {
       if (event.type === 'received') {
-        // Fetch sender display name
+        // Fetch sender display name and rating
         const { data: profile } = await $page.data.supabase
           .from('profiles')
-          .select('display_name')
+          .select('display_name, rating')
           .eq('id', event.fromUser)
           .single();
+
+        const name = sanitizeName(profile?.display_name ?? '') || i18n.t('common.loading');
+        const rating = profile?.rating;
+        const displayName = rating != null ? `${name} (${rating})` : name;
+
+        // Clear previous timer
+        if (invitationToastTimer) clearTimeout(invitationToastTimer);
 
         pendingInvitationToast = {
           id: event.id,
           fromUser: event.fromUser,
-          fromDisplayName: sanitizeName(profile?.display_name ?? '') || i18n.t('common.loading'),
+          fromDisplayName: displayName,
           gameConfig: event.gameConfig
         };
+
+        // Auto-dismiss after 30s (AC3)
+        invitationToastTimer = setTimeout(() => {
+          pendingInvitationToast = null;
+          invitationToastTimer = null;
+        }, 30_000);
       } else if (event.type === 'statusChanged') {
         if (event.newStatus === 'accepted') {
           // Look up the game created from this invitation
@@ -145,11 +159,32 @@
             toast.success(i18n.t('invitation.toast.accepted'));
           }
         } else if (event.newStatus === 'declined') {
-          toast.info(i18n.t('invitation.toast.declined'));
+          const { data: invitation } = await $page.data.supabase
+            .from('game_invitations')
+            .select('to_user')
+            .eq('id', event.id)
+            .single();
+
+          let declineToast = i18n.t('invitation.toast.declined');
+          if (invitation?.to_user) {
+            const { data: recipient } = await $page.data.supabase
+              .from('profiles')
+              .select('display_name')
+              .eq('id', invitation.to_user)
+              .single();
+
+            const recipientName = sanitizeName(recipient?.display_name ?? '');
+            if (recipientName) {
+              declineToast = i18n.t('friend.challenge.toast.declined').replace('{name}', recipientName);
+            }
+          }
+
+          toast.info(declineToast, { duration: 3000 });
         }
       } else if (event.type === 'deleted') {
         // Sender cancelled — dismiss toast if it's for this invitation
         if (pendingInvitationToast?.id === event.id) {
+          if (invitationToastTimer) { clearTimeout(invitationToastTimer); invitationToastTimer = null; }
           pendingInvitationToast = null;
         }
       }
@@ -201,6 +236,7 @@
       fromDisplayName={pendingInvitationToast.fromDisplayName}
       gameConfig={pendingInvitationToast.gameConfig}
       onaccept={async (invitationId) => {
+        if (invitationToastTimer) { clearTimeout(invitationToastTimer); invitationToastTimer = null; }
         const response = await fetch('/play/online?/acceptInvitation', {
           method: 'POST',
           body: new URLSearchParams({ invitationId }),
@@ -214,10 +250,19 @@
             goto(`/play/online/${gameId}`);
           }
         } else {
-          toast.error(i18n.t('invitation.toast.acceptFailed'));
+          // Check if failed due to expiry
+          const errorCode = result.type === 'failure'
+            ? (result.data as { errors?: { form?: string } } | null)?.errors?.form
+            : undefined;
+          if (errorCode === 'invitationUnavailable') {
+            toast.error(i18n.t('friend.challenge.toast.expired'), { duration: 3000 });
+          } else {
+            toast.error(i18n.t('invitation.toast.acceptFailed'));
+          }
         }
       }}
       ondecline={async (invitationId) => {
+        if (invitationToastTimer) { clearTimeout(invitationToastTimer); invitationToastTimer = null; }
         const response = await fetch('/play/online?/declineInvitation', {
           method: 'POST',
           body: new URLSearchParams({ invitationId }),
@@ -229,7 +274,10 @@
           toast.error(i18n.t('invitation.toast.declineFailed'));
         }
       }}
-      ondismiss={() => { pendingInvitationToast = null; }}
+      ondismiss={() => {
+        if (invitationToastTimer) { clearTimeout(invitationToastTimer); invitationToastTimer = null; }
+        pendingInvitationToast = null;
+      }}
     />
   {/if}
 

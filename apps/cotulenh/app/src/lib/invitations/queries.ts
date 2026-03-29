@@ -23,7 +23,11 @@ export function validateGameConfig(config: unknown): config is GameConfig {
     Number.isInteger(c.incrementSeconds) &&
     c.incrementSeconds >= 0 &&
     c.incrementSeconds <= 30 &&
-    (typeof c.isRated === 'undefined' || typeof c.isRated === 'boolean')
+    (typeof c.isRated === 'undefined' || typeof c.isRated === 'boolean') &&
+    (typeof c.preferredColor === 'undefined' ||
+      c.preferredColor === 'random' ||
+      c.preferredColor === 'red' ||
+      c.preferredColor === 'blue')
   );
 }
 
@@ -41,6 +45,41 @@ async function createGameWithInitialState(
   }
 
   return { gameId: data };
+}
+
+type ProfileSummary = { displayName: string; rating?: number };
+
+function readOptionalRating(profile: { rating?: unknown }): number | undefined {
+  return typeof profile.rating === 'number' ? profile.rating : undefined;
+}
+
+async function loadProfileMap(
+  supabase: SupabaseClient,
+  userIds: string[]
+): Promise<Map<string, ProfileSummary>> {
+  const uniqueUserIds = [...new Set(userIds)];
+  if (uniqueUserIds.length === 0) {
+    return new Map();
+  }
+
+  const { data: profiles } = await supabase
+    .from('profiles')
+    .select('id, display_name, rating')
+    .in('id', uniqueUserIds);
+
+  if (!profiles) {
+    return new Map();
+  }
+
+  return new Map(
+    profiles.map((profile) => [
+      profile.id,
+      {
+        displayName: profile.display_name,
+        rating: readOptionalRating(profile as { rating?: unknown })
+      }
+    ])
+  );
 }
 
 /**
@@ -123,23 +162,16 @@ export async function getSentInvitations(
     .map((inv) => inv.to_user)
     .filter((id): id is string => id !== null);
 
-  let profileMap = new Map<string, string>();
-  if (recipientIds.length > 0) {
-    const { data: profiles } = await supabase
-      .from('profiles')
-      .select('id, display_name')
-      .in('id', recipientIds);
-
-    if (profiles) {
-      profileMap = new Map(profiles.map((p) => [p.id, p.display_name]));
-    }
-  }
+  const profileMap = await loadProfileMap(supabase, recipientIds);
 
   return invitations.map((inv) => ({
     id: inv.id,
     fromUser: { id: inv.from_user, displayName: '' },
     toUser: inv.to_user
-      ? { id: inv.to_user, displayName: sanitizeName(profileMap.get(inv.to_user) ?? '') }
+      ? {
+          id: inv.to_user,
+          displayName: sanitizeName(profileMap.get(inv.to_user)?.displayName ?? '')
+        }
       : null,
     gameConfig: inv.game_config as GameConfig,
     inviteCode: inv.invite_code,
@@ -192,30 +224,24 @@ export async function getReceivedInvitations(
   // Get sender profiles
   const senderIds = invitations.map((inv) => inv.from_user);
 
-  let profileMap = new Map<string, string>();
-  if (senderIds.length > 0) {
-    const { data: profiles } = await supabase
-      .from('profiles')
-      .select('id, display_name')
-      .in('id', senderIds);
+  const profileMap = await loadProfileMap(supabase, senderIds);
 
-    if (profiles) {
-      profileMap = new Map(profiles.map((p) => [p.id, p.display_name]));
-    }
-  }
-
-  return invitations.map((inv) => ({
-    id: inv.id,
-    fromUser: {
-      id: inv.from_user,
-      displayName: sanitizeName(profileMap.get(inv.from_user) ?? '')
-    },
-    toUser: inv.to_user ? { id: inv.to_user, displayName: '' } : null,
-    gameConfig: inv.game_config as GameConfig,
-    inviteCode: inv.invite_code,
-    status: inv.status,
-    createdAt: inv.created_at
-  }));
+  return invitations.map((inv) => {
+    const profile = profileMap.get(inv.from_user);
+    return {
+      id: inv.id,
+      fromUser: {
+        id: inv.from_user,
+        displayName: sanitizeName(profile?.displayName ?? ''),
+        ...(profile?.rating != null ? { rating: profile.rating } : {})
+      },
+      toUser: inv.to_user ? { id: inv.to_user, displayName: '' } : null,
+      gameConfig: inv.game_config as GameConfig,
+      inviteCode: inv.invite_code,
+      status: inv.status,
+      createdAt: inv.created_at
+    };
+  });
 }
 
 /**
@@ -240,30 +266,20 @@ export async function acceptInvitation(
     .single();
 
   if (updateError || !invitation) {
-    return { success: false, error: 'acceptFailed' };
+    return { success: false, error: 'invitationUnavailable' };
   }
 
-  // 2. Create games row — sender is red, recipient is blue
-  const { data: game, error: insertError } = await supabase
-    .from('games')
-    .insert({
-      red_player: invitation.from_user,
-      blue_player: userId,
-      status: 'started',
-      time_control: invitation.game_config,
-      invitation_id: invitation.id
-    })
-    .select('id')
-    .single();
+  // 2. Create game + game state atomically via RPC.
+  const { gameId, error: insertError } = await createGameWithInitialState(supabase, invitation.id);
 
-  if (insertError || !game) {
+  if (insertError || !gameId) {
     // Rollback invitation status on game creation failure
     logger.error(insertError as Error, 'Failed to create game after accepting invitation');
     await supabase.from('game_invitations').update({ status: 'pending' }).eq('id', invitationId);
     return { success: false, error: 'gameCreationFailed' };
   }
 
-  return { success: true, gameId: game.id };
+  return { success: true, gameId };
 }
 
 /**
@@ -543,30 +559,24 @@ export async function getOpenChallenges(supabase: SupabaseClient): Promise<Invit
   // Get creator profiles
   const creatorIds = challenges.map((c) => c.from_user);
 
-  let profileMap = new Map<string, string>();
-  if (creatorIds.length > 0) {
-    const { data: profiles } = await supabase
-      .from('profiles')
-      .select('id, display_name')
-      .in('id', creatorIds);
+  const profileMap = await loadProfileMap(supabase, creatorIds);
 
-    if (profiles) {
-      profileMap = new Map(profiles.map((p) => [p.id, p.display_name]));
-    }
-  }
-
-  return challenges.map((c) => ({
-    id: c.id,
-    fromUser: {
-      id: c.from_user,
-      displayName: sanitizeName(profileMap.get(c.from_user) ?? '')
-    },
-    toUser: null,
-    gameConfig: c.game_config as GameConfig,
-    inviteCode: c.invite_code,
-    status: c.status,
-    createdAt: c.created_at
-  }));
+  return challenges.map((c) => {
+    const profile = profileMap.get(c.from_user);
+    return {
+      id: c.id,
+      fromUser: {
+        id: c.from_user,
+        displayName: sanitizeName(profile?.displayName ?? ''),
+        ...(profile?.rating != null ? { rating: profile.rating } : {})
+      },
+      toUser: null,
+      gameConfig: c.game_config as GameConfig,
+      inviteCode: c.invite_code,
+      status: c.status,
+      createdAt: c.created_at
+    };
+  });
 }
 
 /**

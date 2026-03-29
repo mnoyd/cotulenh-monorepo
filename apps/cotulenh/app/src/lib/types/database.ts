@@ -7,6 +7,7 @@ export interface Database {
         Row: {
           id: string;
           display_name: string;
+          rating: number | null;
           avatar_url: string | null;
           locale: string;
           settings_json: Json;
@@ -16,6 +17,7 @@ export interface Database {
         Insert: {
           id: string;
           display_name: string;
+          rating?: number | null;
           avatar_url?: string | null;
           locale?: string;
           settings_json?: Json;
@@ -25,6 +27,7 @@ export interface Database {
         Update: {
           id?: string;
           display_name?: string;
+          rating?: number | null;
           avatar_url?: string | null;
           locale?: string;
           settings_json?: Json;

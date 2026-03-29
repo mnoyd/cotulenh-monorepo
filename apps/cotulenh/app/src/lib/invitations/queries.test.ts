@@ -55,6 +55,14 @@ describe('validateGameConfig', () => {
     expect(validateGameConfig({ timeMinutes: 60, incrementSeconds: 30 })).toBe(true);
     expect(validateGameConfig({ timeMinutes: 1, incrementSeconds: 0 })).toBe(true);
     expect(validateGameConfig({ timeMinutes: 5, incrementSeconds: 0, isRated: true })).toBe(true);
+    expect(
+      validateGameConfig({
+        timeMinutes: 15,
+        incrementSeconds: 10,
+        isRated: false,
+        preferredColor: 'random'
+      })
+    ).toBe(true);
   });
 
   it('rejects null/undefined', () => {
@@ -91,6 +99,12 @@ describe('validateGameConfig', () => {
 
   it('rejects invalid isRated values', () => {
     expect(validateGameConfig({ timeMinutes: 5, incrementSeconds: 0, isRated: 'yes' })).toBe(false);
+  });
+
+  it('rejects invalid preferredColor values', () => {
+    expect(
+      validateGameConfig({ timeMinutes: 5, incrementSeconds: 0, preferredColor: 'green' })
+    ).toBe(false);
   });
 });
 
@@ -430,6 +444,91 @@ describe('getReceivedInvitations', () => {
     expect(result[0].gameConfig).toEqual({ timeMinutes: 5, incrementSeconds: 0 });
   });
 
+  it('includes sender rating when available', async () => {
+    const { supabase, mockFrom } = createMockSupabase();
+    let callCount = 0;
+
+    mockFrom.mockImplementation(() => {
+      callCount++;
+      if (callCount === 1) {
+        const chain: Record<string, unknown> = {};
+        for (const m of ['select', 'eq', 'gt', 'order']) {
+          chain[m] = vi.fn().mockReturnValue(chain);
+        }
+        chain.order = vi.fn().mockResolvedValue({
+          data: [
+            {
+              id: 'inv-1',
+              from_user: 'user-2',
+              to_user: 'user-1',
+              game_config: { timeMinutes: 5, incrementSeconds: 0 },
+              invite_code: null,
+              status: 'pending',
+              created_at: '2024-01-01T00:00:00Z'
+            }
+          ],
+          error: null
+        });
+        return chain;
+      }
+      return {
+        select: vi.fn().mockReturnValue({
+          in: vi.fn().mockResolvedValue({
+            data: [{ id: 'user-2', display_name: 'Player Two', rating: 1500 }],
+            error: null
+          })
+        })
+      };
+    });
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = await getReceivedInvitations(supabase as any, 'user-1');
+    expect(result).toHaveLength(1);
+    expect(result[0].fromUser.rating).toBe(1500);
+  });
+
+  it('omits rating when null in profile', async () => {
+    const { supabase, mockFrom } = createMockSupabase();
+    let callCount = 0;
+
+    mockFrom.mockImplementation(() => {
+      callCount++;
+      if (callCount === 1) {
+        const chain: Record<string, unknown> = {};
+        for (const m of ['select', 'eq', 'gt', 'order']) {
+          chain[m] = vi.fn().mockReturnValue(chain);
+        }
+        chain.order = vi.fn().mockResolvedValue({
+          data: [
+            {
+              id: 'inv-1',
+              from_user: 'user-2',
+              to_user: 'user-1',
+              game_config: { timeMinutes: 5, incrementSeconds: 0 },
+              invite_code: null,
+              status: 'pending',
+              created_at: '2024-01-01T00:00:00Z'
+            }
+          ],
+          error: null
+        });
+        return chain;
+      }
+      return {
+        select: vi.fn().mockReturnValue({
+          in: vi.fn().mockResolvedValue({
+            data: [{ id: 'user-2', display_name: 'Player Two', rating: null }],
+            error: null
+          })
+        })
+      };
+    });
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = await getReceivedInvitations(supabase as any, 'user-1');
+    expect(result[0].fromUser.rating).toBeUndefined();
+  });
+
   it('sanitizes sender display names', async () => {
     const { supabase, mockFrom } = createMockSupabase();
     let callCount = 0;
@@ -474,31 +573,29 @@ describe('getReceivedInvitations', () => {
 });
 
 describe('acceptInvitation', () => {
-  it('updates invitation and creates game on success', async () => {
-    const { supabase, mockFrom } = createMockSupabase();
-    let callCount = 0;
+  it('updates invitation and creates game state atomically on success', async () => {
+    const { supabase, mockFrom, mockRpc } = createMockSupabase();
 
-    mockFrom.mockImplementation(() => {
-      callCount++;
-      if (callCount === 1) {
-        // update invitation
-        return actionChain({
-          data: {
-            id: 'inv-1',
-            from_user: 'user-2',
-            game_config: { timeMinutes: 5, incrementSeconds: 0 }
-          },
-          error: null
-        });
-      }
-      // insert game
-      return actionChain({ data: { id: 'game-1' }, error: null });
-    });
+    mockFrom.mockReturnValue(
+      actionChain({
+        data: {
+          id: 'inv-1',
+          from_user: 'user-2',
+          game_config: { timeMinutes: 5, incrementSeconds: 0 }
+        },
+        error: null
+      })
+    );
+    mockRpc.mockResolvedValue({ data: 'game-1', error: null });
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const result = await acceptInvitation(supabase as any, 'inv-1', 'user-1');
     expect(result.success).toBe(true);
     expect(result.gameId).toBe('game-1');
+    expect(mockRpc).toHaveBeenCalledWith('create_game_with_state', {
+      p_invitation_id: 'inv-1',
+      p_fen: DEFAULT_POSITION
+    });
   });
 
   it('fails when user is not the recipient', async () => {
@@ -509,17 +606,15 @@ describe('acceptInvitation', () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const result = await acceptInvitation(supabase as any, 'inv-1', 'not-recipient');
     expect(result.success).toBe(false);
-    expect(result.error).toBe('acceptFailed');
+    expect(result.error).toBe('invitationUnavailable');
   });
 
   it('rolls back invitation on game creation failure', async () => {
-    const { supabase, mockFrom } = createMockSupabase();
-    let callCount = 0;
+    const { supabase, mockFrom, mockRpc } = createMockSupabase();
     const rollbackChain = actionChain({ data: { id: 'inv-1' }, error: null });
 
     mockFrom.mockImplementation(() => {
-      callCount++;
-      if (callCount === 1) {
+      if (mockFrom.mock.calls.length === 1) {
         // update invitation succeeds
         return actionChain({
           data: {
@@ -530,13 +625,10 @@ describe('acceptInvitation', () => {
           error: null
         });
       }
-      if (callCount === 2) {
-        // insert game fails
-        return actionChain({ data: null, error: { message: 'insert failed' } });
-      }
       // rollback update
       return rollbackChain;
     });
+    mockRpc.mockResolvedValue({ data: null, error: { message: 'rpc failed' } });
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const result = await acceptInvitation(supabase as any, 'inv-1', 'user-1');

@@ -5,8 +5,10 @@
   import { getOnlineUsers } from '$lib/friends/presence.svelte';
   import { sortFriendsByOnline } from '$lib/friends/sort';
   import CommandCenter from '$lib/components/CommandCenter.svelte';
+  import FriendChallengeDialog from '$lib/components/FriendChallengeDialog.svelte';
   import { AlertDialog } from 'bits-ui';
   import { toast } from 'svelte-sonner';
+  import type { GameConfig } from '$lib/invitations/types';
   import type { PageData } from './$types';
 
   import '$lib/styles/command-center.css';
@@ -31,6 +33,11 @@
   let removeDialogOpen = $state(false);
   let friendToRemove = $state<{ friendshipId: string; displayName: string } | null>(null);
   let isRemoving = $state(false);
+
+  // Friend challenge state
+  let challengeDialogOpen = $state(false);
+  let challengeTarget = $state<{ id: string; displayName: string; rating?: number } | null>(null);
+  let challengePending = $state(new Set<string>());
 
   let visibleIncoming = $derived(
     data.incomingRequests.filter((r: PendingRequestItem) => !removedIncoming.has(r.friendshipId))
@@ -149,6 +156,34 @@
     finally { const next = new Set(loadingRequests); next.delete(friendshipId); loadingRequests = next; }
   }
 
+  function openChallengeDialog(friend: FriendListItem) {
+    challengeTarget = {
+      id: friend.userId,
+      displayName: friend.displayName,
+      ...(friend.rating != null ? { rating: friend.rating } : {})
+    };
+    challengeDialogOpen = true;
+  }
+
+  async function handleSendChallenge(config: GameConfig & { toUserId: string }) {
+    const { toUserId, ...gameConfig } = config;
+    challengePending = new Set([...challengePending, toUserId]);
+    try {
+      const ok = await postAction('sendFriendChallenge', {
+        toUserId,
+        gameConfig: JSON.stringify(gameConfig)
+      });
+      if (!ok) {
+        const next = new Set(challengePending); next.delete(toUserId); challengePending = next;
+        toast.error(i18n.t('invitation.toast.sendFailed')); return;
+      }
+      toast.success(i18n.t('invitation.toast.sent'), { duration: 4000 });
+    } catch {
+      const next = new Set(challengePending); next.delete(toUserId); challengePending = next;
+      toast.error(i18n.t('invitation.toast.sendFailed'));
+    }
+  }
+
   function openRemoveDialog(friend: FriendListItem) {
     friendToRemove = { friendshipId: friend.friendshipId, displayName: friend.displayName };
     removeDialogOpen = true;
@@ -188,6 +223,14 @@
 </svelte:head>
 
 <CommandCenter center={centerContent} />
+
+{#if challengeTarget}
+  <FriendChallengeDialog
+    bind:open={challengeDialogOpen}
+    friend={challengeTarget}
+    onsubmit={handleSendChallenge}
+  />
+{/if}
 
 <AlertDialog.Root bind:open={removeDialogOpen}>
   <AlertDialog.Portal>
@@ -302,9 +345,22 @@
           <div class="flat-list-item">
             <span class="status-dot" class:online={onlineUsers.has(friend.userId)}></span>
             <span class="friend-name">{friend.displayName}</span>
-            <button class="text-link danger" onclick={() => openRemoveDialog(friend)}>
-              {i18n.t('friends.remove.button')}
-            </button>
+            <div class="actions">
+              {#if challengePending.has(friend.userId)}
+                <span class="text-secondary">{i18n.t('invitation.action.invited')}</span>
+              {:else}
+                <button
+                  class="text-link"
+                  disabled={!onlineUsers.has(friend.userId)}
+                  onclick={() => openChallengeDialog(friend)}
+                >
+                  {i18n.t('friend.challenge.action.challenge')}
+                </button>
+              {/if}
+              <button class="text-link danger" onclick={() => openRemoveDialog(friend)}>
+                {i18n.t('friends.remove.button')}
+              </button>
+            </div>
           </div>
         {/each}
       </div>

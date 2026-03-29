@@ -749,6 +749,22 @@ export interface TranslationKeys {
   'lobby.toast.cancelFailed': string;
   'lobby.toast.challengeAccepted': string;
 
+  // Friend Challenge
+  'friend.challenge.toast.challengeMessage': string;
+  'friend.challenge.toast.received': string;
+  'friend.challenge.toast.declined': string;
+  'friend.challenge.toast.expired': string;
+  'friend.challenge.dialog.title': string;
+  'friend.challenge.dialog.rating': string;
+  'friend.challenge.action.send': string;
+  'friend.challenge.action.cancel': string;
+  'friend.challenge.action.challenge': string;
+  'friend.challenge.action.challengeFriend': string;
+  'friend.challenge.friendSelector.title': string;
+  'friend.challenge.friendSelector.empty': string;
+  'friend.challenge.colorChoice.label': string;
+  'friend.challenge.colorChoice.random': string;
+
   // Game Replay
   'gameReplay.title': string;
   'gameReplay.copyPgn': string;

@@ -758,6 +758,22 @@ export const vi: TranslationKeys = {
   'lobby.toast.cancelFailed': 'Hủy thách đấu thất bại',
   'lobby.toast.challengeAccepted': 'Thách đấu đã được chấp nhận!',
 
+  // Friend Challenge
+  'friend.challenge.toast.challengeMessage': 'thách đấu',
+  'friend.challenge.toast.received': '{name} ({rating}) thách đấu {timeControl}',
+  'friend.challenge.toast.declined': '{name} đã từ chối thách đấu',
+  'friend.challenge.toast.expired': 'Thách đấu đã hết hạn',
+  'friend.challenge.dialog.title': 'Thách đấu {name}',
+  'friend.challenge.dialog.rating': 'Xếp hạng: {rating}',
+  'friend.challenge.action.send': 'Gửi thách đấu',
+  'friend.challenge.action.cancel': 'Hủy thách đấu',
+  'friend.challenge.action.challenge': 'Thách đấu',
+  'friend.challenge.action.challengeFriend': 'Thách đấu bạn bè',
+  'friend.challenge.friendSelector.title': 'Chọn bạn bè',
+  'friend.challenge.friendSelector.empty': 'Không có bạn bè trực tuyến',
+  'friend.challenge.colorChoice.label': 'Chọn màu',
+  'friend.challenge.colorChoice.random': 'Ngẫu nhiên',
+
   // Game Replay
   'gameReplay.title': 'Xem Lại Trận Đấu',
   'gameReplay.copyPgn': 'Sao Chép PGN',

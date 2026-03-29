@@ -143,20 +143,33 @@ export async function getFriendsList(
 
   const { data: profiles } = await supabase
     .from('profiles')
-    .select('id, display_name')
+    .select('id, display_name, rating')
     .in('id', friendIds);
 
   if (!profiles) return [];
 
-  const profileMap = new Map(profiles.map((p) => [p.id, p.display_name]));
+  const profileMap = new Map(
+    profiles.map((p) => [
+      p.id,
+      {
+        displayName: p.display_name,
+        rating:
+          typeof (p as { rating?: unknown }).rating === 'number'
+            ? (p as { rating: number }).rating
+            : undefined
+      }
+    ])
+  );
 
   return friendships
     .map((f) => {
       const friendId = f.user_a === userId ? f.user_b : f.user_a;
+      const profile = profileMap.get(friendId);
       return {
         friendshipId: f.id,
         userId: friendId,
-        displayName: sanitizeName(profileMap.get(friendId) ?? '')
+        displayName: sanitizeName(profile?.displayName ?? ''),
+        ...(profile?.rating != null ? { rating: profile.rating } : {})
       };
     })
     .sort((a, b) => a.displayName.localeCompare(b.displayName));

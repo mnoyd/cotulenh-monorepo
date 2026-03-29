@@ -2,6 +2,7 @@ export interface GameConfig {
   timeMinutes: number; // 1-60
   incrementSeconds: number; // 0-30
   isRated?: boolean;
+  preferredColor?: 'random' | 'red' | 'blue';
 }
 
 export interface TimePreset {
@@ -25,7 +26,7 @@ export type InvitationStatus = 'pending' | 'accepted' | 'declined' | 'cancelled'
 
 export interface InvitationItem {
   id: string;
-  fromUser: { id: string; displayName: string };
+  fromUser: { id: string; displayName: string; rating?: number };
   toUser: { id: string; displayName: string } | null;
   gameConfig: GameConfig;
   inviteCode: string | null;

@@ -759,6 +759,22 @@ export const en: TranslationKeys = {
   'lobby.toast.cancelFailed': 'Failed to cancel challenge',
   'lobby.toast.challengeAccepted': 'Your challenge was accepted!',
 
+  // Friend Challenge
+  'friend.challenge.toast.challengeMessage': 'challenges you',
+  'friend.challenge.toast.received': '{name} ({rating}) challenges you {timeControl}',
+  'friend.challenge.toast.declined': '{name} declined your challenge',
+  'friend.challenge.toast.expired': 'Challenge has expired',
+  'friend.challenge.dialog.title': 'Challenge {name}',
+  'friend.challenge.dialog.rating': 'Rating: {rating}',
+  'friend.challenge.action.send': 'Send challenge',
+  'friend.challenge.action.cancel': 'Cancel challenge',
+  'friend.challenge.action.challenge': 'Challenge',
+  'friend.challenge.action.challengeFriend': 'Challenge Friend',
+  'friend.challenge.friendSelector.title': 'Select friend',
+  'friend.challenge.friendSelector.empty': 'No friends online',
+  'friend.challenge.colorChoice.label': 'Choose color',
+  'friend.challenge.colorChoice.random': 'Random',
+
   // Game Replay
   'gameReplay.title': 'Game Replay',
   'gameReplay.copyPgn': 'Copy PGN',

@@ -18,6 +18,7 @@
   import { subscribeToLobby, unsubscribeFromLobby } from '$lib/invitations/lobby-realtime.svelte';
   import type { LobbyChallengeEvent } from '$lib/invitations/lobby-realtime.svelte';
   import LobbyChallengeList from '$lib/components/LobbyChallengeList.svelte';
+  import FriendChallengeDialog from '$lib/components/FriendChallengeDialog.svelte';
   import CommandCenter from '$lib/components/CommandCenter.svelte';
   import {
     clearMyActiveChallenge,
@@ -130,6 +131,10 @@
   let createdInviteCode = $state<string | null>(null);
   let copiedLink = $state(false);
 
+  // Friend challenge dialog state
+  let challengeDialogOpen = $state(false);
+  let challengeTarget = $state<{ id: string; displayName: string; rating?: number } | null>(null);
+
   // Screen reader announcement
   let srAnnouncement = $state('');
 
@@ -199,13 +204,22 @@
 
         const { data: profile } = await $page.data.supabase
           .from('profiles')
-          .select('display_name')
+          .select('display_name, rating')
           .eq('id', event.fromUser)
           .single();
         if (profile) {
           realtimeReceivedInvitations = realtimeReceivedInvitations.map((inv) =>
             inv.id === event.id
-              ? { ...inv, fromUser: { ...inv.fromUser, displayName: sanitizeName(profile.display_name) } }
+              ? {
+                  ...inv,
+                  fromUser: {
+                    ...inv.fromUser,
+                    displayName: sanitizeName(profile.display_name),
+                    ...(typeof (profile as { rating?: unknown }).rating === 'number'
+                      ? { rating: (profile as { rating: number }).rating }
+                      : {})
+                  }
+                }
               : inv
           );
         }
@@ -449,14 +463,28 @@
 
   // ─── Friend invitation handlers ─────────────────────────────────
 
-  async function handleInvite(friendUserId: string) {
+  function openChallengeDialog(friend: FriendListItem) {
+    challengeTarget = {
+      id: friend.userId,
+      displayName: friend.displayName,
+      ...(friend.rating != null ? { rating: friend.rating } : {})
+    };
+    challengeDialogOpen = true;
+  }
+
+  async function handleFriendChallenge(config: GameConfig & { toUserId: string }) {
+    const { toUserId, ...gameConfig } = config;
+    await handleInvite(toUserId, gameConfig);
+  }
+
+  async function handleInvite(friendUserId: string, gameConfig?: GameConfig) {
     optimisticInvited = new Set([...optimisticInvited, friendUserId]);
     loadingSend = new Set([...loadingSend, friendUserId]);
 
     try {
       const response = await postAction('sendInvitation', {
         toUserId: friendUserId,
-        gameConfig: JSON.stringify(selectedConfig)
+        gameConfig: JSON.stringify(gameConfig ?? selectedConfig)
       });
 
       if (!response.ok) {
@@ -530,7 +558,15 @@
       const response = await postAction('acceptInvitation', { invitationId });
 
       if (!response.ok) {
-        toast.error(i18n.t('invitation.toast.acceptFailed'));
+        const result = deserialize(await response.text());
+        const errorCode = result.type === 'failure'
+          ? (result.data as { errors?: { form?: string } } | null)?.errors?.form
+          : undefined;
+        if (errorCode === 'invitationUnavailable') {
+          toast.error(i18n.t('friend.challenge.toast.expired'), { duration: 3000 });
+        } else {
+          toast.error(i18n.t('invitation.toast.acceptFailed'));
+        }
         return;
       }
 
@@ -730,7 +766,7 @@
 
     <!-- Friends Online -->
     <h2 class="section-header">
-      {i18n.t('invitation.onlineFriends.title')} ({onlineFriends.length})
+      {i18n.t('friend.challenge.action.challengeFriend')} ({onlineFriends.length})
     </h2>
 
     {#if onlineFriends.length === 0}
@@ -750,14 +786,22 @@
               <button
                 class="text-link"
                 disabled={isSending}
-                onclick={() => handleInvite(friend.userId)}
+                onclick={() => openChallengeDialog(friend)}
               >
-                {isSending ? '...' : i18n.t('invitation.action.invite')}
+                {isSending ? '...' : i18n.t('friend.challenge.action.challenge')}
               </button>
             {/if}
           </div>
         {/each}
       </div>
+    {/if}
+
+    {#if challengeTarget}
+      <FriendChallengeDialog
+        bind:open={challengeDialogOpen}
+        friend={challengeTarget}
+        onsubmit={handleFriendChallenge}
+      />
     {/if}
 
     <!-- Received Invitations -->
@@ -769,8 +813,8 @@
       <div class="flat-list">
         {#each visibleReceivedInvitations as invitation (invitation.id)}
           <div class="flat-list-item">
-            <span>from {invitation.fromUser?.displayName || '...'}</span>
-            <span class="text-dim">{invitation.gameConfig.timeMinutes}+{invitation.gameConfig.incrementSeconds}</span>
+            <span>from {invitation.fromUser?.displayName || '...'}{invitation.fromUser?.rating != null ? ` (${invitation.fromUser.rating})` : ''}</span>
+            <span class="text-dim">{invitation.gameConfig.timeMinutes}+{invitation.gameConfig.incrementSeconds}{invitation.gameConfig.isRated ? ` · ${i18n.t('lobby.rated')}` : ''}</span>
             <button
               class="text-link"
               disabled={loadingAccept.has(invitation.id)}
@@ -800,7 +844,7 @@
         {#each visibleSentInvitations as invitation (invitation.id)}
           <div class="flat-list-item">
             <span>to {invitation.toUser?.displayName || i18n.t('inviteLink.anyone')}</span>
-            <span class="text-dim">{invitation.gameConfig.timeMinutes}+{invitation.gameConfig.incrementSeconds}</span>
+            <span class="text-dim">{invitation.gameConfig.timeMinutes}+{invitation.gameConfig.incrementSeconds}{invitation.gameConfig.isRated ? ` · ${i18n.t('lobby.rated')}` : ''}</span>
             <button
               class="text-link"
               disabled={loadingCancel.has(invitation.id)}

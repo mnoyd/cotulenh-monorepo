@@ -11,6 +11,7 @@ import {
   cancelSentRequest,
   removeFriend
 } from '$lib/friends/queries';
+import { sendInvitation, validateGameConfig } from '$lib/invitations/queries';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ locals: { supabase, safeGetSession } }) => {
@@ -158,6 +159,54 @@ export const actions: Actions = {
     }
 
     return { success: true, action: 'cancelRequest' as const };
+  },
+
+  sendFriendChallenge: async ({ request, locals: { supabase, safeGetSession } }) => {
+    const { user } = await safeGetSession();
+    if (!user) {
+      return fail(401, {
+        errors: { form: 'unauthorized' },
+        action: 'sendFriendChallenge' as const
+      });
+    }
+
+    const formData = await request.formData();
+    const toUserId = String(formData.get('toUserId') ?? '');
+    let gameConfig: unknown;
+    try {
+      gameConfig = JSON.parse(String(formData.get('gameConfig') ?? ''));
+    } catch {
+      return fail(400, {
+        errors: { form: 'invalidGameConfig' },
+        action: 'sendFriendChallenge' as const
+      });
+    }
+
+    if (!toUserId) {
+      return fail(400, {
+        errors: { form: 'missingUserId' },
+        action: 'sendFriendChallenge' as const
+      });
+    }
+
+    if (!validateGameConfig(gameConfig)) {
+      return fail(400, {
+        errors: { form: 'invalidGameConfig' },
+        action: 'sendFriendChallenge' as const
+      });
+    }
+
+    const result = await sendInvitation(supabase, user.id, toUserId, gameConfig);
+
+    if (!result.success) {
+      logger.error(new Error(result.error ?? 'Unknown'), 'Failed to send friend challenge');
+      return fail(400, {
+        errors: { form: result.error ?? 'sendFailed' },
+        action: 'sendFriendChallenge' as const
+      });
+    }
+
+    return { success: true, action: 'sendFriendChallenge' as const };
   },
 
   removeFriend: async ({ request, locals: { supabase, safeGetSession } }) => {

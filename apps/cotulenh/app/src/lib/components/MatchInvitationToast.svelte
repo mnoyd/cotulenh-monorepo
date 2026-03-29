@@ -80,7 +80,7 @@
 
     <p id="invitation-toast-desc" class="toast-body">
       <strong>{fromDisplayName}</strong>
-      {i18n.t('invitation.notification.challengeMessage')}
+      {i18n.t('friend.challenge.toast.challengeMessage')}
       <span class="time-badge">{timeLabel}</span>
     </p>
 
