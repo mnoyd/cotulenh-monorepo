@@ -22,7 +22,22 @@ pnpm run lint             # Run ESLint
 ```bash
 pnpm run test             # Run all tests
 pnpm run test:watch       # Run tests in watch mode
+./scripts/local-supabase-safe.sh app-playwright e2e/<file>.spec.ts --reporter=line  # Local Supabase E2E
 ```
+
+## Local Supabase Wrapper
+
+For local Supabase commands that usually need unsandboxed access, use the repo wrapper from the monorepo root:
+
+```bash
+./scripts/local-supabase-safe.sh status-env
+./scripts/local-supabase-safe.sh psql -Atqc 'select version();'
+./scripts/local-supabase-safe.sh psql-file supabase/migrations/<file>.sql
+./scripts/local-supabase-safe.sh app-dev
+./scripts/local-supabase-safe.sh app-playwright e2e/<file>.spec.ts --reporter=line
+```
+
+Agents should prefer this wrapper over ad hoc `pnpm dlx supabase ...`, raw `psql`, or custom Playwright startup commands so one persisted approval on `["./scripts/local-supabase-safe.sh"]` covers the whole local Supabase workflow.
 
 ### Building
 

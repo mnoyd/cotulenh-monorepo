@@ -20,6 +20,27 @@ export function getLocalSupabaseEnv({ cwd = process.cwd() } = {}) {
     return cachedEnv;
   }
 
+  const envOverride = {
+    apiUrl: process.env.LOCAL_SUPABASE_API_URL,
+    publishableKey: process.env.LOCAL_SUPABASE_PUBLISHABLE_KEY,
+    anonKey: process.env.LOCAL_SUPABASE_ANON_KEY ?? '',
+    serviceRoleKey: process.env.LOCAL_SUPABASE_SERVICE_ROLE_KEY
+  };
+
+  if (envOverride.apiUrl && envOverride.publishableKey && envOverride.serviceRoleKey) {
+    cachedEnv = {
+      ...envOverride,
+      values: {
+        API_URL: envOverride.apiUrl,
+        PUBLISHABLE_KEY: envOverride.publishableKey,
+        ANON_KEY: envOverride.anonKey,
+        SERVICE_ROLE_KEY: envOverride.serviceRoleKey
+      }
+    };
+
+    return cachedEnv;
+  }
+
   let output;
 
   try {

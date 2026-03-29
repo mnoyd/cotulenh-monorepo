@@ -122,6 +122,8 @@ bd automatically syncs via Dolt:
 - ✅ Always use `--json` flag for programmatic use
 - ✅ Link discovered work with `discovered-from` dependencies
 - ✅ Check `bd ready` before asking "what should I work on?"
+- ✅ For local Supabase workflows that need unsandboxed access, use `./scripts/local-supabase-safe.sh ...`
+- ✅ When requesting approval for the wrapper the first time, ask for a persisted prefix rule on `["./scripts/local-supabase-safe.sh"]`
 - ❌ Do NOT create markdown TODO lists
 - ❌ Do NOT use external issue trackers
 - ❌ Do NOT duplicate tracking systems
