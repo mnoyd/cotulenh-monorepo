@@ -615,6 +615,9 @@ export const en: TranslationKeys = {
   'inviteLink.create.another': 'Create Another Link',
   'inviteLink.toast.created': 'Invite link created!',
   'inviteLink.toast.createFailed': 'Failed to create invite link',
+  'inviteLink.error.unavailable':
+    'This invitation is no longer available. Reload the page or use another link.',
+  'inviteLink.error.acceptFailed': 'Could not accept the invitation right now. Please try again.',
   'inviteLink.verifyEmailContext':
     "After verifying your email, you'll be taken to the game invitation.",
   'inviteLink.anyone': 'Anyone',

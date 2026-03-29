@@ -2,13 +2,15 @@
   import { enhance } from '$app/forms';
   import { page } from '$app/stores';
   import { getI18n } from '$lib/i18n/index.svelte';
+  import type { TranslationKey } from '$lib/i18n/types';
   import Button from '$lib/components/ui/button/button.svelte';
-  import { Loader2, Clock, Copy, Check, AlertTriangle } from 'lucide-svelte';
-  import type { PageData } from './$types';
+  import { Loader2, Clock, Copy, Check, AlertTriangle, AlertCircle } from 'lucide-svelte';
+  import type { ActionData, PageData } from './$types';
 
   const i18n = getI18n();
 
   let { data }: { data: PageData } = $props();
+  let form: ActionData = $derived($page.form);
   let submitting = $state(false);
   let copied = $state(false);
   let srAnnouncement = $state('');
@@ -26,6 +28,25 @@
   );
 
   let redirectTo = $derived(`/play/online/invite/${$page.params.code}`);
+  let acceptError = $derived.by(() => {
+    if (form?.action !== 'acceptInviteLink' || !form.errors?.form) {
+      return null;
+    }
+
+    return i18n.t(getErrorKey(form.errors.form));
+  });
+
+  function getErrorKey(code: string): TranslationKey {
+    const keyMap: Record<string, TranslationKey> = {
+      alreadyClaimed: 'inviteLink.error.unavailable',
+      acceptFailed: 'inviteLink.error.acceptFailed',
+      gameCreationFailed: 'inviteLink.error.acceptFailed',
+      unauthorized: 'inviteLink.error.acceptFailed',
+      form: 'inviteLink.error.acceptFailed'
+    };
+
+    return keyMap[code] ?? 'inviteLink.error.acceptFailed';
+  }
 
   async function copyLink() {
     try {
@@ -109,6 +130,12 @@
           <Clock size={18} />
           <span>{timeLabel}</span>
         </div>
+        {#if acceptError}
+          <div class="form-error" role="alert">
+            <AlertCircle size={16} />
+            <span>{acceptError}</span>
+          </div>
+        {/if}
         <form
           method="POST"
           action="?/acceptInviteLink"
@@ -252,6 +279,19 @@
     color: var(--theme-text-secondary, #aaa);
     margin: 0 0 1rem;
     line-height: 1.5;
+  }
+
+  .form-error {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    border-radius: 8px;
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    color: #ef4444;
+    font-size: 0.875rem;
+    margin: 0 0 1rem;
   }
 
   .time-control {

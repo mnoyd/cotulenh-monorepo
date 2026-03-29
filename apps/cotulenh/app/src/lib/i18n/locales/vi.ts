@@ -615,6 +615,9 @@ export const vi: TranslationKeys = {
   'inviteLink.create.another': 'Tạo Liên Kết Khác',
   'inviteLink.toast.created': 'Đã tạo liên kết mời!',
   'inviteLink.toast.createFailed': 'Tạo liên kết mời thất bại',
+  'inviteLink.error.unavailable':
+    'Lời mời này không còn khả dụng. Vui lòng tải lại trang hoặc dùng liên kết khác.',
+  'inviteLink.error.acceptFailed': 'Không thể chấp nhận lời mời lúc này. Vui lòng thử lại.',
   'inviteLink.verifyEmailContext': 'Sau khi xác minh email, bạn sẽ được chuyển đến lời mời chơi.',
   'inviteLink.anyone': 'Bất kỳ ai',
 

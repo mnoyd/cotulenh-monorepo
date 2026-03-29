@@ -608,6 +608,8 @@ export interface TranslationKeys {
   'inviteLink.create.another': string;
   'inviteLink.toast.created': string;
   'inviteLink.toast.createFailed': string;
+  'inviteLink.error.unavailable': string;
+  'inviteLink.error.acceptFailed': string;
   'inviteLink.verifyEmailContext': string;
   'inviteLink.anyone': string;
 

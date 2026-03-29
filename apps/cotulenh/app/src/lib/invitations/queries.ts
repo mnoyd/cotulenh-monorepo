@@ -386,17 +386,10 @@ export async function acceptInviteLink(
   inviteCode: string,
   userId: string
 ): Promise<{ success: boolean; gameId?: string; inviterUserId?: string; error?: string }> {
-  // Step 1: Claim the invitation (set to_user atomically)
-  const { data: claimed, error: claimError } = await supabase
-    .from('game_invitations')
-    .update({ to_user: userId })
-    .eq('invite_code', inviteCode)
-    .is('to_user', null)
-    .eq('status', 'pending')
-    .gt('expires_at', new Date().toISOString())
-    .neq('from_user', userId)
-    .select('id, from_user, game_config')
-    .single();
+  // Step 1: Claim the invitation atomically via SECURITY DEFINER RPC.
+  const { data: claimed, error: claimError } = await supabase.rpc('claim_link_invitation', {
+    p_invite_code: inviteCode
+  });
 
   if (claimError || !claimed) {
     return { success: false, error: 'alreadyClaimed' };
@@ -419,30 +412,14 @@ export async function acceptInviteLink(
     return { success: false, error: 'acceptFailed' };
   }
 
-  // Step 3: Auto-friend users; rollback invitation if friendship reconciliation fails.
-  const friendshipCreated = await createAutoFriendship(supabase, userId, claimed.from_user);
-  if (!friendshipCreated) {
-    await supabase
-      .from('game_invitations')
-      .update({ status: 'pending', to_user: null })
-      .eq('id', claimed.id);
-    return { success: false, error: 'friendshipFailed' };
-  }
+  // Step 3: Auto-friend users as a detached side effect.
+  // Do not block the game start path on friendship reconciliation latency.
+  void createAutoFriendship(supabase, userId, claimed.from_user);
 
-  // Step 4: Create games row — sender is red, acceptor is blue
-  const { data: game, error: gameError } = await supabase
-    .from('games')
-    .insert({
-      red_player: claimed.from_user,
-      blue_player: userId,
-      status: 'started',
-      time_control: claimed.game_config,
-      invitation_id: claimed.id
-    })
-    .select('id')
-    .single();
+  // Step 4: Create game + game_state atomically via RPC
+  const { gameId, error: gameError } = await createGameWithInitialState(supabase, claimed.id);
 
-  if (gameError || !game) {
+  if (gameError || !gameId) {
     // Rollback: revert invitation to pending + unclaimed
     logger.error(gameError as Error, 'acceptInviteLink: game creation failed, rolling back');
     await supabase
@@ -452,7 +429,7 @@ export async function acceptInviteLink(
     return { success: false, error: 'gameCreationFailed' };
   }
 
-  return { success: true, gameId: game.id, inviterUserId: claimed.from_user };
+  return { success: true, gameId, inviterUserId: claimed.from_user };
 }
 
 // ────────────────────────────────────────────────────────────────
@@ -659,18 +636,23 @@ export async function createAutoFriendship(
   userIdA: string,
   userIdB: string
 ): Promise<boolean> {
-  const { data, error } = await supabase.rpc('create_or_accept_friendship', {
-    p_user_1: userIdA,
-    p_user_2: userIdB,
-    p_initiated_by: userIdA
-  });
+  try {
+    const { data, error } = await supabase.rpc('create_or_accept_friendship', {
+      p_user_1: userIdA,
+      p_user_2: userIdB,
+      p_initiated_by: userIdA
+    });
 
-  if (!error && data === true) return true;
+    if (!error && data === true) return true;
 
-  // Unexpected error — log but don't throw (friendship is non-blocking side effect)
-  logger.error(
-    error ?? new Error('create_or_accept_friendship returned false'),
-    'createAutoFriendship failed'
-  );
-  return false;
+    // Unexpected error — log but don't throw (friendship is non-blocking side effect)
+    logger.error(
+      error ?? new Error('create_or_accept_friendship returned false'),
+      'createAutoFriendship failed'
+    );
+    return false;
+  } catch (error) {
+    logger.error(error as Error, 'createAutoFriendship failed');
+    return false;
+  }
 }

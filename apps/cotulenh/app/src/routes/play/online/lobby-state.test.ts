@@ -58,6 +58,19 @@ describe('lobby-state', () => {
     expect(shouldNavigateOnAcceptedSentInvitation('missing', null, [])).toBe(false);
   });
 
+  it('navigates when shareable invite link (toUser=null, inviteCode set) is accepted', () => {
+    const shareableInvite = {
+      ...currentChallenge,
+      id: 'invite-link-1',
+      toUser: null,
+      inviteCode: 'abc12345'
+    };
+
+    expect(shouldNavigateOnAcceptedSentInvitation('invite-link-1', null, [shareableInvite])).toBe(
+      true
+    );
+  });
+
   it('resolves partial lobby hydration without throwing when one stream fails', async () => {
     const resolved = await resolveLobbyHydration(
       Promise.reject(new Error('open challenge query failed')),

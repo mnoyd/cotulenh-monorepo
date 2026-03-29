@@ -792,16 +792,13 @@ describe('createShareableInvitation', () => {
 });
 
 describe('acceptInviteLink', () => {
-  it('claims, accepts, and creates game on success', async () => {
+  it('claims, accepts, auto-friends and creates game via RPC on success', async () => {
     const { supabase, mockFrom, mockRpc } = createMockSupabase();
-    let callCount = 0;
-    mockRpc.mockResolvedValue({ data: true, error: null });
-
-    mockFrom.mockImplementation(() => {
-      callCount++;
-      if (callCount === 1) {
-        // claim step
-        return actionChain({
+    let rpcCallCount = 0;
+    mockRpc.mockImplementation(() => {
+      rpcCallCount++;
+      if (rpcCallCount === 1) {
+        return Promise.resolve({
           data: {
             id: 'inv-1',
             from_user: 'user-sender',
@@ -810,26 +807,39 @@ describe('acceptInviteLink', () => {
           error: null
         });
       }
-      if (callCount === 2) {
-        // accept step (status update)
-        return actionChain({ data: { id: 'inv-1' }, error: null });
+      if (rpcCallCount === 2) {
+        // create_or_accept_friendship
+        return Promise.resolve({ data: true, error: null });
       }
-      // create game
-      return actionChain({ data: { id: 'game-1' }, error: null });
+      // create_game_with_state
+      return Promise.resolve({ data: 'game-1', error: null });
     });
+
+    mockFrom.mockReturnValue(actionChain({ data: { id: 'inv-1' }, error: null }));
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const result = await acceptInviteLink(supabase as any, 'abc12345', 'user-acceptor');
     expect(result.success).toBe(true);
     expect(result.gameId).toBe('game-1');
     expect(result.inviterUserId).toBe('user-sender');
+    expect(mockRpc).toHaveBeenCalledWith('claim_link_invitation', {
+      p_invite_code: 'abc12345'
+    });
+    expect(mockRpc).toHaveBeenCalledWith('create_or_accept_friendship', {
+      p_user_1: 'user-acceptor',
+      p_user_2: 'user-sender',
+      p_initiated_by: 'user-acceptor'
+    });
+    expect(mockRpc).toHaveBeenCalledWith('create_game_with_state', {
+      p_invitation_id: 'inv-1',
+      p_fen: DEFAULT_POSITION
+    });
   });
 
   it('fails when invitation already claimed (race condition)', async () => {
     const { supabase, mockFrom, mockRpc } = createMockSupabase();
-    mockRpc.mockResolvedValue({ data: true, error: null });
-    const chain = actionChain({ data: null, error: { code: 'PGRST116', message: 'no rows' } });
-    mockFrom.mockReturnValue(chain);
+    mockFrom.mockReturnValue(actionChain({ data: { id: 'inv-1' }, error: null }));
+    mockRpc.mockResolvedValueOnce({ data: null, error: null });
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const result = await acceptInviteLink(supabase as any, 'abc12345', 'user-acceptor');
@@ -839,10 +849,8 @@ describe('acceptInviteLink', () => {
 
   it('prevents self-accept via neq from_user filter', async () => {
     const { supabase, mockFrom, mockRpc } = createMockSupabase();
-    mockRpc.mockResolvedValue({ data: true, error: null });
-    // Claim step fails because from_user == userId is filtered by .neq()
-    const chain = actionChain({ data: null, error: { code: 'PGRST116' } });
-    mockFrom.mockReturnValue(chain);
+    mockFrom.mockReturnValue(actionChain({ data: { id: 'inv-1' }, error: null }));
+    mockRpc.mockResolvedValueOnce({ data: null, error: null });
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const result = await acceptInviteLink(supabase as any, 'abc12345', 'user-sender');
@@ -850,17 +858,14 @@ describe('acceptInviteLink', () => {
     expect(result.error).toBe('alreadyClaimed');
   });
 
-  it('rolls back on game creation failure', async () => {
+  it('rolls back on game creation RPC failure', async () => {
     const { supabase, mockFrom, mockRpc } = createMockSupabase();
-    let callCount = 0;
     const rollbackChain = actionChain({ data: { id: 'inv-1' }, error: null });
-    mockRpc.mockResolvedValue({ data: true, error: null });
-
-    mockFrom.mockImplementation(() => {
-      callCount++;
-      if (callCount === 1) {
-        // claim succeeds
-        return actionChain({
+    let rpcCallCount = 0;
+    mockRpc.mockImplementation(() => {
+      rpcCallCount++;
+      if (rpcCallCount === 1) {
+        return Promise.resolve({
           data: {
             id: 'inv-1',
             from_user: 'user-sender',
@@ -869,15 +874,19 @@ describe('acceptInviteLink', () => {
           error: null
         });
       }
-      if (callCount === 2) {
-        // accept succeeds
+      if (rpcCallCount === 2) {
+        // create_or_accept_friendship succeeds
+        return Promise.resolve({ data: true, error: null });
+      }
+      // create_game_with_state fails
+      return Promise.resolve({ data: null, error: { message: 'rpc failed' } });
+    });
+    let fromCallCount = 0;
+    mockFrom.mockImplementation(() => {
+      fromCallCount++;
+      if (fromCallCount === 1) {
         return actionChain({ data: { id: 'inv-1' }, error: null });
       }
-      if (callCount === 3) {
-        // game creation fails
-        return actionChain({ data: null, error: { message: 'game insert failed' } });
-      }
-      // rollback calls (status back to pending, to_user back to null)
       return rollbackChain;
     });
 
@@ -887,17 +896,13 @@ describe('acceptInviteLink', () => {
     expect(result.error).toBe('gameCreationFailed');
   });
 
-  it('rolls back and fails when auto-friendship reconciliation fails', async () => {
+  it('continues to game creation even when auto-friendship fails (non-blocking)', async () => {
     const { supabase, mockFrom, mockRpc } = createMockSupabase();
-    let callCount = 0;
-    const rollbackChain = actionChain({ data: { id: 'inv-1' }, error: null });
-    mockRpc.mockResolvedValue({ data: false, error: null });
-
-    mockFrom.mockImplementation(() => {
-      callCount++;
-      if (callCount === 1) {
-        // claim succeeds
-        return actionChain({
+    let rpcCallCount = 0;
+    mockRpc.mockImplementation(() => {
+      rpcCallCount++;
+      if (rpcCallCount === 1) {
+        return Promise.resolve({
           data: {
             id: 'inv-1',
             from_user: 'user-sender',
@@ -906,18 +911,49 @@ describe('acceptInviteLink', () => {
           error: null
         });
       }
-      if (callCount === 2) {
-        // accept succeeds
-        return actionChain({ data: { id: 'inv-1' }, error: null });
+      if (rpcCallCount === 2) {
+        // create_or_accept_friendship fails (non-blocking)
+        return Promise.resolve({ data: false, error: null });
       }
-      // rollback invitation
-      return rollbackChain;
+      // create_game_with_state succeeds
+      return Promise.resolve({ data: 'game-1', error: null });
     });
+    mockFrom.mockReturnValue(actionChain({ data: { id: 'inv-1' }, error: null }));
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const result = await acceptInviteLink(supabase as any, 'abc12345', 'user-acceptor');
-    expect(result.success).toBe(false);
-    expect(result.error).toBe('friendshipFailed');
+    expect(result.success).toBe(true);
+    expect(result.gameId).toBe('game-1');
+    expect(result.inviterUserId).toBe('user-sender');
+  });
+
+  it('continues to game creation when auto-friendship RPC rejects', async () => {
+    const { supabase, mockFrom, mockRpc } = createMockSupabase();
+    let rpcCallCount = 0;
+    mockRpc.mockImplementation(() => {
+      rpcCallCount++;
+      if (rpcCallCount === 1) {
+        return Promise.resolve({
+          data: {
+            id: 'inv-1',
+            from_user: 'user-sender',
+            game_config: { timeMinutes: 5, incrementSeconds: 0 }
+          },
+          error: null
+        });
+      }
+      if (rpcCallCount === 2) {
+        return Promise.reject(new Error('friendship rpc crashed'));
+      }
+      return Promise.resolve({ data: 'game-1', error: null });
+    });
+
+    mockFrom.mockReturnValue(actionChain({ data: { id: 'inv-1' }, error: null }));
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = await acceptInviteLink(supabase as any, 'abc12345', 'user-acceptor');
+    expect(result.success).toBe(true);
+    expect(result.gameId).toBe('game-1');
   });
 });
 
@@ -948,6 +984,15 @@ describe('createAutoFriendship', () => {
   it('returns false on RPC errors', async () => {
     const { supabase, mockRpc } = createMockSupabase();
     mockRpc.mockResolvedValue({ data: null, error: { message: 'connection refused' } });
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = await createAutoFriendship(supabase as any, 'user-a', 'user-b');
+    expect(result).toBe(false);
+  });
+
+  it('returns false when RPC rejects', async () => {
+    const { supabase, mockRpc } = createMockSupabase();
+    mockRpc.mockRejectedValue(new Error('network blew up'));
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const result = await createAutoFriendship(supabase as any, 'user-a', 'user-b');
