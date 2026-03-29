@@ -181,11 +181,15 @@ Claude Opus 4.6
 ### Debug Log References
 
 - `supabase` CLI not available in environment (`supabase: command not found`); created follow-up issue `cotulenh-monorepo-052` for local migration execution verification
+- 2026-03-29: Verified migration `010_feedback.sql` against the running local Supabase Postgres at `127.0.0.1:54322` using `psql` because `supabase` CLI is still not on `PATH` in this shell
+- 2026-03-29: Confirmed `supabase_migrations.schema_migrations` contains version `010`; `public.feedback` exists; RLS policies are present for `{anon}` and `{authenticated}`; triggers `feedback_sanitize_message` (INSERT/UPDATE) and `feedback_updated_at` (UPDATE) are installed
+- 2026-03-29: Runtime verification succeeded: insert of `'<b>Hello</b> <script>alert(1)</script>'` was stored as `Hello alert(1)`; empty-after-sanitize insert failed with `Feedback message must not be empty`; separate-session update advanced `updated_at` from `2026-03-29 09:23:11.944849+00` to `2026-03-29 09:23:12.957115+00`
 - Pre-existing svelte-check errors (49) unrelated to feedback changes — env vars, boardConfig typing
 - All 616 tests pass with 0 regressions
 
 ### Completion Notes List
 
+- 2026-03-29 follow-up: local Supabase verification issue `cotulenh-monorepo-052` completed with direct `psql` evidence for migration presence, RLS policies, sanitization rejection, and `updated_at` trigger behavior
 - Task 1: Created `supabase/migrations/010_feedback.sql` with uuid PK, nullable user_id FK, message with non-empty CHECK, page_url, context_json jsonb, RLS policies for authenticated and anonymous INSERT, updated_at trigger
 - Task 2: Created `$lib/feedback/` module with types.ts (FeedbackRow, FeedbackInsert, FeedbackContext), submit.ts (sanitizeMessage, collectContext, submitFeedback), and 16 unit tests covering sanitization, context collection, and Supabase submission
 - Task 3: Created FeedbackDialog.svelte using Dialog primitives with textarea (2000 char limit), submit/loading states, toast success/error notifications
