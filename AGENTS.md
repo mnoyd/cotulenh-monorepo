@@ -1,15 +1,15 @@
 # Agent Instructions
 
-This project uses **bd** (beads) for issue tracking. Run `bd onboard` to get started.
+This project uses **bd** (beads) for issue tracking. Run `bd prime` for the current workflow context, or `bd onboard` when setting the repo up.
 
 ## Quick Reference
 
 ```bash
-bd ready              # Find available work
+bd ready --json       # Find available work
 bd show <id>          # View issue details
-bd update <id> --status in_progress  # Claim work
-bd close <id>         # Complete work
-bd sync               # Sync with git
+bd update <id> --claim --json  # Claim work
+bd close <id> --reason "Done" --json  # Complete work
+bd dolt push          # Push beads only when a Dolt remote is configured
 ```
 
 ## Landing the Plane (Session Completion)
@@ -24,7 +24,6 @@ bd sync               # Sync with git
 4. **PUSH TO REMOTE** - This is MANDATORY:
    ```bash
    git pull --rebase
-   bd sync
    git push
    git status  # MUST show "up to date with origin"
    ```
@@ -38,6 +37,8 @@ bd sync               # Sync with git
 - NEVER stop before pushing - that leaves work stranded locally
 - NEVER say "ready to push when you are" - YOU must push
 - If push fails, resolve and retry until it succeeds
+- Do not run `bd sync`; that command is not available in the current beads CLI
+- Only run `bd dolt pull` / `bd dolt push` after `bd config validate` passes and `bd dolt remote list` shows a configured remote
 
 **USE 'bd' FOR TASK TRACKING AND ISSUE MANAGEMENT.**
 
@@ -112,7 +113,7 @@ bd close bd-42 --reason "Completed" --json
 bd automatically syncs via Dolt:
 
 - Each write auto-commits to Dolt history
-- Use `bd dolt push`/`bd dolt pull` for remote sync
+- Use `bd dolt push`/`bd dolt pull` for remote sync only after `bd config validate` passes and a Dolt remote is configured
 - No manual export/import needed!
 
 ### Important Rules
@@ -125,6 +126,6 @@ bd automatically syncs via Dolt:
 - ❌ Do NOT use external issue trackers
 - ❌ Do NOT duplicate tracking systems
 
-For more details, see README.md and docs/QUICKSTART.md.
+For more details, see `README.md` and `bd prime`.
 
 <!-- END BEADS INTEGRATION -->
