@@ -44,11 +44,13 @@ export function clearMyActiveChallenge(
 export function shouldNavigateOnAcceptedSentInvitation(
   invitationId: string,
   activeChallenge: InvitationItem | null,
-  sentInvitations: InvitationItem[]
+  sentInvitations: InvitationItem[],
+  trackedSentInvitationIds: Set<string>
 ): boolean {
   return (
     activeChallenge?.id === invitationId ||
-    sentInvitations.some((invitation) => invitation.id === invitationId)
+    sentInvitations.some((invitation) => invitation.id === invitationId) ||
+    trackedSentInvitationIds.has(invitationId)
   );
 }
 

@@ -42,6 +42,7 @@
   } from '$lib/learn/learn-progress-sync.svelte';
   import type { InvitationRealtimeEvent } from '$lib/invitations/realtime.svelte';
   import { sanitizeName } from '$lib/invitations/queries';
+  import { waitForGameByInvitation } from '$lib/invitations/game-resolution';
   import MatchInvitationToast from '$lib/components/MatchInvitationToast.svelte';
   import { goto } from '$app/navigation';
 
@@ -142,19 +143,23 @@
         }, 30_000);
       } else if (event.type === 'statusChanged') {
         if (event.newStatus === 'accepted') {
-          // Look up the game created from this invitation
-          const { data: game } = await $page.data.supabase
-            .from('games')
-            .select('id')
-            .eq('invitation_id', event.id)
-            .single();
+          const currentPath = $page.url.pathname;
+          if (currentPath.startsWith('/play/online')) {
+            return;
+          }
+
+          const game = await waitForGameByInvitation($page.data.supabase, event.id);
           if (game) {
-            toast.success(i18n.t('invitation.toast.accepted'), {
-              action: {
-                label: i18n.t('game.goToGame'),
-                onClick: () => goto(`/play/online/${game.id}`)
-              }
-            });
+            if (currentPath === '/user/friends') {
+              goto(`/play/online/${game.id}`);
+            } else {
+              toast.success(i18n.t('invitation.toast.accepted'), {
+                action: {
+                  label: i18n.t('game.goToGame'),
+                  onClick: () => goto(`/play/online/${game.id}`)
+                }
+              });
+            }
           } else {
             toast.success(i18n.t('invitation.toast.accepted'));
           }

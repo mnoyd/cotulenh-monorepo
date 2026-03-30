@@ -30,6 +30,7 @@
   import { onMount, onDestroy } from 'svelte';
   import '$lib/styles/command-center.css';
   import type { PageData } from './$types';
+  import { waitForGameByInvitation } from '$lib/invitations/game-resolution';
 
   const i18n = getI18n();
 
@@ -76,6 +77,7 @@
 
   // Optimistic states
   let optimisticInvited = $state(new Set<string>());
+  let sentInvitationIds = $state(new Set<string>());
   let removedSentInvitations = $state(new Set<string>());
   let removedReceivedInvitations = $state(new Set<string>());
   let loadingSend = $state(new Set<string>());
@@ -226,29 +228,33 @@
       } else if (event.type === 'statusChanged') {
         removedSentInvitations = new Set([...removedSentInvitations, event.id]);
         const inv = data.sentInvitations.find((i: InvitationItem) => i.id === event.id);
+        const trackedSentInvitationIds = new Set(sentInvitationIds);
+        const shouldNavigate =
+          event.newStatus === 'accepted' &&
+          shouldNavigateOnAcceptedSentInvitation(
+            event.id,
+            myActiveChallenge,
+            data.sentInvitations,
+            trackedSentInvitationIds
+          );
         if (inv?.toUser) {
           const next = new Set(optimisticInvited);
           next.delete(inv.toUser.id);
           optimisticInvited = next;
         }
+        const nextSentInvitationIds = new Set(trackedSentInvitationIds);
+        nextSentInvitationIds.delete(event.id);
+        sentInvitationIds = nextSentInvitationIds;
 
         // If our open challenge was accepted, navigate to game
-        if (event.newStatus === 'accepted') {
-          if (
-            shouldNavigateOnAcceptedSentInvitation(
-              event.id,
-              myActiveChallenge,
-              data.sentInvitations
-            )
-          ) {
+        if (shouldNavigate) {
             removedLobbyChallenges = new Set([...removedLobbyChallenges, event.id]);
             myActiveChallenge = clearMyActiveChallenge(myActiveChallenge, event.id);
             toast.success(i18n.t('lobby.toast.challengeAccepted'), { duration: 4000 });
-            const game = await waitForGameByInvitation(event.id);
+            const game = await waitForGameByInvitation($page.data.supabase, event.id);
             if (game) {
               goto(`/play/online/${game.id}`);
             }
-          }
         }
       } else if (event.type === 'deleted') {
         removedReceivedInvitations = new Set([...removedReceivedInvitations, event.id]);
@@ -321,30 +327,6 @@
       lobbyLoading = false;
       throw error;
     }
-  }
-
-  async function waitForGameByInvitation(
-    invitationId: string,
-    retries = 25,
-    delayMs = 200
-  ): Promise<{ id: string } | null> {
-    for (let attempt = 0; attempt < retries; attempt++) {
-      const { data: game } = await $page.data.supabase
-        .from('games')
-        .select('id')
-        .eq('invitation_id', invitationId)
-        .single();
-
-      if (game) {
-        return game;
-      }
-
-      if (attempt < retries - 1) {
-        await new Promise((resolve) => setTimeout(resolve, delayMs));
-      }
-    }
-
-    return null;
   }
 
   // ─── Lobby handlers ─────────────────────────────────────────────
@@ -507,6 +489,13 @@
         return;
       }
 
+      const result = deserialize(await response.text());
+      const invitationId =
+        result.type === 'success' ? (result.data as { invitationId?: string })?.invitationId : undefined;
+      if (invitationId) {
+        sentInvitationIds = new Set([...sentInvitationIds, invitationId]);
+      }
+
       toast.success(i18n.t('invitation.toast.sent'), { duration: 4000 });
       await refreshLobbyData();
     } catch {
@@ -538,6 +527,9 @@
         next.delete(inv.toUser.id);
         optimisticInvited = next;
       }
+      const nextSentInvitationIds = new Set(sentInvitationIds);
+      nextSentInvitationIds.delete(invitationId);
+      sentInvitationIds = nextSentInvitationIds;
 
       removedSentInvitations = new Set([...removedSentInvitations, invitationId]);
       toast.success(i18n.t('invitation.toast.cancelled'), { duration: 4000 });

@@ -47,15 +47,31 @@ describe('lobby-state', () => {
   });
 
   it('navigates for accepted invitations that belong to the creator session', () => {
-    expect(shouldNavigateOnAcceptedSentInvitation('challenge-1', currentChallenge, [])).toBe(true);
-
     expect(
-      shouldNavigateOnAcceptedSentInvitation('challenge-2', null, [
-        { ...currentChallenge, id: 'challenge-2' }
-      ])
+      shouldNavigateOnAcceptedSentInvitation('challenge-1', currentChallenge, [], new Set())
     ).toBe(true);
 
-    expect(shouldNavigateOnAcceptedSentInvitation('missing', null, [])).toBe(false);
+    expect(
+      shouldNavigateOnAcceptedSentInvitation(
+        'challenge-2',
+        null,
+        [{ ...currentChallenge, id: 'challenge-2' }],
+        new Set()
+      )
+    ).toBe(true);
+
+    expect(shouldNavigateOnAcceptedSentInvitation('missing', null, [], new Set())).toBe(false);
+  });
+
+  it('navigates for invitations created during the current session', () => {
+    expect(
+      shouldNavigateOnAcceptedSentInvitation(
+        'tracked-invite',
+        null,
+        [],
+        new Set(['tracked-invite'])
+      )
+    ).toBe(true);
   });
 
   it('navigates when shareable invite link (toUser=null, inviteCode set) is accepted', () => {
@@ -66,9 +82,9 @@ describe('lobby-state', () => {
       inviteCode: 'abc12345'
     };
 
-    expect(shouldNavigateOnAcceptedSentInvitation('invite-link-1', null, [shareableInvite])).toBe(
-      true
-    );
+    expect(
+      shouldNavigateOnAcceptedSentInvitation('invite-link-1', null, [shareableInvite], new Set())
+    ).toBe(true);
   });
 
   it('resolves partial lobby hydration without throwing when one stream fails', async () => {

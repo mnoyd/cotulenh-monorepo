@@ -86,7 +86,11 @@ export const actions: Actions = {
       });
     }
 
-    return { success: true, action: 'sendInvitation' as const };
+    return {
+      success: true,
+      action: 'sendInvitation' as const,
+      invitationId: result.invitationId
+    };
   },
 
   cancelInvitation: async ({ request, locals: { supabase, safeGetSession } }) => {

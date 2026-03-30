@@ -206,7 +206,11 @@ export const actions: Actions = {
       });
     }
 
-    return { success: true, action: 'sendFriendChallenge' as const };
+    return {
+      success: true,
+      action: 'sendFriendChallenge' as const,
+      invitationId: result.invitationId
+    };
   },
 
   removeFriend: async ({ request, locals: { supabase, safeGetSession } }) => {

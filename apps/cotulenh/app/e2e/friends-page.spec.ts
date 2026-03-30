@@ -177,11 +177,79 @@ async function waitForFriendRow(
     .toContain(friend.displayName);
 }
 
+async function clearUserState(userId: string): Promise<void> {
+  const { data: games, error: gamesError } = await admin
+    .from('games')
+    .select('id')
+    .or(`red_player.eq.${userId},blue_player.eq.${userId}`);
+  if (gamesError) throw gamesError;
+
+  if (games && games.length > 0) {
+    const { error: deleteGamesError } = await admin
+      .from('games')
+      .delete()
+      .in(
+        'id',
+        games.map((game) => game.id)
+      );
+    if (deleteGamesError) throw deleteGamesError;
+  }
+
+  const { error: invitationError } = await admin
+    .from('game_invitations')
+    .delete()
+    .or(`from_user.eq.${userId},to_user.eq.${userId}`);
+  if (invitationError) throw invitationError;
+
+  const { error: friendshipError } = await admin
+    .from('friendships')
+    .delete()
+    .or(`user_a.eq.${userId},user_b.eq.${userId}`);
+  if (friendshipError) throw friendshipError;
+}
+
 async function clearFriendships(): Promise<void> {
   for (const user of [userAForCleanup, userBForCleanup, userCForCleanup]) {
     if (!user?.id) continue;
-    await admin.from('friendships').delete().or(`user_a.eq.${user.id},user_b.eq.${user.id}`);
+    await clearUserState(user.id);
   }
+}
+
+async function createFriendship(userAId: string, userBId: string): Promise<void> {
+  const { error } = await admin.from('friendships').insert({
+    user_a: userAId < userBId ? userAId : userBId,
+    user_b: userAId < userBId ? userBId : userAId,
+    status: 'accepted',
+    initiated_by: userAId
+  });
+  if (error) throw error;
+}
+
+async function findLatestInvitation(fromUserId: string, toUserId: string) {
+  const { data, error } = await admin
+    .from('game_invitations')
+    .select('id, to_user, status, game_config, created_at')
+    .eq('from_user', fromUserId)
+    .eq('to_user', toUserId)
+    .order('created_at', { ascending: false })
+    .limit(1);
+  if (error) throw error;
+  return data?.[0] ?? null;
+}
+
+async function openChallengeDialogForFriend(
+  page: import('@playwright/test').Page,
+  friend: SeedUser
+): Promise<import('@playwright/test').Locator> {
+  const friendRow = page.locator('[data-section="online-friends"] .flat-list-item', {
+    hasText: friend.displayName
+  });
+  await expect(friendRow).toBeVisible();
+  await friendRow.getByRole('button', { name: 'Thách đấu' }).click();
+
+  const dialog = page.locator('.challenge-dialog');
+  await expect(dialog).toBeVisible({ timeout: 5_000 });
+  return dialog;
 }
 
 let userAForCleanup: SeedUser | null = null;
@@ -388,6 +456,240 @@ test.describe('Friends Page', () => {
     } finally {
       await senderContext.close();
       await recipientContext.close();
+    }
+  });
+
+  test('online friend shows enabled challenge button, offline shows disabled', async ({
+    browser
+  }) => {
+    test.slow();
+
+    // Create friendship directly via admin
+    await createFriendship(userA.id!, userB.id!);
+
+    const contextA = await browser.newContext();
+    const contextB = await browser.newContext();
+    const pageA = await contextA.newPage();
+    const pageB = await contextB.newPage();
+
+    try {
+      // Both login — B goes to friends page to join presence
+      await loginThroughUi(pageA, userA);
+      await loginThroughUi(pageB, userB);
+
+      // Poll-reload until B appears in online section on A's page
+      await expect
+        .poll(
+          async () => {
+            await reloadFriendsPage(pageA);
+            const onlineSection = pageA.locator('[data-section="online-friends"]');
+            return (await onlineSection.textContent()) ?? '';
+          },
+          { timeout: 20_000 }
+        )
+        .toContain(userB.displayName);
+
+      // Online friend should have enabled challenge button
+      const onlineFriendRow = pageA.locator('[data-section="online-friends"] .flat-list-item', {
+        hasText: userB.displayName
+      });
+      await expect(onlineFriendRow).toBeVisible();
+      const challengeButton = onlineFriendRow.getByRole('button', { name: 'Thách đấu' });
+      await expect(challengeButton).toBeEnabled();
+
+      // Close user B to make them go offline
+      await contextB.close();
+
+      // Wait for B to appear in offline section
+      await expect
+        .poll(
+          async () => {
+            await reloadFriendsPage(pageA);
+            const offlineSection = pageA.locator('[data-section="offline-friends"]');
+            return (await offlineSection.textContent()) ?? '';
+          },
+          { timeout: 20_000 }
+        )
+        .toContain(userB.displayName);
+
+      // Offline friend should have disabled challenge button
+      const offlineFriendRow = pageA.locator('[data-section="offline-friends"] .flat-list-item', {
+        hasText: userB.displayName
+      });
+      await expect(offlineFriendRow).toBeVisible();
+      const disabledButton = offlineFriendRow.getByRole('button', { name: 'Thách đấu' });
+      await expect(disabledButton).toBeDisabled();
+    } finally {
+      await contextA.close();
+      await contextB.close().catch(() => {});
+    }
+  });
+
+  test('challenge button opens dialog with time controls, rated/casual, and color options', async ({
+    browser
+  }) => {
+    test.slow();
+
+    await createFriendship(userA.id!, userB.id!);
+
+    const contextA = await browser.newContext();
+    const contextB = await browser.newContext();
+    const pageA = await contextA.newPage();
+    const pageB = await contextB.newPage();
+
+    try {
+      await loginThroughUi(pageA, userA);
+      await loginThroughUi(pageB, userB);
+
+      // Poll-reload until B appears online
+      await expect
+        .poll(
+          async () => {
+            await reloadFriendsPage(pageA);
+            const onlineSection = pageA.locator('[data-section="online-friends"]');
+            return (await onlineSection.textContent()) ?? '';
+          },
+          { timeout: 20_000 }
+        )
+        .toContain(userB.displayName);
+
+      const dialog = await openChallengeDialogForFriend(pageA, userB);
+      await expect(dialog).toContainText(userB.displayName);
+
+      // Time control presets should be visible and default to 15+10
+      await expect(dialog).toContainText('1+0');
+      await expect(dialog).toContainText('15+10');
+      await expect(dialog).toContainText('30+0');
+      await expect(dialog.locator('button.active').filter({ hasText: '15+10' })).toBeVisible();
+
+      // Rated/Casual toggle defaults to casual
+      await expect(dialog.getByRole('button', { name: 'Giao Hữu' })).toBeVisible();
+      await expect(dialog.getByRole('button', { name: 'Xếp Hạng' })).toBeVisible();
+      await expect(dialog.locator('button.active').filter({ hasText: 'Giao Hữu' })).toBeVisible();
+
+      // Color choice defaults to random
+      await expect(dialog.getByRole('button', { name: 'Ngẫu nhiên' })).toBeVisible();
+      await expect(dialog.getByRole('button', { name: 'Đỏ' })).toBeVisible();
+      await expect(dialog.getByRole('button', { name: 'Xanh' })).toBeVisible();
+      await expect(dialog.locator('button.active').filter({ hasText: 'Ngẫu nhiên' })).toBeVisible();
+    } finally {
+      await contextA.close();
+      await contextB.close();
+    }
+  });
+
+  test('submit challenge from friends page: invitation sent and friend receives toast', async ({
+    browser
+  }) => {
+    test.slow();
+
+    await createFriendship(userA.id!, userB.id!);
+
+    const contextA = await browser.newContext();
+    const contextB = await browser.newContext();
+    const pageA = await contextA.newPage();
+    const pageB = await contextB.newPage();
+
+    try {
+      // Login B first so realtime subscription is established before challenge arrives
+      await loginThroughUi(pageB, userB);
+      await loginThroughUi(pageA, userA);
+
+      // Poll-reload until B appears online
+      await expect
+        .poll(
+          async () => {
+            await reloadFriendsPage(pageA);
+            const onlineSection = pageA.locator('[data-section="online-friends"]');
+            return (await onlineSection.textContent()) ?? '';
+          },
+          { timeout: 20_000 }
+        )
+        .toContain(userB.displayName);
+
+      const dialog = await openChallengeDialogForFriend(pageA, userB);
+
+      // Click send button
+      const sendButton = dialog.getByRole('button', { name: 'Gửi thách đấu' });
+      await sendButton.click();
+
+      await expect
+        .poll(async () => findLatestInvitation(userA.id!, userB.id!), {
+          timeout: 15_000
+        })
+        .not.toBeNull();
+
+      const createdInvitation = await findLatestInvitation(userA.id!, userB.id!);
+      expect(createdInvitation?.to_user).toBe(userB.id);
+      expect(createdInvitation?.status).toBe('pending');
+      expect(createdInvitation?.game_config).toMatchObject({
+        timeMinutes: 15,
+        incrementSeconds: 10,
+        isRated: false,
+        preferredColor: 'random'
+      });
+
+      // Friend B should receive the toast notification
+      const toastOverlay = pageB.getByRole('alertdialog');
+      await expect(toastOverlay).toBeVisible({ timeout: 15_000 });
+      await expect(toastOverlay).toContainText(userA.displayName);
+      await expect(toastOverlay).toContainText('15+10');
+    } finally {
+      await contextA.close();
+      await contextB.close();
+    }
+  });
+
+  test('friend accepts challenge from friends page, both navigate to game', async ({ browser }) => {
+    test.slow();
+
+    await createFriendship(userA.id!, userB.id!);
+
+    const contextA = await browser.newContext();
+    const contextB = await browser.newContext();
+    const pageA = await contextA.newPage();
+    const pageB = await contextB.newPage();
+
+    try {
+      // Login B first so realtime subscription is established
+      await loginThroughUi(pageB, userB);
+      await loginThroughUi(pageA, userA);
+
+      // Poll-reload until B appears online
+      await expect
+        .poll(
+          async () => {
+            await reloadFriendsPage(pageA);
+            const onlineSection = pageA.locator('[data-section="online-friends"]');
+            return (await onlineSection.textContent()) ?? '';
+          },
+          { timeout: 20_000 }
+        )
+        .toContain(userB.displayName);
+
+      const dialog = await openChallengeDialogForFriend(pageA, userB);
+      const sendButton = dialog.getByRole('button', { name: 'Gửi thách đấu' });
+      await sendButton.click();
+
+      // Friend B receives toast
+      const toastOverlay = pageB.getByRole('alertdialog');
+      await expect(toastOverlay).toBeVisible({ timeout: 15_000 });
+
+      // Recipient accepts
+      const acceptButton = toastOverlay.getByRole('button', { name: 'Chấp nhận' });
+      await acceptButton.click();
+
+      // Recipient navigates to game page
+      await expect(pageB).toHaveURL(/\/play\/online\/[^/]+/u, { timeout: 15_000 });
+
+      // Challenger auto-navigates from the friends page when the invitation is accepted
+      await expect(pageA).toHaveURL(/\/play\/online\/[^/]+/u, { timeout: 15_000 });
+
+      // Both on the same game URL
+      expect(new URL(pageA.url()).pathname).toBe(new URL(pageB.url()).pathname);
+    } finally {
+      await contextA.close();
+      await contextB.close();
     }
   });
 

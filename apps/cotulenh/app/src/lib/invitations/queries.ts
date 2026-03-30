@@ -110,7 +110,12 @@ export async function sendInvitation(
   fromUserId: string,
   toUserId: string,
   gameConfig: GameConfig
-): Promise<{ success: boolean; error?: string; inviteCode?: string }> {
+): Promise<{
+  success: boolean;
+  error?: string;
+  inviteCode?: string | null;
+  invitationId?: string;
+}> {
   if (fromUserId === toUserId) {
     return { success: false, error: 'cannotInviteSelf' };
   }
@@ -137,7 +142,7 @@ export async function sendInvitation(
     return { success: false, error: 'sendFailed' };
   }
 
-  return { success: true, inviteCode: data.invite_code };
+  return { success: true, inviteCode: data.invite_code, invitationId: data.id };
 }
 
 /**
