@@ -195,18 +195,32 @@ export async function getPendingIncomingRequests(
 
   const { data: profiles } = await supabase
     .from('profiles')
-    .select('id, display_name')
+    .select('id, display_name, rating')
     .in('id', senderIds);
 
   if (!profiles) return [];
 
-  const profileMap = new Map(profiles.map((p) => [p.id, p.display_name]));
+  const profileMap = new Map(
+    profiles.map((p) => [
+      p.id,
+      {
+        displayName: p.display_name,
+        rating:
+          typeof (p as { rating?: unknown }).rating === 'number'
+            ? (p as { rating: number }).rating
+            : undefined
+      }
+    ])
+  );
 
   return friendships
     .map((f) => ({
       friendshipId: f.id,
       userId: f.initiated_by,
-      displayName: sanitizeName(profileMap.get(f.initiated_by) ?? ''),
+      displayName: sanitizeName(profileMap.get(f.initiated_by)?.displayName ?? ''),
+      ...(profileMap.get(f.initiated_by)?.rating != null
+        ? { rating: profileMap.get(f.initiated_by)?.rating }
+        : {}),
       createdAt: f.created_at
     }))
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
@@ -259,17 +273,25 @@ export async function acceptFriendRequest(
   friendshipId: string,
   userId: string
 ): Promise<{ success: boolean; error?: string }> {
-  const { data, error: updateError } = await supabase
+  const { data: friendship, error: friendshipError } = await supabase
     .from('friendships')
-    .update({ status: 'accepted' })
+    .select('user_a, user_b, initiated_by')
     .eq('id', friendshipId)
     .or(`user_a.eq.${userId},user_b.eq.${userId}`)
-    .neq('initiated_by', userId)
     .eq('status', 'pending')
-    .select('id')
     .single();
 
-  if (updateError || !data) {
+  if (friendshipError || !friendship || friendship.initiated_by === userId) {
+    return { success: false, error: 'acceptFailed' };
+  }
+
+  const { data, error } = await supabase.rpc('create_or_accept_friendship', {
+    p_user_1: friendship.user_a,
+    p_user_2: friendship.user_b,
+    p_initiated_by: userId
+  });
+
+  if (error || !data) {
     return { success: false, error: 'acceptFailed' };
   }
 

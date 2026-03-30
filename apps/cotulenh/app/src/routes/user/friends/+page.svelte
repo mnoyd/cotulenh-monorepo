@@ -1,7 +1,19 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import { getI18n } from '$lib/i18n/index.svelte';
   import type { TranslationKey } from '$lib/i18n/types';
   import type { FriendSearchResult, FriendListItem, PendingRequestItem } from '$lib/friends/types';
+  import {
+    acceptFriendRequest as acceptFriendRequestQuery,
+    cancelSentRequest as cancelSentRequestQuery,
+    declineFriendRequest as declineFriendRequestQuery,
+    getFriendsList,
+    getPendingIncomingRequests,
+    getPendingSentRequests,
+    removeFriend as removeFriendQuery,
+    searchUsers,
+    sendFriendRequest as sendFriendRequestQuery
+  } from '$lib/friends/queries';
   import { getOnlineUsers } from '$lib/friends/presence.svelte';
   import { sortFriendsByOnline } from '$lib/friends/sort';
   import CommandCenter from '$lib/components/CommandCenter.svelte';
@@ -16,6 +28,10 @@
   const i18n = getI18n();
 
   let { data }: { data: PageData } = $props();
+  let friends = $state<FriendListItem[]>([]);
+  let incomingRequests = $state<PendingRequestItem[]>([]);
+  let sentRequests = $state<PendingRequestItem[]>([]);
+  let hydratedUserId = $state<string | null>(null);
 
   let searchQuery = $state('');
   let searchResults = $state<FriendSearchResult[]>([]);
@@ -28,7 +44,7 @@
   let removedSent = $state(new Set<string>());
   let removedFriends = $state(new Set<string>());
   let loadingRequests = $state(new Set<string>());
-  let optimisticFriends = $state<Array<{ friendshipId: string; userId: string; displayName: string }>>([]);
+  let optimisticFriends = $state<FriendListItem[]>([]);
 
   let removeDialogOpen = $state(false);
   let friendToRemove = $state<{ friendshipId: string; displayName: string } | null>(null);
@@ -38,22 +54,27 @@
   let challengeDialogOpen = $state(false);
   let challengeTarget = $state<{ id: string; displayName: string; rating?: number } | null>(null);
   let challengePending = $state(new Set<string>());
+  let incomingOpen = $state(true);
+  let sentOpen = $state(true);
+  let onlineOpen = $state(true);
+  let offlineOpen = $state(true);
 
   let visibleIncoming = $derived(
-    data.incomingRequests.filter((r: PendingRequestItem) => !removedIncoming.has(r.friendshipId))
+    incomingRequests.filter((r: PendingRequestItem) => !removedIncoming.has(r.friendshipId))
   );
   let visibleSent = $derived(
-    data.sentRequests.filter((r: PendingRequestItem) => !removedSent.has(r.friendshipId))
+    sentRequests.filter((r: PendingRequestItem) => !removedSent.has(r.friendshipId))
   );
 
   let onlineUsers = $derived(getOnlineUsers());
 
   let allFriends = $derived.by(() => {
-    const merged = [...data.friends, ...optimisticFriends].filter(
-      (f) => !removedFriends.has(f.friendshipId)
-    );
+    const merged = [...friends, ...optimisticFriends].filter((f) => !removedFriends.has(f.friendshipId));
     return sortFriendsByOnline(merged, onlineUsers);
   });
+
+  let onlineFriends = $derived(allFriends.filter((f) => onlineUsers.has(f.userId)));
+  let offlineFriends = $derived(allFriends.filter((f) => !onlineUsers.has(f.userId)));
 
   let searchSectionEl: HTMLElement | undefined = $state();
   let showDropdown = $state(false);
@@ -71,6 +92,60 @@
     }
   });
 
+  $effect(() => {
+    friends = data.friends;
+    incomingRequests = data.incomingRequests;
+    sentRequests = data.sentRequests;
+    hydratedUserId = null;
+  });
+
+  async function refreshFriendsData(): Promise<void> {
+    const supabase = data.supabase;
+    const userId = data.user?.id;
+    if (!supabase || !userId) return;
+
+    const [nextFriends, nextIncoming, nextSent] = await Promise.all([
+      getFriendsList(supabase, userId),
+      getPendingIncomingRequests(supabase, userId),
+      getPendingSentRequests(supabase, userId)
+    ]);
+
+    friends = nextFriends;
+    incomingRequests = nextIncoming;
+    sentRequests = nextSent;
+  }
+
+  $effect(() => {
+    const userId = data.user?.id ?? null;
+    if (!data.supabase || !userId || hydratedUserId === userId) return;
+    hydratedUserId = userId;
+    void refreshFriendsData();
+  });
+
+  onMount(() => {
+    const supabase = data.supabase;
+    const userId = data.user?.id;
+    if (!supabase || !userId) return;
+
+    let active = true;
+    void supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!active || session?.user.id !== userId) return;
+      return refreshFriendsData();
+    });
+
+    const {
+      data: { subscription }
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user.id !== userId) return;
+      void refreshFriendsData();
+    });
+
+    return () => {
+      active = false;
+      subscription.unsubscribe();
+    };
+  });
+
   function debounceSearch() {
     if (debounceTimer) clearTimeout(debounceTimer);
     if (searchQuery.trim().length < 2) {
@@ -80,16 +155,20 @@
     debounceTimer = setTimeout(async () => {
       isSearching = true;
       try {
-        const response = await fetch('?/search', {
-          method: 'POST',
-          body: new URLSearchParams({ query: searchQuery.trim() }),
-          headers: { 'x-sveltekit-action': 'true' }
-        });
-        const result = await response.json();
-        const actionData = result?.data;
-        if (actionData && Array.isArray(actionData)) searchResults = actionData;
-        else if (Array.isArray(actionData?.results)) searchResults = actionData.results;
-        else searchResults = result?.data?.results ?? [];
+        if (data.supabase && data.user?.id) {
+          searchResults = await searchUsers(data.supabase, searchQuery.trim(), data.user.id);
+        } else {
+          const response = await fetch('?/search', {
+            method: 'POST',
+            body: new URLSearchParams({ query: searchQuery.trim() }),
+            headers: { 'x-sveltekit-action': 'true' }
+          });
+          const result = await response.json();
+          const actionData = result?.data;
+          if (actionData && Array.isArray(actionData)) searchResults = actionData;
+          else if (Array.isArray(actionData?.results)) searchResults = actionData.results;
+          else searchResults = result?.data?.results ?? [];
+        }
         hasSearched = true;
       } catch { searchResults = []; hasSearched = true; }
       finally { isSearching = false; }
@@ -107,11 +186,14 @@
   async function handleSendRequest(toUserId: string) {
     optimisticPending = new Set([...optimisticPending, toUserId]);
     try {
-      const ok = await postAction('sendRequest', { toUserId });
+      const ok = data.supabase && data.user?.id
+        ? (await sendFriendRequestQuery(data.supabase, data.user.id, toUserId)).success
+        : await postAction('sendRequest', { toUserId });
       if (!ok) {
         const next = new Set(optimisticPending); next.delete(toUserId); optimisticPending = next;
         toast.error(i18n.t('friends.toast.requestFailed')); return;
       }
+      await refreshFriendsData();
       toast.success(i18n.t('friends.toast.requestSent'), { duration: 4000 });
     } catch {
       const next = new Set(optimisticPending); next.delete(toUserId); optimisticPending = next;
@@ -121,14 +203,25 @@
 
   async function handleAcceptRequest(friendshipId: string) {
     loadingRequests = new Set([...loadingRequests, friendshipId]);
-    const request = data.incomingRequests.find((r: PendingRequestItem) => r.friendshipId === friendshipId);
+    const request = incomingRequests.find((r: PendingRequestItem) => r.friendshipId === friendshipId);
     try {
-      const ok = await postAction('acceptRequest', { friendshipId });
+      const ok = data.supabase && data.user?.id
+        ? (await acceptFriendRequestQuery(data.supabase, friendshipId, data.user.id)).success
+        : await postAction('acceptRequest', { friendshipId });
       if (!ok) { toast.error(i18n.t('friends.toast.actionFailed')); return; }
       removedIncoming = new Set([...removedIncoming, friendshipId]);
       if (request) {
-        optimisticFriends = [...optimisticFriends, { friendshipId, userId: request.userId, displayName: request.displayName }];
+        optimisticFriends = [
+          ...optimisticFriends,
+          {
+            friendshipId,
+            userId: request.userId,
+            displayName: request.displayName,
+            ...(request.rating != null ? { rating: request.rating } : {})
+          }
+        ];
       }
+      await refreshFriendsData();
       toast.success(i18n.t('friends.toast.requestAccepted'), { duration: 4000 });
     } catch { toast.error(i18n.t('friends.toast.actionFailed')); }
     finally { const next = new Set(loadingRequests); next.delete(friendshipId); loadingRequests = next; }
@@ -137,9 +230,12 @@
   async function handleDeclineRequest(friendshipId: string) {
     loadingRequests = new Set([...loadingRequests, friendshipId]);
     try {
-      const ok = await postAction('declineRequest', { friendshipId });
+      const ok = data.supabase && data.user?.id
+        ? (await declineFriendRequestQuery(data.supabase, friendshipId, data.user.id)).success
+        : await postAction('declineRequest', { friendshipId });
       if (!ok) { toast.error(i18n.t('friends.toast.actionFailed')); return; }
       removedIncoming = new Set([...removedIncoming, friendshipId]);
+      await refreshFriendsData();
       toast.success(i18n.t('friends.toast.requestDeclined'), { duration: 4000 });
     } catch { toast.error(i18n.t('friends.toast.actionFailed')); }
     finally { const next = new Set(loadingRequests); next.delete(friendshipId); loadingRequests = next; }
@@ -148,9 +244,12 @@
   async function handleCancelRequest(friendshipId: string) {
     loadingRequests = new Set([...loadingRequests, friendshipId]);
     try {
-      const ok = await postAction('cancelRequest', { friendshipId });
+      const ok = data.supabase && data.user?.id
+        ? (await cancelSentRequestQuery(data.supabase, friendshipId, data.user.id)).success
+        : await postAction('cancelRequest', { friendshipId });
       if (!ok) { toast.error(i18n.t('friends.toast.actionFailed')); return; }
       removedSent = new Set([...removedSent, friendshipId]);
+      await refreshFriendsData();
       toast.success(i18n.t('friends.toast.requestCancelled'), { duration: 4000 });
     } catch { toast.error(i18n.t('friends.toast.actionFailed')); }
     finally { const next = new Set(loadingRequests); next.delete(friendshipId); loadingRequests = next; }
@@ -194,9 +293,12 @@
     isRemoving = true;
     const { friendshipId } = friendToRemove;
     try {
-      const ok = await postAction('removeFriend', { friendshipId });
+      const ok = data.supabase && data.user?.id
+        ? (await removeFriendQuery(data.supabase, friendshipId, data.user.id)).success
+        : await postAction('removeFriend', { friendshipId });
       if (!ok) { toast.error(i18n.t('friends.toast.removeFailed')); return; }
       removedFriends = new Set([...removedFriends, friendshipId]);
+      await refreshFriendsData();
       toast.success(i18n.t('friends.toast.friendRemoved'), { duration: 4000 });
     } catch { toast.error(i18n.t('friends.toast.removeFailed')); }
     finally { isRemoving = false; removeDialogOpen = false; friendToRemove = null; }
@@ -215,6 +317,13 @@
       result.relationship === 'accepted' ||
       result.relationship === 'pending_sent' ||
       result.relationship === 'pending_received';
+  }
+
+  function toggleSection(section: 'incoming' | 'sent' | 'online' | 'offline') {
+    if (section === 'incoming') incomingOpen = !incomingOpen;
+    if (section === 'sent') sentOpen = !sentOpen;
+    if (section === 'online') onlineOpen = !onlineOpen;
+    if (section === 'offline') offlineOpen = !offlineOpen;
   }
 </script>
 
@@ -302,68 +411,140 @@
     <hr class="divider" />
 
     <!-- Incoming requests -->
-    <span class="section-header">{i18n.t('friends.requests.incoming')} ({visibleIncoming.length})</span>
-    {#if visibleIncoming.length > 0}
-      <div class="flat-list">
-        {#each visibleIncoming as request (request.friendshipId)}
-          <div class="flat-list-item">
-            <span>{request.displayName}</span>
-            <div class="actions">
-              <button class="text-link" disabled={loadingRequests.has(request.friendshipId)} onclick={() => handleAcceptRequest(request.friendshipId)}>accept</button>
-              <button class="text-link" disabled={loadingRequests.has(request.friendshipId)} onclick={() => handleDeclineRequest(request.friendshipId)}>decline</button>
-            </div>
+    <section class="friends-section" data-section="incoming-requests">
+      <button
+        type="button"
+        class="section-toggle section-header"
+        aria-expanded={incomingOpen}
+        onclick={() => toggleSection('incoming')}
+      >
+        <span>{i18n.t('friends.requests.incoming')} ({visibleIncoming.length})</span>
+        <span class="section-chevron" aria-hidden="true">{incomingOpen ? '▾' : '▸'}</span>
+      </button>
+      {#if incomingOpen}
+        {#if visibleIncoming.length > 0}
+          <div class="flat-list section-body">
+            {#each visibleIncoming as request (request.friendshipId)}
+              <div class="flat-list-item">
+                <span>{request.displayName}</span>
+                <div class="actions">
+                  <button class="text-link" disabled={loadingRequests.has(request.friendshipId)} onclick={() => handleAcceptRequest(request.friendshipId)}>{i18n.t('friends.action.accept')}</button>
+                  <button class="text-link" disabled={loadingRequests.has(request.friendshipId)} onclick={() => handleDeclineRequest(request.friendshipId)}>{i18n.t('friends.action.decline')}</button>
+                </div>
+              </div>
+            {/each}
           </div>
-        {/each}
-      </div>
-    {:else}
-      <span class="text-secondary">{i18n.t('friends.requests.emptyIncoming')}</span>
-    {/if}
+        {:else}
+          <span class="text-secondary section-body">{i18n.t('friends.requests.emptyIncoming')}</span>
+        {/if}
+      {/if}
+    </section>
 
     <!-- Sent requests -->
     {#if visibleSent.length > 0}
       <hr class="divider" />
-      <span class="section-header">{i18n.t('friends.requests.sent')} ({visibleSent.length})</span>
-      <div class="flat-list">
-        {#each visibleSent as request (request.friendshipId)}
-          <div class="flat-list-item">
-            <span>{request.displayName}</span>
-            <button class="text-link" disabled={loadingRequests.has(request.friendshipId)} onclick={() => handleCancelRequest(request.friendshipId)}>cancel</button>
+      <section class="friends-section" data-section="sent-requests">
+        <button
+          type="button"
+          class="section-toggle section-header"
+          aria-expanded={sentOpen}
+          onclick={() => toggleSection('sent')}
+        >
+          <span>{i18n.t('friends.requests.sent')} ({visibleSent.length})</span>
+          <span class="section-chevron" aria-hidden="true">{sentOpen ? '▾' : '▸'}</span>
+        </button>
+        {#if sentOpen}
+          <div class="flat-list section-body">
+            {#each visibleSent as request (request.friendshipId)}
+              <div class="flat-list-item">
+                <span>{request.displayName}</span>
+                <button class="text-link" disabled={loadingRequests.has(request.friendshipId)} onclick={() => handleCancelRequest(request.friendshipId)}>{i18n.t('friends.action.cancel')}</button>
+              </div>
+            {/each}
           </div>
-        {/each}
-      </div>
+        {/if}
+      </section>
     {/if}
 
     <hr class="divider" />
 
-    <!-- Friends list -->
-    <span class="section-header">{i18n.t('friends.list.title')} ({allFriends.length})</span>
-    {#if allFriends.length === 0}
-      <span class="text-secondary">{i18n.t('friends.empty.title')}</span>
-    {:else}
-      <div class="flat-list">
-        {#each allFriends as friend (friend.friendshipId)}
-          <div class="flat-list-item">
-            <span class="status-dot" class:online={onlineUsers.has(friend.userId)}></span>
-            <span class="friend-name">{friend.displayName}</span>
-            <div class="actions">
-              {#if challengePending.has(friend.userId)}
-                <span class="text-secondary">{i18n.t('invitation.action.invited')}</span>
-              {:else}
+    <!-- Online Friends -->
+    <section class="friends-section" data-section="online-friends">
+      <button
+        type="button"
+        class="section-toggle section-header"
+        aria-expanded={onlineOpen}
+        onclick={() => toggleSection('online')}
+      >
+        <span>{i18n.t('friends.section.online')} ({onlineFriends.length})</span>
+        <span class="section-chevron" aria-hidden="true">{onlineOpen ? '▾' : '▸'}</span>
+      </button>
+      {#if onlineOpen && onlineFriends.length > 0}
+        <div class="flat-list section-body">
+          {#each onlineFriends as friend (friend.friendshipId)}
+            <div class="flat-list-item">
+              <span class="status-dot online"></span>
+              <span class="friend-name">{friend.displayName}</span>
+              <span class="friend-rating">{friend.rating != null ? friend.rating : i18n.t('profile.rating.unrated')}</span>
+              <div class="actions">
+                {#if challengePending.has(friend.userId)}
+                  <span class="text-secondary">{i18n.t('invitation.action.invited')}</span>
+                {:else}
+                  <button
+                    class="text-link"
+                    onclick={() => openChallengeDialog(friend)}
+                  >
+                    {i18n.t('friend.challenge.action.challenge')}
+                  </button>
+                {/if}
+                <button class="text-link danger" onclick={() => openRemoveDialog(friend)}>
+                  {i18n.t('friends.remove.button')}
+                </button>
+              </div>
+            </div>
+          {/each}
+        </div>
+      {/if}
+    </section>
+
+    <hr class="divider" />
+
+    <!-- Offline Friends -->
+    <section class="friends-section" data-section="offline-friends">
+      <button
+        type="button"
+        class="section-toggle section-header"
+        aria-expanded={offlineOpen}
+        onclick={() => toggleSection('offline')}
+      >
+        <span>{i18n.t('friends.section.offline')} ({offlineFriends.length})</span>
+        <span class="section-chevron" aria-hidden="true">{offlineOpen ? '▾' : '▸'}</span>
+      </button>
+      {#if offlineOpen && offlineFriends.length > 0}
+        <div class="flat-list section-body">
+          {#each offlineFriends as friend (friend.friendshipId)}
+            <div class="flat-list-item">
+              <span class="status-dot"></span>
+              <span class="friend-name">{friend.displayName}</span>
+              <span class="friend-rating">{friend.rating != null ? friend.rating : i18n.t('profile.rating.unrated')}</span>
+              <div class="actions">
                 <button
                   class="text-link"
-                  disabled={!onlineUsers.has(friend.userId)}
-                  onclick={() => openChallengeDialog(friend)}
+                  disabled
                 >
                   {i18n.t('friend.challenge.action.challenge')}
                 </button>
-              {/if}
-              <button class="text-link danger" onclick={() => openRemoveDialog(friend)}>
-                {i18n.t('friends.remove.button')}
-              </button>
+                <button class="text-link danger" onclick={() => openRemoveDialog(friend)}>
+                  {i18n.t('friends.remove.button')}
+                </button>
+              </div>
             </div>
-          </div>
-        {/each}
-      </div>
+          {/each}
+        </div>
+      {/if}
+    </section>
+    {#if allFriends.length === 0}
+      <span class="text-secondary">{i18n.t('friends.empty.title')}</span>
     {/if}
   </div>
 {/snippet}
@@ -376,9 +557,41 @@
     padding-top: 1rem;
   }
 
+  .friends-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
   .text-secondary {
     color: var(--theme-text-secondary, #aaa);
     font-size: 0.8125rem;
+  }
+
+  .section-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    width: 100%;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .section-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .section-chevron {
+    color: var(--theme-text-secondary, #aaa);
+    font-size: 0.875rem;
+    line-height: 1;
   }
 
   .search-section {
@@ -426,8 +639,15 @@
     color: var(--theme-text-primary, #eee);
   }
 
+  .friend-rating {
+    font-size: 0.75rem;
+    color: var(--theme-text-secondary, #aaa);
+    font-family: var(--font-mono);
+    margin-right: 0.5rem;
+  }
+
   .online {
-    background: #22c55e !important;
+    background: var(--color-player-online, #22c55e) !important;
   }
 
   .danger {

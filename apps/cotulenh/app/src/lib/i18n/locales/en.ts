@@ -534,6 +534,8 @@ export const en: TranslationKeys = {
   'friends.empty.title': 'No friends yet',
   'friends.empty.subtitle': 'Search for players to connect with',
   'friends.list.title': 'Your Friends',
+  'friends.section.online': 'Online',
+  'friends.section.offline': 'Offline',
   'friends.action.sendRequest': 'Send Request',
   'friends.action.pending': 'Pending',
   'friends.action.friends': 'Friends',

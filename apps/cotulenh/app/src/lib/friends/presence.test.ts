@@ -68,14 +68,14 @@ describe('presence-core', () => {
   });
 
   describe('joinLobby', () => {
-    it('creates a channel subscription for the lobby', () => {
+    it('creates a channel subscription for the shared online presence channel', () => {
       const channel = createMockChannel();
       const supabase = createMockSupabase(channel);
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       joinLobby(supabase as any, 'user-1');
 
-      expect(supabase.channel).toHaveBeenCalledWith('lobby', {
+      expect(supabase.channel).toHaveBeenCalledWith('online', {
         config: { presence: { key: 'user-1' } }
       });
       expect(channel.on).toHaveBeenCalledTimes(3); // sync, join, leave

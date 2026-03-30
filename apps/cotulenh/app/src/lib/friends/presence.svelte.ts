@@ -20,14 +20,14 @@ _setStateChangeCallback((users, connected) => {
 });
 
 /**
- * Join the lobby Presence channel.
+ * Join the shared online Presence channel.
  */
 export function joinLobby(supabase: SupabaseClient, userId: string): void {
   coreJoinLobby(supabase, userId);
 }
 
 /**
- * Leave the lobby Presence channel.
+ * Leave the shared online Presence channel.
  */
 export function leaveLobby(): void {
   coreLeaveLobby();
@@ -48,7 +48,7 @@ export function isUserOnline(userId: string): boolean {
 }
 
 /**
- * Get whether the lobby connection is active (reactive via $state).
+ * Get whether the online presence connection is active (reactive via $state).
  */
 export function getLobbyConnected(): boolean {
   return isConnected;

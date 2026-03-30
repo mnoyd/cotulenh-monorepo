@@ -1,13 +1,13 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { logger } from '@cotulenh/common';
 
-/** Current lobby channel reference */
-let lobbyChannel: ReturnType<SupabaseClient['channel']> | null = null;
+/** Current shared online presence channel reference */
+let onlineChannel: ReturnType<SupabaseClient['channel']> | null = null;
 
 /** Online users set — plain variable, wrapped with $state in presence.svelte.ts */
 let onlineUsers = new Set<string>();
 
-/** Whether we're currently connected to the lobby */
+/** Whether we're currently connected to the shared online channel */
 let connected = false;
 
 /** Reconnect state for exponential backoff */
@@ -50,14 +50,14 @@ export function _setStateChangeCallback(cb: StateChangeCallback | null): void {
 }
 
 /**
- * Join the lobby Presence channel — subscribe and track own presence.
+ * Join the shared online Presence channel — subscribe and track own presence.
  */
 export function joinLobby(supabase: SupabaseClient, userId: string): void {
-  if (lobbyChannel) {
+  if (onlineChannel) {
     return;
   }
 
-  const channel = supabase.channel('lobby', {
+  const channel = supabase.channel('online', {
     config: { presence: { key: userId } }
   });
 
@@ -83,7 +83,7 @@ export function joinLobby(supabase: SupabaseClient, userId: string): void {
           setConnected(true);
           reconnectAttempts = 0;
         } catch (error) {
-          logger.error(error as Error, 'Failed to track lobby presence');
+          logger.error(error as Error, 'Failed to track shared online presence');
           setConnected(false);
           scheduleReconnect(supabase, userId);
         }
@@ -95,11 +95,11 @@ export function joinLobby(supabase: SupabaseClient, userId: string): void {
       }
     });
 
-  lobbyChannel = channel;
+  onlineChannel = channel;
 }
 
 /**
- * Leave the lobby Presence channel — unsubscribe and clean up.
+ * Leave the shared online Presence channel — unsubscribe and clean up.
  */
 export function leaveLobby(): void {
   if (reconnectTimer) {
@@ -108,9 +108,9 @@ export function leaveLobby(): void {
   }
   reconnectAttempts = 0;
 
-  if (lobbyChannel) {
-    lobbyChannel.unsubscribe();
-    lobbyChannel = null;
+  if (onlineChannel) {
+    onlineChannel.unsubscribe();
+    onlineChannel = null;
   }
 
   connected = false;
@@ -145,7 +145,7 @@ export function onPresenceChange(callback: PresenceCallback): () => void {
 }
 
 /**
- * Get whether the lobby connection is active.
+ * Get whether the shared online presence connection is active.
  */
 export function getLobbyConnected(): boolean {
   return connected;
@@ -167,9 +167,9 @@ function scheduleReconnect(supabase: SupabaseClient, userId: string): void {
 
   reconnectTimer = setTimeout(() => {
     reconnectTimer = null;
-    if (lobbyChannel) {
-      lobbyChannel.unsubscribe();
-      lobbyChannel = null;
+    if (onlineChannel) {
+      onlineChannel.unsubscribe();
+      onlineChannel = null;
     }
     joinLobby(supabase, userId);
   }, delay);

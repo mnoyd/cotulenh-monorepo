@@ -529,6 +529,8 @@ export interface TranslationKeys {
   'friends.empty.title': string;
   'friends.empty.subtitle': string;
   'friends.list.title': string;
+  'friends.section.online': string;
+  'friends.section.offline': string;
   'friends.action.sendRequest': string;
   'friends.action.pending': string;
   'friends.action.friends': string;

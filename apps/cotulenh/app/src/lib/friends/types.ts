@@ -34,5 +34,6 @@ export interface PendingRequestItem {
   friendshipId: string;
   userId: string;
   displayName: string;
+  rating?: number;
   createdAt: string;
 }

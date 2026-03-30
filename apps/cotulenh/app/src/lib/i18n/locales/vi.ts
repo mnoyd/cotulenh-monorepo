@@ -535,6 +535,8 @@ export const vi: TranslationKeys = {
   'friends.empty.title': 'Chưa có bạn bè',
   'friends.empty.subtitle': 'Tìm kiếm người chơi để kết nối',
   'friends.list.title': 'Bạn Bè Của Bạn',
+  'friends.section.online': 'Trực Tuyến',
+  'friends.section.offline': 'Ngoại Tuyến',
   'friends.action.sendRequest': 'Gửi Lời Mời',
   'friends.action.pending': 'Đang Chờ',
   'friends.action.friends': 'Bạn Bè',

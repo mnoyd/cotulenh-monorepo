@@ -286,7 +286,7 @@ describe('getPendingIncomingRequests', () => {
       return {
         select: vi.fn().mockReturnValue({
           in: vi.fn().mockResolvedValue({
-            data: [{ id: 'sender-1', display_name: 'Sender One' }],
+            data: [{ id: 'sender-1', display_name: 'Sender One', rating: 1725 }],
             error: null
           })
         })
@@ -299,6 +299,7 @@ describe('getPendingIncomingRequests', () => {
     expect(result[0].friendshipId).toBe('f-1');
     expect(result[0].displayName).toBe('Sender One');
     expect(result[0].userId).toBe('sender-1');
+    expect(result[0].rating).toBe(1725);
   });
 
   it('returns empty when profiles query fails', async () => {
@@ -407,45 +408,81 @@ describe('getPendingSentRequests', () => {
 });
 
 describe('acceptFriendRequest', () => {
-  it('returns success when recipient accepts', async () => {
-    const { supabase, mockFrom } = createMockSupabase();
-    const chain = actionChain({ data: { id: 'f-1' }, error: null });
-    mockFrom.mockReturnValue(chain);
+  it('returns success when recipient accepts via RPC', async () => {
+    const rpc = vi.fn().mockResolvedValue({ data: true, error: null });
+    const { supabase, mockFrom } = createMockSupabase({ rpc });
+    const selectChain = {
+      eq: vi.fn().mockReturnThis(),
+      or: vi.fn().mockReturnThis(),
+      select: vi.fn().mockReturnThis(),
+      single: vi.fn().mockResolvedValue({
+        data: {
+          user_a: 'initiator-user',
+          user_b: 'user-1',
+          initiated_by: 'initiator-user'
+        },
+        error: null
+      })
+    };
+    mockFrom.mockReturnValue(selectChain);
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const result = await acceptFriendRequest(supabase as any, 'f-1', 'user-1');
     expect(result.success).toBe(true);
-  });
-
-  it('calls update with accepted status', async () => {
-    const { supabase, mockFrom } = createMockSupabase();
-    const chain = actionChain({ data: { id: 'f-1' }, error: null });
-    mockFrom.mockReturnValue(chain);
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await acceptFriendRequest(supabase as any, 'f-1', 'user-1');
-    expect(chain.update).toHaveBeenCalledWith({ status: 'accepted' });
+    expect(rpc).toHaveBeenCalledWith('create_or_accept_friendship', {
+      p_user_1: 'initiator-user',
+      p_user_2: 'user-1',
+      p_initiated_by: 'user-1'
+    });
   });
 
   it('fails when user is the initiator (not recipient)', async () => {
-    const { supabase, mockFrom } = createMockSupabase();
-    const chain = actionChain({ data: null, error: { code: 'PGRST116' } });
-    mockFrom.mockReturnValue(chain);
+    const rpc = vi.fn();
+    const { supabase, mockFrom } = createMockSupabase({ rpc });
+    const selectChain = {
+      eq: vi.fn().mockReturnThis(),
+      or: vi.fn().mockReturnThis(),
+      select: vi.fn().mockReturnThis(),
+      single: vi.fn().mockResolvedValue({
+        data: {
+          user_a: 'initiator-user',
+          user_b: 'user-1',
+          initiated_by: 'initiator-user'
+        },
+        error: null
+      })
+    };
+    mockFrom.mockReturnValue(selectChain);
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const result = await acceptFriendRequest(supabase as any, 'f-1', 'initiator-user');
     expect(result.success).toBe(false);
     expect(result.error).toBe('acceptFailed');
+    expect(rpc).not.toHaveBeenCalled();
   });
 
-  it('verifies recipient authorization via neq initiated_by', async () => {
-    const { supabase, mockFrom } = createMockSupabase();
-    const chain = actionChain({ data: { id: 'f-1' }, error: null });
-    mockFrom.mockReturnValue(chain);
+  it('fails when the RPC cannot accept the friendship', async () => {
+    const rpc = vi.fn().mockResolvedValue({ data: false, error: null });
+    const { supabase, mockFrom } = createMockSupabase({ rpc });
+    const selectChain = {
+      eq: vi.fn().mockReturnThis(),
+      or: vi.fn().mockReturnThis(),
+      select: vi.fn().mockReturnThis(),
+      single: vi.fn().mockResolvedValue({
+        data: {
+          user_a: 'initiator-user',
+          user_b: 'user-1',
+          initiated_by: 'initiator-user'
+        },
+        error: null
+      })
+    };
+    mockFrom.mockReturnValue(selectChain);
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await acceptFriendRequest(supabase as any, 'f-1', 'user-1');
-    expect(chain.neq).toHaveBeenCalledWith('initiated_by', 'user-1');
+    const result = await acceptFriendRequest(supabase as any, 'f-1', 'user-1');
+    expect(result.success).toBe(false);
+    expect(result.error).toBe('acceptFailed');
   });
 });
 
