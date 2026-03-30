@@ -11,6 +11,7 @@ Usage:
   ./scripts/local-supabase-safe.sh status-env
   ./scripts/local-supabase-safe.sh psql [psql args...]
   ./scripts/local-supabase-safe.sh psql-file <sql-file>
+  ./scripts/local-supabase-safe.sh repair-profiles-schema
   ./scripts/local-supabase-safe.sh app-dev
   ./scripts/local-supabase-safe.sh app-playwright [playwright args...]
 
@@ -18,6 +19,9 @@ Subcommands:
   status-env        Print `supabase status -o env` for the local stack.
   psql              Run `psql` against the local Supabase DB using the discovered DB_URL.
   psql-file         Apply a SQL file to the local Supabase DB with ON_ERROR_STOP=1.
+  repair-profiles-schema
+                    Repair local `public.profiles` schema drift from migrations 018/024 and
+                    print verification output for username/rating/trigger state.
   app-dev           Start the app with local Supabase credentials injected.
   app-playwright    Run app Playwright tests against the local Supabase stack.
 
@@ -76,6 +80,48 @@ run_psql() {
   psql "$LOCAL_SUPABASE_DB_URL" "$@"
 }
 
+repair_profiles_schema() {
+  local repair_sql="$ROOT_DIR/scripts/fix_local_profiles_schema.sql"
+
+  if [[ ! -f "$repair_sql" ]]; then
+    echo "Repair SQL file not found: $repair_sql" >&2
+    exit 1
+  fi
+
+  run_psql -v ON_ERROR_STOP=1 -f "$repair_sql"
+
+  run_psql -Atqc "
+    select 'columns';
+    select column_name || '|' || is_nullable
+    from information_schema.columns
+    where table_schema = 'public'
+      and table_name = 'profiles'
+      and column_name in ('rating', 'username')
+    order by column_name;
+    select 'migration_versions';
+    select version
+    from supabase_migrations.schema_migrations
+    where version in ('018', '024')
+    order by version;
+    select 'username_duplicates';
+    select count(*)
+    from (
+      select username
+      from public.profiles
+      group by username
+      having count(*) > 1
+    ) duplicates;
+    select 'trigger_function';
+    select pg_get_functiondef('public.handle_new_user()'::regprocedure) like '%username%';
+    select 'username_index';
+    select count(*)
+    from pg_indexes
+    where schemaname = 'public'
+      and tablename = 'profiles'
+      and indexname = 'idx_profiles_username';
+  "
+}
+
 command="${1:-help}"
 
 case "$command" in
@@ -99,6 +145,9 @@ case "$command" in
 
     shift
     run_psql -v ON_ERROR_STOP=1 -f "$1"
+    ;;
+  repair-profiles-schema)
+    repair_profiles_schema
     ;;
   app-dev)
     load_local_supabase_env

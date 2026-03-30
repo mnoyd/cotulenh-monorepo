@@ -33,9 +33,16 @@ For local Supabase commands that usually need unsandboxed access, use the repo w
 ./scripts/local-supabase-safe.sh status-env
 ./scripts/local-supabase-safe.sh psql -Atqc 'select version();'
 ./scripts/local-supabase-safe.sh psql-file supabase/migrations/<file>.sql
+./scripts/local-supabase-safe.sh repair-profiles-schema
 ./scripts/local-supabase-safe.sh app-dev
 ./scripts/local-supabase-safe.sh app-playwright e2e/<file>.spec.ts --reporter=line
 ```
+
+If local friends/profile flows start failing because `profiles.rating` or `profiles.username`
+is missing, or migration `024` is absent even though `username` already exists, run
+`./scripts/local-supabase-safe.sh repair-profiles-schema` from the monorepo root. The
+command repairs the local `public.profiles` schema, recreates the signup trigger function,
+marks migration `024` as applied when appropriate, and prints verification output.
 
 Agents should prefer this wrapper over ad hoc `pnpm dlx supabase ...`, raw `psql`, or custom Playwright startup commands so one persisted approval on `["./scripts/local-supabase-safe.sh"]` covers the whole local Supabase workflow.
 

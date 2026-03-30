@@ -101,7 +101,7 @@ test.describe('Player Profiles', () => {
     await expect(page.locator('text=/Tham gia/')).toBeVisible();
 
     // Should show stats section
-    await expect(page.locator('text=/Thống Kê Trận Đấu|Số Trận/')).toBeVisible();
+    await expect(page.getByText('Thống Kê Trận Đấu', { exact: true })).toBeVisible();
   });
 
   test('own profile shows settings link and stats', async ({ page }) => {
@@ -117,7 +117,8 @@ test.describe('Player Profiles', () => {
     await expect(page.locator('a[href="/user/settings"]')).toBeVisible();
 
     // Should show rating (Unrated for new user)
-    await expect(page.locator('text=/Chưa xếp hạng|Xếp Hạng/')).toBeVisible();
+    await expect(page.getByText('Xếp Hạng', { exact: true })).toBeVisible();
+    await expect(page.getByText('Chưa xếp hạng', { exact: true })).toBeVisible();
 
     // Should show stats
     await expect(page.locator('text=/Số Trận/')).toBeVisible();
