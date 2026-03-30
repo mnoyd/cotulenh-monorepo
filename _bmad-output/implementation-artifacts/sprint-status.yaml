@@ -82,7 +82,7 @@ development_status:
   # Epic 5: Social & Friends
   epic-5: in-progress
   5-1-player-profiles: done
-  5-2-friends-list-online-presence: review
+  5-2-friends-list-online-presence: done
   5-3-challenge-friends-from-friends-list: backlog
   epic-5-retrospective: optional
 

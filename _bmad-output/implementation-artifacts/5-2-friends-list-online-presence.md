@@ -1,6 +1,6 @@
 # Story 5.2: Friends List & Online Presence
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
