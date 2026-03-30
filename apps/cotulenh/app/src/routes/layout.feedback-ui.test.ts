@@ -22,6 +22,16 @@ describe('feedback UI wiring', () => {
     expect(source).toContain('<FeedbackDialog bind:open={feedbackOpen} />');
   });
 
+  it('renders dropdown triggers via child snippets to avoid nested buttons', () => {
+    const source = readFileSync(layoutPath, 'utf8');
+
+    expect(source).toContain('<DropdownMenu.Trigger class="user-trigger">');
+    expect(source).toContain('<DropdownMenu.Trigger class="mobile-menu-trigger">');
+    expect(source).toContain('{#snippet child({ props })}');
+    expect(source).not.toContain('<DropdownMenu.Trigger>\n              <button');
+    expect(source).not.toContain('<DropdownMenu.Trigger>\n          <button');
+  });
+
   it('shows error and supports resubmission flow in feedback dialog implementation', () => {
     const source = readFileSync(feedbackDialogPath, 'utf8');
 
