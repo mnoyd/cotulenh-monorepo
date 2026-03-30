@@ -47,7 +47,9 @@
 
   // Friend challenge state
   let challengeDialogOpen = $state(false);
-  let challengeTarget = $state<{ id: string; displayName: string; rating?: number } | null>(null);
+  let challengeTarget = $state<
+    { id: string; displayName: string; rating?: number; ratingGamesPlayed?: number } | null
+  >(null);
   let challengePending = $state(new Set<string>());
   let incomingOpen = $state(true);
   let sentOpen = $state(true);
@@ -208,7 +210,9 @@
             friendshipId,
             userId: request.userId,
             displayName: request.displayName,
-            ...(request.rating != null ? { rating: request.rating } : {})
+            ...(request.rating != null
+              ? { rating: request.rating, ratingGamesPlayed: request.ratingGamesPlayed ?? 0 }
+              : {})
           }
         ];
       }
@@ -246,7 +250,9 @@
     challengeTarget = {
       id: friend.userId,
       displayName: friend.displayName,
-      ...(friend.rating != null ? { rating: friend.rating } : {})
+      ...(friend.rating != null
+        ? { rating: friend.rating, ratingGamesPlayed: friend.ratingGamesPlayed ?? 0 }
+        : {})
     };
     challengeDialogOpen = true;
   }
@@ -485,7 +491,7 @@
               <div class="friend-summary">
                 <span class="status-dot online"></span>
                 <span class="friend-name">{friend.displayName}</span>
-                <span class="friend-rating">{friend.rating != null ? friend.rating : i18n.t('profile.rating.unrated')}</span>
+                <span class="friend-rating">{friend.rating != null ? String(friend.rating) + ((friend.ratingGamesPlayed ?? 0) < 30 ? '?' : '') : i18n.t('profile.rating.unrated')}</span>
               </div>
               <div class="actions friend-actions">
                 {#if challengePending.has(friend.userId)}
@@ -528,7 +534,7 @@
               <div class="friend-summary">
                 <span class="status-dot offline"></span>
                 <span class="friend-name">{friend.displayName}</span>
-                <span class="friend-rating">{friend.rating != null ? friend.rating : i18n.t('profile.rating.unrated')}</span>
+                <span class="friend-rating">{friend.rating != null ? String(friend.rating) + ((friend.ratingGamesPlayed ?? 0) < 30 ? '?' : '') : i18n.t('profile.rating.unrated')}</span>
               </div>
               <div class="actions friend-actions">
                 <button

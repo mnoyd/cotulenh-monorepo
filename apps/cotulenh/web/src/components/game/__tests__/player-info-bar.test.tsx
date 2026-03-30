@@ -15,6 +15,7 @@ describe('PlayerInfoBar', () => {
   const defaultProps = {
     name: 'Nguoi choi 1',
     rating: 1500,
+    ratingGamesPlayed: 30,
     color: 'red' as const,
     isActive: false,
     clockMs: 600000,
@@ -93,5 +94,21 @@ describe('PlayerInfoBar', () => {
     const timer = screen.getByRole('timer');
     expect(timer).toBeDefined();
     expect(screen.getByText('10:00')).toBeDefined();
+  });
+
+  it('shows provisional ? when games played < 30', () => {
+    render(<PlayerInfoBar {...defaultProps} ratingGamesPlayed={10} />);
+    expect(screen.getByText('(1500?)')).toBeDefined();
+  });
+
+  it('does not show provisional ? when games played >= 30', () => {
+    render(<PlayerInfoBar {...defaultProps} ratingGamesPlayed={30} />);
+    expect(screen.getByText('(1500)')).toBeDefined();
+  });
+
+  it('shows provisional ? in aria-label', () => {
+    render(<PlayerInfoBar {...defaultProps} ratingGamesPlayed={5} isActive={true} />);
+    const bar = screen.getByLabelText('Nguoi choi 1, 1500? diem, dang di');
+    expect(bar).toBeDefined();
   });
 });

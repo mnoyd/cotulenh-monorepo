@@ -44,8 +44,18 @@ describe('useGameStore', () => {
     expect(state.gameStatus).toBe('started');
     expect(state.myColor).toBe('red');
     expect(state.clocks).toEqual({ red: 600, blue: 600 });
-    expect(state.redPlayer).toEqual({ id: 'p1', name: 'Nguoi choi 1', rating: 1500 });
-    expect(state.bluePlayer).toEqual({ id: 'p2', name: 'Nguoi choi 2', rating: 1600 });
+    expect(state.redPlayer).toEqual({
+      id: 'p1',
+      name: 'Nguoi choi 1',
+      rating: 1500,
+      ratingGamesPlayed: 0
+    });
+    expect(state.bluePlayer).toEqual({
+      id: 'p2',
+      name: 'Nguoi choi 2',
+      rating: 1600,
+      ratingGamesPlayed: 0
+    });
   });
 
   it('initializes game with playing phase', () => {

@@ -320,6 +320,7 @@ export function GamePageClient({ gameData }: GamePageClientProps) {
             <PlayerInfoBar
               name={topPlayer.name}
               rating={topPlayer.rating}
+              ratingGamesPlayed={topPlayer.ratingGamesPlayed}
               color={topColor}
               isActive={topActive && (phase === 'playing' || phase === 'deploying')}
               clockMs={topClock}
@@ -419,6 +420,7 @@ export function GamePageClient({ gameData }: GamePageClientProps) {
             <PlayerInfoBar
               name={bottomPlayer.name}
               rating={bottomPlayer.rating}
+              ratingGamesPlayed={bottomPlayer.ratingGamesPlayed}
               color={bottomColor}
               isActive={bottomActive && (phase === 'playing' || phase === 'deploying')}
               clockMs={bottomClock}

@@ -9,7 +9,7 @@
 
   interface Props {
     open: boolean;
-    friend: { id: string; displayName: string; rating?: number };
+    friend: { id: string; displayName: string; rating?: number; ratingGamesPlayed?: number };
     onsubmit: (config: GameConfig & { toUserId: string }) => void;
     translate?: (key: TranslationKey) => string;
   }
@@ -24,7 +24,12 @@
     translate('friend.challenge.dialog.title').replace('{name}', friend.displayName)
   );
   let dialogRating = $derived(
-    translate('friend.challenge.dialog.rating').replace('{rating}', String(friend.rating ?? ''))
+    translate('friend.challenge.dialog.rating').replace(
+      '{rating}',
+      friend.rating != null
+        ? `${friend.rating}${(friend.ratingGamesPlayed ?? 0) < 30 ? '?' : ''}`
+        : ''
+    )
   );
 
   function handleSubmit() {

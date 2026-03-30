@@ -102,7 +102,8 @@ describe('profile page server', () => {
         displayName: 'Commander',
         avatarUrl: null,
         createdAt: '2026-01-15T00:00:00Z',
-        rating: 1500
+        rating: 1500,
+        ratingGamesPlayed: 0
       });
       expect(result.stats).toEqual({
         gamesPlayed: 1,

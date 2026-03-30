@@ -79,7 +79,8 @@ describe('public profile page component', () => {
             displayName: 'Commander',
             avatarUrl: null,
             createdAt: '2026-01-15T00:00:00Z',
-            rating: 1500
+            rating: 1500,
+            ratingGamesPlayed: 0
           },
           stats: { gamesPlayed: 12, wins: 7, losses: 5 },
           games: [],

@@ -19,8 +19,8 @@ type GameStore = {
   gameStatus: GameStatus | null;
   winner: 'red' | 'blue' | null;
   resultReason: string | null;
-  redPlayer: { id: string; name: string; rating: number } | null;
-  bluePlayer: { id: string; name: string; rating: number } | null;
+  redPlayer: { id: string; name: string; rating: number; ratingGamesPlayed: number } | null;
+  bluePlayer: { id: string; name: string; rating: number; ratingGamesPlayed: number } | null;
   deploySubmitted: boolean;
   opponentDeploySubmitted: boolean;
   lastSeenSeq: number;
@@ -188,12 +188,14 @@ export const useGameStore = create<GameStore>((set, get) => ({
       redPlayer: {
         id: gameData.red_player.id,
         name: gameData.red_player.display_name,
-        rating: gameData.red_player.rating
+        rating: gameData.red_player.rating,
+        ratingGamesPlayed: gameData.red_player.rating_games_played ?? 0
       },
       bluePlayer: {
         id: gameData.blue_player.id,
         name: gameData.blue_player.display_name,
-        rating: gameData.blue_player.rating
+        rating: gameData.blue_player.rating,
+        ratingGamesPlayed: gameData.blue_player.rating_games_played ?? 0
       },
       ...pendingActionState
     });

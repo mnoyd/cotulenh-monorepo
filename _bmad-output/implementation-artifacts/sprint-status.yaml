@@ -87,8 +87,8 @@ development_status:
   epic-5-retrospective: optional
 
   # Epic 6: Ratings & Leaderboard
-  epic-6: backlog
-  6-1-glicko-2-rating-system: backlog
+  epic-6: in-progress
+  6-1-glicko-2-rating-system: done
   6-2-post-game-rating-display: backlog
   6-3-activity-leaderboard: backlog
   epic-6-retrospective: optional

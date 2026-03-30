@@ -61,12 +61,19 @@ export async function getGame(gameId: string): Promise<GetGameResult> {
   // Fetch player display names
   const { data: players } = await supabase
     .from('profiles')
-    .select('id, display_name, rating')
+    .select('id, display_name, rating, rating_games_played')
     .in('id', [game.red_player, game.blue_player]);
 
-  const playerMap = new Map<string, { display_name: string; rating: number }>();
+  const playerMap = new Map<
+    string,
+    { display_name: string; rating: number; rating_games_played: number }
+  >();
   for (const p of players ?? []) {
-    playerMap.set(p.id, { display_name: p.display_name ?? 'Nguoi choi', rating: p.rating ?? 1500 });
+    playerMap.set(p.id, {
+      display_name: p.display_name ?? 'Nguoi choi',
+      rating: p.rating ?? 1500,
+      rating_games_played: (p as { rating_games_played?: number }).rating_games_played ?? 0
+    });
   }
 
   const redInfo = playerMap.get(game.red_player as string);
@@ -80,12 +87,14 @@ export async function getGame(gameId: string): Promise<GetGameResult> {
     red_player: {
       id: game.red_player as string,
       display_name: redInfo?.display_name ?? 'Nguoi choi',
-      rating: redInfo?.rating ?? 1500
+      rating: redInfo?.rating ?? 1500,
+      rating_games_played: redInfo?.rating_games_played ?? 0
     },
     blue_player: {
       id: game.blue_player as string,
       display_name: blueInfo?.display_name ?? 'Nguoi choi',
-      rating: blueInfo?.rating ?? 1500
+      rating: blueInfo?.rating ?? 1500,
+      rating_games_played: blueInfo?.rating_games_played ?? 0
     },
     my_color: game.red_player === user.id ? 'red' : 'blue',
     is_rated: game.is_rated,

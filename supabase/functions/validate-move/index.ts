@@ -1,7 +1,7 @@
 import { CoTuLenh, DEFAULT_POSITION } from '@cotulenh/core';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { applyElapsedAndIncrement } from './clock.ts';
-import { completeGame, determineGameEndResult } from './game-end.ts';
+import { completeGame, determineGameEndResult, type GameData } from './game-end.ts';
 import {
   expirePendingAction,
   handleRematchAccept,
@@ -133,7 +133,7 @@ Deno.serve(async (req) => {
     // 1.10: Verify game status is 'started'
     const { data: gameRow, error: gameError } = await supabase
       .from('games')
-      .select('id, status, red_player, blue_player, time_control, winner, result_reason')
+      .select('id, status, red_player, blue_player, time_control, winner, result_reason, is_rated')
       .eq('id', game_id)
       .single();
 
@@ -158,6 +158,12 @@ Deno.serve(async (req) => {
 
     const playerColor: 'red' | 'blue' = isRedPlayer ? 'red' : 'blue';
     const colorCode: 'r' | 'b' = isRedPlayer ? 'r' : 'b';
+
+    const gameData: GameData = {
+      redPlayerId: gameRow.red_player,
+      bluePlayerId: gameRow.blue_player,
+      isRated: gameRow.is_rated ?? false
+    };
 
     // 1.4: SELECT FOR UPDATE row lock on game_states for concurrency safety
     const { data: stateRows, error: stateError } = await supabase.rpc(
@@ -336,7 +342,8 @@ Deno.serve(async (req) => {
           supabase as never,
           game_id,
           { status: 'timeout', winner: playerColor, result_reason: null },
-          tcSeq
+          tcSeq,
+          gameData
         );
 
         if (!endResult.success) {
@@ -378,7 +385,8 @@ Deno.serve(async (req) => {
         supabase as never,
         game_id,
         { status: 'resign', winner: resignOpponentColor, result_reason: null },
-        resignSeq
+        resignSeq,
+        gameData
       );
 
       if (!resignResult.success) {
@@ -473,7 +481,8 @@ Deno.serve(async (req) => {
         supabase as never,
         game_id,
         { status: 'draw', winner: null, result_reason: 'mutual_agreement' },
-        drawAcceptSeq
+        drawAcceptSeq,
+        gameData
       );
 
       if (!drawAcceptResult.success) {
@@ -777,7 +786,8 @@ Deno.serve(async (req) => {
           supabase as never,
           game_id,
           { status: 'timeout', winner: timeoutOpponent, result_reason: null },
-          timeoutSeq
+          timeoutSeq,
+          gameData
         );
         if (!timeoutResult.success) {
           return errorResponse('Failed to complete game', 'INTERNAL_ERROR', 500);
@@ -885,7 +895,13 @@ Deno.serve(async (req) => {
       const gameEndResult = determineGameEndResult(engine, playerColor);
       if (gameEndResult) {
         const endSeq = moveSeq + 1;
-        const endResult = await completeGame(supabase as never, game_id, gameEndResult, endSeq);
+        const endResult = await completeGame(
+          supabase as never,
+          game_id,
+          gameEndResult,
+          endSeq,
+          gameData
+        );
         if (!endResult.success) {
           return errorResponse('Failed to complete game', 'INTERNAL_ERROR', 500);
         }

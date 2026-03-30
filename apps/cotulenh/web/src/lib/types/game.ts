@@ -24,6 +24,7 @@ export interface PlayerInfo {
   id: string;
   display_name: string;
   rating: number;
+  rating_games_played?: number;
 }
 
 export interface GameStateData {

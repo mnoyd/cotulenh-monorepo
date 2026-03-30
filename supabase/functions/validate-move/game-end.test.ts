@@ -1,4 +1,4 @@
-import { completeGame, determineGameEndResult } from './game-end.ts';
+import { completeGame, determineGameEndResult, type GameData } from './game-end.ts';
 import { assertEquals } from 'https://deno.land/std@0.224.0/assert/assert_equals.ts';
 import { assertMatch } from 'https://deno.land/std@0.224.0/assert/assert_match.ts';
 
@@ -19,8 +19,14 @@ function createMockSupabase(opts?: { updateError?: boolean }) {
             }
             return { error: null };
           }
+        }),
+        select: (_columns: string) => ({
+          eq: (_col: string, _val: unknown) => ({
+            single: async () => ({ data: null, error: { message: 'not found' } })
+          })
         })
       }),
+      rpc: async () => ({ error: null }),
       channel: (name: string) => ({
         send: async (msg: Record<string, unknown>) => {
           calls.broadcast = { channel: name, event: msg };
@@ -241,4 +247,176 @@ Deno.test('determineGameEndResult returns draw by threefold repetition', () => {
     winner: null,
     result_reason: 'threefold_repetition'
   });
+});
+
+// === Rating integration tests ===
+
+function createRatedMockSupabase(opts?: {
+  rpcError?: boolean;
+  ratingData?: Record<string, unknown> | null;
+  ratingError?: boolean;
+}) {
+  const calls: {
+    rpc?: { fn: string; params: Record<string, unknown> };
+    broadcast?: { channel: string; event: Record<string, unknown> };
+  } = {};
+
+  return {
+    client: {
+      from: (table: string) => ({
+        update: (data: Record<string, unknown>) => ({
+          eq: async (_col: string, _val: string) => ({ error: null })
+        }),
+        select: (_columns: string) => ({
+          eq: (_col: string, _val: unknown) => ({
+            single: async () => ({
+              data: opts?.ratingData ?? null,
+              error: opts?.ratingError
+                ? { message: 'DB error', code: 'XX000' }
+                : opts?.ratingData
+                  ? null
+                  : { message: 'not found' }
+            })
+          })
+        })
+      }),
+      rpc: async (fn: string, params: Record<string, unknown>) => {
+        calls.rpc = { fn, params };
+        if (opts?.rpcError) {
+          return { error: { message: 'DB error' } };
+        }
+        return { error: null };
+      },
+      channel: (name: string) => ({
+        send: async (msg: Record<string, unknown>) => {
+          calls.broadcast = { channel: name, event: msg };
+        }
+      })
+    },
+    calls
+  };
+}
+
+const ratedGameData: GameData = {
+  redPlayerId: 'red-uuid',
+  bluePlayerId: 'blue-uuid',
+  isRated: true
+};
+
+const casualGameData: GameData = {
+  redPlayerId: 'red-uuid',
+  bluePlayerId: 'blue-uuid',
+  isRated: false
+};
+
+Deno.test('completeGame calls RPC with rating params for rated game', async () => {
+  const mock = createRatedMockSupabase();
+
+  const result = await completeGame(
+    mock.client as never,
+    'game-rated',
+    { status: 'checkmate', winner: 'red', result_reason: null },
+    10,
+    ratedGameData
+  );
+
+  assertEquals(result.success, true);
+  assertEquals(mock.calls.rpc?.fn, 'complete_game_with_ratings');
+  assertEquals(mock.calls.rpc?.params.p_game_id, 'game-rated');
+  assertEquals(mock.calls.rpc?.params.p_status, 'checkmate');
+  assertEquals(mock.calls.rpc?.params.p_winner, 'red');
+  assertEquals(mock.calls.rpc?.params.p_is_rated, true);
+  assertEquals(mock.calls.rpc?.params.p_red_player_id, 'red-uuid');
+  assertEquals(mock.calls.rpc?.params.p_blue_player_id, 'blue-uuid');
+  // Rating params should be present
+  assertEquals(typeof mock.calls.rpc?.params.p_red_new_rating, 'number');
+  assertEquals(typeof mock.calls.rpc?.params.p_blue_new_rating, 'number');
+});
+
+Deno.test('completeGame returns rating changes for rated game', async () => {
+  const mock = createRatedMockSupabase();
+
+  const result = await completeGame(
+    mock.client as never,
+    'game-rated',
+    { status: 'checkmate', winner: 'red', result_reason: null },
+    10,
+    ratedGameData
+  );
+
+  assertEquals(result.success, true);
+  // Should have rating changes
+  assertEquals(result.ratingChanges != null, true);
+  assertEquals(typeof result.ratingChanges!.red.old, 'number');
+  assertEquals(typeof result.ratingChanges!.red.new, 'number');
+  assertEquals(typeof result.ratingChanges!.red.delta, 'number');
+  assertEquals(typeof result.ratingChanges!.blue.old, 'number');
+  assertEquals(typeof result.ratingChanges!.blue.new, 'number');
+});
+
+Deno.test('completeGame broadcasts rating_changes in payload for rated game', async () => {
+  const mock = createRatedMockSupabase();
+
+  await completeGame(
+    mock.client as never,
+    'game-rated',
+    { status: 'checkmate', winner: 'red', result_reason: null },
+    10,
+    ratedGameData
+  );
+
+  const payload = mock.calls.broadcast?.event.payload as Record<string, unknown>;
+  const inner = payload.payload as Record<string, unknown>;
+  assertEquals(inner.rating_changes != null, true);
+});
+
+Deno.test('completeGame skips rating update for casual game', async () => {
+  const mock = createRatedMockSupabase();
+
+  const result = await completeGame(
+    mock.client as never,
+    'game-casual',
+    { status: 'checkmate', winner: 'red', result_reason: null },
+    10,
+    casualGameData
+  );
+
+  assertEquals(result.success, true);
+  assertEquals(result.ratingChanges, null);
+  // RPC should still be called but with is_rated=false
+  assertEquals(mock.calls.rpc?.params.p_is_rated, false);
+});
+
+Deno.test('completeGame returns error when RPC fails for rated game', async () => {
+  const mock = createRatedMockSupabase({ rpcError: true });
+
+  const result = await completeGame(
+    mock.client as never,
+    'game-fail',
+    { status: 'checkmate', winner: 'red', result_reason: null },
+    10,
+    ratedGameData
+  );
+
+  assertEquals(result.success, false);
+  assertEquals(result.error, 'Failed to complete rated game');
+  // No broadcast on failure
+  assertEquals(mock.calls.broadcast, undefined);
+});
+
+Deno.test('completeGame returns error when rating lookup fails for rated game', async () => {
+  const mock = createRatedMockSupabase({ ratingError: true });
+
+  const result = await completeGame(
+    mock.client as never,
+    'game-fail',
+    { status: 'checkmate', winner: 'red', result_reason: null },
+    10,
+    ratedGameData
+  );
+
+  assertEquals(result.success, false);
+  assertEquals(result.error, 'Failed to load ratings');
+  assertEquals(mock.calls.rpc, undefined);
+  assertEquals(mock.calls.broadcast, undefined);
 });

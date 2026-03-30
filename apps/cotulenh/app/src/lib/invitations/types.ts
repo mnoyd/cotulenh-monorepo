@@ -26,7 +26,7 @@ export type InvitationStatus = 'pending' | 'accepted' | 'declined' | 'cancelled'
 
 export interface InvitationItem {
   id: string;
-  fromUser: { id: string; displayName: string; rating?: number };
+  fromUser: { id: string; displayName: string; rating?: number; ratingGamesPlayed?: number };
   toUser: { id: string; displayName: string } | null;
   gameConfig: GameConfig;
   inviteCode: string | null;

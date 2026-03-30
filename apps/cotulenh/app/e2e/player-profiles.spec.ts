@@ -54,13 +54,35 @@ async function loginThroughUi(
   redirectTo = '/user/profile'
 ): Promise<void> {
   await page.goto(`/auth/login?redirectTo=${encodeURIComponent(redirectTo)}`);
+  await expect(page.locator('#email')).toBeVisible();
+  await expect(page.locator('#password')).toBeVisible();
+
+  const emailInput = page.locator('#email');
+  const passwordInput = page.locator('#password');
+  const submitButton = page.locator('button[type="submit"]');
 
   for (let attempt = 0; attempt < 2; attempt += 1) {
-    await page.locator('#email').fill(user.email);
-    await page.locator('#password').fill(user.password);
+    await emailInput.click();
+    await emailInput.fill('');
+    await emailInput.pressSequentially(user.email);
 
-    const submitButton = page.locator('button[type="submit"]');
-    await expect(submitButton).toBeEnabled();
+    await passwordInput.click();
+    await passwordInput.fill('');
+    await passwordInput.pressSequentially(user.password);
+
+    if (!(await submitButton.isEnabled())) {
+      await page.waitForTimeout(500);
+      await emailInput.click();
+      await emailInput.fill('');
+      await emailInput.pressSequentially(user.email);
+      await passwordInput.click();
+      await passwordInput.fill('');
+      await passwordInput.pressSequentially(user.password);
+    }
+
+    await expect(emailInput).toHaveValue(user.email);
+    await expect(passwordInput).toHaveValue(user.password);
+    await expect.poll(async () => submitButton.isEnabled(), { timeout: 15_000 }).toBe(true);
     await submitButton.click();
 
     try {

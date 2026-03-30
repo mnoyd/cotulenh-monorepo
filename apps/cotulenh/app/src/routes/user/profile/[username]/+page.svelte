@@ -71,7 +71,7 @@
 
   const ratingDisplay = $derived(
     data.profileDetail.rating != null
-      ? String(data.profileDetail.rating)
+      ? String(data.profileDetail.rating) + (data.profileDetail.ratingGamesPlayed < 30 ? '?' : '')
       : t('profile.rating.unrated')
   );
 
@@ -169,7 +169,12 @@
 
 <FriendChallengeDialog
   bind:open={challengeDialogOpen}
-  friend={{ id: data.profileDetail.id, displayName: data.profileDetail.displayName, rating: data.profileDetail.rating ?? undefined }}
+  friend={{
+    id: data.profileDetail.id,
+    displayName: data.profileDetail.displayName,
+    rating: data.profileDetail.rating ?? undefined,
+    ratingGamesPlayed: data.profileDetail.ratingGamesPlayed
+  }}
   onsubmit={handleSendChallenge}
   translate={t}
 />

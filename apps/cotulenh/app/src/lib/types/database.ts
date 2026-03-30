@@ -9,6 +9,7 @@ export interface Database {
           username: string;
           display_name: string;
           rating: number | null;
+          rating_games_played: number;
           avatar_url: string | null;
           locale: string;
           settings_json: Json;
@@ -20,6 +21,7 @@ export interface Database {
           username: string;
           display_name: string;
           rating?: number | null;
+          rating_games_played?: number;
           avatar_url?: string | null;
           locale?: string;
           settings_json?: Json;
@@ -31,6 +33,7 @@ export interface Database {
           username?: string;
           display_name?: string;
           rating?: number | null;
+          rating_games_played?: number;
           avatar_url?: string | null;
           locale?: string;
           settings_json?: Json;
@@ -240,6 +243,50 @@ export interface Database {
             columns: ['invitation_id'];
             isOneToOne: false;
             referencedRelation: 'game_invitations';
+            referencedColumns: ['id'];
+          }
+        ];
+      };
+      ratings: {
+        Row: {
+          id: string;
+          user_id: string;
+          time_control: string;
+          rating: number;
+          rating_deviation: number;
+          volatility: number;
+          games_played: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          time_control?: string;
+          rating?: number;
+          rating_deviation?: number;
+          volatility?: number;
+          games_played?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          time_control?: string;
+          rating?: number;
+          rating_deviation?: number;
+          volatility?: number;
+          games_played?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'ratings_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'profiles';
             referencedColumns: ['id'];
           }
         ];

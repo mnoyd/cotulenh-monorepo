@@ -47,10 +47,16 @@ async function createGameWithInitialState(
   return { gameId: data };
 }
 
-type ProfileSummary = { displayName: string; rating?: number };
+type ProfileSummary = { displayName: string; rating?: number; ratingGamesPlayed?: number };
 
 function readOptionalRating(profile: { rating?: unknown }): number | undefined {
   return typeof profile.rating === 'number' ? profile.rating : undefined;
+}
+
+function readOptionalRatingGamesPlayed(profile: {
+  rating_games_played?: unknown;
+}): number | undefined {
+  return typeof profile.rating_games_played === 'number' ? profile.rating_games_played : undefined;
 }
 
 async function loadProfileMap(
@@ -64,7 +70,7 @@ async function loadProfileMap(
 
   const { data: profiles } = await supabase
     .from('profiles')
-    .select('id, display_name, rating')
+    .select('id, display_name, rating, rating_games_played')
     .in('id', uniqueUserIds);
 
   if (!profiles) {
@@ -76,7 +82,10 @@ async function loadProfileMap(
       profile.id,
       {
         displayName: profile.display_name,
-        rating: readOptionalRating(profile as { rating?: unknown })
+        rating: readOptionalRating(profile as { rating?: unknown }),
+        ratingGamesPlayed: readOptionalRatingGamesPlayed(
+          profile as { rating_games_played?: unknown }
+        )
       }
     ])
   );
@@ -238,7 +247,9 @@ export async function getReceivedInvitations(
       fromUser: {
         id: inv.from_user,
         displayName: sanitizeName(profile?.displayName ?? ''),
-        ...(profile?.rating != null ? { rating: profile.rating } : {})
+        ...(profile?.rating != null
+          ? { rating: profile.rating, ratingGamesPlayed: profile.ratingGamesPlayed ?? 0 }
+          : {})
       },
       toUser: inv.to_user ? { id: inv.to_user, displayName: '' } : null,
       gameConfig: inv.game_config as GameConfig,
@@ -550,7 +561,9 @@ export async function getOpenChallenges(supabase: SupabaseClient): Promise<Invit
       fromUser: {
         id: c.from_user,
         displayName: sanitizeName(profile?.displayName ?? ''),
-        ...(profile?.rating != null ? { rating: profile.rating } : {})
+        ...(profile?.rating != null
+          ? { rating: profile.rating, ratingGamesPlayed: profile.ratingGamesPlayed ?? 0 }
+          : {})
       },
       toUser: null,
       gameConfig: c.game_config as GameConfig,

@@ -143,7 +143,7 @@ export async function getFriendsList(
 
   const { data: profiles } = await supabase
     .from('profiles')
-    .select('id, display_name, rating')
+    .select('id, display_name, rating, rating_games_played')
     .in('id', friendIds);
 
   if (!profiles) return [];
@@ -156,7 +156,11 @@ export async function getFriendsList(
         rating:
           typeof (p as { rating?: unknown }).rating === 'number'
             ? (p as { rating: number }).rating
-            : undefined
+            : undefined,
+        ratingGamesPlayed:
+          typeof (p as { rating_games_played?: unknown }).rating_games_played === 'number'
+            ? (p as { rating_games_played: number }).rating_games_played
+            : 0
       }
     ])
   );
@@ -169,7 +173,9 @@ export async function getFriendsList(
         friendshipId: f.id,
         userId: friendId,
         displayName: sanitizeName(profile?.displayName ?? ''),
-        ...(profile?.rating != null ? { rating: profile.rating } : {})
+        ...(profile?.rating != null
+          ? { rating: profile.rating, ratingGamesPlayed: profile.ratingGamesPlayed ?? 0 }
+          : {})
       };
     })
     .sort((a, b) => a.displayName.localeCompare(b.displayName));
@@ -195,7 +201,7 @@ export async function getPendingIncomingRequests(
 
   const { data: profiles } = await supabase
     .from('profiles')
-    .select('id, display_name, rating')
+    .select('id, display_name, rating, rating_games_played')
     .in('id', senderIds);
 
   if (!profiles) return [];
@@ -208,7 +214,11 @@ export async function getPendingIncomingRequests(
         rating:
           typeof (p as { rating?: unknown }).rating === 'number'
             ? (p as { rating: number }).rating
-            : undefined
+            : undefined,
+        ratingGamesPlayed:
+          typeof (p as { rating_games_played?: unknown }).rating_games_played === 'number'
+            ? (p as { rating_games_played: number }).rating_games_played
+            : 0
       }
     ])
   );
@@ -219,7 +229,10 @@ export async function getPendingIncomingRequests(
       userId: f.initiated_by,
       displayName: sanitizeName(profileMap.get(f.initiated_by)?.displayName ?? ''),
       ...(profileMap.get(f.initiated_by)?.rating != null
-        ? { rating: profileMap.get(f.initiated_by)?.rating }
+        ? {
+            rating: profileMap.get(f.initiated_by)?.rating,
+            ratingGamesPlayed: profileMap.get(f.initiated_by)?.ratingGamesPlayed ?? 0
+          }
         : {}),
       createdAt: f.created_at
     }))

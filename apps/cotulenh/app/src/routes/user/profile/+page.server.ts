@@ -9,7 +9,7 @@ export const load: PageServerLoad = async ({ locals: { supabase, safeGetSession 
 
   const { data: profileData } = await supabase
     .from('profiles')
-    .select('username, display_name, avatar_url, created_at, rating')
+    .select('username, display_name, avatar_url, created_at, rating, rating_games_played')
     .eq('id', user.id)
     .single();
 
@@ -22,7 +22,8 @@ export const load: PageServerLoad = async ({ locals: { supabase, safeGetSession 
       displayName: profileData?.display_name ?? '',
       avatarUrl: profileData?.avatar_url ?? null,
       createdAt: profileData?.created_at ?? new Date().toISOString(),
-      rating: (profileData?.rating as number | null) ?? null
+      rating: (profileData?.rating as number | null) ?? null,
+      ratingGamesPlayed: (profileData?.rating_games_played as number | null) ?? 0
     },
     stats
   };

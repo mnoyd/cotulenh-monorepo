@@ -63,11 +63,49 @@ async function loginThroughUi(
   user: SeedUser
 ): Promise<void> {
   await page.goto('/auth/login?redirectTo=%2Fplay%2Fonline');
-  await page.locator('#email').fill(user.email);
-  await page.locator('#password').fill(user.password);
-  await page.locator('button[type="submit"]').click();
-  await page.waitForURL(/\/play\/online$/u);
-  await expect(page.locator('.online-hub')).toBeVisible();
+  await expect(page.locator('#email')).toBeVisible();
+  await expect(page.locator('#password')).toBeVisible();
+
+  const emailInput = page.locator('#email');
+  const passwordInput = page.locator('#password');
+  const submitButton = page.locator('button[type="submit"]');
+
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    await emailInput.click();
+    await emailInput.fill('');
+    await emailInput.pressSequentially(user.email);
+
+    await passwordInput.click();
+    await passwordInput.fill('');
+    await passwordInput.pressSequentially(user.password);
+
+    if (!(await submitButton.isEnabled())) {
+      await page.waitForTimeout(500);
+      await emailInput.click();
+      await emailInput.fill('');
+      await emailInput.pressSequentially(user.email);
+      await passwordInput.click();
+      await passwordInput.fill('');
+      await passwordInput.pressSequentially(user.password);
+    }
+
+    await expect(emailInput).toHaveValue(user.email);
+    await expect(passwordInput).toHaveValue(user.password);
+    await expect.poll(async () => submitButton.isEnabled(), { timeout: 15_000 }).toBe(true);
+    await submitButton.click();
+
+    try {
+      await page.waitForURL(/\/play\/online$/u, { timeout: 15_000 });
+      await expect(page.locator('.online-hub')).toBeVisible();
+      return;
+    } catch (error) {
+      if (attempt === 1) {
+        throw error;
+      }
+
+      await page.waitForURL(/\/auth\/login/u, { timeout: 15_000 });
+    }
+  }
 }
 
 test('friends can send and accept a friend challenge', async ({ browser }) => {

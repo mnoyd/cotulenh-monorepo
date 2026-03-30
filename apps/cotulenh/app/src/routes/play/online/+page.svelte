@@ -135,7 +135,9 @@
 
   // Friend challenge dialog state
   let challengeDialogOpen = $state(false);
-  let challengeTarget = $state<{ id: string; displayName: string; rating?: number } | null>(null);
+  let challengeTarget = $state<
+    { id: string; displayName: string; rating?: number; ratingGamesPlayed?: number } | null
+  >(null);
 
   // Screen reader announcement
   let srAnnouncement = $state('');
@@ -206,7 +208,7 @@
 
         const { data: profile } = await $page.data.supabase
           .from('profiles')
-          .select('display_name, rating')
+          .select('display_name, rating, rating_games_played')
           .eq('id', event.fromUser)
           .single();
         if (profile) {
@@ -218,7 +220,14 @@
                     ...inv.fromUser,
                     displayName: sanitizeName(profile.display_name),
                     ...(typeof (profile as { rating?: unknown }).rating === 'number'
-                      ? { rating: (profile as { rating: number }).rating }
+                      ? {
+                          rating: (profile as { rating: number }).rating,
+                          ratingGamesPlayed:
+                            typeof (profile as { rating_games_played?: unknown }).rating_games_played ===
+                            'number'
+                              ? (profile as { rating_games_played: number }).rating_games_played
+                              : 0
+                        }
                       : {})
                   }
                 }
@@ -449,7 +458,9 @@
     challengeTarget = {
       id: friend.userId,
       displayName: friend.displayName,
-      ...(friend.rating != null ? { rating: friend.rating } : {})
+      ...(friend.rating != null
+        ? { rating: friend.rating, ratingGamesPlayed: friend.ratingGamesPlayed ?? 0 }
+        : {})
     };
     challengeDialogOpen = true;
   }
@@ -805,7 +816,7 @@
       <div class="flat-list">
         {#each visibleReceivedInvitations as invitation (invitation.id)}
           <div class="flat-list-item">
-            <span>from {invitation.fromUser?.displayName || '...'}{invitation.fromUser?.rating != null ? ` (${invitation.fromUser.rating})` : ''}</span>
+            <span>from {invitation.fromUser?.displayName || '...'}{invitation.fromUser?.rating != null ? ` (${invitation.fromUser.rating}${(invitation.fromUser.ratingGamesPlayed ?? 0) < 30 ? '?' : ''})` : ''}</span>
             <span class="text-dim">{invitation.gameConfig.timeMinutes}+{invitation.gameConfig.incrementSeconds}{invitation.gameConfig.isRated ? ` · ${i18n.t('lobby.rated')}` : ''}</span>
             <button
               class="text-link"

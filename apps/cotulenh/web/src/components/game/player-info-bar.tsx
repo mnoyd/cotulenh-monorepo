@@ -6,6 +6,7 @@ import { ChessClock } from './chess-clock';
 type PlayerInfoBarProps = {
   name: string;
   rating: number;
+  ratingGamesPlayed?: number;
   color: 'red' | 'blue';
   isActive: boolean;
   clockMs: number | null;
@@ -25,6 +26,7 @@ function getInitials(name: string): string {
 export function PlayerInfoBar({
   name,
   rating,
+  ratingGamesPlayed,
   color,
   isActive,
   clockMs,
@@ -35,7 +37,11 @@ export function PlayerInfoBar({
 
   const clockBg = color === 'red' ? 'bg-[hsl(0,70%,50%,0.1)]' : 'bg-[hsl(210,70%,50%,0.1)]';
 
-  const statusText = isActive ? `${name}, ${rating} diem, dang di` : `${name}, ${rating} diem`;
+  const provisional = (ratingGamesPlayed ?? 0) < 30 ? '?' : '';
+  const ratingDisplay = `${rating}${provisional}`;
+  const statusText = isActive
+    ? `${name}, ${ratingDisplay} diem, dang di`
+    : `${name}, ${ratingDisplay} diem`;
 
   return (
     <div
@@ -57,7 +63,7 @@ export function PlayerInfoBar({
           {name}
         </span>
         <span className="ml-[var(--space-2)] hidden text-[var(--text-xs)] text-[var(--color-text-muted)] sm:inline">
-          ({rating})
+          ({ratingDisplay})
         </span>
       </div>
 

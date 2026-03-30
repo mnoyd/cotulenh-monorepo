@@ -20,7 +20,7 @@ export const load: PageServerLoad = async ({
 
   const { data: profileData, error: dbError } = await supabase
     .from('profiles')
-    .select('id, username, display_name, avatar_url, created_at, rating')
+    .select('id, username, display_name, avatar_url, created_at, rating, rating_games_played')
     .eq('username', requestedUsername)
     .maybeSingle();
 
@@ -72,7 +72,8 @@ export const load: PageServerLoad = async ({
       displayName: profileData.display_name,
       avatarUrl: profileData.avatar_url ?? null,
       createdAt: profileData.created_at ?? new Date().toISOString(),
-      rating: profileData.rating as number | null
+      rating: profileData.rating as number | null,
+      ratingGamesPlayed: (profileData.rating_games_played as number | null) ?? 0
     },
     stats,
     games,

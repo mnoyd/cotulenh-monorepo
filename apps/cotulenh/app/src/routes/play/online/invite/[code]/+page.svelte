@@ -173,7 +173,7 @@
         </div>
         <div class="auth-actions">
           <Button
-            href="/auth/register?redirectTo={encodeURIComponent(redirectTo)}"
+            href={`/auth/register?redirectTo=${encodeURIComponent(redirectTo)}`}
             size="lg"
             class="signup-btn"
             autofocus
@@ -182,7 +182,7 @@
           </Button>
           <p class="login-prompt">
             {i18n.t('inviteLink.alreadyHaveAccount')}
-            <a href="/auth/login?redirectTo={encodeURIComponent(redirectTo)}">
+            <a href={`/auth/login?redirectTo=${encodeURIComponent(redirectTo)}`}>
               {i18n.t('inviteLink.logIn')}
             </a>
           </p>

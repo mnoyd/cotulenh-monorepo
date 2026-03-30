@@ -75,7 +75,7 @@
 
   const ratingDisplay = $derived(
     data.profileDetail.rating != null
-      ? String(data.profileDetail.rating)
+      ? String(data.profileDetail.rating) + (data.profileDetail.ratingGamesPlayed < 30 ? '?' : '')
       : t('profile.rating.unrated')
   );
 

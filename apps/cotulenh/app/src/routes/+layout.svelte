@@ -118,13 +118,14 @@
         // Fetch sender display name and rating
         const { data: profile } = await $page.data.supabase
           .from('profiles')
-          .select('display_name, rating')
+          .select('display_name, rating, rating_games_played')
           .eq('id', event.fromUser)
           .single();
 
         const name = sanitizeName(profile?.display_name ?? '') || i18n.t('common.loading');
         const rating = profile?.rating;
-        const displayName = rating != null ? `${name} (${rating})` : name;
+        const provisional = (profile?.rating_games_played ?? 0) < 30 ? '?' : '';
+        const displayName = rating != null ? `${name} (${rating}${provisional})` : name;
 
         // Clear previous timer
         if (invitationToastTimer) clearTimeout(invitationToastTimer);

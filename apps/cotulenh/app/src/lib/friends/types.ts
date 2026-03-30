@@ -28,6 +28,7 @@ export interface FriendListItem {
   userId: string;
   displayName: string;
   rating?: number;
+  ratingGamesPlayed?: number;
 }
 
 export interface PendingRequestItem {
@@ -35,5 +36,6 @@ export interface PendingRequestItem {
   userId: string;
   displayName: string;
   rating?: number;
+  ratingGamesPlayed?: number;
   createdAt: string;
 }
