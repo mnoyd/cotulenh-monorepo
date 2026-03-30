@@ -83,3 +83,4 @@
 {"actor":"Hoang Manh","comment":null,"created_at":"2026-03-30T13:04:51Z","event_type":"created","id":"ee1acf37-97a1-4969-8830-26a984db409d","issue_id":"cotulenh-monorepo-p0s","new_value":"","old_value":""}
 {"actor":"Hoang Manh","comment":null,"created_at":"2026-03-30T13:51:17Z","event_type":"created","id":"09511701-2ce4-43e2-ae6e-f79e6452a9db","issue_id":"cotulenh-monorepo-jra","new_value":"","old_value":""}
 {"actor":"Hoang Manh","comment":null,"created_at":"2026-03-30T16:19:42Z","event_type":"created","id":"aa436f67-c392-420a-8a28-0072ff0c8fd3","issue_id":"cotulenh-monorepo-mas","new_value":"","old_value":""}
+{"actor":"Hoang Manh","comment":null,"created_at":"2026-03-30T16:42:07Z","event_type":"closed","id":"aae043e2-964b-427b-b98f-6c88750211fc","issue_id":"cotulenh-monorepo-dn4","new_value":"Completed","old_value":""}
