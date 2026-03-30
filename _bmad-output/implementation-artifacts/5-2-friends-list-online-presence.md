@@ -254,6 +254,7 @@ Claude Opus 4.6 (1M context)
 - **Tasks 3-4 Verification (2026-03-30):** Friend request lifecycle verified: send from search and profile page, accept/decline with optimistic UI, remove with confirmation dialog. All working correctly.
 - **Task 5 E2E (2026-03-30):** Created comprehensive E2E test suite: friends list rendering, search + send request, accept incoming request, remove friend with confirmation, and presence updates with two browser contexts.
 - **Task 6 Unit tests (2026-03-30):** All 785 existing tests pass. No unit test gaps found — existing coverage is comprehensive (55 friends-specific tests).
+- **Review Fixes (2026-03-30):** Switched friends-page mutations back to server actions, added username search support on the friends page, corrected offline status-dot styling, and upgraded mobile friend rows into single-column cards. Extended E2E coverage for username search and `/@username` profile-page friend requests.
 
 ### Change Log
 
@@ -262,11 +263,16 @@ Claude Opus 4.6 (1M context)
 - 2026-03-30: Fixed hardcoded English accept/decline/cancel buttons to use i18n translations
 - 2026-03-30: Added i18n keys: friends.section.online, friends.section.offline
 - 2026-03-30: Added E2E test suite for friends page (5 tests)
+- 2026-03-30: Added username search support and restored server-action mutation flow on the friends page
+- 2026-03-30: Updated mobile friend rows to render as single-column cards and fixed offline status indicator styling
+- 2026-03-30: Expanded friends E2E coverage for username search and `/@username` profile friend requests
 
 ### File List
 
 - `src/routes/user/friends/+page.svelte` (modified) — rating display, Online/Offline sections, i18n button fixes
+- `src/lib/friends/queries.ts` (modified) — username-aware player search for friends-page lookup
+- `src/lib/friends/queries.test.ts` (modified) — coverage for username-aware friend search behavior
 - `src/lib/i18n/types.ts` (modified) — added friends.section.online, friends.section.offline keys
 - `src/lib/i18n/locales/en.ts` (modified) — added English translations for section headers
 - `src/lib/i18n/locales/vi.ts` (modified) — added Vietnamese translations for section headers
-- `e2e/friends-page.spec.ts` (new) — E2E tests for friends page
+- `e2e/friends-page.spec.ts` (modified) — E2E tests for friends page, username search, and `/@username` profile requests

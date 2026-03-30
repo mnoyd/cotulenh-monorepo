@@ -4,15 +4,10 @@
   import type { TranslationKey } from '$lib/i18n/types';
   import type { FriendSearchResult, FriendListItem, PendingRequestItem } from '$lib/friends/types';
   import {
-    acceptFriendRequest as acceptFriendRequestQuery,
-    cancelSentRequest as cancelSentRequestQuery,
-    declineFriendRequest as declineFriendRequestQuery,
     getFriendsList,
     getPendingIncomingRequests,
     getPendingSentRequests,
-    removeFriend as removeFriendQuery,
     searchUsers,
-    sendFriendRequest as sendFriendRequestQuery
   } from '$lib/friends/queries';
   import { getOnlineUsers } from '$lib/friends/presence.svelte';
   import { sortFriendsByOnline } from '$lib/friends/sort';
@@ -186,9 +181,7 @@
   async function handleSendRequest(toUserId: string) {
     optimisticPending = new Set([...optimisticPending, toUserId]);
     try {
-      const ok = data.supabase && data.user?.id
-        ? (await sendFriendRequestQuery(data.supabase, data.user.id, toUserId)).success
-        : await postAction('sendRequest', { toUserId });
+      const ok = await postAction('sendRequest', { toUserId });
       if (!ok) {
         const next = new Set(optimisticPending); next.delete(toUserId); optimisticPending = next;
         toast.error(i18n.t('friends.toast.requestFailed')); return;
@@ -205,9 +198,7 @@
     loadingRequests = new Set([...loadingRequests, friendshipId]);
     const request = incomingRequests.find((r: PendingRequestItem) => r.friendshipId === friendshipId);
     try {
-      const ok = data.supabase && data.user?.id
-        ? (await acceptFriendRequestQuery(data.supabase, friendshipId, data.user.id)).success
-        : await postAction('acceptRequest', { friendshipId });
+      const ok = await postAction('acceptRequest', { friendshipId });
       if (!ok) { toast.error(i18n.t('friends.toast.actionFailed')); return; }
       removedIncoming = new Set([...removedIncoming, friendshipId]);
       if (request) {
@@ -230,9 +221,7 @@
   async function handleDeclineRequest(friendshipId: string) {
     loadingRequests = new Set([...loadingRequests, friendshipId]);
     try {
-      const ok = data.supabase && data.user?.id
-        ? (await declineFriendRequestQuery(data.supabase, friendshipId, data.user.id)).success
-        : await postAction('declineRequest', { friendshipId });
+      const ok = await postAction('declineRequest', { friendshipId });
       if (!ok) { toast.error(i18n.t('friends.toast.actionFailed')); return; }
       removedIncoming = new Set([...removedIncoming, friendshipId]);
       await refreshFriendsData();
@@ -244,9 +233,7 @@
   async function handleCancelRequest(friendshipId: string) {
     loadingRequests = new Set([...loadingRequests, friendshipId]);
     try {
-      const ok = data.supabase && data.user?.id
-        ? (await cancelSentRequestQuery(data.supabase, friendshipId, data.user.id)).success
-        : await postAction('cancelRequest', { friendshipId });
+      const ok = await postAction('cancelRequest', { friendshipId });
       if (!ok) { toast.error(i18n.t('friends.toast.actionFailed')); return; }
       removedSent = new Set([...removedSent, friendshipId]);
       await refreshFriendsData();
@@ -293,9 +280,7 @@
     isRemoving = true;
     const { friendshipId } = friendToRemove;
     try {
-      const ok = data.supabase && data.user?.id
-        ? (await removeFriendQuery(data.supabase, friendshipId, data.user.id)).success
-        : await postAction('removeFriend', { friendshipId });
+      const ok = await postAction('removeFriend', { friendshipId });
       if (!ok) { toast.error(i18n.t('friends.toast.removeFailed')); return; }
       removedFriends = new Set([...removedFriends, friendshipId]);
       await refreshFriendsData();
@@ -350,10 +335,24 @@
         {i18n.t('friends.remove.description').replace('{name}', friendToRemove?.displayName ?? '')}
       </AlertDialog.Description>
       <div class="alert-actions">
-        <AlertDialog.Cancel class="alert-cancel-btn">{i18n.t('friends.remove.cancel')}</AlertDialog.Cancel>
-        <AlertDialog.Action class="alert-action-btn" onclick={handleRemoveFriend} disabled={isRemoving}>
+        <button
+          type="button"
+          class="alert-cancel-btn"
+          onclick={() => {
+            removeDialogOpen = false;
+            friendToRemove = null;
+          }}
+        >
+          {i18n.t('friends.remove.cancel')}
+        </button>
+        <button
+          type="button"
+          class="alert-action-btn"
+          onclick={handleRemoveFriend}
+          disabled={isRemoving}
+        >
           {i18n.t('friends.remove.confirm')}
-        </AlertDialog.Action>
+        </button>
       </div>
     </AlertDialog.Content>
   </AlertDialog.Portal>
@@ -480,13 +479,15 @@
         <span class="section-chevron" aria-hidden="true">{onlineOpen ? '▾' : '▸'}</span>
       </button>
       {#if onlineOpen && onlineFriends.length > 0}
-        <div class="flat-list section-body">
+        <div class="flat-list friend-card-list section-body">
           {#each onlineFriends as friend (friend.friendshipId)}
-            <div class="flat-list-item">
-              <span class="status-dot online"></span>
-              <span class="friend-name">{friend.displayName}</span>
-              <span class="friend-rating">{friend.rating != null ? friend.rating : i18n.t('profile.rating.unrated')}</span>
-              <div class="actions">
+            <div class="flat-list-item friend-card">
+              <div class="friend-summary">
+                <span class="status-dot online"></span>
+                <span class="friend-name">{friend.displayName}</span>
+                <span class="friend-rating">{friend.rating != null ? friend.rating : i18n.t('profile.rating.unrated')}</span>
+              </div>
+              <div class="actions friend-actions">
                 {#if challengePending.has(friend.userId)}
                   <span class="text-secondary">{i18n.t('invitation.action.invited')}</span>
                 {:else}
@@ -521,13 +522,15 @@
         <span class="section-chevron" aria-hidden="true">{offlineOpen ? '▾' : '▸'}</span>
       </button>
       {#if offlineOpen && offlineFriends.length > 0}
-        <div class="flat-list section-body">
+        <div class="flat-list friend-card-list section-body">
           {#each offlineFriends as friend (friend.friendshipId)}
-            <div class="flat-list-item">
-              <span class="status-dot"></span>
-              <span class="friend-name">{friend.displayName}</span>
-              <span class="friend-rating">{friend.rating != null ? friend.rating : i18n.t('profile.rating.unrated')}</span>
-              <div class="actions">
+            <div class="flat-list-item friend-card">
+              <div class="friend-summary">
+                <span class="status-dot offline"></span>
+                <span class="friend-name">{friend.displayName}</span>
+                <span class="friend-rating">{friend.rating != null ? friend.rating : i18n.t('profile.rating.unrated')}</span>
+              </div>
+              <div class="actions friend-actions">
                 <button
                   class="text-link"
                   disabled
@@ -633,6 +636,29 @@
     gap: 0.5rem;
   }
 
+  .friend-card-list {
+    gap: 0.75rem;
+  }
+
+  .friend-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+  }
+
+  .friend-summary {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 0;
+    flex: 1;
+  }
+
+  .friend-actions {
+    flex-shrink: 0;
+  }
+
   .friend-name {
     flex: 1;
     font-size: 0.875rem;
@@ -652,6 +678,28 @@
 
   .danger {
     color: #ef4444;
+  }
+
+  @media (max-width: 768px) {
+    .friend-card {
+      align-items: flex-start;
+      flex-direction: column;
+      padding: 0.75rem;
+      border: 1px solid var(--theme-border, #333);
+      background: var(--theme-bg-panel, #1a1a1a);
+    }
+
+    .friend-summary {
+      width: 100%;
+      align-items: baseline;
+      flex-wrap: wrap;
+    }
+
+    .friend-actions {
+      width: 100%;
+      flex-wrap: wrap;
+      justify-content: flex-start;
+    }
   }
 
   .sr-only {

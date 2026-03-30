@@ -31,11 +31,11 @@ export async function searchUsers(
   // Escape LIKE metacharacters (% and _) in user input
   const escapedQuery = query.replace(/[%_]/g, '\\$&');
 
-  // Search profiles by display name
+  // Search profiles by display name or stable username
   const { data: profiles, error: profileError } = await supabase
     .from('profiles')
     .select('id, display_name')
-    .ilike('display_name', `%${escapedQuery}%`)
+    .or(`display_name.ilike.%${escapedQuery}%,username.ilike.%${escapedQuery}%`)
     .neq('id', currentUserId)
     .limit(10);
 

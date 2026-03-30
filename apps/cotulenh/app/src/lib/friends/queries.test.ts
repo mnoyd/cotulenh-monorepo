@@ -76,28 +76,31 @@ describe('searchUsers', () => {
     expect(results).toEqual([]);
   });
 
-  it('excludes self from search results', async () => {
-    const chain = chainable({ data: [], error: null });
-    const { supabase } = createMockSupabase();
-    supabase.from.mockReturnValue(chain);
-    // Make limit return profiles result
-    chain.limit = vi.fn().mockResolvedValue({
-      data: [{ id: 'user-2', display_name: 'Player Two' }],
-      error: null
-    });
-    // Make or (for friendships query) return empty
-    chain.or = vi.fn().mockReturnValue({
-      ...chain,
-      select: vi.fn().mockReturnValue({
-        ...chain,
-        or: vi.fn().mockResolvedValue({ data: [], error: null })
+  it('searches by display name or username and excludes self', async () => {
+    const { supabase, mockFrom } = createMockSupabase();
+    const profilesChain = {
+      select: vi.fn().mockReturnThis(),
+      or: vi.fn().mockReturnThis(),
+      neq: vi.fn().mockReturnThis(),
+      limit: vi.fn().mockResolvedValue({
+        data: [{ id: 'user-2', display_name: 'Player Two' }],
+        error: null
       })
-    });
+    };
+    const friendshipsChain = {
+      select: vi.fn().mockReturnThis(),
+      or: vi.fn().mockResolvedValue({ data: [], error: null })
+    };
+
+    mockFrom.mockReturnValueOnce(profilesChain).mockReturnValueOnce(friendshipsChain);
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await searchUsers(supabase as any, 'Player', 'user-1');
-    // Verify neq was called with self ID
-    expect(chain.neq).toHaveBeenCalledWith('id', 'user-1');
+
+    expect(profilesChain.or).toHaveBeenCalledWith(
+      'display_name.ilike.%Player%,username.ilike.%Player%'
+    );
+    expect(profilesChain.neq).toHaveBeenCalledWith('id', 'user-1');
   });
 
   it('returns empty array when no profiles match', async () => {

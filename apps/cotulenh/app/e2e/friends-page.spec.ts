@@ -4,6 +4,7 @@ import { getLocalSupabaseEnv } from '../scripts/local-supabase.mjs';
 
 type SeedUser = {
   id?: string;
+  username?: string;
   email: string;
   password: string;
   displayName: string;
@@ -36,12 +37,13 @@ async function seedConfirmedUser(user: SeedUser): Promise<string> {
   if (error) throw error;
   user.id = data.user.id;
 
-  const { error: profileError } = await admin
+  const { data: profile, error: profileError } = await admin
     .from('profiles')
-    .select('id')
+    .select('id, username')
     .eq('id', data.user.id)
     .single();
   if (profileError) throw profileError;
+  user.username = profile.username;
 
   return data.user.id;
 }
@@ -54,24 +56,35 @@ async function loginThroughUi(
   await page.goto(`/auth/login?redirectTo=${encodeURIComponent(redirectTo)}`);
   await expect(page.locator('#email')).toBeVisible();
   await expect(page.locator('#password')).toBeVisible();
+  const emailInput = page.locator('#email');
+  const passwordInput = page.locator('#password');
 
   for (let attempt = 0; attempt < 2; attempt += 1) {
-    await page.locator('#email').fill(user.email);
-    await page.locator('#password').fill(user.password);
+    await emailInput.click();
+    await emailInput.fill('');
+    await emailInput.pressSequentially(user.email);
+
+    await passwordInput.click();
+    await passwordInput.fill('');
+    await passwordInput.pressSequentially(user.password);
 
     const submitButton = page.locator('button[type="submit"]');
     if (!(await submitButton.isEnabled())) {
       await page.waitForTimeout(500);
-      await page.locator('#email').fill(user.email);
-      await page.locator('#password').fill(user.password);
+      await emailInput.click();
+      await emailInput.fill('');
+      await emailInput.pressSequentially(user.email);
+      await passwordInput.click();
+      await passwordInput.fill('');
+      await passwordInput.pressSequentially(user.password);
     }
-    await expect(page.locator('#email')).toHaveValue(user.email);
-    await expect(page.locator('#password')).toHaveValue(user.password);
-    await expect(submitButton).toBeEnabled();
+    await expect(emailInput).toHaveValue(user.email);
+    await expect(passwordInput).toHaveValue(user.password);
+    await expect.poll(async () => submitButton.isEnabled(), { timeout: 15_000 }).toBe(true);
     await submitButton.click();
 
     try {
-      await page.waitForURL(new RegExp(redirectTo.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')), {
+      await page.waitForURL((url) => url.pathname === redirectTo, {
         timeout: 15_000
       });
       await page.reload({ waitUntil: 'networkidle' });
@@ -90,10 +103,11 @@ async function reloadFriendsPage(page: import('@playwright/test').Page): Promise
 
 async function sendFriendRequestViaUi(
   page: import('@playwright/test').Page,
-  recipient: SeedUser
+  recipient: SeedUser,
+  query: string = recipient.displayName.slice(0, 10)
 ): Promise<void> {
   const searchInput = page.locator('.search-input');
-  await searchInput.fill(recipient.displayName.slice(0, 10));
+  await searchInput.fill(query);
 
   const searchResults = page.locator('.search-results');
   await expect(searchResults).toBeVisible();
@@ -106,6 +120,22 @@ async function sendFriendRequestViaUi(
 
   await expect(resultRow.locator('button')).toContainText(/Đang Chờ|Pending/);
   await expect(page.locator('[data-section="sent-requests"]')).toContainText(recipient.displayName);
+}
+
+async function sendFriendRequestFromProfileViaUi(
+  page: import('@playwright/test').Page,
+  recipient: SeedUser
+): Promise<void> {
+  if (!recipient.username) throw new Error('Recipient username is required');
+
+  await page.goto(`/@${recipient.username}`);
+  await page.waitForLoadState('networkidle');
+
+  const addFriendButton = page.locator('button', { hasText: /Thêm bạn|Add Friend/ });
+  await expect(addFriendButton).toBeVisible();
+  await addFriendButton.click();
+
+  await expect(page.locator('main')).toContainText(/Đã gửi lời mời|Request Sent/);
 }
 
 async function acceptFriendRequestViaUi(
@@ -246,6 +276,35 @@ test.describe('Friends Page', () => {
     }
   });
 
+  test('search by username and send friend request', async ({ browser }) => {
+    const senderContext = await browser.newContext();
+    const recipientContext = await browser.newContext();
+    const senderPage = await senderContext.newPage();
+    const recipientPage = await recipientContext.newPage();
+
+    try {
+      await loginThroughUi(recipientPage, userC);
+      await loginThroughUi(senderPage, userA);
+      await sendFriendRequestViaUi(senderPage, userC, userC.username!);
+
+      await expect
+        .poll(
+          async () => {
+            await reloadFriendsPage(recipientPage);
+            return (
+              (await recipientPage.locator('[data-section="incoming-requests"]').textContent()) ??
+              ''
+            );
+          },
+          { timeout: 20_000 }
+        )
+        .toContain(userA.displayName);
+    } finally {
+      await senderContext.close();
+      await recipientContext.close();
+    }
+  });
+
   test('accept incoming friend request and friend appears in list', async ({ browser }) => {
     const recipientContext = await browser.newContext();
     const senderContext = await browser.newContext();
@@ -301,6 +360,35 @@ test.describe('Friends Page', () => {
     // Friend B should no longer be in the list
     await expect(friendRow).not.toBeVisible();
     await ownerContext.close();
+  });
+
+  test('send friend request from /@username profile page', async ({ browser }) => {
+    const senderContext = await browser.newContext();
+    const recipientContext = await browser.newContext();
+    const senderPage = await senderContext.newPage();
+    const recipientPage = await recipientContext.newPage();
+
+    try {
+      await loginThroughUi(recipientPage, userB);
+      await loginThroughUi(senderPage, userA);
+      await sendFriendRequestFromProfileViaUi(senderPage, userB);
+
+      await expect
+        .poll(
+          async () => {
+            await reloadFriendsPage(recipientPage);
+            return (
+              (await recipientPage.locator('[data-section="incoming-requests"]').textContent()) ??
+              ''
+            );
+          },
+          { timeout: 20_000 }
+        )
+        .toContain(userA.displayName);
+    } finally {
+      await senderContext.close();
+      await recipientContext.close();
+    }
   });
 
   test('presence updates when second user comes online', async ({ browser }) => {
