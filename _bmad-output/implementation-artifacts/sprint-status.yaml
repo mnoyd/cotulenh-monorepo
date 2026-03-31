@@ -91,11 +91,11 @@ development_status:
   6-1-glicko-2-rating-system: done
   6-2-post-game-rating-display: done
   6-3-activity-leaderboard: done
-  epic-6-retrospective: optional
+  epic-6-retrospective: done
 
   # Epic 7: Game History & Review
-  epic-7: backlog
-  7-1-game-history-list: backlog
+  epic-7: in-progress
+  7-1-game-history-list: done
   7-2-game-replay-viewer: backlog
   7-3-pgn-export: backlog
   epic-7-retrospective: optional
