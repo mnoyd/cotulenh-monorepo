@@ -6,6 +6,17 @@ import { createClient } from '@/lib/supabase/browser';
 
 type ClientPhase = 'idle' | 'deploying' | 'playing' | 'ended';
 
+export type RatingChange = {
+  old: number;
+  new: number;
+  delta: number;
+};
+
+export type RatingChanges = {
+  red: RatingChange;
+  blue: RatingChange;
+};
+
 type GameStore = {
   engine: CoTuLenh | null;
   phase: ClientPhase;
@@ -19,6 +30,7 @@ type GameStore = {
   gameStatus: GameStatus | null;
   winner: 'red' | 'blue' | null;
   resultReason: string | null;
+  ratingChanges: RatingChanges | null;
   redPlayer: { id: string; name: string; rating: number; ratingGamesPlayed: number } | null;
   bluePlayer: { id: string; name: string; rating: number; ratingGamesPlayed: number } | null;
   deploySubmitted: boolean;
@@ -44,7 +56,8 @@ type GameStore = {
   handleGameEnd: (
     status: GameStatus,
     winner: 'red' | 'blue' | null,
-    resultReason: string | null
+    resultReason: string | null,
+    ratingChanges?: RatingChanges | null
   ) => void;
   deployMove: (from: string, to: string, pieceType?: string) => unknown | null;
   cancelDeploy: () => void;
@@ -151,6 +164,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   gameStatus: null,
   winner: null,
   resultReason: null,
+  ratingChanges: null,
   redPlayer: null,
   bluePlayer: null,
   deploySubmitted: false,
@@ -185,6 +199,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       myColor: gameData.my_color,
       winner: gameData.winner ?? null,
       resultReason: gameData.result_reason ?? null,
+      ratingChanges: null,
       redPlayer: {
         id: gameData.red_player.id,
         name: gameData.red_player.display_name,
@@ -342,11 +357,12 @@ export const useGameStore = create<GameStore>((set, get) => ({
     set({ clocks: { red, blue }, lastSyncTime: Date.now() });
   },
 
-  handleGameEnd: (status, winner, resultReason) => {
+  handleGameEnd: (status, winner, resultReason, ratingChanges = null) => {
     set({
       gameStatus: status,
       winner,
       resultReason,
+      ratingChanges,
       phase: 'ended',
       clockRunning: false,
       pendingDrawOffer: null,
@@ -853,6 +869,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       gameStatus: null,
       winner: null,
       resultReason: null,
+      ratingChanges: null,
       redPlayer: null,
       bluePlayer: null,
       deploySubmitted: false,

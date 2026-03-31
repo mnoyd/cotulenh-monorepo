@@ -103,6 +103,34 @@ describe('useGameStore - end state', () => {
       expect(state.resultReason).toBe('fifty_move_rule');
     });
 
+    it('stores rating changes from a rated game end payload', () => {
+      useGameStore.getState().initializeGame('game-end-1', mockPlayingGameData);
+
+      useGameStore.getState().handleGameEnd('checkmate', 'red', null, {
+        red: { old: 1500, new: 1512, delta: 12 },
+        blue: { old: 1600, new: 1588, delta: -12 }
+      });
+
+      expect(useGameStore.getState().ratingChanges).toEqual({
+        red: { old: 1500, new: 1512, delta: 12 },
+        blue: { old: 1600, new: 1588, delta: -12 }
+      });
+    });
+
+    it('clears rating changes for a casual game end payload', () => {
+      useGameStore.getState().initializeGame('game-end-1', mockPlayingGameData);
+      useGameStore.setState({
+        ratingChanges: {
+          red: { old: 1500, new: 1512, delta: 12 },
+          blue: { old: 1600, new: 1588, delta: -12 }
+        }
+      });
+
+      useGameStore.getState().handleGameEnd('draw', null, null, null);
+
+      expect(useGameStore.getState().ratingChanges).toBeNull();
+    });
+
     it('stops clock running on game end', () => {
       useGameStore.getState().initializeGame('game-end-1', mockPlayingGameData);
       useGameStore.getState().initializeEngine('some-fen');
@@ -161,6 +189,7 @@ describe('useGameStore - end state', () => {
       const state = useGameStore.getState();
       expect(state.winner).toBeNull();
       expect(state.resultReason).toBeNull();
+      expect(state.ratingChanges).toBeNull();
       expect(state.phase).toBe('idle');
       expect(state.timeoutClaimSent).toBe(false);
     });

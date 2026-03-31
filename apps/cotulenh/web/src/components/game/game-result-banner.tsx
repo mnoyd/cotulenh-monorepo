@@ -3,6 +3,9 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
 
 import type { GameStatus } from '@/lib/types/game';
+import type { RatingChanges } from '@/stores/game-store';
+
+import { RatingChangeDisplay } from '@/components/profile/rating-change-display';
 
 type RematchStatus = 'idle' | 'sent' | 'received' | 'accepted' | 'declined' | 'expired';
 
@@ -10,6 +13,8 @@ type GameResultBannerProps = {
   status: GameStatus;
   winner: 'red' | 'blue' | null;
   myColor: 'red' | 'blue';
+  ratingChanges?: RatingChanges | null;
+  isRated?: boolean;
   resultReason?: string | null;
   rematchStatus?: RematchStatus;
   onNewGame: () => void;
@@ -49,6 +54,8 @@ export function GameResultBanner({
   status,
   winner,
   myColor,
+  ratingChanges,
+  isRated = false,
   resultReason,
   rematchStatus = 'idle',
   onNewGame,
@@ -143,6 +150,7 @@ export function GameResultBanner({
   const methodText = getMethodText(status, resultReason);
   const isWin = winner === myColor;
   const isDraw = winner === null;
+  const myRatingChange = ratingChanges ? ratingChanges[myColor] : null;
 
   return (
     <div
@@ -182,6 +190,8 @@ export function GameResultBanner({
             {methodText}
           </p>
         ) : null}
+
+        {isRated && myRatingChange ? <RatingChangeDisplay change={myRatingChange} /> : null}
 
         {/* Action buttons */}
         <div className="mt-[var(--space-4)] flex flex-col gap-[var(--space-2)] sm:flex-row sm:justify-center">

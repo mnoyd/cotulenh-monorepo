@@ -109,7 +109,11 @@ describe('useGameChannel', () => {
           payload: {
             status: 'timeout',
             winner: 'red',
-            result_reason: null
+            result_reason: null,
+            rating_changes: {
+              red: { old: 1500, new: 1512, delta: 12 },
+              blue: { old: 1500, new: 1488, delta: -12 }
+            }
           },
           seq: 11
         }
@@ -118,7 +122,10 @@ describe('useGameChannel', () => {
 
     await Promise.resolve();
 
-    expect(handleGameEnd).toHaveBeenCalledWith('timeout', 'red', null);
+    expect(handleGameEnd).toHaveBeenCalledWith('timeout', 'red', null, {
+      red: { old: 1500, new: 1512, delta: 12 },
+      blue: { old: 1500, new: 1488, delta: -12 }
+    });
   });
 
   it('processes draw offer lifecycle events', async () => {

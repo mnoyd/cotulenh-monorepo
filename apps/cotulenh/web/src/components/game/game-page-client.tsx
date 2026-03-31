@@ -49,6 +49,7 @@ export function GamePageClient({ gameData }: GamePageClientProps) {
   const winner = useGameStore((s) => s.winner);
   const gameStatus = useGameStore((s) => s.gameStatus);
   const resultReason = useGameStore((s) => s.resultReason);
+  const ratingChanges = useGameStore((s) => s.ratingChanges);
   const pendingDrawOffer = useGameStore((s) => s.pendingDrawOffer);
   const pendingTakeback = useGameStore((s) => s.pendingTakeback);
   const resign = useGameStore((s) => s.resign);
@@ -362,6 +363,8 @@ export function GamePageClient({ gameData }: GamePageClientProps) {
               status={gameStatus}
               winner={winner}
               myColor={myColor ?? 'red'}
+              ratingChanges={ratingChanges}
+              isRated={gameData.is_rated}
               resultReason={resultReason}
               rematchStatus={rematchStatus}
               onNewGame={handleNewGame}

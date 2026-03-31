@@ -5,6 +5,8 @@ import { useEffect, useRef, useCallback } from 'react';
 import { getGame } from '@/lib/actions/game';
 import { createClient } from '@/lib/supabase/browser';
 import { useGameStore } from '@/stores/game-store';
+import type { GameStatus } from '@/lib/types/game';
+import type { RatingChanges } from '@/stores/game-store';
 
 type GameEventEnvelope = {
   type:
@@ -120,12 +122,13 @@ export function useGameChannel(gameId: string | null) {
           break;
         }
         case 'game_end': {
-          const { status, winner, result_reason } = eventPayload as {
-            status: string;
+          const { status, winner, result_reason, rating_changes } = eventPayload as {
+            status: GameStatus;
             winner: 'red' | 'blue' | null;
             result_reason: string | null;
+            rating_changes?: RatingChanges | null;
           };
-          handleGameEnd(status as import('@/lib/types/game').GameStatus, winner, result_reason);
+          handleGameEnd(status, winner, result_reason, rating_changes ?? null);
           break;
         }
         case 'draw_offer': {

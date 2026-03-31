@@ -291,6 +291,29 @@ describe('GamePageClient', () => {
     vi.useRealTimers();
   });
 
+  it('shows rating change details in the result banner for rated games', () => {
+    const endedGameData: GameData = {
+      ...mockGameData,
+      status: 'checkmate',
+      winner: 'red',
+      game_state: {
+        ...mockGameData.game_state,
+        phase: 'playing'
+      }
+    };
+
+    render(<GamePageClient gameData={endedGameData} />);
+
+    act(() => {
+      useGameStore.getState().handleGameEnd('checkmate', 'red', null, {
+        red: { old: 1492, new: 1504, delta: 12 },
+        blue: { old: 1510, new: 1498, delta: -12 }
+      });
+    });
+
+    expect(screen.getByTestId('rating-change-display')).toBeDefined();
+  });
+
   it('sends a best-effort rematch decline when unmounting with a received offer', () => {
     const endedGameData: GameData = {
       ...mockGameData,

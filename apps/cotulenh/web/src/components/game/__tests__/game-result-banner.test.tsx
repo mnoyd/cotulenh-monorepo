@@ -4,10 +4,16 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { GameResultBanner } from '../game-result-banner';
 
 describe('GameResultBanner', () => {
+  const ratingChanges = {
+    red: { old: 1492, new: 1504, delta: 12 },
+    blue: { old: 1510, new: 1498, delta: -12 }
+  };
+
   const defaultProps = {
     status: 'checkmate' as const,
     winner: 'red' as const,
     myColor: 'red' as const,
+    isRated: true,
     resultReason: null,
     onNewGame: vi.fn(),
     onDismiss: vi.fn()
@@ -114,6 +120,19 @@ describe('GameResultBanner', () => {
     render(<GameResultBanner {...defaultProps} status="resign" winner="blue" />);
     expect(screen.getByTestId('game-result-method').textContent).toBe('Đầu hàng');
     expect(screen.getByTestId('game-result-outcome').textContent).toBe('Bạn thua!');
+  });
+
+  it('shows the current player rating delta for rated games', () => {
+    render(<GameResultBanner {...defaultProps} ratingChanges={ratingChanges} />);
+
+    expect(screen.getByTestId('rating-change-display')).toBeDefined();
+    expect(screen.getByTestId('rating-change-old').textContent).toBe('1492');
+  });
+
+  it('hides the rating delta for casual games', () => {
+    render(<GameResultBanner {...defaultProps} isRated={false} ratingChanges={ratingChanges} />);
+
+    expect(screen.queryByTestId('rating-change-display')).toBeNull();
   });
 
   it('renders mutual agreement draw method text', () => {

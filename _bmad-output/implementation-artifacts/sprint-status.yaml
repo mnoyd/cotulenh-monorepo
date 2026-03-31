@@ -89,7 +89,7 @@ development_status:
   # Epic 6: Ratings & Leaderboard
   epic-6: in-progress
   6-1-glicko-2-rating-system: done
-  6-2-post-game-rating-display: backlog
+  6-2-post-game-rating-display: done
   6-3-activity-leaderboard: backlog
   epic-6-retrospective: optional
 
