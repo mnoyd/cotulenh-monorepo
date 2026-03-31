@@ -7,6 +7,7 @@ import type { GameData } from '@/lib/types/game';
 import type { Dests } from '@cotulenh/board';
 import { useGameStore } from '@/stores/game-store';
 import { useGameChannel } from '@/hooks/use-game-channel';
+import { useReplayEngine } from '@/hooks/use-replay-engine';
 
 import { BoardContainer } from './board-container';
 import { PlayerInfoBar } from './player-info-bar';
@@ -76,9 +77,64 @@ export function GamePageClient({ gameData }: GamePageClientProps) {
   const [moveRejected, setMoveRejected] = useState(false);
   const [errorToast, setErrorToast] = useState<string | null>(null);
   const rematchStatusRef = useRef(rematchStatus);
+  const pageRef = useRef<HTMLDivElement>(null);
 
-  // Subscribe to realtime game events
-  useGameChannel(gameId);
+  // Review mode: completed games use replay engine instead of live state
+  const isReviewMode = gameData.status !== 'started';
+  const replay = useReplayEngine(isReviewMode ? gameData.game_state.move_history : []);
+
+  // Subscribe to realtime game events (skip in review mode)
+  useGameChannel(isReviewMode ? null : gameId);
+
+  // Keyboard navigation for review mode
+  useEffect(() => {
+    if (!isReviewMode) return;
+
+    pageRef.current?.focus();
+  }, [isReviewMode, gameData.id]);
+
+  // Keyboard navigation for review mode (when game page is focused)
+  useEffect(() => {
+    if (!isReviewMode) return;
+
+    const pageEl = pageRef.current;
+    if (!pageEl) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.tagName === 'SELECT' ||
+          target.isContentEditable)
+      ) {
+        return;
+      }
+
+      switch (e.key) {
+        case 'ArrowLeft':
+          e.preventDefault();
+          replay.goPrev();
+          break;
+        case 'ArrowRight':
+          e.preventDefault();
+          replay.goNext();
+          break;
+        case 'Home':
+          e.preventDefault();
+          replay.goFirst();
+          break;
+        case 'End':
+          e.preventDefault();
+          replay.goLast();
+          break;
+      }
+    };
+
+    pageEl.addEventListener('keydown', handleKeyDown);
+    return () => pageEl.removeEventListener('keydown', handleKeyDown);
+  }, [isReviewMode, replay.goPrev, replay.goNext, replay.goFirst, replay.goLast]);
 
   useEffect(() => {
     initializeGame(gameData.id, gameData);
@@ -257,14 +313,11 @@ export function GamePageClient({ gameData }: GamePageClientProps) {
 
   // Compute last move for highlight
   const lastMove = useMemo<[string, string] | undefined>(() => {
-    if (moveHistory.length === 0) return undefined;
-    const last = moveHistory[moveHistory.length - 1];
-    // SAN moves like "e2e4" — extract from/to squares (first 2 chars each)
-    if (last && last.length >= 4) {
-      return [last.slice(0, 2), last.slice(2, 4)];
-    }
-    return undefined;
-  }, [moveHistory]);
+    // In review mode, use replay engine's last move SAN
+    const san = isReviewMode ? replay.lastMoveSan : moveHistory[moveHistory.length - 1];
+    if (!san || san.length < 4) return undefined;
+    return [san.slice(0, 2), san.slice(2, 4)];
+  }, [isReviewMode, replay.lastMoveSan, moveHistory]);
 
   const topPlayer = orientation === 'red' ? bluePlayer : redPlayer;
   const bottomPlayer = orientation === 'red' ? redPlayer : bluePlayer;
@@ -312,7 +365,11 @@ export function GamePageClient({ gameData }: GamePageClientProps) {
   }, [isPlaying, myColor, clockRunning, getDisplayClocks, claimTimeout]);
 
   return (
-    <div className="flex h-full flex-col lg:flex-row">
+    <div
+      ref={pageRef}
+      tabIndex={isReviewMode ? 0 : undefined}
+      className="flex h-full flex-col lg:flex-row"
+    >
       {/* Board section */}
       <div className="flex flex-1 shrink-0 flex-col items-center justify-center p-[var(--space-2)] lg:p-[var(--space-4)]">
         {/* Top player bar */}
@@ -344,17 +401,19 @@ export function GamePageClient({ gameData }: GamePageClientProps) {
         {/* Board */}
         <div className={`${boardTrackClass} relative shrink-0`}>
           <BoardContainer
-            fen={boardFen}
+            fen={isReviewMode ? replay.currentFen : boardFen}
             orientation={orientation}
-            viewOnly={isDeploying ? deploySubmitted : !isMyTurn}
+            viewOnly={isReviewMode ? true : isDeploying ? deploySubmitted : !isMyTurn}
             onMove={
-              isDeploying && !deploySubmitted
-                ? handleDeployMove
-                : isPlaying && isMyTurn
-                  ? handlePlayingMove
-                  : undefined
+              isReviewMode
+                ? undefined
+                : isDeploying && !deploySubmitted
+                  ? handleDeployMove
+                  : isPlaying && isMyTurn
+                    ? handlePlayingMove
+                    : undefined
             }
-            legalMoves={legalMovesMap}
+            legalMoves={isReviewMode ? undefined : legalMovesMap}
             lastMove={lastMove}
             moveRejected={moveRejected}
           />
@@ -465,7 +524,7 @@ export function GamePageClient({ gameData }: GamePageClientProps) {
           </div>
         ) : (
           <GameRightPanel
-            moveHistory={moveHistory}
+            moveHistory={isReviewMode ? gameData.game_state.move_history : moveHistory}
             phase={phase}
             myColor={myColor}
             pendingDrawOffer={pendingDrawOffer}
@@ -479,6 +538,19 @@ export function GamePageClient({ gameData }: GamePageClientProps) {
             onAcceptTakeback={acceptTakeback}
             onDeclineTakeback={declineTakeback}
             onExpireTakeback={expireTakeback}
+            isReviewMode={isReviewMode}
+            currentMoveIndex={replay.currentIndex}
+            totalMoves={replay.totalMoves}
+            onNavigate={(action) => {
+              const actions = {
+                first: replay.goFirst,
+                prev: replay.goPrev,
+                next: replay.goNext,
+                last: replay.goLast
+              };
+              actions[action]();
+            }}
+            onMoveClick={replay.goTo}
           />
         )}
       </div>

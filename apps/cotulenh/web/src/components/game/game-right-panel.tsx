@@ -20,6 +20,11 @@ type GameRightPanelProps = {
   onAcceptTakeback: () => void;
   onDeclineTakeback: () => void;
   onExpireTakeback: () => void;
+  isReviewMode?: boolean;
+  currentMoveIndex?: number;
+  totalMoves?: number;
+  onNavigate?: (action: 'first' | 'prev' | 'next' | 'last') => void;
+  onMoveClick?: (index: number) => void;
   className?: string;
 };
 
@@ -38,6 +43,11 @@ export function GameRightPanel({
   onAcceptTakeback,
   onDeclineTakeback,
   onExpireTakeback,
+  isReviewMode,
+  currentMoveIndex,
+  totalMoves,
+  onNavigate,
+  onMoveClick,
   className
 }: GameRightPanelProps) {
   const hasMoves = moveHistory.length > 0;
@@ -60,13 +70,19 @@ export function GameRightPanel({
 
         <TabsContent value="moves" className="flex min-h-0 flex-1 flex-col">
           {/* Move list area */}
-          <MoveList moveHistory={moveHistory} className="flex-1" />
+          <MoveList
+            moveHistory={moveHistory}
+            className="flex-1"
+            currentMoveIndex={isReviewMode ? currentMoveIndex : undefined}
+            onMoveClick={isReviewMode ? onMoveClick : undefined}
+          />
 
           {/* Move navigation */}
           <div className="flex shrink-0 items-center justify-center gap-[var(--space-1)] border-t border-[var(--color-border)] p-[var(--space-2)]">
             <button
               type="button"
-              disabled={!hasMoves}
+              disabled={!hasMoves || (isReviewMode && currentMoveIndex === 0)}
+              onClick={onNavigate ? () => onNavigate('first') : undefined}
               className="min-h-[44px] min-w-[44px] border border-[var(--color-border)] text-[var(--color-text)] hover:bg-[var(--color-surface-elevated)] disabled:opacity-50"
               aria-label="Di den nuoc dau tien"
             >
@@ -74,7 +90,8 @@ export function GameRightPanel({
             </button>
             <button
               type="button"
-              disabled={!hasMoves}
+              disabled={!hasMoves || (isReviewMode && currentMoveIndex === 0)}
+              onClick={onNavigate ? () => onNavigate('prev') : undefined}
               className="min-h-[44px] min-w-[44px] border border-[var(--color-border)] text-[var(--color-text)] hover:bg-[var(--color-surface-elevated)] disabled:opacity-50"
               aria-label="Nuoc truoc"
             >
@@ -82,7 +99,8 @@ export function GameRightPanel({
             </button>
             <button
               type="button"
-              disabled={!hasMoves}
+              disabled={!hasMoves || (isReviewMode && currentMoveIndex === totalMoves)}
+              onClick={onNavigate ? () => onNavigate('next') : undefined}
               className="min-h-[44px] min-w-[44px] border border-[var(--color-border)] text-[var(--color-text)] hover:bg-[var(--color-surface-elevated)] disabled:opacity-50"
               aria-label="Nuoc tiep"
             >
@@ -90,7 +108,8 @@ export function GameRightPanel({
             </button>
             <button
               type="button"
-              disabled={!hasMoves}
+              disabled={!hasMoves || (isReviewMode && currentMoveIndex === totalMoves)}
+              onClick={onNavigate ? () => onNavigate('last') : undefined}
               className="min-h-[44px] min-w-[44px] border border-[var(--color-border)] text-[var(--color-text)] hover:bg-[var(--color-surface-elevated)] disabled:opacity-50"
               aria-label="Di den nuoc cuoi cung"
             >
@@ -98,23 +117,25 @@ export function GameRightPanel({
             </button>
           </div>
 
-          {/* Game controls */}
-          <GameControls
-            phase={phase}
-            myColor={myColor}
-            pendingDrawOffer={pendingDrawOffer}
-            pendingTakeback={pendingTakeback}
-            moveHistoryLength={moveHistory.length}
-            onResign={onResign}
-            onOfferDraw={onOfferDraw}
-            onAcceptDraw={onAcceptDraw}
-            onDeclineDraw={onDeclineDraw}
-            onExpireDrawOffer={onExpireDrawOffer}
-            onRequestTakeback={onRequestTakeback}
-            onAcceptTakeback={onAcceptTakeback}
-            onDeclineTakeback={onDeclineTakeback}
-            onExpireTakeback={onExpireTakeback}
-          />
+          {/* Game controls — hidden in review mode */}
+          {isReviewMode ? null : (
+            <GameControls
+              phase={phase}
+              myColor={myColor}
+              pendingDrawOffer={pendingDrawOffer}
+              pendingTakeback={pendingTakeback}
+              moveHistoryLength={moveHistory.length}
+              onResign={onResign}
+              onOfferDraw={onOfferDraw}
+              onAcceptDraw={onAcceptDraw}
+              onDeclineDraw={onDeclineDraw}
+              onExpireDrawOffer={onExpireDrawOffer}
+              onRequestTakeback={onRequestTakeback}
+              onAcceptTakeback={onAcceptTakeback}
+              onDeclineTakeback={onDeclineTakeback}
+              onExpireTakeback={onExpireTakeback}
+            />
+          )}
         </TabsContent>
 
         <TabsContent value="chat" className="flex-1 p-[var(--space-3)]">

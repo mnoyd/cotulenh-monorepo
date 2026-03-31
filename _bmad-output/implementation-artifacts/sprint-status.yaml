@@ -96,7 +96,7 @@ development_status:
   # Epic 7: Game History & Review
   epic-7: in-progress
   7-1-game-history-list: done
-  7-2-game-replay-viewer: backlog
+  7-2-game-replay-viewer: done
   7-3-pgn-export: backlog
   epic-7-retrospective: optional
 

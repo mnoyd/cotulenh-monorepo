@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { act, render, screen } from '@testing-library/react';
+import { act, render, screen, fireEvent } from '@testing-library/react';
 
 import type { GameData } from '@/lib/types/game';
 import { useGameStore } from '@/stores/game-store';
@@ -32,7 +32,7 @@ vi.mock('@/hooks/use-board', () => ({
 // Mock CoTuLenh engine
 vi.mock('@cotulenh/core', () => ({
   CoTuLenh: vi.fn().mockImplementation(() => ({
-    move: vi.fn(),
+    move: vi.fn().mockReturnValue({ san: 'e2e4' }),
     undo: vi.fn(),
     commitSession: vi.fn().mockReturnValue({ success: false }),
     cancelSession: vi.fn(),
@@ -312,6 +312,75 @@ describe('GamePageClient', () => {
     });
 
     expect(screen.getByTestId('rating-change-display')).toBeDefined();
+  });
+
+  describe('review mode', () => {
+    const completedGameData: GameData = {
+      ...mockGameData,
+      status: 'checkmate',
+      winner: 'red',
+      game_state: {
+        ...mockGameData.game_state,
+        phase: 'playing',
+        move_history: ['e2e4', 'd7d5']
+      }
+    };
+
+    it('renders board in view-only mode for completed games', () => {
+      render(<GamePageClient gameData={completedGameData} />);
+      expect(screen.getByTestId('board-container')).toBeDefined();
+    });
+
+    it('hides game controls (resign/draw/takeback) in review mode', () => {
+      render(<GamePageClient gameData={completedGameData} />);
+      // GameControls resign button should not be present
+      expect(screen.queryByTestId('resign-button')).toBeNull();
+    });
+
+    it('shows navigation buttons in review mode', () => {
+      render(<GamePageClient gameData={completedGameData} />);
+      expect(screen.getByLabelText('Di den nuoc dau tien')).toBeDefined();
+      expect(screen.getByLabelText('Nuoc truoc')).toBeDefined();
+      expect(screen.getByLabelText('Nuoc tiep')).toBeDefined();
+      expect(screen.getByLabelText('Di den nuoc cuoi cung')).toBeDefined();
+    });
+
+    it('shows move list with moves from game data', () => {
+      render(<GamePageClient gameData={completedGameData} />);
+      expect(screen.getByText('e2e4')).toBeDefined();
+      expect(screen.getByText('d7d5')).toBeDefined();
+    });
+
+    it('supports keyboard navigation in review mode (Arrow/Home/End)', async () => {
+      const { container } = render(<GamePageClient gameData={completedGameData} />);
+      const page = container.firstElementChild as HTMLElement;
+
+      await act(async () => {
+        await Promise.resolve();
+      });
+
+      const leftEvent = new KeyboardEvent('keydown', {
+        key: 'ArrowLeft',
+        bubbles: true,
+        cancelable: true
+      });
+      let preventedLeft = false;
+      act(() => {
+        preventedLeft = !page.dispatchEvent(leftEvent);
+      });
+      expect(preventedLeft).toBe(true);
+      expect(screen.getByText('e2e4').className).toContain('font-bold');
+
+      act(() => {
+        fireEvent.keyDown(page, { key: 'Home' });
+      });
+      expect(screen.getByText('Vi tri ban dau').className).toContain('font-bold');
+
+      act(() => {
+        fireEvent.keyDown(page, { key: 'End' });
+      });
+      expect(screen.getByText('d7d5').className).toContain('font-bold');
+    });
   });
 
   it('sends a best-effort rematch decline when unmounting with a received offer', () => {
