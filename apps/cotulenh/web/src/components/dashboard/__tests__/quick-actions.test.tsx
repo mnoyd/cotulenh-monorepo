@@ -21,7 +21,7 @@ describe('QuickActions', () => {
   it('has correct hrefs', () => {
     render(<QuickActions />);
     const links = screen.getAllByRole('link');
-    expect(links[0]).toHaveAttribute('href', '/play');
+    expect(links[0]).toHaveAttribute('href', '/game/ai');
     expect(links[1]).toHaveAttribute('href', '/play');
     expect(links[2]).toHaveAttribute('href', '/play');
     expect(links[3]).toHaveAttribute('href', '/learn');

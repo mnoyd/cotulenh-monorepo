@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 
+import type { GameData } from '@/lib/types/game';
 import { GameRightPanel } from '../game-right-panel';
 
 const baseProps = {
@@ -18,6 +19,25 @@ const baseProps = {
   onAcceptTakeback: vi.fn(),
   onDeclineTakeback: vi.fn(),
   onExpireTakeback: vi.fn()
+};
+
+const gameData: GameData = {
+  id: 'game-1',
+  status: 'checkmate',
+  red_player: { id: 'red', display_name: 'Nguoi choi Do', rating: 1500 },
+  blue_player: { id: 'blue', display_name: 'Nguoi choi Xanh', rating: 1500 },
+  my_color: 'red',
+  is_rated: true,
+  created_at: '2026-04-01T00:00:00Z',
+  winner: 'red',
+  result_reason: 'checkmate',
+  game_state: {
+    move_history: ['a1a2'],
+    fen: 'fen',
+    phase: 'playing',
+    clocks: { red: 100, blue: 100 },
+    pending_action: null
+  }
 };
 
 describe('GameRightPanel', () => {
@@ -47,6 +67,28 @@ describe('GameRightPanel', () => {
       />
     );
     expect(screen.queryByTestId('resign-button')).toBeNull();
+  });
+
+  it('shows PGN export controls in review mode when game data is provided', () => {
+    render(
+      <GameRightPanel
+        {...baseProps}
+        isReviewMode
+        gameData={gameData}
+        currentMoveIndex={1}
+        totalMoves={1}
+        onNavigate={vi.fn()}
+      />
+    );
+
+    expect(screen.getByTestId('pgn-export-controls')).toBeDefined();
+    expect(screen.getByText('Sao chep PGN')).toBeDefined();
+    expect(screen.getByText('Tai xuong')).toBeDefined();
+  });
+
+  it('does not show PGN export controls in live mode', () => {
+    render(<GameRightPanel {...baseProps} gameData={gameData} />);
+    expect(screen.queryByTestId('pgn-export-controls')).toBeNull();
   });
 
   describe('review mode navigation buttons', () => {

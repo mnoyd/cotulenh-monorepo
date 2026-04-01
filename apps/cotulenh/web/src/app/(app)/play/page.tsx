@@ -12,8 +12,8 @@ export default function PlayPage() {
     <PlaceholderPage
       title="Sảnh chơi đang được hoàn thiện"
       description="Bạn sẽ sớm có thể tạo và nhận thách đấu trực tiếp từ màn hình này."
-      primaryAction={{ href: '/dashboard', label: 'Về bảng điều khiển' }}
-      secondaryAction={{ href: '/learn', label: 'Tiếp tục học chơi' }}
+      primaryAction={{ href: '/game/ai', label: 'Chơi với AI' }}
+      secondaryAction={{ href: '/dashboard', label: 'Về bảng điều khiển' }}
     />
   );
 }

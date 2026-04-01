@@ -97,12 +97,12 @@ development_status:
   epic-7: in-progress
   7-1-game-history-list: done
   7-2-game-replay-viewer: done
-  7-3-pgn-export: backlog
+  7-3-pgn-export: done
   epic-7-retrospective: optional
 
   # Epic 8: AI Opponent & Arena Tournaments
-  epic-8: backlog
-  8-1-ai-opponent: backlog
+  epic-8: in-progress
+  8-1-ai-opponent: done
   8-2-arena-tournament-lobby-registration: backlog
   8-3-arena-tournament-gameplay-live-standings: backlog
   epic-8-retrospective: optional

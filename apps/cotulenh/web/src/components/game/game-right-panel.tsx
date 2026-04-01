@@ -1,9 +1,11 @@
 'use client';
 
+import type { GameData } from '@/lib/types/game';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils/cn';
 import { MoveList } from './move-list';
 import { GameControls } from './game-controls';
+import { PgnExportControls } from './pgn-export-controls';
 
 type GameRightPanelProps = {
   moveHistory: string[];
@@ -25,6 +27,10 @@ type GameRightPanelProps = {
   totalMoves?: number;
   onNavigate?: (action: 'first' | 'prev' | 'next' | 'last') => void;
   onMoveClick?: (index: number) => void;
+  gameData?: GameData;
+  onPgnCopySuccess?: (message: string) => void;
+  onPgnError?: (message: string) => void;
+  isAiGame?: boolean;
   className?: string;
 };
 
@@ -48,6 +54,10 @@ export function GameRightPanel({
   totalMoves,
   onNavigate,
   onMoveClick,
+  gameData,
+  onPgnCopySuccess,
+  onPgnError,
+  isAiGame,
   className
 }: GameRightPanelProps) {
   const hasMoves = moveHistory.length > 0;
@@ -117,8 +127,29 @@ export function GameRightPanel({
             </button>
           </div>
 
-          {/* Game controls — hidden in review mode */}
-          {isReviewMode ? null : (
+          {/* PGN export controls — review mode only */}
+          {isReviewMode && gameData ? (
+            <PgnExportControls
+              gameData={gameData}
+              onCopySuccess={onPgnCopySuccess}
+              onError={onPgnError}
+            />
+          ) : null}
+
+          {/* Game controls — hidden in review mode, resign-only for AI */}
+          {isReviewMode ? null : isAiGame ? (
+            <div className="shrink-0 border-t border-[var(--color-border)] p-[var(--space-2)]">
+              <button
+                type="button"
+                data-testid="resign-button"
+                disabled={phase !== 'playing'}
+                onClick={onResign}
+                className="min-h-[44px] w-full border border-[var(--color-border)] text-[var(--color-text)] hover:bg-[var(--color-surface-elevated)] disabled:opacity-50"
+              >
+                Đầu hàng
+              </button>
+            </div>
+          ) : (
             <GameControls
               phase={phase}
               myColor={myColor}

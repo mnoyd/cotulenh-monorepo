@@ -343,6 +343,8 @@ describe('GamePageClient', () => {
       expect(screen.getByLabelText('Nuoc truoc')).toBeDefined();
       expect(screen.getByLabelText('Nuoc tiep')).toBeDefined();
       expect(screen.getByLabelText('Di den nuoc cuoi cung')).toBeDefined();
+      expect(screen.getByText('Sao chep PGN')).toBeDefined();
+      expect(screen.getByText('Tai xuong')).toBeDefined();
     });
 
     it('shows move list with moves from game data', () => {

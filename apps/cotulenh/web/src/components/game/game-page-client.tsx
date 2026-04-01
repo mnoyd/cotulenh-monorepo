@@ -76,6 +76,7 @@ export function GamePageClient({ gameData }: GamePageClientProps) {
   const [boardFen, setBoardFen] = useState(gameData.game_state.fen);
   const [moveRejected, setMoveRejected] = useState(false);
   const [errorToast, setErrorToast] = useState<string | null>(null);
+  const [successToast, setSuccessToast] = useState<string | null>(null);
   const rematchStatusRef = useRef(rematchStatus);
   const pageRef = useRef<HTMLDivElement>(null);
 
@@ -152,6 +153,16 @@ export function GamePageClient({ gameData }: GamePageClientProps) {
     rematchStatusRef.current = rematchStatus;
   }, [rematchStatus]);
 
+  const showErrorToast = useCallback((message: string) => {
+    setErrorToast(message);
+    setTimeout(() => setErrorToast(null), 3000);
+  }, []);
+
+  const showSuccessToast = useCallback((message: string) => {
+    setSuccessToast(message);
+    setTimeout(() => setSuccessToast(null), 3000);
+  }, []);
+
   const handleDeployMove = useCallback(
     (orig: string, dest: string) => {
       const selectedPieceType = selectedPiece?.split('-')[0];
@@ -189,26 +200,24 @@ export function GamePageClient({ gameData }: GamePageClientProps) {
       const result = await storeMakeMove(san);
       if (!result.success) {
         setMoveRejected(true);
-        setErrorToast(result.error ?? 'Nuoc di khong hop le');
+        showErrorToast(result.error ?? 'Nuoc di khong hop le');
         setTimeout(() => setMoveRejected(false), 200);
-        setTimeout(() => setErrorToast(null), 3000);
       }
       if (engine) {
         setBoardFen(engine.fen());
       }
     },
-    [storeMakeMove, engine]
+    [storeMakeMove, engine, showErrorToast]
   );
 
   // Show error toast when moveError changes
   useEffect(() => {
     if (moveError) {
-      setErrorToast(moveError);
+      showErrorToast(moveError);
       setMoveRejected(true);
       setTimeout(() => setMoveRejected(false), 200);
-      setTimeout(() => setErrorToast(null), 3000);
     }
-  }, [moveError]);
+  }, [moveError, showErrorToast]);
 
   const isDeploying = phase === 'deploying';
   const isPlaying = phase === 'playing';
@@ -440,8 +449,20 @@ export function GamePageClient({ gameData }: GamePageClientProps) {
           <div
             className={`${boardTrackClass} mt-[var(--space-1)] rounded bg-red-600/90 px-[var(--space-3)] py-[var(--space-2)] text-center text-[var(--text-sm)] text-white`}
             role="alert"
+            data-testid="error-toast"
           >
             {errorToast}
+          </div>
+        ) : null}
+
+        {/* Success toast */}
+        {successToast ? (
+          <div
+            className={`${boardTrackClass} mt-[var(--space-1)] rounded bg-teal-600/90 px-[var(--space-3)] py-[var(--space-2)] text-center text-[var(--text-sm)] text-white`}
+            role="status"
+            data-testid="success-toast"
+          >
+            {successToast}
           </div>
         ) : null}
 
@@ -551,6 +572,9 @@ export function GamePageClient({ gameData }: GamePageClientProps) {
               actions[action]();
             }}
             onMoveClick={replay.goTo}
+            gameData={gameData}
+            onPgnCopySuccess={showSuccessToast}
+            onPgnError={showErrorToast}
           />
         )}
       </div>

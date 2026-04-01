@@ -2,7 +2,7 @@ import { BookOpen, Plus, Swords, Trophy } from 'lucide-react';
 import Link from 'next/link';
 
 const actions = [
-  { href: '/play', label: 'Chơi với AI', icon: Swords },
+  { href: '/game/ai', label: 'Chơi với AI', icon: Swords },
   { href: '/play', label: 'Tạo ván đấu', icon: Plus },
   { href: '/play', label: 'Giải đấu', icon: Trophy },
   { href: '/learn', label: 'Học', icon: BookOpen }
