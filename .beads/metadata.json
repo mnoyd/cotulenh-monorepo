@@ -2,5 +2,7 @@
   "database": "dolt",
   "backend": "dolt",
   "dolt_mode": "server",
-  "dolt_database": "cotulenh_monorepo"
+  "dolt_server_port": 43861,
+  "dolt_database": "cotulenh_monorepo",
+  "project_id": "36643425-7047-427f-b2b9-7bdc6e18df7c"
 }
