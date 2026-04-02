@@ -365,16 +365,12 @@
         <!-- Desktop User Menu -->
         <div class="user-section">
           <DropdownMenu.Root>
-            <DropdownMenu.Trigger class="user-trigger">
-              {#snippet child({ props })}
-                <button
-                  {...props}
-                  aria-label={i18n.t('nav.userMenu')}
-                  title={i18n.t('nav.userMenu')}
-                >
-                  <span class="user-avatar">{avatarLetter}</span>
-                </button>
-              {/snippet}
+            <DropdownMenu.Trigger
+              class="user-trigger"
+              aria-label={i18n.t('nav.userMenu')}
+              title={i18n.t('nav.userMenu')}
+            >
+              <span class="user-avatar">{avatarLetter}</span>
             </DropdownMenu.Trigger>
             <DropdownMenu.Content align="start" side="right">
               <DropdownMenu.Item>
@@ -424,16 +420,12 @@
   {#if browser}
     <div class="mobile-menu hidden max-md:block">
       <DropdownMenu.Root>
-        <DropdownMenu.Trigger class="mobile-menu-trigger">
-          {#snippet child({ props })}
-            <button
-              {...props}
-              aria-label={i18n.t('nav.menu')}
-              title={i18n.t('nav.menu')}
-            >
-              <Menu size={24} />
-            </button>
-          {/snippet}
+        <DropdownMenu.Trigger
+          class="mobile-menu-trigger"
+          aria-label={i18n.t('nav.menu')}
+          title={i18n.t('nav.menu')}
+        >
+          <Menu size={24} />
         </DropdownMenu.Trigger>
         <DropdownMenu.Content align="start" side="bottom">
           <DropdownMenu.Item>
