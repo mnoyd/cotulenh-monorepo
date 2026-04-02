@@ -159,8 +159,9 @@ describe('learn-progress-sync', () => {
       });
 
       startLearnProgressSync(client, 'user-123');
-      // Wait a tick for async to complete
-      await new Promise((r) => setTimeout(r, 50));
+      await vi.waitFor(() => {
+        expect(subjectProgress.getAllProgress).toHaveBeenCalled();
+      });
 
       // Neither store should be updated — original save spy should not have been called
       expect(originalSaveSpy).not.toHaveBeenCalledWith(
@@ -200,7 +201,12 @@ describe('learn-progress-sync', () => {
 
       // Should not throw
       startLearnProgressSync(client, 'user-123');
-      await new Promise((r) => setTimeout(r, 50));
+      await vi.waitFor(() => {
+        expect(logger.error).toHaveBeenCalledWith(
+          expect.objectContaining({ message: 'network error' }),
+          expect.stringContaining('Failed to fetch learn progress')
+        );
+      });
 
       expect(logger.error).toHaveBeenCalledWith(
         expect.objectContaining({ message: 'network error' }),
@@ -220,7 +226,12 @@ describe('learn-progress-sync', () => {
       });
 
       startLearnProgressSync(client, 'user-123');
-      await new Promise((r) => setTimeout(r, 50));
+      await vi.waitFor(() => {
+        expect(logger.error).toHaveBeenCalledWith(
+          expect.objectContaining({ message: 'write error' }),
+          expect.stringContaining('Failed to batch sync learn progress')
+        );
+      });
 
       expect(logger.error).toHaveBeenCalledWith(
         expect.objectContaining({ message: 'write error' }),
@@ -238,7 +249,9 @@ describe('learn-progress-sync', () => {
       const { client, upsertFn } = createMockSupabase();
 
       startLearnProgressSync(client, 'user-123');
-      await new Promise((r) => setTimeout(r, 50));
+      await vi.waitFor(() => {
+        expect(subjectProgress.getAllProgress).toHaveBeenCalled();
+      });
 
       // Clear call history
       upsertFn.mockClear();
@@ -247,9 +260,6 @@ describe('learn-progress-sync', () => {
 
       // saveLessonProgress should now only write to localStorage (original behavior)
       subjectProgress.saveLessonProgress('new-lesson', 2, 3);
-
-      // Give time for any async operations
-      await new Promise((r) => setTimeout(r, 50));
 
       // No new Supabase upsert calls should have been made
       expect(upsertFn).not.toHaveBeenCalled();
@@ -263,7 +273,9 @@ describe('learn-progress-sync', () => {
       startLearnProgressSync(client, 'user-123');
       startLearnProgressSync(client, 'user-123');
 
-      await new Promise((r) => setTimeout(r, 50));
+      await vi.waitFor(() => {
+        expect(eqFn).toHaveBeenCalledTimes(1);
+      });
 
       // eq should only be called once (single fetch)
       expect(eqFn).toHaveBeenCalledTimes(1);
@@ -290,15 +302,15 @@ describe('learn-progress-sync', () => {
       const { client, upsertFn } = createMockSupabase();
 
       startLearnProgressSync(client, 'user-123');
-      await new Promise((r) => setTimeout(r, 50));
+      await vi.waitFor(() => {
+        expect(subjectProgress.getAllProgress).toHaveBeenCalled();
+      });
 
       // Clear initial sync calls.
       upsertFn.mockClear();
 
       // Lower stars should be ignored locally and must not downgrade Supabase.
       subjectProgress.saveLessonProgress('new-lesson', 1, 99);
-
-      await new Promise((r) => setTimeout(r, 50));
 
       expect(upsertFn).not.toHaveBeenCalled();
       expect(subjectProgress.getLessonProgress('new-lesson')?.stars).toBe(3);
@@ -308,7 +320,9 @@ describe('learn-progress-sync', () => {
       const { client, upsertFn } = createMockSupabase();
 
       startLearnProgressSync(client, 'user-123');
-      await new Promise((r) => setTimeout(r, 50));
+      await vi.waitFor(() => {
+        expect(subjectProgress.getAllProgress).toHaveBeenCalled();
+      });
 
       // Clear initial sync calls
       upsertFn.mockClear();
@@ -316,7 +330,9 @@ describe('learn-progress-sync', () => {
       // Now save a new lesson — should trigger Supabase upsert via wrapped method
       subjectProgress.saveLessonProgress('new-lesson', 3, 4);
 
-      await new Promise((r) => setTimeout(r, 50));
+      await vi.waitFor(() => {
+        expect(upsertFn).toHaveBeenCalled();
+      });
 
       // The single-item upsert should have been called
       expect(client.from).toHaveBeenCalledWith('learn_progress');
@@ -396,7 +412,9 @@ describe('learn-progress-sync', () => {
       const { client, upsertFn } = createMockSupabase({ selectData: [] });
 
       startLearnProgressSync(client, 'new-user');
-      await new Promise((r) => setTimeout(r, 50));
+      await vi.waitFor(() => {
+        expect(subjectProgress.getAllProgress).toHaveBeenCalled();
+      });
 
       // No upsert calls — nothing to migrate
       expect(upsertFn).not.toHaveBeenCalled();
@@ -460,7 +478,12 @@ describe('learn-progress-sync', () => {
       });
 
       startLearnProgressSync(failingClient.client, 'user-retry');
-      await new Promise((r) => setTimeout(r, 50));
+      await vi.waitFor(() => {
+        expect(logger.error).toHaveBeenCalledWith(
+          expect.objectContaining({ message: 'network error' }),
+          expect.stringContaining('Failed to fetch learn progress')
+        );
+      });
 
       expect(logger.error).toHaveBeenCalledWith(
         expect.objectContaining({ message: 'network error' }),
@@ -495,7 +518,12 @@ describe('learn-progress-sync', () => {
       });
 
       startLearnProgressSync(failingClient.client, 'user-retry');
-      await new Promise((r) => setTimeout(r, 50));
+      await vi.waitFor(() => {
+        expect(logger.error).toHaveBeenCalledWith(
+          expect.objectContaining({ message: 'network error' }),
+          expect.stringContaining('Failed to fetch learn progress')
+        );
+      });
 
       // Verify the error was logged (migration failed)
       expect(logger.error).toHaveBeenCalledWith(
@@ -557,7 +585,7 @@ describe('learn-progress-sync', () => {
         error: null
       });
 
-      await new Promise((r) => setTimeout(r, 50));
+      await staleFetch.promise;
 
       expect(newUpsert).not.toHaveBeenCalled();
     });
