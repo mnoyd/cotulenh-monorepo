@@ -11,6 +11,7 @@ Usage:
   ./scripts/local-supabase-safe.sh status-env
   ./scripts/local-supabase-safe.sh psql [psql args...]
   ./scripts/local-supabase-safe.sh psql-file <sql-file>
+  ./scripts/local-supabase-safe.sh seed-tournament-scheduler-secrets
   ./scripts/local-supabase-safe.sh repair-profiles-schema
   ./scripts/local-supabase-safe.sh app-dev
   ./scripts/local-supabase-safe.sh app-playwright [playwright args...]
@@ -19,6 +20,9 @@ Subcommands:
   status-env        Print `supabase status -o env` for the local stack.
   psql              Run `psql` against the local Supabase DB using the discovered DB_URL.
   psql-file         Apply a SQL file to the local Supabase DB with ON_ERROR_STOP=1.
+  seed-tournament-scheduler-secrets
+                    Upsert Vault secrets (`project_url`, `service_role_key`) from local
+                    Supabase env so migration 028 scheduler jobs can invoke tournament-pair.
   repair-profiles-schema
                     Repair local `public.profiles` schema drift from migrations 018/024 and
                     print verification output for username/rating/trigger state.
@@ -122,6 +126,80 @@ repair_profiles_schema() {
   "
 }
 
+seed_tournament_scheduler_secrets() {
+  load_local_supabase_env
+
+  run_psql -q -v ON_ERROR_STOP=1 \
+    -v project_url="$LOCAL_SUPABASE_API_URL" \
+    -v service_role_key="$LOCAL_SUPABASE_SERVICE_ROLE_KEY" >/dev/null <<'SQL'
+SELECT vault.update_secret(
+  d.id,
+  :'project_url',
+  'project_url',
+  'Supabase project URL for tournament scheduler jobs'
+)
+FROM vault.decrypted_secrets d
+WHERE d.name = 'project_url';
+
+SELECT vault.create_secret(
+  :'project_url',
+  'project_url',
+  'Supabase project URL for tournament scheduler jobs'
+)
+WHERE NOT EXISTS (
+  SELECT 1
+  FROM vault.decrypted_secrets d
+  WHERE d.name = 'project_url'
+);
+
+SELECT vault.update_secret(
+  d.id,
+  :'service_role_key',
+  'service_role_key',
+  'Supabase service role key for tournament scheduler jobs'
+)
+FROM vault.decrypted_secrets d
+WHERE d.name = 'service_role_key';
+
+SELECT vault.create_secret(
+  :'service_role_key',
+  'service_role_key',
+  'Supabase service role key for tournament scheduler jobs'
+)
+WHERE NOT EXISTS (
+  SELECT 1
+  FROM vault.decrypted_secrets d
+  WHERE d.name = 'service_role_key'
+);
+SQL
+
+  run_psql -F $'\t' -Atqc "
+    select 'secrets';
+    select name,
+           case
+             when decrypted_secret is null or length(decrypted_secret) = 0 then 'missing'
+             else 'configured'
+           end as status
+    from vault.decrypted_secrets
+    where name in ('project_url', 'service_role_key')
+    order by name;
+    select 'scheduler_functions';
+    with required(name) as (
+      values
+        ('invoke_tournament_pair_edge'),
+        ('schedule_due_tournaments'),
+        ('schedule_expired_tournaments')
+    )
+    select r.name,
+           case when p.proname is null then 'missing' else 'present' end as status
+    from required r
+    left join pg_proc p on p.proname = r.name
+    left join pg_namespace n on n.oid = p.pronamespace and n.nspname = 'public'
+    where n.nspname = 'public' or n.nspname is null
+    order by r.name;
+  "
+}
+
 command="${1:-help}"
 
 case "$command" in
@@ -145,6 +223,9 @@ case "$command" in
 
     shift
     run_psql -v ON_ERROR_STOP=1 -f "$1"
+    ;;
+  seed-tournament-scheduler-secrets)
+    seed_tournament_scheduler_secrets
     ;;
   repair-profiles-schema)
     repair_profiles_schema
