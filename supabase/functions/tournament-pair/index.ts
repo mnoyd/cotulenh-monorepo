@@ -19,18 +19,6 @@ function errorResponse(error: string, code: string, status: number) {
   return jsonResponse({ error, code }, status);
 }
 
-function parseJwtPayload(token: string): Record<string, unknown> | null {
-  try {
-    const parts = token.split('.');
-    if (parts.length < 2) return null;
-    const payload = parts[1].replace(/-/g, '+').replace(/_/g, '/');
-    const padded = payload.padEnd(payload.length + ((4 - (payload.length % 4)) % 4), '=');
-    return JSON.parse(atob(padded)) as Record<string, unknown>;
-  } catch {
-    return null;
-  }
-}
-
 type TournamentAction = 'start_tournament' | 'pair_next_round';
 
 type Pairing = {
@@ -38,6 +26,28 @@ type Pairing = {
   red_player: string;
   blue_player: string;
 };
+
+async function rollbackCreatedGames(
+  supabase: ReturnType<typeof createClient>,
+  tournamentId: string,
+  gameIds: string[]
+): Promise<void> {
+  if (gameIds.length === 0) return;
+
+  const { error } = await supabase
+    .from('games')
+    .delete()
+    .eq('tournament_id', tournamentId)
+    .in('id', gameIds);
+
+  if (error) {
+    console.error('Failed to rollback partially created tournament games', {
+      tournamentId,
+      gameIds,
+      error
+    });
+  }
+}
 
 async function handleStartTournament(
   supabase: ReturnType<typeof createClient>,
@@ -190,17 +200,6 @@ async function pairRound(
 
   const { pairs, byePlayer } = generatePairings(participants as Participant[]);
 
-  // Award bye
-  if (byePlayer) {
-    const { error: byeErr } = await supabase.rpc('award_tournament_bye', {
-      p_tournament_id: tournamentId,
-      p_user_id: byePlayer.user_id
-    });
-    if (byeErr) {
-      return errorResponse('Failed to award bye', 'INTERNAL_ERROR', 500);
-    }
-  }
-
   // Parse time_control string (e.g., "3+2") into jsonb format
   const tcParts = timeControl.split('+');
   const timeMinutes = parseInt(tcParts[0], 10) || 5;
@@ -209,6 +208,7 @@ async function pairRound(
 
   // Create games for each pair
   const pairings: Pairing[] = [];
+  const createdGameIds: string[] = [];
   for (const [red, blue] of pairs) {
     const { data: gameId, error: gameErr } = await supabase.rpc('create_tournament_game', {
       p_tournament_id: tournamentId,
@@ -219,15 +219,28 @@ async function pairRound(
     });
 
     if (gameErr || !gameId) {
-      console.error('Failed to create tournament game:', gameErr);
-      continue;
+      await rollbackCreatedGames(supabase, tournamentId, createdGameIds);
+      return errorResponse('Failed to create tournament game', 'INTERNAL_ERROR', 500);
     }
 
+    createdGameIds.push(gameId);
     pairings.push({
       game_id: gameId,
       red_player: red.user_id,
       blue_player: blue.user_id
     });
+  }
+
+  // Award bye only after round game creation has succeeded.
+  if (byePlayer) {
+    const { error: byeErr } = await supabase.rpc('award_tournament_bye', {
+      p_tournament_id: tournamentId,
+      p_user_id: byePlayer.user_id
+    });
+    if (byeErr) {
+      await rollbackCreatedGames(supabase, tournamentId, createdGameIds);
+      return errorResponse('Failed to award bye', 'INTERNAL_ERROR', 500);
+    }
   }
 
   // Broadcast round_start event
@@ -269,12 +282,10 @@ Deno.serve(async (req) => {
       return errorResponse('Missing authorization', 'UNAUTHORIZED', 401);
     }
     const authToken = authHeader.slice('Bearer '.length);
-    const jwtPayload = parseJwtPayload(authToken);
-    const jwtRole = (jwtPayload?.role as string | undefined) ?? null;
-    const isServiceRoleCall = jwtRole === 'service_role';
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const isServiceRoleCall = authToken === supabaseServiceKey;
 
     let callerUserId: string | null = null;
     if (!isServiceRoleCall) {

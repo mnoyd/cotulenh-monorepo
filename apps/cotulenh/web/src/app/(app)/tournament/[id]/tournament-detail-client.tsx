@@ -113,7 +113,16 @@ export function TournamentDetailClient({
         return;
       }
 
-      setIsPairingInProgress((data?.length ?? 0) === 0);
+      const existingGameId =
+        Array.isArray(data) && data.length > 0 ? ((data[0] as { id?: string }).id ?? null) : null;
+
+      if (existingGameId) {
+        setIsPairingInProgress(false);
+        router.push(`/game/${existingGameId}`);
+        return;
+      }
+
+      setIsPairingInProgress(true);
     };
 
     void checkPairingState();
@@ -121,7 +130,7 @@ export function TournamentDetailClient({
     return () => {
       cancelled = true;
     };
-  }, [currentUserId, tournament.id, tournament.status, tournament.current_round]);
+  }, [currentUserId, router, tournament.id, tournament.status, tournament.current_round]);
 
   return (
     <div className="p-[var(--space-6)] max-w-2xl mx-auto">

@@ -1,6 +1,6 @@
 # Story 8.3: Arena Tournament Gameplay & Live Standings
 
-Status: review
+Status: done
 
 ## Story
 
@@ -48,7 +48,7 @@ So that I experience competitive, organized play with real-time results.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Database migration `027_tournament_games.sql` (AC: #1, #2, #3)
+- [x] Task 1: Database migration `027_tournament_games.sql` (AC: #1, #2, #3)
   - [x]Add `tournament_id` column (nullable FK) to `games` table
   - [x]Add `score` and `games_played` columns to `tournament_participants`
   - [x]Create `tournament_games` view or index for efficient lookups
@@ -433,6 +433,7 @@ Claude Opus 4.6 (1M context)
 ### Change Log
 
 - 2026-04-02: Implemented Story 8.3 Arena Tournament Gameplay & Live Standings — migration, Edge Function, game completion hook, types, store, detail page, standings component, and tests
+- 2026-04-03: Senior review fixes applied — hardened tournament-pair auth, made pairing fail-fast on game creation errors, and improved detail-page auto-redirect/banner behavior with added tests
 
 ### File List
 
@@ -460,3 +461,35 @@ Claude Opus 4.6 (1M context)
 - `apps/cotulenh/web/src/lib/types/game.ts` (modified — tournament fields on `GameData`)
 - `apps/cotulenh/web/src/components/game/game-page-client.tsx` (modified — tournament banner and continue flow)
 - `apps/cotulenh/web/src/components/game/game-result-banner.tsx` (modified — tournament CTA and final position)
+- `supabase/functions/tournament-pair/index.ts` (modified — service-role auth hardening and fail-fast round creation rollback)
+- `apps/cotulenh/web/src/app/(app)/tournament/[id]/tournament-detail-client.tsx` (modified — redirect participants to existing started game on load)
+- `apps/cotulenh/web/src/app/(app)/tournament/[id]/__tests__/tournament-detail-client.test.tsx` (new — redirect/pairing banner tests)
+- `apps/cotulenh/web/src/components/tournament/tournament-standings.tsx` (modified — show between-rounds banner even with empty standings)
+- `apps/cotulenh/web/src/components/tournament/__tests__/tournament-standings.test.tsx` (modified — covers empty-standings active banner case)
+
+### Senior Developer Review (AI)
+
+Date: 2026-04-03  
+Reviewer: Noy (AI)
+
+Findings fixed:
+
+1. **HIGH — service-role spoof risk in `tournament-pair` auth**
+   - The function trusted an unverified JWT payload `role=service_role`, allowing a forged token to bypass participant checks.
+   - Fix: require exact bearer token match with `SUPABASE_SERVICE_ROLE_KEY` for privileged path; non-service callers are validated through `auth.getUser()`.
+   - File: `supabase/functions/tournament-pair/index.ts`
+
+2. **HIGH — partial round creation could return success**
+   - Pairing loop previously `continue`d on game creation failure, producing incomplete rounds while still broadcasting/returning success.
+   - Fix: fail-fast behavior with rollback of already created round games and error response.
+   - File: `supabase/functions/tournament-pair/index.ts`
+
+3. **MEDIUM — participant not redirected when game already exists**
+   - Detail page only redirected on live `round_start` broadcast; if user opened/reloaded after pairing, they stayed on standings page.
+   - Fix: during pairing-state check, redirect to `/game/[id]` when an active game already exists for the participant.
+   - Files: `apps/cotulenh/web/src/app/(app)/tournament/[id]/tournament-detail-client.tsx`, `.../__tests__/tournament-detail-client.test.tsx`
+
+4. **MEDIUM — between-rounds banner hidden when standings empty**
+   - `TournamentStandings` returned early for empty standings, preventing `"Dang tim doi thu..."` from rendering during active pairing.
+   - Fix: render banner independently of table/empty state.
+   - Files: `apps/cotulenh/web/src/components/tournament/tournament-standings.tsx`, `.../__tests__/tournament-standings.test.tsx`

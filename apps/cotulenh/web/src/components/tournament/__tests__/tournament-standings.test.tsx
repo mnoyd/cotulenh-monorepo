@@ -57,6 +57,14 @@ describe('TournamentStandings', () => {
     expect(screen.getByText('Dang tim doi thu...')).toBeInTheDocument();
   });
 
+  it('shows between-rounds banner even when standings are empty', () => {
+    render(<TournamentStandings standings={[]} isActive={true} />);
+
+    expect(screen.getByTestId('between-rounds-banner')).toBeInTheDocument();
+    expect(screen.getByText('Dang tim doi thu...')).toBeInTheDocument();
+    expect(screen.getByText('Chua co ket qua')).toBeInTheDocument();
+  });
+
   it('does not show between-rounds banner when tournament is not active', () => {
     render(<TournamentStandings standings={mockStandings} isActive={false} />);
 
