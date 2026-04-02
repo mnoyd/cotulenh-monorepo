@@ -6,7 +6,6 @@
 	import type { GameHistoryItem } from '$lib/game/history';
 	import {
 		getGameResult,
-		getDurationParts,
 		formatTimeControl,
 		getGameHistoryReasonKey
 	} from '$lib/game/history';
@@ -35,14 +34,6 @@
 		const key = getGameHistoryReasonKey(game.resultReason);
 		if (!key) return '';
 		return i18n.t(key);
-	}
-
-	function getDurationLabel(game: GameHistoryItem): string {
-		const duration = getDurationParts(game.startedAt, game.endedAt);
-		if (!duration) return '—';
-		return i18n.t('gameHistory.duration')
-			.replace('{minutes}', String(duration.minutes))
-			.replace('{seconds}', String(duration.seconds));
 	}
 
 	function formatDate(dateStr: string | null): string {

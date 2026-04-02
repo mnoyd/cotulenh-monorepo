@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { TIME_PRESETS, type GameConfig } from './types';
+import { TIME_PRESETS } from './types';
 
 describe('TIME_PRESETS', () => {
   it('has exactly 9 presets', () => {

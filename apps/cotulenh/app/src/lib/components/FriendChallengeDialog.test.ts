@@ -49,7 +49,6 @@ describe('FriendChallengeDialog component', () => {
   it('renders dialog with friend name in title', () => {
     component = render();
     flushSync();
-    const title = target.querySelector('[class*="title"]');
     // Dialog renders in portal, check document body
     const body = document.body;
     expect(body.textContent).toContain('Test Friend');

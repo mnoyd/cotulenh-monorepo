@@ -12,7 +12,6 @@
   import type { GameConfig } from '$lib/invitations/types';
   import {
     getGameResult,
-    getDurationParts,
     getGameHistoryReasonKey
   } from '$lib/game/history';
 
@@ -95,14 +94,6 @@
     const key = getGameHistoryReasonKey(game.resultReason);
     if (!key) return '';
     return t(key);
-  }
-
-  function getDurationLabel(game: GameHistoryItem): string {
-    const duration = getDurationParts(game.startedAt, game.endedAt);
-    if (!duration) return '—';
-    return t('gameHistory.duration')
-      .replace('{minutes}', String(duration.minutes))
-      .replace('{seconds}', String(duration.seconds));
   }
 
   function formatDate(dateStr: string | null): string {
@@ -188,7 +179,7 @@
     <div class="skeleton-bar" style="width: 80px; height: 0.8rem;"></div>
     <hr class="divider" />
     <div class="skeleton-bar" style="width: 140px; height: 1rem;"></div>
-    {#each [1, 2, 3] as _}
+    {#each [1, 2, 3] as statSkeletonId (statSkeletonId)}
       <div class="stat-row">
         <div class="skeleton-bar" style="width: 80px;"></div>
         <div class="skeleton-bar" style="width: 40px;"></div>
@@ -196,7 +187,7 @@
     {/each}
     <hr class="divider" />
     <div class="skeleton-bar" style="width: 140px; height: 1rem;"></div>
-    {#each [1, 2, 3] as _}
+    {#each [1, 2, 3] as gameSkeletonId (gameSkeletonId)}
       <div class="game-row">
         <div class="skeleton-bar" style="width: 150px;"></div>
         <div class="skeleton-bar" style="width: 60px;"></div>

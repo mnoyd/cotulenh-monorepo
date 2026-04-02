@@ -27,7 +27,7 @@
 {#if loading}
   <!-- Skeleton loading state -->
   <div class="flat-list">
-    {#each [1, 2, 3] as _}
+    {#each [1, 2, 3] as skeletonId (skeletonId)}
       <div class="flat-list-item skeleton-item">
         <span class="skeleton-bar name"></span>
         <span class="skeleton-bar time"></span>

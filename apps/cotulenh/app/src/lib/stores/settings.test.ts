@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { DEFAULT_SETTINGS, SettingsSchema } from './settings';
 
 // Mock browser environment
@@ -18,7 +18,8 @@ describe('Settings', () => {
   });
 
   it('SettingsSchema defaults moveConfirmation to false', () => {
-    const { moveConfirmation: _, ...withoutMoveConfirm } = DEFAULT_SETTINGS;
+    const withoutMoveConfirm = { ...DEFAULT_SETTINGS };
+    delete withoutMoveConfirm.moveConfirmation;
     const result = SettingsSchema.safeParse(withoutMoveConfirm);
     expect(result.success).toBe(true);
     if (result.success) {

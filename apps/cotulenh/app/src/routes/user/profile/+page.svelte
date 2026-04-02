@@ -98,7 +98,7 @@
     <div class="skeleton-bar" style="width: 120px; height: 0.8rem;"></div>
     <div class="skeleton-bar" style="width: 80px; height: 0.8rem;"></div>
     <hr class="divider" />
-    {#each [1, 2, 3] as _}
+    {#each [1, 2, 3] as skeletonId (skeletonId)}
       <div class="stat-row">
         <div class="skeleton-bar" style="width: 80px;"></div>
         <div class="skeleton-bar" style="width: 40px;"></div>
