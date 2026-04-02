@@ -3,7 +3,7 @@
 
 CREATE EXTENSION IF NOT EXISTS pg_cron;
 CREATE EXTENSION IF NOT EXISTS pg_net;
-CREATE EXTENSION IF NOT EXISTS vault;
+CREATE EXTENSION IF NOT EXISTS supabase_vault;
 
 -- Internal helper: invoke tournament-pair Edge Function via HTTP.
 CREATE OR REPLACE FUNCTION public.invoke_tournament_pair_edge(
