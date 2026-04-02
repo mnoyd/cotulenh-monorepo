@@ -1,4 +1,4 @@
--- Migration: 018_game_states_disconnect_tracking
+-- Migration: 0180_game_states_disconnect_tracking
 -- Adds disconnect tracking and clock pause metadata to game_states.
 -- Also extends the lock_game_state_for_update RPC and adds helper RPCs for
 -- disconnect recording, reconnect clearing, and timed disconnect forfeits.

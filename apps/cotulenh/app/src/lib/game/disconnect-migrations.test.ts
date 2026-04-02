@@ -5,7 +5,7 @@ import { resolve } from 'node:path';
 const disconnectMigrationPath = resolve(
   process.cwd(),
   '../../..',
-  'supabase/migrations/018_game_states_disconnect_tracking.sql'
+  'supabase/migrations/0180_game_states_disconnect_tracking.sql'
 );
 const cronMigrationPath = resolve(
   process.cwd(),
