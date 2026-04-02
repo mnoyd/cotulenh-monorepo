@@ -32,6 +32,40 @@ export async function getTournaments(): Promise<GetTournamentsResult> {
   return { success: true, data: data as Tournament[] };
 }
 
+type GetTournamentDetailResult =
+  | { success: true; data: Tournament }
+  | { success: false; error: string };
+
+export async function getTournamentDetail(
+  tournamentId: string
+): Promise<GetTournamentDetailResult> {
+  const parsed = tournamentIdSchema.safeParse({ tournamentId });
+  if (!parsed.success) {
+    return { success: false, error: 'ID giai dau khong hop le' };
+  }
+
+  const supabase = await createClient();
+
+  const {
+    data: { user }
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return { success: false, error: 'Vui long dang nhap' };
+  }
+
+  const { data, error } = await supabase
+    .from('tournaments')
+    .select('*')
+    .eq('id', tournamentId)
+    .single();
+
+  if (error || !data) {
+    return { success: false, error: 'Khong the tai giai dau' };
+  }
+
+  return { success: true, data: data as Tournament };
+}
+
 type JoinLeaveResult = { success: true } | { success: false; error: string };
 
 export async function joinTournament(tournamentId: string): Promise<JoinLeaveResult> {

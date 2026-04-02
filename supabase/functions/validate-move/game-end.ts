@@ -37,7 +37,7 @@ type SupabaseClient = {
       };
     };
   };
-  rpc: (fn: string, params: Record<string, unknown>) => Promise<{ error: unknown }>;
+  rpc: (fn: string, params: Record<string, unknown>) => Promise<{ data?: unknown; error: unknown }>;
   channel: (
     name: string,
     opts?: { config?: { private?: boolean } }
@@ -50,6 +50,7 @@ export type GameData = {
   redPlayerId: string;
   bluePlayerId: string;
   isRated: boolean;
+  tournamentId?: string | null;
 };
 
 type PlayerRatingSnapshot = {
@@ -242,6 +243,60 @@ export async function completeGame(
       seq
     }
   });
+
+  // Tournament standings hook: update scores and trigger next round if needed
+  if (gameData?.tournamentId) {
+    try {
+      const { data: remaining, error: standingsErr } = await supabase.rpc(
+        'update_tournament_standings',
+        {
+          p_tournament_id: gameData.tournamentId,
+          p_game_id: gameId
+        }
+      );
+
+      if (!standingsErr && remaining === 0) {
+        // All round games complete — check if tournament should continue or end
+        const { data: tournament } = await (supabase as unknown as SupabaseClient)
+          .from('tournaments')
+          .select('start_time, duration_minutes, status')
+          .eq('id', gameData.tournamentId)
+          .single();
+
+        if (tournament) {
+          const t = tournament as Record<string, unknown>;
+          const startTime = new Date(t.start_time as string).getTime();
+          const durationMs = (t.duration_minutes as number) * 60 * 1000;
+
+          if (Date.now() > startTime + durationMs) {
+            // Tournament duration expired — complete it
+            await supabase.rpc('complete_tournament', {
+              p_tournament_id: gameData.tournamentId
+            });
+
+            const tournamentChannel = supabase.channel(`tournament:${gameData.tournamentId}`);
+            await tournamentChannel.send({
+              type: 'broadcast',
+              event: 'tournament_end',
+              payload: { type: 'tournament_end', payload: {} }
+            });
+          } else if (t.status === 'active') {
+            // Round complete and tournament still active -> queue next pairing cycle.
+            const { error: pairErr } = await supabase.rpc('pair_tournament_round', {
+              p_tournament_id: gameData.tournamentId,
+              p_action: 'pair_next_round'
+            });
+            if (pairErr) {
+              console.error('Failed to trigger next tournament round', pairErr);
+            }
+          }
+        }
+      }
+    } catch {
+      // Tournament standings update is best-effort — don't fail the game completion
+      console.error('Tournament standings update failed for game', gameId);
+    }
+  }
 
   return { success: true, ratingChanges };
 }

@@ -133,7 +133,9 @@ Deno.serve(async (req) => {
     // 1.10: Verify game status is 'started'
     const { data: gameRow, error: gameError } = await supabase
       .from('games')
-      .select('id, status, red_player, blue_player, time_control, winner, result_reason, is_rated')
+      .select(
+        'id, status, red_player, blue_player, time_control, winner, result_reason, is_rated, tournament_id'
+      )
       .eq('id', game_id)
       .single();
 
@@ -162,7 +164,8 @@ Deno.serve(async (req) => {
     const gameData: GameData = {
       redPlayerId: gameRow.red_player,
       bluePlayerId: gameRow.blue_player,
-      isRated: gameRow.is_rated ?? false
+      isRated: gameRow.is_rated ?? false,
+      tournamentId: gameRow.tournament_id ?? null
     };
 
     // 1.4: SELECT FOR UPDATE row lock on game_states for concurrency safety

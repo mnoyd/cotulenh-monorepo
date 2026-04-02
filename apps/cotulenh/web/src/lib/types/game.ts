@@ -45,5 +45,17 @@ export interface GameData {
   created_at: string;
   winner: 'red' | 'blue' | null;
   result_reason: string | null;
+  tournament_id?: string | null;
+  tournament?: {
+    id: string;
+    current_round: number;
+    status: 'upcoming' | 'active' | 'completed';
+    standings: Array<{
+      player_id: string;
+      player_name: string;
+      score: number;
+      games_played: number;
+    }>;
+  } | null;
   game_state: GameStateData;
 }

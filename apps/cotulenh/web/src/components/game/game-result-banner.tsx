@@ -21,6 +21,9 @@ type GameResultBannerProps = {
   onRematch?: () => void;
   onAcceptRematch?: () => void;
   onDeclineRematch?: () => void;
+  isTournamentGame?: boolean;
+  tournamentFinalPosition?: number | null;
+  onContinueTournament?: () => void;
   onDismiss?: () => void;
 };
 
@@ -62,6 +65,9 @@ export function GameResultBanner({
   onRematch,
   onAcceptRematch,
   onDeclineRematch,
+  isTournamentGame = false,
+  tournamentFinalPosition = null,
+  onContinueTournament,
   onDismiss
 }: GameResultBannerProps) {
   const bannerRef = useRef<HTMLDivElement>(null);
@@ -143,8 +149,8 @@ export function GameResultBanner({
     };
   }, [rematchStatus]);
 
-  // Hide rematch for aborted/disputed games
-  const showRematch = status !== 'aborted' && status !== 'dispute';
+  // Hide rematch for aborted/disputed games and all tournament games.
+  const showRematch = !isTournamentGame && status !== 'aborted' && status !== 'dispute';
 
   const outcomeText = getOutcomeText(winner, myColor);
   const methodText = getMethodText(status, resultReason);
@@ -192,6 +198,15 @@ export function GameResultBanner({
         ) : null}
 
         {isRated && myRatingChange ? <RatingChangeDisplay change={myRatingChange} /> : null}
+
+        {isTournamentGame && tournamentFinalPosition ? (
+          <p
+            className="mt-[var(--space-2)] text-[var(--text-sm)] text-[var(--color-text-muted)]"
+            data-testid="game-result-tournament-position"
+          >
+            Vi tri cua ban: #{tournamentFinalPosition}
+          </p>
+        ) : null}
 
         {/* Action buttons */}
         <div className="mt-[var(--space-4)] flex flex-col gap-[var(--space-2)] sm:flex-row sm:justify-center">
@@ -254,6 +269,15 @@ export function GameResultBanner({
                 Tái đấu
               </button>
             )
+          ) : null}
+          {isTournamentGame ? (
+            <button
+              onClick={onContinueTournament ?? onNewGame}
+              className="bg-[var(--color-primary)] px-[var(--space-4)] py-[var(--space-2)] text-[var(--text-sm)] text-white hover:bg-[var(--color-primary-hover)]"
+              data-testid="game-result-continue-tournament"
+            >
+              Tiep tuc giai dau
+            </button>
           ) : null}
           <button
             onClick={onNewGame}

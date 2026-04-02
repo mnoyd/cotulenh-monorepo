@@ -420,3 +420,105 @@ Deno.test('completeGame returns error when rating lookup fails for rated game', 
   assertEquals(mock.calls.rpc, undefined);
   assertEquals(mock.calls.broadcast, undefined);
 });
+
+function createTournamentFlowMock(opts?: { remainingGames?: number; expired?: boolean }) {
+  const calls: {
+    rpcCalls: Array<{ fn: string; params: Record<string, unknown> }>;
+    broadcast?: { channel: string; event: Record<string, unknown> };
+  } = {
+    rpcCalls: []
+  };
+
+  const startTime = new Date(Date.now() - (opts?.expired ? 3 : 1) * 60 * 1000).toISOString();
+  const durationMinutes = opts?.expired ? 1 : 30;
+
+  return {
+    client: {
+      from: (table: string) => ({
+        update: (_data: Record<string, unknown>) => ({
+          eq: async (_col: string, _val: string) => ({ error: null })
+        }),
+        select: (_columns: string) => ({
+          eq: (_col: string, _val: unknown) => ({
+            single: async () => {
+              if (table === 'tournaments') {
+                return {
+                  data: {
+                    start_time: startTime,
+                    duration_minutes: durationMinutes,
+                    status: 'active'
+                  },
+                  error: null
+                };
+              }
+              return { data: null, error: { message: 'not found' } };
+            }
+          })
+        })
+      }),
+      rpc: async (fn: string, params: Record<string, unknown>) => {
+        calls.rpcCalls.push({ fn, params });
+        if (fn === 'update_tournament_standings') {
+          return { data: opts?.remainingGames ?? 0, error: null };
+        }
+        return { error: null };
+      },
+      channel: (name: string) => ({
+        send: async (msg: Record<string, unknown>) => {
+          calls.broadcast = { channel: name, event: msg };
+        }
+      })
+    },
+    calls
+  };
+}
+
+Deno.test(
+  'completeGame triggers pair_tournament_round RPC when tournament round completes',
+  async () => {
+    const mock = createTournamentFlowMock({ remainingGames: 0, expired: false });
+
+    const result = await completeGame(
+      mock.client as never,
+      'game-tournament-round-end',
+      { status: 'checkmate', winner: 'red', result_reason: null },
+      22,
+      {
+        redPlayerId: 'red-uuid',
+        bluePlayerId: 'blue-uuid',
+        isRated: false,
+        tournamentId: 'tournament-uuid'
+      }
+    );
+
+    assertEquals(result.success, true);
+
+    const pairCall = mock.calls.rpcCalls.find((call) => call.fn === 'pair_tournament_round');
+    assertEquals(pairCall?.params.p_tournament_id, 'tournament-uuid');
+    assertEquals(pairCall?.params.p_action, 'pair_next_round');
+  }
+);
+
+Deno.test(
+  'completeGame does not trigger pair_tournament_round when round still has active games',
+  async () => {
+    const mock = createTournamentFlowMock({ remainingGames: 1, expired: false });
+
+    const result = await completeGame(
+      mock.client as never,
+      'game-tournament-not-final',
+      { status: 'checkmate', winner: 'red', result_reason: null },
+      22,
+      {
+        redPlayerId: 'red-uuid',
+        bluePlayerId: 'blue-uuid',
+        isRated: false,
+        tournamentId: 'tournament-uuid'
+      }
+    );
+
+    assertEquals(result.success, true);
+    const pairCall = mock.calls.rpcCalls.find((call) => call.fn === 'pair_tournament_round');
+    assertEquals(pairCall, undefined);
+  }
+);

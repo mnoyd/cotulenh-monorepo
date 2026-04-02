@@ -222,10 +222,21 @@ export function GamePageClient({ gameData }: GamePageClientProps) {
   const isDeploying = phase === 'deploying';
   const isPlaying = phase === 'playing';
   const isEnded = phase === 'ended';
+  const isTournamentGame = !!gameData.tournament_id;
+  const tournamentStatus = gameData.tournament?.status ?? null;
+  const tournamentRound = gameData.tournament?.current_round ?? 0;
 
   const handleNewGame = useCallback(() => {
     router.push('/dashboard');
   }, [router]);
+
+  const handleContinueTournament = useCallback(() => {
+    if (gameData.tournament_id) {
+      router.push(`/tournament/${gameData.tournament_id}`);
+      return;
+    }
+    router.push('/dashboard');
+  }, [gameData.tournament_id, router]);
 
   const handleDismissBanner = useCallback(() => {
     setBannerDismissed(true);
@@ -283,6 +294,17 @@ export function GamePageClient({ gameData }: GamePageClientProps) {
   const isRedTurn = moveHistory.length % 2 === 0;
   const myColorCode = myColor === 'red' ? 'r' : 'b';
   const isMyTurn = isPlaying && engine && engine.turn() === myColorCode;
+  const myTournamentPosition = useMemo(() => {
+    if (!isTournamentGame || !gameData.tournament?.standings?.length) {
+      return null;
+    }
+    const myPlayerId =
+      gameData.my_color === 'red' ? gameData.red_player.id : gameData.blue_player.id;
+    const index = gameData.tournament.standings.findIndex(
+      (entry) => entry.player_id === myPlayerId
+    );
+    return index >= 0 ? index + 1 : null;
+  }, [gameData, isTournamentGame]);
 
   // Symbol-to-role mapping for building board Dests
   const SYMBOL_TO_ROLE: Record<string, string> = {
@@ -396,6 +418,17 @@ export function GamePageClient({ gameData }: GamePageClientProps) {
           </div>
         ) : null}
 
+        {isTournamentGame ? (
+          <div
+            className={`mb-[var(--space-2)] border border-[var(--color-border)] bg-[var(--color-surface-elevated)] px-[var(--space-3)] py-[var(--space-2)] text-center text-[var(--text-sm)] text-[var(--color-text)] ${boardTrackClass}`}
+            data-testid="tournament-game-banner"
+          >
+            {tournamentStatus === 'completed'
+              ? 'Giai dau ket thuc'
+              : `Giai dau -- Vong ${Math.max(1, tournamentRound)}`}
+          </div>
+        ) : null}
+
         {/* Deploy progress counter — mobile overlay */}
         {isDeploying && !deploySubmitted ? (
           <div className={`${boardTrackClass} sm:hidden`}>
@@ -435,7 +468,10 @@ export function GamePageClient({ gameData }: GamePageClientProps) {
               isRated={gameData.is_rated}
               resultReason={resultReason}
               rematchStatus={rematchStatus}
+              isTournamentGame={isTournamentGame}
+              tournamentFinalPosition={myTournamentPosition}
               onNewGame={handleNewGame}
+              onContinueTournament={handleContinueTournament}
               onRematch={offerRematch}
               onAcceptRematch={acceptRematch}
               onDeclineRematch={declineRematch}

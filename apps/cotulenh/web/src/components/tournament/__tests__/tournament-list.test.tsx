@@ -25,6 +25,7 @@ vi.mock('@/lib/supabase/browser', () => ({
 // Mock tournament actions
 vi.mock('@/lib/actions/tournament', () => ({
   getTournaments: vi.fn().mockResolvedValue({ success: true, data: [] }),
+  getTournamentDetail: vi.fn().mockResolvedValue({ success: true, data: null }),
   joinTournament: vi.fn().mockResolvedValue({ success: true }),
   leaveTournament: vi.fn().mockResolvedValue({ success: true })
 }));
@@ -41,6 +42,7 @@ const makeTournament = (overrides: Partial<Tournament> = {}): Tournament => ({
   status: 'upcoming',
   participant_count: 5,
   standings: [],
+  current_round: 0,
   created_at: '2026-04-01T00:00:00Z',
   updated_at: '2026-04-01T00:00:00Z',
   ...overrides

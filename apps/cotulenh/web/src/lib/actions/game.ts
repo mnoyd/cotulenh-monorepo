@@ -34,6 +34,13 @@ export async function getGame(gameId: string): Promise<GetGameResult> {
       winner,
       result_reason,
       ended_at,
+      tournament_id,
+      tournaments (
+        id,
+        current_round,
+        status,
+        standings
+      ),
       game_states (
         move_history,
         fen,
@@ -80,6 +87,8 @@ export async function getGame(gameId: string): Promise<GetGameResult> {
   const blueInfo = playerMap.get(game.blue_player as string);
 
   const gameState = Array.isArray(game.game_states) ? game.game_states[0] : game.game_states;
+  const tournamentRowRaw = (game as { tournaments?: unknown }).tournaments;
+  const tournamentRow = Array.isArray(tournamentRowRaw) ? tournamentRowRaw[0] : tournamentRowRaw;
 
   const data: GameData = {
     id: game.id,
@@ -101,6 +110,23 @@ export async function getGame(gameId: string): Promise<GetGameResult> {
     created_at: game.created_at,
     winner: game.winner ?? null,
     result_reason: game.result_reason ?? null,
+    tournament_id: game.tournament_id ?? null,
+    tournament: tournamentRow
+      ? {
+          id: (tournamentRow as { id: string }).id,
+          current_round: (tournamentRow as { current_round: number | null }).current_round ?? 0,
+          status: (tournamentRow as { status: 'upcoming' | 'active' | 'completed' }).status,
+          standings:
+            (tournamentRow as { standings?: Array<Record<string, unknown>> }).standings?.map(
+              (row) => ({
+                player_id: String(row.player_id ?? ''),
+                player_name: String(row.player_name ?? ''),
+                score: Number(row.score ?? 0),
+                games_played: Number(row.games_played ?? 0)
+              })
+            ) ?? []
+        }
+      : null,
     game_state: {
       move_history: gameState?.move_history ?? [],
       fen: gameState?.fen ?? 'start',

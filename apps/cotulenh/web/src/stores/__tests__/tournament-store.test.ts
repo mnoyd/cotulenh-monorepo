@@ -1,15 +1,18 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { getTournamentsMock, joinTournamentMock, leaveTournamentMock } = vi.hoisted(() => {
-  return {
-    getTournamentsMock: vi.fn(),
-    joinTournamentMock: vi.fn(),
-    leaveTournamentMock: vi.fn()
-  };
-});
+const { getTournamentsMock, getTournamentDetailMock, joinTournamentMock, leaveTournamentMock } =
+  vi.hoisted(() => {
+    return {
+      getTournamentsMock: vi.fn(),
+      getTournamentDetailMock: vi.fn(),
+      joinTournamentMock: vi.fn(),
+      leaveTournamentMock: vi.fn()
+    };
+  });
 
 vi.mock('@/lib/actions/tournament', () => ({
   getTournaments: getTournamentsMock,
+  getTournamentDetail: getTournamentDetailMock,
   joinTournament: joinTournamentMock,
   leaveTournament: leaveTournamentMock
 }));
@@ -26,6 +29,7 @@ const mockTournament: Tournament = {
   status: 'upcoming',
   participant_count: 5,
   standings: [],
+  current_round: 0,
   created_at: '2026-04-01T00:00:00Z',
   updated_at: '2026-04-01T00:00:00Z'
 };
@@ -34,7 +38,12 @@ const mockTournamentActive: Tournament = {
   ...mockTournament,
   id: '223e4567-e89b-12d3-a456-426614174000',
   title: 'Giải đang diễn ra',
-  status: 'active'
+  status: 'active',
+  current_round: 2,
+  standings: [
+    { player_id: 'p1', player_name: 'Player 1', score: 3, games_played: 3 },
+    { player_id: 'p2', player_name: 'Player 2', score: 1, games_played: 3 }
+  ]
 };
 
 describe('useTournamentStore', () => {
@@ -168,11 +177,77 @@ describe('useTournamentStore', () => {
     });
   });
 
+  describe('fetchTournamentDetail', () => {
+    it('loads tournament detail on success', async () => {
+      getTournamentDetailMock.mockResolvedValue({
+        success: true,
+        data: mockTournamentActive
+      });
+
+      await useTournamentStore.getState().fetchTournamentDetail(mockTournamentActive.id);
+
+      const state = useTournamentStore.getState();
+      expect(state.activeTournament?.id).toBe(mockTournamentActive.id);
+      expect(state.standings).toHaveLength(2);
+      expect(state.detailLoading).toBe(false);
+      expect(state.detailError).toBeNull();
+    });
+
+    it('sets detailError on failure', async () => {
+      getTournamentDetailMock.mockResolvedValue({
+        success: false,
+        error: 'Khong the tai giai dau'
+      });
+
+      await useTournamentStore.getState().fetchTournamentDetail('bad-id');
+
+      const state = useTournamentStore.getState();
+      expect(state.detailError).toBe('Khong the tai giai dau');
+      expect(state.activeTournament).toBeNull();
+      expect(state.detailLoading).toBe(false);
+    });
+  });
+
+  describe('updateTournament with activeTournament', () => {
+    it('updates activeTournament and standings when ids match', async () => {
+      getTournamentDetailMock.mockResolvedValue({
+        success: true,
+        data: mockTournamentActive
+      });
+      await useTournamentStore.getState().fetchTournamentDetail(mockTournamentActive.id);
+
+      const updated = {
+        ...mockTournamentActive,
+        standings: [
+          { player_id: 'p1', player_name: 'Player 1', score: 4, games_played: 4 },
+          { player_id: 'p2', player_name: 'Player 2', score: 2, games_played: 4 }
+        ]
+      };
+      useTournamentStore.getState().updateTournament(updated);
+
+      const state = useTournamentStore.getState();
+      expect(state.activeTournament?.standings[0].score).toBe(4);
+      expect(state.standings[0].score).toBe(4);
+    });
+  });
+
+  describe('updateStandings', () => {
+    it('directly sets standings', () => {
+      const newStandings = [{ player_id: 'x', player_name: 'X', score: 5, games_played: 5 }];
+      useTournamentStore.getState().updateStandings(newStandings);
+      expect(useTournamentStore.getState().standings).toEqual(newStandings);
+    });
+  });
+
   describe('reset', () => {
-    it('clears all state', async () => {
+    it('clears all state including detail state', async () => {
       getTournamentsMock.mockResolvedValue({ success: true, data: [mockTournament] });
       await useTournamentStore.getState().fetchTournaments();
-      expect(useTournamentStore.getState().tournaments).toHaveLength(1);
+      getTournamentDetailMock.mockResolvedValue({
+        success: true,
+        data: mockTournamentActive
+      });
+      await useTournamentStore.getState().fetchTournamentDetail(mockTournamentActive.id);
 
       useTournamentStore.getState().reset();
 
@@ -180,6 +255,10 @@ describe('useTournamentStore', () => {
       expect(state.tournaments).toHaveLength(0);
       expect(state.loading).toBe(false);
       expect(state.error).toBeNull();
+      expect(state.activeTournament).toBeNull();
+      expect(state.standings).toHaveLength(0);
+      expect(state.detailLoading).toBe(false);
+      expect(state.detailError).toBeNull();
     });
   });
 });
