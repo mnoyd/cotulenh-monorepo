@@ -341,6 +341,16 @@
 
 {#snippet centerContent()}
   <div class="board-area">
+    <div class="reconnect-banner-slot">
+      <ReconnectBanner visible={showSelfDisconnectBanner} mode="self" />
+      <ReconnectBanner
+        visible={showOpponentDisconnectBanner}
+        mode="opponent"
+        remainingSeconds={opponentReconnectSecondsRemaining}
+        timedOut={opponentDisconnectTimedOut}
+      />
+    </div>
+
     <!-- Opponent bar -->
     <div class="player-bar">
       <div class="player-info">
@@ -413,14 +423,6 @@
         />
       </div>
     {/if}
-
-    <ReconnectBanner visible={showSelfDisconnectBanner} mode="self" />
-    <ReconnectBanner
-      visible={showOpponentDisconnectBanner}
-      mode="opponent"
-      remainingSeconds={opponentReconnectSecondsRemaining}
-      timedOut={opponentDisconnectTimedOut}
-    />
 
     {#if pendingMove}
       <div class="move-confirm-bar">
@@ -565,6 +567,16 @@
     gap: 0.25rem;
     flex: 1;
     min-height: 0;
+  }
+
+  .reconnect-banner-slot {
+    position: sticky;
+    top: 0;
+    z-index: 25;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
   }
 
   .board-sizer {

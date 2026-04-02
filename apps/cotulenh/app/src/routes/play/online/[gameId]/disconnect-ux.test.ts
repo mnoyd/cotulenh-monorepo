@@ -21,6 +21,18 @@ describe('online game disconnect UX wiring', () => {
     expect(source).toContain('timedOut={opponentDisconnectTimedOut}');
   });
 
+  it('anchors reconnect banners at the top of the game area', () => {
+    const source = readFileSync(pagePath, 'utf8');
+    const bannerSlotIndex = source.indexOf('<div class="reconnect-banner-slot">');
+    const firstPlayerBarIndex = source.indexOf('<!-- Opponent bar -->');
+    expect(bannerSlotIndex).toBeGreaterThan(-1);
+    expect(firstPlayerBarIndex).toBeGreaterThan(-1);
+    expect(bannerSlotIndex).toBeLessThan(firstPlayerBarIndex);
+    expect(source).toContain('.reconnect-banner-slot {');
+    expect(source).toContain('position: sticky;');
+    expect(source).toContain('top: 0;');
+  });
+
   it('shows paused clock copy on both player bars', () => {
     const source = readFileSync(pagePath, 'utf8');
     expect(source).toContain('onlineSession?.clocksPaused');
