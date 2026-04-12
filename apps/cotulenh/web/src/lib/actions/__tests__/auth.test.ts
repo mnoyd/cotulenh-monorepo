@@ -37,10 +37,12 @@ const loadActions = () => import('../auth');
 
 describe('auth actions', () => {
   const originalSiteUrl = process.env.NEXT_PUBLIC_SITE_URL;
+  const originalNodeEnv = process.env.NODE_ENV;
 
   beforeEach(() => {
     vi.clearAllMocks();
     process.env.NEXT_PUBLIC_SITE_URL = originalSiteUrl;
+    process.env.NODE_ENV = originalNodeEnv;
     mockSignOut.mockResolvedValue({ error: null });
   });
 
@@ -151,6 +153,38 @@ describe('auth actions', () => {
     const result = await login(initialAuthActionState, formData);
 
     expect(result.error).toBe('Vui lòng thử lại sau');
+  });
+
+  it('shows detailed Supabase login error in development', async () => {
+    process.env.NODE_ENV = 'development';
+    const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    mockSignInWithPassword.mockResolvedValue({
+      error: {
+        message: 'Connection refused',
+        status: 503,
+        code: 'fetch_failed'
+      }
+    });
+    const { login } = await loadActions();
+    const formData = new FormData();
+    formData.set('email', 'noy@example.com');
+    formData.set('password', 'matkhau123');
+
+    const result = await login(initialAuthActionState, formData);
+
+    expect(result.error).toContain('Đăng nhập lỗi (dev):');
+    expect(result.error).toContain('status=503');
+    expect(result.error).toContain('code=fetch_failed');
+    expect(result.error).toContain('message=Connection refused');
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      '[auth.login] Supabase signInWithPassword failed',
+      {
+        status: 503,
+        code: 'fetch_failed',
+        message: 'Connection refused'
+      }
+    );
+    consoleErrorSpy.mockRestore();
   });
 
   it('logs in successfully and redirects to the dashboard', async () => {

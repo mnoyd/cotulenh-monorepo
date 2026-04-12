@@ -20,6 +20,8 @@ type AuthFieldErrors = Partial<Record<AuthFieldName, string>>;
 
 type SignupValues = Pick<Required<AuthValues>, 'email' | 'password' | 'display_name'>;
 
+type SupabaseAuthError = { message?: string; status?: number; code?: string };
+
 export async function signup(
   _previousState: AuthActionState,
   formData: FormData
@@ -82,6 +84,14 @@ export async function login(
   });
 
   if (error) {
+    if (isDevelopment()) {
+      console.error('[auth.login] Supabase signInWithPassword failed', {
+        status: error.status,
+        code: error.code,
+        message: error.message
+      });
+    }
+
     return {
       success: false,
       error: mapLoginError(error),
@@ -122,7 +132,7 @@ function flattenFieldErrors(
   ) as AuthFieldErrors;
 }
 
-function mapSignupError(error: { message?: string; status?: number; code?: string }) {
+function mapSignupError(error: SupabaseAuthError) {
   const message = error.message?.toLowerCase() ?? '';
 
   if (
@@ -224,7 +234,7 @@ async function getOrigin() {
   return 'http://localhost:3000';
 }
 
-function mapUpdatePasswordError(error: { message?: string; status?: number; code?: string }) {
+function mapUpdatePasswordError(error: SupabaseAuthError) {
   const message = error.message?.toLowerCase() ?? '';
 
   if (error.status === 429 || message.includes('rate limit')) {
@@ -234,7 +244,7 @@ function mapUpdatePasswordError(error: { message?: string; status?: number; code
   return 'Không thể cập nhật mật khẩu lúc này';
 }
 
-function mapLoginError(error: { message?: string; status?: number; code?: string }) {
+function mapLoginError(error: SupabaseAuthError) {
   const message = error.message?.toLowerCase() ?? '';
 
   if (
@@ -253,5 +263,23 @@ function mapLoginError(error: { message?: string; status?: number; code?: string
     return 'Email hoặc mật khẩu không đúng';
   }
 
+  if (isDevelopment()) {
+    return `Đăng nhập lỗi (dev): ${formatDevErrorDetails(error)}`;
+  }
+
   return 'Không thể đăng nhập lúc này';
+}
+
+function isDevelopment() {
+  return process.env.NODE_ENV === 'development';
+}
+
+function formatDevErrorDetails(error: SupabaseAuthError) {
+  const details = [
+    error.status !== undefined ? `status=${error.status}` : null,
+    error.code ? `code=${error.code}` : null,
+    error.message ? `message=${error.message}` : null
+  ].filter(Boolean);
+
+  return details.join(' | ') || 'unknown error';
 }
