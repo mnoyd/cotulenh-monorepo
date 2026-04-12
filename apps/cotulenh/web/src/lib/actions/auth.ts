@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
+import type { AuthActionState } from '@/lib/actions/auth-action-state';
 import { createClient } from '@/lib/supabase/server';
 import {
   loginSchema,
@@ -18,17 +19,6 @@ type AuthValues = Partial<Record<AuthFieldName, string>>;
 type AuthFieldErrors = Partial<Record<AuthFieldName, string>>;
 
 type SignupValues = Pick<Required<AuthValues>, 'email' | 'password' | 'display_name'>;
-
-export type AuthActionState = {
-  success: boolean;
-  error?: string;
-  fieldErrors?: AuthFieldErrors;
-  values?: AuthValues;
-};
-
-export const initialAuthActionState: AuthActionState = {
-  success: false
-};
 
 export async function signup(
   _previousState: AuthActionState,

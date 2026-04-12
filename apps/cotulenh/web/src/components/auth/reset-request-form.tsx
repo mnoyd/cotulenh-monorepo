@@ -4,11 +4,8 @@ import { type ChangeEvent, type ReactNode, useActionState, useState } from 'reac
 import { useFormStatus } from 'react-dom';
 import Link from 'next/link';
 
-import {
-  type AuthActionState,
-  initialAuthActionState,
-  requestPasswordReset
-} from '@/lib/actions/auth';
+import { type AuthActionState, initialAuthActionState } from '@/lib/actions/auth-action-state';
+import { requestPasswordReset } from '@/lib/actions/auth';
 import { resetRequestSchema } from '@/lib/validators/auth';
 import { Button } from '@/components/ui/button';
 import { buttonVariants } from '@/components/ui/button-variants';

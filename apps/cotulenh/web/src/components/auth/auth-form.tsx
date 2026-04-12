@@ -11,7 +11,8 @@ import {
 import { useFormStatus } from 'react-dom';
 import Link from 'next/link';
 
-import { type AuthActionState, initialAuthActionState, login, signup } from '@/lib/actions/auth';
+import { type AuthActionState, initialAuthActionState } from '@/lib/actions/auth-action-state';
+import { login, signup } from '@/lib/actions/auth';
 import { loginSchema, signupSchema } from '@/lib/validators/auth';
 import { Button } from '@/components/ui/button';
 import { buttonVariants } from '@/components/ui/button-variants';

@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { initialAuthActionState } from '../auth-action-state';
+
 const mockSignUp = vi.fn();
 const mockSignInWithPassword = vi.fn();
 const mockResetPasswordForEmail = vi.fn();
@@ -43,7 +45,7 @@ describe('auth actions', () => {
   });
 
   it('returns field errors for invalid signup input', async () => {
-    const { signup, initialAuthActionState } = await loadActions();
+    const { signup } = await loadActions();
     const formData = new FormData();
     formData.set('email', 'sai');
     formData.set('password', '123');
@@ -65,7 +67,7 @@ describe('auth actions', () => {
         code: 'user_already_exists'
       }
     });
-    const { signup, initialAuthActionState } = await loadActions();
+    const { signup } = await loadActions();
     const formData = new FormData();
     formData.set('email', 'noy@example.com');
     formData.set('password', 'matkhau123');
@@ -86,7 +88,7 @@ describe('auth actions', () => {
 
   it('signs up successfully and redirects to the dashboard', async () => {
     mockSignUp.mockResolvedValue({ error: null });
-    const { signup, initialAuthActionState } = await loadActions();
+    const { signup } = await loadActions();
     const formData = new FormData();
     formData.set('email', 'noy@example.com');
     formData.set('password', 'matkhau123');
@@ -117,7 +119,7 @@ describe('auth actions', () => {
         code: 'invalid_credentials'
       }
     });
-    const { login, initialAuthActionState } = await loadActions();
+    const { login } = await loadActions();
     const formData = new FormData();
     formData.set('email', 'noy@example.com');
     formData.set('password', 'sai-mat-khau');
@@ -141,7 +143,7 @@ describe('auth actions', () => {
         status: 429
       }
     });
-    const { login, initialAuthActionState } = await loadActions();
+    const { login } = await loadActions();
     const formData = new FormData();
     formData.set('email', 'noy@example.com');
     formData.set('password', 'matkhau123');
@@ -153,7 +155,7 @@ describe('auth actions', () => {
 
   it('logs in successfully and redirects to the dashboard', async () => {
     mockSignInWithPassword.mockResolvedValue({ error: null });
-    const { login, initialAuthActionState } = await loadActions();
+    const { login } = await loadActions();
     const formData = new FormData();
     formData.set('email', 'noy@example.com');
     formData.set('password', 'matkhau123');
@@ -172,7 +174,7 @@ describe('auth actions', () => {
 
   describe('requestPasswordReset', () => {
     it('returns field errors for invalid email', async () => {
-      const { requestPasswordReset, initialAuthActionState } = await loadActions();
+      const { requestPasswordReset } = await loadActions();
       const formData = new FormData();
       formData.set('email', 'khong-hop-le');
 
@@ -184,7 +186,7 @@ describe('auth actions', () => {
 
     it('always returns success message regardless of email existence', async () => {
       mockResetPasswordForEmail.mockResolvedValue({ error: null });
-      const { requestPasswordReset, initialAuthActionState } = await loadActions();
+      const { requestPasswordReset } = await loadActions();
       const formData = new FormData();
       formData.set('email', 'noy@example.com');
 
@@ -201,7 +203,7 @@ describe('auth actions', () => {
       mockResetPasswordForEmail.mockResolvedValue({
         error: { message: 'User not found', status: 404 }
       });
-      const { requestPasswordReset, initialAuthActionState } = await loadActions();
+      const { requestPasswordReset } = await loadActions();
       const formData = new FormData();
       formData.set('email', 'khong-ton-tai@example.com');
 
@@ -213,7 +215,7 @@ describe('auth actions', () => {
     it('uses NEXT_PUBLIC_SITE_URL as redirect origin when configured', async () => {
       process.env.NEXT_PUBLIC_SITE_URL = 'https://cotulenh.vn';
       mockResetPasswordForEmail.mockResolvedValue({ error: null });
-      const { requestPasswordReset, initialAuthActionState } = await loadActions();
+      const { requestPasswordReset } = await loadActions();
       const formData = new FormData();
       formData.set('email', 'noy@example.com');
 
@@ -228,7 +230,7 @@ describe('auth actions', () => {
 
   describe('updatePassword', () => {
     it('returns field errors for mismatched passwords', async () => {
-      const { updatePassword, initialAuthActionState } = await loadActions();
+      const { updatePassword } = await loadActions();
       const formData = new FormData();
       formData.set('password', 'matkhau123');
       formData.set('confirm_password', 'matkhau456');
@@ -241,7 +243,7 @@ describe('auth actions', () => {
 
     it('updates password and redirects to login with success', async () => {
       mockUpdateUser.mockResolvedValue({ error: null });
-      const { updatePassword, initialAuthActionState } = await loadActions();
+      const { updatePassword } = await loadActions();
       const formData = new FormData();
       formData.set('password', 'matkhaumoi123');
       formData.set('confirm_password', 'matkhaumoi123');
@@ -258,7 +260,7 @@ describe('auth actions', () => {
       mockUpdateUser.mockResolvedValue({
         error: { message: 'Auth session missing', status: 401 }
       });
-      const { updatePassword, initialAuthActionState } = await loadActions();
+      const { updatePassword } = await loadActions();
       const formData = new FormData();
       formData.set('password', 'matkhaumoi123');
       formData.set('confirm_password', 'matkhaumoi123');
@@ -272,7 +274,7 @@ describe('auth actions', () => {
     it('returns error when sign-out fails after update', async () => {
       mockUpdateUser.mockResolvedValue({ error: null });
       mockSignOut.mockResolvedValue({ error: { message: 'Sign out failed', status: 500 } });
-      const { updatePassword, initialAuthActionState } = await loadActions();
+      const { updatePassword } = await loadActions();
       const formData = new FormData();
       formData.set('password', 'matkhaumoi123');
       formData.set('confirm_password', 'matkhaumoi123');

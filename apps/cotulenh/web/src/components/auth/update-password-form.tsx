@@ -4,7 +4,8 @@ import { type ChangeEvent, type ReactNode, useActionState, useState } from 'reac
 import { useFormStatus } from 'react-dom';
 import Link from 'next/link';
 
-import { type AuthActionState, initialAuthActionState, updatePassword } from '@/lib/actions/auth';
+import { type AuthActionState, initialAuthActionState } from '@/lib/actions/auth-action-state';
+import { updatePassword } from '@/lib/actions/auth';
 import { updatePasswordSchema } from '@/lib/validators/auth';
 import { Button } from '@/components/ui/button';
 import { buttonVariants } from '@/components/ui/button-variants';
