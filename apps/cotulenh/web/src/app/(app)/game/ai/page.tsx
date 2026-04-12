@@ -1,18 +1,12 @@
-import dynamic from 'next/dynamic';
-
 import { FEATURES } from '@/lib/constants/feature-flags';
-
-const AiGameClient = dynamic(
-  () => import('@/components/game/ai-game-client').then((mod) => ({ default: mod.AiGameClient })),
-  { ssr: false }
-);
+import { AiGamePageClient } from '@/components/game/ai-game-page-client';
 
 export default function AiGamePage() {
   if (!FEATURES.AI_OPPONENT) {
     return <ComingSoon />;
   }
 
-  return <AiGameClient />;
+  return <AiGamePageClient />;
 }
 
 function ComingSoon() {
